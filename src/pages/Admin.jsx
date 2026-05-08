@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useRole } from '../hooks/useRole';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { useAuth } from '../hooks/useAuth.jsx';
-import { Shield, Users, Key, FileText, Trash2, Ban, ChevronDown } from 'lucide-react';
+import { Shield, Users, Key, FileText, Trash2, Ban, ChevronDown, ChevronUp, Check } from 'lucide-react';
 
 const ROLES = ['user', 'admin', 'super_admin'];
+const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -23,90 +24,95 @@ function StatCard({ icon: Icon, label, value, color }) {
 }
 
 function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDeletePosts }) {
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
-  const roleColors = {
-    user: 'tag-cyan',
-    admin: 'tag-purple',
-    super_admin: 'tag-green',
-  };
 
-  // super_admin pode editar qualquer um exceto a si mesmo
-  // admin pode editar apenas users comuns
   const canEdit = !isMe && (
-    isSuperAdmin
-      ? user.role !== 'super_admin'
-      : user.role === 'user'
+    isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user'
   );
 
-  // Quais roles aparecem no dropdown
-  const availableRoles = isSuperAdmin
-    ? ROLES.filter(r => r !== user.role)
-    : ['user', 'admin'].filter(r => r !== user.role);
+  const availableRoles = ROLES.filter(r => r !== user.role).filter(r =>
+    isSuperAdmin ? true : r !== 'super_admin'
+  );
 
   return (
-    <div className="card p-4">
-      <div className="flex items-center gap-3 flex-wrap">
+    <div className="card overflow-hidden">
+      {/* Linha principal */}
+      <div className="flex items-center gap-3 p-4">
         <div className="w-9 h-9 rounded-full bg-dark-400 border border-dark-300 flex items-center justify-center shrink-0">
           <span className="text-sm font-mono text-gray-300">
             {user.username?.[0]?.toUpperCase() || '?'}
           </span>
         </div>
+
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">
-            {user.username} {isMe && <span className="text-xs text-gray-500 font-mono">(você)</span>}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-white truncate">{user.username}</p>
+            {isMe && <span className="text-xs text-gray-500 font-mono shrink-0">(você)</span>}
+            {user.banned && <span className="tag tag-pink shrink-0">banido</span>}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`tag ${roleColors[user.role] || 'tag-cyan'}`}>{user.role}</span>
-          {user.banned && <span className="tag tag-pink">banido</span>}
+        {/* Role sempre à direita */}
+        <span className={`tag ${roleColors[user.role] || 'tag-cyan'} shrink-0`}>
+          {user.role}
+        </span>
 
-          {canEdit && (
-            <div className="relative">
+        {/* Expandir ações */}
+        {canEdit && (
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="text-gray-500 hover:text-white transition-colors ml-1 shrink-0"
+          >
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        )}
+      </div>
+
+      {/* Painel de ações expandido */}
+      {expanded && canEdit && (
+        <div className="border-t border-dark-500 bg-dark-700 px-4 py-3 space-y-3">
+          {/* Mudar role */}
+          <div>
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Mudar role para:</p>
+            <div className="flex gap-2 flex-wrap">
+              {availableRoles.map(r => (
+                <button
+                  key={r}
+                  onClick={() => { onRoleChange(user.id, r); setExpanded(false); }}
+                  className={`tag cursor-pointer hover:opacity-100 transition-opacity ${roleColors[r]}`}
+                >
+                  → {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Ações */}
+          <div>
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Ações:</p>
+            <div className="flex gap-2 flex-wrap">
               <button
-                onClick={() => setOpen(o => !o)}
-                className="btn-neon py-1 px-3 text-xs flex items-center gap-1"
+                onClick={() => { onBan(user.id, !user.banned); setExpanded(false); }}
+                className="btn-purple py-1.5 px-3 text-xs flex items-center gap-1.5"
               >
-                Role <ChevronDown size={12} />
+                <Ban size={12} />
+                {user.banned ? 'Desbanir' : 'Banir usuário'}
               </button>
-              {open && (
-                <div className="absolute right-0 top-8 bg-dark-700 border border-dark-400 rounded shadow-lg z-10 min-w-36">
-                  {availableRoles.map(r => (
-                    <button
-                      key={r}
-                      onClick={() => { onRoleChange(user.id, r); setOpen(false); }}
-                      className="block w-full text-left px-4 py-2.5 text-xs font-mono hover:bg-dark-500 transition-colors text-gray-300 hover:text-white"
-                    >
-                      → {r}
-                    </button>
-                  ))}
-                </div>
+
+              {user.role === 'user' && (
+                <button
+                  onClick={() => { onDeletePosts(user.id, user.username); }}
+                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all"
+                >
+                  <Trash2 size={12} />
+                  Deletar posts
+                </button>
               )}
             </div>
-          )}
-
-          {canEdit && (
-            <button
-              onClick={() => onBan(user.id, !user.banned)}
-              className="btn-purple py-1 px-3 text-xs flex items-center gap-1"
-            >
-              <Ban size={12} />
-              {user.banned ? 'Desbanir' : 'Banir'}
-            </button>
-          )}
-
-          {canEdit && user.role === 'user' && (
-            <button
-              onClick={() => onDeletePosts(user.id, user.username)}
-              className="text-gray-600 hover:text-red-400 transition-colors p-1"
-              title="Deletar posts"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -175,6 +181,7 @@ export default function Admin() {
   const [keys, setKeys] = useState([]);
   const [stats, setStats] = useState({ users: 0, posts: 0, keys: 0 });
   const [loading, setLoading] = useState(true);
+  const [filterRole, setFilterRole] = useState('todos');
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
@@ -184,7 +191,7 @@ export default function Admin() {
   async function fetchAll() {
     setLoading(true);
     const [{ data: u }, { data: p }, { data: k }] = await Promise.all([
-      supabase.from('profiles').select('*').order('created_at'),
+      supabase.from('profiles').select('*').order('role').order('username'),
       supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }),
       supabase.from('game_keys').select('*').order('created_at', { ascending: false }),
     ]);
@@ -197,8 +204,8 @@ export default function Admin() {
 
   async function handleRoleChange(userId, newRole) {
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-    if (error) toast.error('Erro ao atualizar role');
-    else { toast.success(`Role atualizado para ${newRole}`); fetchAll(); }
+    if (error) toast.error('Sem permissão ou erro ao atualizar');
+    else { toast.success(`Role → ${newRole}`); fetchAll(); }
   }
 
   async function handleBan(userId, banned) {
@@ -222,12 +229,17 @@ export default function Admin() {
   }
 
   async function handleDeleteKey(keyId) {
+    if (!confirm('Remover este item?')) return;
     const { error } = await supabase.from('game_keys').delete().eq('id', keyId);
     if (error) toast.error('Erro');
     else { toast.success('Removido'); fetchAll(); }
   }
 
   if (!isAdmin) return null;
+
+  const filteredUsers = filterRole === 'todos'
+    ? users
+    : users.filter(u => u.role === filterRole);
 
   const tabs = [
     { id: 'users', label: 'Usuários', icon: Users },
@@ -253,10 +265,10 @@ export default function Admin() {
         <StatCard icon={Key} label="Keys" value={stats.keys} color="bg-neon-purple/10 text-neon-purple" />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-2 py-2 px-4 text-xs font-display tracking-wider uppercase rounded border transition-all ${
+            className={`flex items-center gap-2 py-2 px-4 text-xs font-display tracking-wider uppercase rounded border transition-all shrink-0 ${
               tab === id
                 ? 'border-neon-purple bg-neon-purple/10 text-neon-purple'
                 : 'border-dark-400 text-gray-500 hover:text-gray-300'
@@ -274,7 +286,21 @@ export default function Admin() {
         <>
           {tab === 'users' && (
             <div className="space-y-3">
-              {users.map(u => (
+              {/* Filtro por role */}
+              <div className="flex gap-2 flex-wrap">
+                {['todos', 'user', 'admin', 'super_admin'].map(r => (
+                  <button key={r} onClick={() => setFilterRole(r)}
+                    className={`tag cursor-pointer transition-all ${
+                      filterRole === r
+                        ? r === 'todos' ? 'tag-green' : roleColors[r]
+                        : 'opacity-40 hover:opacity-70 tag-cyan'
+                    }`}>
+                    {r} {r === 'todos' ? `(${users.length})` : `(${users.filter(u => u.role === r).length})`}
+                  </button>
+                ))}
+              </div>
+
+              {filteredUsers.map(u => (
                 <UserRow
                   key={u.id}
                   user={u}
@@ -297,7 +323,7 @@ export default function Admin() {
               ) : posts.map(p => (
                 <div key={p.id} className="card p-4 flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white mb-1">{p.title}</p>
+                    <p className="text-sm font-semibold text-white mb-1 truncate">{p.title}</p>
                     <p className="text-xs text-gray-500 font-mono">
                       {p.profiles?.username} · {new Date(p.created_at).toLocaleDateString('pt-BR')}
                     </p>
@@ -317,14 +343,18 @@ export default function Admin() {
               <div className="space-y-3">
                 {keys.map(k => (
                   <div key={k.id} className="card p-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-white">{k.game_title}</p>
-                      <p className="text-xs text-gray-500 font-mono">
-                        {k.platform} · {k.is_promo ? `Promo -${k.discount_percent}%` : k.key_code || 'sem key'}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">{k.game_title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="tag tag-cyan">{k.platform}</span>
+                        {k.is_promo
+                          ? <span className="tag tag-purple">-{k.discount_percent}%</span>
+                          : <span className="font-mono text-xs text-neon-green">{k.key_code || 'sem key'}</span>
+                        }
+                      </div>
                     </div>
                     <button onClick={() => handleDeleteKey(k.id)}
-                      className="text-gray-600 hover:text-red-400 transition-colors">
+                      className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
                       <Trash2 size={15} />
                     </button>
                   </div>
