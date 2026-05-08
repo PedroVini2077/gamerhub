@@ -23,9 +23,7 @@ export default function Home() {
 
   return (
     <div className="flex gap-6">
-      {/* Feed principal */}
       <div className="flex-1 min-w-0 space-y-4">
-        {/* Banner */}
         <div className="card p-6 border-neon-green/20 relative overflow-hidden">
           <div className="absolute inset-0 grid-bg opacity-50" />
           <div className="relative">
@@ -60,12 +58,13 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-4">
-            {posts.map(p => <PostCard key={p.id} post={p} />)}
+            {posts.map(p => (
+              <PostCard key={p.id} post={p} onDelete={fetchPosts} />
+            ))}
           </div>
         )}
       </div>
 
-      {/* Painel direito */}
       <RightPanel />
     </div>
   );
