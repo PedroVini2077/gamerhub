@@ -3,6 +3,7 @@ import { useRole } from '../hooks/useRole';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { Shield, Users, Key, FileText, Trash2, Ban, ChevronDown } from 'lucide-react';
 
 const ROLES = ['user', 'admin', 'super_admin'];
@@ -21,17 +22,27 @@ function StatCard({ icon: Icon, label, value, color }) {
   );
 }
 
-function UserRow({ user, currentRole, isSuperAdmin, onRoleChange, onBan, onDeletePosts }) {
+function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDeletePosts }) {
   const [open, setOpen] = useState(false);
+  const isMe = user.id === currentUserId;
   const roleColors = {
     user: 'tag-cyan',
     admin: 'tag-purple',
     super_admin: 'tag-green',
   };
 
-  const canEdit = isSuperAdmin
-    ? user.role !== 'super_admin' || user.isCurrentUser
-    : user.role === 'user';
+  // super_admin pode editar qualquer um exceto a si mesmo
+  // admin pode editar apenas users comuns
+  const canEdit = !isMe && (
+    isSuperAdmin
+      ? user.role !== 'super_admin'
+      : user.role === 'user'
+  );
+
+  // Quais roles aparecem no dropdown
+  const availableRoles = isSuperAdmin
+    ? ROLES.filter(r => r !== user.role)
+    : ['user', 'admin'].filter(r => r !== user.role);
 
   return (
     <div className="card p-4">
@@ -42,13 +53,13 @@ function UserRow({ user, currentRole, isSuperAdmin, onRoleChange, onBan, onDelet
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">{user.username}</p>
-          <p className="text-xs text-gray-500 font-mono truncate">{user.email}</p>
+          <p className="text-sm font-semibold text-white">
+            {user.username} {isMe && <span className="text-xs text-gray-500 font-mono">(você)</span>}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`tag ${roleColors[user.role] || 'tag-cyan'}`}>{user.role}</span>
-
           {user.banned && <span className="tag tag-pink">banido</span>}
 
           {canEdit && (
@@ -60,19 +71,14 @@ function UserRow({ user, currentRole, isSuperAdmin, onRoleChange, onBan, onDelet
                 Role <ChevronDown size={12} />
               </button>
               {open && (
-                <div className="absolute right-0 top-8 bg-dark-700 border border-dark-400 rounded shadow-lg z-10 min-w-32">
-                  {ROLES.filter(r => {
-                    if (!isSuperAdmin) return r === 'user' || r === 'admin';
-                    return r !== 'super_admin';
-                  }).map(r => (
+                <div className="absolute right-0 top-8 bg-dark-700 border border-dark-400 rounded shadow-lg z-10 min-w-36">
+                  {availableRoles.map(r => (
                     <button
                       key={r}
                       onClick={() => { onRoleChange(user.id, r); setOpen(false); }}
-                      className={`block w-full text-left px-4 py-2 text-xs font-mono hover:bg-dark-500 transition-colors ${
-                        user.role === r ? 'text-neon-green' : 'text-gray-300'
-                      }`}
+                      className="block w-full text-left px-4 py-2.5 text-xs font-mono hover:bg-dark-500 transition-colors text-gray-300 hover:text-white"
                     >
-                      {r}
+                      → {r}
                     </button>
                   ))}
                 </div>
@@ -84,14 +90,13 @@ function UserRow({ user, currentRole, isSuperAdmin, onRoleChange, onBan, onDelet
             <button
               onClick={() => onBan(user.id, !user.banned)}
               className="btn-purple py-1 px-3 text-xs flex items-center gap-1"
-              title={user.banned ? 'Desbanir' : 'Banir'}
             >
               <Ban size={12} />
               {user.banned ? 'Desbanir' : 'Banir'}
             </button>
           )}
 
-          {(isSuperAdmin || currentRole === 'admin') && user.role === 'user' && (
+          {canEdit && user.role === 'user' && (
             <button
               onClick={() => onDeletePosts(user.id, user.username)}
               className="text-gray-600 hover:text-red-400 transition-colors p-1"
@@ -117,7 +122,11 @@ function KeyForm({ onAdd }) {
     setLoading(true);
     const { error } = await supabase.from('game_keys').insert(form);
     if (error) toast.error('Erro ao adicionar');
-    else { toast.success('Adicionado!'); setForm({ game_title: '', platform: 'Steam', key_code: '', is_promo: false, discount_percent: 0, promo_url: '' }); onAdd(); }
+    else {
+      toast.success('Adicionado!');
+      setForm({ game_title: '', platform: 'Steam', key_code: '', is_promo: false, discount_percent: 0, promo_url: '' });
+      onAdd();
+    }
     setLoading(false);
   }
 
@@ -125,23 +134,28 @@ function KeyForm({ onAdd }) {
     <div className="card p-5 space-y-3">
       <h3 className="font-display text-xs text-neon-green tracking-widest uppercase">Adicionar Key / Promo</h3>
       <div className="grid grid-cols-2 gap-3">
-        <input className="input-gamer" placeholder="Nome do jogo" value={form.game_title} onChange={e => setForm(f => ({ ...f, game_title: e.target.value }))} />
-        <select className="input-gamer" value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}>
+        <input className="input-gamer" placeholder="Nome do jogo" value={form.game_title}
+          onChange={e => setForm(f => ({ ...f, game_title: e.target.value }))} />
+        <select className="input-gamer" value={form.platform}
+          onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}>
           {['Steam', 'Epic', 'GOG', 'PlayStation', 'Xbox'].map(p => <option key={p}>{p}</option>)}
         </select>
       </div>
-      <div className="flex items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-gray-400 font-mono cursor-pointer">
-          <input type="checkbox" checked={form.is_promo} onChange={e => setForm(f => ({ ...f, is_promo: e.target.checked }))} />
-          É promoção?
-        </label>
-      </div>
+      <label className="flex items-center gap-2 text-sm text-gray-400 font-mono cursor-pointer">
+        <input type="checkbox" checked={form.is_promo}
+          onChange={e => setForm(f => ({ ...f, is_promo: e.target.checked }))} />
+        É promoção?
+      </label>
       {!form.is_promo ? (
-        <input className="input-gamer" placeholder="Código da key" value={form.key_code} onChange={e => setForm(f => ({ ...f, key_code: e.target.value }))} />
+        <input className="input-gamer" placeholder="Código da key" value={form.key_code}
+          onChange={e => setForm(f => ({ ...f, key_code: e.target.value }))} />
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          <input className="input-gamer" type="number" placeholder="Desconto %" value={form.discount_percent} onChange={e => setForm(f => ({ ...f, discount_percent: +e.target.value }))} />
-          <input className="input-gamer" placeholder="URL da promo" value={form.promo_url} onChange={e => setForm(f => ({ ...f, promo_url: e.target.value }))} />
+          <input className="input-gamer" type="number" placeholder="Desconto %"
+            value={form.discount_percent}
+            onChange={e => setForm(f => ({ ...f, discount_percent: +e.target.value }))} />
+          <input className="input-gamer" placeholder="URL da promo" value={form.promo_url}
+            onChange={e => setForm(f => ({ ...f, promo_url: e.target.value }))} />
         </div>
       )}
       <button onClick={handleAdd} disabled={loading} className="btn-solid py-2 px-5">
@@ -153,6 +167,7 @@ function KeyForm({ onAdd }) {
 
 export default function Admin() {
   const { isAdmin, isSuperAdmin, role } = useRole();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('users');
   const [users, setUsers] = useState([]);
@@ -222,7 +237,6 @@ export default function Admin() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="card p-5 border-neon-purple/20">
         <div className="flex items-center gap-2 mb-1">
           <Shield size={16} className="text-neon-purple" />
@@ -233,14 +247,12 @@ export default function Admin() {
         <p className="text-xs text-gray-500 font-mono">Área restrita. Acesso controlado por hierarquia.</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard icon={Users} label="Usuários" value={stats.users} color="bg-neon-cyan/10 text-neon-cyan" />
         <StatCard icon={FileText} label="Posts" value={stats.posts} color="bg-neon-green/10 text-neon-green" />
         <StatCard icon={Key} label="Keys" value={stats.keys} color="bg-neon-purple/10 text-neon-purple" />
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-2">
         {tabs.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
@@ -266,7 +278,7 @@ export default function Admin() {
                 <UserRow
                   key={u.id}
                   user={u}
-                  currentRole={role}
+                  currentUserId={user?.id}
                   isSuperAdmin={isSuperAdmin}
                   onRoleChange={handleRoleChange}
                   onBan={handleBan}
@@ -278,7 +290,11 @@ export default function Admin() {
 
           {tab === 'posts' && (
             <div className="space-y-3">
-              {posts.map(p => (
+              {posts.length === 0 ? (
+                <div className="card p-8 text-center">
+                  <p className="font-mono text-gray-500 text-sm">Nenhum post ainda</p>
+                </div>
+              ) : posts.map(p => (
                 <div key={p.id} className="card p-4 flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white mb-1">{p.title}</p>
@@ -286,7 +302,8 @@ export default function Admin() {
                       {p.profiles?.username} · {new Date(p.created_at).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
-                  <button onClick={() => handleDeletePost(p.id)} className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
+                  <button onClick={() => handleDeletePost(p.id)}
+                    className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
                     <Trash2 size={15} />
                   </button>
                 </div>
@@ -306,7 +323,8 @@ export default function Admin() {
                         {k.platform} · {k.is_promo ? `Promo -${k.discount_percent}%` : k.key_code || 'sem key'}
                       </p>
                     </div>
-                    <button onClick={() => handleDeleteKey(k.id)} className="text-gray-600 hover:text-red-400 transition-colors">
+                    <button onClick={() => handleDeleteKey(k.id)}
+                      className="text-gray-600 hover:text-red-400 transition-colors">
                       <Trash2 size={15} />
                     </button>
                   </div>
