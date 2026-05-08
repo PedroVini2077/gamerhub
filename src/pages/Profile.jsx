@@ -1,14 +1,18 @@
-import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { User, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Profile() {
-  const { user, profile } = useAuth();
-  const [bio, setBio] = useState(profile?.bio || '');
+  const { user, profile, refreshProfile } = useAuth();
+  const [bio, setBio] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (profile?.bio) setBio(profile.bio);
+  }, [profile]);
 
   if (!user) return (
     <div className="max-w-md mx-auto card p-10 text-center mt-10">
@@ -22,9 +26,18 @@ export default function Profile() {
     setSaving(true);
     const { error } = await supabase.from('profiles').update({ bio }).eq('id', user.id);
     if (error) toast.error('Erro ao salvar');
-    else toast.success('Perfil atualizado!');
+    else {
+      await refreshProfile();
+      toast.success('Perfil atualizado!');
+    }
     setSaving(false);
   }
+
+  const roleColors = {
+    user: 'tag-cyan',
+    admin: 'tag-purple',
+    super_admin: 'tag-green',
+  };
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
@@ -38,10 +51,12 @@ export default function Profile() {
           </div>
           <div>
             <h2 className="font-display text-lg font-bold text-white">
-              {profile?.username || 'Gamer'}
+              {profile?.username || '...'}
             </h2>
             <p className="text-xs text-gray-500 font-mono">{user.email}</p>
-            <span className="tag tag-green mt-1">Player</span>
+            <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'} mt-1 inline-block`}>
+              {profile?.role || 'user'}
+            </span>
           </div>
         </div>
 
