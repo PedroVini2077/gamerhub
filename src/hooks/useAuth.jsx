@@ -8,6 +8,16 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  async function fetchProfile(userId) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    setProfile(data);
+    return data;
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -24,13 +34,10 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-    setProfile(data);
-  }
-
   async function signInWithEmail(email, password) {
-    return supabase.auth.signInWithPassword({ email, password });
+    const result = await supabase.auth.signInWithPassword({ email, password });
+    if (result.data?.user) await fetchProfile(result.data.user.id);
+    return result;
   }
 
   async function signUpWithEmail(email, password, username) {
@@ -38,16 +45,22 @@ export function AuthProvider({ children }) {
     if (error) return { error };
     if (data.user) {
       await supabase.from('profiles').insert({ id: data.user.id, username });
+      await fetchProfile(data.user.id);
     }
     return { data };
   }
 
   async function signOut() {
     await supabase.auth.signOut();
+    setProfile(null);
+  }
+
+  async function refreshProfile() {
+    if (user) await fetchProfile(user.id);
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
