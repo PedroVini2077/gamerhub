@@ -1,16 +1,19 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Key, User, Zap, X } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-
-const nav = [
-  { to: '/', icon: Home, label: 'Feed' },
-  { to: '/community', icon: Users, label: 'Comunidade' },
-  { to: '/keys', icon: Key, label: 'Keys & Promos' },
-  { to: '/profile', icon: User, label: 'Perfil' },
-];
+import { Home, Users, Key, User, Zap, X, Shield } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import { useRole } from '../../hooks/useRole';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
+  const { isAdmin, role } = useRole();
+
+  const nav = [
+    { to: '/', icon: Home, label: 'Feed' },
+    { to: '/community', icon: Users, label: 'Comunidade' },
+    { to: '/keys', icon: Key, label: 'Keys & Promos' },
+    { to: '/profile', icon: User, label: 'Perfil' },
+    ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin', highlight: true }] : []),
+  ];
 
   return (
     <>
@@ -20,11 +23,10 @@ export default function Sidebar({ open, onClose }) {
         flex flex-col transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
       `}>
-        {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-dark-500">
           <div className="flex items-center gap-2">
-            <Zap size={20} className="text-neon" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
-            <span className="font-display font-bold text-lg text-neon tracking-wider">GAMER</span>
+            <Zap size={20} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
+            <span className="font-display font-bold text-lg text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-lg text-white tracking-wider">HUB</span>
           </div>
           <button onClick={onClose} className="md:hidden text-gray-500 hover:text-white">
@@ -32,19 +34,21 @@ export default function Sidebar({ open, onClose }) {
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-6 px-2 space-y-1">
-          {nav.map(({ to, icon: Icon, label }) => (
+          {nav.map(({ to, icon: Icon, label, highlight }) => (
             <NavLink
               key={to}
               to={to}
               end={to === '/'}
               className={({ isActive }) => `
-                flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-all
-                font-body tracking-wide
+                flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-all font-body tracking-wide
                 ${isActive
-                  ? 'bg-neon-green/10 border-l-2 border-neon-green text-neon-green'
-                  : 'text-gray-400 hover:text-white hover:bg-dark-600 border-l-2 border-transparent'
+                  ? highlight
+                    ? 'bg-neon-purple/10 border-l-2 border-neon-purple text-neon-purple'
+                    : 'bg-neon-green/10 border-l-2 border-neon-green text-neon-green'
+                  : highlight
+                    ? 'text-neon-purple/60 hover:text-neon-purple hover:bg-dark-600 border-l-2 border-transparent'
+                    : 'text-gray-400 hover:text-white hover:bg-dark-600 border-l-2 border-transparent'
                 }
               `}
               onClick={onClose}
@@ -55,7 +59,6 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
-        {/* User mini */}
         {profile && (
           <div className="px-4 py-4 border-t border-dark-500">
             <div className="flex items-center gap-3">
@@ -66,14 +69,13 @@ export default function Sidebar({ open, onClose }) {
               </div>
               <div>
                 <p className="text-xs font-mono text-white">{profile.username}</p>
-                <p className="text-xs text-gray-500">Online</p>
+                <p className="text-xs text-gray-500 font-mono">{role}</p>
               </div>
-              <div className="ml-auto w-2 h-2 rounded-full bg-neon-green animate-pulse-neon" />
+              <div className="ml-auto w-2 h-2 rounded-full bg-neon-green animate-pulse" />
             </div>
           </div>
         )}
 
-        {/* Version */}
         <div className="px-4 py-2">
           <p className="text-xs font-mono text-dark-400">v1.0.0 // BETA</p>
         </div>

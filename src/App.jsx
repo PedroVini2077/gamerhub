@@ -9,6 +9,7 @@ import Community from './pages/Community';
 import Keys from './pages/Keys';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import Admin from './pages/Admin';
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/community" element={<Layout><Community /></Layout>} />
           <Route path="/keys" element={<Layout><Keys /></Layout>} />
           <Route path="/profile" element={<Layout><Profile /></Layout>} />
+          <Route path="/admin" element={<Layout><Admin /></Layout>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
