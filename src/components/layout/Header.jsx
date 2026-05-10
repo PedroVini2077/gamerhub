@@ -67,7 +67,7 @@ export default function Header({ onMenuClick }) {
                 className="fixed inset-0 z-40"
                 onClick={() => setOpen(false)}
               />
-              <div className="absolute right-0 top-10 w-80 bg-dark-700 border border-dark-400 rounded shadow-xl z-50">
+              <div className="absolute right-0 top-10 w-80 notif-panel bg-dark-700 border border-dark-400 rounded shadow-xl z-50">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-dark-500">
                   <span className="text-xs font-display text-gray-300 uppercase tracking-wider">
                     Notificações
