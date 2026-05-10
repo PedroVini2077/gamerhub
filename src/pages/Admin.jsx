@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { Shield, Users, Key, FileText, Trash2, Ban, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import KeyEditor from '../components/keys/KeyEditor';
 
 const ROLES = ['user', 'admin', 'super_admin'];
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -353,6 +354,7 @@ export default function Admin() {
                         }
                       </div>
                     </div>
+                    <KeyEditor item={k} onUpdate={fetchAll} />
                     <button onClick={() => handleDeleteKey(k.id)}
                       className="text-gray-600 hover:text-red-400 transition-colors shrink-0">
                       <Trash2 size={15} />

@@ -3,11 +3,13 @@ import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
+import { useRealtime } from '../hooks/useRealtime';
 import { Zap } from 'lucide-react';
 
 export default function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newPosts, setNewPosts] = useState(0);
 
   async function fetchPosts() {
     const { data } = await supabase
@@ -17,9 +19,15 @@ export default function Home() {
       .limit(30);
     setPosts(data || []);
     setLoading(false);
+    setNewPosts(0);
   }
 
   useEffect(() => { fetchPosts(); }, []);
+
+  useRealtime('posts', (payload) => {
+    if (payload.eventType === 'INSERT') setNewPosts(n => n + 1);
+    if (payload.eventType === 'DELETE') fetchPosts();
+  });
 
   return (
     <div className="flex gap-6">
@@ -39,6 +47,15 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        {newPosts > 0 && (
+          <button
+            onClick={fetchPosts}
+            className="w-full card p-3 text-center text-xs font-mono text-neon-green border-neon-green/30 hover:bg-neon-green/5 transition-colors animate-fade-up"
+          >
+            ↑ {newPosts} novo{newPosts > 1 ? 's' : ''} post{newPosts > 1 ? 's' : ''} — clique para ver
+          </button>
+        )}
 
         <PostForm onPost={fetchPosts} />
 
@@ -64,7 +81,6 @@ export default function Home() {
           </div>
         )}
       </div>
-
       <RightPanel />
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import MuralCard from '../components/community/MuralCard';
 import MuralForm from '../components/community/MuralForm';
+import { useRealtime } from '../hooks/useRealtime';
 import { Users } from 'lucide-react';
 
 export default function Community() {
@@ -19,6 +20,8 @@ export default function Community() {
   }
 
   useEffect(() => { fetch(); }, []);
+
+  useRealtime('community_posts', () => fetch());
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
