@@ -12,7 +12,7 @@ const categoryConfig = {
 };
 
 export default function PostCard({ post, onDelete }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { isAdmin } = useRole();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -36,7 +36,7 @@ export default function PostCard({ post, onDelete }) {
         .select('id')
         .eq('post_id', post.id)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       setLiked(!!data);
     }
   }
@@ -55,6 +55,15 @@ export default function PostCard({ post, onDelete }) {
       await supabase.from('post_likes').insert({ post_id: post.id, user_id: user.id });
       setLiked(true);
       setLikeCount(c => c + 1);
+
+      // Notifica o dono do post (se não for ele mesmo curtindo)
+      if (post.user_id && post.user_id !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: post.user_id,
+          type: 'like',
+          message: `${profile?.username || 'Alguém'} curtiu seu post "${post.title}"`,
+        });
+      }
     }
     setLikeLoading(false);
   }
