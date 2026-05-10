@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
 import { useRealtime } from '../hooks/useRealtime';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { Zap } from 'lucide-react';
 
 export default function Home() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newPosts, setNewPosts] = useState(0);
@@ -24,10 +26,20 @@ export default function Home() {
 
   useEffect(() => { fetchPosts(); }, []);
 
-  useRealtime('posts', (payload) => {
-    if (payload.eventType === 'INSERT') setNewPosts(n => n + 1);
-    if (payload.eventType === 'DELETE') fetchPosts();
-  });
+  useRealtime('posts', useCallback((payload) => {
+    if (payload.eventType === 'INSERT') {
+      // Só avisa se foi outro usuário que postou
+      if (payload.new?.user_id !== user?.id) {
+        setNewPosts(n => n + 1);
+      } else {
+        // Foi você mesmo — atualiza direto sem banner
+        fetchPosts();
+      }
+    }
+    if (payload.eventType === 'DELETE') {
+      fetchPosts();
+    }
+  }, [user?.id]));
 
   return (
     <div className="flex gap-6">
