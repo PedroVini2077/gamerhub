@@ -36,7 +36,13 @@ export function AuthProvider({ children }) {
 
   async function signInWithEmail(email, password) {
     const result = await supabase.auth.signInWithPassword({ email, password });
-    if (result.data?.user) await fetchProfile(result.data.user.id);
+    if (result.data?.user) {
+      const p = await fetchProfile(result.data.user.id);
+      if (p?.banned) {
+        await supabase.auth.signOut();
+        return { error: { message: 'Sua conta foi banida. Entre em contato com o suporte.' } };
+      }
+    }
     return result;
   }
 
