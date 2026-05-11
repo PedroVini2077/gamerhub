@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import toast from 'react-hot-toast';
 import { Send, Trash2, MessageSquare } from 'lucide-react';
+import Avatar from '../ui/Avatar';
 
 function CommentCard({ comment, onDelete }) {
   const { user } = useAuth();
@@ -19,11 +20,7 @@ function CommentCard({ comment, onDelete }) {
 
   return (
     <div className="flex items-start gap-2.5 py-2.5 border-b border-dark-600 last:border-0">
-      <div className="w-7 h-7 rounded-full bg-dark-400 border border-dark-300 flex items-center justify-center shrink-0 mt-0.5">
-        <span className="text-xs font-mono text-gray-400">
-          {comment.profiles?.username?.[0]?.toUpperCase() || '?'}
-        </span>
-      </div>
+      <Avatar profile={comment.profiles} size={7} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-xs font-semibold text-white">
@@ -66,7 +63,7 @@ export default function CommentSection({ postId, postOwnerId, registerRefresh })
   async function fetchComments() {
     const { data } = await supabase
       .from('comments')
-      .select('*, profiles(username)')
+      .select('*, profiles(username, avatar_url)')
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
     setComments(data || []);
@@ -75,10 +72,7 @@ export default function CommentSection({ postId, postOwnerId, registerRefresh })
 
   useEffect(() => {
     fetchCount();
-    // Registra função de refresh no canal global
-    if (registerRefresh) {
-      registerRefresh(fetchComments);
-    }
+    if (registerRefresh) registerRefresh(fetchComments);
   }, [postId]);
 
   useEffect(() => {
