@@ -46,7 +46,7 @@ export default function Community() {
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map(i => <MuralCard key={i.id} item={i} />)}
+          {items.map(i => <MuralCard key={i.id} item={i} onDelete={fetch} />)}
         </div>
       )}
     </div>
