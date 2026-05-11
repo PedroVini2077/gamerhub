@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
@@ -12,6 +12,9 @@ export default function Home() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newPosts, setNewPosts] = useState(0);
+  const loadedRef = useRef(false);
+  const userRef = useRef(user);
+  userRef.current = user;
 
   async function fetchPosts() {
     const { data } = await supabase
@@ -24,22 +27,30 @@ export default function Home() {
     setNewPosts(0);
   }
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => {
+    fetchPosts().then(() => {
+      // Só começa a contar novos posts DEPOIS do carregamento inicial
+      loadedRef.current = true;
+    });
+  }, []);
 
-  useRealtime('posts', useCallback((payload) => {
+  useRealtime('posts', (payload) => {
+    // Ignora eventos antes do carregamento inicial terminar
+    if (!loadedRef.current) return;
+
     if (payload.eventType === 'INSERT') {
-      // Só avisa se foi outro usuário que postou
-      if (payload.new?.user_id !== user?.id) {
-        setNewPosts(n => n + 1);
-      } else {
-        // Foi você mesmo — atualiza direto sem banner
+      if (payload.new?.user_id === userRef.current?.id) {
+        // Você postou — atualiza direto
         fetchPosts();
+      } else {
+        // Outro usuário postou — mostra banner
+        setNewPosts(n => n + 1);
       }
     }
     if (payload.eventType === 'DELETE') {
       fetchPosts();
     }
-  }, [user?.id]));
+  });
 
   return (
     <div className="flex gap-6">
