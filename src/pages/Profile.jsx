@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { Save, Camera } from 'lucide-react';
+import { Save, Camera, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Profile() {
@@ -12,6 +12,7 @@ export default function Profile() {
   const [stats, setStats] = useState({ posts: 0, likes: 0 });
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [showFull, setShowFull] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -31,14 +32,32 @@ export default function Profile() {
     }
   }
 
+  async function compressImage(file) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 400;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+        else { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url);
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = url;
+    });
+  }
+
   async function handleAvatarUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Imagem muito grande. Máximo 2MB.');
-      return;
-    }
 
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowed.includes(file.type)) {
@@ -47,15 +66,17 @@ export default function Profile() {
     }
 
     setUploading(true);
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/avatar.${ext}`;
+    toast.loading('Processando imagem...', { id: 'upload' });
+
+    const compressed = await compressImage(file);
+    const path = `${user.id}/avatar.jpg`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(path, file, { upsert: true });
+      .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
 
     if (uploadError) {
-      toast.error('Erro ao fazer upload');
+      toast.error('Erro ao fazer upload', { id: 'upload' });
       setUploading(false);
       return;
     }
@@ -64,17 +85,19 @@ export default function Profile() {
       .from('avatars')
       .getPublicUrl(path);
 
+    const finalUrl = publicUrl + '?t=' + Date.now();
+
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ avatar_url: publicUrl })
+      .update({ avatar_url: finalUrl })
       .eq('id', user.id);
 
     if (updateError) {
-      toast.error('Erro ao salvar avatar');
+      toast.error('Erro ao salvar avatar', { id: 'upload' });
     } else {
-      setAvatarUrl(publicUrl + '?t=' + Date.now());
+      setAvatarUrl(finalUrl);
       await refreshProfile();
-      toast.success('Avatar atualizado! 🎮');
+      toast.success('Avatar atualizado! 🎮', { id: 'upload' });
     }
     setUploading(false);
   }
@@ -98,30 +121,52 @@ export default function Profile() {
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
+      {/* Modal foto grande */}
+      {showFull && avatarUrl && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowFull(false)}
+        >
+          <div className="relative max-w-sm w-full">
+            <img
+              src={avatarUrl}
+              alt="avatar"
+              className="w-full rounded-xl object-cover"
+              onClick={e => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setShowFull(false)}
+              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-dark-800/90 flex items-center justify-center text-white hover:bg-dark-700"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="card p-6">
         <div className="flex items-center gap-4 mb-6">
-          {/* Avatar com botão de upload */}
           <div className="relative shrink-0">
+            {/* Foto — clica pra ver em tamanho grande */}
             <div
               className="w-16 h-16 rounded-full border-2 border-neon-green/40 overflow-hidden bg-dark-400 flex items-center justify-center cursor-pointer"
               style={{ boxShadow: '0 0 20px #39ff1420' }}
-              onClick={() => fileRef.current?.click()}
+              onClick={() => avatarUrl && setShowFull(true)}
             >
               {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="avatar"
-                  className="w-full h-full object-cover"
-                />
+                <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
               ) : (
                 <span className="font-display text-2xl text-neon-green font-bold">
                   {profile?.username?.[0]?.toUpperCase() || '?'}
                 </span>
               )}
             </div>
+
+            {/* Botão câmera separado */}
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploading}
+              title="Trocar foto"
               className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-dark-600 border border-neon-green/40 flex items-center justify-center hover:bg-neon-green/10 transition-colors"
             >
               {uploading
@@ -129,6 +174,7 @@ export default function Profile() {
                 : <Camera size={11} className="text-neon-green" />
               }
             </button>
+
             <input
               ref={fileRef}
               type="file"
