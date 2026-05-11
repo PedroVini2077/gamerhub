@@ -15,6 +15,7 @@ export default function Home() {
   const loadedRef = useRef(false);
   const userRef = useRef(user);
   const refreshCommentsRef = useRef({});
+  const refreshLikesRef = useRef({});
   userRef.current = user;
 
   async function fetchPosts() {
@@ -41,11 +42,17 @@ export default function Home() {
     if (payload.eventType === 'DELETE') fetchPosts();
   });
 
-  // Canal global de comentários
   useRealtime('comments', (payload) => {
     const postId = payload.new?.post_id || payload.old?.post_id;
     if (postId && refreshCommentsRef.current[postId]) {
       refreshCommentsRef.current[postId]();
+    }
+  });
+
+  useRealtime('post_likes', (payload) => {
+    const postId = payload.new?.post_id || payload.old?.post_id;
+    if (postId && refreshLikesRef.current[postId]) {
+      refreshLikesRef.current[postId]();
     }
   });
 
@@ -101,6 +108,7 @@ export default function Home() {
                 post={p}
                 onDelete={fetchPosts}
                 registerRefresh={(fn) => { refreshCommentsRef.current[p.id] = fn; }}
+                registerLikeRefresh={(fn) => { refreshLikesRef.current[p.id] = fn; }}
               />
             ))}
           </div>

@@ -12,7 +12,7 @@ const categoryConfig = {
   news: { label: 'News', cls: 'tag-cyan' },
 };
 
-export default function PostCard({ post, onDelete, registerRefresh }) {
+export default function PostCard({ post, onDelete, registerRefresh, registerLikeRefresh }) {
   const { user, profile } = useAuth();
   const { isAdmin } = useRole();
   const [liked, setLiked] = useState(false);
@@ -22,7 +22,10 @@ export default function PostCard({ post, onDelete, registerRefresh }) {
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
   const canDelete = user && (isAdmin || user.id === post.user_id);
 
-  useEffect(() => { fetchLikes(); }, [post.id, user]);
+  useEffect(() => {
+    fetchLikes();
+    if (registerLikeRefresh) registerLikeRefresh(fetchLikes);
+  }, [post.id, user]);
 
   async function fetchLikes() {
     const { count } = await supabase
