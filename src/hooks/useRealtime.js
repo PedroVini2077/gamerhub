@@ -6,13 +6,17 @@ export function useRealtime(table, callback) {
   callbackRef.current = callback;
 
   useEffect(() => {
+    const channelName = `realtime-${table}-${Math.random().toString(36).slice(2)}`;
+    
     const channel = supabase
-      .channel(`realtime-${table}-${Date.now()}`)
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
         callbackRef.current(payload);
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [table]);
 }

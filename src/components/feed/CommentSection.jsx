@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
-import { useRealtime } from '../../hooks/useRealtime';
 import toast from 'react-hot-toast';
 import { Send, Trash2, MessageSquare } from 'lucide-react';
 
@@ -54,6 +53,23 @@ export default function CommentSection({ postId, postOwnerId }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    fetchCount();
+  }, [postId]);
+
+  useEffect(() => {
+    if (open) fetchComments();
+  }, [open]);
+
+  async function fetchCount() {
+    const { count } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true })
+      .eq('post_id', postId);
+    setCount(count || 0);
+  }
 
   async function fetchComments() {
     const { data } = await supabase
@@ -62,17 +78,8 @@ export default function CommentSection({ postId, postOwnerId }) {
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
     setComments(data || []);
+    setCount(data?.length || 0);
   }
-
-  useEffect(() => {
-    if (open) fetchComments();
-  }, [open]);
-
-  useRealtime('comments', (payload) => {
-    if (payload.new?.post_id === postId || payload.old?.post_id === postId) {
-      fetchComments();
-    }
-  });
 
   async function handleSubmit() {
     if (!text.trim()) return;
@@ -86,7 +93,7 @@ export default function CommentSection({ postId, postOwnerId }) {
       toast.error('Erro ao comentar');
     } else {
       setText('');
-      // Notifica dono do post
+      fetchComments();
       if (postOwnerId && postOwnerId !== user?.id) {
         await supabase.from('notifications').insert({
           user_id: postOwnerId,
@@ -107,21 +114,16 @@ export default function CommentSection({ postId, postOwnerId }) {
 
   return (
     <div className="mt-3 pt-3 border-t border-dark-500">
-      {/* Toggle comentários */}
       <button
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-neon-green transition-colors"
       >
         <MessageSquare size={13} />
-        {comments.length > 0 || open
-          ? `${comments.length} comentário${comments.length !== 1 ? 's' : ''}`
-          : 'Comentar'
-        }
+        {count > 0 ? `${count} comentário${count !== 1 ? 's' : ''}` : 'Comentar'}
       </button>
 
       {open && (
         <div className="mt-3 space-y-1 animate-fade-up">
-          {/* Lista de comentários */}
           {comments.length > 0 && (
             <div className="bg-dark-700 rounded-lg px-3 py-1 mb-3">
               {comments.map(c => (
@@ -130,7 +132,6 @@ export default function CommentSection({ postId, postOwnerId }) {
             </div>
           )}
 
-          {/* Input */}
           {user ? (
             <div className="flex gap-2 items-end">
               <textarea
