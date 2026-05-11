@@ -5,13 +5,17 @@ import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
 import { useRealtime } from '../hooks/useRealtime';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { Zap } from 'lucide-react';
+import { Zap, Search, X } from 'lucide-react';
+
+const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
 
 export default function Home() {
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newPosts, setNewPosts] = useState(0);
+  const [search, setSearch] = useState('');
+  const [filterCat, setFilterCat] = useState('todos');
   const loadedRef = useRef(false);
   const userRef = useRef(user);
   const refreshCommentsRef = useRef({});
@@ -56,6 +60,14 @@ export default function Home() {
     }
   });
 
+  // Filtragem local
+  const filtered = posts.filter(p => {
+    const matchCat = filterCat === 'todos' || p.category === filterCat;
+    const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
+      p.content.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
   return (
     <div className="flex gap-6">
       <div className="flex-1 min-w-0 space-y-4">
@@ -72,6 +84,39 @@ export default function Home() {
             <p className="text-sm text-gray-400 font-body">
               Dicas, curiosidades, news e a melhor comunidade gamer do Brasil.
             </p>
+          </div>
+        </div>
+
+        {/* Busca e filtros */}
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green transition-all">
+            <span className="pl-3 text-gray-500 shrink-0"><Search size={14} /></span>
+            <input
+              className="flex-1 bg-transparent py-2.5 px-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+              placeholder="Buscar posts..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="pr-3 text-gray-500 hover:text-white">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {CATEGORIES.map(c => (
+              <button
+                key={c}
+                onClick={() => setFilterCat(c)}
+                className={`tag cursor-pointer transition-all ${
+                  filterCat === c
+                    ? c === 'todos' ? 'tag-green' : c === 'dica' ? 'tag-green' : c === 'curiosidade' ? 'tag-purple' : 'tag-cyan'
+                    : 'opacity-40 hover:opacity-70 tag-cyan'
+                }`}
+              >
+                {c}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -96,13 +141,15 @@ export default function Home() {
               </div>
             ))}
           </div>
-        ) : posts.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="card p-8 text-center">
-            <p className="font-mono text-gray-500 text-sm">Nenhum post ainda. Seja o primeiro! 🎮</p>
+            <p className="font-mono text-gray-500 text-sm">
+              {search || filterCat !== 'todos' ? 'Nenhum post encontrado.' : 'Nenhum post ainda. Seja o primeiro! 🎮'}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {posts.map(p => (
+            {filtered.map(p => (
               <PostCard
                 key={p.id}
                 post={p}
