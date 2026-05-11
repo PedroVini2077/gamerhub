@@ -25,7 +25,7 @@ export default function Home() {
   async function fetchPosts() {
     const { data } = await supabase
       .from('posts')
-      .select('*, profiles(username), user_id')
+      .select('*, profiles(username, avatar_url), user_id')
       .order('created_at', { ascending: false })
       .limit(30);
     setPosts(data || []);

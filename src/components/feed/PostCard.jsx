@@ -5,6 +5,7 @@ import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
+import Avatar from '../ui/Avatar';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -78,11 +79,7 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
   return (
     <div className="card p-5 animate-fade-up">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-9 h-9 rounded-full bg-dark-400 border border-dark-300 flex items-center justify-center shrink-0">
-          <span className="text-sm font-mono text-gray-300">
-            {post.profiles?.username?.[0]?.toUpperCase() || '?'}
-          </span>
-        </div>
+        <Avatar profile={post.profiles} size={9} />
         <div>
           <p className="text-sm font-semibold text-white">
             {post.profiles?.username || 'GamerAnon'}
