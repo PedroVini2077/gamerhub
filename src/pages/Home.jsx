@@ -14,6 +14,7 @@ export default function Home() {
   const [newPosts, setNewPosts] = useState(0);
   const loadedRef = useRef(false);
   const userRef = useRef(user);
+  const refreshCommentsRef = useRef({});
   userRef.current = user;
 
   async function fetchPosts() {
@@ -28,27 +29,23 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchPosts().then(() => {
-      // Só começa a contar novos posts DEPOIS do carregamento inicial
-      loadedRef.current = true;
-    });
+    fetchPosts().then(() => { loadedRef.current = true; });
   }, []);
 
   useRealtime('posts', (payload) => {
-    // Ignora eventos antes do carregamento inicial terminar
     if (!loadedRef.current) return;
-
     if (payload.eventType === 'INSERT') {
-      if (payload.new?.user_id === userRef.current?.id) {
-        // Você postou — atualiza direto
-        fetchPosts();
-      } else {
-        // Outro usuário postou — mostra banner
-        setNewPosts(n => n + 1);
-      }
+      if (payload.new?.user_id === userRef.current?.id) fetchPosts();
+      else setNewPosts(n => n + 1);
     }
-    if (payload.eventType === 'DELETE') {
-      fetchPosts();
+    if (payload.eventType === 'DELETE') fetchPosts();
+  });
+
+  // Canal global de comentários
+  useRealtime('comments', (payload) => {
+    const postId = payload.new?.post_id || payload.old?.post_id;
+    if (postId && refreshCommentsRef.current[postId]) {
+      refreshCommentsRef.current[postId]();
     }
   });
 
@@ -99,7 +96,12 @@ export default function Home() {
         ) : (
           <div className="space-y-4">
             {posts.map(p => (
-              <PostCard key={p.id} post={p} onDelete={fetchPosts} />
+              <PostCard
+                key={p.id}
+                post={p}
+                onDelete={fetchPosts}
+                registerRefresh={(fn) => { refreshCommentsRef.current[p.id] = fn; }}
+              />
             ))}
           </div>
         )}

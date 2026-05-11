@@ -47,21 +47,13 @@ function CommentCard({ comment, onDelete }) {
   );
 }
 
-export default function CommentSection({ postId, postOwnerId }) {
+export default function CommentSection({ postId, postOwnerId, registerRefresh }) {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    fetchCount();
-  }, [postId]);
-
-  useEffect(() => {
-    if (open) fetchComments();
-  }, [open]);
 
   async function fetchCount() {
     const { count } = await supabase
@@ -80,6 +72,18 @@ export default function CommentSection({ postId, postOwnerId }) {
     setComments(data || []);
     setCount(data?.length || 0);
   }
+
+  useEffect(() => {
+    fetchCount();
+    // Registra função de refresh no canal global
+    if (registerRefresh) {
+      registerRefresh(fetchComments);
+    }
+  }, [postId]);
+
+  useEffect(() => {
+    if (open) fetchComments();
+  }, [open]);
 
   async function handleSubmit() {
     if (!text.trim()) return;

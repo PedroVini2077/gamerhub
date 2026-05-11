@@ -12,7 +12,7 @@ const categoryConfig = {
   news: { label: 'News', cls: 'tag-cyan' },
 };
 
-export default function PostCard({ post, onDelete }) {
+export default function PostCard({ post, onDelete, registerRefresh }) {
   const { user, profile } = useAuth();
   const { isAdmin } = useRole();
   const [liked, setLiked] = useState(false);
@@ -30,7 +30,6 @@ export default function PostCard({ post, onDelete }) {
       .select('*', { count: 'exact', head: true })
       .eq('post_id', post.id);
     setLikeCount(count || 0);
-
     if (user) {
       const { data } = await supabase
         .from('post_likes')
@@ -46,7 +45,6 @@ export default function PostCard({ post, onDelete }) {
     if (!user) { toast.error('Faça login para curtir!'); return; }
     if (likeLoading) return;
     setLikeLoading(true);
-
     if (liked) {
       await supabase.from('post_likes').delete()
         .eq('post_id', post.id).eq('user_id', user.id);
@@ -56,7 +54,6 @@ export default function PostCard({ post, onDelete }) {
       await supabase.from('post_likes').insert({ post_id: post.id, user_id: user.id });
       setLiked(true);
       setLikeCount(c => c + 1);
-
       if (post.user_id && post.user_id !== user.id) {
         await supabase.from('notifications').insert({
           user_id: post.user_id,
@@ -118,7 +115,11 @@ export default function PostCard({ post, onDelete }) {
         </button>
       </div>
 
-      <CommentSection postId={post.id} postOwnerId={post.user_id} />
+      <CommentSection
+        postId={post.id}
+        postOwnerId={post.user_id}
+        registerRefresh={registerRefresh}
+      />
     </div>
   );
 }
