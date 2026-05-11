@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Key, User, Zap, X, Shield } from 'lucide-react';
+import { Home, Users, Key, User, Zap, X, Shield, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
+import Avatar from '../ui/Avatar';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
@@ -12,6 +13,7 @@ export default function Sidebar({ open, onClose }) {
     { to: '/community', icon: Users, label: 'Comunidade' },
     { to: '/keys', icon: Key, label: 'Keys & Promos' },
     { to: '/profile', icon: User, label: 'Perfil' },
+    { to: '/settings', icon: Settings, label: 'Configurações' },
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin', highlight: true }] : []),
   ];
 
@@ -62,16 +64,12 @@ export default function Sidebar({ open, onClose }) {
         {profile && (
           <div className="px-4 py-4 border-t border-dark-500">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-dark-400 border border-neon-green/30 flex items-center justify-center">
-                <span className="text-neon-green text-xs font-mono">
-                  {profile.username?.[0]?.toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-mono text-white">{profile.username}</p>
+              <Avatar profile={profile} size={32} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-mono text-white truncate">{profile.username}</p>
                 <p className="text-xs text-gray-500 font-mono">{role}</p>
               </div>
-              <div className="ml-auto w-2 h-2 rounded-full bg-neon-green animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse shrink-0" />
             </div>
           </div>
         )}
