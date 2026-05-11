@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
 import { Send } from 'lucide-react';
 
@@ -58,26 +58,27 @@ export default function PostForm({ onPost }) {
         onChange={e => setContent(e.target.value)}
         maxLength={1000}
       />
-      <div className="flex items-center gap-3">
-        <div className="flex gap-2">
-          {categories.map(c => (
-            <button
-              key={c}
-              onClick={() => setCategory(c)}
-              className={`tag cursor-pointer transition-all ${
-                category === c ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-        <div className="ml-auto">
-          <button onClick={handleSubmit} disabled={loading} className="btn-solid flex items-center gap-2 py-2 px-4">
-            <Send size={13} />
-            {loading ? 'Enviando...' : 'Publicar'}
+      {/* Categorias e botão em linhas separadas no mobile */}
+      <div className="flex flex-wrap items-center gap-2">
+        {categories.map(c => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={`tag cursor-pointer transition-all ${
+              category === c ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'
+            }`}
+          >
+            {c}
           </button>
-        </div>
+        ))}
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto"
+        >
+          <Send size={13} />
+          {loading ? 'Enviando...' : 'Publicar'}
+        </button>
       </div>
     </div>
   );
