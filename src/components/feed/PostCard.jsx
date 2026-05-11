@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import CommentSection from './CommentSection';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -56,7 +57,6 @@ export default function PostCard({ post, onDelete }) {
       setLiked(true);
       setLikeCount(c => c + 1);
 
-      // Notifica o dono do post (se não for ele mesmo curtindo)
       if (post.user_id && post.user_id !== user.id) {
         await supabase.from('notifications').insert({
           user_id: post.user_id,
@@ -117,6 +117,8 @@ export default function PostCard({ post, onDelete }) {
           {likeCount}
         </button>
       </div>
+
+      <CommentSection postId={post.id} postOwnerId={post.user_id} />
     </div>
   );
 }
