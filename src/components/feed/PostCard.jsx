@@ -79,7 +79,7 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
   return (
     <div className="card p-5 animate-fade-up">
       <div className="flex items-center gap-3 mb-3">
-        <Avatar profile={post.profiles} size={9} />
+        <Avatar profile={post.profiles} size={36} />
         <div>
           <p className="text-sm font-semibold text-white">
             {post.profiles?.username || 'GamerAnon'}

@@ -20,7 +20,7 @@ export default function MuralCard({ item, onDelete }) {
   return (
     <div className="card p-4 animate-fade-up">
       <div className="flex items-start gap-3">
-        <Avatar profile={item.profiles} size={8} />
+        <Avatar profile={item.profiles} size={32} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold text-white">

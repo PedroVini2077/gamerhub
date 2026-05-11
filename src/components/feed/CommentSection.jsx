@@ -20,7 +20,7 @@ function CommentCard({ comment, onDelete }) {
 
   return (
     <div className="flex items-start gap-2.5 py-2.5 border-b border-dark-600 last:border-0">
-      <Avatar profile={comment.profiles} size={7} />
+      <Avatar profile={comment.profiles} size={28} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-xs font-semibold text-white">
