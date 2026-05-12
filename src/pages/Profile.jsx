@@ -124,21 +124,35 @@ export default function Profile() {
       {/* Modal foto grande */}
       {showFull && avatarUrl && (
         <div
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setShowFull(false)}
         >
-          <div className="relative max-w-sm w-full">
-            <img
-              src={avatarUrl}
-              alt="avatar"
-              className="w-full rounded-xl object-cover"
-              onClick={e => e.stopPropagation()}
-            />
+          <div
+            className="relative w-72 rounded-2xl overflow-hidden border border-neon-green/20 animate-fade-up"
+            style={{ boxShadow: "0 0 40px #39ff1420" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 grid-bg opacity-60" />
+              <img src={avatarUrl} alt="avatar" className="w-full h-64 object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-dark-800 via-transparent to-transparent" />
+            </div>
+            <div className="bg-dark-800 px-5 py-4">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-display text-lg font-bold text-white">{profile?.username}</h3>
+                <span className={`tag ${profile?.role === "super_admin" ? "tag-green" : profile?.role === "admin" ? "tag-purple" : "tag-cyan"}`}>{profile?.role || "user"}</span>
+              </div>
+              {profile?.bio && <p className="text-xs text-gray-400 font-mono">{profile.bio}</p>}
+              <div className="mt-3 pt-3 border-t border-dark-500 flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+                <span className="text-xs text-gray-500 font-mono">GamerHub</span>
+              </div>
+            </div>
             <button
               onClick={() => setShowFull(false)}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-dark-800/90 flex items-center justify-center text-white hover:bg-dark-700"
+              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-dark-800/80 flex items-center justify-center text-white hover:bg-dark-700 border border-dark-400"
             >
-              <X size={16} />
+              <X size={13} />
             </button>
           </div>
         </div>

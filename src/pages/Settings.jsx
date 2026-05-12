@@ -5,6 +5,21 @@ import toast from 'react-hot-toast';
 import { Settings, Lock, Mail, Bell, Shield, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+function Toggle({ value, onChange }) {
+  return (
+    <button
+      onClick={() => onChange(!value)}
+      className="relative w-11 h-6 rounded-full transition-colors shrink-0"
+      style={{ background: value ? '#39ff14' : '#2e2e3e' }}
+    >
+      <span
+        className="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform"
+        style={{ transform: value ? 'translateX(22px)' : 'translateX(4px)' }}
+      />
+    </button>
+  );
+}
+
 function SettingRow({ icon: Icon, label, description, children }) {
   return (
     <div className="flex items-center gap-4 py-4 border-b border-dark-500 last:border-0">
@@ -21,13 +36,14 @@ function SettingRow({ icon: Icon, label, description, children }) {
 }
 
 export default function Settings_() {
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [notifLikes, setNotifLikes] = useState(true);
   const [notifComments, setNotifComments] = useState(true);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   if (!user) return (
     <div className="max-w-md mx-auto card p-10 text-center mt-10">
@@ -57,6 +73,32 @@ export default function Settings_() {
     setChangingPassword(false);
   }
 
+  async function handleDeleteAccount() {
+    const confirmed = confirm(
+      'Tem certeza? Essa ação é IRREVERSÍVEL.\nTodos os seus posts, comentários e dados serão deletados.'
+    );
+    if (!confirmed) return;
+
+    const doubleConfirm = confirm('Última chance. Confirmar exclusão da conta?');
+    if (!doubleConfirm) return;
+
+    setDeletingAccount(true);
+    const { error } = await supabase.from('profiles').delete().eq('id', user.id);
+    if (error) {
+      toast.error('Erro ao deletar conta. Entre em contato com o suporte.');
+    } else {
+      await signOut();
+      toast.success('Conta deletada.');
+    }
+    setDeletingAccount(false);
+  }
+
+  const roleColors = {
+    user: 'tag-cyan',
+    admin: 'tag-purple',
+    super_admin: 'tag-green',
+  };
+
   return (
     <div className="max-w-lg mx-auto space-y-4">
       <div className="card p-5">
@@ -72,14 +114,13 @@ export default function Settings_() {
         <h2 className="font-display text-xs text-gray-500 tracking-widest uppercase mb-2">Conta</h2>
 
         <SettingRow icon={Mail} label="Email" description={user.email}>
-          <span className="tag tag-green text-xs">verificado</span>
+          <span className="tag tag-green text-xs shrink-0">verificado</span>
         </SettingRow>
 
         <SettingRow icon={Shield} label="Role" description="Seu nível de acesso">
-          <span className={`tag ${
-            profile?.role === 'super_admin' ? 'tag-green' :
-            profile?.role === 'admin' ? 'tag-purple' : 'tag-cyan'
-          }`}>{profile?.role || 'user'}</span>
+          <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'} shrink-0`}>
+            {profile?.role || 'user'}
+          </span>
         </SettingRow>
 
         <SettingRow icon={Lock} label="Senha" description="Troque sua senha de acesso">
@@ -87,7 +128,11 @@ export default function Settings_() {
             onClick={() => setShowPasswordForm(o => !o)}
             className="text-gray-500 hover:text-neon-green transition-colors"
           >
-            <ChevronRight size={16} className={`transition-transform ${showPasswordForm ? 'rotate-90' : ''}`} />
+            <ChevronRight
+              size={16}
+              className="transition-transform duration-200"
+              style={{ transform: showPasswordForm ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            />
           </button>
         </SettingRow>
 
@@ -121,23 +166,11 @@ export default function Settings_() {
       {/* Notificações */}
       <div className="card p-5">
         <h2 className="font-display text-xs text-gray-500 tracking-widest uppercase mb-2">Notificações</h2>
-
         <SettingRow icon={Bell} label="Likes nos posts" description="Avisar quando curtirem seu post">
-          <button
-            onClick={() => setNotifLikes(o => !o)}
-            className={`w-10 h-5 rounded-full transition-colors relative ${notifLikes ? 'bg-neon-green' : 'bg-dark-400'}`}
-          >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${notifLikes ? 'translate-x-5' : 'translate-x-0.5'}`} />
-          </button>
+          <Toggle value={notifLikes} onChange={setNotifLikes} />
         </SettingRow>
-
         <SettingRow icon={Bell} label="Comentários" description="Avisar quando comentarem no seu post">
-          <button
-            onClick={() => setNotifComments(o => !o)}
-            className={`w-10 h-5 rounded-full transition-colors relative ${notifComments ? 'bg-neon-green' : 'bg-dark-400'}`}
-          >
-            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${notifComments ? 'translate-x-5' : 'translate-x-0.5'}`} />
-          </button>
+          <Toggle value={notifComments} onChange={setNotifComments} />
         </SettingRow>
       </div>
 
@@ -148,10 +181,11 @@ export default function Settings_() {
           Ações irreversíveis. Pense bem antes de continuar.
         </p>
         <button
-          onClick={() => toast.error('Entre em contato com o suporte para deletar sua conta.')}
+          onClick={handleDeleteAccount}
+          disabled={deletingAccount}
           className="text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-4 py-2 rounded transition-all"
         >
-          Deletar minha conta
+          {deletingAccount ? 'Deletando...' : 'Deletar minha conta'}
         </button>
       </div>
     </div>
