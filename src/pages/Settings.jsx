@@ -151,12 +151,16 @@ export default function Settings_() {
       <div className="card p-5">
         <h2 className="font-display text-xs text-gray-500 tracking-widest uppercase mb-2">Conta</h2>
 
-        <SettingRow icon={Mail} label="Email" description={null}>
-          <div className="flex flex-col items-end gap-1 min-w-0">
-            <span className="tag tag-green text-xs shrink-0">verificado</span>
-            <span className="text-xs text-gray-500 font-mono truncate max-w-[160px]">{user.email}</span>
+        <div className="flex items-start gap-4 py-4 border-b border-dark-500">
+          <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0 mt-0.5">
+            <Mail size={15} className="text-gray-400" />
           </div>
-        </SettingRow>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">Email</p>
+            <p className="text-xs text-gray-500 font-mono mt-0.5 truncate">{user.email}</p>
+          </div>
+          <span className="tag tag-green text-xs shrink-0">verificado</span>
+        </div>
 
         <SettingRow icon={Shield} label="Role" description="Seu nível de acesso">
           <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'} shrink-0`}>
