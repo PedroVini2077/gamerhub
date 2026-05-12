@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { Shield, Users, Key, FileText, Trash2, Ban, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import KeyEditor from '../components/keys/KeyEditor';
+import Avatar from '../components/ui/Avatar';
 
 const ROLES = ['user', 'admin', 'super_admin'];
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -40,11 +41,7 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
     <div className="card overflow-hidden">
       {/* Linha principal */}
       <div className="flex items-center gap-3 p-4">
-        <div className="w-9 h-9 rounded-full bg-dark-400 border border-dark-300 flex items-center justify-center shrink-0">
-          <span className="text-sm font-mono text-gray-300">
-            {user.username?.[0]?.toUpperCase() || '?'}
-          </span>
-        </div>
+        <Avatar profile={user} size={36} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
