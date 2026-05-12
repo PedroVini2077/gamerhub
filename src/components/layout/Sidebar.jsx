@@ -83,15 +83,15 @@ export default function Sidebar({ open, onClose }) {
         {/* Stats compactos */}
         <div className="px-4 py-3 border-t border-dark-500">
           <p className="text-xs font-mono text-dark-400 uppercase tracking-wider mb-2">Status</p>
-          <div className="grid grid-cols-3 gap-1">
+          <div className="space-y-1">
             {[
               { label: 'Membros', value: stats.users, color: 'text-neon-cyan' },
               { label: 'Posts/dia', value: stats.postsToday, color: 'text-neon-green' },
               { label: 'Keys', value: stats.keys, color: 'text-neon-purple' },
             ].map(s => (
-              <div key={s.label} className="bg-dark-700 rounded p-2 text-center border border-dark-500">
+              <div key={s.label} className="flex justify-between items-center px-2 py-1.5 bg-dark-700 rounded border border-dark-500">
                 <p className={`text-sm font-bold font-mono ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-gray-600 font-mono">{s.label}</p>
+                <p className="text-xs text-gray-500 font-mono">{s.label}</p>
               </div>
             ))}
           </div>
