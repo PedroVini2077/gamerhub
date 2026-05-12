@@ -9,12 +9,12 @@ function Toggle({ value, onChange }) {
   return (
     <button
       onClick={() => onChange(!value)}
-      className="relative w-11 h-6 rounded-full transition-colors shrink-0"
+      className="relative w-10 h-5 rounded-full transition-colors shrink-0"
       style={{ background: value ? '#39ff14' : '#2e2e3e' }}
     >
       <span
-        className="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform"
-        style={{ transform: value ? 'translateX(22px)' : 'translateX(4px)' }}
+        className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform"
+        style={{ transform: value ? 'translateX(18px)' : 'translateX(2px)' }}
       />
     </button>
   );
