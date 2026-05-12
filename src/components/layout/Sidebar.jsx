@@ -86,7 +86,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="grid grid-cols-3 gap-1">
             {[
               { label: 'Membros', value: stats.users, color: 'text-neon-cyan' },
-              { label: 'Hoje', value: stats.postsToday, color: 'text-neon-green' },
+              { label: 'Posts/dia', value: stats.postsToday, color: 'text-neon-green' },
               { label: 'Keys', value: stats.keys, color: 'text-neon-purple' },
             ].map(s => (
               <div key={s.label} className="bg-dark-700 rounded p-2 text-center border border-dark-500">
