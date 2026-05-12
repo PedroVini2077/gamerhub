@@ -9,12 +9,31 @@ function Toggle({ value, onChange }) {
   return (
     <button
       onClick={() => onChange(!value)}
-      className="relative w-10 h-5 rounded-full transition-colors shrink-0"
-      style={{ background: value ? '#39ff14' : '#2e2e3e' }}
+      style={{
+        position: 'relative',
+        width: 44,
+        height: 24,
+        borderRadius: 12,
+        background: value ? '#39ff14' : '#2e2e3e',
+        border: 'none',
+        cursor: 'pointer',
+        transition: 'background 0.2s',
+        flexShrink: 0,
+        padding: 0,
+      }}
     >
       <span
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform"
-        style={{ transform: value ? 'translateX(18px)' : 'translateX(2px)' }}
+        style={{
+          position: 'absolute',
+          top: 3,
+          left: value ? 23 : 3,
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: 'white',
+          transition: 'left 0.2s',
+          display: 'block',
+        }}
       />
     </button>
   );
