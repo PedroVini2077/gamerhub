@@ -1,12 +1,29 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Key, User, Zap, X, Shield, Settings } from 'lucide-react';
+import { Home, Users, Key, User, Zap, X, Shield, Settings, FileText } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
   const { isAdmin, role } = useRole();
+  const [stats, setStats] = useState({ users: 0, postsToday: 0, keys: 0 });
+
+  useEffect(() => {
+    async function fetchStats() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const [{ count: users }, { count: postsToday }, { count: keys }] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+        supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
+      ]);
+      setStats({ users: users || 0, postsToday: postsToday || 0, keys: keys || 0 });
+    }
+    fetchStats();
+  }, []);
 
   const nav = [
     { to: '/', icon: Home, label: 'Feed' },
@@ -25,6 +42,7 @@ export default function Sidebar({ open, onClose }) {
         flex flex-col transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
       `}>
+        {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-dark-500">
           <div className="flex items-center gap-2">
             <Zap size={20} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
@@ -36,6 +54,7 @@ export default function Sidebar({ open, onClose }) {
           </button>
         </div>
 
+        {/* Nav */}
         <nav className="flex-1 py-6 px-2 space-y-1">
           {nav.map(({ to, icon: Icon, label, highlight }) => (
             <NavLink
@@ -61,6 +80,24 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
+        {/* Stats compactos */}
+        <div className="px-4 py-3 border-t border-dark-500">
+          <p className="text-xs font-mono text-dark-400 uppercase tracking-wider mb-2">Status</p>
+          <div className="grid grid-cols-3 gap-1">
+            {[
+              { label: 'Membros', value: stats.users, color: 'text-neon-cyan' },
+              { label: 'Hoje', value: stats.postsToday, color: 'text-neon-green' },
+              { label: 'Keys', value: stats.keys, color: 'text-neon-purple' },
+            ].map(s => (
+              <div key={s.label} className="bg-dark-700 rounded p-2 text-center border border-dark-500">
+                <p className={`text-sm font-bold font-mono ${s.color}`}>{s.value}</p>
+                <p className="text-xs text-gray-600 font-mono">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* User info */}
         {profile && (
           <div className="px-4 py-4 border-t border-dark-500">
             <div className="flex items-center gap-3">
