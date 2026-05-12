@@ -151,8 +151,11 @@ export default function Settings_() {
       <div className="card p-5">
         <h2 className="font-display text-xs text-gray-500 tracking-widest uppercase mb-2">Conta</h2>
 
-        <SettingRow icon={Mail} label="Email" description={user.email}>
-          <span className="tag tag-green text-xs shrink-0">verificado</span>
+        <SettingRow icon={Mail} label="Email" description={null}>
+          <div className="flex flex-col items-end gap-1 min-w-0">
+            <span className="tag tag-green text-xs shrink-0">verificado</span>
+            <span className="text-xs text-gray-500 font-mono truncate max-w-[160px]">{user.email}</span>
+          </div>
         </SettingRow>
 
         <SettingRow icon={Shield} label="Role" description="Seu nível de acesso">
