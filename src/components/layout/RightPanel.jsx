@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Tag, ExternalLink, Gift, Users, FileText, Key } from 'lucide-react';
+import { formatNumber } from '../../lib/format';
 import { useRealtime } from '../../hooks/useRealtime';
 
 export default function RightPanel() {
@@ -110,7 +111,7 @@ export default function RightPanel() {
                 <s.icon size={12} className={s.color} />
                 <span className="text-xs text-gray-400 font-mono">{s.label}</span>
               </div>
-              <span className={`text-sm font-bold font-mono ${s.color}`}>{s.value}</span>
+              <span className={`text-sm font-bold font-mono ${s.color}`}>{formatNumber(s.value)}</span>
             </div>
           ))}
         </div>

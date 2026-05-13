@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
 import { useEffect, useState } from 'react';
+import { formatNumber } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
 
 export default function Sidebar({ open, onClose }) {
@@ -91,7 +92,7 @@ export default function Sidebar({ open, onClose }) {
             ].map(s => (
               <div key={s.label} className="flex justify-between items-center px-2 py-1.5 bg-dark-700 rounded border border-dark-500">
                 <p className="text-xs text-gray-500 font-mono">{s.label}</p>
-                <p className={`text-sm font-bold font-mono ${s.color}`}>{s.value}</p>
+                <p className={`text-sm font-bold font-mono ${s.color}`}>{formatNumber(s.value)}</p>
               </div>
             ))}
           </div>
