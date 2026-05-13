@@ -33,8 +33,8 @@ export default function Settings_() {
   const [newEmail, setNewEmail] = useState('');
   const [changingEmail, setChangingEmail] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [notifLikes, setNotifLikes] = useState(true);
-  const [notifComments, setNotifComments] = useState(true);
+  const [notifLikes, setNotifLikes] = useState(null);
+  const [notifComments, setNotifComments] = useState(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
@@ -234,7 +234,7 @@ export default function Settings_() {
             <p className="text-sm font-semibold text-white">Likes nos posts</p>
             <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando curtirem seu post</p>
           </div>
-          <Toggle value={notifLikes} onChange={v => handleToggleNotif('likes', v)} />
+          {notifLikes !== null && <Toggle value={notifLikes} onChange={v => handleToggleNotif('likes', v)} />}
         </div>
         <div className="flex items-center gap-4 py-4">
           <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
@@ -244,7 +244,7 @@ export default function Settings_() {
             <p className="text-sm font-semibold text-white">Comentários</p>
             <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando comentarem no seu post</p>
           </div>
-          <Toggle value={notifComments} onChange={v => handleToggleNotif('comments', v)} />
+          {notifComments !== null && <Toggle value={notifComments} onChange={v => handleToggleNotif('comments', v)} />}
         </div>
       </div>
 
