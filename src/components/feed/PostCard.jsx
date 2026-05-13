@@ -5,6 +5,8 @@ import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
+import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Avatar from '../ui/Avatar';
 
 const categoryConfig = {
@@ -82,7 +84,7 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
         <Avatar profile={post.profiles} size={36} />
         <div>
           <p className="text-sm font-semibold text-white">
-            {post.profiles?.username || 'GamerAnon'}
+            <Link to={`/u/${post.profiles?.username}`} className="hover:text-neon-green transition-colors">{post.profiles?.username || 'GamerAnon'}</Link>
           </p>
           <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
             <Clock size={10} />

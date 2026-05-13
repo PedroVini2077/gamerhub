@@ -1,4 +1,6 @@
 import { Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';
@@ -24,7 +26,7 @@ export default function MuralCard({ item, onDelete }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-semibold text-white">
-              {item.profiles?.username || 'Gamer'}
+              <Link to={`/u/${item.profiles?.username}`} className="hover:text-neon-green transition-colors">{item.profiles?.username || 'Gamer'}</Link>
             </span>
             <span className="text-xs text-gray-600 font-mono">
               {new Date(item.created_at).toLocaleString('pt-BR', {

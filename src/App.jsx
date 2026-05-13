@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
+import UserProfile from './pages/UserProfile';
 import NotFound from './pages/NotFound';
 
 function Layout({ children }) {
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/community" element={<Layout><Community /></Layout>} />
           <Route path="/keys" element={<Layout><Keys /></Layout>} />
           <Route path="/profile" element={<Layout><Profile /></Layout>} />
+          <Route path="/u/:username" element={<Layout><UserProfile /></Layout>} />
           <Route path="/settings" element={<Layout><Settings /></Layout>} />
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
           <Route path="*" element={<NotFound />} />
