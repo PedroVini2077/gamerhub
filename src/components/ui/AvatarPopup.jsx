@@ -98,7 +98,7 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
               </div>
               <div className="py-3 text-center">
                 <p className="text-sm font-bold font-mono text-neon-cyan">
-                  {profile?.created_at
+                  {loading ? '...' : profile?.created_at
                     ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
                     : '—'}
                 </p>
