@@ -12,18 +12,25 @@ export default function Sidebar({ open, onClose }) {
   const { isAdmin, role } = useRole();
   const [stats, setStats] = useState({ users: 0, postsToday: 0, keys: 0 });
 
+  async function fetchStats() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const [{ count: users }, { count: postsToday }, { count: keys }] = await Promise.all([
+      supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+      supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
+    ]);
+    setStats({ users: users || 0, postsToday: postsToday || 0, keys: keys || 0 });
+  }
+
   useEffect(() => {
-    async function fetchStats() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const [{ count: users }, { count: postsToday }, { count: keys }] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
-        supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
-      ]);
-      setStats({ users: users || 0, postsToday: postsToday || 0, keys: keys || 0 });
-    }
     fetchStats();
+    const channel = supabase.channel('sidebar-stats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_keys' }, fetchStats)
+      .subscribe();
+    return () => supabase.removeChannel(channel);
   }, []);
 
   const nav = [
