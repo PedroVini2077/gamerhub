@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
 import Avatar from './Avatar';
@@ -38,10 +39,10 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
         />
       </button>
 
-      {/* Modal centralizado */}
-      {open && (
+      {/* Modal centralizado via Portal */}
+      {open && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.85)' }}
           onClick={() => setOpen(false)}
         >
@@ -117,7 +118,7 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </>
   );
 }
