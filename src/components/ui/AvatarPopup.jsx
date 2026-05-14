@@ -10,27 +10,30 @@ const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' 
 
 export default function AvatarPopup({ profile: initialProfile, size = 36, className = '' }) {
   const [open, setOpen] = useState(false);
-  const [profile, setProfile] = useState(initialProfile);
+  const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({ posts: 0 });
   const [loading, setLoading] = useState(false);
 
   async function handleOpen() {
     setOpen(true);
+    setLoading(true);
+    setProfile(null);
+
     if (initialProfile?.id) {
-      setLoading(true);
       const [{ data: fullProfile }, { count: postsCount }] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', initialProfile.id).single(),
         supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', initialProfile.id),
       ]);
       if (fullProfile) setProfile(fullProfile);
       setStats({ posts: postsCount || 0 });
-      setLoading(false);
     }
+    setLoading(false);
   }
+
+  const displayProfile = profile || initialProfile;
 
   return (
     <>
-      {/* Avatar clicável */}
       <button onClick={handleOpen} className="block rounded-full focus:outline-none shrink-0">
         <Avatar
           profile={initialProfile}
@@ -39,11 +42,10 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
         />
       </button>
 
-      {/* Modal centralizado via Portal */}
       {open && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.85)' }}
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.85)', zIndex: 9999 }}
           onClick={() => setOpen(false)}
         >
           <div
@@ -55,11 +57,7 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
             <div className="relative bg-dark-800 pt-8 pb-6 flex flex-col items-center">
               <div className="absolute inset-0 grid-bg opacity-40" />
               <div className="relative">
-                <Avatar
-                  profile={profile}
-                  size={88}
-                  className="ring-2 ring-neon-green/40"
-                />
+                <Avatar profile={displayProfile} size={88} className="ring-2 ring-neon-green/40" />
               </div>
               <button
                 onClick={() => setOpen(false)}
@@ -72,19 +70,18 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
             {/* Info */}
             <div className="bg-dark-700 px-5 py-4 text-center border-b border-dark-500">
               {loading ? (
-                <div className="h-4 bg-dark-500 rounded w-1/2 mx-auto animate-pulse mb-2" />
+                <div className="space-y-2">
+                  <div className="h-5 bg-dark-500 rounded w-1/2 mx-auto animate-pulse" />
+                  <div className="h-4 bg-dark-500 rounded w-1/3 mx-auto animate-pulse" />
+                </div>
               ) : (
                 <>
-                  <h3 className="font-display text-xl font-bold text-white mb-2">
-                    {profile?.username}
-                  </h3>
-                  <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>
-                    {roleLabels[profile?.role] || 'Player'}
+                  <h3 className="font-display text-xl font-bold text-white mb-2">{displayProfile?.username}</h3>
+                  <span className={`tag ${roleColors[displayProfile?.role] || 'tag-cyan'}`}>
+                    {roleLabels[displayProfile?.role] || 'Player'}
                   </span>
                   {profile?.bio && (
-                    <p className="text-xs text-gray-400 font-mono mt-3 leading-relaxed">
-                      {profile.bio}
-                    </p>
+                    <p className="text-xs text-gray-400 font-mono mt-3 leading-relaxed">{profile.bio}</p>
                   )}
                 </>
               )}
@@ -93,7 +90,9 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
             {/* Stats */}
             <div className="bg-dark-700 grid grid-cols-2 divide-x divide-dark-500 border-b border-dark-500">
               <div className="py-3 text-center">
-                <p className="text-lg font-bold font-mono text-neon-green">{stats.posts}</p>
+                <p className="text-lg font-bold font-mono text-neon-green">
+                  {loading ? '...' : stats.posts}
+                </p>
                 <p className="text-xs text-gray-500 font-mono">Posts</p>
               </div>
               <div className="py-3 text-center">
@@ -109,7 +108,7 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
             {/* Botão ver perfil */}
             <div className="bg-dark-700 p-4">
               <Link
-                to={`/u/${profile?.username}`}
+                to={`/u/${displayProfile?.username}`}
                 onClick={() => setOpen(false)}
                 className="flex items-center justify-center gap-2 w-full btn-neon py-2.5 text-xs"
               >
@@ -117,8 +116,9 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
               </Link>
             </div>
           </div>
-        </div>
-      , document.body)}
+        </div>,
+        document.body
+      )}
     </>
   );
 }
