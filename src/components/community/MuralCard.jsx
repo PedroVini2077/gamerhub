@@ -1,6 +1,5 @@
 import { Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';

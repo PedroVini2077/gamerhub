@@ -6,7 +6,6 @@ import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 import Avatar from '../ui/Avatar';
 
 const categoryConfig = {
