@@ -1,1 +1,16 @@
-{"projectId":"prj_b7CTUleueTRhhRyuMPnJSMAaADmA","orgId":"team_YhqK28nPf4KrzHBXaOdE1s1P","projectName":"gamerhub"}
+{
+  "projectId": "prj_b7CTUleueTRhhRyuMPnJSMAaADmA",
+  "orgId": "team_YhqK28nPf4KrzHBXaOdE1s1P",
+  "projectName": "gamerhub",
+  "settings": {
+    "createdAt": 1778198577828,
+    "framework": "vite",
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}
