@@ -22,11 +22,15 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
     const username = initialProfile?.username;
     if (!username) { setLoading(false); return; }
 
-    const { data: fullProfile } = await supabase
+    const { data: fullProfile, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('username', username)
       .single();
+
+    if (error) {
+      console.error('AvatarPopup error:', error);
+    }
 
     if (fullProfile) {
       setProfile(fullProfile);
@@ -35,6 +39,9 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
         .select('*', { count: 'exact', head: true })
         .eq('user_id', fullProfile.id);
       setStats({ posts: count || 0 });
+    } else {
+      // Usa dados do initialProfile como fallback
+      setProfile(initialProfile);
     }
 
     setLoading(false);
