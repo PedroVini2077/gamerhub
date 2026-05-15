@@ -20,17 +20,14 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
     setProfile(null);
 
     const username = initialProfile?.username;
-    if (!username) { setLoading(false); return; }
+    const userId = initialProfile?.id;
+    if (!username && !userId) { setLoading(false); return; }
 
-    const { data: fullProfile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single();
+    let query = supabase.from('profiles').select('*');
+    if (userId) query = query.eq('id', userId);
+    else query = query.eq('username', username);
 
-    if (error) {
-      console.error('AvatarPopup error:', error);
-    }
+    const { data: fullProfile } = await query.maybeSingle();
 
     if (fullProfile) {
       setProfile(fullProfile);
@@ -40,7 +37,6 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
         .eq('user_id', fullProfile.id);
       setStats({ posts: count || 0 });
     } else {
-      // Usa dados do initialProfile como fallback
       setProfile(initialProfile);
     }
 
