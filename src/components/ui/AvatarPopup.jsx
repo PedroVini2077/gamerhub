@@ -8,7 +8,7 @@ import { X, ExternalLink } from 'lucide-react';
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
 
-export default function AvatarPopup({ profile: initialProfile, size = 36, className = '' }) {
+export default function AvatarPopup({ profile: initialProfile, userId, size = 36, className = '' }) {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({ posts: 0 });
@@ -20,11 +20,11 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
     setProfile(null);
 
     const username = initialProfile?.username;
-    const userId = initialProfile?.id;
-    if (!username && !userId) { setLoading(false); return; }
+    const uid = userId || initialProfile?.id;
+    if (!username && !uid) { setLoading(false); return; }
 
     let query = supabase.from('profiles').select('*');
-    if (userId) query = query.eq('id', userId);
+    if (uid) query = query.eq('id', uid);
     else query = query.eq('username', username);
 
     const { data: fullProfile } = await query.maybeSingle();

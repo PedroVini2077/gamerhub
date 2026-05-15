@@ -80,7 +80,7 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
   return (
     <div className="card p-5 animate-fade-up">
       <div className="flex items-center gap-3 mb-3">
-        <AvatarPopup profile={{...post.profiles, id: post.profiles?.id || post.user_id}} size={36} />
+        <AvatarPopup profile={post.profiles} userId={post.user_id} size={36} />
         <div>
           <Link
             to={`/u/${post.profiles?.username}`}
