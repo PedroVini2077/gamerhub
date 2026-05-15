@@ -24,9 +24,12 @@ export default function MuralCard({ item, onDelete }) {
         <AvatarPopup profile={item.profiles} size={32} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-semibold text-white">
-              <Link to={`/u/${item.profiles?.username}`} className="hover:text-neon-green transition-colors">{item.profiles?.username || 'Gamer'}</Link>
-            </span>
+            <Link
+              to={`/u/${item.profiles?.username}`}
+              className="text-sm font-semibold text-white hover:text-neon-green transition-colors"
+            >
+              {item.profiles?.username || 'Gamer'}
+            </Link>
             <span className="text-xs text-gray-600 font-mono">
               {new Date(item.created_at).toLocaleString('pt-BR', {
                 day: '2-digit', month: '2-digit',

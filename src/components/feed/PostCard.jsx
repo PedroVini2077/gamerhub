@@ -82,9 +82,12 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
       <div className="flex items-center gap-3 mb-3">
         <AvatarPopup profile={post.profiles} size={36} />
         <div>
-          <p className="text-sm font-semibold text-white">
-            <Link to={`/u/${post.profiles?.username}`} className="hover:text-neon-green transition-colors">{post.profiles?.username || 'GamerAnon'}</Link>
-          </p>
+          <Link
+            to={`/u/${post.profiles?.username}`}
+            className="text-sm font-semibold text-white hover:text-neon-green transition-colors"
+          >
+            {post.profiles?.username || 'GamerAnon'}
+          </Link>
           <div className="flex items-center gap-1 text-xs text-gray-500 font-mono">
             <Clock size={10} />
             {timeAgo}
