@@ -19,14 +19,24 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
     setLoading(true);
     setProfile(null);
 
-    if (initialProfile?.id) {
-      const [{ data: fullProfile }, { count: postsCount }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', initialProfile.id).single(),
-        supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', initialProfile.id),
-      ]);
-      if (fullProfile) setProfile(fullProfile);
-      setStats({ posts: postsCount || 0 });
+    const username = initialProfile?.username;
+    if (!username) { setLoading(false); return; }
+
+    const { data: fullProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', username)
+      .single();
+
+    if (fullProfile) {
+      setProfile(fullProfile);
+      const { count } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', fullProfile.id);
+      setStats({ posts: count || 0 });
     }
+
     setLoading(false);
   }
 
@@ -53,7 +63,6 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
             style={{ boxShadow: '0 0 40px #39ff1420' }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Header com foto */}
             <div className="relative bg-dark-800 pt-8 pb-6 flex flex-col items-center">
               <div className="absolute inset-0 grid-bg opacity-40" />
               <div className="relative">
@@ -67,7 +76,6 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
               </button>
             </div>
 
-            {/* Info */}
             <div className="bg-dark-700 px-5 py-4 text-center border-b border-dark-500">
               {loading ? (
                 <div className="space-y-2">
@@ -87,7 +95,6 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
               )}
             </div>
 
-            {/* Stats */}
             <div className="bg-dark-700 grid grid-cols-2 divide-x divide-dark-500 border-b border-dark-500">
               <div className="py-3 text-center">
                 <p className="text-lg font-bold font-mono text-neon-green">
@@ -105,7 +112,6 @@ export default function AvatarPopup({ profile: initialProfile, size = 36, classN
               </div>
             </div>
 
-            {/* Botão ver perfil */}
             <div className="bg-dark-700 p-4">
               <Link
                 to={`/u/${displayProfile?.username}`}
