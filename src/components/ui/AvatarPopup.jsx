@@ -68,18 +68,18 @@ export default function AvatarPopup({ profile, size = 36, className = '' }) {
 
             <div className="grid grid-cols-2 divide-x divide-dark-500 border-b border-dark-500">
               <div className="py-3 text-center">
+                <p className="text-xs text-gray-500 font-mono mb-1">Posts</p>
                 <p className="text-lg font-bold font-mono text-neon-green">
                   {extra ? extra.posts : '...'}
                 </p>
-                <p className="text-xs text-gray-500 font-mono">Posts</p>
               </div>
               <div className="py-3 text-center">
+                <p className="text-xs text-gray-500 font-mono mb-1">Membro desde</p>
                 <p className="text-sm font-bold font-mono text-neon-cyan">
                   {profile?.created_at
                     ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
                     : '—'}
                 </p>
-                <p className="text-xs text-gray-500 font-mono">Membro desde</p>
               </div>
             </div>
 
