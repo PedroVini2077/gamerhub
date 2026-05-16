@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import Avatar from './Avatar';
-import { X } from 'lucide-react';
+import { X, ExternalLink } from 'lucide-react';
+
+const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
+const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
 
 export default function AvatarPopup({ profile, size = 36, className = '' }) {
   const [open, setOpen] = useState(false);
@@ -37,8 +41,22 @@ export default function AvatarPopup({ profile, size = 36, className = '' }) {
                 <X size={14} />
               </button>
             </div>
-            <div className="px-5 py-4 text-center">
-              <h3 className="font-display text-xl font-bold text-white">{profile?.username}</h3>
+
+            <div className="px-5 py-4 text-center border-b border-dark-500">
+              <h3 className="font-display text-xl font-bold text-white mb-2">{profile?.username}</h3>
+              <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>
+                {roleLabels[profile?.role] || 'Player'}
+              </span>
+            </div>
+
+            <div className="p-4">
+              <Link
+                to={`/u/${profile?.username}`}
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center gap-2 w-full btn-neon py-2.5 text-xs"
+              >
+                Ver perfil completo <ExternalLink size={12} />
+              </Link>
             </div>
           </div>
         </div>,
