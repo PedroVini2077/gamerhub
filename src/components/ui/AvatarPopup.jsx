@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabase';
 import Avatar from './Avatar';
 import { X, ExternalLink } from 'lucide-react';
 
@@ -9,10 +10,23 @@ const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' 
 
 export default function AvatarPopup({ profile, size = 36, className = '' }) {
   const [open, setOpen] = useState(false);
+  const [extra, setExtra] = useState(null);
+
+  async function handleOpen() {
+    setOpen(true);
+    if (extra || !profile?.id) return;
+
+    const { count } = await supabase
+      .from('posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', profile.id);
+
+    setExtra({ posts: count || 0 });
+  }
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="block rounded-full focus:outline-none shrink-0">
+      <button onClick={handleOpen} className="block rounded-full focus:outline-none shrink-0">
         <Avatar
           profile={profile}
           size={size}
@@ -47,6 +61,26 @@ export default function AvatarPopup({ profile, size = 36, className = '' }) {
               <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>
                 {roleLabels[profile?.role] || 'Player'}
               </span>
+              {profile?.bio && (
+                <p className="text-xs text-gray-400 font-mono mt-3 leading-relaxed">{profile.bio}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 divide-x divide-dark-500 border-b border-dark-500">
+              <div className="py-3 text-center">
+                <p className="text-lg font-bold font-mono text-neon-green">
+                  {extra ? extra.posts : '...'}
+                </p>
+                <p className="text-xs text-gray-500 font-mono">Posts</p>
+              </div>
+              <div className="py-3 text-center">
+                <p className="text-sm font-bold font-mono text-neon-cyan">
+                  {profile?.created_at
+                    ? new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+                    : '—'}
+                </p>
+                <p className="text-xs text-gray-500 font-mono">Membro desde</p>
+              </div>
             </div>
 
             <div className="p-4">
