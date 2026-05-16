@@ -12,7 +12,7 @@ export default function Community() {
   async function fetch() {
     const { data } = await supabase
       .from('community_posts')
-      .select('*, profiles(id, username, avatar_url)')
+      .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
       .order('created_at', { ascending: false })
       .limit(50);
     setItems(data || []);

@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import toast from 'react-hot-toast';
 import { Send, Trash2, MessageSquare } from 'lucide-react';
-import Avatar from '../ui/Avatar';
+import AvatarPopup from '../ui/AvatarPopup';
 
 function CommentCard({ comment, onDelete }) {
   const { user } = useAuth();
@@ -20,7 +20,7 @@ function CommentCard({ comment, onDelete }) {
 
   return (
     <div className="flex items-start gap-2.5 py-2.5 border-b border-dark-600 last:border-0">
-      <Avatar profile={comment.profiles} size={28} />
+      <AvatarPopup profile={comment.profiles} size={28} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <span className="text-xs font-semibold text-white">
@@ -63,7 +63,7 @@ export default function CommentSection({ postId, postOwnerId, registerRefresh })
   async function fetchComments() {
     const { data } = await supabase
       .from('comments')
-      .select('*, profiles(username, avatar_url)')
+      .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
     setComments(data || []);
