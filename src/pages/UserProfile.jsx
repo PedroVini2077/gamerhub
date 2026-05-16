@@ -87,7 +87,7 @@ export default function UserProfile() {
       {/* Card do perfil */}
       <div className="card p-6">
         <div className="flex items-center gap-4 mb-4">
-          <AvatarPopup profile={profile} size={64} />
+          <AvatarPopup profile={profile} size={64} postsCount={stats.posts} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-display text-xl font-bold text-white">{profile.username}</h1>
