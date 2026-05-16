@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import AvatarPopup from '../ui/AvatarPopup';
+import Avatar from '../ui/Avatar';
 
 export default function MuralCard({ item, onDelete }) {
   const { user } = useAuth();
@@ -21,7 +21,7 @@ export default function MuralCard({ item, onDelete }) {
   return (
     <div className="card p-4 animate-fade-up">
       <div className="flex items-start gap-3">
-        <AvatarPopup profile={item.profiles} size={32} />
+        <Avatar profile={item.profiles} size={32} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <Link

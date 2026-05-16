@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
-import AvatarPopup from '../ui/AvatarPopup';
+import Avatar from '../ui/Avatar';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -80,7 +80,7 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
   return (
     <div className="card p-5 animate-fade-up">
       <div className="flex items-center gap-3 mb-3">
-        <AvatarPopup profile={post.profiles} userId={post.user_id} size={36} />
+        <Avatar profile={post.profiles} size={36} />
         <div>
           <Link
             to={`/u/${post.profiles?.username}`}
