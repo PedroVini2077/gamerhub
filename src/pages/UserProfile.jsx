@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
-import Avatar from '../components/ui/Avatar';
+import AvatarPopup from '../components/ui/AvatarPopup';
 import { ArrowLeft, Calendar } from 'lucide-react';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -14,6 +14,7 @@ export default function UserProfile() {
   const [stats, setStats] = useState({ posts: 0, likes: 0 });
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProfile();
@@ -78,15 +79,15 @@ export default function UserProfile() {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Voltar */}
-      <Link to="/" className="flex items-center gap-2 text-xs text-gray-500 hover:text-neon-green transition-colors font-mono">
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-xs text-gray-500 hover:text-neon-green transition-colors font-mono">
         <ArrowLeft size={14} />
-        Voltar ao feed
-      </Link>
+        Voltar
+      </button>
 
       {/* Card do perfil */}
       <div className="card p-6">
         <div className="flex items-center gap-4 mb-4">
-          <Avatar profile={profile} size={64} />
+          <AvatarPopup profile={profile} size={64} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-display text-xl font-bold text-white">{profile.username}</h1>
