@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
-import AvatarPopup from '../components/ui/AvatarPopup';
+import Avatar from '../components/ui/Avatar';
 import { ArrowLeft, Calendar } from 'lucide-react';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -14,6 +14,7 @@ export default function UserProfile() {
   const [stats, setStats] = useState({ posts: 0, likes: 0 });
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,6 +55,22 @@ export default function UserProfile() {
     setLoading(false);
   }
 
+  if (showPhoto && profile?.avatar_url) return (
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.9)', zIndex: 9999 }}
+      onClick={() => setShowPhoto(false)}
+    >
+      <img
+        src={profile.avatar_url}
+        alt={profile.username}
+        className="max-w-sm w-full rounded-full border-2 border-neon-green/40"
+        style={{ boxShadow: '0 0 40px #39ff1420' }}
+        onClick={e => e.stopPropagation()}
+      />
+    </div>
+  );
+
   if (loading) return (
     <div className="max-w-2xl mx-auto space-y-4">
       <div className="card p-6 animate-pulse">
@@ -87,7 +104,9 @@ export default function UserProfile() {
       {/* Card do perfil */}
       <div className="card p-6">
         <div className="flex items-center gap-4 mb-4">
-          <AvatarPopup profile={profile} size={64} postsCount={stats.posts} />
+          <button onClick={() => profile?.avatar_url && setShowPhoto(true)} className="shrink-0">
+            <Avatar profile={profile} size={64} className={profile?.avatar_url ? 'cursor-pointer hover:ring-2 hover:ring-neon-green/50 transition-all' : ''} />
+          </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-display text-xl font-bold text-white">{profile.username}</h1>
