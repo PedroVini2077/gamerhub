@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Tag, ExternalLink, Gift, Users, FileText, Key } from 'lucide-react';
 import { formatNumber } from '../../lib/format';
-import { useRealtime } from '../../hooks/useRealtime';
 
 export default function RightPanel() {
   const [keys, setKeys] = useState([]);
@@ -35,9 +34,7 @@ export default function RightPanel() {
     fetchStats();
   }, []);
 
-  useRealtime('posts', () => fetchStats());
-  useRealtime('game_keys', () => { fetchKeys(); fetchStats(); });
-  useRealtime('profiles', () => fetchStats());
+
 
   return (
     <aside className="hidden xl:flex flex-col w-72 shrink-0 gap-4">

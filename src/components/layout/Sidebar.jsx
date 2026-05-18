@@ -25,12 +25,7 @@ export default function Sidebar({ open, onClose }) {
 
   useEffect(() => {
     fetchStats();
-    const channel = supabase.channel('sidebar-stats')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, fetchStats)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchStats)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_keys' }, fetchStats)
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+
   }, []);
 
   const nav = [
