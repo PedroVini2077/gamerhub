@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
+import { Music } from 'lucide-react';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -105,6 +106,24 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
 
       <h2 className="text-base font-bold text-white mb-2 font-body">{post.title}</h2>
       <p className="text-sm text-gray-400 leading-relaxed">{post.content}</p>
+
+      {/* Mídia do post */}
+      {post.media_url && post.media_type === 'image' && (
+        <div className="mt-3 rounded-lg overflow-hidden border border-dark-400">
+          <img src={post.media_url} alt={post.title} className="w-full max-h-80 object-cover" />
+        </div>
+      )}
+      {post.media_url && post.media_type === 'video' && (
+        <div className="mt-3 rounded-lg overflow-hidden border border-dark-400">
+          <video src={post.media_url} controls className="w-full max-h-80" />
+        </div>
+      )}
+      {post.media_url && post.media_type === 'audio' && (
+        <div className="mt-3 p-3 bg-dark-700 rounded-lg border border-dark-400 flex items-center gap-3">
+          <Music size={16} className="text-neon-green shrink-0" />
+          <audio src={post.media_url} controls className="flex-1" />
+        </div>
+      )}
 
       <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">
         <button
