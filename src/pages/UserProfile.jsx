@@ -148,7 +148,7 @@ export default function UserProfile() {
         ) : (
           <div className="space-y-4">
             {posts.map(p => (
-              <PostCard key={p.id} post={p} onDelete={fetchProfile} />
+              <PostCard key={p.id} post={p} onDelete={fetchProfile} disablePopup />
             ))}
           </div>
         )}

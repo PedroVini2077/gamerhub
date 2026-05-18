@@ -8,7 +8,7 @@ import { X, ExternalLink } from 'lucide-react';
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
 
-export default function AvatarPopup({ profile, size = 36, className = '', postsCount }) {
+export default function AvatarPopup({ profile, size = 36, className = '', postsCount, disablePopup = false }) {
   const [open, setOpen] = useState(false);
   const [extra, setExtra] = useState(postsCount !== undefined ? { posts: postsCount } : null);
 
@@ -26,7 +26,7 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
 
   return (
     <>
-      <button onClick={handleOpen} className="block rounded-full focus:outline-none shrink-0">
+      <button onClick={disablePopup ? undefined : handleOpen} className="block rounded-full focus:outline-none shrink-0" style={disablePopup ? { cursor: 'default' } : {}}>
         <Avatar
           profile={profile}
           size={size}

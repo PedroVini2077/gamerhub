@@ -14,7 +14,7 @@ const categoryConfig = {
   news: { label: 'News', cls: 'tag-cyan' },
 };
 
-export default function PostCard({ post, onDelete, registerRefresh, registerLikeRefresh }) {
+export default function PostCard({ post, onDelete, registerRefresh, registerLikeRefresh, disablePopup = false }) {
   const { user, profile } = useAuth();
   const { isAdmin } = useRole();
   const [liked, setLiked] = useState(false);
@@ -80,7 +80,7 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
   return (
     <div className="card p-5 animate-fade-up">
       <div className="flex items-center gap-3 mb-3">
-        <AvatarPopup profile={post.profiles} size={36} />
+        <AvatarPopup profile={post.profiles} size={36} disablePopup={disablePopup} />
         <div>
           <Link
             to={`/u/${post.profiles?.username}`}
