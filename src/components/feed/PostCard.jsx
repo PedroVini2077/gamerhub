@@ -1,4 +1,4 @@
-import { Heart, Clock, Trash2 } from 'lucide-react';
+import { Heart, Clock, Trash2, Music, Maximize2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
-import { Music } from 'lucide-react';
+import MediaLightbox from '../ui/MediaLightbox';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -15,20 +15,18 @@ const categoryConfig = {
   news: { label: 'News', cls: 'tag-cyan' },
 };
 
-export default function PostCard({ post, onDelete, registerRefresh, registerLikeRefresh, disablePopup = false }) {
+export default function PostCard({ post, onDelete, disablePopup = false }) {
   const { user, profile } = useAuth();
   const { isAdmin } = useRole();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
   const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
   const canDelete = user && (isAdmin || user.id === post.user_id);
 
-  useEffect(() => {
-    fetchLikes();
-    if (registerLikeRefresh) registerLikeRefresh(fetchLikes);
-  }, [post.id, user]);
+  useEffect(() => { fetchLikes(); }, [post.id, user]);
 
   async function fetchLikes() {
     const { count } = await supabase
@@ -80,6 +78,15 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
 
   return (
     <div className="card p-5 animate-fade-up">
+      {lightbox && (
+        <MediaLightbox
+          src={post.media_url}
+          type={post.media_type}
+          title={post.title}
+          onClose={() => setLightbox(false)}
+        />
+      )}
+
       <div className="flex items-center gap-3 mb-3">
         <AvatarPopup profile={post.profiles} size={36} disablePopup={disablePopup} />
         <div>
@@ -107,21 +114,48 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
       <h2 className="text-base font-bold text-white mb-2 font-body">{post.title}</h2>
       <p className="text-sm text-gray-400 leading-relaxed">{post.content}</p>
 
-      {/* Mídia do post */}
+      {/* Mídia */}
       {post.media_url && post.media_type === 'image' && (
-        <div className="mt-3 rounded-lg overflow-hidden border border-dark-400">
-          <img src={post.media_url} alt={post.title} className="w-full max-h-80 object-cover" />
+        <div className="mt-3 relative group rounded-lg overflow-hidden border border-dark-400 cursor-pointer"
+          onClick={() => setLightbox(true)}>
+          <img
+            src={post.media_url}
+            alt={post.title}
+            className="w-full object-contain bg-dark-800"
+            style={{ maxHeight: '400px' }}
+          />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
+            <Maximize2 size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
         </div>
       )}
+
       {post.media_url && post.media_type === 'video' && (
-        <div className="mt-3 rounded-lg overflow-hidden border border-dark-400">
-          <video src={post.media_url} controls className="w-full max-h-80" />
+        <div className="mt-3 relative group rounded-lg overflow-hidden border border-dark-400">
+          <video
+            className="w-full bg-dark-800"
+            style={{ maxHeight: '400px' }}
+            controls
+            playsInline
+            preload="metadata"
+          >
+            <source src={post.media_url} />
+          </video>
+          <button
+            onClick={() => setLightbox(true)}
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-dark-800/80 border border-dark-400 flex items-center justify-center text-gray-400 hover:text-white"
+          >
+            <Maximize2 size={14} />
+          </button>
         </div>
       )}
+
       {post.media_url && post.media_type === 'audio' && (
         <div className="mt-3 p-3 bg-dark-700 rounded-lg border border-dark-400 flex items-center gap-3">
           <Music size={16} className="text-neon-green shrink-0" />
-          <audio src={post.media_url} controls className="flex-1" />
+          <audio controls preload="metadata" className="flex-1">
+            <source src={post.media_url} />
+          </audio>
         </div>
       )}
 
@@ -138,11 +172,7 @@ export default function PostCard({ post, onDelete, registerRefresh, registerLike
         </button>
       </div>
 
-      <CommentSection
-        postId={post.id}
-        postOwnerId={post.user_id}
-        registerRefresh={registerRefresh}
-      />
+      <CommentSection postId={post.id} postOwnerId={post.user_id} />
     </div>
   );
 }

@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
-import { Send, Image, X, Film, Music } from 'lucide-react';
+import { Send, Image, X, Film, Music, Mic } from 'lucide-react';
+import AudioRecorder from '../ui/AudioRecorder';
 
 const categories = ['dica', 'curiosidade', 'news'];
 
@@ -23,6 +24,7 @@ export default function PostForm({ onPost }) {
   const [mediaType, setMediaType] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [activeMediaType, setActiveMediaType] = useState(null);
+  const [showRecorder, setShowRecorder] = useState(false);
   const fileRef = useRef(null);
   const videoRef = useRef(null);
   const audioRef = useRef(null);
@@ -143,6 +145,20 @@ export default function PostForm({ onPost }) {
         maxLength={1000}
       />
 
+      {/* Gravador de áudio */}
+      {showRecorder && (
+        <AudioRecorder
+          onRecorded={(file) => {
+            if (mediaPreview) URL.revokeObjectURL(mediaPreview);
+            setMediaFile(file);
+            setMediaType('audio');
+            setMediaPreview(URL.createObjectURL(file));
+            setShowRecorder(false);
+          }}
+          onCancel={() => setShowRecorder(false)}
+        />
+      )}
+
       {/* Preview da mídia */}
       {mediaPreview && (
         <div className="relative mb-3 rounded-lg overflow-hidden border border-dark-400 bg-dark-700">
@@ -201,7 +217,7 @@ export default function PostForm({ onPost }) {
           </button>
         ))}
 
-        {!mediaFile && (
+        {!mediaFile && !showRecorder && (
           <div className="flex gap-1 ml-1">
             {Object.entries(MEDIA_TYPES).map(([type, { icon: Icon, label }]) => (
               <button
@@ -213,6 +229,13 @@ export default function PostForm({ onPost }) {
                 <Icon size={16} />
               </button>
             ))}
+            <button
+              onClick={() => setShowRecorder(true)}
+              title="Gravar áudio"
+              className="text-gray-500 hover:text-neon-green transition-colors p-1"
+            >
+              <Mic size={16} />
+            </button>
           </div>
         )}
 
