@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
 import MediaLightbox from '../ui/MediaLightbox';
 import MediaPlayer from '../ui/MediaPlayer';
+import MediaPlayer from '../ui/MediaPlayer';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
