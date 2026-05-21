@@ -1,4 +1,4 @@
-import { Heart, Clock, Trash2, Music, Maximize2 } from 'lucide-react';
+import { Heart, Clock, Trash2, Maximize2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
@@ -8,6 +8,7 @@ import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
 import MediaLightbox from '../ui/MediaLightbox';
+import MediaPlayer from '../ui/MediaPlayer';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -131,15 +132,19 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
       )}
 
       {post.media_url && post.media_type === 'video' && (
-        <div className="mt-3 relative group rounded-lg overflow-hidden border border-dark-400">
+        <div className="mt-3 relative rounded-lg overflow-hidden border border-dark-400 bg-dark-800">
           <video
-            className="w-full bg-dark-800"
-            style={{ maxHeight: '400px' }}
+            className="w-full"
+            style={{ maxHeight: '400px', display: 'block' }}
             controls
             playsInline
             preload="metadata"
+            crossOrigin="anonymous"
           >
-            <source src={post.media_url} />
+            <source src={post.media_url} type="video/mp4" />
+            <source src={post.media_url} type="video/webm" />
+            <source src={post.media_url} type="video/ogg" />
+            Seu navegador não suporta vídeo.
           </video>
           <button
             onClick={() => setLightbox(true)}
@@ -151,12 +156,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
       )}
 
       {post.media_url && post.media_type === 'audio' && (
-        <div className="mt-3 p-3 bg-dark-700 rounded-lg border border-dark-400 flex items-center gap-3">
-          <Music size={16} className="text-neon-green shrink-0" />
-          <audio controls preload="metadata" className="flex-1">
-            <source src={post.media_url} />
-          </audio>
-        </div>
+        <MediaPlayer src={post.media_url} title={post.title} />
       )}
 
       <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">
