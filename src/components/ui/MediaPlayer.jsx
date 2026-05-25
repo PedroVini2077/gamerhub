@@ -37,7 +37,7 @@ export default function MediaPlayer({ src, title }) {
   }
 
   function fmt(s) {
-    if (sed -n '1,35p' ~/gamerhub/src/components/ui/AvatarPopup.jsx || isNaN(s)) return '0:00';
+    if (!s || isNaN(s)) return '0:00';
     return Math.floor(s / 60) + ':' + Math.floor(s % 60).toString().padStart(2, '0');
   }
 
