@@ -1,4 +1,4 @@
-import { Heart, Clock, Trash2, Maximize2 } from 'lucide-react';
+import { Heart, Clock, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
@@ -7,8 +7,7 @@ import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
-import MediaLightbox from '../ui/MediaLightbox';
-import MediaPlayer from '../ui/MediaPlayer';
+import MediaCarousel from '../ui/MediaCarousel';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -22,12 +21,24 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
-  const [lightbox, setLightbox] = useState(false);
+  const [postMedia, setPostMedia] = useState([]);
   const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
   const canDelete = user && (isAdmin || user.id === post.user_id);
 
-  useEffect(() => { fetchLikes(); }, [post.id, user]);
+  useEffect(() => {
+    fetchLikes();
+    fetchMedia();
+  }, [post.id, user]);
+
+  async function fetchMedia() {
+    const { data } = await supabase
+      .from('post_media')
+      .select('*')
+      .eq('post_id', post.id)
+      .order('position');
+    setPostMedia(data || []);
+  }
 
   async function fetchLikes() {
     const { count } = await supabase
@@ -37,11 +48,8 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     setLikeCount(count || 0);
     if (user) {
       const { data } = await supabase
-        .from('post_likes')
-        .select('id')
-        .eq('post_id', post.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .from('post_likes').select('id')
+        .eq('post_id', post.id).eq('user_id', user.id).maybeSingle();
       setLiked(!!data);
     }
   }
@@ -79,15 +87,6 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   return (
     <div className="card p-5 animate-fade-up">
-      {lightbox && (
-        <MediaLightbox
-          src={post.media_url}
-          type={post.media_type}
-          title={post.title}
-          onClose={() => setLightbox(false)}
-        />
-      )}
-
       <div className="flex items-center gap-3 mb-3">
         <AvatarPopup profile={post.profiles} size={36} disablePopup={disablePopup} />
         <div>
@@ -115,48 +114,9 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
       <h2 className="text-base font-bold text-white mb-2 font-body">{post.title}</h2>
       <p className="text-sm text-gray-400 leading-relaxed">{post.content}</p>
 
-      {/* Mídia */}
-      {post.media_url && post.media_type === 'image' && (
-        <div className="mt-3 relative group rounded-lg overflow-hidden border border-dark-400 cursor-pointer"
-          onClick={() => setLightbox(true)}>
-          <img
-            src={post.media_url}
-            alt={post.title}
-            className="w-full object-contain bg-dark-800"
-            style={{ maxHeight: '400px' }}
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
-            <Maximize2 size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        </div>
-      )}
-
-      {post.media_url && post.media_type === 'video' && (
-        <div className="mt-3 relative rounded-lg overflow-hidden border border-dark-400 bg-dark-800">
-          <video
-            className="w-full"
-            style={{ maxHeight: '400px', display: 'block' }}
-            controls
-            playsInline
-            preload="metadata"
-            crossOrigin="anonymous"
-          >
-            <source src={post.media_url} type="video/mp4" />
-            <source src={post.media_url} type="video/webm" />
-            <source src={post.media_url} type="video/ogg" />
-            Seu navegador não suporta vídeo.
-          </video>
-          <button
-            onClick={() => setLightbox(true)}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-dark-800/80 border border-dark-400 flex items-center justify-center text-gray-400 hover:text-white"
-          >
-            <Maximize2 size={14} />
-          </button>
-        </div>
-      )}
-
-      {post.media_url && post.media_type === 'audio' && (
-        <MediaPlayer src={post.media_url} title={post.title} />
+      {/* Carrossel de mídias */}
+      {postMedia.length > 0 && (
+        <MediaCarousel items={postMedia} postTitle={post.title} />
       )}
 
       <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">

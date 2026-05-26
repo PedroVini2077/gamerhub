@@ -19,20 +19,16 @@ export default function PostForm({ onPost }) {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('dica');
   const [loading, setLoading] = useState(false);
-  const [mediaFile, setMediaFile] = useState(null);
-  const [mediaPreview, setMediaPreview] = useState(null);
-  const [mediaType, setMediaType] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [activeMediaType, setActiveMediaType] = useState(null);
+  const [medias, setMedias] = useState([]); // [{file, preview, type}]
   const [showRecorder, setShowRecorder] = useState(false);
+  const [activeType, setActiveType] = useState(null);
   const fileRef = useRef(null);
-  const videoRef = useRef(null);
-  const audioRef = useRef(null);
 
   if (!user) return null;
 
   function handleMediaSelect(type) {
-    setActiveMediaType(type);
+    if (medias.length >= 10) { toast.error('Máximo 10 mídias por post'); return; }
+    setActiveType(type);
     fileRef.current.accept = MEDIA_TYPES[type].accept;
     fileRef.current.click();
   }
@@ -40,44 +36,22 @@ export default function PostForm({ onPost }) {
   function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const type = activeMediaType;
-    const maxMB = MEDIA_TYPES[type].maxMB;
-
+    const maxMB = MEDIA_TYPES[activeType].maxMB;
     if (file.size > maxMB * 1024 * 1024) {
-      toast.error(`Arquivo muito grande. Máximo ${maxMB}MB.`);
+      toast.error(`Máximo ${maxMB}MB para ${MEDIA_TYPES[activeType].label}`);
       e.target.value = '';
       return;
     }
-
-    // Revoga URL anterior se existir
-    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
-
-    const url = URL.createObjectURL(file);
-    setMediaFile(file);
-    setMediaType(type);
-    setMediaPreview(url);
+    const preview = URL.createObjectURL(file);
+    setMedias(m => [...m, { file, preview, type: activeType }]);
     e.target.value = '';
   }
 
-  function removeMedia() {
-    if (mediaPreview) URL.revokeObjectURL(mediaPreview);
-    setMediaFile(null);
-    setMediaPreview(null);
-    setMediaType(null);
-    setActiveMediaType(null);
-  }
-
-  async function uploadMedia() {
-    if (!mediaFile) return null;
-    const ext = mediaFile.name.split('.').pop();
-    const path = `${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage
-      .from('post-media')
-      .upload(path, mediaFile, { contentType: mediaFile.type });
-    if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
-    return publicUrl;
+  function removeMedia(i) {
+    setMedias(m => {
+      URL.revokeObjectURL(m[i].preview);
+      return m.filter((_, idx) => idx !== i);
+    });
   }
 
   async function handleSubmit() {
@@ -88,36 +62,49 @@ export default function PostForm({ onPost }) {
     setLoading(true);
 
     try {
-      let media_url = null;
-      if (mediaFile) {
-        setUploading(true);
-        toast.loading('Enviando mídia...', { id: 'upload' });
-        media_url = await uploadMedia();
+      // 1. Cria o post
+      const { data: post, error: postError } = await supabase
+        .from('posts')
+        .insert({
+          user_id: profile?.id,
+          title: title.trim(),
+          content: content.trim(),
+          category,
+        })
+        .select()
+        .single();
+
+      if (postError) throw postError;
+
+      // 2. Faz upload das mídias
+      if (medias.length > 0) {
+        toast.loading('Enviando mídias...', { id: 'upload' });
+        const mediaRows = [];
+
+        for (let i = 0; i < medias.length; i++) {
+          const { file, type } = medias[i];
+          const ext = file.name.split('.').pop();
+          const path = `${user.id}/${post.id}-${i}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from('post-media')
+            .upload(path, file, { contentType: file.type });
+          if (upErr) throw upErr;
+          const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
+          mediaRows.push({ post_id: post.id, url: publicUrl, type, position: i });
+        }
+
+        const { error: mediaErr } = await supabase.from('post_media').insert(mediaRows);
+        if (mediaErr) throw mediaErr;
         toast.dismiss('upload');
-        setUploading(false);
       }
 
-      const { error } = await supabase.from('posts').insert({
-        user_id: profile?.id,
-        title: title.trim(),
-        content: content.trim(),
-        category,
-        media_url,
-        media_type: mediaType,
-      });
-
-      if (error) {
-        toast.error('Erro ao publicar post');
-      } else {
-        toast.success('Post publicado! 🎮');
-        setTitle('');
-        setContent('');
-        removeMedia();
-        onPost?.();
-      }
-    } catch {
-      toast.error('Erro ao fazer upload. Tente um arquivo menor.');
-      setUploading(false);
+      toast.success('Post publicado! 🎮');
+      setTitle('');
+      setContent('');
+      setMedias([]);
+      onPost?.();
+    } catch (err) {
+      toast.error('Erro ao publicar: ' + err.message);
       toast.dismiss('upload');
     }
 
@@ -145,62 +132,53 @@ export default function PostForm({ onPost }) {
         maxLength={1000}
       />
 
-      {/* Gravador de áudio */}
+      {/* Gravador */}
       {showRecorder && (
         <AudioRecorder
           onRecorded={(file) => {
-            if (mediaPreview) URL.revokeObjectURL(mediaPreview);
-            setMediaFile(file);
-            setMediaType('audio');
-            setMediaPreview(URL.createObjectURL(file));
+            const preview = URL.createObjectURL(file);
+            setMedias(m => [...m, { file, preview, type: 'audio' }]);
             setShowRecorder(false);
           }}
           onCancel={() => setShowRecorder(false)}
         />
       )}
 
-      {/* Preview da mídia */}
-      {mediaPreview && (
-        <div className="relative mb-3 rounded-lg overflow-hidden border border-dark-400 bg-dark-700">
-          {mediaType === 'image' && (
-            <img src={mediaPreview} alt="preview" className="w-full max-h-64 object-cover" />
-          )}
-          {mediaType === 'video' && (
-            <video
-              ref={videoRef}
-              className="w-full max-h-64"
-              controls
-              playsInline
-              preload="metadata"
-            >
-              <source src={mediaPreview} type={mediaFile?.type} />
-            </video>
-          )}
-          {mediaType === 'audio' && (
-            <div className="p-4 flex items-center gap-3">
-              <Music size={20} className="text-neon-green shrink-0" />
-              <audio
-                ref={audioRef}
-                controls
-                preload="metadata"
-                className="flex-1"
+      {/* Preview das mídias */}
+      {medias.length > 0 && (
+        <div className="mb-3 flex gap-2 flex-wrap">
+          {medias.map((m, i) => (
+            <div key={i} className="relative rounded-lg overflow-hidden border border-dark-400 bg-dark-700"
+              style={{ width: 80, height: 80 }}>
+              {m.type === 'image' && (
+                <img src={m.preview} className="w-full h-full object-cover" />
+              )}
+              {m.type === 'video' && (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Film size={24} className="text-neon-green" />
+                </div>
+              )}
+              {m.type === 'audio' && (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Music size={24} className="text-neon-green" />
+                </div>
+              )}
+              <button
+                onClick={() => removeMedia(i)}
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-dark-800/90 flex items-center justify-center text-gray-400 hover:text-white"
               >
-                <source src={mediaPreview} type={mediaFile?.type} />
-              </audio>
+                <X size={10} />
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 bg-dark-800/80 text-center">
+                <span className="text-xs font-mono text-gray-400">{i + 1}</span>
+              </div>
+            </div>
+          ))}
+          {medias.length < 10 && (
+            <div className="text-xs text-gray-600 font-mono self-end pb-1">
+              {medias.length}/10
             </div>
           )}
-          <button
-            onClick={removeMedia}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-dark-800/90 border border-dark-400 flex items-center justify-center text-gray-400 hover:text-white"
-          >
-            <X size={13} />
-          </button>
-          <div className="px-3 pb-2">
-            <p className="text-xs text-gray-500 font-mono truncate">{mediaFile?.name}</p>
-            <p className="text-xs text-gray-600 font-mono">
-              {(mediaFile?.size / 1024 / 1024).toFixed(1)}MB
-            </p>
-          </div>
         </div>
       )}
 
@@ -217,7 +195,7 @@ export default function PostForm({ onPost }) {
           </button>
         ))}
 
-        {!mediaFile && !showRecorder && (
+        {medias.length < 10 && !showRecorder && (
           <div className="flex gap-1 ml-1">
             {Object.entries(MEDIA_TYPES).map(([type, { icon: Icon, label }]) => (
               <button
@@ -239,20 +217,15 @@ export default function PostForm({ onPost }) {
           </div>
         )}
 
-        <input
-          ref={fileRef}
-          type="file"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
 
         <button
           onClick={handleSubmit}
-          disabled={loading || uploading}
+          disabled={loading}
           className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto"
         >
           <Send size={13} />
-          {uploading ? 'Enviando...' : loading ? 'Publicando...' : 'Publicar'}
+          {loading ? 'Publicando...' : 'Publicar'}
         </button>
       </div>
     </div>
