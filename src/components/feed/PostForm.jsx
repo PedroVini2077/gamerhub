@@ -7,38 +7,34 @@ import AudioRecorder from '../ui/AudioRecorder';
 
 const categories = ['dica', 'curiosidade', 'news'];
 
-const MEDIA_TYPES = {
-  image: { icon: Image, label: 'Imagem', accept: 'image/*', maxMB: 5 },
-  video: { icon: Film, label: 'Vídeo', accept: 'video/*', maxMB: 100 },
-  audio: { icon: Music, label: 'Áudio', accept: 'audio/*', maxMB: 20 },
-};
-
 export default function PostForm({ onPost }) {
   const { user, profile } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('dica');
   const [loading, setLoading] = useState(false);
-  const [medias, setMedias] = useState([]); // [{file, preview, type}]
+  const [medias, setMedias] = useState([]);
+  const [audio, setAudio] = useState(null);
   const [showRecorder, setShowRecorder] = useState(false);
   const [activeType, setActiveType] = useState(null);
   const fileRef = useRef(null);
+  const audioFileRef = useRef(null);
 
   if (!user) return null;
 
   function handleMediaSelect(type) {
     if (medias.length >= 10) { toast.error('Máximo 10 mídias por post'); return; }
     setActiveType(type);
-    fileRef.current.accept = MEDIA_TYPES[type].accept;
+    fileRef.current.accept = type === 'image' ? 'image/*' : 'video/*';
     fileRef.current.click();
   }
 
   function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const maxMB = MEDIA_TYPES[activeType].maxMB;
+    const maxMB = activeType === 'image' ? 5 : 100;
     if (file.size > maxMB * 1024 * 1024) {
-      toast.error(`Máximo ${maxMB}MB para ${MEDIA_TYPES[activeType].label}`);
+      toast.error(`Máximo ${maxMB}MB`);
       e.target.value = '';
       return;
     }
@@ -47,183 +43,197 @@ export default function PostForm({ onPost }) {
     e.target.value = '';
   }
 
+  function handleAudioFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { toast.error('Máximo 20MB para áudio'); return; }
+    setAudio({ file, preview: URL.createObjectURL(file), type: 'file' });
+    e.target.value = '';
+  }
+
   function removeMedia(i) {
-    setMedias(m => {
-      URL.revokeObjectURL(m[i].preview);
-      return m.filter((_, idx) => idx !== i);
-    });
+    setMedias(m => { URL.revokeObjectURL(m[i].preview); return m.filter((_, idx) => idx !== i); });
+  }
+
+  function removeAudio() {
+    if (audio?.preview) URL.revokeObjectURL(audio.preview);
+    setAudio(null);
   }
 
   async function handleSubmit() {
-    if (!title.trim() || !content.trim()) {
-      toast.error('Preencha título e conteúdo!');
-      return;
-    }
+    if (!title.trim()) { toast.error('Preencha o título!'); return; }
+    if (!content.trim() && !audio) { toast.error('Escreva algo ou grave um áudio!'); return; }
     setLoading(true);
 
     try {
-      // 1. Cria o post
-      const { data: post, error: postError } = await supabase
-        .from('posts')
-        .insert({
-          user_id: profile?.id,
-          title: title.trim(),
-          content: content.trim(),
-          category,
-        })
-        .select()
-        .single();
+      let audio_url = null;
+      let audio_type = null;
+
+      // Upload do áudio principal
+      if (audio?.file) {
+        toast.loading('Enviando áudio...', { id: 'up' });
+        const ext = audio.file.name.split('.').pop();
+        const path = `${user.id}/audio-${Date.now()}.${ext}`;
+        const { error } = await supabase.storage.from('post-media').upload(path, audio.file, { contentType: audio.file.type });
+        if (error) throw error;
+        const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
+        audio_url = publicUrl;
+        audio_type = audio.type === 'recorded' ? 'recorded' : 'music';
+        toast.dismiss('up');
+      }
+
+      const { data: post, error: postError } = await supabase.from('posts').insert({
+        user_id: profile?.id,
+        title: title.trim(),
+        content: content.trim(),
+        category,
+        audio_url,
+        audio_type,
+      }).select().single();
 
       if (postError) throw postError;
 
-      // 2. Faz upload das mídias
+      // Upload das mídias visuais
       if (medias.length > 0) {
-        toast.loading('Enviando mídias...', { id: 'upload' });
-        const mediaRows = [];
-
+        toast.loading('Enviando mídias...', { id: 'up2' });
+        const rows = [];
         for (let i = 0; i < medias.length; i++) {
           const { file, type } = medias[i];
           const ext = file.name.split('.').pop();
           const path = `${user.id}/${post.id}-${i}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from('post-media')
-            .upload(path, file, { contentType: file.type });
-          if (upErr) throw upErr;
+          await supabase.storage.from('post-media').upload(path, file, { contentType: file.type });
           const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
-          mediaRows.push({ post_id: post.id, url: publicUrl, type, position: i });
+          rows.push({ post_id: post.id, url: publicUrl, type, position: i });
         }
-
-        const { error: mediaErr } = await supabase.from('post_media').insert(mediaRows);
-        if (mediaErr) throw mediaErr;
-        toast.dismiss('upload');
+        await supabase.from('post_media').insert(rows);
+        toast.dismiss('up2');
       }
 
       toast.success('Post publicado! 🎮');
-      setTitle('');
-      setContent('');
-      setMedias([]);
+      setTitle(''); setContent(''); setMedias([]); removeAudio();
       onPost?.();
     } catch (err) {
-      toast.error('Erro ao publicar: ' + err.message);
-      toast.dismiss('upload');
+      toast.error('Erro: ' + err.message);
+      toast.dismiss('up'); toast.dismiss('up2');
     }
-
     setLoading(false);
   }
 
   return (
     <div className="card p-5">
-      <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">
-        Novo Post
-      </h3>
-      <input
-        className="input-gamer mb-3"
-        placeholder="Título do post..."
-        value={title}
-        onChange={e => setTitle(e.target.value)}
-        maxLength={100}
-      />
-      <textarea
-        className="input-gamer mb-3 resize-none"
-        rows={3}
-        placeholder="Compartilhe uma dica, curiosidade ou news..."
-        value={content}
-        onChange={e => setContent(e.target.value)}
-        maxLength={1000}
-      />
+      <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
+
+      <input className="input-gamer mb-3" placeholder="Título do post..." value={title}
+        onChange={e => setTitle(e.target.value)} maxLength={100} />
+
+      {/* Área de conteúdo — texto OU áudio */}
+      {!audio ? (
+        <textarea className="input-gamer mb-3 resize-none" rows={3}
+          placeholder="Escreva algo... (ou grave/adicione um áudio abaixo)"
+          value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
+      ) : (
+        <div className="mb-3 border border-neon-green/20 rounded-lg p-3 bg-dark-700 relative">
+          <p className="text-xs font-mono text-neon-green mb-2 uppercase tracking-wider">
+            {audio.type === 'recorded' ? '🎙 Áudio gravado' : '🎵 Música'}
+          </p>
+          <audio controls preload="metadata" className="w-full" style={{ height: 36 }}>
+            <source src={audio.preview} />
+          </audio>
+          {content && <p className="text-xs text-gray-400 mt-2 font-mono">{content}</p>}
+          <button onClick={removeAudio}
+            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 hover:text-white">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
+      {/* Se tiver áudio, ainda permite escrever legenda */}
+      {audio && (
+        <input className="input-gamer mb-3" placeholder="Legenda opcional..."
+          value={content} onChange={e => setContent(e.target.value)} maxLength={300} />
+      )}
 
       {/* Gravador */}
       {showRecorder && (
         <AudioRecorder
           onRecorded={(file) => {
-            const preview = URL.createObjectURL(file);
-            setMedias(m => [...m, { file, preview, type: 'audio' }]);
+            setAudio({ file, preview: URL.createObjectURL(file), type: 'recorded' });
             setShowRecorder(false);
           }}
           onCancel={() => setShowRecorder(false)}
         />
       )}
 
-      {/* Preview das mídias */}
+      {/* Preview mídias visuais */}
       {medias.length > 0 && (
         <div className="mb-3 flex gap-2 flex-wrap">
           {medias.map((m, i) => (
             <div key={i} className="relative rounded-lg overflow-hidden border border-dark-400 bg-dark-700"
-              style={{ width: 80, height: 80 }}>
-              {m.type === 'image' && (
-                <img src={m.preview} className="w-full h-full object-cover" />
-              )}
-              {m.type === 'video' && (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Film size={24} className="text-neon-green" />
-                </div>
-              )}
-              {m.type === 'audio' && (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Music size={24} className="text-neon-green" />
-                </div>
-              )}
-              <button
-                onClick={() => removeMedia(i)}
-                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-dark-800/90 flex items-center justify-center text-gray-400 hover:text-white"
-              >
+              style={{ width: 72, height: 72 }}>
+              {m.type === 'image'
+                ? <img src={m.preview} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                    <Film size={20} className="text-neon-green" />
+                    <span className="text-xs text-gray-500 font-mono">vídeo</span>
+                  </div>
+              }
+              <button onClick={() => removeMedia(i)}
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-dark-800/90 flex items-center justify-center text-gray-400 hover:text-white">
                 <X size={10} />
               </button>
-              <div className="absolute bottom-0 left-0 right-0 bg-dark-800/80 text-center">
+              <div className="absolute bottom-0 left-0 right-0 bg-dark-800/80 text-center py-0.5">
                 <span className="text-xs font-mono text-gray-400">{i + 1}</span>
               </div>
             </div>
           ))}
-          {medias.length < 10 && (
-            <div className="text-xs text-gray-600 font-mono self-end pb-1">
-              {medias.length}/10
-            </div>
-          )}
+          <span className="text-xs text-gray-600 font-mono self-end pb-1">{medias.length}/10</span>
         </div>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
         {categories.map(c => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={`tag cursor-pointer transition-all ${
-              category === c ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'
-            }`}
-          >
+          <button key={c} onClick={() => setCategory(c)}
+            className={`tag cursor-pointer transition-all ${category === c ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'}`}>
             {c}
           </button>
         ))}
 
-        {medias.length < 10 && !showRecorder && (
-          <div className="flex gap-1 ml-1">
-            {Object.entries(MEDIA_TYPES).map(([type, { icon: Icon, label }]) => (
-              <button
-                key={type}
-                onClick={() => handleMediaSelect(type)}
-                title={`${label} (máx. ${MEDIA_TYPES[type].maxMB}MB)`}
-                className="text-gray-500 hover:text-neon-green transition-colors p-1"
-              >
-                <Icon size={16} />
-              </button>
-            ))}
-            <button
-              onClick={() => setShowRecorder(true)}
-              title="Gravar áudio"
-              className="text-gray-500 hover:text-neon-green transition-colors p-1"
-            >
+        <div className="flex gap-1 ml-1">
+          {/* Imagem */}
+          {medias.length < 10 && (
+            <button onClick={() => handleMediaSelect('image')} title="Imagem (máx 5MB)"
+              className="text-gray-500 hover:text-neon-green transition-colors p-1">
+              <Image size={16} />
+            </button>
+          )}
+          {/* Vídeo */}
+          {medias.length < 10 && (
+            <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 100MB)"
+              className="text-gray-500 hover:text-neon-green transition-colors p-1">
+              <Film size={16} />
+            </button>
+          )}
+          {/* Música (arquivo) */}
+          {!audio && (
+            <button onClick={() => audioFileRef.current.click()} title="Adicionar música (máx 20MB)"
+              className="text-gray-500 hover:text-neon-green transition-colors p-1">
+              <Music size={16} />
+            </button>
+          )}
+          {/* Gravar áudio */}
+          {!audio && !showRecorder && (
+            <button onClick={() => setShowRecorder(true)} title="Gravar áudio"
+              className="text-gray-500 hover:text-neon-green transition-colors p-1">
               <Mic size={16} />
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
         <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
+        <input ref={audioFileRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioFile} />
 
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto"
-        >
+        <button onClick={handleSubmit} disabled={loading}
+          className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto">
           <Send size={13} />
           {loading ? 'Publicando...' : 'Publicar'}
         </button>
