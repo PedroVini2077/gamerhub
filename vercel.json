@@ -1,3 +1,17 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+  "headers": [
+    {
+      "source": "/(.*).mp4",
+      "headers": [{ "key": "Content-Type", "value": "video/mp4" }]
+    },
+    {
+      "source": "/(.*).webm",
+      "headers": [{ "key": "Content-Type", "value": "video/webm" }]
+    },
+    {
+      "source": "/(.*).mov",
+      "headers": [{ "key": "Content-Type", "value": "video/quicktime" }]
+    }
+  ]
 }
