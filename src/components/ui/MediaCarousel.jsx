@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Maximize2, Film, Music } from 'lucide-react';
+import { Maximize2, Film, Music, ChevronLeft, ChevronRight } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
 
 function VideoPlayer({ src }) {
-  const [status, setStatus] = useState('loading'); // loading | ok | failed
-  const videoRef = useRef(null);
+  const [status, setStatus] = useState('loading');
 
   useEffect(() => {
     setStatus('loading');
@@ -15,30 +14,32 @@ function VideoPlayer({ src }) {
     return () => clearTimeout(timer);
   }, [src]);
 
-  if (status === 'failed') return (
-    <div className="flex flex-col items-center justify-center gap-3 p-8 text-center bg-dark-900" style={{ minHeight: 200 }}>
-      <p className="text-2xl">⚠️</p>
-      <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
-      <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
-      <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">Baixar vídeo</a>
-    </div>
-  );
-
   return (
-    <div className="relative bg-dark-900">
-      <video
-        ref={videoRef}
-        key={src}
-        className="w-full"
-        style={{ maxHeight: 400, display: 'block', background: '#060608' }}
-        controls playsInline preload="auto" controlsList="nodownload"
-        onCanPlay={() => setStatus('ok')}
-        onError={() => setStatus('failed')}
-      >
-        <source src={src} type="video/mp4" />
-        <source src={src} type="video/webm" />
-        <source src={src} />
-      </video>
+    <div className="relative bg-dark-900" style={{ minHeight: 200 }}>
+      {status === 'failed' ? (
+        <div className="flex flex-col items-center justify-center gap-3 p-8 text-center" style={{ minHeight: 200 }}>
+          <p className="text-2xl">⚠️</p>
+          <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
+          <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
+          <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">Baixar vídeo</a>
+        </div>
+      ) : (
+        <video
+          key={src}
+          className="w-full"
+          style={{ maxHeight: 400, display: 'block', background: '#060608' }}
+          controls
+          playsInline
+          preload="auto"
+          controlsList="nodownload"
+          onCanPlay={() => setStatus('ok')}
+          onError={() => setStatus('failed')}
+        >
+          <source src={src} type="video/mp4" />
+          <source src={src} type="video/webm" />
+          <source src={src} />
+        </video>
+      )}
     </div>
   );
 }
@@ -48,10 +49,17 @@ export default function MediaCarousel({ items, postTitle }) {
   const [lightbox, setLightbox] = useState(false);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   if (!items || items.length === 0) return null;
 
   const current = items[index];
+  const hasPrev = index > 0;
+  const hasNext = index < items.length - 1;
 
   function handleTouchStart(e) {
     touchStartX.current = e.touches[0].clientX;
@@ -63,21 +71,20 @@ export default function MediaCarousel({ items, postTitle }) {
     const dx = e.changedTouches[0].clientX - touchStartX.current;
     const dy = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
     if (Math.abs(dx) > 40 && dy < 60) {
-      if (dx < 0 && index < items.length - 1) setIndex(i => i + 1);
-      if (dx > 0 && index > 0) setIndex(i => i - 1);
+      if (dx < 0 && hasNext) setIndex(i => i + 1);
+      if (dx > 0 && hasPrev) setIndex(i => i - 1);
     }
     touchStartX.current = null;
   }
 
-  // Mouse drag (desktop)
   const mouseStartX = useRef(null);
   function handleMouseDown(e) { mouseStartX.current = e.clientX; }
   function handleMouseUp(e) {
     if (mouseStartX.current === null) return;
     const dx = e.clientX - mouseStartX.current;
     if (Math.abs(dx) > 40) {
-      if (dx < 0 && index < items.length - 1) setIndex(i => i + 1);
-      if (dx > 0 && index > 0) setIndex(i => i - 1);
+      if (dx < 0 && hasNext) setIndex(i => i + 1);
+      if (dx > 0 && hasPrev) setIndex(i => i - 1);
     }
     mouseStartX.current = null;
   }
@@ -92,37 +99,54 @@ export default function MediaCarousel({ items, postTitle }) {
         className="relative rounded-lg overflow-hidden border border-dark-400 bg-dark-900 select-none"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        style={{ cursor: items.length > 1 ? 'grab' : 'default' }}
+        onMouseDown={!isMobile ? handleMouseDown : undefined}
+        onMouseUp={!isMobile ? handleMouseUp : undefined}
+        style={{ cursor: items.length > 1 && !isMobile ? 'grab' : 'default' }}
       >
+        {current.type === 'image' && (
+          <div
+            className="relative group cursor-pointer bg-dark-900 flex items-center justify-center"
+            style={{ minHeight: 200, maxHeight: 500 }}
+            onClick={() => setLightbox(true)}
+          >
+            <img
+              src={current.url}
+              alt={postTitle}
+              className="w-full h-auto object-contain"
+              style={{ maxHeight: 500 }}
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+              <Maximize2 size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </div>
+        )}
 
-      {current.type === 'image' && (
-  <div
-    className="relative group cursor-pointer bg-dark-900 flex items-center justify-center"
-    style={{ minHeight: 200, maxHeight: 500 }}
-    onClick={() => setLightbox(true)}
-  >
-    <img
-      src={current.url}
-      alt={postTitle}
-      className="w-full h-auto object-contain"
-      style={{ maxHeight: 500 }}
-    />
-    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-      <Maximize2 size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-    </div>
-  </div>
-)}
-
-{current.type === 'video' && (
-  <VideoPlayer src={current.url} onExpand={() => setLightbox(true)} />
-)}
+        {current.type === 'video' && (
+          <VideoPlayer src={current.url} />
+        )}
 
         {current.type === 'audio' && (
           <div className="bg-dark-800 p-1">
             <MediaPlayer src={current.url} title={postTitle} />
           </div>
+        )}
+
+        {/* Setas — só no desktop */}
+        {!isMobile && hasPrev && (
+          <button
+            onClick={() => setIndex(i => i - 1)}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dark-800/90 border border-dark-400 flex items-center justify-center text-white hover:bg-dark-700 transition-colors z-10"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
+        {!isMobile && hasNext && (
+          <button
+            onClick={() => setIndex(i => i + 1)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dark-800/90 border border-dark-400 flex items-center justify-center text-white hover:bg-dark-700 transition-colors z-10"
+          >
+            <ChevronRight size={16} />
+          </button>
         )}
 
         {/* Indicadores */}
