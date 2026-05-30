@@ -67,19 +67,40 @@ export default function MediaCarousel({ items, postTitle }) {
         )}
 
         {current.type === 'video' && (
-          <div className="relative bg-dark-900">
-            <video key={current.url} className="w-full" style={{ maxHeight: 400, display: 'block', background: '#060608' }}
-              controls playsInline preload="metadata" controlsList="nodownload">
-              <source src={current.url} type="video/mp4" />
-              <source src={current.url} type="video/webm" />
-              <source src={current.url} />
-            </video>
-            <button onClick={() => setLightbox(true)}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-dark-800/80 border border-dark-400 flex items-center justify-center text-gray-400 hover:text-white">
-              <Maximize2 size={14} />
-            </button>
-          </div>
-        )}
+  <div className="relative bg-dark-900">
+    <video
+      key={current.url}
+      className="w-full"
+      style={{ maxHeight: 400, display: 'block', background: '#060608' }}
+      controls
+      playsInline
+      preload="metadata"
+      controlsList="nodownload"
+      onError={(e) => {
+        e.target.style.display = 'none';
+        e.target.nextSibling.style.display = 'flex';
+      }}
+    >
+      <source src={current.url} type="video/mp4" />
+      <source src={current.url} type="video/webm" />
+      <source src={current.url} />
+    </video>
+    <div
+      className="flex-col items-center justify-center gap-3 p-8 text-center"
+      style={{ display: 'none', minHeight: 200 }}
+    >
+      <p className="text-neon-green font-mono text-sm">⚠ Codec não suportado</p>
+      <p className="text-gray-500 font-mono text-xs">Este vídeo usa um formato incompatível com seu navegador.</p>
+      <a
+        href={current.url}
+        download
+        className="btn-neon py-2 px-4 text-xs mt-2 inline-block"
+      >
+        Baixar vídeo
+      </a>
+    </div>
+  </div>
+)}
 
         {current.type === 'audio' && (
           <div className="bg-dark-800 p-1">
