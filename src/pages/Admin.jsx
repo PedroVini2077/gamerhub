@@ -3,7 +3,7 @@ import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Shield, Clock, X } from 'lucide-react';
+import { Shield, Clock, X, Users, FileText, Key, ChevronUp, ChevronDown, Ban, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
 import Avatar from '../components/ui/Avatar';
@@ -39,10 +39,8 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
 
   return (
     <div className="card overflow-hidden">
-      {/* Linha principal */}
       <div className="flex items-center gap-3 p-4">
         <Avatar profile={user} size={36} />
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-white truncate">{user.username}</p>
@@ -50,59 +48,39 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
             {user.banned && <span className="tag tag-pink shrink-0">banido</span>}
           </div>
         </div>
-
-        {/* Role sempre à direita */}
-        <span className={`tag ${roleColors[user.role] || 'tag-cyan'} shrink-0`}>
-          {user.role}
-        </span>
-
-        {/* Expandir ações */}
+        <span className={`tag ${roleColors[user.role] || 'tag-cyan'} shrink-0`}>{user.role}</span>
         {canEdit && (
-          <button
-            onClick={() => setExpanded(e => !e)}
-            className="text-gray-500 hover:text-white transition-colors ml-1 shrink-0"
-          >
+          <button onClick={() => setExpanded(e => !e)}
+            className="text-gray-500 hover:text-white transition-colors ml-1 shrink-0">
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         )}
       </div>
 
-      {/* Painel de ações expandido */}
       {expanded && canEdit && (
         <div className="border-t border-dark-500 bg-dark-700 px-4 py-3 space-y-3">
-          {/* Mudar role */}
           <div>
             <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Mudar role para:</p>
             <div className="flex gap-2 flex-wrap">
               {availableRoles.map(r => (
-                <button
-                  key={r}
-                  onClick={() => { onRoleChange(user.id, r); setExpanded(false); }}
-                  className={`tag cursor-pointer hover:opacity-100 transition-opacity ${roleColors[r]}`}
-                >
+                <button key={r} onClick={() => { onRoleChange(user.id, r); setExpanded(false); }}
+                  className={`tag cursor-pointer hover:opacity-100 transition-opacity ${roleColors[r]}`}>
                   → {r}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Ações */}
           <div>
             <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Ações:</p>
             <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => { onBan(user.id, !user.banned); setExpanded(false); }}
-                className="btn-purple py-1.5 px-3 text-xs flex items-center gap-1.5"
-              >
+              <button onClick={() => { onBan(user.id, !user.banned); setExpanded(false); }}
+                className="btn-purple py-1.5 px-3 text-xs flex items-center gap-1.5">
                 <Ban size={12} />
                 {user.banned ? 'Desbanir' : 'Banir usuário'}
               </button>
-
               {user.role === 'user' && (
-                <button
-                  onClick={() => { onDeletePosts(user.id, user.username); }}
-                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all"
-                >
+                <button onClick={() => onDeletePosts(user.id, user.username)}
+                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
                   <Trash2 size={12} />
                   Deletar posts
                 </button>
@@ -182,23 +160,14 @@ export default function Admin() {
   const [filterRole, setFilterRole] = useState('todos');
   const [liveMod, setLiveMod] = useState({ silenced: [], lives: [] });
 
-  async function fetchLiveMod() {
-    const [{ data: silenced }, { data: lives }] = await Promise.all([
-      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
-      supabase.from('posts').select('id, title, profiles(username)').eq('is_live', true).not('embed_url', 'is', null),
-    ]);
-    setLiveMod({ silenced: silenced || [], lives: lives || [] });
-  }
-
-  async function unsilenceUser(id) {
-    await supabase.from('live_chat_timeouts').delete().eq('id', id);
-    fetchLiveMod();
-  }
-
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
     fetchAll();
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (tab === 'lives') fetchLiveMod();
+  }, [tab]);
 
   async function fetchAll() {
     setLoading(true);
@@ -212,6 +181,19 @@ export default function Admin() {
     setKeys(k || []);
     setStats({ users: u?.length || 0, posts: p?.length || 0, keys: k?.length || 0 });
     setLoading(false);
+  }
+
+  async function fetchLiveMod() {
+    const [{ data: silenced }, { data: lives }] = await Promise.all([
+      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
+      supabase.from('posts').select('id, title, profiles(username)').eq('is_live', true).not('embed_url', 'is', null),
+    ]);
+    setLiveMod({ silenced: silenced || [], lives: lives || [] });
+  }
+
+  async function unsilenceUser(id) {
+    await supabase.from('live_chat_timeouts').delete().eq('id', id);
+    fetchLiveMod();
   }
 
   async function handleRoleChange(userId, newRole) {
@@ -252,10 +234,6 @@ export default function Admin() {
   const filteredUsers = filterRole === 'todos'
     ? users
     : users.filter(u => u.role === filterRole);
-
-  useEffect(() => {
-    if (tab === 'lives') fetchLiveMod();
-  }, [tab]);
 
   const tabs = [
     { id: 'users', label: 'Usuários', icon: Users },
@@ -303,7 +281,6 @@ export default function Admin() {
         <>
           {tab === 'users' && (
             <div className="space-y-3">
-              {/* Filtro por role */}
               <div className="flex gap-2 flex-wrap">
                 {['todos', 'user', 'admin', 'super_admin'].map(r => (
                   <button key={r} onClick={() => setFilterRole(r)}
@@ -316,17 +293,10 @@ export default function Admin() {
                   </button>
                 ))}
               </div>
-
               {filteredUsers.map(u => (
-                <UserRow
-                  key={u.id}
-                  user={u}
-                  currentUserId={user?.id}
-                  isSuperAdmin={isSuperAdmin}
-                  onRoleChange={handleRoleChange}
-                  onBan={handleBan}
-                  onDeletePosts={handleDeletePosts}
-                />
+                <UserRow key={u.id} user={u} currentUserId={user?.id}
+                  isSuperAdmin={isSuperAdmin} onRoleChange={handleRoleChange}
+                  onBan={handleBan} onDeletePosts={handleDeletePosts} />
               ))}
             </div>
           )}
@@ -361,7 +331,8 @@ export default function Admin() {
                   <Shield size={16} className="text-neon-green" />
                   <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">Moderação de Lives</h3>
                 </div>
-                <button onClick={fetchLiveMod} className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors">
+                <button onClick={fetchLiveMod}
+                  className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors">
                   Atualizar
                 </button>
               </div>
