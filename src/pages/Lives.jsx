@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { useRole } from '../hooks/useRole';
 import AvatarPopup from '../components/ui/AvatarPopup';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
+import { useState, useEffect, useRef } from 'react';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
@@ -26,53 +27,7 @@ export default function Lives() {
 
   useEffect(() => { fetchLives(); }, []);
 
-  useEffect(() => {
-    if (!activeLive) return;
-    fetchMessages();
-    fetchTimeouts();
-
-    const channel = supabase.channel(`live-chat-${activeLive.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat', filter: `post_id=eq.${activeLive.id}` }, () => fetchMessages())
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat', filter: `post_id=eq.${activeLive.id}` }, () => fetchMessages())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts', filter: `post_id=eq.${activeLive.id}` }, () => fetchTimeouts())
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
-  }, [activeLive]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  async function fetchLives() {
-    const { data } = await supabase.from('posts')
-      .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
-      .eq('is_live', true)
-      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
-      .not('embed_url', 'is', null)
-      .order('created_at', { ascending: false });
-    setLives(data || []);
-    setLoading(false);
-  }
-
-  async function fetchMessages() {
-    if (!activeLive) return;
-    const { data } = await supabase.from('live_chat')
-      .select('*, profiles(id, username, avatar_url, role)')
-      .eq('post_id', activeLive.id)
-      .order('created_at', { ascending: true })
-      .limit(100);
-    setMessages(data || []);
-  }
-
-  async function fetchTimeouts() {
-    if (!activeLive) return;
-    const { data } = await supabase.from('live_chat_timeouts').select('*').eq('post_id', activeLive.id);
-    const map = {};
-    (data || []).forEach(t => { map[t.user_id] = t; });
-    setTimeouts(map);
-    setIsSilenced(user && map[user.id] && new Date(map[user.id].expires_at) > new Date());
-  }
+  
 
   async function sendMessage() {
     if (!msg.trim() || !user || !activeLive || sending || isSilenced) return;
