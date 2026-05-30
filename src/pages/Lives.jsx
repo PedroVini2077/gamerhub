@@ -1,18 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Tv, MessageCircle, Send, X } from 'lucide-react';
+import { Tv, MessageCircle, Send, X, Trash2, Clock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { useRole } from '../hooks/useRole';
 import AvatarPopup from '../components/ui/AvatarPopup';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
 
 export default function Lives() {
   const { user, profile } = useAuth();
+  const { isAdmin } = useRole();
   const [lives, setLives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeLive, setActiveLive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [msg, setMsg] = useState('');
   const [sending, setSending] = useState(false);
+  const [timeouts, setTimeouts] = useState({});
+  const [isSilenced, setIsSilenced] = useState(false);
   const bottomRef = useRef(null);
 
   useEffect(() => { fetchLives(); }, []);
@@ -20,16 +24,21 @@ export default function Lives() {
   useEffect(() => {
     if (!activeLive) return;
     fetchMessages();
+    fetchTimeouts();
 
     const channel = supabase.channel(`live-chat-${activeLive.id}`)
       .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'live_chat',
+        event: 'INSERT', schema: 'public', table: 'live_chat',
         filter: `post_id=eq.${activeLive.id}`
-      }, (payload) => {
-        fetchMessages();
-      })
+      }, () => fetchMessages())
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: 'live_chat',
+        filter: `post_id=eq.${activeLive.id}`
+      }, () => fetchMessages())
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'live_chat_timeouts',
+        filter: `post_id=eq.${activeLive.id}`
+      }, () => fetchTimeouts())
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -40,32 +49,44 @@ export default function Lives() {
   }, [messages]);
 
   async function fetchLives() {
-    const { data } = await supabase
-      .from('posts')
+    const { data } = await supabase.from('posts')
       .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
       .eq('is_live', true)
       .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
       .not('embed_url', 'is', null)
       .order('created_at', { ascending: false });
-
     setLives(data || []);
     setLoading(false);
   }
 
   async function fetchMessages() {
     if (!activeLive) return;
-    const { data } = await supabase
-      .from('live_chat')
+    const { data } = await supabase.from('live_chat')
       .select('*, profiles(id, username, avatar_url, role)')
       .eq('post_id', activeLive.id)
       .order('created_at', { ascending: true })
       .limit(100);
-
     setMessages(data || []);
   }
 
+  async function fetchTimeouts() {
+    if (!activeLive) return;
+    const { data } = await supabase.from('live_chat_timeouts')
+      .select('*').eq('post_id', activeLive.id);
+
+    const map = {};
+    (data || []).forEach(t => { map[t.user_id] = t.expires_at; });
+    setTimeouts(map);
+
+    if (user && map[user.id]) {
+      setIsSilenced(new Date(map[user.id]) > new Date());
+    } else {
+      setIsSilenced(false);
+    }
+  }
+
   async function sendMessage() {
-    if (!msg.trim() || !user || !activeLive || sending) return;
+    if (!msg.trim() || !user || !activeLive || sending || isSilenced) return;
     setSending(true);
     await supabase.from('live_chat').insert({
       post_id: activeLive.id,
@@ -74,6 +95,36 @@ export default function Lives() {
     });
     setMsg('');
     setSending(false);
+  }
+
+  async function deleteMessage(id) {
+    await supabase.from('live_chat').delete().eq('id', id);
+  }
+
+  async function silenceUser(userId, minutes) {
+    if (!activeLive) return;
+    const expires = new Date(Date.now() + minutes * 60000).toISOString();
+    await supabase.from('live_chat_timeouts').upsert({
+      post_id: activeLive.id,
+      user_id: userId,
+      expires_at: expires,
+      created_by: user.id
+    }, { onConflict: 'post_id,user_id' });
+    await fetchTimeouts();
+  }
+
+  async function unsilenceUser(userId) {
+    if (!activeLive) return;
+    await supabase.from('live_chat_timeouts')
+      .delete().eq('post_id', activeLive.id).eq('user_id', userId);
+    await fetchTimeouts();
+  }
+
+  const isLiveOwner = activeLive && user && activeLive.user_id === user.id;
+  const canModerate = isAdmin || isLiveOwner;
+
+  function isUserSilenced(userId) {
+    return timeouts[userId] && new Date(timeouts[userId]) > new Date();
   }
 
   if (loading) return (
@@ -98,7 +149,7 @@ export default function Lives() {
 
       <EmbedPlayer url={activeLive.embed_url} isLive={true} />
 
-      <div className="card flex flex-col" style={{ height: 350 }}>
+      <div className="card flex flex-col" style={{ height: 400 }}>
         <div className="flex items-center gap-2 p-3 border-b border-dark-500">
           <MessageCircle size={14} className="text-neon-green" />
           <span className="text-xs font-mono text-neon-green uppercase tracking-wider">Chat ao vivo</span>
@@ -107,43 +158,87 @@ export default function Lives() {
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {messages.length === 0 && (
-            <p className="text-xs text-gray-600 font-mono text-center py-4">
-              Seja o primeiro a comentar! 🎮
-            </p>
+            <p className="text-xs text-gray-600 font-mono text-center py-4">Seja o primeiro a comentar! 🎮</p>
           )}
-          {messages.map(m => (
-            <div key={m.id} className="flex items-start gap-2">
-              <AvatarPopup profile={m.profiles} size={24} />
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-bold text-neon-green font-mono">
-                  {m.profiles?.username}
-                </span>
-                <span className="text-xs text-gray-300 ml-2 break-words">{m.message}</span>
+          {messages.map(m => {
+            const silenced = isUserSilenced(m.user_id);
+            const canDelete = canModerate || (user && m.user_id === user.id);
+            return (
+              <div key={m.id} className="flex items-start gap-2 group">
+                <AvatarPopup profile={m.profiles} size={24} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <span className={`text-xs font-bold font-mono ${silenced ? 'text-gray-600' : 'text-neon-green'}`}>
+                      {m.profiles?.username}
+                    </span>
+                    {silenced && <span className="text-xs text-gray-600 font-mono">🔇</span>}
+                  </div>
+                  <span className="text-xs text-gray-300 break-words">{m.message}</span>
+                </div>
+
+                {/* Ações de moderação */}
+                <div className="hidden group-hover:flex items-center gap-1 shrink-0">
+                  {canDelete && (
+                    <button onClick={() => deleteMessage(m.id)}
+                      className="text-gray-600 hover:text-red-400 transition-colors p-0.5">
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                  {canModerate && user && m.user_id !== user.id && (
+                    <>
+                      {isUserSilenced(m.user_id) ? (
+                        <button onClick={() => unsilenceUser(m.user_id)}
+                          title="Remover silêncio"
+                          className="text-gray-600 hover:text-neon-green transition-colors p-0.5">
+                          <Clock size={11} />
+                        </button>
+                      ) : (
+                        <div className="relative group/silence">
+                          <button className="text-gray-600 hover:text-yellow-400 transition-colors p-0.5">
+                            <Clock size={11} />
+                          </button>
+                          <div className="absolute right-0 bottom-5 hidden group-hover/silence:flex flex-col gap-1 bg-dark-700 border border-dark-400 rounded p-1 z-20">
+                            {[5, 10, 30, 60].map(min => (
+                              <button key={min} onClick={() => silenceUser(m.user_id, min)}
+                                className="text-xs font-mono text-gray-400 hover:text-yellow-400 whitespace-nowrap px-2 py-0.5">
+                                {min} min
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <div ref={bottomRef} />
         </div>
 
         {user ? (
-          <div className="p-3 border-t border-dark-500 flex gap-2">
-            <input
-              className="input-gamer flex-1 text-sm py-1.5"
-              placeholder="Manda um comentário..."
-              value={msg}
-              onChange={e => setMsg(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendMessage()}
-              maxLength={200}
-            />
-            <button onClick={sendMessage} disabled={sending}
-              className="btn-solid py-1.5 px-3">
-              <Send size={13} />
-            </button>
-          </div>
+          isSilenced ? (
+            <div className="p-3 border-t border-dark-500 text-center">
+              <p className="text-xs font-mono text-yellow-500">🔇 Você está silenciado neste chat</p>
+            </div>
+          ) : (
+            <div className="p-3 border-t border-dark-500 flex gap-2">
+              <input
+                className="input-gamer flex-1 text-sm py-1.5"
+                placeholder="Manda um comentário..."
+                value={msg}
+                onChange={e => setMsg(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                maxLength={200}
+              />
+              <button onClick={sendMessage} disabled={sending}
+                className="btn-solid py-1.5 px-3">
+                <Send size={13} />
+              </button>
+            </div>
+          )
         ) : (
-          <p className="text-xs text-gray-600 font-mono text-center p-3">
-            Faça login para comentar
-          </p>
+          <p className="text-xs text-gray-600 font-mono text-center p-3">Faça login para comentar</p>
         )}
       </div>
     </div>
