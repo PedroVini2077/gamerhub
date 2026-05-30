@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useRole } from '../hooks/useRole';
 import AvatarPopup from '../components/ui/AvatarPopup';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
-import { useState, useEffect, useRef } from 'react';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
@@ -24,10 +23,65 @@ export default function Lives() {
   const [showModPanel, setShowModPanel] = useState(false);
   const [silenceMenu, setSilenceMenu] = useState(null);
   const bottomRef = useRef(null);
+  const activeLiveRef = useRef(null);
 
   useEffect(() => { fetchLives(); }, []);
 
-  
+  useEffect(() => {
+    activeLiveRef.current = activeLive;
+  }, [activeLive]);
+
+  useEffect(() => {
+    if (!activeLive) return;
+    fetchMessages(activeLive.id);
+    fetchTimeouts(activeLive.id);
+
+    const channel = supabase.channel(`live-chat-${activeLive.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat', filter: `post_id=eq.${activeLive.id}` },
+        () => fetchMessages(activeLiveRef.current?.id))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat', filter: `post_id=eq.${activeLive.id}` },
+        () => fetchMessages(activeLiveRef.current?.id))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts', filter: `post_id=eq.${activeLive.id}` },
+        () => fetchTimeouts(activeLiveRef.current?.id))
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [activeLive]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  async function fetchLives() {
+    const { data } = await supabase.from('posts')
+      .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
+      .eq('is_live', true)
+      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
+      .not('embed_url', 'is', null)
+      .order('created_at', { ascending: false });
+    setLives(data || []);
+    setLoading(false);
+  }
+
+  async function fetchMessages(postId) {
+    if (!postId) return;
+    const { data } = await supabase.from('live_chat')
+      .select('*, profiles(id, username, avatar_url, role)')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    setMessages(data || []);
+  }
+
+  async function fetchTimeouts(postId) {
+    if (!postId) return;
+    const { data } = await supabase.from('live_chat_timeouts')
+      .select('*').eq('post_id', postId);
+    const map = {};
+    (data || []).forEach(t => { map[t.user_id] = t; });
+    setTimeouts(map);
+    setIsSilenced(!!(user && map[user.id] && new Date(map[user.id].expires_at) > new Date()));
+  }
 
   async function sendMessage() {
     if (!msg.trim() || !user || !activeLive || sending || isSilenced) return;
@@ -49,13 +103,14 @@ export default function Lives() {
       { onConflict: 'post_id,user_id' }
     );
     setSilenceMenu(null);
-    await fetchTimeouts();
+    await fetchTimeouts(activeLive.id);
   }
 
   async function unsilenceUser(userId) {
     if (!activeLive) return;
-    await supabase.from('live_chat_timeouts').delete().eq('post_id', activeLive.id).eq('user_id', userId);
-    await fetchTimeouts();
+    await supabase.from('live_chat_timeouts').delete()
+      .eq('post_id', activeLive.id).eq('user_id', userId);
+    await fetchTimeouts(activeLive.id);
   }
 
   const isLiveOwner = activeLive && user && activeLive.user_id === user.id;
@@ -72,7 +127,6 @@ export default function Lives() {
 
   if (activeLive) return (
     <div className="flex flex-col gap-4">
-      {/* Header */}
       <div className="flex items-center gap-2">
         <button onClick={() => { setActiveLive(null); setMessages([]); setShowModPanel(false); }}
           className="text-gray-500 hover:text-neon-green transition-colors shrink-0">
@@ -85,17 +139,18 @@ export default function Lives() {
         <h2 className="font-display text-sm text-white truncate flex-1">{activeLive.title}</h2>
         {canModerate && (
           <button onClick={() => setShowModPanel(p => !p)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded border text-xs font-mono transition-all shrink-0 ${showModPanel ? 'border-neon-green text-neon-green bg-neon-green/10' : 'border-dark-400 text-gray-500 hover:border-neon-green/50 hover:text-neon-green'}`}>
-            <Shield size={12} />
-            Mod
+            className={`flex items-center gap-1.5 px-2 py-1 rounded border text-xs font-mono transition-all shrink-0 ${
+              showModPanel
+                ? 'border-neon-green text-neon-green bg-neon-green/10'
+                : 'border-dark-400 text-gray-500 hover:border-neon-green/50 hover:text-neon-green'
+            }`}>
+            <Shield size={12} /> Mod
           </button>
         )}
       </div>
 
-      {/* Player */}
       <EmbedPlayer url={activeLive.embed_url} isLive={true} />
 
-      {/* Painel de moderação */}
       {canModerate && showModPanel && (
         <div className="rounded-xl border border-neon-green/20 bg-dark-800 overflow-hidden"
           style={{ boxShadow: '0 0 20px #39ff1410' }}>
@@ -103,9 +158,7 @@ export default function Lives() {
             <Shield size={14} className="text-neon-green" />
             <span className="text-xs font-mono text-neon-green uppercase tracking-widest font-bold">Painel de Moderação</span>
           </div>
-
           <div className="p-4 space-y-4">
-            {/* Usuários silenciados */}
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Clock size={12} className="text-yellow-400" />
@@ -121,16 +174,11 @@ export default function Lives() {
                     const msgProfile = messages.find(m => m.user_id === t.user_id)?.profiles;
                     const remaining = Math.ceil((new Date(t.expires_at) - new Date()) / 60000);
                     return (
-                      <div key={t.user_id}
-                        className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-yellow-400/10">
+                      <div key={t.user_id} className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-yellow-400/10">
                         <span className="text-lg">🔇</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-mono font-bold text-yellow-400">
-                            {msgProfile?.username || 'Usuário'}
-                          </p>
-                          <p className="text-xs font-mono text-gray-600">
-                            {remaining} min restantes
-                          </p>
+                          <p className="text-xs font-mono font-bold text-yellow-400">{msgProfile?.username || 'Usuário'}</p>
+                          <p className="text-xs font-mono text-gray-600">{remaining} min restantes</p>
                         </div>
                         <button onClick={() => unsilenceUser(t.user_id)}
                           className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded transition-all">
@@ -143,7 +191,6 @@ export default function Lives() {
               )}
             </div>
 
-            {/* Usuários no chat */}
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Users size={12} className="text-neon-cyan" />
@@ -159,8 +206,7 @@ export default function Lives() {
                     if (!p || p.id === user?.id) return null;
                     const silenced = isUserSilenced(p.id);
                     return (
-                      <div key={p.id}
-                        className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
+                      <div key={p.id} className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
                         <AvatarPopup profile={p} size={24} />
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-mono font-bold text-white">{p.username}</p>
@@ -175,8 +221,7 @@ export default function Lives() {
                           </button>
                         ) : (
                           <div className="relative">
-                            <button
-                              onClick={() => setSilenceMenu(silenceMenu === p.id ? null : p.id)}
+                            <button onClick={() => setSilenceMenu(silenceMenu === p.id ? null : p.id)}
                               className="text-xs font-mono text-gray-500 hover:text-yellow-400 border border-dark-400 hover:border-yellow-400/40 px-2 py-0.5 rounded transition-all flex items-center gap-1">
                               <Clock size={10} /> Silenciar
                             </button>
@@ -204,7 +249,6 @@ export default function Lives() {
         </div>
       )}
 
-      {/* Chat */}
       <div className="card flex flex-col" style={{ height: 380 }}>
         <div className="flex items-center gap-2 p-3 border-b border-dark-500">
           <MessageCircle size={14} className="text-neon-green" />
@@ -229,7 +273,7 @@ export default function Lives() {
                     </span>
                     {silenced && <span className="text-xs">🔇</span>}
                     {m.profiles?.role !== 'user' && (
-                      <span className={`tag text-xs ${roleColors[m.profiles?.role]}`} style={{ fontSize: 9, padding: '1px 4px' }}>
+                      <span className={`tag ${roleColors[m.profiles?.role]}`} style={{ fontSize: 9, padding: '1px 4px' }}>
                         {roleLabels[m.profiles?.role]}
                       </span>
                     )}
@@ -273,7 +317,6 @@ export default function Lives() {
     </div>
   );
 
-  // Lista de lives
   return (
     <div>
       <div className="flex items-center gap-2 mb-6">
