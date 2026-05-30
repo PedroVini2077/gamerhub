@@ -4,36 +4,24 @@ import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
 
 function VideoPlayer({ src }) {
-  const [supported, setSupported] = useState(null);
-
-  useEffect(() => {
-    const video = document.createElement('video');
-    const mp4 = video.canPlayType('video/mp4; codecs="avc1.42E01E"');
-    const webm = video.canPlayType('video/webm; codecs="vp8"');
-    
-    if (mp4 === 'probably' || mp4 === 'maybe' || webm === 'probably' || webm === 'maybe') {
-      setSupported(true);
-    } else {
-      setSupported(false);
-    }
-  }, []);
-
-  if (supported === false) return (
-    <div className="flex flex-col items-center justify-center gap-3 p-8 text-center bg-dark-900" style={{ minHeight: 200 }}>
-      <p className="text-2xl">⚠️</p>
-      <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
-      <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
-      <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">Baixar vídeo</a>
-    </div>
-  );
+  const [failed, setFailed] = useState(false);
 
   return (
     <div className="relative bg-dark-900">
+      {failed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center z-10 bg-dark-900">
+          <p className="text-xl">🎬</p>
+          <p className="text-neon-green font-mono text-sm">Vídeo não compatível</p>
+          <p className="text-gray-500 font-mono text-xs">Seu navegador não conseguiu reproduzir este vídeo.</p>
+          <a href={src} download className="btn-neon py-2 px-4 text-xs inline-block">⬇ Baixar vídeo</a>
+        </div>
+      )}
       <video
         key={src}
         className="w-full"
-        style={{ maxHeight: 400, display: 'block', background: '#060608' }}
+        style={{ maxHeight: 400, display: 'block', background: '#060608', opacity: failed ? 0 : 1 }}
         controls playsInline preload="metadata"
+        onError={() => setFailed(true)}
       >
         <source src={src} type="video/mp4" />
         <source src={src} type="video/webm" />
