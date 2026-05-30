@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
 import { Send, Image, X, Film, Music, Mic } from 'lucide-react';
 import AudioRecorder from '../ui/AudioRecorder';
+import MediaPlayer from '../ui/MediaPlayer';
 
 const categories = ['dica', 'curiosidade', 'news'];
 
@@ -141,9 +142,7 @@ export default function PostForm({ onPost }) {
             onChange={e => setAudioName(e.target.value)}
             maxLength={80}
           />
-          <audio controls preload="metadata" className="w-full" style={{ height: 36 }}>
-            <source src={audio.preview} />
-          </audio>
+          <MediaPlayer src={audio.preview} title={audioName || 'Áudio'} />
           <button onClick={removeAudio}
             className="absolute top-2 right-2 w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 hover:text-white">
             <X size={12} />
