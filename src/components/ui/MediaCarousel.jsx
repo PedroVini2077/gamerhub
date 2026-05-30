@@ -3,6 +3,44 @@ import { Maximize2, Film, Music } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
 
+function VideoPlayer({ src, onExpand }) {
+  const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className="relative bg-dark-900" style={{ minHeight: 200 }}>
+      {!failed && (
+        <video
+          key={src}
+          className="w-full"
+          style={{ maxHeight: 400, display: 'block', background: '#060608' }}
+          controls
+          playsInline
+          preload="metadata"
+          controlsList="nodownload"
+          onLoadedData={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          onStalled={() => setTimeout(() => { if (!loaded) setFailed(true); }, 5000)}
+        >
+          <source src={src} type="video/mp4" />
+          <source src={src} type="video/webm" />
+          <source src={src} />
+        </video>
+      )}
+      {failed && (
+        <div className="flex flex-col items-center justify-center gap-3 p-8 text-center" style={{ minHeight: 200 }}>
+          <p className="text-2xl">⚠️</p>
+          <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
+          <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
+          <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">
+            Baixar vídeo
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MediaCarousel({ items, postTitle }) {
   const [index, setIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
@@ -66,40 +104,8 @@ export default function MediaCarousel({ items, postTitle }) {
           </div>
         )}
 
-        {current.type === 'video' && (
-  <div className="relative bg-dark-900">
-    <video
-      key={current.url}
-      className="w-full"
-      style={{ maxHeight: 400, display: 'block', background: '#060608' }}
-      controls
-      playsInline
-      preload="metadata"
-      controlsList="nodownload"
-      onError={(e) => {
-        e.target.style.display = 'none';
-        e.target.nextSibling.style.display = 'flex';
-      }}
-    >
-      <source src={current.url} type="video/mp4" />
-      <source src={current.url} type="video/webm" />
-      <source src={current.url} />
-    </video>
-    <div
-      className="flex-col items-center justify-center gap-3 p-8 text-center"
-      style={{ display: 'none', minHeight: 200 }}
-    >
-      <p className="text-neon-green font-mono text-sm">⚠ Codec não suportado</p>
-      <p className="text-gray-500 font-mono text-xs">Este vídeo usa um formato incompatível com seu navegador.</p>
-      <a
-        href={current.url}
-        download
-        className="btn-neon py-2 px-4 text-xs mt-2 inline-block"
-      >
-        Baixar vídeo
-      </a>
-    </div>
-  </div>
+{current.type === 'video' && (
+  <VideoPlayer src={current.url} onExpand={() => setLightbox(true)} />
 )}
 
         {current.type === 'audio' && (
