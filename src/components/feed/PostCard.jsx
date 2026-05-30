@@ -56,10 +56,20 @@ useEffect(() => {
   useEffect(() => { fetchLikes(); fetchMedia(); }, [post.id, user]);
 
   async function fetchMedia() {
-    const { data } = await supabase.from('post_media').select('*')
-      .eq('post_id', post.id).order('position');
-    setPostMedia(data || []);
+  const { data } = await supabase.from('post_media').select('*')
+    .eq('post_id', post.id).order('position');
+  setPostMedia(data || []);
+
+  // Se não achou mídia e o post tem menos de 30s, tenta de novo em 3s
+  const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
+  if ((!data || data.length === 0) && age < 30) {
+    setTimeout(async () => {
+      const { data: retry } = await supabase.from('post_media').select('*')
+        .eq('post_id', post.id).order('position');
+      if (retry && retry.length > 0) setPostMedia(retry);
+    }, 3000);
   }
+}
 
   async function fetchLikes() {
     const { count } = await supabase.from('post_likes')
