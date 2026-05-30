@@ -28,14 +28,29 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
   const [saving, setSaving] = useState(false);
+
+  const [countdown, setCountdown] = useState('');
+
+useEffect(() => {
+  if (!editing) return;
+  function updateCountdown() {
+    const elapsed = (Date.now() - new Date(post.created_at).getTime()) / 1000;
+    const remaining = (EDIT_LIMIT_MINUTES * 60) - elapsed;
+    if (remaining <= 0) { setEditing(false); return; }
+    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+    const s = Math.floor(remaining % 60).toString().padStart(2, '0');
+    setCountdown(`${m}:${s}`);
+  }
+  updateCountdown();
+  const interval = setInterval(updateCountdown, 1000);
+  return () => clearInterval(interval);
+}, [editing]);
+
   const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
   const canDelete = user && (isAdmin || user.id === post.user_id);
-
-  // Pode editar se for dono e dentro de 30 minutos
   const isOwner = user && user.id === post.user_id;
-  const createdAt = new Date(post.created_at);
-  const minutesSince = (Date.now() - createdAt.getTime()) / 60000;
+  const minutesSince = (Date.now() - new Date(post.created_at).getTime()) / 60000;
   const canEdit = isOwner && minutesSince <= EDIT_LIMIT_MINUTES;
 
   useEffect(() => { fetchLikes(); fetchMedia(); }, [post.id, user]);
@@ -85,11 +100,11 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   }
 
   async function handleSaveEdit() {
-    if (!editContent.trim()) { toast.error('Conteúdo não pode ser vazio'); return; }
     setSaving(true);
-    const { error } = await supabase.from('posts')
-      .update({ content: editContent.trim(), edited_at: new Date().toISOString() })
-      .eq('id', post.id);
+    const { error } = await supabase.from('posts').update({
+      content: editContent.trim() || null,
+      edited_at: new Date().toISOString()
+    }).eq('id', post.id);
     if (error) toast.error('Erro ao salvar');
     else { toast.success('Post editado!'); setEditing(false); }
     setSaving(false);
@@ -128,26 +143,22 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
       <h2 className="text-base font-bold text-white mb-2 font-body">{post.title}</h2>
 
-      {/* Áudio principal do post */}
+      {/* Áudio principal */}
       {post.audio_url && (
         <div className="mb-2">
           <p className="text-xs font-mono text-gray-500 mb-1">
             {post.audio_type === 'recorded' ? '🎙 Áudio' : '🎵 Música'}
           </p>
-          <MediaPlayer src={post.audio_url} title={post.title} />
+          <MediaPlayer src={post.audio_url} title={post.audio_name || post.title} />
         </div>
       )}
 
-      {/* Conteúdo editável */}
+      {/* Conteúdo texto — editável */}
       {editing ? (
         <div className="space-y-2 mb-2">
-          <textarea
-            className="input-gamer resize-none w-full"
-            rows={3}
-            value={editContent}
-            onChange={e => setEditContent(e.target.value)}
-            maxLength={1000}
-          />
+          <textarea className="input-gamer resize-none w-full" rows={3}
+            placeholder="Legenda (opcional)..."
+            value={editContent} onChange={e => setEditContent(e.target.value)} maxLength={1000} />
           <div className="flex gap-2">
             <button onClick={handleSaveEdit} disabled={saving}
               className="btn-solid py-1.5 px-3 text-xs flex items-center gap-1">
@@ -158,20 +169,23 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
               <X size={12} /> Cancelar
             </button>
           </div>
-          <p className="text-xs text-gray-600 font-mono">
-            Você tem {EDIT_LIMIT_MINUTES} min após publicar para editar
-          </p>
+          <p className="text-xs font-mono flex items-center gap-1"
+  style={{ color: countdown <= '05:00' ? '#ff4444' : '#6b7280' }}>
+  ⏱ Tempo restante: <span className="font-bold ml-1">{countdown}</span>
+</p>
         </div>
       ) : (
-        post.content && <p className="text-sm text-gray-400 leading-relaxed">{post.content}</p>
+        post.content && <p className="text-sm text-gray-400 leading-relaxed mb-2">{post.content}</p>
       )}
 
-      {/* Carrossel de mídias visuais */}
+      {/* Carrossel */}
       {postMedia.length > 0 && <MediaCarousel items={postMedia} postTitle={post.title} />}
 
       <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">
         <button onClick={handleLike} disabled={likeLoading}
-          className={`flex items-center gap-1.5 text-xs font-mono transition-all ${liked ? 'text-neon-green' : 'text-gray-500 hover:text-neon-green'}`}>
+          className={`flex items-center gap-1.5 text-xs font-mono transition-all ${
+            liked ? 'text-neon-green' : 'text-gray-500 hover:text-neon-green'
+          }`}>
           <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
           {likeCount}
         </button>

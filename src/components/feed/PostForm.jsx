@@ -11,6 +11,7 @@ export default function PostForm({ onPost }) {
   const { user, profile } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [audioName, setAudioName] = useState('');
   const [category, setCategory] = useState('dica');
   const [loading, setLoading] = useState(false);
   const [medias, setMedias] = useState([]);
@@ -48,6 +49,8 @@ export default function PostForm({ onPost }) {
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) { toast.error('Máximo 20MB para áudio'); return; }
     setAudio({ file, preview: URL.createObjectURL(file), type: 'file' });
+    const name = file.name.replace(/\.[^/.]+$/, '');
+    setAudioName(name);
     e.target.value = '';
   }
 
@@ -58,20 +61,20 @@ export default function PostForm({ onPost }) {
   function removeAudio() {
     if (audio?.preview) URL.revokeObjectURL(audio.preview);
     setAudio(null);
+    setAudioName('');
   }
 
   async function handleSubmit() {
     if (!title.trim()) { toast.error('Preencha o título!'); return; }
-    if (!content.trim() && !audio) { toast.error('Escreva algo ou grave um áudio!'); return; }
+
     setLoading(true);
+    const toastId = toast.loading('Processando post...');
 
     try {
       let audio_url = null;
       let audio_type = null;
 
-      // Upload do áudio principal
       if (audio?.file) {
-        toast.loading('Enviando áudio...', { id: 'up' });
         const ext = audio.file.name.split('.').pop();
         const path = `${user.id}/audio-${Date.now()}.${ext}`;
         const { error } = await supabase.storage.from('post-media').upload(path, audio.file, { contentType: audio.file.type });
@@ -79,23 +82,21 @@ export default function PostForm({ onPost }) {
         const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
         audio_url = publicUrl;
         audio_type = audio.type === 'recorded' ? 'recorded' : 'music';
-        toast.dismiss('up');
       }
 
       const { data: post, error: postError } = await supabase.from('posts').insert({
         user_id: profile?.id,
         title: title.trim(),
-        content: content.trim(),
+        content: content.trim() || null,
         category,
         audio_url,
         audio_type,
+        audio_name: audioName.trim() || null,
       }).select().single();
 
       if (postError) throw postError;
 
-      // Upload das mídias visuais
       if (medias.length > 0) {
-        toast.loading('Enviando mídias...', { id: 'up2' });
         const rows = [];
         for (let i = 0; i < medias.length; i++) {
           const { file, type } = medias[i];
@@ -106,15 +107,13 @@ export default function PostForm({ onPost }) {
           rows.push({ post_id: post.id, url: publicUrl, type, position: i });
         }
         await supabase.from('post_media').insert(rows);
-        toast.dismiss('up2');
       }
 
-      toast.success('Post publicado! 🎮');
-      setTitle(''); setContent(''); setMedias([]); removeAudio();
+      toast.success('Post publicado! 🎮', { id: toastId });
+      setTitle(''); setContent(''); setMedias([]); setAudioName(''); removeAudio();
       onPost?.();
     } catch (err) {
-      toast.error('Erro: ' + err.message);
-      toast.dismiss('up'); toast.dismiss('up2');
+      toast.error('Erro: ' + err.message, { id: toastId });
     }
     setLoading(false);
   }
@@ -126,20 +125,25 @@ export default function PostForm({ onPost }) {
       <input className="input-gamer mb-3" placeholder="Título do post..." value={title}
         onChange={e => setTitle(e.target.value)} maxLength={100} />
 
-      {/* Área de conteúdo — texto OU áudio */}
       {!audio ? (
         <textarea className="input-gamer mb-3 resize-none" rows={3}
-          placeholder="Escreva algo... (ou grave/adicione um áudio abaixo)"
+          placeholder="Escreva algo... (opcional se tiver áudio)"
           value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
       ) : (
         <div className="mb-3 border border-neon-green/20 rounded-lg p-3 bg-dark-700 relative">
           <p className="text-xs font-mono text-neon-green mb-2 uppercase tracking-wider">
             {audio.type === 'recorded' ? '🎙 Áudio gravado' : '🎵 Música'}
           </p>
+          <input
+            className="input-gamer mb-2 text-sm"
+            placeholder="Nome do áudio / música..."
+            value={audioName}
+            onChange={e => setAudioName(e.target.value)}
+            maxLength={80}
+          />
           <audio controls preload="metadata" className="w-full" style={{ height: 36 }}>
             <source src={audio.preview} />
           </audio>
-          {content && <p className="text-xs text-gray-400 mt-2 font-mono">{content}</p>}
           <button onClick={removeAudio}
             className="absolute top-2 right-2 w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 hover:text-white">
             <X size={12} />
@@ -147,24 +151,23 @@ export default function PostForm({ onPost }) {
         </div>
       )}
 
-      {/* Se tiver áudio, ainda permite escrever legenda */}
       {audio && (
-        <input className="input-gamer mb-3" placeholder="Legenda opcional..."
+        <textarea className="input-gamer mb-3 resize-none" rows={2}
+          placeholder="Legenda opcional..."
           value={content} onChange={e => setContent(e.target.value)} maxLength={300} />
       )}
 
-      {/* Gravador */}
       {showRecorder && (
         <AudioRecorder
           onRecorded={(file) => {
             setAudio({ file, preview: URL.createObjectURL(file), type: 'recorded' });
+            setAudioName('Áudio gravado');
             setShowRecorder(false);
           }}
           onCancel={() => setShowRecorder(false)}
         />
       )}
 
-      {/* Preview mídias visuais */}
       {medias.length > 0 && (
         <div className="mb-3 flex gap-2 flex-wrap">
           {medias.map((m, i) => (
@@ -199,33 +202,31 @@ export default function PostForm({ onPost }) {
         ))}
 
         <div className="flex gap-1 ml-1">
-          {/* Imagem */}
           {medias.length < 10 && (
-            <button onClick={() => handleMediaSelect('image')} title="Imagem (máx 5MB)"
-              className="text-gray-500 hover:text-neon-green transition-colors p-1">
-              <Image size={16} />
-            </button>
+            <>
+              <button onClick={() => handleMediaSelect('image')} title="Imagem"
+                className="text-gray-500 hover:text-neon-green transition-colors p-1">
+                <Image size={16} />
+              </button>
+              <button onClick={() => handleMediaSelect('video')} title="Vídeo"
+                className="text-gray-500 hover:text-neon-green transition-colors p-1">
+                <Film size={16} />
+              </button>
+            </>
           )}
-          {/* Vídeo */}
-          {medias.length < 10 && (
-            <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 100MB)"
-              className="text-gray-500 hover:text-neon-green transition-colors p-1">
-              <Film size={16} />
-            </button>
-          )}
-          {/* Música (arquivo) */}
           {!audio && (
-            <button onClick={() => audioFileRef.current.click()} title="Adicionar música (máx 20MB)"
-              className="text-gray-500 hover:text-neon-green transition-colors p-1">
-              <Music size={16} />
-            </button>
-          )}
-          {/* Gravar áudio */}
-          {!audio && !showRecorder && (
-            <button onClick={() => setShowRecorder(true)} title="Gravar áudio"
-              className="text-gray-500 hover:text-neon-green transition-colors p-1">
-              <Mic size={16} />
-            </button>
+            <>
+              <button onClick={() => audioFileRef.current.click()} title="Música"
+                className="text-gray-500 hover:text-neon-green transition-colors p-1">
+                <Music size={16} />
+              </button>
+              {!showRecorder && (
+                <button onClick={() => setShowRecorder(true)} title="Gravar áudio"
+                  className="text-gray-500 hover:text-neon-green transition-colors p-1">
+                  <Mic size={16} />
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -235,7 +236,7 @@ export default function PostForm({ onPost }) {
         <button onClick={handleSubmit} disabled={loading}
           className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto">
           <Send size={13} />
-          {loading ? 'Publicando...' : 'Publicar'}
+          {loading ? 'Aguarde...' : 'Publicar'}
         </button>
       </div>
     </div>
