@@ -2,41 +2,44 @@ import { useState, useRef } from 'react';
 import { Maximize2, Film, Music } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
+import { useState, useRef, useEffect } from 'react';
 
-function VideoPlayer({ src, onExpand }) {
+function VideoPlayer({ src }) {
   const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const v = videoRef.current;
+      if (v && v.readyState === 0) setFailed(true);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [src]);
+
+  if (failed) return (
+    <div className="flex flex-col items-center justify-center gap-3 p-8 text-center bg-dark-900" style={{ minHeight: 200 }}>
+      <p className="text-2xl">⚠️</p>
+      <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
+      <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
+      <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">Baixar vídeo</a>
+    </div>
+  );
 
   return (
-    <div className="relative bg-dark-900" style={{ minHeight: 200 }}>
-      {!failed && (
-        <video
-          key={src}
-          className="w-full"
-          style={{ maxHeight: 400, display: 'block', background: '#060608' }}
-          controls
-          playsInline
-          preload="metadata"
-          controlsList="nodownload"
-          onLoadedData={() => setLoaded(true)}
-          onError={() => setFailed(true)}
-          onStalled={() => setTimeout(() => { if (!loaded) setFailed(true); }, 5000)}
-        >
-          <source src={src} type="video/mp4" />
-          <source src={src} type="video/webm" />
-          <source src={src} />
-        </video>
-      )}
-      {failed && (
-        <div className="flex flex-col items-center justify-center gap-3 p-8 text-center" style={{ minHeight: 200 }}>
-          <p className="text-2xl">⚠️</p>
-          <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
-          <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
-          <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">
-            Baixar vídeo
-          </a>
-        </div>
-      )}
+    <div className="relative bg-dark-900">
+      <video
+        ref={videoRef}
+        key={src}
+        className="w-full"
+        style={{ maxHeight: 400, display: 'block', background: '#060608' }}
+        controls playsInline preload="auto" controlsList="nodownload"
+        onError={() => setFailed(true)}
+        onCanPlay={() => setFailed(false)}
+      >
+        <source src={src} type="video/mp4" />
+        <source src={src} type="video/webm" />
+        <source src={src} />
+      </video>
     </div>
   );
 }
@@ -94,15 +97,24 @@ export default function MediaCarousel({ items, postTitle }) {
         onMouseUp={handleMouseUp}
         style={{ cursor: items.length > 1 ? 'grab' : 'default' }}
       >
-        {current.type === 'image' && (
-          <div className="relative group" onClick={() => setLightbox(true)} style={{ cursor: 'pointer' }}>
-            <img src={current.url} alt={postTitle} className="w-full object-contain"
-              style={{ maxHeight: 400, background: '#060608' }} />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
-              <Maximize2 size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </div>
-        )}
+
+      {current.type === 'image' && (
+  <div
+    className="relative group cursor-pointer bg-dark-900 flex items-center justify-center"
+    style={{ minHeight: 200, maxHeight: 500 }}
+    onClick={() => setLightbox(true)}
+  >
+    <img
+      src={current.url}
+      alt={postTitle}
+      className="w-full h-auto object-contain"
+      style={{ maxHeight: 500 }}
+    />
+    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+      <Maximize2 size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
+  </div>
+)}
 
 {current.type === 'video' && (
   <VideoPlayer src={current.url} onExpand={() => setLightbox(true)} />
