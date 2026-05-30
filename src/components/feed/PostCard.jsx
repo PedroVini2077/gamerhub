@@ -193,7 +193,13 @@ useEffect(() => {
         post.content && <p className="text-sm text-gray-400 leading-relaxed mb-2">{post.content}</p>
       )}
 
-      {post.embed_url && <EmbedPlayer url={post.embed_url} />}
+      {post.embed_url && (
+  post.expires_at && new Date(post.expires_at) < new Date()
+    ? <div className="mt-3 p-4 rounded-lg border border-dark-400 bg-dark-800 text-center">
+        <p className="text-gray-500 font-mono text-xs">📴 Esta live já encerrou</p>
+      </div>
+    : <EmbedPlayer url={post.embed_url} isLive={post.is_live} />
+)}      
 
       {/* Carrossel */}
       {postMedia.length > 0 && <MediaCarousel items={postMedia} postTitle={post.title} />}

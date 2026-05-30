@@ -20,6 +20,8 @@ export default function PostForm({ onPost }) {
   const [audio, setAudio] = useState(null);
   const [embedUrl, setEmbedUrl] = useState('');
   const [showEmbed, setShowEmbed] = useState(false);
+  const [isLive, setIsLive] = useState(false);
+  const [expiresAt, setExpiresAt] = useState('');
   const [showRecorder, setShowRecorder] = useState(false);
   const [activeType, setActiveType] = useState(null);
   const fileRef = useRef(null);
@@ -100,6 +102,8 @@ export default function PostForm({ onPost }) {
         audio_name: audioName.trim() || null,
         embed_url: embedUrl.trim() || null,
         embed_type: embedInfo?.type || null,
+        is_live: isLive,
+expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       }).select().single();
 
       if (postError) throw postError;
@@ -160,20 +164,39 @@ export default function PostForm({ onPost }) {
           value={content} onChange={e => setContent(e.target.value)} maxLength={300} />
       )}
 
-      {showEmbed && (
-        <div className="mb-3">
-          <div className="flex gap-2 mb-2">
-            <input className="input-gamer flex-1 text-sm"
-              placeholder="Cole o link do YouTube, Twitch, TikTok..."
-              value={embedUrl} onChange={e => setEmbedUrl(e.target.value)} />
-            <button onClick={() => { setShowEmbed(false); setEmbedUrl(''); }}
-              className="text-gray-500 hover:text-red-400 transition-colors p-2">
-              <X size={16} />
-            </button>
+     {showEmbed && (
+  <div className="mb-3 border border-dark-400 rounded-lg p-3 bg-dark-700">
+    <div className="flex gap-2 mb-2">
+      <input className="input-gamer flex-1 text-sm"
+        placeholder="Cole o link do YouTube, Twitch, TikTok..."
+        value={embedUrl} onChange={e => setEmbedUrl(e.target.value)} />
+      <button onClick={() => { setShowEmbed(false); setEmbedUrl(''); setIsLive(false); setExpiresAt(''); }}
+        className="text-gray-500 hover:text-red-400 transition-colors p-2">
+        <X size={16} />
+      </button>
+    </div>
+
+    {/* Opção de live com expiração */}
+    {embedUrl && getEmbedInfo(embedUrl)?.type === 'twitch' && (
+      <div className="mt-2 space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={isLive} onChange={e => setIsLive(e.target.checked)}
+            className="w-4 h-4 accent-neon-green" />
+          <span className="text-xs font-mono text-gray-400">🔴 Marcar como Live</span>
+        </label>
+        {isLive && (
+          <div>
+            <p className="text-xs font-mono text-gray-500 mb-1">Live termina em:</p>
+            <input type="datetime-local" className="input-gamer text-xs"
+              value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
           </div>
-          {embedUrl && <EmbedPlayer url={embedUrl} />}
-        </div>
-      )}
+        )}
+      </div>
+    )}
+
+    {embedUrl && <EmbedPlayer url={embedUrl} isLive={isLive} />}
+  </div>
+)}
 
       {showRecorder && (
         <AudioRecorder
