@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
 import MediaCarousel from '../ui/MediaCarousel';
 import MediaPlayer from '../ui/MediaPlayer';
+import EmbedPlayer from '../ui/EmbedPlayer';
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -191,6 +192,8 @@ useEffect(() => {
       ) : (
         post.content && <p className="text-sm text-gray-400 leading-relaxed mb-2">{post.content}</p>
       )}
+
+      {post.embed_url && <EmbedPlayer url={post.embed_url} />}
 
       {/* Carrossel */}
       {postMedia.length > 0 && <MediaCarousel items={postMedia} postTitle={post.title} />}

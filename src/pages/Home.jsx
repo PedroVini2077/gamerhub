@@ -23,7 +23,7 @@ export default function Home() {
   async function fetchPosts() {
     const { data } = await supabase
       .from('posts')
-      .select('*, profiles(id, username, avatar_url, role, bio, created_at), user_id, audio_url, audio_type, audio_name, edited_at')
+      .select('*, profiles(id, username, avatar_url, role, bio, created_at), user_id, audio_url, audio_type, audio_name, edited_at, embed_url, embed_type')
       .order('created_at', { ascending: false })
       .limit(30);
     setPosts(data || []);

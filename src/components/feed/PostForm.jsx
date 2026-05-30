@@ -2,8 +2,9 @@ import { useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
-import { Send, Image, X, Film, Music, Mic } from 'lucide-react';
+import { Send, Image, X, Film, Music, Mic, Link } from 'lucide-react';
 import AudioRecorder from '../ui/AudioRecorder';
+import EmbedPlayer, { getEmbedInfo } from '../ui/EmbedPlayer';
 import MediaPlayer from '../ui/MediaPlayer';
 
 const categories = ['dica', 'curiosidade', 'news'];
@@ -17,6 +18,8 @@ export default function PostForm({ onPost }) {
   const [loading, setLoading] = useState(false);
   const [medias, setMedias] = useState([]);
   const [audio, setAudio] = useState(null);
+  const [embedUrl, setEmbedUrl] = useState('');
+  const [showEmbed, setShowEmbed] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
   const [activeType, setActiveType] = useState(null);
   const fileRef = useRef(null);
@@ -40,8 +43,7 @@ export default function PostForm({ onPost }) {
       e.target.value = '';
       return;
     }
-    const preview = URL.createObjectURL(file);
-    setMedias(m => [...m, { file, preview, type: activeType }]);
+    setMedias(m => [...m, { file, preview: URL.createObjectURL(file), type: activeType }]);
     e.target.value = '';
   }
 
@@ -49,8 +51,8 @@ export default function PostForm({ onPost }) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 20 * 1024 * 1024) { toast.error('Máximo 20MB para áudio'); return; }
-    setAudio({ file, preview: URL.createObjectURL(file), type: 'file' });
     const name = file.name.replace(/\.[^/.]+$/, '');
+    setAudio({ file, preview: URL.createObjectURL(file), type: 'file' });
     setAudioName(name);
     e.target.value = '';
   }
@@ -78,12 +80,15 @@ export default function PostForm({ onPost }) {
       if (audio?.file) {
         const ext = audio.file.name.split('.').pop();
         const path = `${user.id}/audio-${Date.now()}.${ext}`;
-        const { error } = await supabase.storage.from('post-media').upload(path, audio.file, { contentType: audio.file.type });
+        const { error } = await supabase.storage.from('post-media')
+          .upload(path, audio.file, { contentType: audio.file.type });
         if (error) throw error;
         const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
         audio_url = publicUrl;
         audio_type = audio.type === 'recorded' ? 'recorded' : 'music';
       }
+
+      const embedInfo = embedUrl ? getEmbedInfo(embedUrl) : null;
 
       const { data: post, error: postError } = await supabase.from('posts').insert({
         user_id: profile?.id,
@@ -93,6 +98,8 @@ export default function PostForm({ onPost }) {
         audio_url,
         audio_type,
         audio_name: audioName.trim() || null,
+        embed_url: embedUrl.trim() || null,
+        embed_type: embedInfo?.type || null,
       }).select().single();
 
       if (postError) throw postError;
@@ -111,7 +118,9 @@ export default function PostForm({ onPost }) {
       }
 
       toast.success('Post publicado! 🎮', { id: toastId });
-      setTitle(''); setContent(''); setMedias([]); setAudioName(''); removeAudio();
+      setTitle(''); setContent(''); setMedias([]);
+      setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
+      removeAudio();
       onPost?.();
     } catch (err) {
       toast.error('Erro: ' + err.message, { id: toastId });
@@ -123,25 +132,20 @@ export default function PostForm({ onPost }) {
     <div className="card p-5">
       <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
 
-      <input className="input-gamer mb-3" placeholder="Título do post..." value={title}
-        onChange={e => setTitle(e.target.value)} maxLength={100} />
+      <input className="input-gamer mb-3" placeholder="Título do post..."
+        value={title} onChange={e => setTitle(e.target.value)} maxLength={100} />
 
       {!audio ? (
         <textarea className="input-gamer mb-3 resize-none" rows={3}
-          placeholder="Escreva algo... (opcional se tiver áudio)"
+          placeholder="Escreva algo... (opcional se tiver áudio ou link)"
           value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
       ) : (
         <div className="mb-3 border border-neon-green/20 rounded-lg p-3 bg-dark-700 relative">
           <p className="text-xs font-mono text-neon-green mb-2 uppercase tracking-wider">
             {audio.type === 'recorded' ? '🎙 Áudio gravado' : '🎵 Música'}
           </p>
-          <input
-            className="input-gamer mb-2 text-sm"
-            placeholder="Nome do áudio / música..."
-            value={audioName}
-            onChange={e => setAudioName(e.target.value)}
-            maxLength={80}
-          />
+          <input className="input-gamer mb-2 text-sm" placeholder="Nome do áudio / música..."
+            value={audioName} onChange={e => setAudioName(e.target.value)} maxLength={80} />
           <MediaPlayer src={audio.preview} title={audioName || 'Áudio'} />
           <button onClick={removeAudio}
             className="absolute top-2 right-2 w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 hover:text-white">
@@ -154,6 +158,21 @@ export default function PostForm({ onPost }) {
         <textarea className="input-gamer mb-3 resize-none" rows={2}
           placeholder="Legenda opcional..."
           value={content} onChange={e => setContent(e.target.value)} maxLength={300} />
+      )}
+
+      {showEmbed && (
+        <div className="mb-3">
+          <div className="flex gap-2 mb-2">
+            <input className="input-gamer flex-1 text-sm"
+              placeholder="Cole o link do YouTube, Twitch, TikTok..."
+              value={embedUrl} onChange={e => setEmbedUrl(e.target.value)} />
+            <button onClick={() => { setShowEmbed(false); setEmbedUrl(''); }}
+              className="text-gray-500 hover:text-red-400 transition-colors p-2">
+              <X size={16} />
+            </button>
+          </div>
+          {embedUrl && <EmbedPlayer url={embedUrl} />}
+        </div>
       )}
 
       {showRecorder && (
@@ -203,11 +222,11 @@ export default function PostForm({ onPost }) {
         <div className="flex gap-1 ml-1">
           {medias.length < 10 && (
             <>
-              <button onClick={() => handleMediaSelect('image')} title="Imagem"
+              <button onClick={() => handleMediaSelect('image')} title="Imagem (máx 5MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Image size={16} />
               </button>
-              <button onClick={() => handleMediaSelect('video')} title="Vídeo"
+              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 100MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Film size={16} />
               </button>
@@ -215,7 +234,7 @@ export default function PostForm({ onPost }) {
           )}
           {!audio && (
             <>
-              <button onClick={() => audioFileRef.current.click()} title="Música"
+              <button onClick={() => audioFileRef.current.click()} title="Música (máx 20MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Music size={16} />
               </button>
@@ -226,6 +245,12 @@ export default function PostForm({ onPost }) {
                 </button>
               )}
             </>
+          )}
+          {!showEmbed && (
+            <button onClick={() => setShowEmbed(true)} title="Link externo"
+              className="text-gray-500 hover:text-neon-green transition-colors p-1">
+              <Link size={16} />
+            </button>
           )}
         </div>
 
