@@ -36,17 +36,14 @@ export default function Home() {
   }, []);
 
   useRealtime('posts', (payload) => {
-    if (!loadedRef.current) return;
-    if (payload.eventType === 'INSERT') {
-      if (payload.new?.user_id === userRef.current?.id) fetchPosts();
-      else setNewPosts(n => n + 1);
-    }
-    if (payload.eventType === 'DELETE') fetchPosts();
-  });
-
-
-
-
+  if (!loadedRef.current) return;
+  if (payload.eventType === 'INSERT') {
+    if (payload.new?.user_id === userRef.current?.id) {
+      setTimeout(() => fetchPosts(), 5000);
+    } else setNewPosts(n => n + 1);
+  }
+  if (payload.eventType === 'DELETE') fetchPosts();
+});
 
   // Filtragem local
   const filtered = posts.filter(p => {
