@@ -3,8 +3,8 @@ import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { Shield, Clock, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Shield, Users, Key, FileText, Trash2, Ban, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import KeyEditor from '../components/keys/KeyEditor';
 import Avatar from '../components/ui/Avatar';
 
@@ -192,6 +192,7 @@ export default function Admin() {
       supabase.from('profiles').select('*').order('role').order('username'),
       supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }),
       supabase.from('game_keys').select('*').order('created_at', { ascending: false }),
+      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
     ]);
     setUsers(u || []);
     setPosts(p || []);
@@ -239,9 +240,25 @@ export default function Admin() {
     ? users
     : users.filter(u => u.role === filterRole);
 
+  const [liveMod, setLiveMod] = useState({ silenced: [], lives: [] });
+
+  async function fetchLiveMod() {
+    const [{ data: silenced }, { data: lives }] = await Promise.all([
+      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
+      supabase.from('posts').select('id, title, profiles(username)').eq('is_live', true).not('embed_url', 'is', null),
+    ]);
+    setLiveMod({ silenced: silenced || [], lives: lives || [] });
+  }
+
+  async function unsilenceUser(id) {
+    await supabase.from('live_chat_timeouts').delete().eq('id', id);
+    fetchLiveMod();
+  }
+
   const tabs = [
     { id: 'users', label: 'Usuários', icon: Users },
     { id: 'posts', label: 'Posts', icon: FileText },
+    { id: 'lives', label: 'Mod de Lives', icon: Shield },
     { id: 'keys', label: 'Keys & Promos', icon: Key },
   ];
 
@@ -332,6 +349,79 @@ export default function Admin() {
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+
+          {tab === 'lives' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield size={16} className="text-neon-green" />
+                  <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">Moderação de Lives</h3>
+                </div>
+                <button onClick={fetchLiveMod} className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors">
+                  Atualizar
+                </button>
+              </div>
+
+              <div className="card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock size={13} className="text-yellow-400" />
+                  <p className="text-xs font-mono text-yellow-400 uppercase tracking-wider font-bold">
+                    Usuários Silenciados ({liveMod.silenced?.length || 0})
+                  </p>
+                </div>
+                {!liveMod.silenced?.length ? (
+                  <p className="text-xs text-gray-600 font-mono">Nenhum usuário silenciado</p>
+                ) : (
+                  <div className="space-y-2">
+                    {liveMod.silenced.map(t => {
+                      const remaining = Math.ceil((new Date(t.expires_at) - new Date()) / 60000);
+                      const live = liveMod.lives?.find(l => l.id === t.post_id);
+                      if (remaining <= 0) return null;
+                      return (
+                        <div key={t.id} className="flex items-center gap-3 bg-dark-700 rounded-lg px-3 py-2 border border-yellow-400/10">
+                          <span className="text-lg">🔇</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-mono font-bold text-yellow-400">{t.profiles?.username}</p>
+                            <p className="text-xs font-mono text-gray-600">
+                              {live ? `Live: ${live.title}` : 'Live desconhecida'} · {remaining} min restantes
+                            </p>
+                          </div>
+                          <button onClick={() => unsilenceUser(t.id)}
+                            className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded transition-all">
+                            Remover
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <X size={13} className="text-red-400" />
+                  <p className="text-xs font-mono text-red-400 uppercase tracking-wider font-bold">
+                    Lives Ativas ({liveMod.lives?.length || 0})
+                  </p>
+                </div>
+                {!liveMod.lives?.length ? (
+                  <p className="text-xs text-gray-600 font-mono">Nenhuma live ativa</p>
+                ) : (
+                  <div className="space-y-2">
+                    {liveMod.lives.map(l => (
+                      <div key={l.id} className="flex items-center gap-3 bg-dark-700 rounded-lg px-3 py-2 border border-red-400/10">
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-mono font-bold text-white">{l.title}</p>
+                          <p className="text-xs font-mono text-gray-600">por {l.profiles?.username}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
