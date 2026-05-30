@@ -180,6 +180,20 @@ export default function Admin() {
   const [stats, setStats] = useState({ users: 0, posts: 0, keys: 0 });
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('todos');
+  const [liveMod, setLiveMod] = useState({ silenced: [], lives: [] });
+
+  async function fetchLiveMod() {
+    const [{ data: silenced }, { data: lives }] = await Promise.all([
+      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
+      supabase.from('posts').select('id, title, profiles(username)').eq('is_live', true).not('embed_url', 'is', null),
+    ]);
+    setLiveMod({ silenced: silenced || [], lives: lives || [] });
+  }
+
+  async function unsilenceUser(id) {
+    await supabase.from('live_chat_timeouts').delete().eq('id', id);
+    fetchLiveMod();
+  }
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
@@ -239,21 +253,6 @@ export default function Admin() {
   const filteredUsers = filterRole === 'todos'
     ? users
     : users.filter(u => u.role === filterRole);
-
-  const [liveMod, setLiveMod] = useState({ silenced: [], lives: [] });
-
-  async function fetchLiveMod() {
-    const [{ data: silenced }, { data: lives }] = await Promise.all([
-      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
-      supabase.from('posts').select('id, title, profiles(username)').eq('is_live', true).not('embed_url', 'is', null),
-    ]);
-    setLiveMod({ silenced: silenced || [], lives: lives || [] });
-  }
-
-  async function unsilenceUser(id) {
-    await supabase.from('live_chat_timeouts').delete().eq('id', id);
-    fetchLiveMod();
-  }
 
   const tabs = [
     { id: 'users', label: 'Usuários', icon: Users },
