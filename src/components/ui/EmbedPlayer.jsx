@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 
-function getEmbedInfo(url) {
+export function getEmbedInfo(url) {
   if (!url) return null;
 
   // YouTube
