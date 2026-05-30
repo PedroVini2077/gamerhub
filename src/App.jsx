@@ -1,3 +1,4 @@
+import Lives from './pages/Lives';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useState } from 'react';
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/settings" element={<Layout><Settings /></Layout>} />
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/lives" element={<Layout><Lives /></Layout>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

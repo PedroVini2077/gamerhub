@@ -1,3 +1,4 @@
+import { Tv } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Home, Users, Key, User, Zap, X, Shield, Settings, FileText } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
@@ -35,7 +36,8 @@ export default function Sidebar({ open, onClose }) {
     { to: '/profile', icon: User, label: 'Perfil' },
     { to: '/settings', icon: Settings, label: 'Configurações' },
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin', highlight: true }] : []),
-  ];
+    { to: '/lives', icon: Tv, label: 'Lives' }, 
+ ];
 
   return (
     <>
