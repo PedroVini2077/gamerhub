@@ -1,8 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Maximize2, Film, Music } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
-import { useState, useRef, useEffect } from 'react';
 
 function VideoPlayer({ src }) {
   const [failed, setFailed] = useState(false);
