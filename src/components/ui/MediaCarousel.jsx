@@ -4,18 +4,18 @@ import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
 
 function VideoPlayer({ src }) {
-  const [failed, setFailed] = useState(false);
+  const [status, setStatus] = useState('loading'); // loading | ok | failed
   const videoRef = useRef(null);
 
   useEffect(() => {
+    setStatus('loading');
     const timer = setTimeout(() => {
-      const v = videoRef.current;
-      if (v && v.readyState === 0) setFailed(true);
-    }, 8000);
+      setStatus(s => s === 'loading' ? 'failed' : s);
+    }, 6000);
     return () => clearTimeout(timer);
   }, [src]);
 
-  if (failed) return (
+  if (status === 'failed') return (
     <div className="flex flex-col items-center justify-center gap-3 p-8 text-center bg-dark-900" style={{ minHeight: 200 }}>
       <p className="text-2xl">⚠️</p>
       <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
@@ -32,8 +32,8 @@ function VideoPlayer({ src }) {
         className="w-full"
         style={{ maxHeight: 400, display: 'block', background: '#060608' }}
         controls playsInline preload="auto" controlsList="nodownload"
-        onError={() => setFailed(true)}
-        onCanPlay={() => setFailed(false)}
+        onCanPlay={() => setStatus('ok')}
+        onError={() => setStatus('failed')}
       >
         <source src={src} type="video/mp4" />
         <source src={src} type="video/webm" />
