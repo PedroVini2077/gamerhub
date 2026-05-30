@@ -206,7 +206,6 @@ export default function Admin() {
       supabase.from('profiles').select('*').order('role').order('username'),
       supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }),
       supabase.from('game_keys').select('*').order('created_at', { ascending: false }),
-      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
     ]);
     setUsers(u || []);
     setPosts(p || []);
@@ -253,6 +252,10 @@ export default function Admin() {
   const filteredUsers = filterRole === 'todos'
     ? users
     : users.filter(u => u.role === filterRole);
+
+  useEffect(() => {
+    if (tab === 'lives') fetchLiveMod();
+  }, [tab]);
 
   const tabs = [
     { id: 'users', label: 'Usuários', icon: Users },
