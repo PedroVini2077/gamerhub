@@ -14,32 +14,43 @@ function VideoPlayer({ src }) {
     return () => clearTimeout(timer);
   }, [src]);
 
+  if (status === 'failed') return (
+    <div className="flex flex-col items-center justify-center gap-3 p-8 text-center bg-dark-900" style={{ minHeight: 200 }}>
+      <p className="text-2xl">⚠️</p>
+      <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
+      <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
+      <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">Baixar vídeo</a>
+    </div>
+  );
+
   return (
     <div className="relative bg-dark-900" style={{ minHeight: 200 }}>
-      {status === 'failed' ? (
-        <div className="flex flex-col items-center justify-center gap-3 p-8 text-center" style={{ minHeight: 200 }}>
-          <p className="text-2xl">⚠️</p>
-          <p className="text-neon-green font-mono text-sm">Codec não suportado</p>
-          <p className="text-gray-500 font-mono text-xs">Este vídeo não é compatível com seu navegador.</p>
-          <a href={src} download className="btn-neon py-2 px-4 text-xs mt-1 inline-block">Baixar vídeo</a>
+      {status === 'loading' && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <p className="text-gray-500 font-mono text-xs animate-pulse">Carregando vídeo...</p>
         </div>
-      ) : (
-        <video
-          key={src}
-          className="w-full"
-          style={{ maxHeight: 400, display: 'block', background: '#060608' }}
-          controls
-          playsInline
-          preload="auto"
-          controlsList="nodownload"
-          onCanPlay={() => setStatus('ok')}
-          onError={() => setStatus('failed')}
-        >
-          <source src={src} type="video/mp4" />
-          <source src={src} type="video/webm" />
-          <source src={src} />
-        </video>
       )}
+      <video
+        key={src}
+        className="w-full"
+        style={{
+          maxHeight: 400,
+          display: 'block',
+          background: '#060608',
+          opacity: status === 'ok' ? 1 : 0,
+          transition: 'opacity 0.3s'
+        }}
+        controls
+        playsInline
+        preload="auto"
+        controlsList="nodownload"
+        onCanPlay={() => setStatus('ok')}
+        onError={() => setStatus('failed')}
+      >
+        <source src={src} type="video/mp4" />
+        <source src={src} type="video/webm" />
+        <source src={src} />
+      </video>
     </div>
   );
 }
