@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, Users } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -12,6 +13,8 @@ const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' 
 export default function Lives() {
   const { user } = useAuth();
   const { isAdmin } = useRole();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [lives, setLives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeLive, setActiveLive] = useState(null);
@@ -25,38 +28,33 @@ export default function Lives() {
   const bottomRef = useRef(null);
   const activeLiveRef = useRef(null);
 
-    useEffect(() => {
-  if (!activeLive) return;
-  fetchMessages(activeLive.id);
-  fetchTimeouts(activeLive.id);
+  useEffect(() => { fetchLives(); }, []);
 
-  const channel = supabase.channel(`live-chat-${activeLive.id}`)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'live_chat'
-    }, (payload) => {
-      const postId = payload.new?.post_id || payload.old?.post_id;
-      if (postId === activeLiveRef.current?.id) {
-        fetchMessages(activeLiveRef.current.id);
-      }
-    })
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'live_chat_timeouts'
-    }, () => fetchTimeouts(activeLiveRef.current?.id))
-    .subscribe();
+  useEffect(() => {
+    activeLiveRef.current = activeLive;
+  }, [activeLive]);
 
-  return () => supabase.removeChannel(channel);
-}, [activeLive]);
+  useEffect(() => {
+    if (id && lives.length > 0 && !activeLive) {
+      const live = lives.find(l => l.id === id);
+      if (live) setActiveLive(live);
+    }
+  }, [id, lives]);
 
-    const channel = supabase.channel(`live-chat-${activeLive.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat', filter: `post_id=eq.${activeLive.id}` },
-        () => fetchMessages(activeLiveRef.current?.id))
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat', filter: `post_id=eq.${activeLive.id}` },
-        () => fetchMessages(activeLiveRef.current?.id))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts', filter: `post_id=eq.${activeLive.id}` },
+  useEffect(() => {
+    if (!activeLive) return;
+    fetchMessages(activeLive.id);
+    fetchTimeouts(activeLive.id);
+
+    const channel = supabase.channel(`live-${activeLive.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat' },
+        (payload) => {
+          const postId = payload.new?.post_id || payload.old?.post_id;
+          if (postId === activeLiveRef.current?.id) {
+            fetchMessages(activeLiveRef.current.id);
+          }
+        })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' },
         () => fetchTimeouts(activeLiveRef.current?.id))
       .subscribe();
 
@@ -66,6 +64,18 @@ export default function Lives() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  function enterLive(live) {
+    setActiveLive(live);
+    navigate('/lives/' + live.id);
+  }
+
+  function exitLive() {
+    setActiveLive(null);
+    setMessages([]);
+    setShowModPanel(false);
+    navigate('/lives');
+  }
 
   async function fetchLives() {
     const { data } = await supabase.from('posts')
@@ -78,16 +88,15 @@ export default function Lives() {
     setLoading(false);
   }
 
-async function fetchMessages(postId) {
-  if (!postId) return;
-  const { data } = await supabase
-    .from('live_chat')
-    .select('id, message, created_at, user_id, profiles(id, username, avatar_url, role)')
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true })
-    .limit(100);
-  setMessages(data || []);
-}
+  async function fetchMessages(postId) {
+    if (!postId) return;
+    const { data } = await supabase.from('live_chat')
+      .select('id, message, created_at, user_id, profiles(id, username, avatar_url, role)')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    setMessages(data || []);
+  }
 
   async function fetchTimeouts(postId) {
     if (!postId) return;
@@ -102,13 +111,15 @@ async function fetchMessages(postId) {
   async function sendMessage() {
     if (!msg.trim() || !user || !activeLive || sending || isSilenced) return;
     setSending(true);
-    await supabase.from('live_chat').insert({ post_id: activeLive.id, user_id: user.id, message: msg.trim() });
+    await supabase.from('live_chat').insert({
+      post_id: activeLive.id, user_id: user.id, message: msg.trim()
+    });
     setMsg('');
     setSending(false);
   }
 
-  async function deleteMessage(id) {
-    await supabase.from('live_chat').delete().eq('id', id);
+  async function deleteMessage(msgId) {
+    await supabase.from('live_chat').delete().eq('id', msgId);
   }
 
   async function silenceUser(userId, minutes) {
@@ -144,7 +155,7 @@ async function fetchMessages(postId) {
   if (activeLive) return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <button onClick={() => { setActiveLive(null); setMessages([]); setShowModPanel(false); }}
+        <button onClick={exitLive}
           className="text-gray-500 hover:text-neon-green transition-colors shrink-0">
           <X size={18} />
         </button>
@@ -165,7 +176,7 @@ async function fetchMessages(postId) {
         )}
       </div>
 
-      <EmbedPlayer url={activeLive.embed_url} isLive={true} />
+      <EmbedPlayer url={activeLive.embed_url} isLive={true} expiresAt={activeLive.expires_at} />
 
       {canModerate && showModPanel && (
         <div className="rounded-xl border border-neon-green/20 bg-dark-800 overflow-hidden"
@@ -184,27 +195,23 @@ async function fetchMessages(postId) {
               </div>
               {silencedList.length === 0 ? (
                 <p className="text-xs text-gray-600 font-mono pl-4">Nenhum usuário silenciado</p>
-              ) : (
-                <div className="space-y-2">
-                  {silencedList.map(t => {
-                    const msgProfile = messages.find(m => m.user_id === t.user_id)?.profiles;
-                    const remaining = Math.ceil((new Date(t.expires_at) - new Date()) / 60000);
-                    return (
-                      <div key={t.user_id} className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-yellow-400/10">
-                        <span className="text-lg">🔇</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-mono font-bold text-yellow-400">{msgProfile?.username || 'Usuário'}</p>
-                          <p className="text-xs font-mono text-gray-600">{remaining} min restantes</p>
-                        </div>
-                        <button onClick={() => unsilenceUser(t.user_id)}
-                          className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded transition-all">
-                          Remover
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              ) : silencedList.map(t => {
+                const msgProfile = messages.find(m => m.user_id === t.user_id)?.profiles;
+                const remaining = Math.ceil((new Date(t.expires_at) - new Date()) / 60000);
+                return (
+                  <div key={t.user_id} className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-yellow-400/10">
+                    <span className="text-lg">🔇</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono font-bold text-yellow-400">{msgProfile?.username || 'Usuário'}</p>
+                      <p className="text-xs font-mono text-gray-600">{remaining} min restantes</p>
+                    </div>
+                    <button onClick={() => unsilenceUser(t.user_id)}
+                      className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded transition-all">
+                      Remover
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             <div>
@@ -216,50 +223,46 @@ async function fetchMessages(postId) {
               </div>
               {uniqueChatters.length === 0 ? (
                 <p className="text-xs text-gray-600 font-mono pl-4">Ninguém comentou ainda</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {uniqueChatters.map(p => {
-                    if (!p || p.id === user?.id) return null;
-                    const silenced = isUserSilenced(p.id);
-                    return (
-                      <div key={p.id} className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
-                        <AvatarPopup profile={p} size={24} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-mono font-bold text-white">{p.username}</p>
-                          <span className={`tag text-xs ${roleColors[p.role] || 'tag-cyan'}`}>
-                            {roleLabels[p.role] || 'Player'}
-                          </span>
-                        </div>
-                        {silenced ? (
-                          <button onClick={() => unsilenceUser(p.id)}
-                            className="text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:border-yellow-400/60 px-2 py-0.5 rounded transition-all">
-                            🔇 Remover
-                          </button>
-                        ) : (
-                          <div className="relative">
-                            <button onClick={() => setSilenceMenu(silenceMenu === p.id ? null : p.id)}
-                              className="text-xs font-mono text-gray-500 hover:text-yellow-400 border border-dark-400 hover:border-yellow-400/40 px-2 py-0.5 rounded transition-all flex items-center gap-1">
-                              <Clock size={10} /> Silenciar
-                            </button>
-                            {silenceMenu === p.id && (
-                              <div className="absolute right-0 top-7 bg-dark-700 border border-dark-400 rounded-lg p-1.5 z-20 flex flex-col gap-1"
-                                style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
-                                <p className="text-xs font-mono text-gray-500 px-2 pb-1 border-b border-dark-500">Silenciar por:</p>
-                                {[5, 10, 30, 60].map(min => (
-                                  <button key={min} onClick={() => silenceUser(p.id, min)}
-                                    className="text-xs font-mono text-gray-400 hover:text-yellow-400 hover:bg-dark-600 px-3 py-1 rounded text-left transition-colors">
-                                    {min} min
-                                  </button>
-                                ))}
-                              </div>
-                            )}
+              ) : uniqueChatters.map(p => {
+                if (!p || p.id === user?.id) return null;
+                const silenced = isUserSilenced(p.id);
+                return (
+                  <div key={p.id} className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
+                    <AvatarPopup profile={p} size={24} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono font-bold text-white">{p.username}</p>
+                      <span className={`tag text-xs ${roleColors[p.role] || 'tag-cyan'}`}>
+                        {roleLabels[p.role] || 'Player'}
+                      </span>
+                    </div>
+                    {silenced ? (
+                      <button onClick={() => unsilenceUser(p.id)}
+                        className="text-xs font-mono text-yellow-400 border border-yellow-400/30 px-2 py-0.5 rounded transition-all">
+                        🔇 Remover
+                      </button>
+                    ) : (
+                      <div className="relative">
+                        <button onClick={() => setSilenceMenu(silenceMenu === p.id ? null : p.id)}
+                          className="text-xs font-mono text-gray-500 hover:text-yellow-400 border border-dark-400 px-2 py-0.5 rounded transition-all flex items-center gap-1">
+                          <Clock size={10} /> Silenciar
+                        </button>
+                        {silenceMenu === p.id && (
+                          <div className="absolute right-0 top-7 bg-dark-700 border border-dark-400 rounded-lg p-1.5 z-20 flex flex-col gap-1"
+                            style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
+                            <p className="text-xs font-mono text-gray-500 px-2 pb-1 border-b border-dark-500">Silenciar por:</p>
+                            {[5, 10, 30, 60].map(min => (
+                              <button key={min} onClick={() => silenceUser(p.id, min)}
+                                className="text-xs font-mono text-gray-400 hover:text-yellow-400 hover:bg-dark-600 px-3 py-1 rounded text-left transition-colors">
+                                {min} min
+                              </button>
+                            ))}
                           </div>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -354,7 +357,7 @@ async function fetchMessages(postId) {
         <div className="space-y-4">
           {lives.map(live => (
             <div key={live.id} className="card p-4 cursor-pointer hover:border-neon-green/30 transition-all"
-              onClick={() => setActiveLive(live)}>
+              onClick={() => enterLive(live)}>
               <div className="flex items-center gap-3 mb-3">
                 <AvatarPopup profile={live.profiles} size={36} />
                 <div className="flex-1">

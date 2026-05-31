@@ -58,6 +58,7 @@ export default function App() {
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
           <Route path="*" element={<NotFound />} />
           <Route path="/lives" element={<Layout><Lives /></Layout>} />
+          <Route path="/lives/:id" element={<Layout><Lives /></Layout>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
