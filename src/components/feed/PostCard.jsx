@@ -210,15 +210,16 @@ useEffect(() => {
         </button>
       </div>
 
-     {post.is_live ? (
-  <div className="mt-4 pt-3 border-t border-dark-500">
-    <a href="/lives"
-      className="flex items-center justify-center gap-2 w-full btn-neon py-2 text-xs">
-      🔴 Entrar na live para comentar
-    </a>
-  </div>
-) : (
-  <CommentSection postId={post.id} postOwnerId={post.user_id} />
-)}
- );
+{post.is_live ? (
+        <div className="mt-4 pt-3 border-t border-dark-500">
+          <a href="/lives"
+            className="flex items-center justify-center gap-2 w-full btn-neon py-2 text-xs">
+            🔴 Entrar na live para comentar
+          </a>
+        </div>
+      ) : (
+        <CommentSection postId={post.id} postOwnerId={post.user_id} />
+      )}
+    </div>
+  );
 }
