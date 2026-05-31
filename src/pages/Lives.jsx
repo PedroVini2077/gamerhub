@@ -25,16 +25,31 @@ export default function Lives() {
   const bottomRef = useRef(null);
   const activeLiveRef = useRef(null);
 
-  useEffect(() => { fetchLives(); }, []);
+    useEffect(() => {
+  if (!activeLive) return;
+  fetchMessages(activeLive.id);
+  fetchTimeouts(activeLive.id);
 
-  useEffect(() => {
-    activeLiveRef.current = activeLive;
-  }, [activeLive]);
+  const channel = supabase.channel(`live-chat-${activeLive.id}`)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'live_chat'
+    }, (payload) => {
+      const postId = payload.new?.post_id || payload.old?.post_id;
+      if (postId === activeLiveRef.current?.id) {
+        fetchMessages(activeLiveRef.current.id);
+      }
+    })
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'live_chat_timeouts'
+    }, () => fetchTimeouts(activeLiveRef.current?.id))
+    .subscribe();
 
-  useEffect(() => {
-    if (!activeLive) return;
-    fetchMessages(activeLive.id);
-    fetchTimeouts(activeLive.id);
+  return () => supabase.removeChannel(channel);
+}, [activeLive]);
 
     const channel = supabase.channel(`live-chat-${activeLive.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_chat', filter: `post_id=eq.${activeLive.id}` },

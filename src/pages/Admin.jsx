@@ -169,6 +169,17 @@ export default function Admin() {
     if (tab === 'lives') fetchLiveMod();
   }, [tab]);
 
+  useEffect(() => {
+  if (tab !== 'lives') return;
+  const channel = supabase.channel('admin-live-mod')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' },
+      () => fetchLiveMod())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' },
+      () => fetchLiveMod())
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}, [tab]);
+
   async function fetchAll() {
     setLoading(true);
     const [{ data: u }, { data: p }, { data: k }] = await Promise.all([
