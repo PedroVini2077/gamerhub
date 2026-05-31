@@ -183,9 +183,12 @@ export default function Admin() {
     setLoading(false);
   }
 
-  async function fetchLiveMod() {
+const [refreshing, setRefreshing] = useState(false);
+
+async function fetchLiveMod() {
+  setRefreshing(true);
   try {
-    const [{ data: silenced, error: e1 }, { data: lives, error: e2 }] = await Promise.all([
+    const [{ data: silenced }, { data: lives }] = await Promise.all([
       supabase.from('live_chat_timeouts')
         .select('id, post_id, user_id, expires_at, profiles!user_id(username)')
         .order('created_at', { ascending: false }),
@@ -196,8 +199,9 @@ export default function Admin() {
     ]);
     setLiveMod({ silenced: silenced || [], lives: lives || [] });
   } catch (err) {
-    toast.error('Erro ao carregar moderação');
+    toast.error('Erro ao carregar');
   }
+  setRefreshing(false);
 }
 
   async function unsilenceUser(id) {
@@ -340,10 +344,10 @@ export default function Admin() {
                   <Shield size={16} className="text-neon-green" />
                   <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">Moderação de Lives</h3>
                 </div>
-                <button onClick={fetchLiveMod}
-                  className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors">
-                  Atualizar
-                </button>
+                <button onClick={fetchLiveMod} disabled={refreshing}
+  className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors flex items-center gap-1">
+  {refreshing ? '⟳ Atualizando...' : '⟳ Atualizar'}
+</button>
               </div>
 
               <div className="card p-4">

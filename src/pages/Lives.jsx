@@ -63,21 +63,15 @@ export default function Lives() {
     setLoading(false);
   }
 
-  async function fetchMessages(postId) {
+async function fetchMessages(postId) {
   if (!postId) return;
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('live_chat')
-    .select(`
-      id,
-      message,
-      created_at,
-      user_id,
-      profiles!inner(id, username, avatar_url, role)
-    `)
+    .select('id, message, created_at, user_id, profiles(id, username, avatar_url, role)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true })
     .limit(100);
-  if (!error) setMessages(data || []);
+  setMessages(data || []);
 }
 
   async function fetchTimeouts(postId) {
