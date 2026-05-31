@@ -184,17 +184,26 @@ export default function Admin() {
   }
 
   async function fetchLiveMod() {
-    const [{ data: silenced }, { data: lives }] = await Promise.all([
-      supabase.from('live_chat_timeouts').select('*, profiles:user_id(username, avatar_url, role)').order('created_at', { ascending: false }),
-      supabase.from('posts').select('id, title, profiles(username)').eq('is_live', true).not('embed_url', 'is', null),
+  try {
+    const [{ data: silenced, error: e1 }, { data: lives, error: e2 }] = await Promise.all([
+      supabase.from('live_chat_timeouts')
+        .select('id, post_id, user_id, expires_at, profiles!user_id(username)')
+        .order('created_at', { ascending: false }),
+      supabase.from('posts')
+        .select('id, title, user_id, profiles(username)')
+        .eq('is_live', true)
+        .not('embed_url', 'is', null),
     ]);
     setLiveMod({ silenced: silenced || [], lives: lives || [] });
+  } catch (err) {
+    toast.error('Erro ao carregar moderação');
   }
+}
 
   async function unsilenceUser(id) {
-    await supabase.from('live_chat_timeouts').delete().eq('id', id);
-    fetchLiveMod();
-  }
+  await supabase.from('live_chat_timeouts').delete().eq('id', id);
+  fetchLiveMod();
+}
 
   async function handleRoleChange(userId, newRole) {
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);

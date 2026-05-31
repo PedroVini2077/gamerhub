@@ -21,8 +21,17 @@ export function getEmbedInfo(url) {
   return { type: 'link', label: 'Link externo', color: '#39ff14', icon: '🔗' };
 }
 
-function TwitchPlayer({ id, url, isLive }) {
+  function TwitchPlayer({ id, url, isLive, expiresAt }) {
+  const expired = expiresAt && new Date(expiresAt) < new Date();
   const domain = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+
+  if (expired) return (
+    <div className="mt-3 rounded-lg border border-dark-400 bg-dark-900 p-8 text-center">
+      <p className="text-3xl mb-3">📴</p>
+      <p className="text-neon-green font-mono text-sm">Live encerrada</p>
+      <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
+    </div>
+  );
 
   return (
     <div className="mt-3 rounded-lg overflow-hidden border border-dark-400 bg-dark-900">
@@ -59,7 +68,7 @@ function TwitchPlayer({ id, url, isLive }) {
   );
 }
 
-export default function EmbedPlayer({ url, isLive }) {
+export default function EmbedPlayer({ url, isLive, expiresAt }) {
   const info = getEmbedInfo(url);
   if (!info) return null;
 
@@ -79,7 +88,7 @@ export default function EmbedPlayer({ url, isLive }) {
   );
 
   if (info.type === 'twitch') return (
-    <TwitchPlayer id={info.id} url={url} isLive={isLive} />
+    <TwitchPlayer id={info.id} url={url} isLive={isLive} expiresAt={expiresAt} />
   );
 
   if (info.type === 'twitch-clip') return (
