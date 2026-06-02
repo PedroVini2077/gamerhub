@@ -34,6 +34,20 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)',
+          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: '#0d0d12', border: '3px solid #39ff14',
+            borderRadius: 16, padding: '48px 64px', textAlign: 'center',
+            boxShadow: '0 0 60px #39ff1450'
+          }}>
+            <p style={{ fontSize: 64 }}>🔧</p>
+            <p style={{ color: '#39ff14', fontFamily: 'monospace', fontSize: 32, fontWeight: 'bold', marginTop: 16 }}>SITE EM MANUTENÇÃO</p>
+            <p style={{ color: '#888', fontFamily: 'monospace', fontSize: 14, marginTop: 8 }}>Voltamos em breve!</p>
+          </div>
+        </div>
         <Toaster
           position="bottom-right"
           toastOptions={{
