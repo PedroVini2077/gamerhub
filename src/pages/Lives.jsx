@@ -27,6 +27,7 @@ export default function Lives() {
   const [showModPanel, setShowModPanel] = useState(false);
   const [silenceMenu, setSilenceMenu] = useState(null);
   const [silencingUser, setSilencingUser] = useState(null);
+  const [liveEnded, setLiveEnded] = useState(false);
   const bottomRef = useRef(null);
   const activeLiveRef = useRef(null);
 
@@ -58,6 +59,12 @@ export default function Lives() {
         })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' },
         () => fetchTimeouts(activeLiveRef.current?.id))
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'posts',
+        filter: `id=eq.${activeLive.id}`
+      }, (payload) => {
+        if (!payload.new?.is_live) setLiveEnded(true);
+      })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
@@ -124,6 +131,12 @@ export default function Lives() {
     await supabase.from('live_chat').delete().eq('id', msgId);
   }
 
+  async function endLive() {
+    if (!activeLive) return;
+    await supabase.from('posts').update({ is_live: false }).eq('id', activeLive.id);
+    setLiveEnded(true);
+  }
+
   async function silenceUser(userId, minutes) {
     if (!activeLive) return;
     setSilencingUser(userId);
@@ -183,7 +196,15 @@ export default function Lives() {
           <span className="text-xs font-mono text-red-400 font-bold">AO VIVO</span>
         </div>
         <h2 className="font-display text-sm text-white truncate flex-1 min-w-0">{activeLive.title}</h2>
-        {canModerate && (
+        {isLiveOwner && !liveEnded && (
+          <button
+            type="button"
+            onClick={endLive}
+            className="flex items-center gap-1 px-2 py-1 rounded border border-red-500/40 text-red-400 text-xs font-mono hover:bg-red-500/10 transition-all shrink-0 cursor-pointer">
+            <X size={11} /><span>Encerrar</span>
+          </button>
+        )}
+        {canModerate && !liveEnded && (
           <button
             type="button"
             onClick={() => { setSilenceMenu(null); setShowModPanel(p => !p); }}
@@ -197,7 +218,15 @@ export default function Lives() {
         )}
       </div>
 
-      <EmbedPlayer url={activeLive.embed_url} isLive={true} expiresAt={activeLive.expires_at} />
+      {liveEnded ? (
+        <div className="mt-1 rounded-lg border border-dark-400 bg-dark-900 p-10 text-center">
+          <p className="text-4xl mb-3">📴</p>
+          <p className="text-neon-green font-mono text-sm font-bold">Live encerrada</p>
+          <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
+        </div>
+      ) : (
+        <EmbedPlayer url={activeLive.embed_url} isLive={true} expiresAt={activeLive.expires_at} />
+      )}
 
       {canModerate && showModPanel && (
         <div className="rounded-xl border border-neon-green/20 bg-dark-800"

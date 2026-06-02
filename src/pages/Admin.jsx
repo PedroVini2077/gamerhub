@@ -198,27 +198,31 @@ const [refreshing, setRefreshing] = useState(false);
 
 async function fetchLiveMod() {
   setRefreshing(true);
-  try {
-    const [{ data: silenced }, { data: lives }] = await Promise.all([
-      supabase.from('live_chat_timeouts')
-        .select('id, post_id, user_id, expires_at, profiles!user_id(username)')
-        .order('created_at', { ascending: false }),
-      supabase.from('posts')
-        .select('id, title, user_id, profiles(username)')
-        .eq('is_live', true)
-        .not('embed_url', 'is', null),
-    ]);
-    setLiveMod({ silenced: silenced || [], lives: lives || [] });
-  } catch (err) {
-    toast.error('Erro ao carregar');
-  }
+  const [{ data: silenced }, { data: lives }] = await Promise.all([
+    supabase.from('live_chat_timeouts')
+      .select('id, post_id, user_id, expires_at, profiles(username)')
+      .order('created_at', { ascending: false }),
+    supabase.from('posts')
+      .select('id, title, user_id, profiles(username)')
+      .eq('is_live', true)
+      .not('embed_url', 'is', null)
+      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString()),
+  ]);
+  setLiveMod({ silenced: silenced || [], lives: lives || [] });
   setRefreshing(false);
 }
 
   async function unsilenceUser(id) {
-  await supabase.from('live_chat_timeouts').delete().eq('id', id);
-  fetchLiveMod();
-}
+    await supabase.from('live_chat_timeouts').delete().eq('id', id);
+    fetchLiveMod();
+  }
+
+  async function handleEndLive(postId) {
+    if (!confirm('Encerrar esta live?')) return;
+    const { error } = await supabase.from('posts').update({ is_live: false }).eq('id', postId);
+    if (error) toast.error('Erro ao encerrar live');
+    else { toast.success('Live encerrada'); fetchLiveMod(); }
+  }
 
   async function handleRoleChange(userId, newRole) {
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
@@ -414,6 +418,10 @@ async function fetchLiveMod() {
                           <p className="text-xs font-mono font-bold text-white">{l.title}</p>
                           <p className="text-xs font-mono text-gray-600">por {l.profiles?.username}</p>
                         </div>
+                        <button onClick={() => handleEndLive(l.id)}
+                          className="text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/20 hover:border-red-400/50 px-2 py-0.5 rounded transition-all shrink-0">
+                          Encerrar
+                        </button>
                       </div>
                     ))}
                   </div>
