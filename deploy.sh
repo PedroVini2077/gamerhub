@@ -1,4 +1,6 @@
 #!/bin/bash
+echo "⬇️  Puxando atualizações..."
+git pull origin main
 echo "📦 Fazendo commit..."
 git add .
 git commit -m "$1"
