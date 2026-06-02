@@ -210,7 +210,7 @@ useEffect(() => {
         </button>
       </div>
 
-{post.is_live ? (
+{post.is_live && (!post.expires_at || new Date(post.expires_at) > new Date()) ? (
         <div className="mt-4 pt-3 border-t border-dark-500">
           <a href="/lives"
             className="flex items-center justify-center gap-2 w-full btn-neon py-2 text-xs">

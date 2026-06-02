@@ -12,7 +12,7 @@ const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-gr
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
 
 export default function Lives() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isAdmin } = useRole();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -28,8 +28,13 @@ export default function Lives() {
   const [silenceMenu, setSilenceMenu] = useState(null);
   const [silencingUser, setSilencingUser] = useState(null);
   const [liveEnded, setLiveEnded] = useState(false);
+  const [viewerCount, setViewerCount] = useState(0);
   const bottomRef = useRef(null);
   const activeLiveRef = useRef(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate('/login');
+  }, [authLoading, user, navigate]);
 
   useEffect(() => { fetchLives(); }, []);
 
@@ -49,6 +54,32 @@ export default function Lives() {
     fetchMessages(activeLive.id);
     fetchTimeouts(activeLive.id);
 
+    // Check expires_at immediately on enter
+    if (activeLive.expires_at && new Date() >= new Date(activeLive.expires_at)) {
+      setLiveEnded(true);
+    }
+
+    // Auto-expire poll (every 30s)
+    const expiryInterval = activeLive.expires_at
+      ? setInterval(() => {
+          if (new Date() >= new Date(activeLive.expires_at)) setLiveEnded(true);
+        }, 30_000)
+      : null;
+
+    // Presence — viewer counter
+    const presenceChannel = supabase.channel(`presence-${activeLive.id}`, {
+      config: { presence: { key: user?.id || 'anon' } },
+    });
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        setViewerCount(Object.keys(presenceChannel.presenceState()).length);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ user_id: user?.id, at: Date.now() });
+        }
+      });
+
     const channel = supabase.channel(`live-${activeLive.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat' },
         (payload) => {
@@ -67,7 +98,11 @@ export default function Lives() {
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      if (expiryInterval) clearInterval(expiryInterval);
+      supabase.removeChannel(presenceChannel);
+      supabase.removeChannel(channel);
+    };
   }, [activeLive]);
 
   useEffect(() => {
@@ -75,6 +110,8 @@ export default function Lives() {
   }, [messages]);
 
   function enterLive(live) {
+    setLiveEnded(false);
+    setViewerCount(0);
     setActiveLive(live);
     navigate('/lives/' + live.id);
   }
@@ -83,6 +120,8 @@ export default function Lives() {
     setActiveLive(null);
     setMessages([]);
     setShowModPanel(false);
+    setLiveEnded(false);
+    setViewerCount(0);
     navigate('/lives');
   }
 
@@ -100,7 +139,7 @@ export default function Lives() {
   async function fetchMessages(postId) {
     if (!postId) return;
     const { data } = await supabase.from('live_chat')
-      .select('id, message, created_at, user_id, profiles(id, username, avatar_url, role)')
+      .select('id, message, created_at, user_id, profiles(id, username, avatar_url, role, bio, created_at)')
       .eq('post_id', postId)
       .order('created_at', { ascending: true })
       .limit(100);
@@ -194,6 +233,11 @@ export default function Lives() {
         <div className="flex items-center gap-1.5 shrink-0">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           <span className="text-xs font-mono text-red-400 font-bold">AO VIVO</span>
+          {viewerCount > 0 && (
+            <span className="flex items-center gap-0.5 text-xs font-mono text-gray-600">
+              <Users size={10} />{viewerCount}
+            </span>
+          )}
         </div>
         <h2 className="font-display text-sm text-white truncate flex-1 min-w-0">{activeLive.title}</h2>
         {isLiveOwner && !liveEnded && (
