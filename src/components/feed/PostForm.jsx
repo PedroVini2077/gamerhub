@@ -104,9 +104,7 @@ export default function PostForm({ onPost }) {
         embed_type: embedInfo?.type || null,
         is_live: isLive,
         was_live: isLive,
-        expires_at: isLive && expiresAt
-          ? new Date(Date.now() + Number(expiresAt) * 3600_000).toISOString()
-          : null,
+        expires_at: null,
       }).select().single();
 
       if (postError) throw postError;
@@ -180,29 +178,14 @@ export default function PostForm({ onPost }) {
       </button>
     </div>
 
-    {/* Opção de live com expiração */}
+    {/* Opção de live */}
     {embedUrl && getEmbedInfo(embedUrl)?.type === 'twitch' && (
-      <div className="mt-2 space-y-2">
+      <div className="mt-2">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={isLive} onChange={e => setIsLive(e.target.checked)}
             className="w-4 h-4 accent-neon-green" />
           <span className="text-xs font-mono text-gray-400">🔴 Marcar como Live</span>
         </label>
-        {isLive && (
-          <div>
-            <p className="text-xs font-mono text-gray-500 mb-1">Duração estimada:</p>
-            <select className="input-gamer text-xs"
-              value={expiresAt} onChange={e => setExpiresAt(e.target.value)}>
-              <option value="">Sem prazo (encerrar manualmente)</option>
-              <option value="1">1 hora</option>
-              <option value="2">2 horas</option>
-              <option value="3">3 horas</option>
-              <option value="4">4 horas</option>
-              <option value="6">6 horas</option>
-              <option value="8">8 horas</option>
-            </select>
-          </div>
-        )}
       </div>
     )}
 
