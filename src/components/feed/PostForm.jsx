@@ -104,7 +104,9 @@ export default function PostForm({ onPost }) {
         embed_type: embedInfo?.type || null,
         is_live: isLive,
         was_live: isLive,
-        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+        expires_at: isLive && expiresAt
+          ? new Date(Date.now() + Number(expiresAt) * 3600_000).toISOString()
+          : null,
       }).select().single();
 
       if (postError) throw postError;
@@ -125,6 +127,7 @@ export default function PostForm({ onPost }) {
       toast.success('Post publicado! 🎮', { id: toastId });
       setTitle(''); setContent(''); setMedias([]);
       setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
+      setIsLive(false); setExpiresAt('');
       removeAudio();
       onPost?.();
     } catch (err) {
@@ -187,9 +190,17 @@ export default function PostForm({ onPost }) {
         </label>
         {isLive && (
           <div>
-            <p className="text-xs font-mono text-gray-500 mb-1">Live termina em:</p>
-            <input type="datetime-local" className="input-gamer text-xs"
-              value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
+            <p className="text-xs font-mono text-gray-500 mb-1">Duração estimada:</p>
+            <select className="input-gamer text-xs"
+              value={expiresAt} onChange={e => setExpiresAt(e.target.value)}>
+              <option value="">Sem prazo (encerrar manualmente)</option>
+              <option value="1">1 hora</option>
+              <option value="2">2 horas</option>
+              <option value="3">3 horas</option>
+              <option value="4">4 horas</option>
+              <option value="6">6 horas</option>
+              <option value="8">8 horas</option>
+            </select>
           </div>
         )}
       </div>
