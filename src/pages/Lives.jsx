@@ -25,6 +25,7 @@ export default function Lives() {
   const [isSilenced, setIsSilenced] = useState(false);
   const [showModPanel, setShowModPanel] = useState(false);
   const [silenceMenu, setSilenceMenu] = useState(null);
+  const [silencingUser, setSilencingUser] = useState(null);
   const bottomRef = useRef(null);
   const activeLiveRef = useRef(null);
 
@@ -124,12 +125,14 @@ export default function Lives() {
 
   async function silenceUser(userId, minutes) {
     if (!activeLive) return;
+    setSilencingUser(userId);
     const expires = new Date(Date.now() + minutes * 60000).toISOString();
     await supabase.from('live_chat_timeouts').upsert(
       { post_id: activeLive.id, user_id: userId, expires_at: expires, created_by: user.id },
       { onConflict: 'post_id,user_id' }
     );
     setSilenceMenu(null);
+    setSilencingUser(null);
     await fetchTimeouts(activeLive.id);
   }
 
@@ -154,19 +157,19 @@ export default function Lives() {
 
   if (activeLive) return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 pr-1">
         <button onClick={exitLive}
-          className="text-gray-500 hover:text-neon-green transition-colors shrink-0">
+          className="text-gray-500 hover:text-neon-green transition-colors shrink-0 p-1">
           <X size={18} />
         </button>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           <span className="text-xs font-mono text-red-400 font-bold">AO VIVO</span>
         </div>
-        <h2 className="font-display text-sm text-white truncate flex-1">{activeLive.title}</h2>
+        <h2 className="font-display text-sm text-white truncate flex-1 min-w-0">{activeLive.title}</h2>
         {canModerate && (
           <button onClick={() => setShowModPanel(p => !p)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded border text-xs font-mono transition-all shrink-0 ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-xs font-mono transition-all shrink-0 ${
               showModPanel
                 ? 'border-neon-green text-neon-green bg-neon-green/10'
                 : 'border-dark-400 text-gray-500 hover:border-neon-green/50 hover:text-neon-green'
@@ -237,14 +240,15 @@ export default function Lives() {
                     </div>
                     {silenced ? (
                       <button onClick={() => unsilenceUser(p.id)}
-                        className="text-xs font-mono text-yellow-400 border border-yellow-400/30 px-2 py-0.5 rounded transition-all">
+                        className="text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:border-yellow-400/60 hover:bg-yellow-400/5 px-2 py-0.5 rounded transition-all active:scale-95">
                         🔇 Remover
                       </button>
                     ) : (
                       <div className="relative">
                         <button onClick={() => setSilenceMenu(silenceMenu === p.id ? null : p.id)}
-                          className="text-xs font-mono text-gray-500 hover:text-yellow-400 border border-dark-400 px-2 py-0.5 rounded transition-all flex items-center gap-1">
-                          <Clock size={10} /> Silenciar
+                          disabled={silencingUser === p.id}
+                          className="text-xs font-mono text-gray-500 hover:text-yellow-400 border border-dark-400 hover:border-yellow-400/40 px-2 py-0.5 rounded transition-all flex items-center gap-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                          {silencingUser === p.id ? <span className="animate-pulse">...</span> : <><Clock size={10} /> Silenciar</>}
                         </button>
                         {silenceMenu === p.id && (
                           <div className="absolute right-0 top-7 bg-dark-700 border border-dark-400 rounded-lg p-1.5 z-20 flex flex-col gap-1"
@@ -252,7 +256,7 @@ export default function Lives() {
                             <p className="text-xs font-mono text-gray-500 px-2 pb-1 border-b border-dark-500">Silenciar por:</p>
                             {[5, 10, 30, 60].map(min => (
                               <button key={min} onClick={() => silenceUser(p.id, min)}
-                                className="text-xs font-mono text-gray-400 hover:text-yellow-400 hover:bg-dark-600 px-3 py-1 rounded text-left transition-colors">
+                                className="text-xs font-mono text-gray-400 hover:text-yellow-400 hover:bg-dark-600 px-3 py-1 rounded text-left transition-colors active:scale-95">
                                 {min} min
                               </button>
                             ))}
