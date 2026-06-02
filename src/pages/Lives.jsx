@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { useRole } from '../hooks/useRole';
 import AvatarPopup from '../components/ui/AvatarPopup';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
+import toast from 'react-hot-toast';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
@@ -128,16 +129,25 @@ export default function Lives() {
     setSilencingUser(userId);
     setSilenceMenu(null);
     const expires = new Date(Date.now() + minutes * 60000).toISOString();
-    await supabase.from('live_chat_timeouts')
+
+    const { error: delError } = await supabase.from('live_chat_timeouts')
       .delete()
       .eq('post_id', activeLive.id)
       .eq('user_id', userId);
-    await supabase.from('live_chat_timeouts').insert({
+    if (delError) toast.error('DELETE falhou: ' + delError.message);
+
+    const { error: insError } = await supabase.from('live_chat_timeouts').insert({
       post_id: activeLive.id,
       user_id: userId,
       expires_at: expires,
       created_by: user.id,
     });
+    if (insError) {
+      toast.error('INSERT falhou: ' + insError.message);
+    } else {
+      toast.success('Usuário silenciado por ' + minutes + ' min');
+    }
+
     setSilencingUser(null);
     await fetchTimeouts(activeLive.id);
   }
