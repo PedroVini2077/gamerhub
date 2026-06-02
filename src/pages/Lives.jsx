@@ -200,7 +200,7 @@ export default function Lives() {
       <EmbedPlayer url={activeLive.embed_url} isLive={true} expiresAt={activeLive.expires_at} />
 
       {canModerate && showModPanel && (
-        <div className="rounded-xl border border-neon-green/20 bg-dark-800 overflow-hidden"
+        <div className="rounded-xl border border-neon-green/20 bg-dark-800"
           style={{ boxShadow: '0 0 20px #39ff1410' }}>
           <div className="flex items-center gap-2 px-4 py-3 border-b border-dark-600 bg-dark-900/50">
             <Shield size={14} className="text-neon-green" />
