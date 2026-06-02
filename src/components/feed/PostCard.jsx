@@ -28,6 +28,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [postMedia, setPostMedia] = useState([]);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
+  const [editIsLive, setEditIsLive] = useState(post.is_live || false);
   const [saving, setSaving] = useState(false);
 
   const [countdown, setCountdown] = useState('');
@@ -118,6 +119,8 @@ useEffect(() => {
     setSaving(true);
     const { error } = await supabase.from('posts').update({
       content: editContent.trim() || null,
+      is_live: editIsLive,
+      was_live: post.was_live || editIsLive,
       edited_at: new Date().toISOString()
     }).eq('id', post.id);
     if (error) toast.error('Erro ao salvar');
@@ -174,20 +177,27 @@ useEffect(() => {
           <textarea className="input-gamer resize-none w-full" rows={3}
             placeholder="Legenda (opcional)..."
             value={editContent} onChange={e => setEditContent(e.target.value)} maxLength={1000} />
+          {post.embed_type === 'twitch' && (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={editIsLive} onChange={e => setEditIsLive(e.target.checked)}
+                className="w-4 h-4 accent-neon-green" />
+              <span className="text-xs font-mono text-gray-400">🔴 Marcar como Live</span>
+            </label>
+          )}
           <div className="flex gap-2">
             <button onClick={handleSaveEdit} disabled={saving}
               className="btn-solid py-1.5 px-3 text-xs flex items-center gap-1">
               <Check size={12} /> {saving ? 'Salvando...' : 'Salvar'}
             </button>
-            <button onClick={() => { setEditing(false); setEditContent(post.content || ''); }}
+            <button onClick={() => { setEditing(false); setEditContent(post.content || ''); setEditIsLive(post.is_live || false); }}
               className="btn-neon py-1.5 px-3 text-xs flex items-center gap-1">
               <X size={12} /> Cancelar
             </button>
           </div>
           <p className="text-xs font-mono flex items-center gap-1"
-  style={{ color: countdown <= '05:00' ? '#ff4444' : '#6b7280' }}>
-  ⏱ Tempo restante: <span className="font-bold ml-1">{countdown}</span>
-</p>
+            style={{ color: countdown <= '05:00' ? '#ff4444' : '#6b7280' }}>
+            ⏱ Tempo restante: <span className="font-bold ml-1">{countdown}</span>
+          </p>
         </div>
       ) : (
         post.content && <p className="text-sm text-gray-400 leading-relaxed mb-2">{post.content}</p>
