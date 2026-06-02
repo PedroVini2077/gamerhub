@@ -194,8 +194,16 @@ useEffect(() => {
       )}
 
       {post.embed_url && (
-  <EmbedPlayer url={post.embed_url} isLive={post.is_live} expiresAt={post.expires_at} />
-)}      
+        post.was_live && !post.is_live
+          ? (
+            <div className="mt-3 rounded-lg border border-dark-400 bg-dark-900 p-8 text-center">
+              <p className="text-3xl mb-3">📴</p>
+              <p className="text-neon-green font-mono text-sm font-bold">Live encerrada</p>
+              <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
+            </div>
+          )
+          : <EmbedPlayer url={post.embed_url} isLive={post.is_live} expiresAt={post.expires_at} />
+      )}
 
       {/* Carrossel */}
       {postMedia.length > 0 && <MediaCarousel items={postMedia} postTitle={post.title} />}

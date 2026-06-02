@@ -103,7 +103,8 @@ export default function PostForm({ onPost }) {
         embed_url: embedUrl.trim() || null,
         embed_type: embedInfo?.type || null,
         is_live: isLive,
-expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+        was_live: isLive,
+        expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
       }).select().single();
 
       if (postError) throw postError;
