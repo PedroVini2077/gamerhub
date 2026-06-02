@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { ExternalLink, Tv } from 'lucide-react';
 
 export function getEmbedInfo(url) {
@@ -22,8 +23,16 @@ export function getEmbedInfo(url) {
 }
 
   function TwitchPlayer({ id, url, isLive, expiresAt }) {
-  const expired = expiresAt && new Date(expiresAt) < new Date();
+  const [expired, setExpired] = useState(() => expiresAt && new Date(expiresAt) < new Date());
   const domain = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+
+  useEffect(() => {
+    if (!expiresAt) return;
+    const remaining = new Date(expiresAt) - Date.now();
+    if (remaining <= 0) { setExpired(true); return; }
+    const timer = setTimeout(() => setExpired(true), remaining);
+    return () => clearTimeout(timer);
+  }, [expiresAt]);
 
   if (expired) return (
     <div className="mt-3 rounded-lg border border-dark-400 bg-dark-900 p-8 text-center">
