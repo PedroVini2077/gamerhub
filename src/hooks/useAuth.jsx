@@ -94,21 +94,8 @@ export function AuthProvider({ children }) {
     });
     if (error) return { error };
 
-    // Com confirmação de email ativa, data.session é null até o email ser confirmado.
-    // O perfil será criado automaticamente via trigger após a confirmação.
-    // Se session existe (confirmação desativada), cria o perfil imediatamente.
-    if (data.user && data.session) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({ id: data.user.id, username });
-
-      if (profileError) {
-        await supabase.auth.signOut();
-        return { error: { message: 'Erro ao criar perfil. Tente novamente.' } };
-      }
-
-      await fetchProfile(data.user.id);
-    }
+    // O perfil é criado automaticamente via trigger no banco (handle_new_user).
+    // Não é necessário inserir manualmente aqui.
 
     return { data };
   }
