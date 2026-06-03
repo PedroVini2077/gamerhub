@@ -8,7 +8,8 @@ import {
   Shield, Clock, X, Users, FileText, Key,
   ChevronUp, ChevronDown, Ban, Trash2,
   RotateCcw, CheckCircle, XCircle, Crown, ScrollText, Bell,
-  VolumeX, UserPlus, Radio, Tv,
+  VolumeX, UserPlus, Radio, Tv, LogIn, LogOut,
+  AlertTriangle, ShieldAlert, ShieldOff, Pencil, Activity,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
@@ -234,7 +235,6 @@ export default function Admin() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('users');
-  const [superTab, setSuperTab] = useState('requests');
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [keys, setKeys] = useState([]);
@@ -245,6 +245,8 @@ export default function Admin() {
   const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [logCat, setLogCat] = useState('todos');
+  const [logsLoading, setLogsLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
   const [notifLoading, setNotifLoading] = useState(false);
@@ -256,9 +258,13 @@ export default function Admin() {
 
   useEffect(() => {
     if (tab === 'lives' || tab === 'super') fetchLiveMod();
-    if (tab === 'super' && isSuperAdmin) fetchLogs();
     if (tab === 'notifs') fetchNotifications();
+    if (tab === 'logs') fetchLogs(logCat);
   }, [tab]);
+
+  useEffect(() => {
+    if (tab === 'logs') fetchLogs(logCat);
+  }, [logCat]);
 
   useEffect(() => {
     const channel = supabase.channel('admin-realtime')
@@ -275,6 +281,9 @@ export default function Admin() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
         fetchNotificationsCount();
         if (tab === 'notifs') fetchNotifications();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
+        if (tab === 'logs') fetchLogs(logCat);
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
@@ -333,11 +342,14 @@ export default function Admin() {
     setRefreshing(false);
   }
 
-  async function fetchLogs() {
-    if (!isSuperAdmin) return;
-    const { data } = await supabase.from('admin_logs')
-      .select('*').order('created_at', { ascending: false }).limit(50);
+  async function fetchLogs(cat = 'todos') {
+    setLogsLoading(true);
+    let q = supabase.from('admin_logs')
+      .select('*').order('created_at', { ascending: false }).limit(100);
+    if (cat !== 'todos') q = q.eq('category', cat);
+    const { data } = await q;
     setLogs(data || []);
+    setLogsLoading(false);
   }
 
   async function fetchNotificationsCount() {
@@ -380,12 +392,16 @@ export default function Admin() {
     setNotifLoading(false);
   }
 
-  async function logAction(action, details) {
+  async function logAction(action, details, category = 'admin', severity = 'info') {
     await supabase.from('admin_logs').insert({
       admin_id: user.id,
       admin_username: profile?.username || 'Admin',
+      actor_id: user.id,
+      actor_username: profile?.username || 'Admin',
       action,
       details,
+      category,
+      severity,
     });
   }
 
@@ -462,29 +478,62 @@ export default function Admin() {
   }
 
   async function handleRoleChange(userId, newRole) {
+    const target = users.find(u => u.id === userId);
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
     if (error) toast.error('Sem permissão ou erro ao atualizar');
-    else { toast.success(`Role → ${newRole}`); fetchAll(); }
+    else {
+      toast.success(`Role → ${newRole}`);
+      await logAction('admin_role_changed',
+        `Role de @${target?.username || userId} alterada para "${newRole}" por @${profile?.username}`,
+        'admin', 'info');
+      fetchAll();
+    }
   }
 
   async function handleBan(userId, banned) {
+    const target = users.find(u => u.id === userId);
     const { error } = await supabase.from('profiles').update({ banned }).eq('id', userId);
     if (error) toast.error('Erro');
-    else { toast.success(banned ? 'Usuário banido' : 'Usuário desbanido'); fetchAll(); }
+    else {
+      toast.success(banned ? 'Usuário banido' : 'Usuário desbanido');
+      await logAction(
+        banned ? 'admin_ban' : 'admin_unban',
+        `@${target?.username || userId} foi ${banned ? 'banido' : 'desbanido'} por @${profile?.username}`,
+        'security', banned ? 'warning' : 'info'
+      );
+      if (banned) {
+        await supabase.from('admin_notifications').insert({
+          type: 'user_banned',
+          title: 'Usuário banido',
+          message: `@${target?.username || userId} foi banido por @${profile?.username}`,
+          audience: 'all_admins',
+        });
+      }
+      fetchAll();
+    }
   }
 
   async function handleDeletePosts(userId, username) {
     if (!confirm(`Deletar todos os posts de ${username}?`)) return;
     const { error } = await supabase.from('posts').delete().eq('user_id', userId);
     if (error) toast.error('Erro ao deletar posts');
-    else { toast.success('Posts deletados'); fetchAll(); }
+    else {
+      toast.success('Posts deletados');
+      await logAction('admin_delete_posts',
+        `Todos os posts de @${username} deletados por @${profile?.username}`,
+        'admin', 'warning');
+      fetchAll();
+    }
   }
 
   async function handleDeletePost(postId) {
     if (!confirm('Deletar este post?')) return;
     const { error } = await supabase.from('posts').delete().eq('id', postId);
     if (error) toast.error('Erro');
-    else { toast.success('Post deletado'); fetchAll(); }
+    else {
+      toast.success('Post deletado');
+      fetchAll();
+    }
   }
 
   async function handleDeleteKey(keyId) {
@@ -507,6 +556,7 @@ export default function Admin() {
     { id: 'lives', label: 'Mod de Lives', icon: Shield },
     { id: 'keys', label: 'Keys & Promos', icon: Key },
     { id: 'notifs', label: 'Notificações', icon: Bell, badge: unreadCount },
+    { id: 'logs', label: 'Logs', icon: Activity },
     ...(isSuperAdmin ? [{ id: 'super', label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
@@ -790,6 +840,10 @@ export default function Admin() {
                   ? <RotateCcw size={15} className="text-neon-green" />
                   : n.type === 'reactivation_request'
                   ? <RotateCcw size={15} className="text-yellow-400" />
+                  : n.type === 'security_alert'
+                  ? <ShieldAlert size={15} className="text-red-400" />
+                  : n.type === 'user_banned'
+                  ? <Ban size={15} className="text-red-400" />
                   : <Bell size={15} className="text-gray-500" />;
                 return (
                   <div key={n.id} className={`card p-4 flex items-start gap-3 transition-all ${
@@ -819,6 +873,113 @@ export default function Admin() {
             </div>
           )}
 
+          {tab === 'logs' && (
+            <div className="space-y-3">
+              {/* Cabeçalho */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity size={15} className="text-neon-purple" />
+                  <h3 className="font-display text-sm text-neon-purple uppercase tracking-wider">Atividade do Site</h3>
+                </div>
+                <button onClick={() => fetchLogs(logCat)} disabled={logsLoading}
+                  className="text-xs font-mono text-gray-500 hover:text-neon-purple transition-colors flex items-center gap-1">
+                  <RotateCcw size={11} className={logsLoading ? 'animate-spin' : ''} />
+                  {logsLoading ? 'Carregando...' : 'Atualizar'}
+                </button>
+              </div>
+
+              {/* Filtro por categoria */}
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { id: 'todos',    label: 'Todos' },
+                  { id: 'auth',     label: 'Auth' },
+                  { id: 'security', label: 'Segurança' },
+                  { id: 'content',  label: 'Conteúdo' },
+                  { id: 'admin',    label: 'Admin' },
+                ].map(c => (
+                  <button key={c.id} onClick={() => setLogCat(c.id)}
+                    className={`tag cursor-pointer transition-all ${
+                      logCat === c.id ? 'tag-purple' : 'opacity-40 hover:opacity-70 tag-cyan'
+                    }`}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Lista de logs */}
+              {logsLoading ? (
+                <div className="space-y-2">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="card p-3 animate-pulse">
+                      <div className="h-3 bg-dark-500 rounded w-3/4 mb-2" />
+                      <div className="h-2 bg-dark-500 rounded w-1/3" />
+                    </div>
+                  ))}
+                </div>
+              ) : !logs.length ? (
+                <div className="card p-8 text-center">
+                  <Activity size={28} className="text-gray-600 mx-auto mb-2" />
+                  <p className="text-xs font-mono text-gray-500">Nenhuma atividade registrada</p>
+                </div>
+              ) : logs.map(log => {
+                // Ícone por tipo de ação
+                const iconMap = {
+                  auth_login_success:   { Icon: LogIn,       cls: 'text-neon-green' },
+                  auth_login_failed:    { Icon: AlertTriangle,cls: 'text-yellow-400' },
+                  auth_logout:          { Icon: LogOut,       cls: 'text-gray-400' },
+                  auth_register:        { Icon: UserPlus,     cls: 'text-neon-cyan' },
+                  auth_banned_attempt:  { Icon: Ban,          cls: 'text-red-400' },
+                  auth_rate_limited:    { Icon: Clock,        cls: 'text-yellow-400' },
+                  auth_permanent_block: { Icon: ShieldOff,    cls: 'text-red-500' },
+                  content_post_created: { Icon: FileText,     cls: 'text-neon-green' },
+                  content_post_deleted: { Icon: Trash2,       cls: 'text-red-400' },
+                  content_post_edited:  { Icon: Pencil,       cls: 'text-gray-400' },
+                  live_ended:           { Icon: Tv,           cls: 'text-gray-500' },
+                  live_reactivated:     { Icon: RotateCcw,    cls: 'text-neon-green' },
+                  reactivation_requested:{ Icon: RotateCcw,  cls: 'text-yellow-400' },
+                  reactivation_approved:{ Icon: CheckCircle,  cls: 'text-neon-green' },
+                  reactivation_denied:  { Icon: XCircle,      cls: 'text-red-400' },
+                  admin_ban:            { Icon: Ban,          cls: 'text-red-400' },
+                  admin_unban:          { Icon: Shield,       cls: 'text-neon-green' },
+                  admin_role_changed:   { Icon: Crown,        cls: 'text-yellow-400' },
+                  admin_delete_posts:   { Icon: Trash2,       cls: 'text-red-400' },
+                };
+                const { Icon = ScrollText, cls = 'text-gray-500' } = iconMap[log.action] || {};
+
+                // Cor do indicador de severidade
+                const severityDot =
+                  log.severity === 'critical' ? 'bg-red-500 animate-pulse' :
+                  log.severity === 'warning'  ? 'bg-yellow-400' :
+                                                'bg-gray-600';
+
+                return (
+                  <div key={log.id} className={`card p-3 flex items-start gap-3 ${
+                    log.severity === 'critical' ? 'border-red-500/20 bg-red-500/5' :
+                    log.severity === 'warning'  ? 'border-yellow-400/10' : ''
+                  }`}>
+                    <Icon size={14} className={`${cls} shrink-0 mt-0.5`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono text-gray-300 leading-relaxed">{log.details}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${severityDot}`} />
+                        <span className="text-xs font-mono text-gray-600">
+                          {log.actor_username || log.admin_username}
+                        </span>
+                        <span className="text-gray-700 text-xs">·</span>
+                        <span className="text-xs font-mono text-gray-600">
+                          {new Date(log.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                        <span className="tag opacity-50 shrink-0" style={{ fontSize: 9, padding: '1px 5px' }}>
+                          {log.category}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {tab === 'super' && isSuperAdmin && (
             <div className="space-y-4">
               <div className="card p-4 border-yellow-400/20" style={{ boxShadow: '0 0 20px #eab30810' }}>
@@ -829,80 +990,39 @@ export default function Admin() {
                 <p className="text-xs text-gray-600 font-mono mt-1">Acesso exclusivo — super admins only.</p>
               </div>
 
-              <div className="flex gap-2">
-                {[
-                  { id: 'requests', label: `Solicitações${pendingCount > 0 ? ` (${pendingCount})` : ''}`, icon: RotateCcw },
-                  { id: 'logs', label: 'Logs', icon: ScrollText },
-                ].map(({ id, label, icon: Icon }) => (
-                  <button key={id}
-                    onClick={() => { setSuperTab(id); if (id === 'logs') fetchLogs(); }}
-                    className={`flex items-center gap-1.5 py-1.5 px-3 text-xs font-mono rounded border transition-all ${
-                      superTab === id
-                        ? 'border-yellow-400/50 bg-yellow-400/10 text-yellow-400'
-                        : 'border-dark-400 text-gray-500 hover:text-gray-300'
-                    }`}>
-                    <Icon size={11} /> {label}
-                  </button>
-                ))}
-              </div>
-
-              {superTab === 'requests' && (
-                <div className="space-y-3">
-                  {!liveMod.requests?.length ? (
-                    <div className="card p-8 text-center">
-                      <CheckCircle size={28} className="text-neon-green/40 mx-auto mb-2" />
-                      <p className="text-xs font-mono text-gray-500">Nenhuma solicitação pendente</p>
-                    </div>
-                  ) : liveMod.requests.map(req => (
-                    <div key={req.id} className="card p-4 border-yellow-400/10 space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-white font-mono truncate">"{req.post_title}"</p>
-                          <p className="text-xs text-gray-500 font-mono mt-0.5">
-                            por <span className="text-yellow-400">{req.admin_username}</span>
-                            {' · '}{new Date(req.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                          </p>
-                        </div>
-                        <span className="tag tag-purple shrink-0 text-xs">pendente</span>
-                      </div>
-                      <div className="bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
-                        <p className="text-xs font-mono text-neon-green font-bold">{req.reason}</p>
-                        {req.details && <p className="text-xs font-mono text-gray-400 mt-0.5">{req.details}</p>}
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleApproveRequest(req)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
-                          <CheckCircle size={12} /> Aprovar e Reativar
-                        </button>
-                        <button onClick={() => handleDenyRequest(req)}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
-                          <XCircle size={12} /> Negar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              {!liveMod.requests?.length ? (
+                <div className="card p-8 text-center">
+                  <CheckCircle size={28} className="text-neon-green/40 mx-auto mb-2" />
+                  <p className="text-xs font-mono text-gray-500">Nenhuma solicitação pendente</p>
                 </div>
-              )}
-
-              {superTab === 'logs' && (
-                <div className="space-y-2">
-                  {!logs.length ? (
-                    <div className="card p-8 text-center">
-                      <p className="text-xs font-mono text-gray-500">Nenhuma ação registrada ainda</p>
+              ) : liveMod.requests.map(req => (
+                <div key={req.id} className="card p-4 border-yellow-400/10 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white font-mono truncate">"{req.post_title}"</p>
+                      <p className="text-xs text-gray-500 font-mono mt-0.5">
+                        por <span className="text-yellow-400">{req.admin_username}</span>
+                        {' · '}{new Date(req.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                      </p>
                     </div>
-                  ) : logs.map(log => (
-                    <div key={log.id} className="card p-3 flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-neon-green/50 mt-1.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-mono text-gray-300 leading-relaxed">{log.details}</p>
-                        <p className="text-xs font-mono text-gray-600 mt-0.5">
-                          {log.admin_username} · {new Date(log.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    <span className="tag tag-purple shrink-0 text-xs">pendente</span>
+                  </div>
+                  <div className="bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
+                    <p className="text-xs font-mono text-neon-green font-bold">{req.reason}</p>
+                    {req.details && <p className="text-xs font-mono text-gray-400 mt-0.5">{req.details}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleApproveRequest(req)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
+                      <CheckCircle size={12} /> Aprovar e Reativar
+                    </button>
+                    <button onClick={() => handleDenyRequest(req)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
+                      <XCircle size={12} /> Negar
+                    </button>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
         </>

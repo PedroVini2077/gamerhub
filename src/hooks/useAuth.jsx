@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
+import { logAudit } from '../lib/auditLog';
 
 const AuthContext = createContext(null);
 
@@ -48,8 +49,16 @@ export function AuthProvider({ children }) {
       const p = await fetchProfile(result.data.user.id);
       if (p?.banned) {
         await supabase.auth.signOut();
+        logAudit('auth_banned_attempt',
+          `Tentativa de login de conta banida (@${p.username || email.trim()})`,
+          { category: 'security', severity: 'warning', metadata: { email: email.trim() } }
+        );
         return { error: { message: 'Sua conta foi banida. Entre em contato com o suporte.' } };
       }
+      logAudit('auth_login_success',
+        `@${p?.username || email.trim()} fez login`,
+        { category: 'auth', severity: 'info', metadata: { email: email.trim() } }
+      );
     }
 
     return result;
@@ -98,6 +107,9 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    if (profile?.username) {
+      logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
+    }
     await supabase.auth.signOut();
     setProfile(null);
   }

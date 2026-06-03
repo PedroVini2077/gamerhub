@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Zap, Mail, Lock, User, AlertTriangle, ShieldOff } from 'lucide-react';
+import { logSecurity } from '../lib/auditLog';
 
 const RATE_KEY = 'gh_login_attempts';
 
@@ -107,9 +108,16 @@ export default function Login() {
         const next = recordFailedAttempt();
         setBlockStatus(getBlockStatus());
         if (next.blocked) {
-          toast.error(next.permanent
+          const msg = next.permanent
             ? 'Conta bloqueada por 24h por excesso de tentativas.'
-            : `Muitas tentativas. Aguarde ${formatCountdown(next.blockedUntil - Date.now())}.`
+            : `Muitas tentativas. Aguarde ${formatCountdown(next.blockedUntil - Date.now())}.`;
+          toast.error(msg);
+          logSecurity(
+            next.permanent ? 'auth_permanent_block' : 'auth_rate_limited',
+            next.permanent
+              ? `Bloqueio permanente (24h) ativado para "${email}" após ${next.attempts} tentativas`
+              : `Rate limiting ativado para "${email}" (${next.attempts} tentativas — bloqueio de ${formatCountdown(next.blockedUntil - Date.now())})`,
+            email, next.attempts
           );
         } else {
           const attemptsLeft = LOCKOUT_MS.length - 1 - next.attempts;
@@ -117,6 +125,11 @@ export default function Login() {
             ? ` (${attemptsLeft} tentativa${attemptsLeft > 1 ? 's' : ''} até bloqueio)`
             : '';
           toast.error(error.message + warn);
+          logSecurity(
+            'auth_login_failed',
+            `Tentativa ${next.attempts} de login falhou para "${email}"`,
+            email, next.attempts
+          );
         }
       } else {
         clearRateLimit();
