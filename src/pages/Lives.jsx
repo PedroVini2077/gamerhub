@@ -37,7 +37,15 @@ export default function Lives() {
     if (!authLoading && !user) navigate('/login');
   }, [authLoading, user, navigate]);
 
-  useEffect(() => { fetchLives(); }, []);
+  useEffect(() => {
+    fetchLives();
+    const listChannel = supabase.channel('lives-list')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, fetchLives)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' },
+        (payload) => { if (payload.new.is_live !== payload.old.is_live) fetchLives(); })
+      .subscribe();
+    return () => supabase.removeChannel(listChannel);
+  }, []);
 
   useEffect(() => {
     activeLiveRef.current = activeLive;
@@ -60,12 +68,13 @@ export default function Lives() {
       setLiveEnded(true);
     }
 
-    // Auto-expire poll (every 30s)
-    const expiryInterval = activeLive.expires_at
-      ? setInterval(() => {
-          if (new Date() >= new Date(activeLive.expires_at)) setLiveEnded(true);
-        }, 30_000)
-      : null;
+    // Timer preciso — dispara no exato momento que expires_at chega
+    let expiryTimeout = null;
+    if (activeLive.expires_at) {
+      const remaining = new Date(activeLive.expires_at) - Date.now();
+      if (remaining <= 0) setLiveEnded(true);
+      else expiryTimeout = setTimeout(() => setLiveEnded(true), remaining);
+    }
 
     // Presence — viewer counter
     const presenceChannel = supabase.channel(`presence-${activeLive.id}`, {
@@ -100,7 +109,7 @@ export default function Lives() {
       .subscribe();
 
     return () => {
-      if (expiryInterval) clearInterval(expiryInterval);
+      if (expiryTimeout) clearTimeout(expiryTimeout);
       supabase.removeChannel(presenceChannel);
       supabase.removeChannel(channel);
     };
