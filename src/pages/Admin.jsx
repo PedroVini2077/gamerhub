@@ -587,7 +587,7 @@ export default function Admin() {
         <StatCard icon={Key} label="Keys" value={stats.keys} color="bg-neon-purple/10 text-neon-purple" />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 pt-2">
         {tabs.map(({ id, label, icon: Icon, badge }) => (
           <button key={id} onClick={() => setTab(id)}
             className={`relative flex items-center gap-2 py-2 px-4 text-xs font-display tracking-wider uppercase rounded border transition-all shrink-0 ${
