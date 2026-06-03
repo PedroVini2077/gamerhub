@@ -7,6 +7,9 @@ export function getEmbedInfo(url) {
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
   if (yt) return { type: 'youtube', id: yt[1], label: 'YouTube', color: '#ff0000', icon: '▶️' };
 
+  const twVod = url.match(/twitch\.tv\/videos\/(\d+)/);
+  if (twVod) return { type: 'twitch-vod', id: twVod[1], label: 'Twitch VOD', color: '#9147ff', icon: '🎮' };
+
   const twClip = url.match(/twitch\.tv\/\w+\/clip\/(\w+)/);
   if (twClip) return { type: 'twitch-clip', id: twClip[1], label: 'Twitch Clip', color: '#9147ff', icon: '🎮' };
 
@@ -98,6 +101,30 @@ export default function EmbedPlayer({ url, isLive, expiresAt }) {
 
   if (info.type === 'twitch') return (
     <TwitchPlayer id={info.id} url={url} isLive={isLive} expiresAt={expiresAt} />
+  );
+
+  if (info.type === 'twitch-vod') return (
+    <div className="mt-3 rounded-lg overflow-hidden border border-dark-400 bg-dark-900">
+      <div className="flex items-center justify-between px-3 py-2 bg-dark-800 border-b border-dark-600">
+        <div className="flex items-center gap-2">
+          <Tv size={13} className="text-purple-400" />
+          <span className="text-xs font-mono text-purple-400 font-bold">TWITCH VOD</span>
+        </div>
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-purple-400 transition-colors">
+          Abrir na Twitch <ExternalLink size={11} />
+        </a>
+      </div>
+      <div style={{ aspectRatio: '16/9' }}>
+        <iframe
+          src={`https://player.twitch.tv/?video=${info.id}&parent=${domain}&autoplay=false`}
+          className="w-full h-full"
+          allowFullScreen
+          title="Twitch VOD"
+          style={{ border: 'none' }}
+        />
+      </div>
+    </div>
   );
 
   if (info.type === 'twitch-clip') return (

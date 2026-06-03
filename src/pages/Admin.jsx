@@ -201,6 +201,7 @@ async function fetchLiveMod() {
   const [{ data: silenced }, { data: lives }] = await Promise.all([
     supabase.from('live_chat_timeouts')
       .select('id, post_id, user_id, expires_at, profiles(username)')
+      .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false }),
     supabase.from('posts')
       .select('id, title, user_id, profiles(username)')
