@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import {
   Shield, Clock, X, Users, FileText, Key,
   ChevronUp, ChevronDown, Ban, Trash2,
-  RotateCcw, CheckCircle, XCircle, Crown, ScrollText,
+  RotateCcw, CheckCircle, XCircle, Crown, ScrollText, Bell,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
@@ -243,6 +243,9 @@ export default function Admin() {
   const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [readIds, setReadIds] = useState(new Set());
+  const [notifLoading, setNotifLoading] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
@@ -252,32 +255,45 @@ export default function Admin() {
   useEffect(() => {
     if (tab === 'lives' || tab === 'super') fetchLiveMod();
     if (tab === 'super' && isSuperAdmin) fetchLogs();
+    if (tab === 'notifs') fetchNotifications();
   }, [tab]);
 
   useEffect(() => {
-    if (tab !== 'lives' && tab !== 'super') return;
-    const channel = supabase.channel('admin-live-mod')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' }, () => fetchLiveMod())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchLiveMod())
+    const channel = supabase.channel('admin-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' }, () => {
+        if (tab === 'lives' || tab === 'super') fetchLiveMod();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+        if (tab === 'lives' || tab === 'super') fetchLiveMod();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_reactivation_requests' }, () => {
-        fetchLiveMod();
+        if (tab === 'lives' || tab === 'super') fetchLiveMod();
         if (isSuperAdmin) fetchLogs();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
+        fetchNotificationsCount();
+        if (tab === 'notifs') fetchNotifications();
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
-  }, [tab]);
+  }, [tab, isSuperAdmin]);
 
   async function fetchAll() {
     setLoading(true);
-    const [{ data: u }, { data: p }, { data: k }] = await Promise.all([
+    const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
+    const [{ data: u }, { data: p }, { data: k }, { data: allNotifs }, { data: reads }] = await Promise.all([
       supabase.from('profiles').select('*').order('role').order('username'),
       supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }),
       supabase.from('game_keys').select('*').order('created_at', { ascending: false }),
+      supabase.from('admin_notifications').select('id').in('audience', audience),
+      supabase.from('admin_notification_reads').select('notification_id').eq('admin_id', user.id),
     ]);
     setUsers(u || []);
     setPosts(p || []);
     setKeys(k || []);
     setStats({ users: u?.length || 0, posts: p?.length || 0, keys: k?.length || 0 });
+    setReadIds(new Set((reads || []).map(r => r.notification_id)));
+    setNotifications(allNotifs || []);
     setLoading(false);
   }
 
@@ -320,6 +336,46 @@ export default function Admin() {
     const { data } = await supabase.from('admin_logs')
       .select('*').order('created_at', { ascending: false }).limit(50);
     setLogs(data || []);
+  }
+
+  async function fetchNotificationsCount() {
+    const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
+    const { data: notifs } = await supabase.from('admin_notifications')
+      .select('id').in('audience', audience);
+    const { data: reads } = await supabase.from('admin_notification_reads')
+      .select('notification_id').eq('admin_id', user.id);
+    const rIds = new Set((reads || []).map(r => r.notification_id));
+    setReadIds(rIds);
+    setNotifications(prev => {
+      const existingIds = new Set(prev.map(n => n.id));
+      const newIds = (notifs || []).filter(n => !existingIds.has(n.id));
+      return newIds.length > 0 ? prev : prev;
+    });
+  }
+
+  async function fetchNotifications() {
+    setNotifLoading(true);
+    const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
+    const [{ data: notifs }, { data: reads }] = await Promise.all([
+      supabase.from('admin_notifications')
+        .select('*').in('audience', audience)
+        .order('created_at', { ascending: false }).limit(50),
+      supabase.from('admin_notification_reads')
+        .select('notification_id').eq('admin_id', user.id),
+    ]);
+    const rIds = new Set((reads || []).map(r => r.notification_id));
+    setNotifications(notifs || []);
+    setReadIds(rIds);
+    // Mark all current as read
+    const unread = (notifs || []).filter(n => !rIds.has(n.id));
+    if (unread.length > 0) {
+      await supabase.from('admin_notification_reads').upsert(
+        unread.map(n => ({ notification_id: n.id, admin_id: user.id })),
+        { onConflict: 'notification_id,admin_id' }
+      );
+      setReadIds(new Set((notifs || []).map(n => n.id)));
+    }
+    setNotifLoading(false);
   }
 
   async function logAction(action, details) {
@@ -441,11 +497,14 @@ export default function Admin() {
   const filteredUsers = filterRole === 'todos' ? users : users.filter(u => u.role === filterRole);
   const pendingCount = liveMod.requests?.length || 0;
 
+  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
+
   const tabs = [
     { id: 'users', label: 'Usuários', icon: Users },
     { id: 'posts', label: 'Posts', icon: FileText },
     { id: 'lives', label: 'Mod de Lives', icon: Shield },
     { id: 'keys', label: 'Keys & Promos', icon: Key },
+    { id: 'notifs', label: 'Notificações', icon: Bell, badge: unreadCount },
     ...(isSuperAdmin ? [{ id: 'super', label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
@@ -690,6 +749,63 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {tab === 'notifs' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell size={15} className="text-neon-cyan" />
+                  <h3 className="font-display text-sm text-neon-cyan uppercase tracking-wider">Notificações</h3>
+                </div>
+                <button onClick={fetchNotifications} disabled={notifLoading}
+                  className="text-xs font-mono text-gray-500 hover:text-neon-cyan transition-colors">
+                  {notifLoading ? '⟳ Carregando...' : '⟳ Atualizar'}
+                </button>
+              </div>
+
+              {notifLoading ? (
+                <div className="card p-8 text-center">
+                  <p className="text-xs font-mono text-gray-500 animate-pulse">Carregando notificações...</p>
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="card p-8 text-center">
+                  <p className="text-2xl mb-2">🔔</p>
+                  <p className="text-xs font-mono text-gray-500">Nenhuma notificação ainda</p>
+                </div>
+              ) : notifications.map(n => {
+                const isRead = readIds.has(n.id);
+                const icons = {
+                  new_user: '👤',
+                  new_live: '🔴',
+                  reactivation_request: '🔄',
+                };
+                return (
+                  <div key={n.id} className={`card p-4 flex items-start gap-3 transition-all ${
+                    isRead ? 'opacity-60' : 'border-neon-cyan/20'
+                  }`}>
+                    <span className="text-lg shrink-0">{icons[n.type] || '🔔'}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-mono font-bold text-white">{n.title}</p>
+                        {!isRead && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-neon-cyan shrink-0" />
+                        )}
+                        {n.audience === 'super_admin' && (
+                          <span className="tag tag-green shrink-0" style={{ fontSize: 9, padding: '1px 4px' }}>
+                            super admin
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-mono text-gray-400 mt-0.5">{n.message}</p>
+                      <p className="text-xs font-mono text-gray-600 mt-1">
+                        {new Date(n.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
