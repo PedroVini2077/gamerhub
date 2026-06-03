@@ -4,6 +4,7 @@ import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { logAudit } from '../lib/auditLog';
 import {
   Shield, Clock, X, Users, FileText, Key,
   ChevronUp, ChevronDown, Ban, Trash2,
@@ -101,6 +102,7 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
 }
 
 function KeyForm({ onAdd }) {
+  const { profile } = useAuth();
   const [form, setForm] = useState({
     game_title: '', platform: 'Steam', key_code: '', is_promo: false, discount_percent: 0, promo_url: ''
   });
@@ -113,6 +115,9 @@ function KeyForm({ onAdd }) {
     if (error) toast.error('Erro ao adicionar');
     else {
       toast.success('Adicionado!');
+      logAudit('admin_add_key',
+        `Key "${form.game_title}" (${form.platform})${form.is_promo ? ' — Promoção' : ''} adicionada por @${profile?.username}`,
+        { category: 'admin' });
       setForm({ game_title: '', platform: 'Steam', key_code: '', is_promo: false, discount_percent: 0, promo_url: '' });
       onAdd();
     }
@@ -407,6 +412,7 @@ export default function Admin() {
 
   async function unsilenceUser(id) {
     await supabase.from('live_chat_timeouts').delete().eq('id', id);
+    await logAction('admin_unsilence_chat', `Silêncio de chat removido por @${profile?.username}`, 'admin', 'info');
     fetchLiveMod();
   }
 
@@ -532,6 +538,7 @@ export default function Admin() {
     if (error) toast.error('Erro');
     else {
       toast.success('Post deletado');
+      await logAction('admin_delete_post', `Post deletado pelo admin @${profile?.username}`, 'admin', 'warning');
       fetchAll();
     }
   }
@@ -540,7 +547,11 @@ export default function Admin() {
     if (!confirm('Remover este item?')) return;
     const { error } = await supabase.from('game_keys').delete().eq('id', keyId);
     if (error) toast.error('Erro');
-    else { toast.success('Removido'); fetchAll(); }
+    else {
+      toast.success('Removido');
+      await logAction('admin_delete_key', `Key removida pelo admin @${profile?.username}`, 'admin', 'info');
+      fetchAll();
+    }
   }
 
   if (!isAdmin) return null;

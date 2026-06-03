@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
+import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
 import { Save, Camera, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -98,6 +99,7 @@ export default function Profile() {
       setAvatarUrl(finalUrl);
       await refreshProfile();
       toast.success('Avatar atualizado!', { id: 'upload' });
+      logAudit('profile_avatar_updated', `@${profile?.username} atualizou o avatar`, { category: 'profile' });
     }
     setUploading(false);
   }
@@ -106,7 +108,11 @@ export default function Profile() {
     setSaving(true);
     const { error } = await supabase.from('profiles').update({ bio }).eq('id', user.id);
     if (error) toast.error('Erro ao salvar');
-    else { await refreshProfile(); toast.success('Perfil atualizado!'); }
+    else {
+      await refreshProfile();
+      toast.success('Perfil atualizado!');
+      logAudit('profile_bio_updated', `@${profile?.username} atualizou a bio`, { category: 'profile' });
+    }
     setSaving(false);
   }
 

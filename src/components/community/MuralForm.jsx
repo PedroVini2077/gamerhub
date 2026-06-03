@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
 import { Send } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export default function MuralForm({ onPost }) {
     if (error) toast.error('Erro ao enviar mensagem');
     else {
       toast.success('Mensagem enviada!');
+      logAudit('mural_post', `@${profile?.username} escreveu no mural da comunidade`, { category: 'content' });
       setMessage('');
       onPost?.();
     }

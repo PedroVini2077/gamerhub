@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
 import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
+import { logAudit } from '../../lib/auditLog';
 import AudioRecorder from '../ui/AudioRecorder';
 import EmbedPlayer, { getEmbedInfo } from '../ui/EmbedPlayer';
 import MediaPlayer from '../ui/MediaPlayer';
@@ -123,6 +124,11 @@ export default function PostForm({ onPost }) {
       }
 
       toast.success('Post publicado!', { id: toastId });
+      logAudit(
+        isLive ? 'live_created' : 'post_created',
+        `@${profile?.username} ${isLive ? 'criou uma live' : 'publicou um post'}: "${title.trim()}"`,
+        { category: isLive ? 'live' : 'content' }
+      );
       setTitle(''); setContent(''); setMedias([]);
       setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
       setIsLive(false); setExpiresAt('');

@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
+import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
 import { Send, Trash2, MessageSquare } from 'lucide-react';
 import AvatarPopup from '../ui/AvatarPopup';
 
 function CommentCard({ comment, onDelete }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { isAdmin } = useRole();
   const canDelete = user && (isAdmin || user.id === comment.user_id);
 
@@ -15,7 +16,10 @@ function CommentCard({ comment, onDelete }) {
     if (!confirm('Deletar comentário?')) return;
     const { error } = await supabase.from('comments').delete().eq('id', comment.id);
     if (error) toast.error('Erro ao deletar');
-    else onDelete?.();
+    else {
+      logAudit('comment_deleted', `@${profile?.username} deletou um comentário de @${comment.profiles?.username}`, { category: 'content' });
+      onDelete?.();
+    }
   }
 
   return (
@@ -90,6 +94,7 @@ export default function CommentSection({ postId, postOwnerId, registerRefresh })
     if (error) {
       toast.error('Erro ao comentar');
     } else {
+      logAudit('comment_added', `@${profile?.username} comentou em um post`, { category: 'content' });
       setText('');
       fetchComments();
       if (postOwnerId && postOwnerId !== user?.id) {

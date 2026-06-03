@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
+import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
 import { Settings, Lock, Mail, Bell, Shield, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -70,6 +71,7 @@ export default function Settings_() {
     if (error) toast.error('Erro ao trocar senha');
     else {
       toast.success('Senha atualizada!');
+      logAudit('auth_password_changed', `@${profile?.username} alterou a senha`, { category: 'security', severity: 'warning' });
       setNewPassword('');
       setConfirmPassword('');
       setShowPasswordForm(false);
@@ -87,6 +89,7 @@ export default function Settings_() {
     if (error) toast.error('Erro ao alterar email');
     else {
       toast.success('Confirmação enviada para o novo email!');
+      logAudit('auth_email_change_requested', `@${profile?.username} solicitou alteração de email para ${newEmail}`, { category: 'security', severity: 'warning' });
       setNewEmail('');
       setShowEmailForm(false);
     }
@@ -103,7 +106,11 @@ export default function Settings_() {
     try {
       const { error } = await supabase.rpc('delete_own_account');
       if (error) toast.error('Erro ao deletar conta.');
-      else { await signOut(); toast.success('Conta deletada.'); }
+      else {
+        logAudit('auth_account_deleted', `@${profile?.username} deletou a própria conta`, { category: 'security', severity: 'warning' });
+        await signOut();
+        toast.success('Conta deletada.');
+      }
     } catch {
       toast.error('Erro de conexão. Tente novamente.');
     }

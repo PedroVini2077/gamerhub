@@ -1,6 +1,7 @@
 import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -112,7 +113,11 @@ useEffect(() => {
     if (!confirm('Deletar este post?')) return;
     const { error } = await supabase.from('posts').delete().eq('id', post.id);
     if (error) toast.error('Erro ao deletar');
-    else { toast.success('Post deletado'); onDelete?.(); }
+    else {
+      toast.success('Post deletado');
+      logAudit('post_deleted', `@${profile?.username} deletou o post "${post.title}"`, { category: 'content' });
+      onDelete?.();
+    }
   }
 
   async function handleSaveEdit() {
@@ -124,7 +129,11 @@ useEffect(() => {
       edited_at: new Date().toISOString()
     }).eq('id', post.id);
     if (error) toast.error('Erro ao salvar');
-    else { toast.success('Post editado!'); setEditing(false); }
+    else {
+      toast.success('Post editado!');
+      logAudit('post_edited', `@${profile?.username} editou o post "${post.title}"`, { category: 'content' });
+      setEditing(false);
+    }
     setSaving(false);
   }
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, Users, VolumeX } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { logAudit } from '../lib/auditLog';
 import { useRole } from '../hooks/useRole';
 import AvatarPopup from '../components/ui/AvatarPopup';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
@@ -12,7 +13,7 @@ const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-gr
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
 
 export default function Lives() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { isAdmin } = useRole();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -168,11 +169,13 @@ export default function Lives() {
 
   async function deleteMessage(msgId) {
     await supabase.from('live_chat').delete().eq('id', msgId);
+    logAudit('live_chat_delete', `@${profile?.username} deletou uma mensagem no chat da live "${activeLive?.title}"`, { category: 'live' });
   }
 
   async function endLive() {
     if (!activeLive) return;
     await supabase.from('posts').update({ is_live: false }).eq('id', activeLive.id);
+    logAudit('live_ended', `@${profile?.username} encerrou a live "${activeLive.title}"`, { category: 'live' });
     setLiveEnded(true);
   }
 
@@ -198,6 +201,7 @@ export default function Lives() {
       toast.error('INSERT falhou: ' + insError.message);
     } else {
       toast.success('Usuário silenciado por ' + minutes + ' min');
+      logAudit('live_silence', `@${profile?.username} silenciou um usuário por ${minutes}min na live "${activeLive.title}"`, { category: 'live' });
     }
 
     setSilencingUser(null);
@@ -208,6 +212,7 @@ export default function Lives() {
     if (!activeLive) return;
     await supabase.from('live_chat_timeouts').delete()
       .eq('post_id', activeLive.id).eq('user_id', userId);
+    logAudit('live_unsilence', `@${profile?.username} removeu silêncio na live "${activeLive.title}"`, { category: 'live' });
     await fetchTimeouts(activeLive.id);
   }
 

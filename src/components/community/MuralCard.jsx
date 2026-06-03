@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { supabase } from '../../lib/supabase';
+import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
 
 export default function MuralCard({ item, onDelete }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { isAdmin } = useRole();
   const canDelete = user && (isAdmin || user.id === item.user_id);
 
@@ -15,7 +16,11 @@ export default function MuralCard({ item, onDelete }) {
     if (!confirm('Deletar esta mensagem?')) return;
     const { error } = await supabase.from('community_posts').delete().eq('id', item.id);
     if (error) toast.error('Erro ao deletar');
-    else { toast.success('Mensagem deletada'); onDelete?.(); }
+    else {
+      toast.success('Mensagem deletada');
+      logAudit('mural_delete', `@${profile?.username} deletou uma mensagem de @${item.profiles?.username} no mural`, { category: 'content' });
+      onDelete?.();
+    }
   }
 
   return (
