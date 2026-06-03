@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
@@ -45,13 +45,15 @@ export default function Home() {
   if (payload.eventType === 'DELETE') fetchPosts();
 });
 
-  // Filtragem local
-  const filtered = posts.filter(p => {
+  // Filtragem memoizada — não recalcula se posts/search/filterCat não mudarem
+  const filtered = useMemo(() => posts.filter(p => {
     const matchCat = filterCat === 'todos' || p.category === filterCat;
-    const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.content.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchSearch = !search ||
+      p.title?.toLowerCase().includes(q) ||
+      p.content?.toLowerCase().includes(q);
     return matchCat && matchSearch;
-  });
+  }), [posts, search, filterCat]);
 
   return (
     <div className="flex gap-6">
