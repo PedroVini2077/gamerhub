@@ -449,8 +449,54 @@ export default function Lives() {
 
       {lives.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-3xl mb-3">📺</p>
-          <p className="text-gray-500 font-mono text-sm">Nenhuma live acontecendo agora</p>
+          <div className="flex justify-center mb-5">
+            <svg width="110" height="96" viewBox="0 0 110 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* glow de chão */}
+              <ellipse cx="44" cy="88" rx="32" ry="5" fill="#39ff14" fillOpacity="0.07"/>
+
+              {/* corpo da câmera */}
+              <rect x="6" y="26" width="68" height="46" rx="9" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.6"/>
+
+              {/* bumper superior (sapata) */}
+              <rect x="46" y="16" width="22" height="12" rx="4" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.2"/>
+
+              {/* grip / handle direito */}
+              <rect x="74" y="30" width="20" height="30" rx="7" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.3"/>
+
+              {/* anel externo da lente */}
+              <circle cx="36" cy="49" r="18" fill="#09090f" stroke="#39ff14" strokeWidth="1.8"/>
+              {/* anel médio */}
+              <circle cx="36" cy="49" r="13.5" fill="#0d0d14" stroke="#39ff14" strokeWidth="0.8" strokeOpacity="0.3"/>
+              {/* anel interno */}
+              <circle cx="36" cy="49" r="8" fill="#07070d" stroke="#39ff14" strokeWidth="0.5" strokeOpacity="0.18"/>
+
+              {/* CARA — olho esq olhando pra cima-direita (confuso) */}
+              <ellipse cx="30" cy="46" rx="2.4" ry="2.8" fill="#39ff14"/>
+              <ellipse cx="30.9" cy="45.1" rx="1" ry="1" fill="#09090f"/>
+
+              {/* CARA — olho dir olhando pra baixo-esquerda */}
+              <ellipse cx="42" cy="46" rx="2.4" ry="2.8" fill="#39ff14"/>
+              <ellipse cx="41.1" cy="46.9" rx="1" ry="1" fill="#09090f"/>
+
+              {/* sobrancelha levantada (confuso) lado esq */}
+              <path d="M27.5 42 Q30 40.2 32.5 41.5" stroke="#39ff14" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
+
+              {/* boca ondulada / confusa */}
+              <path d="M29 53.5 Q32 51.5 36 53.5 Q40 55.5 43 53.5" stroke="#39ff14" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
+
+              {/* indicador de gravação — apagado / off */}
+              <circle cx="64" cy="30" r="4" fill="#ff444418" stroke="#ff444466" strokeWidth="1"/>
+              <circle cx="64" cy="30" r="1.8" fill="#ff444455"/>
+
+              {/* ? flutuante principal — animado via classe */}
+              <text x="86" y="22" fontSize="18" fill="#39ff14" fillOpacity="0.9" fontFamily="monospace" fontWeight="bold">?</text>
+
+              {/* ?s menores ao redor */}
+              <text x="3" y="20" fontSize="10" fill="#39ff14" fillOpacity="0.3" fontFamily="monospace">?</text>
+              <text x="91" y="64" fontSize="8" fill="#39ff14" fillOpacity="0.22" fontFamily="monospace">?</text>
+            </svg>
+          </div>
+          <p className="text-gray-400 font-mono text-sm">Nenhuma live acontecendo agora</p>
           <p className="text-gray-600 font-mono text-xs mt-1">Volte mais tarde!</p>
         </div>
       ) : (
