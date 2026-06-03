@@ -450,50 +450,90 @@ export default function Lives() {
       {lives.length === 0 ? (
         <div className="card p-10 text-center">
           <div className="flex justify-center mb-5">
-            <svg width="110" height="96" viewBox="0 0 110 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* glow de chão */}
-              <ellipse cx="44" cy="88" rx="32" ry="5" fill="#39ff14" fillOpacity="0.07"/>
+            <svg width="170" height="113" viewBox="0 0 180 120" fill="none" xmlns="http://www.w3.org/2000/svg">
 
-              {/* corpo da câmera */}
-              <rect x="6" y="26" width="68" height="46" rx="9" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.6"/>
+              {/* sombras de chão */}
+              <ellipse cx="55" cy="115" rx="40" ry="4.5" fill="#39ff14" fillOpacity="0.07"/>
+              <ellipse cx="148" cy="113" rx="14" ry="3" fill="#39ff14" fillOpacity="0.04"/>
 
-              {/* bumper superior (sapata) */}
-              <rect x="46" y="16" width="22" height="12" rx="4" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.2"/>
+              {/* ══ TRIPÉ ══ */}
+              <line x1="49" y1="94" x2="21" y2="115" stroke="#39ff14" strokeWidth="1.7" strokeLinecap="round"/>
+              <line x1="57" y1="95" x2="57" y2="115" stroke="#39ff14" strokeWidth="1.7" strokeLinecap="round"/>
+              <line x1="65" y1="94" x2="89" y2="115" stroke="#39ff14" strokeWidth="1.7" strokeLinecap="round"/>
+              <rect x="42" y="89" width="30" height="7" rx="3" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.3"/>
 
-              {/* grip / handle direito */}
-              <rect x="74" y="30" width="20" height="30" rx="7" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.3"/>
+              {/* ══ CORPO DA CÂMERA ══ */}
+              <rect x="16" y="48" width="78" height="44" rx="7" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.8"/>
 
-              {/* anel externo da lente */}
-              <circle cx="36" cy="49" r="18" fill="#09090f" stroke="#39ff14" strokeWidth="1.8"/>
-              {/* anel médio */}
-              <circle cx="36" cy="49" r="13.5" fill="#0d0d14" stroke="#39ff14" strokeWidth="0.8" strokeOpacity="0.3"/>
-              {/* anel interno */}
-              <circle cx="36" cy="49" r="8" fill="#07070d" stroke="#39ff14" strokeWidth="0.5" strokeOpacity="0.18"/>
+              {/* ── bobina esquerda (menor) ── */}
+              <circle cx="34" cy="36" r="13" fill="#09090f" stroke="#39ff14" strokeWidth="1.5"/>
+              <circle cx="34" cy="36" r="8" fill="#0d0d14" stroke="#39ff14" strokeWidth="0.7" strokeOpacity="0.28"/>
+              <circle cx="34" cy="36" r="2.8" fill="#09090f" stroke="#39ff14" strokeWidth="1"/>
+              <line x1="34" y1="28" x2="34" y2="33" stroke="#39ff14" strokeWidth="0.9" strokeOpacity="0.45"/>
+              <line x1="34" y1="39" x2="34" y2="44" stroke="#39ff14" strokeWidth="0.9" strokeOpacity="0.45"/>
+              <line x1="26" y1="36" x2="31" y2="36" stroke="#39ff14" strokeWidth="0.9" strokeOpacity="0.45"/>
+              <line x1="37" y1="36" x2="42" y2="36" stroke="#39ff14" strokeWidth="0.9" strokeOpacity="0.45"/>
 
-              {/* CARA — olho esq olhando pra cima-direita (confuso) */}
-              <ellipse cx="30" cy="46" rx="2.4" ry="2.8" fill="#39ff14"/>
-              <ellipse cx="30.9" cy="45.1" rx="1" ry="1" fill="#09090f"/>
+              {/* ── bobina direita (maior) ── */}
+              <circle cx="67" cy="32" r="17" fill="#09090f" stroke="#39ff14" strokeWidth="1.7"/>
+              <circle cx="67" cy="32" r="11" fill="#0d0d14" stroke="#39ff14" strokeWidth="0.7" strokeOpacity="0.28"/>
+              <circle cx="67" cy="32" r="3.6" fill="#09090f" stroke="#39ff14" strokeWidth="1.2"/>
+              <line x1="67" y1="21" x2="67" y2="28" stroke="#39ff14" strokeWidth="1" strokeOpacity="0.45"/>
+              <line x1="67" y1="36" x2="67" y2="43" stroke="#39ff14" strokeWidth="1" strokeOpacity="0.45"/>
+              <line x1="56" y1="32" x2="63" y2="32" stroke="#39ff14" strokeWidth="1" strokeOpacity="0.45"/>
+              <line x1="71" y1="32" x2="78" y2="32" stroke="#39ff14" strokeWidth="1" strokeOpacity="0.45"/>
+              <line x1="59" y1="23" x2="64" y2="28" stroke="#39ff14" strokeWidth="0.7" strokeOpacity="0.3"/>
+              <line x1="70" y1="36" x2="75" y2="41" stroke="#39ff14" strokeWidth="0.7" strokeOpacity="0.3"/>
+              <line x1="75" y1="23" x2="70" y2="28" stroke="#39ff14" strokeWidth="0.7" strokeOpacity="0.3"/>
+              <line x1="59" y1="41" x2="64" y2="36" stroke="#39ff14" strokeWidth="0.7" strokeOpacity="0.3"/>
 
-              {/* CARA — olho dir olhando pra baixo-esquerda */}
-              <ellipse cx="42" cy="46" rx="2.4" ry="2.8" fill="#39ff14"/>
-              <ellipse cx="41.1" cy="46.9" rx="1" ry="1" fill="#09090f"/>
+              {/* ── lente principal ── */}
+              <circle cx="37" cy="68" r="17" fill="#09090f" stroke="#39ff14" strokeWidth="1.8"/>
+              <circle cx="37" cy="68" r="12" fill="#0d0d14" stroke="#39ff14" strokeWidth="0.8" strokeOpacity="0.25"/>
+              <circle cx="37" cy="68" r="6.5" fill="#07070d"/>
+              <circle cx="34" cy="65" r="2" fill="#39ff14" fillOpacity="0.1"/>
 
-              {/* sobrancelha levantada (confuso) lado esq */}
-              <path d="M27.5 42 Q30 40.2 32.5 41.5" stroke="#39ff14" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
+              {/* ── visor ── */}
+              <rect x="66" y="50" width="16" height="11" rx="2" fill="#09090f" stroke="#39ff14" strokeWidth="1"/>
 
-              {/* boca ondulada / confusa */}
-              <path d="M29 53.5 Q32 51.5 36 53.5 Q40 55.5 43 53.5" stroke="#39ff14" strokeWidth="1.3" fill="none" strokeLinecap="round"/>
+              {/* ── matte box ── */}
+              <rect x="94" y="54" width="14" height="24" rx="2" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.3"/>
+              <line x1="94" y1="61" x2="108" y2="61" stroke="#39ff14" strokeWidth="0.5" strokeOpacity="0.25"/>
+              <line x1="94" y1="68" x2="108" y2="68" stroke="#39ff14" strokeWidth="0.5" strokeOpacity="0.25"/>
 
-              {/* indicador de gravação — apagado / off */}
-              <circle cx="64" cy="30" r="4" fill="#ff444418" stroke="#ff444466" strokeWidth="1"/>
-              <circle cx="64" cy="30" r="1.8" fill="#ff444455"/>
+              {/* ── dials no corpo ── */}
+              <circle cx="74" cy="66" r="3.5" fill="#09090f" stroke="#39ff14" strokeWidth="0.9" strokeOpacity="0.4"/>
+              <circle cx="74" cy="78" r="2.5" fill="#09090f" stroke="#39ff14" strokeWidth="0.8" strokeOpacity="0.3"/>
+              <line x1="65" y1="74" x2="68" y2="74" stroke="#39ff14" strokeWidth="0.7" strokeOpacity="0.25"/>
 
-              {/* ? flutuante principal — animado via classe */}
-              <text x="86" y="22" fontSize="18" fill="#39ff14" fillOpacity="0.9" fontFamily="monospace" fontWeight="bold">?</text>
+              {/* ══ PERSONAGEM CONFUSO (separado) ══ */}
+              <ellipse cx="148" cy="78" rx="15" ry="16" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.4"/>
+              {/* perninhas */}
+              <line x1="141" y1="93" x2="138" y2="107" stroke="#39ff14" strokeWidth="1.4" strokeLinecap="round"/>
+              <line x1="155" y1="93" x2="158" y2="107" stroke="#39ff14" strokeWidth="1.4" strokeLinecap="round"/>
+              {/* braços erguidos */}
+              <path d="M133 75 Q127 67 130 60" stroke="#39ff14" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+              <path d="M163 75 Q169 67 166 60" stroke="#39ff14" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+              {/* mãozinhas */}
+              <circle cx="130" cy="59" r="3" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.1"/>
+              <circle cx="166" cy="59" r="3" fill="#0d0d14" stroke="#39ff14" strokeWidth="1.1"/>
+              {/* olho esq — olhando pra cima-direita */}
+              <ellipse cx="142" cy="75" rx="2.6" ry="3.1" fill="#39ff14"/>
+              <ellipse cx="143" cy="74" rx="1.1" ry="1.1" fill="#09090f"/>
+              {/* olho dir — olhando pra baixo-esquerda */}
+              <ellipse cx="154" cy="75" rx="2.6" ry="3.1" fill="#39ff14"/>
+              <ellipse cx="153" cy="76" rx="1.1" ry="1.1" fill="#09090f"/>
+              {/* sobrancelha levantada */}
+              <path d="M139 70 Q142 68 145 69" stroke="#39ff14" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+              {/* boca confusa ondulada */}
+              <path d="M141 84 Q144.5 82 148 84 Q151.5 86 155 84" stroke="#39ff14" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
 
-              {/* ?s menores ao redor */}
-              <text x="3" y="20" fontSize="10" fill="#39ff14" fillOpacity="0.3" fontFamily="monospace">?</text>
-              <text x="91" y="64" fontSize="8" fill="#39ff14" fillOpacity="0.22" fontFamily="monospace">?</text>
+              {/* ? grande acima do personagem */}
+              <text x="143" y="56" fontSize="15" fill="#39ff14" fillOpacity="0.9" fontFamily="monospace" fontWeight="bold">?</text>
+              {/* ?s menores flutuando */}
+              <text x="170" y="50" fontSize="9" fill="#39ff14" fillOpacity="0.35" fontFamily="monospace">?</text>
+              <text x="110" y="42" fontSize="7" fill="#39ff14" fillOpacity="0.2" fontFamily="monospace">?</text>
+
             </svg>
           </div>
           <p className="text-gray-400 font-mono text-sm">Nenhuma live acontecendo agora</p>
