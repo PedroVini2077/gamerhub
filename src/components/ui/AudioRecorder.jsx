@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Play, Pause, Trash2, Check } from 'lucide-react';
+import { Mic, Square, Play, Pause, Trash2, Check, MicOff } from 'lucide-react';
 
 export default function AudioRecorder({ onRecorded, onCancel }) {
   const [recording, setRecording] = useState(false);
   const [recorded, setRecorded] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);
   const audioRef = useRef(null);
@@ -38,8 +39,12 @@ export default function AudioRecorder({ onRecorded, onCancel }) {
       setRecording(true);
       setTime(0);
       timerRef.current = setInterval(() => setTime(t => t + 1), 1000);
-    } catch {
-      alert('Permita acesso ao microfone nas configurações do navegador.');
+    } catch (err) {
+      if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        alert('Nenhum microfone encontrado neste dispositivo.');
+      } else {
+        setPermissionDenied(true);
+      }
     }
   }
 
@@ -68,7 +73,23 @@ export default function AudioRecorder({ onRecorded, onCancel }) {
     <div className="border border-dark-400 rounded-lg p-4 bg-dark-700 mb-3">
       <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Gravador de Áudio</p>
 
-      {!recorded ? (
+      {permissionDenied ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-red-400">
+            <MicOff size={14} />
+            <span className="text-xs font-mono">Microfone bloqueado</span>
+          </div>
+          <p className="text-xs font-mono text-gray-500 leading-relaxed">
+            Para liberar: toque no <span className="text-white">🔒 cadeado</span> na barra de endereço → Permissões do site → Microfone → Permitir.
+          </p>
+          <button
+            onClick={() => { setPermissionDenied(false); startRecording(); }}
+            className="text-xs font-mono text-neon-green hover:underline"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      ) : !recorded ? (
         <div className="flex items-center gap-3">
           {!recording ? (
             <button
