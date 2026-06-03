@@ -87,10 +87,17 @@ export function AuthProvider({ children }) {
       return { error: { message: 'Este username já está em uso. Escolha outro.' } };
     }
 
-    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { data: { username } },
+    });
     if (error) return { error };
 
-    if (data.user) {
+    // Com confirmação de email ativa, data.session é null até o email ser confirmado.
+    // O perfil será criado automaticamente via trigger após a confirmação.
+    // Se session existe (confirmação desativada), cria o perfil imediatamente.
+    if (data.user && data.session) {
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({ id: data.user.id, username });
