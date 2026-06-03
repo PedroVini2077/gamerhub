@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 // Carregamento imediato — páginas acessadas antes do login
 import Home from './pages/Home';
 import Login from './pages/Login';
+import AuthConfirm from './pages/AuthConfirm';
 import NotFound from './pages/NotFound';
 
 // Lazy loading — carregam só quando o usuário acessar
@@ -66,6 +67,7 @@ export default function App() {
         />
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/confirm" element={<AuthConfirm />} />
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/community" element={<Layout><Community /></Layout>} />
           <Route path="/keys" element={<Layout><Keys /></Layout>} />
