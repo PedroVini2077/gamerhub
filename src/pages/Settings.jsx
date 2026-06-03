@@ -101,18 +101,8 @@ export default function Settings_() {
 
     setDeletingAccount(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      if (!response.ok) toast.error('Erro ao deletar conta.');
+      const { error } = await supabase.rpc('delete_own_account');
+      if (error) toast.error('Erro ao deletar conta.');
       else { await signOut(); toast.success('Conta deletada.'); }
     } catch {
       toast.error('Erro de conexão. Tente novamente.');
