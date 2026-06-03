@@ -7,9 +7,9 @@ import { logSecurity } from '../lib/auditLog';
 
 const RATE_KEY = 'gh_login_attempts';
 
-// Delay progressivo por tentativa (índice = nº de erros acumulados)
-// 1 erro → sem espera, 2 → 30s, 3 → 1min, 4 → 5min, 5 → 15min, 6 → 1h, 7+ → 24h (bloqueio permanente)
-const LOCKOUT_MS = [0, 0, 30_000, 60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000];
+// TESTE: sem delays intermediários, bloqueia só no 7°
+// const LOCKOUT_MS = [0, 0, 30_000, 60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000]; // ORIGINAL
+const LOCKOUT_MS = [0, 0, 0, 0, 0, 0, 0];
 const PERMANENT_AFTER = 7;
 const PERMANENT_MS    = 24 * 60 * 60_000;
 
