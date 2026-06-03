@@ -1,44 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Zap, Mail, Lock, User, AlertTriangle } from 'lucide-react';
+import { Zap, Mail, Lock, User, AlertTriangle, ShieldOff } from 'lucide-react';
 
-// Rate limiting simples no cliente (anti-brute-force)
 const RATE_KEY = 'gh_login_attempts';
-const MAX_ATTEMPTS = 5;
-const BLOCK_MS = 15 * 60 * 1000; // 15 minutos
 
-function getRateLimit() {
-  try {
-    const raw = localStorage.getItem(RATE_KEY);
-    if (!raw) return { blocked: false, attempts: 0 };
-    const { attempts, blockedUntil } = JSON.parse(raw);
-    if (blockedUntil && Date.now() < blockedUntil) {
-      return { blocked: true, remaining: Math.ceil((blockedUntil - Date.now()) / 60000) };
-    }
-    return { blocked: false, attempts: attempts || 0 };
-  } catch {
-    return { blocked: false, attempts: 0 };
-  }
+// Delay progressivo por tentativa (índice = nº de erros acumulados)
+// 1 erro → sem espera, 2 → 30s, 3 → 1min, 4 → 5min, 5 → 15min, 6 → 1h, 7+ → 24h (bloqueio permanente)
+const LOCKOUT_MS = [0, 0, 30_000, 60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000];
+const PERMANENT_AFTER = 7;
+const PERMANENT_MS    = 24 * 60 * 60_000;
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(RATE_KEY)) || {}; } catch { return {}; }
 }
 
-function recordFailedAttempt() {
-  try {
-    const { attempts } = getRateLimit();
-    const next = (attempts || 0) + 1;
-    localStorage.setItem(RATE_KEY, JSON.stringify({
-      attempts: next,
-      blockedUntil: next >= MAX_ATTEMPTS ? Date.now() + BLOCK_MS : null,
-    }));
-    return next;
-  } catch {
-    return 0;
-  }
+function saveState(s) {
+  try { localStorage.setItem(RATE_KEY, JSON.stringify(s)); } catch {}
 }
 
 function clearRateLimit() {
   try { localStorage.removeItem(RATE_KEY); } catch {}
+}
+
+function recordFailedAttempt() {
+  const s = loadState();
+  const attempts = (s.attempts || 0) + 1;
+  const permanent = attempts >= PERMANENT_AFTER;
+  const delayMs = permanent ? PERMANENT_MS : (LOCKOUT_MS[attempts] ?? LOCKOUT_MS.at(-1));
+  const blockedUntil = delayMs > 0 ? Date.now() + delayMs : null;
+  saveState({ attempts, blockedUntil, permanent });
+  return { attempts, blockedUntil, permanent };
+}
+
+function getBlockStatus() {
+  const s = loadState();
+  if (!s.blockedUntil || Date.now() >= s.blockedUntil) {
+    return { blocked: false, attempts: s.attempts || 0 };
+  }
+  return { blocked: true, permanent: !!s.permanent, remainingMs: s.blockedUntil - Date.now(), attempts: s.attempts || 0 };
+}
+
+function formatCountdown(ms) {
+  const totalSec = Math.ceil(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min < 60) return sec > 0 ? `${min}min ${sec}s` : `${min}min`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
 function getPasswordStrength(pwd) {
@@ -63,33 +75,26 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
-  const [blocked, setBlocked] = useState(null); // { remaining: N }
+  const [blockStatus, setBlockStatus] = useState(() => getBlockStatus());
+  const timerRef = useRef(null);
 
+  // Countdown em tempo real — atualiza a cada segundo enquanto bloqueado
   useEffect(() => {
-    const rl = getRateLimit();
-    if (rl.blocked) setBlocked({ remaining: rl.remaining });
-    else setBlocked(null);
-
-    if (rl.blocked) {
-      const interval = setInterval(() => {
-        const rl2 = getRateLimit();
-        if (!rl2.blocked) { setBlocked(null); clearInterval(interval); }
-        else setBlocked({ remaining: rl2.remaining });
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, []);
+    clearInterval(timerRef.current);
+    if (!blockStatus.blocked) return;
+    timerRef.current = setInterval(() => {
+      const s = getBlockStatus();
+      setBlockStatus(s);
+      if (!s.blocked) clearInterval(timerRef.current);
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [blockStatus.blocked]);
 
   const passwordStrength = mode === 'register' ? getPasswordStrength(password) : 0;
 
   async function handleSubmit() {
-    if (blocked) return;
-
-    const rl = getRateLimit();
-    if (rl.blocked) {
-      setBlocked({ remaining: rl.remaining });
-      return;
-    }
+    const current = getBlockStatus();
+    if (current.blocked) { setBlockStatus(current); return; }
 
     if (!email || !password) { toast.error('Preencha email e senha'); return; }
     if (mode === 'register' && !username) { toast.error('Escolha um username'); return; }
@@ -99,14 +104,19 @@ export default function Login() {
     if (mode === 'login') {
       const { error } = await signInWithEmail(email, password);
       if (error) {
-        const attempts = recordFailedAttempt();
-        const rl2 = getRateLimit();
-        if (rl2.blocked) {
-          setBlocked({ remaining: rl2.remaining });
-          toast.error(`Muitas tentativas. Aguarde ${rl2.remaining} min.`);
+        const next = recordFailedAttempt();
+        setBlockStatus(getBlockStatus());
+        if (next.blocked) {
+          toast.error(next.permanent
+            ? 'Conta bloqueada por 24h por excesso de tentativas.'
+            : `Muitas tentativas. Aguarde ${formatCountdown(next.blockedUntil - Date.now())}.`
+          );
         } else {
-          const left = MAX_ATTEMPTS - attempts;
-          toast.error(left > 0 ? `${error.message} (${left} tentativa${left > 1 ? 's' : ''} restante${left > 1 ? 's' : ''})` : error.message);
+          const attemptsLeft = LOCKOUT_MS.length - 1 - next.attempts;
+          const warn = attemptsLeft > 0
+            ? ` (${attemptsLeft} tentativa${attemptsLeft > 1 ? 's' : ''} até bloqueio)`
+            : '';
+          toast.error(error.message + warn);
         }
       } else {
         clearRateLimit();
@@ -153,12 +163,30 @@ export default function Login() {
             ))}
           </div>
 
-          {blocked && (
-            <div className="mb-4 flex items-start gap-2 p-3 rounded-lg border border-red-400/30 bg-red-400/5">
-              <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
-              <p className="text-xs font-mono text-red-400">
-                Muitas tentativas falhas. Aguarde <span className="font-bold">{blocked.remaining} min</span> para tentar novamente.
-              </p>
+          {blockStatus.blocked && (
+            <div className={`mb-4 flex items-start gap-2 p-3 rounded-lg border ${
+              blockStatus.permanent
+                ? 'border-red-600/40 bg-red-600/10'
+                : 'border-red-400/30 bg-red-400/5'
+            }`}>
+              {blockStatus.permanent
+                ? <ShieldOff size={14} className="text-red-500 shrink-0 mt-0.5" />
+                : <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
+              }
+              <div className="text-xs font-mono">
+                {blockStatus.permanent ? (
+                  <p className="text-red-500">
+                    Conta bloqueada por <span className="font-bold">excesso de tentativas</span>.
+                    Aguarde <span className="font-bold">{formatCountdown(blockStatus.remainingMs)}</span> ou redefina sua senha.
+                  </p>
+                ) : (
+                  <p className="text-red-400">
+                    Muitas tentativas falhas. Aguarde{' '}
+                    <span className="font-bold tabular-nums">{formatCountdown(blockStatus.remainingMs)}</span>{' '}
+                    para tentar novamente.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -232,10 +260,10 @@ export default function Login() {
 
             <button
               onClick={handleSubmit}
-              disabled={loading || !!blocked}
+              disabled={loading || blockStatus.blocked}
               className="btn-solid w-full py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Aguarde...' : mode === 'login' ? '// ENTRAR' : '// CRIAR CONTA'}
+              {loading ? 'Aguarde...' : blockStatus.blocked ? `// BLOQUEADO (${formatCountdown(blockStatus.remainingMs)})` : mode === 'login' ? '// ENTRAR' : '// CRIAR CONTA'}
             </button>
           </div>
         </div>
