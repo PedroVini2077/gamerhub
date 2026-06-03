@@ -784,8 +784,12 @@ export default function Admin() {
                   ? <UserPlus size={15} className="text-neon-cyan" />
                   : n.type === 'new_live'
                   ? <Radio size={15} className="text-red-400" />
-                  : n.type === 'reactivation_request'
+                  : n.type === 'live_ended'
+                  ? <Tv size={15} className="text-gray-500" />
+                  : n.type === 'live_reactivated'
                   ? <RotateCcw size={15} className="text-neon-green" />
+                  : n.type === 'reactivation_request'
+                  ? <RotateCcw size={15} className="text-yellow-400" />
                   : <Bell size={15} className="text-gray-500" />;
                 return (
                   <div key={n.id} className={`card p-4 flex items-start gap-3 transition-all ${
