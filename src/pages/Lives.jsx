@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, Users } from 'lucide-react';
+import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, Users, VolumeX } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useRole } from '../hooks/useRole';
 import AvatarPopup from '../components/ui/AvatarPopup';
@@ -264,7 +264,7 @@ export default function Lives() {
 
       {liveEnded ? (
         <div className="mt-1 rounded-lg border border-dark-400 bg-dark-900 p-10 text-center">
-          <p className="text-4xl mb-3">📴</p>
+          <Tv size={36} className="text-gray-600 mx-auto mb-3" />
           <p className="text-neon-green font-mono text-sm font-bold">Live encerrada</p>
           <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
         </div>
@@ -294,7 +294,7 @@ export default function Lives() {
                 const remaining = Math.ceil((new Date(t.expires_at) - new Date()) / 60000);
                 return (
                   <div key={t.user_id} className="flex items-center gap-2 bg-dark-700 rounded-lg px-3 py-2 border border-yellow-400/10">
-                    <span className="text-lg">🔇</span>
+                    <VolumeX size={15} className="text-yellow-500 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-mono font-bold text-yellow-400">{msgProfile?.username || 'Usuário'}</p>
                       <p className="text-xs font-mono text-gray-600">{remaining} min restantes</p>
@@ -332,7 +332,7 @@ export default function Lives() {
                     {silenced ? (
                       <button onClick={() => unsilenceUser(p.id)}
                         className="text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:border-yellow-400/60 hover:bg-yellow-400/5 px-2 py-0.5 rounded transition-all active:scale-95">
-                        🔇 Remover
+                        <VolumeX size={10} className="inline mr-1" />Remover
                       </button>
                     ) : (
                       <div className="relative">
@@ -377,7 +377,7 @@ export default function Lives() {
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {messages.length === 0 && (
-            <p className="text-xs text-gray-600 font-mono text-center py-4">Seja o primeiro a comentar! 🎮</p>
+            <p className="text-xs text-gray-600 font-mono text-center py-4">Seja o primeiro a comentar!</p>
           )}
           {messages.map(m => {
             const silenced = isUserSilenced(m.user_id);
@@ -390,7 +390,7 @@ export default function Lives() {
                     <span className={`text-xs font-bold font-mono ${silenced ? 'text-gray-600' : 'text-neon-green'}`}>
                       {m.profiles?.username}
                     </span>
-                    {silenced && <span className="text-xs">🔇</span>}
+                    {silenced && <VolumeX size={10} className="text-yellow-500" />}
                     {m.profiles?.role !== 'user' && (
                       <span className={`tag ${roleColors[m.profiles?.role]}`} style={{ fontSize: 9, padding: '1px 4px' }}>
                         {roleLabels[m.profiles?.role]}
@@ -414,7 +414,7 @@ export default function Lives() {
         {user ? (
           isSilenced ? (
             <div className="p-3 border-t border-dark-500 text-center">
-              <p className="text-xs font-mono text-yellow-500">🔇 Você está silenciado neste chat</p>
+              <p className="text-xs font-mono text-yellow-500 flex items-center justify-center gap-1.5"><VolumeX size={12} />Você está silenciado neste chat</p>
             </div>
           ) : (
             <div className="p-3 border-t border-dark-500 flex gap-2">
@@ -563,7 +563,7 @@ export default function Lives() {
               {live.content && <p className="text-sm text-gray-400">{live.content}</p>}
               <div className="mt-3 flex items-center justify-between">
                 <span className="tag tag-purple text-xs">
-                  {live.embed_type === 'twitch' ? '🎮 Twitch' : '▶️ YouTube'}
+                  {live.embed_type === 'twitch' ? 'Twitch' : 'YouTube'}
                 </span>
                 <span className="text-xs font-mono text-neon-green">Entrar na live →</span>
               </div>

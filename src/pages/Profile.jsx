@@ -97,7 +97,7 @@ export default function Profile() {
     } else {
       setAvatarUrl(finalUrl);
       await refreshProfile();
-      toast.success('Avatar atualizado! 🎮', { id: 'upload' });
+      toast.success('Avatar atualizado!', { id: 'upload' });
     }
     setUploading(false);
   }

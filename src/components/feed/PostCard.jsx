@@ -1,4 +1,4 @@
-import { Heart, Clock, Trash2, Pencil, Check, X } from 'lucide-react';
+import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
@@ -164,8 +164,8 @@ useEffect(() => {
       {/* Áudio principal */}
       {post.audio_url && (
         <div className="mb-2">
-          <p className="text-xs font-mono text-gray-500 mb-1">
-            {post.audio_type === 'recorded' ? '🎙 Áudio' : '🎵 Música'}
+          <p className="text-xs font-mono text-gray-500 mb-1 flex items-center gap-1">
+            {post.audio_type === 'recorded' ? <><Mic size={11} />Áudio</> : <><Music size={11} />Música</>}
           </p>
           <MediaPlayer src={post.audio_url} title={post.audio_name || post.title} />
         </div>
@@ -181,7 +181,10 @@ useEffect(() => {
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={editIsLive} onChange={e => setEditIsLive(e.target.checked)}
                 className="w-4 h-4 accent-neon-green" />
-              <span className="text-xs font-mono text-gray-400">🔴 Marcar como Live</span>
+              <span className="text-xs font-mono text-gray-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                Marcar como Live
+              </span>
             </label>
           )}
           <div className="flex gap-2">
@@ -207,7 +210,7 @@ useEffect(() => {
         post.was_live && !post.is_live
           ? (
             <div className="mt-3 rounded-lg border border-dark-400 bg-dark-900 p-8 text-center">
-              <p className="text-3xl mb-3">📴</p>
+              <Tv size={32} className="text-gray-600 mx-auto mb-3" />
               <p className="text-neon-green font-mono text-sm font-bold">Live encerrada</p>
               <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
             </div>
@@ -232,7 +235,8 @@ useEffect(() => {
         <div className="mt-4 pt-3 border-t border-dark-500">
           <a href="/lives"
             className="flex items-center justify-center gap-2 w-full btn-neon py-2 text-xs">
-            🔴 Entrar na live para comentar
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            Entrar na live para comentar
           </a>
         </div>
       ) : (

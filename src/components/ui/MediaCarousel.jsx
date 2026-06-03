@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Maximize2, Film, Music, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Maximize2, Film, Music, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
 
@@ -10,10 +10,10 @@ function VideoPlayer({ src }) {
     <div className="relative bg-dark-900">
       {failed && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center z-10 bg-dark-900">
-          <p className="text-xl">🎬</p>
+          <Film size={28} className="text-neon-green/60" />
           <p className="text-neon-green font-mono text-sm">Vídeo não compatível</p>
           <p className="text-gray-500 font-mono text-xs">Seu navegador não conseguiu reproduzir este vídeo.</p>
-          <a href={src} download className="btn-neon py-2 px-4 text-xs inline-block">⬇ Baixar vídeo</a>
+          <a href={src} download className="btn-neon py-2 px-4 text-xs inline-flex items-center gap-1.5"><Download size={13} />Baixar vídeo</a>
         </div>
       )}
       <video

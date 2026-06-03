@@ -21,11 +21,11 @@ export default function Login() {
     if (mode === 'login') {
       const { error } = await signInWithEmail(email, password);
       if (error) toast.error(error.message);
-      else { toast.success('Bem-vindo de volta! 🎮'); navigate('/'); }
+      else { toast.success('Bem-vindo de volta!'); navigate('/'); }
     } else {
       const { error } = await signUpWithEmail(email, password, username);
       if (error) toast.error(error.message);
-      else { toast.success('Conta criada! Verifique seu email 📧'); }
+      else { toast.success('Conta criada! Verifique seu email.'); }
     }
     setLoading(false);
   }

@@ -8,6 +8,7 @@ import {
   Shield, Clock, X, Users, FileText, Key,
   ChevronUp, ChevronDown, Ban, Trash2,
   RotateCcw, CheckCircle, XCircle, Crown, ScrollText, Bell,
+  VolumeX, UserPlus, Radio, Tv,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
@@ -199,7 +200,8 @@ function ReactivationModal({ live, isSuperAdmin, onSubmit, onClose }) {
                     ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
                     : 'border-dark-500 text-gray-400 hover:border-dark-300 hover:text-gray-300'
                 }`}>
-                {reason === r ? '● ' : '○ '}{r}
+                <span className={`w-2 h-2 rounded-full mr-2 border inline-block shrink-0 ${reason === r ? 'bg-neon-green border-neon-green' : 'border-gray-500'}`} />
+                {r}
               </button>
             ))}
           </div>
@@ -616,7 +618,8 @@ export default function Admin() {
                 </div>
                 <button onClick={fetchLiveMod} disabled={refreshing}
                   className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors flex items-center gap-1">
-                  {refreshing ? '⟳ Atualizando...' : '⟳ Atualizar'}
+                  <RotateCcw size={11} className={`inline mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Atualizando...' : 'Atualizar'}
                 </button>
               </div>
 
@@ -637,7 +640,7 @@ export default function Admin() {
                       if (remaining <= 0) return null;
                       return (
                         <div key={t.id} className="flex items-center gap-3 bg-dark-700 rounded-lg px-3 py-2 border border-yellow-400/10">
-                          <span className="text-lg">🔇</span>
+                          <VolumeX size={15} className="text-yellow-500 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-mono font-bold text-yellow-400">{t.profiles?.username}</p>
                             <p className="text-xs font-mono text-gray-600">
@@ -698,7 +701,7 @@ export default function Admin() {
                       const hasPending = liveMod.requests?.some(r => r.post_id === l.id);
                       return (
                         <div key={l.id} className="flex items-center gap-3 bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
-                          <span className="text-sm shrink-0">📴</span>
+                          <Tv size={14} className="text-gray-500 shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-mono font-bold text-white truncate">{l.title}</p>
                             <p className="text-xs font-mono text-gray-600">
@@ -706,8 +709,8 @@ export default function Admin() {
                             </p>
                           </div>
                           {hasPending ? (
-                            <span className="text-xs font-mono text-yellow-400/70 border border-yellow-400/20 px-2 py-0.5 rounded shrink-0">
-                              ⏳ Aguardando
+                            <span className="text-xs font-mono text-yellow-400/70 border border-yellow-400/20 px-2 py-0.5 rounded shrink-0 flex items-center gap-1">
+                              <Clock size={10} />Aguardando
                             </span>
                           ) : (
                             <button onClick={() => setReactivateModal(l)}
@@ -761,7 +764,8 @@ export default function Admin() {
                 </div>
                 <button onClick={fetchNotifications} disabled={notifLoading}
                   className="text-xs font-mono text-gray-500 hover:text-neon-cyan transition-colors">
-                  {notifLoading ? '⟳ Carregando...' : '⟳ Atualizar'}
+                  <RotateCcw size={11} className={`inline mr-1 ${notifLoading ? 'animate-spin' : ''}`} />
+                  {notifLoading ? 'Carregando...' : 'Atualizar'}
                 </button>
               </div>
 
@@ -771,21 +775,23 @@ export default function Admin() {
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="card p-8 text-center">
-                  <p className="text-2xl mb-2">🔔</p>
+                  <Bell size={28} className="text-gray-600 mx-auto mb-2" />
                   <p className="text-xs font-mono text-gray-500">Nenhuma notificação ainda</p>
                 </div>
               ) : notifications.map(n => {
                 const isRead = readIds.has(n.id);
-                const icons = {
-                  new_user: '👤',
-                  new_live: '🔴',
-                  reactivation_request: '🔄',
-                };
+                const notifIcon = n.type === 'new_user'
+                  ? <UserPlus size={15} className="text-neon-cyan" />
+                  : n.type === 'new_live'
+                  ? <Radio size={15} className="text-red-400" />
+                  : n.type === 'reactivation_request'
+                  ? <RotateCcw size={15} className="text-neon-green" />
+                  : <Bell size={15} className="text-gray-500" />;
                 return (
                   <div key={n.id} className={`card p-4 flex items-start gap-3 transition-all ${
                     isRead ? 'opacity-60' : 'border-neon-cyan/20'
                   }`}>
-                    <span className="text-lg shrink-0">{icons[n.type] || '🔔'}</span>
+                    <span className="shrink-0 mt-0.5">{notifIcon}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-xs font-mono font-bold text-white">{n.title}</p>
@@ -840,7 +846,7 @@ export default function Admin() {
                 <div className="space-y-3">
                   {!liveMod.requests?.length ? (
                     <div className="card p-8 text-center">
-                      <p className="text-2xl mb-2">✅</p>
+                      <CheckCircle size={28} className="text-neon-green/40 mx-auto mb-2" />
                       <p className="text-xs font-mono text-gray-500">Nenhuma solicitação pendente</p>
                     </div>
                   ) : liveMod.requests.map(req => (

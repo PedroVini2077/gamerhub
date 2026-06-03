@@ -24,7 +24,7 @@ export default function MuralForm({ onPost }) {
     });
     if (error) toast.error('Erro ao enviar mensagem');
     else {
-      toast.success('Mensagem enviada! 🎮');
+      toast.success('Mensagem enviada!');
       setMessage('');
       onPost?.();
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ExternalLink, Tv } from 'lucide-react';
+import { ExternalLink, Tv, Music, Camera } from 'lucide-react';
 
 export function getEmbedInfo(url) {
   if (!url) return null;
@@ -39,7 +39,7 @@ export function getEmbedInfo(url) {
 
   if (expired) return (
     <div className="mt-3 rounded-lg border border-dark-400 bg-dark-900 p-8 text-center">
-      <p className="text-3xl mb-3">📴</p>
+      <Tv size={32} className="text-gray-600 mx-auto mb-3" />
       <p className="text-neon-green font-mono text-sm">Live encerrada</p>
       <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
     </div>
@@ -151,12 +151,18 @@ export default function EmbedPlayer({ url, isLive, expiresAt }) {
     </div>
   );
 
+  const platformIcon = info.type === 'tiktok'
+    ? <Music size={18} style={{ color: info.color }} />
+    : info.type === 'instagram'
+    ? <Camera size={18} style={{ color: info.color }} />
+    : <ExternalLink size={18} style={{ color: info.color }} />;
+
   return (
     <a href={url} target="_blank" rel="noopener noreferrer"
       className="mt-3 flex items-center gap-3 p-4 rounded-lg border border-dark-400 bg-dark-700 hover:border-neon-green/40 transition-all group">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
+      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
         style={{ background: info.color + '22', border: `1px solid ${info.color}44` }}>
-        {info.icon}
+        {platformIcon}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-mono font-bold" style={{ color: info.color }}>{info.label}</p>

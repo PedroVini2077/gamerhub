@@ -129,7 +129,7 @@ export default function Home() {
         ) : filtered.length === 0 ? (
           <div className="card p-8 text-center">
             <p className="font-mono text-gray-500 text-sm">
-              {search || filterCat !== 'todos' ? 'Nenhum post encontrado.' : 'Nenhum post ainda. Seja o primeiro! 🎮'}
+              {search || filterCat !== 'todos' ? 'Nenhum post encontrado.' : 'Nenhum post ainda. Seja o primeiro!'}
             </p>
           </div>
         ) : (

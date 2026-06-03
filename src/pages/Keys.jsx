@@ -103,7 +103,7 @@ export default function Keys() {
       ) : tab === 'keys' ? (
         keys.length === 0 ? (
           <div className="card p-8 text-center">
-            <p className="font-mono text-gray-500 text-sm">Sem keys disponíveis no momento 😔</p>
+            <p className="font-mono text-gray-500 text-sm">Sem keys disponíveis no momento</p>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -113,7 +113,7 @@ export default function Keys() {
       ) : (
         promos.length === 0 ? (
           <div className="card p-8 text-center">
-            <p className="font-mono text-gray-500 text-sm">Sem promoções ativas no momento 😔</p>
+            <p className="font-mono text-gray-500 text-sm">Sem promoções ativas no momento</p>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">

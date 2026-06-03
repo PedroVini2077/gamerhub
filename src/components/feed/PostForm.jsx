@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
-import { Send, Image, X, Film, Music, Mic, Link } from 'lucide-react';
+import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
 import AudioRecorder from '../ui/AudioRecorder';
 import EmbedPlayer, { getEmbedInfo } from '../ui/EmbedPlayer';
 import MediaPlayer from '../ui/MediaPlayer';
@@ -122,7 +122,7 @@ export default function PostForm({ onPost }) {
         await supabase.from('post_media').insert(rows);
       }
 
-      toast.success('Post publicado! 🎮', { id: toastId });
+      toast.success('Post publicado!', { id: toastId });
       setTitle(''); setContent(''); setMedias([]);
       setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
       setIsLive(false); setExpiresAt('');
@@ -147,8 +147,8 @@ export default function PostForm({ onPost }) {
           value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
       ) : (
         <div className="mb-3 border border-neon-green/20 rounded-lg p-3 bg-dark-700 relative">
-          <p className="text-xs font-mono text-neon-green mb-2 uppercase tracking-wider">
-            {audio.type === 'recorded' ? '🎙 Áudio gravado' : '🎵 Música'}
+          <p className="text-xs font-mono text-neon-green mb-2 uppercase tracking-wider flex items-center gap-1.5">
+            {audio.type === 'recorded' ? <><Mic size={12} />Áudio gravado</> : <><Music size={12} />Música</>}
           </p>
           <input className="input-gamer mb-2 text-sm" placeholder="Nome do áudio / música..."
             value={audioName} onChange={e => setAudioName(e.target.value)} maxLength={80} />
@@ -179,7 +179,7 @@ export default function PostForm({ onPost }) {
     </div>
 
     {embedUrl && !embedUrl.match(/^https?:\/\//) && (
-      <p className="text-xs font-mono text-red-400/80 mb-2">⚠ Cole um link válido começando com https://</p>
+      <p className="text-xs font-mono text-red-400/80 mb-2 flex items-center gap-1"><AlertTriangle size={11} />Cole um link válido começando com https://</p>
     )}
 
     {/* Opção de live */}
@@ -188,7 +188,9 @@ export default function PostForm({ onPost }) {
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={isLive} onChange={e => setIsLive(e.target.checked)}
             className="w-4 h-4 accent-neon-green" />
-          <span className="text-xs font-mono text-gray-400">🔴 Marcar como Live</span>
+          <span className="text-xs font-mono text-gray-400 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Marcar como Live
+          </span>
         </label>
       </div>
     )}

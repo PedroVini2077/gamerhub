@@ -42,7 +42,7 @@ export default function Community() {
         </div>
       ) : items.length === 0 ? (
         <div className="card p-8 text-center">
-          <p className="font-mono text-gray-500 text-sm">Mural vazio. Quebra o gelo! 💬</p>
+          <p className="font-mono text-gray-500 text-sm">Mural vazio. Quebra o gelo!</p>
         </div>
       ) : (
         <div className="space-y-3">
