@@ -1,15 +1,27 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Shield, Clock, X, Users, FileText, Key, ChevronUp, ChevronDown, Ban, Trash2 } from 'lucide-react';
+import {
+  Shield, Clock, X, Users, FileText, Key,
+  ChevronUp, ChevronDown, Ban, Trash2,
+  RotateCcw, CheckCircle, XCircle, Crown, ScrollText,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
 import Avatar from '../components/ui/Avatar';
 
 const ROLES = ['user', 'admin', 'super_admin'];
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
+const REACTIVATE_REASONS = [
+  'Encerrada por engano',
+  'Problema técnico',
+  'Live continuou',
+  'Pedido do criador',
+  'Outro',
+];
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
@@ -28,11 +40,7 @@ function StatCard({ icon: Icon, label, value, color }) {
 function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDeletePosts }) {
   const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
-
-  const canEdit = !isMe && (
-    isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user'
-  );
-
+  const canEdit = !isMe && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const availableRoles = ROLES.filter(r => r !== user.role).filter(r =>
     isSuperAdmin ? true : r !== 'super_admin'
   );
@@ -56,7 +64,6 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
           </button>
         )}
       </div>
-
       {expanded && canEdit && (
         <div className="border-t border-dark-500 bg-dark-700 px-4 py-3 space-y-3">
           <div>
@@ -75,14 +82,12 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
             <div className="flex gap-2 flex-wrap">
               <button onClick={() => { onBan(user.id, !user.banned); setExpanded(false); }}
                 className="btn-purple py-1.5 px-3 text-xs flex items-center gap-1.5">
-                <Ban size={12} />
-                {user.banned ? 'Desbanir' : 'Banir usuário'}
+                <Ban size={12} />{user.banned ? 'Desbanir' : 'Banir usuário'}
               </button>
               {user.role === 'user' && (
                 <button onClick={() => onDeletePosts(user.id, user.username)}
                   className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
-                  <Trash2 size={12} />
-                  Deletar posts
+                  <Trash2 size={12} />Deletar posts
                 </button>
               )}
             </div>
@@ -147,18 +152,97 @@ function KeyForm({ onAdd }) {
   );
 }
 
+function ReactivationModal({ live, isSuperAdmin, onSubmit, onClose }) {
+  const [reason, setReason] = useState('');
+  const [details, setDetails] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
+    if (!reason) return;
+    setSubmitting(true);
+    await onSubmit(live, reason, details);
+    setSubmitting(false);
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.9)' }}
+      onClick={onClose}>
+      <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-dark-400 p-5 space-y-4 animate-fade-up"
+        onClick={e => e.stopPropagation()}
+        style={{ boxShadow: '0 0 40px #39ff1415' }}>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <RotateCcw size={14} className="text-neon-green" />
+            <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">
+              {isSuperAdmin ? 'Reativar Live' : 'Solicitar Reativação'}
+            </h3>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
+          <p className="text-xs font-mono text-white font-bold">{live.title}</p>
+          <p className="text-xs font-mono text-gray-500">por {live.profiles?.username}</p>
+        </div>
+
+        <div>
+          <p className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Motivo:</p>
+          <div className="space-y-1.5">
+            {REACTIVATE_REASONS.map(r => (
+              <button key={r} type="button" onClick={() => setReason(r)}
+                className={`w-full text-left text-xs font-mono px-3 py-2 rounded border transition-all ${
+                  reason === r
+                    ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
+                    : 'border-dark-500 text-gray-400 hover:border-dark-300 hover:text-gray-300'
+                }`}>
+                {reason === r ? '● ' : '○ '}{r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <textarea className="input-gamer resize-none w-full text-xs" rows={2}
+          placeholder="Detalhes adicionais (opcional)..."
+          value={details} onChange={e => setDetails(e.target.value)} maxLength={300} />
+
+        <div className="flex gap-2">
+          <button onClick={handleSubmit} disabled={!reason || submitting}
+            className="btn-solid flex-1 py-2 text-xs disabled:opacity-40 flex items-center justify-center gap-1.5">
+            {submitting
+              ? <span className="animate-pulse font-mono">...</span>
+              : isSuperAdmin
+                ? <><RotateCcw size={12} /> Reativar Agora</>
+                : <><CheckCircle size={12} /> Enviar Solicitação</>
+            }
+          </button>
+          <button onClick={onClose} className="btn-neon py-2 px-4 text-xs">Cancelar</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export default function Admin() {
   const { isAdmin, isSuperAdmin, role } = useRole();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('users');
+  const [superTab, setSuperTab] = useState('requests');
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [keys, setKeys] = useState([]);
   const [stats, setStats] = useState({ users: 0, posts: 0, keys: 0 });
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('todos');
-  const [liveMod, setLiveMod] = useState({ silenced: [], lives: [] });
+  const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
+  const [refreshing, setRefreshing] = useState(false);
+  const [reactivateModal, setReactivateModal] = useState(null);
+  const [logs, setLogs] = useState([]);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
@@ -166,19 +250,22 @@ export default function Admin() {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (tab === 'lives') fetchLiveMod();
+    if (tab === 'lives' || tab === 'super') fetchLiveMod();
+    if (tab === 'super' && isSuperAdmin) fetchLogs();
   }, [tab]);
 
   useEffect(() => {
-  if (tab !== 'lives') return;
-  const channel = supabase.channel('admin-live-mod')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' },
-      () => fetchLiveMod())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' },
-      () => fetchLiveMod())
-    .subscribe();
-  return () => supabase.removeChannel(channel);
-}, [tab]);
+    if (tab !== 'lives' && tab !== 'super') return;
+    const channel = supabase.channel('admin-live-mod')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' }, () => fetchLiveMod())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchLiveMod())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_reactivation_requests' }, () => {
+        fetchLiveMod();
+        if (isSuperAdmin) fetchLogs();
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [tab]);
 
   async function fetchAll() {
     setLoading(true);
@@ -194,35 +281,126 @@ export default function Admin() {
     setLoading(false);
   }
 
-const [refreshing, setRefreshing] = useState(false);
+  async function fetchLiveMod() {
+    setRefreshing(true);
+    const since7d = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
+    const [{ data: silenced }, { data: lives }, { data: endedLives }, { data: requests }] = await Promise.all([
+      supabase.from('live_chat_timeouts')
+        .select('id, post_id, user_id, expires_at, profiles(username)')
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false }),
+      supabase.from('posts')
+        .select('id, title, user_id, profiles(username)')
+        .eq('is_live', true)
+        .not('embed_url', 'is', null),
+      supabase.from('posts')
+        .select('id, title, user_id, created_at, profiles(username)')
+        .eq('was_live', true)
+        .eq('is_live', false)
+        .not('embed_url', 'is', null)
+        .gte('created_at', since7d)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase.from('live_reactivation_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false }),
+    ]);
+    setLiveMod({
+      silenced: silenced || [],
+      lives: lives || [],
+      endedLives: endedLives || [],
+      requests: requests || [],
+    });
+    setRefreshing(false);
+  }
 
-async function fetchLiveMod() {
-  setRefreshing(true);
-  const [{ data: silenced }, { data: lives }] = await Promise.all([
-    supabase.from('live_chat_timeouts')
-      .select('id, post_id, user_id, expires_at, profiles(username)')
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false }),
-    supabase.from('posts')
-      .select('id, title, user_id, profiles(username)')
-      .eq('is_live', true)
-      .not('embed_url', 'is', null)
-      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString()),
-  ]);
-  setLiveMod({ silenced: silenced || [], lives: lives || [] });
-  setRefreshing(false);
-}
+  async function fetchLogs() {
+    if (!isSuperAdmin) return;
+    const { data } = await supabase.from('admin_logs')
+      .select('*').order('created_at', { ascending: false }).limit(50);
+    setLogs(data || []);
+  }
+
+  async function logAction(action, details) {
+    await supabase.from('admin_logs').insert({
+      admin_id: user.id,
+      admin_username: profile?.username || 'Admin',
+      action,
+      details,
+    });
+  }
 
   async function unsilenceUser(id) {
     await supabase.from('live_chat_timeouts').delete().eq('id', id);
     fetchLiveMod();
   }
 
-  async function handleEndLive(postId) {
+  async function handleEndLive(postId, title) {
     if (!confirm('Encerrar esta live?')) return;
     const { error } = await supabase.from('posts').update({ is_live: false }).eq('id', postId);
-    if (error) toast.error('Erro ao encerrar live');
-    else { toast.success('Live encerrada'); fetchLiveMod(); }
+    if (error) { toast.error('Erro ao encerrar live'); return; }
+    toast.success('Live encerrada');
+    await logAction('live_ended', `Live "${title}" encerrada pelo admin`);
+    fetchLiveMod();
+  }
+
+  async function handleReactivateDirect(live, reason, details) {
+    const { error } = await supabase.from('posts').update({ is_live: true }).eq('id', live.id);
+    if (error) { toast.error('Erro ao reativar'); return; }
+    toast.success('Live reativada!');
+    await logAction('live_reactivated',
+      `Live "${live.title}" reativada pelo super admin. Motivo: ${reason}${details ? ` — ${details}` : ''}`);
+    setReactivateModal(null);
+    fetchLiveMod();
+  }
+
+  async function handleSubmitRequest(live, reason, details) {
+    const { error } = await supabase.from('live_reactivation_requests').insert({
+      post_id: live.id,
+      post_title: live.title,
+      admin_id: user.id,
+      admin_username: profile?.username || 'Admin',
+      reason,
+      details: details || null,
+      status: 'pending',
+    });
+    if (error) { toast.error('Erro ao enviar solicitação'); return; }
+    toast.success('Solicitação enviada ao super admin!');
+    await logAction('reactivation_requested',
+      `Admin solicitou reativação de "${live.title}". Motivo: ${reason}${details ? ` — ${details}` : ''}`);
+    setReactivateModal(null);
+    fetchLiveMod();
+  }
+
+  async function handleApproveRequest(req) {
+    const { error } = await supabase.from('posts').update({ is_live: true }).eq('id', req.post_id);
+    if (error) { toast.error('Erro ao reativar post'); return; }
+    await supabase.from('live_reactivation_requests').update({
+      status: 'approved',
+      reviewed_by: user.id,
+      reviewer_username: profile?.username,
+      reviewed_at: new Date().toISOString(),
+    }).eq('id', req.id);
+    toast.success('Aprovado — live reativada!');
+    await logAction('reactivation_approved',
+      `Super admin aprovou reativação de "${req.post_title}" (solicitado por ${req.admin_username})`);
+    fetchLiveMod();
+    fetchLogs();
+  }
+
+  async function handleDenyRequest(req) {
+    await supabase.from('live_reactivation_requests').update({
+      status: 'denied',
+      reviewed_by: user.id,
+      reviewer_username: profile?.username,
+      reviewed_at: new Date().toISOString(),
+    }).eq('id', req.id);
+    toast.success('Solicitação negada');
+    await logAction('reactivation_denied',
+      `Super admin negou reativação de "${req.post_title}" (solicitado por ${req.admin_username})`);
+    fetchLiveMod();
+    fetchLogs();
   }
 
   async function handleRoleChange(userId, newRole) {
@@ -260,19 +438,28 @@ async function fetchLiveMod() {
 
   if (!isAdmin) return null;
 
-  const filteredUsers = filterRole === 'todos'
-    ? users
-    : users.filter(u => u.role === filterRole);
+  const filteredUsers = filterRole === 'todos' ? users : users.filter(u => u.role === filterRole);
+  const pendingCount = liveMod.requests?.length || 0;
 
   const tabs = [
     { id: 'users', label: 'Usuários', icon: Users },
     { id: 'posts', label: 'Posts', icon: FileText },
     { id: 'lives', label: 'Mod de Lives', icon: Shield },
     { id: 'keys', label: 'Keys & Promos', icon: Key },
+    ...(isSuperAdmin ? [{ id: 'super', label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
   return (
     <div className="space-y-5">
+      {reactivateModal && (
+        <ReactivationModal
+          live={reactivateModal}
+          isSuperAdmin={isSuperAdmin}
+          onSubmit={isSuperAdmin ? handleReactivateDirect : handleSubmitRequest}
+          onClose={() => setReactivateModal(null)}
+        />
+      )}
+
       <div className="card p-5 border-neon-purple/20">
         <div className="flex items-center gap-2 mb-1">
           <Shield size={16} className="text-neon-purple" />
@@ -290,14 +477,22 @@ async function fetchLiveMod() {
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {tabs.map(({ id, label, icon: Icon, badge }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-2 py-2 px-4 text-xs font-display tracking-wider uppercase rounded border transition-all shrink-0 ${
+            className={`relative flex items-center gap-2 py-2 px-4 text-xs font-display tracking-wider uppercase rounded border transition-all shrink-0 ${
               tab === id
-                ? 'border-neon-purple bg-neon-purple/10 text-neon-purple'
+                ? id === 'super'
+                  ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400'
+                  : 'border-neon-purple bg-neon-purple/10 text-neon-purple'
                 : 'border-dark-400 text-gray-500 hover:text-gray-300'
             }`}>
             <Icon size={13} /> {label}
+            {badge > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center font-mono font-bold"
+                style={{ fontSize: 9 }}>
+                {badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -361,9 +556,9 @@ async function fetchLiveMod() {
                   <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">Moderação de Lives</h3>
                 </div>
                 <button onClick={fetchLiveMod} disabled={refreshing}
-  className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors flex items-center gap-1">
-  {refreshing ? '⟳ Atualizando...' : '⟳ Atualizar'}
-</button>
+                  className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors flex items-center gap-1">
+                  {refreshing ? '⟳ Atualizando...' : '⟳ Atualizar'}
+                </button>
               </div>
 
               <div className="card p-4">
@@ -403,7 +598,7 @@ async function fetchLiveMod() {
 
               <div className="card p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <X size={13} className="text-red-400" />
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                   <p className="text-xs font-mono text-red-400 uppercase tracking-wider font-bold">
                     Lives Ativas ({liveMod.lives?.length || 0})
                   </p>
@@ -419,12 +614,52 @@ async function fetchLiveMod() {
                           <p className="text-xs font-mono font-bold text-white">{l.title}</p>
                           <p className="text-xs font-mono text-gray-600">por {l.profiles?.username}</p>
                         </div>
-                        <button onClick={() => handleEndLive(l.id)}
+                        <button onClick={() => handleEndLive(l.id, l.title)}
                           className="text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/20 hover:border-red-400/50 px-2 py-0.5 rounded transition-all shrink-0">
                           Encerrar
                         </button>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <RotateCcw size={13} className="text-neon-green/60" />
+                  <p className="text-xs font-mono text-neon-green/60 uppercase tracking-wider font-bold">
+                    Lives Encerradas — últimos 7 dias ({liveMod.endedLives?.length || 0})
+                  </p>
+                </div>
+                {!liveMod.endedLives?.length ? (
+                  <p className="text-xs text-gray-600 font-mono">Nenhuma live encerrada recentemente</p>
+                ) : (
+                  <div className="space-y-2">
+                    {liveMod.endedLives.map(l => {
+                      const hasPending = liveMod.requests?.some(r => r.post_id === l.id);
+                      return (
+                        <div key={l.id} className="flex items-center gap-3 bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
+                          <span className="text-sm shrink-0">📴</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-mono font-bold text-white truncate">{l.title}</p>
+                            <p className="text-xs font-mono text-gray-600">
+                              por {l.profiles?.username} · {new Date(l.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          {hasPending ? (
+                            <span className="text-xs font-mono text-yellow-400/70 border border-yellow-400/20 px-2 py-0.5 rounded shrink-0">
+                              ⏳ Aguardando
+                            </span>
+                          ) : (
+                            <button onClick={() => setReactivateModal(l)}
+                              className="flex items-center gap-1 text-xs font-mono text-neon-green/70 hover:text-neon-green border border-neon-green/20 hover:border-neon-green/50 px-2 py-0.5 rounded transition-all shrink-0">
+                              <RotateCcw size={10} />
+                              {isSuperAdmin ? 'Reativar' : 'Solicitar'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -455,6 +690,93 @@ async function fetchLiveMod() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {tab === 'super' && isSuperAdmin && (
+            <div className="space-y-4">
+              <div className="card p-4 border-yellow-400/20" style={{ boxShadow: '0 0 20px #eab30810' }}>
+                <div className="flex items-center gap-2">
+                  <Crown size={14} className="text-yellow-400" />
+                  <h3 className="font-display text-sm text-yellow-400 uppercase tracking-wider">Área Super Admin</h3>
+                </div>
+                <p className="text-xs text-gray-600 font-mono mt-1">Acesso exclusivo — super admins only.</p>
+              </div>
+
+              <div className="flex gap-2">
+                {[
+                  { id: 'requests', label: `Solicitações${pendingCount > 0 ? ` (${pendingCount})` : ''}`, icon: RotateCcw },
+                  { id: 'logs', label: 'Logs', icon: ScrollText },
+                ].map(({ id, label, icon: Icon }) => (
+                  <button key={id}
+                    onClick={() => { setSuperTab(id); if (id === 'logs') fetchLogs(); }}
+                    className={`flex items-center gap-1.5 py-1.5 px-3 text-xs font-mono rounded border transition-all ${
+                      superTab === id
+                        ? 'border-yellow-400/50 bg-yellow-400/10 text-yellow-400'
+                        : 'border-dark-400 text-gray-500 hover:text-gray-300'
+                    }`}>
+                    <Icon size={11} /> {label}
+                  </button>
+                ))}
+              </div>
+
+              {superTab === 'requests' && (
+                <div className="space-y-3">
+                  {!liveMod.requests?.length ? (
+                    <div className="card p-8 text-center">
+                      <p className="text-2xl mb-2">✅</p>
+                      <p className="text-xs font-mono text-gray-500">Nenhuma solicitação pendente</p>
+                    </div>
+                  ) : liveMod.requests.map(req => (
+                    <div key={req.id} className="card p-4 border-yellow-400/10 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-white font-mono truncate">"{req.post_title}"</p>
+                          <p className="text-xs text-gray-500 font-mono mt-0.5">
+                            por <span className="text-yellow-400">{req.admin_username}</span>
+                            {' · '}{new Date(req.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                          </p>
+                        </div>
+                        <span className="tag tag-purple shrink-0 text-xs">pendente</span>
+                      </div>
+                      <div className="bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
+                        <p className="text-xs font-mono text-neon-green font-bold">{req.reason}</p>
+                        {req.details && <p className="text-xs font-mono text-gray-400 mt-0.5">{req.details}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApproveRequest(req)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
+                          <CheckCircle size={12} /> Aprovar e Reativar
+                        </button>
+                        <button onClick={() => handleDenyRequest(req)}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
+                          <XCircle size={12} /> Negar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {superTab === 'logs' && (
+                <div className="space-y-2">
+                  {!logs.length ? (
+                    <div className="card p-8 text-center">
+                      <p className="text-xs font-mono text-gray-500">Nenhuma ação registrada ainda</p>
+                    </div>
+                  ) : logs.map(log => (
+                    <div key={log.id} className="card p-3 flex items-start gap-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-neon-green/50 mt-1.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-mono text-gray-300 leading-relaxed">{log.details}</p>
+                        <p className="text-xs font-mono text-gray-600 mt-0.5">
+                          {log.admin_username} · {new Date(log.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </>

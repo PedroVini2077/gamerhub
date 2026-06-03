@@ -172,14 +172,18 @@ export default function PostForm({ onPost }) {
       <input className="input-gamer flex-1 text-sm"
         placeholder="Cole o link do YouTube, Twitch, TikTok..."
         value={embedUrl} onChange={e => setEmbedUrl(e.target.value)} />
-      <button onClick={() => { setShowEmbed(false); setEmbedUrl(''); setIsLive(false); setExpiresAt(''); }}
+      <button onClick={() => { setShowEmbed(false); setEmbedUrl(''); setIsLive(false); }}
         className="text-gray-500 hover:text-red-400 transition-colors p-2">
         <X size={16} />
       </button>
     </div>
 
+    {embedUrl && !embedUrl.match(/^https?:\/\//) && (
+      <p className="text-xs font-mono text-red-400/80 mb-2">⚠ Cole um link válido começando com https://</p>
+    )}
+
     {/* Opção de live */}
-    {embedUrl && getEmbedInfo(embedUrl)?.type === 'twitch' && (
+    {embedUrl && embedUrl.match(/^https?:\/\//) && getEmbedInfo(embedUrl)?.type === 'twitch' && (
       <div className="mt-2">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={isLive} onChange={e => setIsLive(e.target.checked)}
@@ -189,7 +193,7 @@ export default function PostForm({ onPost }) {
       </div>
     )}
 
-    {embedUrl && <EmbedPlayer url={embedUrl} isLive={isLive} />}
+    {embedUrl && embedUrl.match(/^https?:\/\//) && <EmbedPlayer url={embedUrl} isLive={isLive} />}
   </div>
 )}
 
