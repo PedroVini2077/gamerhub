@@ -98,6 +98,7 @@ export default function Login() {
     if (current.blocked) { setBlockStatus(current); return; }
 
     if (!email || !password) { toast.error('Preencha email e senha'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast.error('Informe um email válido'); return; }
     if (mode === 'register' && !username) { toast.error('Escolha um username'); return; }
 
     setLoading(true);
