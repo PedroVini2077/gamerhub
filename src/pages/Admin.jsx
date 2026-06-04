@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -283,6 +283,12 @@ export default function Admin() {
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unlockModal, setUnlockModal] = useState(null);
 
+  // Refs para evitar closure stale nos callbacks do realtime
+  const tabRef = useRef(tab);
+  const logCatRef = useRef(logCat);
+  useEffect(() => { tabRef.current = tab; }, [tab]);
+  useEffect(() => { logCatRef.current = logCat; }, [logCat]);
+
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
     fetchAll();
@@ -303,28 +309,28 @@ export default function Admin() {
   useEffect(() => {
     const channel = supabase.channel('admin-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' }, () => {
-        if (tab === 'lives' || tab === 'super') fetchLiveMod();
+        if (tabRef.current === 'lives' || tabRef.current === 'super') fetchLiveMod();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-        if (tab === 'lives' || tab === 'super') fetchLiveMod();
+        if (tabRef.current === 'lives' || tabRef.current === 'super') fetchLiveMod();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_reactivation_requests' }, () => {
-        if (tab === 'lives' || tab === 'super') fetchLiveMod();
+        if (tabRef.current === 'lives' || tabRef.current === 'super') fetchLiveMod();
         if (isSuperAdmin) fetchLogs();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
         fetchNotificationsCount();
-        if (tab === 'notifs') fetchNotifications();
+        if (tabRef.current === 'notifs') fetchNotifications();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
-        if (tab === 'logs') fetchLogs(logCat);
+        if (tabRef.current === 'logs') fetchLogs(logCatRef.current);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'login_rate_limits' }, () => {
-        if (tab === 'super' && isSuperAdmin) fetchBlockedLogins();
+        if (tabRef.current === 'super' && isSuperAdmin) fetchBlockedLogins();
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
-  }, [tab, isSuperAdmin]);
+  }, [isSuperAdmin]);
 
   async function fetchAll() {
     setLoading(true);

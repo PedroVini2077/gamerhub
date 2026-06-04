@@ -126,7 +126,7 @@ export default function Header({ onMenuClick }) {
       {user ? (
         <div className="flex items-center gap-3">
           <Link to="/profile" className="text-sm font-mono text-gray-300 hover:text-neon-green transition-colors">
-            {profile?.username || user.email?.split('@')[0]}
+            {profile?.username}
           </Link>
           <button onClick={handleSignOut} className="btn-neon flex items-center gap-2 py-2 px-3">
             <LogOut size={14} />

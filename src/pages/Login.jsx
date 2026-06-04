@@ -206,6 +206,23 @@ export default function Login() {
     if (e.key === 'Enter') handleSubmit();
   }
 
+  async function handleCheckBlock() {
+    if (!email.trim()) { toast.error('Informe seu email para verificar'); return; }
+    const { data } = await supabase.rpc('check_login_block', { p_email: email.trim() });
+    if (!data?.blocked) {
+      clearRateLimit();
+      setBlockStatus({ blocked: false, attempts: 0 });
+      toast.success('Acesso liberado! Você pode fazer login agora.');
+    } else {
+      const serverMs = data.blocked_until
+        ? new Date(data.blocked_until).getTime()
+        : Date.now() + PERMANENT_MS;
+      saveState({ attempts: data.attempts, blockedUntil: Math.max(serverMs, Date.now()) + 2000, permanent: !!data.permanent });
+      setBlockStatus(getBlockStatus());
+      toast('Conta ainda bloqueada.', { icon: '🔒' });
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -262,6 +279,11 @@ export default function Login() {
                     para tentar novamente.
                   </p>
                 )}
+                <button type="button" onClick={handleCheckBlock}
+                  className="text-gray-600 hover:text-neon-green transition-colors mt-1.5 block"
+                  style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                  Admin desbloqueou sua conta? Verificar
+                </button>
               </div>
             </div>
           )}

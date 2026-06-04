@@ -13,13 +13,15 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   async function fetchProfile(userId) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
-    setProfile(data);
-    return data;
+    // Só atualiza o profile em caso de sucesso — erros temporários (rede, refresh de token)
+    // não devem apagar o profile existente e quebrar a UI
+    if (!error) setProfile(data);
+    return data ?? null;
   }
 
   useEffect(() => {
