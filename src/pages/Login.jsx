@@ -142,8 +142,10 @@ export default function Login() {
           toast.error(error.message + aviso);
         }
       } else {
-        // 4. Sucesso — zera o contador e entra
-        supabase.rpc('reset_login_attempts');
+        // 4. Sucesso — zera o contador e entra.
+        // await é obrigatório: o builder do supabase-js é lazy e só dispara a
+        // requisição quando aguardado — sem isso o reset nunca era enviado.
+        await supabase.rpc('reset_login_attempts');
         setBlock(null);
         navigate('/');
       }

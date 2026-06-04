@@ -42,7 +42,8 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Detecta ban em tempo real enquanto o usuário está logado
+  // Detecta ban em tempo real enquanto o usuário está logado.
+  // Caminho instantâneo: subscription realtime no próprio profile.
   useEffect(() => {
     if (!user?.id) return;
     const channel = supabase
@@ -61,8 +62,23 @@ export function AuthProvider({ children }) {
         }
       })
       .subscribe();
-    return () => supabase.removeChannel(channel);
+
+    // Fallback confiável: revalida o profile a cada 20s. Se o realtime perder o
+    // evento (timing da subscription, reconexão), o ban ainda é capturado aqui.
+    const poll = setInterval(() => fetchProfile(user.id), 20000);
+
+    return () => { supabase.removeChannel(channel); clearInterval(poll); };
   }, [user?.id]);
+
+  // Sempre que o profile indicar banimento (via realtime, poll ou refresh), mostra a tela.
+  useEffect(() => {
+    if (profile?.banned) {
+      setBannedScreen({
+        reason: profile.ban_reason || 'Violação dos termos de uso',
+        details: profile.ban_details || null,
+      });
+    }
+  }, [profile?.banned, profile?.ban_reason, profile?.ban_details]);
 
   async function signInWithEmail(email, password) {
     if (!email?.trim() || !password) {
