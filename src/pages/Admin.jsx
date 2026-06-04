@@ -11,6 +11,7 @@ import {
   RotateCcw, CheckCircle, XCircle, Crown, ScrollText, Bell,
   VolumeX, UserPlus, Radio, Tv, LogIn, LogOut,
   AlertTriangle, ShieldAlert, ShieldOff, Pencil, Activity,
+  Lock, LockOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
@@ -255,6 +256,8 @@ export default function Admin() {
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
   const [notifLoading, setNotifLoading] = useState(false);
+  const [blockedLogins, setBlockedLogins] = useState([]);
+  const [blockedLoading, setBlockedLoading] = useState(false);
   // Refs para evitar closure stale nos callbacks do realtime
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
@@ -270,6 +273,7 @@ export default function Admin() {
     if (tab === 'lives' || tab === 'super') fetchLiveMod();
     if (tab === 'notifs') fetchNotifications();
     if (tab === 'logs') fetchLogs(logCat);
+    if (tab === 'super' && isSuperAdmin) fetchBlockedLogins();
   }, [tab]);
 
 
@@ -401,6 +405,25 @@ export default function Admin() {
       setReadIds(new Set((notifs || []).map(n => n.id)));
     }
     setNotifLoading(false);
+  }
+
+  async function fetchBlockedLogins() {
+    setBlockedLoading(true);
+    const { data } = await supabase.rpc('get_blocked_logins');
+    setBlockedLogins(data || []);
+    setBlockedLoading(false);
+  }
+
+  async function handleUnlock(entry) {
+    if (!confirm(`Desbloquear o login de ${entry.email}?`)) return;
+    const { error } = await supabase.rpc('admin_unlock_login', { p_email: entry.email });
+    if (error) { toast.error('Erro ao desbloquear'); return; }
+    logAudit('admin_unlock_login',
+      `Super admin @${profile?.username} desbloqueou o login de ${entry.email}`,
+      { category: 'security', severity: 'warning', metadata: { email: entry.email } }
+    );
+    toast.success(`${entry.email} desbloqueado`);
+    fetchBlockedLogins();
   }
 
   async function logAction(action, details, category = 'admin', severity = 'info') {
@@ -1005,6 +1028,61 @@ export default function Admin() {
                   <h3 className="font-display text-sm text-yellow-400 uppercase tracking-wider">Área Super Admin</h3>
                 </div>
                 <p className="text-xs text-gray-600 font-mono mt-1">Acesso exclusivo — super admins only.</p>
+              </div>
+
+              {/* Usuários Bloqueados por tentativas de login */}
+              <div className="card p-4 border-red-500/20" style={{ boxShadow: '0 0 20px #ef444415' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Lock size={14} className="text-red-400" />
+                    <h3 className="font-display text-sm text-red-400 uppercase tracking-wider">Usuários Bloqueados</h3>
+                  </div>
+                  <button onClick={fetchBlockedLogins} disabled={blockedLoading}
+                    className="text-xs text-gray-500 hover:text-neon-green font-mono transition-colors flex items-center gap-1">
+                    <RotateCcw size={11} className={blockedLoading ? 'animate-spin' : ''} />
+                    {blockedLoading ? 'Carregando...' : 'Atualizar'}
+                  </button>
+                </div>
+                {blockedLoading ? (
+                  <p className="text-xs text-gray-500 font-mono py-2">Carregando...</p>
+                ) : blockedLogins.length === 0 ? (
+                  <div className="text-center py-4">
+                    <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 font-mono">Nenhum usuário bloqueado no momento</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {blockedLogins.map(entry => (
+                      <div key={entry.email}
+                        className={`bg-dark-700 rounded-lg p-3 border flex items-center justify-between gap-2 ${
+                          entry.permanent ? 'border-red-600/30' : entry.currently_blocked ? 'border-red-500/10' : 'border-dark-500'
+                        }`}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-mono text-white truncate">{entry.email}</p>
+                          <div className="flex gap-2 mt-0.5 flex-wrap items-center">
+                            {entry.username && (
+                              <span className="text-xs text-gray-400 font-mono">@{entry.username}</span>
+                            )}
+                            <span className="text-xs text-red-400 font-mono">{entry.attempts} tentativas</span>
+                            {entry.permanent ? (
+                              <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>permanente</span>
+                            ) : entry.currently_blocked ? (
+                              <span className="text-xs text-orange-400 font-mono">
+                                bloqueado até {new Date(entry.blocked_until).toLocaleString('pt-BR', { timeStyle: 'short', dateStyle: 'short' })}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-500 font-mono">liberado</span>
+                            )}
+                          </div>
+                        </div>
+                        <button onClick={() => handleUnlock(entry)}
+                          className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
+                          <LockOpen size={11} />Desbloquear
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {!liveMod.requests?.length ? (
