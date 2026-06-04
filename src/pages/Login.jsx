@@ -116,9 +116,9 @@ export default function Login() {
   const passwordStrength = mode === 'register' ? getPasswordStrength(password) : 0;
 
   async function handleSubmit() {
-    const current = getBlockStatus();
-    if (current.blocked) { setBlockStatus(current); return; }
-
+    // Sem early return por bloqueio do cliente — o botão já está disabled via blockStatus.
+    // Deixar chegar ao servidor garante que o bloqueio seja gravado no login_rate_limits
+    // e apareça no painel do super admin.
     if (!email) { toast.error('Preencha seu email'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast.error('Informe um email válido'); return; }
     if (mode !== 'forgot' && !password) { toast.error('Preencha sua senha'); return; }
