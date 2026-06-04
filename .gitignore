@@ -3,3 +3,5 @@ dist
 .env.local
 .env
 .vercel
+dist/
+load-tests/config.js
