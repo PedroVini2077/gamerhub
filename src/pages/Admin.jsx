@@ -319,6 +319,9 @@ export default function Admin() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
         if (tab === 'logs') fetchLogs(logCat);
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'login_rate_limits' }, () => {
+        if (tab === 'super' && isSuperAdmin) fetchBlockedLogins();
+      })
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [tab, isSuperAdmin]);

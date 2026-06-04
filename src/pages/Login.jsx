@@ -141,9 +141,11 @@ export default function Login() {
     if (mode === 'login') {
       const { data: blockData } = await supabase.rpc('check_login_block', { p_email: email.trim() });
       if (blockData?.blocked) {
-        const blockedUntilMs = blockData.blocked_until
+        const serverMs = blockData.blocked_until
           ? new Date(blockData.blocked_until).getTime()
           : Date.now() + PERMANENT_MS;
+        // +2s de margem para evitar race condition entre o timer do cliente e o bloqueio do servidor
+        const blockedUntilMs = Math.max(serverMs, Date.now()) + 2000;
         saveState({ attempts: blockData.attempts, blockedUntil: blockedUntilMs, permanent: !!blockData.permanent });
         setBlockStatus(getBlockStatus());
         setLoading(false);

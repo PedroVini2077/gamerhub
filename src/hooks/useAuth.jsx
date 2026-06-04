@@ -48,7 +48,7 @@ export function AuthProvider({ children }) {
     // Registrar falha no servidor IMEDIATAMENTE após o retorno do signInWithPassword,
     // antes de qualquer mudança de estado de auth que bloquearia o rpc() subsequente.
     if (result.error) {
-      supabase.rpc('record_login_failure', { p_email: email.trim() });
+      await supabase.rpc('record_login_failure', { p_email: email.trim() });
     }
 
     if (result.data?.user) {
