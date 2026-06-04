@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +35,7 @@ function recordFailedAttempt() {
 function getBlockStatus() {
   const s = loadState();
   if (!s.blockedUntil || Date.now() >= s.blockedUntil) return { blocked: false, attempts: s.attempts || 0 };
-  return { blocked: true, permanent: !!s.permanent, remainingMs: s.blockedUntil - Date.now(), attempts: s.attempts || 0 };
+  return { blocked: true, permanent: !!s.permanent, remainingMs: s.blockedUntil - Date.now(), blockedUntil: s.blockedUntil, attempts: s.attempts || 0 };
 }
 function formatCountdown(ms) {
   const totalSec = Math.ceil(ms / 1000);
@@ -69,6 +69,19 @@ function InputWrap({ children }) {
   );
 }
 
+function LiveCountdown({ blockedUntil }) {
+  const [text, setText] = useState(() => formatCountdown(Math.max(0, blockedUntil - Date.now())));
+  useEffect(() => {
+    const t = setInterval(() => {
+      const ms = blockedUntil - Date.now();
+      if (ms <= 0) { setText('0s'); clearInterval(t); return; }
+      setText(formatCountdown(ms));
+    }, 500);
+    return () => clearInterval(t);
+  }, [blockedUntil]);
+  return <span className="font-bold tabular-nums">{text}</span>;
+}
+
 const maxBirthDate = new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 export default function Login() {
@@ -84,18 +97,13 @@ export default function Login() {
   const [selectedPlatform, setSelectedPlatform] = useState('');
   const [loading, setLoading]               = useState(false);
   const [blockStatus, setBlockStatus]       = useState(() => getBlockStatus());
-  const timerRef = useRef(null);
-
   useEffect(() => {
-    clearInterval(timerRef.current);
     if (!blockStatus.blocked) return;
-    timerRef.current = setInterval(() => {
-      const s = getBlockStatus();
-      setBlockStatus(s);
-      if (!s.blocked) clearInterval(timerRef.current);
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, [blockStatus.blocked]);
+    const remaining = blockStatus.blockedUntil - Date.now();
+    if (remaining <= 0) { setBlockStatus(getBlockStatus()); return; }
+    const t = setTimeout(() => setBlockStatus(getBlockStatus()), remaining);
+    return () => clearTimeout(t);
+  }, [blockStatus.blocked, blockStatus.blockedUntil]);
 
   function switchMode(m) {
     setMode(m);
@@ -244,12 +252,12 @@ export default function Login() {
                 {blockStatus.permanent ? (
                   <p className="text-red-500">
                     Conta bloqueada por <span className="font-bold">excesso de tentativas</span>.
-                    Aguarde <span className="font-bold">{formatCountdown(blockStatus.remainingMs)}</span> ou redefina sua senha.
+                    Aguarde <span className="font-bold"><LiveCountdown blockedUntil={blockStatus.blockedUntil} /></span> ou redefina sua senha.
                   </p>
                 ) : (
                   <p className="text-red-400">
                     Muitas tentativas falhas. Aguarde{' '}
-                    <span className="font-bold tabular-nums">{formatCountdown(blockStatus.remainingMs)}</span>{' '}
+                    <LiveCountdown blockedUntil={blockStatus.blockedUntil} />{' '}
                     para tentar novamente.
                   </p>
                 )}
@@ -304,8 +312,8 @@ export default function Login() {
                     placeholder="••••••••" value={password}
                     onChange={e => setPassword(e.target.value)} onKeyDown={handleKey} />
                 </InputWrap>
-                {mode === 'register' && password && (
-                  <div className="mt-2 flex items-center gap-2">
+                {mode === 'register' && (
+                  <div className="mt-2 flex items-center gap-2" style={{ visibility: password ? 'visible' : 'hidden' }}>
                     <div className="flex gap-1 flex-1">
                       {[1,2,3,4].map(n => (
                         <div key={n} className="h-1 flex-1 rounded-full transition-all duration-300"
@@ -339,9 +347,10 @@ export default function Login() {
                     placeholder="••••••••" value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)} onKeyDown={handleKey} />
                 </div>
-                {confirmPassword && confirmPassword !== password && (
-                  <p className="text-xs text-red-400 font-mono mt-1">Senhas não coincidem</p>
-                )}
+                <p className="text-xs font-mono mt-1" style={{
+                  color: '#f87171',
+                  visibility: confirmPassword && confirmPassword !== password ? 'visible' : 'hidden'
+                }}>Senhas não coincidem</p>
               </div>
             )}
 
@@ -402,7 +411,7 @@ export default function Login() {
             <button onClick={handleSubmit} disabled={loading || blockStatus.blocked}
               className="btn-solid w-full py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? 'Aguarde...'
-                : blockStatus.blocked ? `// BLOQUEADO (${formatCountdown(blockStatus.remainingMs)})`
+                : blockStatus.blocked ? <>// BLOQUEADO (<LiveCountdown blockedUntil={blockStatus.blockedUntil} />)</>
                 : mode === 'login'    ? '// ENTRAR'
                 : mode === 'register' ? '// CRIAR CONTA'
                 : '// ENVIAR LINK DE RECUPERAÇÃO'}
