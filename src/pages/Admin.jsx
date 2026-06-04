@@ -425,6 +425,7 @@ export default function Admin() {
     if (tab === 'lives' || tab === 'super') fetchLiveMod();
     if (tab === 'notifs') fetchNotifications();
     if (tab === 'logs') fetchLogs(logCat);
+    if (tab === 'users') fetchUnbanRequests();
     if (tab === 'super' && isSuperAdmin) { fetchBlockedLogins(); fetchUnbanRequests(); }
   }, [tab]);
 
@@ -476,6 +477,7 @@ export default function Admin() {
     setReadIds(new Set((reads || []).map(r => r.notification_id)));
     setNotifications(allNotifs || []);
     setLoading(false);
+    fetchUnbanRequests();
   }
 
   async function fetchLiveMod() {
@@ -571,11 +573,10 @@ export default function Admin() {
 
   async function fetchUnbanRequests() {
     setUnbanReqLoading(true);
-    const { data } = await supabase
-      .from('unban_requests')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+    // super_admin vê todas; admin vê apenas as próprias solicitações (para o estado "Em análise")
+    let q = supabase.from('unban_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
+    if (!isSuperAdmin) q = q.eq('requesting_admin_id', user.id);
+    const { data } = await q;
     setUnbanRequests(data || []);
     setUnbanReqLoading(false);
   }
