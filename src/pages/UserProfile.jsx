@@ -3,38 +3,35 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords, Twitch, Youtube, MessageSquare } from 'lucide-react';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
+const PLAYSTYLE_LABELS = { casual: 'Casual', competitivo: 'Competitivo', ambos: 'Casual & Competitivo' };
+
+function calcAge(birthDate) {
+  if (!birthDate) return null;
+  return Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+}
+
 export default function UserProfile() {
   const { username } = useParams();
-  const [profile, setProfile] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [stats, setStats] = useState({ posts: 0, likes: 0 });
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile]   = useState(null);
+  const [posts, setPosts]       = useState([]);
+  const [stats, setStats]       = useState({ posts: 0, likes: 0 });
+  const [loading, setLoading]   = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchProfile();
-  }, [username]);
+  useEffect(() => { fetchProfile(); }, [username]);
 
   async function fetchProfile() {
     setLoading(true);
     const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single();
+      .from('profiles').select('*').eq('username', username).single();
 
-    if (!profileData) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
+    if (!profileData) { setNotFound(true); setLoading(false); return; }
     setProfile(profileData);
 
     const [{ data: postsData }, { count: likesCount }] = await Promise.all([
@@ -56,18 +53,11 @@ export default function UserProfile() {
   }
 
   if (showPhoto && profile?.avatar_url) return (
-    <div
-      className="fixed inset-0 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.9)', zIndex: 9999 }}
-      onClick={() => setShowPhoto(false)}
-    >
-      <img
-        src={profile.avatar_url}
-        alt={profile.username}
+    <div className="fixed inset-0 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.9)', zIndex: 9999 }} onClick={() => setShowPhoto(false)}>
+      <img src={profile.avatar_url} alt={profile.username}
         className="max-w-sm w-full rounded-full border-2 border-neon-green/40"
-        style={{ boxShadow: '0 0 40px #39ff1420' }}
-        onClick={e => e.stopPropagation()}
-      />
+        style={{ boxShadow: '0 0 40px #39ff1420' }} onClick={e => e.stopPropagation()} />
     </div>
   );
 
@@ -93,17 +83,18 @@ export default function UserProfile() {
     </div>
   );
 
+  const age = calcAge(profile.birth_date);
+  const hasSocials = profile.discord || profile.twitch || profile.youtube;
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      {/* Voltar */}
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-xs text-gray-500 hover:text-neon-green transition-colors font-mono">
-        <ArrowLeft size={14} />
-        Voltar
+        <ArrowLeft size={14} />Voltar
       </button>
 
-      {/* Card do perfil */}
+      {/* Card principal */}
       <div className="card p-6">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-start gap-4 mb-4">
           <button onClick={() => profile?.avatar_url && setShowPhoto(true)} className="shrink-0">
             <Avatar profile={profile} size={64} className={profile?.avatar_url ? 'cursor-pointer hover:ring-2 hover:ring-neon-green/50 transition-all' : ''} />
           </button>
@@ -111,21 +102,75 @@ export default function UserProfile() {
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-display text-xl font-bold text-white">{profile.username}</h1>
               <span className={`tag ${roleColors[profile.role] || 'tag-cyan'}`}>{profile.role}</span>
+              {profile.playstyle && (
+                <span className="tag tag-purple text-xs">{PLAYSTYLE_LABELS[profile.playstyle]}</span>
+              )}
             </div>
-            {profile.bio && (
-              <p className="text-sm text-gray-400 font-mono">{profile.bio}</p>
-            )}
-            <div className="flex items-center gap-1 mt-2 text-xs text-gray-600 font-mono">
-              <Calendar size={11} />
-              Membro desde {new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+
+            {profile.bio && <p className="text-sm text-gray-400 font-mono mb-2">{profile.bio}</p>}
+
+            {/* Metadados inline */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 font-mono">
+              <span className="flex items-center gap-1">
+                <Calendar size={11} />
+                Membro desde {new Date(profile.created_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+              {age && (
+                <span className="flex items-center gap-1">
+                  <Calendar size={11} />{age} anos
+                </span>
+              )}
+              {profile.state && (
+                <span className="flex items-center gap-1">
+                  <MapPin size={11} />{profile.state}
+                </span>
+              )}
+              {profile.platform && (
+                <span className="flex items-center gap-1">
+                  <Gamepad2 size={11} />{profile.platform}
+                </span>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Jogos favoritos */}
+        {profile.favorite_games && (
+          <div className="mt-3 pt-3 border-t border-dark-500">
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <Swords size={11} />Jogos Favoritos
+            </p>
+            <p className="text-sm text-gray-300 font-mono">{profile.favorite_games}</p>
+          </div>
+        )}
+
+        {/* Redes sociais */}
+        {hasSocials && (
+          <div className="mt-3 pt-3 border-t border-dark-500 flex flex-wrap gap-3">
+            {profile.discord && (
+              <span className="flex items-center gap-1.5 text-xs font-mono text-gray-400">
+                <MessageSquare size={12} className="text-indigo-400" />{profile.discord}
+              </span>
+            )}
+            {profile.twitch && (
+              <a href={`https://twitch.tv/${profile.twitch}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-mono text-purple-400 hover:text-purple-300 transition-colors">
+                <Twitch size={12} />{profile.twitch}
+              </a>
+            )}
+            {profile.youtube && (
+              <a href={`https://youtube.com/@${profile.youtube}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-mono text-red-400 hover:text-red-300 transition-colors">
+                <Youtube size={12} />{profile.youtube}
+              </a>
+            )}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-dark-500">
           {[
-            { label: 'Posts', value: stats.posts, color: 'text-neon-green' },
+            { label: 'Posts',           value: stats.posts, color: 'text-neon-green' },
             { label: 'Likes recebidos', value: stats.likes, color: 'text-neon-purple' },
           ].map(s => (
             <div key={s.label} className="bg-dark-700 rounded p-3 text-center border border-dark-400">
@@ -147,9 +192,7 @@ export default function UserProfile() {
           </div>
         ) : (
           <div className="space-y-4">
-            {posts.map(p => (
-              <PostCard key={p.id} post={p} onDelete={fetchProfile} disablePopup />
-            ))}
+            {posts.map(p => <PostCard key={p.id} post={p} onDelete={fetchProfile} disablePopup />)}
           </div>
         )}
       </div>

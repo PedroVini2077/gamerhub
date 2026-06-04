@@ -64,8 +64,7 @@ export function AuthProvider({ children }) {
     return result;
   }
 
-  async function signUpWithEmail(email, password, username) {
-    // Validações antes de bater na API
+  async function signUpWithEmail(email, password, username, extraFields = {}) {
     if (!email?.trim()) {
       return { error: { message: 'Informe um email válido.' } };
     }
@@ -76,7 +75,6 @@ export function AuthProvider({ children }) {
       return { error: { message: `Senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` } };
     }
 
-    // Verifica se username já está em uso
     const { data: existing } = await supabase
       .from('profiles')
       .select('id')
@@ -94,8 +92,16 @@ export function AuthProvider({ children }) {
     });
     if (error) return { error };
 
-    // O perfil é criado automaticamente via trigger no banco (handle_new_user).
-    // Não é necessário inserir manualmente aqui.
+    // Salva campos extras (birth_date, state, platform) — o trigger já criou o perfil
+    if (data?.user?.id) {
+      const allowed = ['birth_date', 'state', 'platform'];
+      const updates = Object.fromEntries(
+        Object.entries(extraFields).filter(([k, v]) => allowed.includes(k) && v)
+      );
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('profiles').update(updates).eq('id', data.user.id);
+      }
+    }
 
     return { data };
   }
