@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Zap, Mail, Lock, User, ArrowLeft, Calendar, MapPin, Gamepad2 } from 'lucide-react';
+import { Zap, Mail, Lock, User, ArrowLeft, Calendar, MapPin, Gamepad2, AlertTriangle, ShieldOff } from 'lucide-react';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const PLATFORMS = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
@@ -21,6 +21,28 @@ function getPasswordStrength(pwd) {
 
 const STRENGTH_LABELS = ['', 'Fraca', 'Razoável', 'Boa', 'Forte'];
 const STRENGTH_COLORS = ['', '#ff4444', '#ffaa00', '#39ff14bb', '#39ff14'];
+
+function formatCountdown(ms) {
+  const totalSec = Math.max(0, Math.ceil(ms / 1000));
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return sec > 0 ? `${min}min ${sec}s` : `${min}min`;
+}
+
+// Contagem regressiva apenas visual — o servidor é quem realmente bloqueia.
+function LiveCountdown({ until, onExpire }) {
+  const [ms, setMs] = useState(() => until - Date.now());
+  useEffect(() => {
+    const t = setInterval(() => {
+      const left = until - Date.now();
+      setMs(left);
+      if (left <= 0) { clearInterval(t); onExpire?.(); }
+    }, 500);
+    return () => clearInterval(t);
+  }, [until, onExpire]);
+  return <span className="font-bold tabular-nums">{formatCountdown(ms)}</span>;
+}
 
 function InputWrap({ children }) {
   return (
@@ -44,6 +66,10 @@ export default function Login() {
   const [uf, setUf]                         = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('');
   const [loading, setLoading]               = useState(false);
+  const [block, setBlock]                   = useState(null); // { permanent, blocked_until } | null
+
+  // Bloqueado se for permanente ou se ainda não passou o tempo do servidor
+  const isBlocked = !!block && (block.permanent || (block.blocked_until && new Date(block.blocked_until).getTime() > Date.now()));
 
   function switchMode(m) {
     setMode(m);
@@ -76,9 +102,38 @@ export default function Login() {
 
     // ── Login ──
     if (mode === 'login') {
+      // 1. Servidor decide se está bloqueado (única fonte de verdade)
+      const { data: status } = await supabase.rpc('check_login_status', { p_email: email.trim() });
+      if (status?.blocked) {
+        setBlock({ permanent: status.permanent, blocked_until: status.blocked_until });
+        toast.error(status.permanent
+          ? 'Conta bloqueada por excesso de tentativas. Contate o suporte ou redefina sua senha.'
+          : 'Muitas tentativas falhas. Aguarde para tentar novamente.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Tenta autenticar
       const { error } = await signInWithEmail(email, password);
-      if (error) toast.error(error.message);
-      else navigate('/');
+      if (error) {
+        // 3. Registra a falha no servidor e reflete o novo estado
+        const { data: after } = await supabase.rpc('register_login_attempt', { p_email: email.trim() });
+        if (after?.blocked) {
+          setBlock({ permanent: after.permanent, blocked_until: after.blocked_until });
+          toast.error(after.permanent
+            ? 'Conta bloqueada por excesso de tentativas. Contate o suporte ou redefina sua senha.'
+            : 'Muitas tentativas falhas. Conta bloqueada por 15 minutos.');
+        } else {
+          const left = 5 - (after?.attempts || 0);
+          const aviso = left > 0 ? ` (${left} tentativa${left > 1 ? 's' : ''} até o bloqueio)` : '';
+          toast.error(error.message + aviso);
+        }
+      } else {
+        // 4. Sucesso — zera o contador e entra
+        supabase.rpc('reset_login_attempts');
+        setBlock(null);
+        navigate('/');
+      }
     }
 
     // ── Cadastro ──
@@ -138,6 +193,31 @@ export default function Login() {
                   {m === 'login' ? 'Entrar' : 'Registrar'}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Banner de bloqueio — só no login */}
+          {mode === 'login' && isBlocked && (
+            <div className={`mb-4 flex items-start gap-2 p-3 rounded-lg border ${
+              block.permanent ? 'border-red-600/40 bg-red-600/10' : 'border-red-400/30 bg-red-400/5'
+            }`}>
+              {block.permanent
+                ? <ShieldOff size={14} className="text-red-500 shrink-0 mt-0.5" />
+                : <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />}
+              <div className="text-xs font-mono">
+                {block.permanent ? (
+                  <p className="text-red-500">
+                    Conta bloqueada por <span className="font-bold">excesso de tentativas</span>.
+                    Redefina sua senha ou contate o suporte.
+                  </p>
+                ) : (
+                  <p className="text-red-400">
+                    Muitas tentativas falhas. Aguarde{' '}
+                    <LiveCountdown until={new Date(block.blocked_until).getTime()} onExpire={() => setBlock(null)} />{' '}
+                    para tentar novamente.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -284,9 +364,13 @@ export default function Login() {
             )}
 
             {/* Botão principal */}
-            <button onClick={handleSubmit} disabled={loading}
+            <button onClick={handleSubmit} disabled={loading || (mode === 'login' && isBlocked)}
               className="btn-solid w-full py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? 'Aguarde...'
+                : (mode === 'login' && isBlocked)
+                  ? (block.permanent
+                      ? '// BLOQUEADO'
+                      : <>// BLOQUEADO (<LiveCountdown until={new Date(block.blocked_until).getTime()} onExpire={() => setBlock(null)} />)</>)
                 : mode === 'login'    ? '// ENTRAR'
                 : mode === 'register' ? '// CRIAR CONTA'
                 : '// ENVIAR LINK DE RECUPERAÇÃO'}
