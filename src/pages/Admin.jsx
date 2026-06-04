@@ -1126,13 +1126,15 @@ export default function Admin() {
                 ) : blockedLogins.length === 0 ? (
                   <div className="text-center py-4">
                     <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />
-                    <p className="text-xs text-gray-500 font-mono">Nenhum login bloqueado no momento</p>
+                    <p className="text-xs text-gray-500 font-mono">Nenhuma atividade suspeita de login</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {blockedLogins.map(entry => (
                       <div key={entry.email}
-                        className="bg-dark-700 rounded-lg p-3 border border-red-500/10 flex items-center justify-between gap-2">
+                        className={`bg-dark-700 rounded-lg p-3 border flex items-center justify-between gap-2 ${
+                          entry.currently_blocked ? 'border-red-500/10' : 'border-dark-500'
+                        }`}>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-mono text-white truncate">{entry.email}</p>
                           <div className="flex gap-2 mt-0.5 flex-wrap items-center">
@@ -1142,16 +1144,20 @@ export default function Admin() {
                             <span className="text-xs text-red-400 font-mono">{entry.attempts} tentativas</span>
                             {entry.permanent ? (
                               <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>permanente</span>
-                            ) : (
+                            ) : entry.currently_blocked ? (
                               <span className="text-xs text-orange-400 font-mono">
                                 até {new Date(entry.blocked_until).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-500 font-mono">
+                                não bloqueado agora · última {new Date(entry.updated_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                               </span>
                             )}
                           </div>
                         </div>
                         <button onClick={() => setUnlockModal(entry)}
                           className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
-                          <LockOpen size={11} />Desbloquear
+                          <LockOpen size={11} />{entry.currently_blocked ? 'Desbloquear' : 'Limpar'}
                         </button>
                       </div>
                     ))}
