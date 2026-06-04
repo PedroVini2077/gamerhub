@@ -1,5 +1,5 @@
 import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
@@ -60,28 +60,34 @@ useEffect(() => {
   useEffect(() => {
     fetchLikes();
     fetchMedia();
-    return () => clearInterval(mediaIntervalRef.current);
+    return () => clearTimeout(mediaIntervalRef.current);
   }, [post.id, user]);
 
   async function fetchMedia() {
-  const { data } = await supabase.from('post_media').select('*')
-    .eq('post_id', post.id).order('position');
-  setPostMedia(data || []);
+    const { data } = await supabase.from('post_media').select('*')
+      .eq('post_id', post.id).order('position');
+    setPostMedia(data || []);
 
-  const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
-  if ((!data || data.length === 0) && age < 60) {
-    let attempts = 0;
-    mediaIntervalRef.current = setInterval(async () => {
-      attempts++;
-      const { data: retry } = await supabase.from('post_media').select('*')
-        .eq('post_id', post.id).order('position');
-      if ((retry && retry.length > 0) || attempts >= 5) {
-        clearInterval(mediaIntervalRef.current);
-        if (retry && retry.length > 0) setPostMedia(retry);
+    const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
+    if ((!data || data.length === 0) && age < 60) {
+      const delays = [1000, 2000, 4000, 8000];
+      let attempt = 0;
+      function scheduleRetry() {
+        if (attempt >= delays.length) return;
+        mediaIntervalRef.current = setTimeout(async () => {
+          const { data: retryData } = await supabase.from('post_media').select('*')
+            .eq('post_id', post.id).order('position');
+          if (retryData && retryData.length > 0) {
+            setPostMedia(retryData);
+          } else {
+            attempt++;
+            scheduleRetry();
+          }
+        }, delays[attempt]);
       }
-    }, 2000);
+      scheduleRetry();
+    }
   }
-}
 
   async function fetchLikes() {
     const { count } = await supabase.from('post_likes')
@@ -116,7 +122,9 @@ useEffect(() => {
 
   async function handleDelete() {
     if (!confirm('Deletar este post?')) return;
-    const { error } = await supabase.from('posts').delete().eq('id', post.id);
+    let q = supabase.from('posts').delete().eq('id', post.id);
+    if (!isAdmin) q = q.eq('user_id', user.id);
+    const { error } = await q;
     if (error) toast.error('Erro ao deletar');
     else {
       toast.success('Post deletado');
@@ -127,12 +135,14 @@ useEffect(() => {
 
   async function handleSaveEdit() {
     setSaving(true);
-    const { error } = await supabase.from('posts').update({
+    let q = supabase.from('posts').update({
       content: editContent.trim() || null,
       is_live: editIsLive,
       was_live: post.was_live || editIsLive,
       edited_at: new Date().toISOString()
     }).eq('id', post.id);
+    if (!isAdmin) q = q.eq('user_id', user.id);
+    const { error } = await q;
     if (error) toast.error('Erro ao salvar');
     else {
       toast.success('Post editado!');

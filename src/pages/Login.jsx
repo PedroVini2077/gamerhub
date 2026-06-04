@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Zap, Mail, Lock, User, AlertTriangle, ShieldOff } from 'lucide-react';
@@ -104,8 +105,21 @@ export default function Login() {
     setLoading(true);
 
     if (mode === 'login') {
+      // Verificação server-side — fonte de verdade que não pode ser bypassada limpando localStorage
+      const { data: blockData } = await supabase.rpc('check_login_block', { p_email: email.trim() });
+      if (blockData?.blocked) {
+        const blockedUntilMs = blockData.blocked_until
+          ? new Date(blockData.blocked_until).getTime()
+          : Date.now() + PERMANENT_MS;
+        saveState({ attempts: blockData.attempts, blockedUntil: blockedUntilMs, permanent: !!blockData.permanent });
+        setBlockStatus(getBlockStatus());
+        setLoading(false);
+        return;
+      }
+
       const { error } = await signInWithEmail(email, password);
       if (error) {
+        supabase.rpc('record_login_failure', { p_email: email.trim() }); // fire-and-forget
         const next = recordFailedAttempt();
         setBlockStatus(getBlockStatus());
         if (next.blocked) {
@@ -133,6 +147,7 @@ export default function Login() {
           );
         }
       } else {
+        supabase.rpc('clear_login_rate_limit', { p_email: email.trim() }); // fire-and-forget
         clearRateLimit();
         navigate('/');
       }
@@ -212,6 +227,8 @@ export default function Login() {
                 <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
                   <span className="pl-3 pr-2 text-gray-500 shrink-0"><User size={14} /></span>
                   <input
+                    id="username"
+                    aria-label="Nome de usuário"
                     className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
                     placeholder="seu_nick_aqui"
                     value={username}
@@ -229,6 +246,8 @@ export default function Login() {
               <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
                 <span className="pl-3 pr-2 text-gray-500 shrink-0"><Mail size={14} /></span>
                 <input
+                  id="email"
+                  aria-label="Email"
                   className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
                   type="email"
                   placeholder="gamer@email.com"
@@ -244,6 +263,8 @@ export default function Login() {
               <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
                 <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
                 <input
+                  id="password"
+                  aria-label="Senha"
                   className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
                   type="password"
                   placeholder="••••••••"

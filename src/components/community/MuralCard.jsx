@@ -14,7 +14,9 @@ export default function MuralCard({ item, onDelete }) {
 
   async function handleDelete() {
     if (!confirm('Deletar esta mensagem?')) return;
-    const { error } = await supabase.from('community_posts').delete().eq('id', item.id);
+    let q = supabase.from('community_posts').delete().eq('id', item.id);
+    if (!isAdmin) q = q.eq('user_id', user.id);
+    const { error } = await q;
     if (error) toast.error('Erro ao deletar');
     else {
       toast.success('Mensagem deletada');

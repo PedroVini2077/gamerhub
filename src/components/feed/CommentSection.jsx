@@ -14,7 +14,9 @@ function CommentCard({ comment, onDelete }) {
 
   async function handleDelete() {
     if (!confirm('Deletar comentário?')) return;
-    const { error } = await supabase.from('comments').delete().eq('id', comment.id);
+    let q = supabase.from('comments').delete().eq('id', comment.id);
+    if (!isAdmin) q = q.eq('user_id', user.id);
+    const { error } = await q;
     if (error) toast.error('Erro ao deletar');
     else {
       logAudit('comment_deleted', `@${profile?.username} deletou um comentário de @${comment.profiles?.username}`, { category: 'content' });
@@ -138,6 +140,8 @@ export default function CommentSection({ postId, postOwnerId, registerRefresh })
           {user ? (
             <div className="flex gap-2 items-end">
               <textarea
+                id="comment-input"
+                aria-label="Escreva um comentário"
                 className="input-gamer resize-none flex-1 text-sm"
                 rows={2}
                 placeholder="Escreva um comentário... (Enter para enviar)"

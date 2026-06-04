@@ -219,6 +219,8 @@ export default function Profile() {
           <div>
             <label className="block text-xs text-gray-400 font-mono mb-2 uppercase tracking-wider">Bio</label>
             <textarea
+              id="bio"
+              aria-label="Bio do perfil"
               className="input-gamer resize-none"
               rows={3}
               placeholder="Fale um pouco sobre você..."

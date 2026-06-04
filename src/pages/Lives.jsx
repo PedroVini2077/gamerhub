@@ -177,7 +177,10 @@ export default function Lives() {
   }
 
   async function deleteMessage(msgId) {
-    await supabase.from('live_chat').delete().eq('id', msgId);
+    const isMod = isAdmin || (activeLive && user && activeLive.user_id === user.id);
+    let q = supabase.from('live_chat').delete().eq('id', msgId);
+    if (!isMod) q = q.eq('user_id', user.id);
+    await q;
     logAudit('live_chat_delete', `@${profile?.username} deletou uma mensagem no chat da live "${activeLive?.title}"`, { category: 'live' });
   }
 
@@ -432,7 +435,10 @@ export default function Lives() {
             </div>
           ) : (
             <div className="p-3 border-t border-dark-500 flex gap-2">
-              <input className="input-gamer flex-1 text-sm py-1.5"
+              <input
+                id="live-chat-input"
+                aria-label="Mensagem de chat ao vivo"
+                className="input-gamer flex-1 text-sm py-1.5"
                 placeholder="Manda um comentário..."
                 value={msg}
                 onChange={e => setMsg(e.target.value)}

@@ -72,6 +72,10 @@ export default function PostForm({ onPost }) {
 
   async function handleSubmit() {
     if (!title.trim()) { toast.error('Preencha o título!'); return; }
+    if (embedUrl.trim() && !getEmbedInfo(embedUrl.trim())) {
+      toast.error('Link não suportado. Use YouTube, Twitch ou TikTok.');
+      return;
+    }
 
     setLoading(true);
     const toastId = toast.loading('Processando post...');
@@ -144,11 +148,11 @@ export default function PostForm({ onPost }) {
     <div className="card p-5">
       <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
 
-      <input className="input-gamer mb-3" placeholder="Título do post..."
+      <input id="post-title" aria-label="Título do post" className="input-gamer mb-3" placeholder="Título do post..."
         value={title} onChange={e => setTitle(e.target.value)} maxLength={100} />
 
       {!audio ? (
-        <textarea className="input-gamer mb-3 resize-none" rows={3}
+        <textarea id="post-content" aria-label="Conteúdo do post" className="input-gamer mb-3 resize-none" rows={3}
           placeholder="Escreva algo... (opcional se tiver áudio ou link)"
           value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
       ) : (

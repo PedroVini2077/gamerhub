@@ -163,6 +163,8 @@ export default function Settings_() {
         {showEmailForm && (
           <div className="py-3 space-y-3 border-b border-dark-500 animate-fade-up">
             <input
+              id="new-email"
+              aria-label="Novo email"
               className="input-gamer"
               type="email"
               placeholder="Novo email"
@@ -209,9 +211,9 @@ export default function Settings_() {
 
         {showPasswordForm && (
           <div className="space-y-3 animate-fade-up pb-2">
-            <input className="input-gamer" type="password" placeholder="Nova senha (mín. 6 caracteres)"
+            <input id="new-password" aria-label="Nova senha" className="input-gamer" type="password" placeholder="Nova senha (mín. 6 caracteres)"
               value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-            <input className="input-gamer" type="password" placeholder="Confirmar nova senha"
+            <input id="confirm-password" aria-label="Confirmar nova senha" className="input-gamer" type="password" placeholder="Confirmar nova senha"
               value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             <button onClick={handleChangePassword} disabled={changingPassword} className="btn-solid py-2 px-4">
               {changingPassword ? 'Salvando...' : 'Salvar nova senha'}

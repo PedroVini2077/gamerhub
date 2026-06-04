@@ -44,6 +44,8 @@ export default function MuralForm({ onPost }) {
     <div className="card p-4">
       <div className="flex gap-3 items-end">
         <textarea
+          id="mural-message"
+          aria-label="Mensagem para o mural da comunidade"
           className="input-gamer resize-none flex-1"
           rows={2}
           placeholder="Escreva no mural da comunidade... (Enter para enviar)"
