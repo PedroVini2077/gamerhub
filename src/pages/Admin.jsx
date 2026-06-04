@@ -11,11 +11,12 @@ import {
   RotateCcw, CheckCircle, XCircle, Crown, ScrollText, Bell,
   VolumeX, UserPlus, Radio, Tv, LogIn, LogOut,
   AlertTriangle, ShieldAlert, ShieldOff, Pencil, Activity,
-  Lock, LockOpen,
+  Lock, LockOpen, Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
 import Avatar from '../components/ui/Avatar';
+import BanModal from '../components/ui/BanModal';
 
 const ROLES = ['user', 'admin', 'super_admin'];
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -66,10 +67,11 @@ function StatCard({ icon: Icon, label, value, color }) {
   );
 }
 
-function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDeletePosts }) {
+function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts }) {
   const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
   const canEdit = !isMe && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
+  const canBan = !isMe && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const availableRoles = ROLES.filter(r => r !== user.role).filter(r =>
     isSuperAdmin ? true : r !== 'super_admin'
   );
@@ -79,41 +81,70 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
       <div className="flex items-center gap-3 p-4">
         <Avatar profile={user} size={36} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-semibold text-white truncate">{user.username}</p>
             {isMe && <span className="text-xs text-gray-500 font-mono shrink-0">(você)</span>}
             {user.banned && <span className="tag tag-pink shrink-0">banido</span>}
           </div>
+          {user.banned && user.ban_reason && (
+            <p className="text-xs text-red-400/60 font-mono truncate mt-0.5">{user.ban_reason}</p>
+          )}
         </div>
         <span className={`tag ${roleColors[user.role] || 'tag-cyan'} shrink-0`}>{user.role}</span>
-        {canEdit && (
+        {(canEdit || canBan) && (
           <button onClick={() => setExpanded(e => !e)}
             className="text-gray-500 hover:text-white transition-colors ml-1 shrink-0">
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         )}
       </div>
-      {expanded && canEdit && (
+      {expanded && (canEdit || canBan) && (
         <div className="border-t border-dark-500 bg-dark-700 px-4 py-3 space-y-3">
-          <div>
-            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Mudar role para:</p>
-            <div className="flex gap-2 flex-wrap">
-              {availableRoles.map(r => (
-                <button key={r} onClick={() => { onRoleChange(user.id, r); setExpanded(false); }}
-                  className={`tag cursor-pointer hover:opacity-100 transition-opacity ${roleColors[r]}`}>
-                  → {r}
-                </button>
-              ))}
+          {user.banned && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 space-y-0.5">
+              <p className="text-xs font-mono text-red-400 font-bold">{user.ban_reason}</p>
+              {user.ban_details && <p className="text-xs font-mono text-gray-400">{user.ban_details}</p>}
+              <p className="text-xs font-mono text-gray-500">
+                banido por @{user.banned_by_username || '?'}
+                {user.banned_at && ` · ${new Date(user.banned_at).toLocaleDateString('pt-BR')}`}
+              </p>
             </div>
-          </div>
+          )}
+          {canEdit && !user.banned && (
+            <div>
+              <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Mudar role para:</p>
+              <div className="flex gap-2 flex-wrap">
+                {availableRoles.map(r => (
+                  <button key={r} onClick={() => { onRoleChange(user.id, r); setExpanded(false); }}
+                    className={`tag cursor-pointer hover:opacity-100 transition-opacity ${roleColors[r]}`}>
+                    → {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div>
             <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Ações:</p>
             <div className="flex gap-2 flex-wrap">
-              <button onClick={() => { onBan(user.id, !user.banned); setExpanded(false); }}
-                className="btn-purple py-1.5 px-3 text-xs flex items-center gap-1.5">
-                <Ban size={12} />{user.banned ? 'Desbanir' : 'Banir usuário'}
-              </button>
-              {user.role === 'user' && (
+              {canBan && !user.banned && (
+                <button onClick={() => { onBanClick(user); setExpanded(false); }}
+                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/80 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
+                  <Ban size={12} />Banir usuário
+                </button>
+              )}
+              {user.banned && isSuperAdmin && (
+                <button onClick={() => { onUnbanDirect(user); setExpanded(false); }}
+                  className="flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
+                  <Shield size={12} />Desbanir
+                </button>
+              )}
+              {user.banned && !isSuperAdmin && (
+                <button onClick={() => { onRequestUnban(user); setExpanded(false); }}
+                  className="flex items-center gap-1.5 text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/10 px-3 py-1.5 rounded transition-all">
+                  <RotateCcw size={12} />Solicitar Desbanimento
+                </button>
+              )}
+              {user.role === 'user' && !user.banned && (
                 <button onClick={() => onDeletePosts(user.id, user.username)}
                   className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
                   <Trash2 size={12} />Deletar posts
@@ -124,6 +155,89 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBan, onDel
         </div>
       )}
     </div>
+  );
+}
+
+function UnbanRequestModal({ target, onClose, onSent }) {
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSend() {
+    if (!reason.trim()) return;
+    setLoading(true);
+    const { error } = await supabase.rpc('request_unban', {
+      p_user_id: target.id,
+      p_reason: reason.trim(),
+    });
+    setLoading(false);
+    if (error) {
+      if (error.message?.includes('pending')) toast.error('Já existe uma solicitação pendente para este usuário');
+      else toast.error('Erro ao enviar solicitação');
+      return;
+    }
+    toast.success('Solicitação enviada ao super admin!');
+    onSent?.();
+    onClose();
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.92)' }}
+      onClick={onClose}>
+      <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-yellow-400/30 p-5 space-y-4 animate-fade-up"
+        onClick={e => e.stopPropagation()}
+        style={{ boxShadow: '0 0 40px #eab30815' }}>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <RotateCcw size={14} className="text-yellow-400" />
+            <h3 className="font-display text-sm text-yellow-400 uppercase tracking-wider">Solicitar Desbanimento</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+            <X size={15} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 bg-dark-700 rounded-lg p-3 border border-dark-500">
+          <Avatar profile={target} size={36} />
+          <div className="min-w-0">
+            <p className="text-sm font-mono text-white font-bold">@{target.username}</p>
+            {target.ban_reason && <p className="text-xs text-red-400 font-mono">{target.ban_reason}</p>}
+          </div>
+        </div>
+
+        <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-lg p-3">
+          <p className="text-xs font-mono text-yellow-300 leading-relaxed">
+            Esta solicitação será enviada ao super admin. Descreva por que o ban deve ser removido.
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Justificativa *</p>
+          <textarea
+            className="input-gamer resize-none w-full text-xs"
+            rows={3}
+            placeholder="Por que este usuário deve ser desbanido?"
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            maxLength={500}
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onClose}
+            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
+            Cancelar
+          </button>
+          <button onClick={handleSend} disabled={!reason.trim() || loading}
+            className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
+            style={{ background: '#eab30815', color: '#fbbf24', border: '1px solid #eab30840' }}>
+            {loading ? <span className="animate-pulse">...</span> : <><CheckCircle size={12} />Enviar Solicitação</>}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -272,6 +386,11 @@ export default function Admin() {
   const [stats, setStats] = useState({ users: 0, posts: 0, keys: 0 });
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('todos');
+  const [userSearch, setUserSearch] = useState('');
+  const [banModal, setBanModal] = useState(null);
+  const [unbanReqModal, setUnbanReqModal] = useState(null);
+  const [unbanRequests, setUnbanRequests] = useState([]);
+  const [unbanReqLoading, setUnbanReqLoading] = useState(false);
   const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
@@ -299,7 +418,7 @@ export default function Admin() {
     if (tab === 'lives' || tab === 'super') fetchLiveMod();
     if (tab === 'notifs') fetchNotifications();
     if (tab === 'logs') fetchLogs(logCat);
-    if (tab === 'super' && isSuperAdmin) fetchBlockedLogins();
+    if (tab === 'super' && isSuperAdmin) { fetchBlockedLogins(); fetchUnbanRequests(); }
   }, [tab]);
 
 
@@ -318,6 +437,9 @@ export default function Admin() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_reactivation_requests' }, () => {
         if (tabRef.current === 'lives' || tabRef.current === 'super') fetchLiveMod();
         if (isSuperAdmin) fetchLogs();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'unban_requests' }, () => {
+        if (isSuperAdmin && tabRef.current === 'super') fetchUnbanRequests();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
         fetchNotificationsCount();
@@ -440,6 +562,17 @@ export default function Admin() {
     setBlockedLoading(false);
   }
 
+  async function fetchUnbanRequests() {
+    setUnbanReqLoading(true);
+    const { data } = await supabase
+      .from('unban_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    setUnbanRequests(data || []);
+    setUnbanReqLoading(false);
+  }
+
   // Confirma o desbloqueio (chamado pelo modal de aviso de atividade suspeita)
   async function confirmUnlock() {
     const entry = unlockModal;
@@ -554,27 +687,11 @@ export default function Admin() {
     }
   }
 
-  async function handleBan(userId, banned) {
-    const target = users.find(u => u.id === userId);
-    const { error } = await supabase.from('profiles').update({ banned }).eq('id', userId);
-    if (error) toast.error('Erro');
-    else {
-      toast.success(banned ? 'Usuário banido' : 'Usuário desbanido');
-      await logAction(
-        banned ? 'admin_ban' : 'admin_unban',
-        `@${target?.username || userId} foi ${banned ? 'banido' : 'desbanido'} por @${profile?.username}`,
-        'security', banned ? 'warning' : 'info'
-      );
-      if (banned) {
-        await supabase.from('admin_notifications').insert({
-          type: 'user_banned',
-          title: 'Usuário banido',
-          message: `@${target?.username || userId} foi banido por @${profile?.username}`,
-          audience: 'all_admins',
-        });
-      }
-      fetchAll();
-    }
+  async function handleUnbanDirect(targetUser) {
+    const { error } = await supabase.rpc('unban_user', { p_user_id: targetUser.id });
+    if (error) { toast.error('Erro ao desbanir'); return; }
+    toast.success(`@${targetUser.username} desbanido`);
+    fetchAll();
   }
 
   async function handleDeletePosts(userId, username) {
@@ -612,10 +729,38 @@ export default function Admin() {
     }
   }
 
+  async function handleApproveUnban(req) {
+    const { error } = await supabase.rpc('approve_unban_request', { p_request_id: req.id });
+    if (error) { toast.error('Erro ao aprovar'); return; }
+    toast.success(`@${req.target_username} desbanido!`);
+    fetchUnbanRequests();
+    fetchAll();
+  }
+
+  async function handleDenyUnban(req) {
+    const note = window.prompt('Nota para o admin (opcional):') ?? undefined;
+    if (note === null) return;
+    const { error } = await supabase.rpc('deny_unban_request', {
+      p_request_id: req.id,
+      p_note: note || null,
+    });
+    if (error) { toast.error('Erro ao negar'); return; }
+    toast.success('Solicitação negada');
+    fetchUnbanRequests();
+  }
+
   if (!isAdmin) return null;
 
-  const filteredUsers = filterRole === 'todos' ? users : users.filter(u => u.role === filterRole);
-  const pendingCount = liveMod.requests?.length || 0;
+  const searchLower = userSearch.toLowerCase();
+  const filteredUsers = users.filter(u => {
+    const matchSearch = !searchLower || u.username.toLowerCase().includes(searchLower);
+    const matchRole = filterRole === 'todos' ? true
+      : filterRole === 'banidos' ? u.banned
+      : u.role === filterRole;
+    return matchSearch && matchRole;
+  });
+  const pendingUnbanCount = unbanRequests.length;
+  const pendingCount = (liveMod.requests?.length || 0) + pendingUnbanCount;
 
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
@@ -637,6 +782,22 @@ export default function Admin() {
           isSuperAdmin={isSuperAdmin}
           onSubmit={isSuperAdmin ? handleReactivateDirect : handleSubmitRequest}
           onClose={() => setReactivateModal(null)}
+        />
+      )}
+
+      {banModal && (
+        <BanModal
+          target={banModal}
+          onClose={() => setBanModal(null)}
+          onBanned={() => fetchAll()}
+        />
+      )}
+
+      {unbanReqModal && (
+        <UnbanRequestModal
+          target={unbanReqModal}
+          onClose={() => setUnbanReqModal(null)}
+          onSent={() => fetchAll()}
         />
       )}
 
@@ -738,22 +899,45 @@ export default function Admin() {
         <>
           {tab === 'users' && (
             <div className="space-y-3">
+              {/* Campo de busca */}
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  className="input-gamer w-full pl-8 text-xs"
+                  placeholder="Buscar por username..."
+                  value={userSearch}
+                  onChange={e => setUserSearch(e.target.value)}
+                />
+              </div>
+              {/* Filtros */}
               <div className="flex gap-2 flex-wrap">
-                {['todos', 'user', 'admin', 'super_admin'].map(r => (
-                  <button key={r} onClick={() => setFilterRole(r)}
+                {[
+                  { id: 'todos', label: `Todos (${users.length})`, active: 'tag-green' },
+                  { id: 'user', label: `User (${users.filter(u => u.role === 'user').length})`, active: roleColors.user },
+                  { id: 'admin', label: `Admin (${users.filter(u => u.role === 'admin').length})`, active: roleColors.admin },
+                  { id: 'super_admin', label: `Super Admin (${users.filter(u => u.role === 'super_admin').length})`, active: roleColors.super_admin },
+                  { id: 'banidos', label: `Banidos (${users.filter(u => u.banned).length})`, active: 'tag-pink' },
+                ].map(({ id, label, active }) => (
+                  <button key={id} onClick={() => setFilterRole(id)}
                     className={`tag cursor-pointer transition-all ${
-                      filterRole === r
-                        ? r === 'todos' ? 'tag-green' : roleColors[r]
-                        : 'opacity-40 hover:opacity-70 tag-cyan'
+                      filterRole === id ? active : 'opacity-40 hover:opacity-70 tag-cyan'
                     }`}>
-                    {r} {r === 'todos' ? `(${users.length})` : `(${users.filter(u => u.role === r).length})`}
+                    {label}
                   </button>
                 ))}
               </div>
-              {filteredUsers.map(u => (
+              {filteredUsers.length === 0 ? (
+                <div className="card p-8 text-center">
+                  <Users size={28} className="text-gray-600 mx-auto mb-2" />
+                  <p className="text-xs font-mono text-gray-500">Nenhum usuário encontrado</p>
+                </div>
+              ) : filteredUsers.map(u => (
                 <UserRow key={u.id} user={u} currentUserId={user?.id}
                   isSuperAdmin={isSuperAdmin} onRoleChange={handleRoleChange}
-                  onBan={handleBan} onDeletePosts={handleDeletePosts} />
+                  onBanClick={u => setBanModal(u)}
+                  onUnbanDirect={handleUnbanDirect}
+                  onRequestUnban={u => setUnbanReqModal(u)}
+                  onDeletePosts={handleDeletePosts} />
               ))}
             </div>
           )}
@@ -966,6 +1150,10 @@ export default function Admin() {
                   ? <ShieldAlert size={15} className="text-red-400" />
                   : n.type === 'user_banned'
                   ? <Ban size={15} className="text-red-400" />
+                  : n.type === 'unban_request'
+                  ? <RotateCcw size={15} className="text-yellow-400" />
+                  : n.type === 'unban_approved'
+                  ? <Shield size={15} className="text-neon-green" />
                   : <Bell size={15} className="text-gray-500" />;
                 return (
                   <div key={n.id} className={`card p-4 flex items-start gap-3 transition-all ${
@@ -1062,10 +1250,13 @@ export default function Admin() {
                   reactivation_requested:{ Icon: RotateCcw,  cls: 'text-yellow-400' },
                   reactivation_approved:{ Icon: CheckCircle,  cls: 'text-neon-green' },
                   reactivation_denied:  { Icon: XCircle,      cls: 'text-red-400' },
-                  admin_ban:            { Icon: Ban,          cls: 'text-red-400' },
-                  admin_unban:          { Icon: Shield,       cls: 'text-neon-green' },
-                  admin_role_changed:   { Icon: Crown,        cls: 'text-yellow-400' },
-                  admin_delete_posts:   { Icon: Trash2,       cls: 'text-red-400' },
+                  admin_ban:              { Icon: Ban,           cls: 'text-red-400' },
+                  admin_unban:            { Icon: Shield,        cls: 'text-neon-green' },
+                  admin_unban_requested:  { Icon: RotateCcw,    cls: 'text-yellow-400' },
+                  admin_unban_approved:   { Icon: CheckCircle,   cls: 'text-neon-green' },
+                  admin_unban_denied:     { Icon: XCircle,       cls: 'text-red-400' },
+                  admin_role_changed:     { Icon: Crown,         cls: 'text-yellow-400' },
+                  admin_delete_posts:     { Icon: Trash2,        cls: 'text-red-400' },
                 };
                 const { Icon = ScrollText, cls = 'text-gray-500' } = iconMap[log.action] || {};
 
@@ -1166,10 +1357,66 @@ export default function Admin() {
                 )}
               </div>
 
+              {/* Solicitações de desbanimento — admin → super admin */}
+              <div className="card p-4 border-yellow-400/20" style={{ boxShadow: '0 0 20px #eab30810' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <RotateCcw size={14} className="text-yellow-400" />
+                    <h3 className="font-display text-sm text-yellow-400 uppercase tracking-wider">
+                      Solicitações de Desbanimento
+                    </h3>
+                    {pendingUnbanCount > 0 && (
+                      <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>
+                        {pendingUnbanCount}
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={fetchUnbanRequests} disabled={unbanReqLoading}
+                    className="text-xs text-gray-500 hover:text-yellow-400 font-mono transition-colors flex items-center gap-1">
+                    <RotateCcw size={11} className={unbanReqLoading ? 'animate-spin' : ''} />
+                    Atualizar
+                  </button>
+                </div>
+                {unbanReqLoading ? (
+                  <p className="text-xs text-gray-500 font-mono py-2">Carregando...</p>
+                ) : unbanRequests.length === 0 ? (
+                  <div className="text-center py-4">
+                    <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 font-mono">Nenhuma solicitação pendente</p>
+                  </div>
+                ) : unbanRequests.map(req => (
+                  <div key={req.id} className="bg-dark-700 rounded-lg p-3 border border-yellow-400/10 space-y-2 mb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-mono text-white font-bold">@{req.target_username}</p>
+                        <p className="text-xs text-gray-500 font-mono mt-0.5">
+                          solicitado por <span className="text-yellow-400">@{req.requesting_admin_username}</span>
+                          {' · '}{new Date(req.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                      <span className="tag tag-purple shrink-0" style={{ fontSize: 9 }}>pendente</span>
+                    </div>
+                    <div className="bg-dark-600 rounded px-3 py-2 border border-dark-500">
+                      <p className="text-xs font-mono text-gray-300 leading-relaxed">{req.reason}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleApproveUnban(req)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
+                        <CheckCircle size={12} /> Aprovar e Desbanir
+                      </button>
+                      <button onClick={() => handleDenyUnban(req)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
+                        <XCircle size={12} /> Negar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {!liveMod.requests?.length ? (
                 <div className="card p-8 text-center">
                   <CheckCircle size={28} className="text-neon-green/40 mx-auto mb-2" />
-                  <p className="text-xs font-mono text-gray-500">Nenhuma solicitação pendente</p>
+                  <p className="text-xs font-mono text-gray-500">Nenhuma solicitação de live pendente</p>
                 </div>
               ) : liveMod.requests.map(req => (
                 <div key={req.id} className="card p-4 border-yellow-400/10 space-y-3">

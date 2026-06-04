@@ -2,25 +2,33 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import Avatar from './Avatar';
-import { X, ExternalLink } from 'lucide-react';
+import BanModal from './BanModal';
+import { X, ExternalLink, Ban } from 'lucide-react';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
+const ROLE_RANK = { user: 1, admin: 2, super_admin: 3 };
 
-export default function AvatarPopup({ profile, size = 36, className = '', postsCount, disablePopup = false }) {
+export default function AvatarPopup({ profile, size = 36, className = '', postsCount, disablePopup = false, onBanned }) {
+  const { profile: viewer } = useAuth();
   const [open, setOpen] = useState(false);
   const [extra, setExtra] = useState(postsCount !== undefined ? { posts: postsCount } : null);
+  const [banModal, setBanModal] = useState(false);
+
+  const canBan = viewer && profile &&
+    viewer.id !== profile.id &&
+    !profile.banned &&
+    (ROLE_RANK[viewer.role] || 0) > (ROLE_RANK[profile.role] || 0);
 
   async function handleOpen() {
     setOpen(true);
     if (extra || !profile?.id) return;
-
     const { count } = await supabase
       .from('posts')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', profile.id);
-
     setExtra({ posts: count || 0 });
   }
 
@@ -58,9 +66,14 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
 
             <div className="px-5 py-4 text-center border-b border-dark-500">
               <h3 className="font-display text-xl font-bold text-white mb-2">{profile?.username}</h3>
-              <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>
-                {roleLabels[profile?.role] || 'Player'}
-              </span>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>
+                  {roleLabels[profile?.role] || 'Player'}
+                </span>
+                {profile?.banned && (
+                  <span className="tag tag-pink">banido</span>
+                )}
+              </div>
               {profile?.bio && (
                 <p className="text-xs text-gray-400 font-mono mt-3 leading-relaxed">{profile.bio}</p>
               )}
@@ -83,7 +96,7 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="p-4 space-y-2">
               <Link
                 to={`/u/${profile?.username}`}
                 onClick={() => setOpen(false)}
@@ -91,10 +104,27 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
               >
                 Ver perfil completo <ExternalLink size={12} />
               </Link>
+
+              {canBan && (
+                <button
+                  onClick={() => { setOpen(false); setBanModal(true); }}
+                  className="flex items-center justify-center gap-2 w-full py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all"
+                >
+                  <Ban size={12} /> Banir usuário
+                </button>
+              )}
             </div>
           </div>
         </div>,
         document.body
+      )}
+
+      {banModal && (
+        <BanModal
+          target={profile}
+          onClose={() => setBanModal(false)}
+          onBanned={() => { onBanned?.(); }}
+        />
       )}
     </>
   );
