@@ -41,7 +41,8 @@ function LiveCountdown({ until, onExpire }) {
     }, 500);
     return () => clearInterval(t);
   }, [until, onExpire]);
-  return <span className="font-bold tabular-nums">{formatCountdown(ms)}</span>;
+  // translate="no" evita que o Google Tradutor brigue com o texto que muda a cada 0,5s
+  return <span translate="no" className="notranslate font-bold tabular-nums">{formatCountdown(ms)}</span>;
 }
 
 function InputWrap({ children }) {
@@ -70,6 +71,18 @@ export default function Login() {
 
   // Bloqueado se for permanente ou se ainda não passou o tempo do servidor
   const isBlocked = !!block && (block.permanent || (block.blocked_until && new Date(block.blocked_until).getTime() > Date.now()));
+
+  // Enquanto bloqueado, consulta o servidor periodicamente — assim o desbloqueio
+  // feito pelo super admin no painel reflete pro usuário sem precisar recarregar.
+  useEffect(() => {
+    if (!isBlocked || !email.trim()) return;
+    const t = setInterval(async () => {
+      const { data } = await supabase.rpc('check_login_status', { p_email: email.trim() });
+      if (!data?.blocked) setBlock(null);
+      else setBlock({ permanent: data.permanent, blocked_until: data.blocked_until });
+    }, 8000);
+    return () => clearInterval(t);
+  }, [isBlocked, email]);
 
   function switchMode(m) {
     setMode(m);
@@ -253,7 +266,7 @@ export default function Login() {
                 <input id="email" aria-label="Email" type="email"
                   className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
                   placeholder="gamer@email.com" value={email}
-                  onChange={e => setEmail(e.target.value)} onKeyDown={handleKey} />
+                  onChange={e => { setEmail(e.target.value); if (block) setBlock(null); }} onKeyDown={handleKey} />
               </InputWrap>
             </div>
 
