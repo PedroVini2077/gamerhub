@@ -27,6 +27,31 @@ const REACTIVATE_REASONS = [
   'Outro',
 ];
 
+// Botão de confirmação com contagem regressiva — força o super admin a parar e pensar
+// antes de desbloquear um possível invasor.
+function UnlockCountdownBtn({ onConfirm }) {
+  const [countdown, setCountdown] = useState(10);
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+  return (
+    <button
+      onClick={countdown > 0 ? undefined : onConfirm}
+      disabled={countdown > 0}
+      className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+      style={countdown > 0
+        ? { background: '#111', color: '#555', border: '1px solid #333', cursor: 'not-allowed' }
+        : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>
+      {countdown > 0
+        ? `Aguarde ${countdown}s...`
+        : <><LockOpen size={12} />Confirmar Desbloqueio</>
+      }
+    </button>
+  );
+}
+
 function StatCard({ icon: Icon, label, value, color }) {
   return (
     <div className="card p-5 flex items-center gap-4">
@@ -258,6 +283,7 @@ export default function Admin() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [blockedLogins, setBlockedLogins] = useState([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
+  const [unlockModal, setUnlockModal] = useState(null);
   // Refs para evitar closure stale nos callbacks do realtime
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
@@ -414,15 +440,18 @@ export default function Admin() {
     setBlockedLoading(false);
   }
 
-  async function handleUnlock(entry) {
-    if (!confirm(`Desbloquear o login de ${entry.email}?`)) return;
+  // Confirma o desbloqueio (chamado pelo modal de aviso de atividade suspeita)
+  async function confirmUnlock() {
+    const entry = unlockModal;
+    if (!entry) return;
     const { error } = await supabase.rpc('admin_unlock_login', { p_email: entry.email });
     if (error) { toast.error('Erro ao desbloquear'); return; }
     logAudit('admin_unlock_login',
-      `Super admin @${profile?.username} desbloqueou o login de ${entry.email}`,
-      { category: 'security', severity: 'warning', metadata: { email: entry.email } }
+      `Super admin @${profile?.username} desbloqueou o login de ${entry.email} (${entry.attempts} tentativas registradas${entry.permanent ? ', bloqueio permanente' : ''})`,
+      { category: 'security', severity: 'warning', metadata: { email: entry.email, attempts: entry.attempts, permanent: entry.permanent } }
     );
     toast.success(`${entry.email} desbloqueado`);
+    setUnlockModal(null);
     fetchBlockedLogins();
   }
 
@@ -609,6 +638,59 @@ export default function Admin() {
           onSubmit={isSuperAdmin ? handleReactivateDirect : handleSubmitRequest}
           onClose={() => setReactivateModal(null)}
         />
+      )}
+
+      {/* Modal de aviso ao desbloquear um possível invasor — super admin */}
+      {unlockModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.92)' }}
+          onClick={() => setUnlockModal(null)}>
+          <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-red-500/30 p-5 space-y-4 animate-fade-up"
+            onClick={e => e.stopPropagation()}
+            style={{ boxShadow: '0 0 40px #ef444425' }}>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldAlert size={14} className="text-red-400" />
+                <h3 className="font-display text-sm text-red-400 uppercase tracking-wider">Atenção</h3>
+              </div>
+              <button onClick={() => setUnlockModal(null)}
+                className="text-gray-500 hover:text-white transition-colors">
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+              <p className="text-sm font-mono text-red-300 font-bold leading-relaxed">
+                ⚠️ CUIDADO: Você está prestes a desbloquear um possível invasor.
+              </p>
+              <p className="text-xs font-mono text-gray-400 mt-2 leading-relaxed">
+                Esta conta excedeu o limite de tentativas consecutivas. Pode ser um ataque ou alguém com dificuldade de acesso. Se não reconhece este email, não desbloqueie — oriente a redefinir a senha.
+              </p>
+            </div>
+
+            <div className="bg-dark-700 rounded-lg px-3 py-2.5 border border-dark-500 space-y-1">
+              <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Email</p>
+              <p className="text-sm font-mono text-white break-all">{unlockModal.email}</p>
+              {unlockModal.username && (
+                <p className="text-xs text-gray-400 font-mono">@{unlockModal.username}</p>
+              )}
+              <p className="text-xs text-red-400 font-mono">
+                {unlockModal.attempts} tentativas de login registradas
+                {unlockModal.permanent && ' · bloqueio permanente'}
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setUnlockModal(null)}
+                className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
+                Cancelar
+              </button>
+              <UnlockCountdownBtn key={unlockModal?.email} onConfirm={confirmUnlock} />
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       <div className="card p-5 border-neon-purple/20">
@@ -971,6 +1053,7 @@ export default function Admin() {
                   auth_banned_attempt:  { Icon: Ban,          cls: 'text-red-400' },
                   auth_rate_limited:    { Icon: Clock,        cls: 'text-yellow-400' },
                   auth_permanent_block: { Icon: ShieldOff,    cls: 'text-red-500' },
+                  admin_unlock_login:   { Icon: LockOpen,     cls: 'text-neon-green' },
                   content_post_created: { Icon: FileText,     cls: 'text-neon-green' },
                   content_post_deleted: { Icon: Trash2,       cls: 'text-red-400' },
                   content_post_edited:  { Icon: Pencil,       cls: 'text-gray-400' },
@@ -1073,7 +1156,7 @@ export default function Admin() {
                             )}
                           </div>
                         </div>
-                        <button onClick={() => handleUnlock(entry)}
+                        <button onClick={() => setUnlockModal(entry)}
                           className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
                           <LockOpen size={11} />Desbloquear
                         </button>
