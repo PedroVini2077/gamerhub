@@ -113,7 +113,7 @@ export default function Login() {
     // ── Esqueci minha senha ──
     if (mode === 'forgot') {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin + '/login',
+        redirectTo: window.location.origin + '/auth/confirm',
       });
       if (error) toast.error(error.message);
       else { toast.success('Link de recuperação enviado! Verifique seu email.'); switchMode('login'); }

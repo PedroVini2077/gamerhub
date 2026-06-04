@@ -1,17 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Zap, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { Zap, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
+
+function getPasswordStrength(pwd) {
+  if (!pwd) return 0;
+  let s = 0;
+  if (pwd.length >= 8)  s++;
+  if (pwd.length >= 12) s++;
+  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) s++;
+  if (/\d/.test(pwd)) s++;
+  if (/[^A-Za-z0-9]/.test(pwd)) s++;
+  return Math.min(s, 4);
+}
+const STRENGTH_LABELS = ['', 'Fraca', 'Razoável', 'Boa', 'Forte'];
+const STRENGTH_COLORS = ['', '#ff4444', '#ffaa00', '#39ff14bb', '#39ff14'];
 
 export default function AuthConfirm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('loading'); // loading | success | error
+  const [status, setStatus] = useState('loading'); // loading | success | error | set_password
   const [message, setMessage] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     const token_hash = searchParams.get('token_hash');
-    const type = searchParams.get('type');
+    const type       = searchParams.get('type');
     const redirectTo = searchParams.get('redirect_to');
 
     if (!token_hash) {
@@ -28,9 +45,16 @@ export default function AuthConfirm() {
 
       if (error) {
         setStatus('error');
-        setMessage(error.message.includes('expired')
-          ? 'Este link expirou. Solicite um novo email de verificação.'
-          : 'Link inválido ou já utilizado.');
+        setMessage(
+          error.message.includes('expired')
+            ? type === 'recovery'
+              ? 'Este link expirou. Solicite um novo link de redefinição de senha.'
+              : 'Este link expirou. Solicite um novo email de verificação.'
+            : 'Link inválido ou já utilizado.'
+        );
+      } else if (type === 'recovery') {
+        // Token válido, sessão estabelecida — mostrar formulário de nova senha
+        setStatus('set_password');
       } else {
         setStatus('success');
         setTimeout(() => {
@@ -41,6 +65,25 @@ export default function AuthConfirm() {
 
     verify();
   }, []);
+
+  async function handleSetPassword() {
+    setSaveError('');
+    if (newPassword.length < 8) { setSaveError('A senha precisa ter pelo menos 8 caracteres.'); return; }
+    if (newPassword !== confirmPassword) { setSaveError('As senhas não coincidem.'); return; }
+
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setSaveError(error.message);
+      setSaving(false);
+      return;
+    }
+    await supabase.auth.signOut();
+    setStatus('success_reset');
+    setTimeout(() => navigate('/login'), 3000);
+  }
+
+  const strength = getPasswordStrength(newPassword);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -68,6 +111,14 @@ export default function AuthConfirm() {
             </>
           )}
 
+          {status === 'success_reset' && (
+            <>
+              <CheckCircle size={40} className="text-neon-green mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 8px #39ff14)' }} />
+              <p className="text-white font-display text-sm tracking-widest uppercase mb-2">Senha Redefinida!</p>
+              <p className="text-gray-400 font-mono text-xs">Faça login com sua nova senha. Redirecionando...</p>
+            </>
+          )}
+
           {status === 'error' && (
             <>
               <XCircle size={40} className="text-red-400 mx-auto mb-4" />
@@ -76,6 +127,81 @@ export default function AuthConfirm() {
               <button onClick={() => navigate('/login')} className="btn-solid py-2 px-6 text-sm">
                 Ir para Login
               </button>
+            </>
+          )}
+
+          {status === 'set_password' && (
+            <>
+              <Lock size={36} className="text-neon-green mx-auto mb-4" style={{ filter: 'drop-shadow(0 0 8px #39ff1460)' }} />
+              <p className="text-white font-display text-sm tracking-widest uppercase mb-1">Nova Senha</p>
+              <p className="text-gray-500 font-mono text-xs mb-5">Escolha uma senha segura para sua conta.</p>
+
+              <div className="space-y-3 text-left">
+                {/* Nova senha */}
+                <div>
+                  <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Nova Senha</label>
+                  <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
+                    <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
+                    <input
+                      type="password"
+                      aria-label="Nova senha"
+                      className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  {newPassword && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex gap-1 flex-1">
+                        {[1,2,3,4].map(n => (
+                          <div key={n} className="h-1 flex-1 rounded-full transition-all duration-300"
+                            style={{ background: n <= strength ? STRENGTH_COLORS[strength] : '#2e2e3e' }} />
+                        ))}
+                      </div>
+                      <span className="text-xs font-mono w-16 text-right"
+                        style={{ color: STRENGTH_COLORS[strength] || '#6b7280' }}>
+                        {STRENGTH_LABELS[strength]}
+                      </span>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-600 font-mono mt-1">mínimo 8 caracteres</p>
+                </div>
+
+                {/* Confirmar senha */}
+                <div>
+                  <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Confirmar Senha</label>
+                  <div className={`flex items-center bg-dark-700 border rounded-md transition-all ${
+                    confirmPassword && confirmPassword !== newPassword
+                      ? 'border-red-400/60'
+                      : 'border-dark-400 focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420]'
+                  }`}>
+                    <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
+                    <input
+                      type="password"
+                      aria-label="Confirmar nova senha"
+                      className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                  {confirmPassword && confirmPassword !== newPassword && (
+                    <p className="text-xs text-red-400 font-mono mt-1">Senhas não coincidem</p>
+                  )}
+                </div>
+
+                {saveError && (
+                  <p className="text-xs text-red-400 font-mono">{saveError}</p>
+                )}
+
+                <button
+                  onClick={handleSetPassword}
+                  disabled={saving}
+                  className="btn-solid w-full py-3 mt-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {saving ? 'Salvando...' : '// SALVAR NOVA SENHA'}
+                </button>
+              </div>
             </>
           )}
         </div>
