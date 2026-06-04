@@ -19,7 +19,7 @@ const STRENGTH_COLORS = ['', '#ff4444', '#ffaa00', '#39ff14bb', '#39ff14'];
 export default function AuthConfirm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState('loading'); // loading | success | error | set_password
+  const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,39 +31,64 @@ export default function AuthConfirm() {
     const type       = searchParams.get('type');
     const redirectTo = searchParams.get('redirect_to');
 
-    if (!token_hash) {
-      setStatus('error');
-      setMessage('Link inválido ou expirado.');
+    // ── Formato 1: token_hash na query string (link direto para o app) ──
+    if (token_hash) {
+      supabase.auth.verifyOtp({ token_hash, type: type || 'signup' }).then(({ error }) => {
+        if (error) {
+          setStatus('error');
+          setMessage(
+            type === 'recovery'
+              ? 'Este link expirou ou já foi utilizado. Solicite um novo link de redefinição.'
+              : 'Este link expirou. Solicite um novo email de verificação.'
+          );
+        } else if (type === 'recovery') {
+          setStatus('set_password');
+        } else {
+          setStatus('success');
+          setTimeout(() => navigate(redirectTo?.startsWith('/') ? redirectTo : '/'), 2000);
+        }
+      });
       return;
     }
 
-    async function verify() {
-      const { error } = await supabase.auth.verifyOtp({
-        token_hash,
-        type: type || 'signup',
-      });
-
-      if (error) {
-        setStatus('error');
-        setMessage(
-          error.message.includes('expired')
-            ? type === 'recovery'
-              ? 'Este link expirou. Solicite um novo link de redefinição de senha.'
-              : 'Este link expirou. Solicite um novo email de verificação.'
-            : 'Link inválido ou já utilizado.'
-        );
-      } else if (type === 'recovery') {
-        // Token válido, sessão estabelecida — mostrar formulário de nova senha
+    // ── Formato 2: tokens no hash fragment (#access_token=...&type=recovery) ──
+    // supabase-js detecta automaticamente e dispara eventos de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
         setStatus('set_password');
-      } else {
-        setStatus('success');
-        setTimeout(() => {
-          navigate(redirectTo && redirectTo.startsWith('/') ? redirectTo : '/');
-        }, 2000);
+      } else if (event === 'SIGNED_IN' && session) {
+        const hash = window.location.hash;
+        if (hash.includes('type=recovery')) {
+          setStatus('set_password');
+        } else {
+          setStatus('success');
+          setTimeout(() => navigate('/'), 2000);
+        }
+      } else if (event === 'INITIAL_SESSION' && !session) {
+        setStatus('error');
+        setMessage('Link inválido ou expirado.');
       }
-    }
+    });
 
-    verify();
+    // Verifica se supabase-js já processou o hash antes do listener ser registrado
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const hash = window.location.hash;
+      if (session) {
+        if (hash.includes('type=recovery')) {
+          setStatus('set_password');
+        } else {
+          setStatus('success');
+          setTimeout(() => navigate('/'), 2000);
+        }
+      } else if (!hash.includes('access_token') && !hash.includes('error=')) {
+        // Sem token na query nem no hash
+        setStatus('error');
+        setMessage('Link inválido ou expirado.');
+      }
+      // se tem access_token no hash mas ainda sem sessão, aguarda o onAuthStateChange
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleSetPassword() {
@@ -73,11 +98,7 @@ export default function AuthConfirm() {
 
     setSaving(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      setSaveError(error.message);
-      setSaving(false);
-      return;
-    }
+    if (error) { setSaveError(error.message); setSaving(false); return; }
     await supabase.auth.signOut();
     setStatus('success_reset');
     setTimeout(() => navigate('/login'), 3000);
@@ -137,19 +158,14 @@ export default function AuthConfirm() {
               <p className="text-gray-500 font-mono text-xs mb-5">Escolha uma senha segura para sua conta.</p>
 
               <div className="space-y-3 text-left">
-                {/* Nova senha */}
                 <div>
                   <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Nova Senha</label>
                   <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
                     <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                    <input
-                      type="password"
-                      aria-label="Nova senha"
+                    <input type="password" aria-label="Nova senha"
                       className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                    />
+                      placeholder="••••••••" value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)} />
                   </div>
                   {newPassword && (
                     <div className="mt-2 flex items-center gap-2">
@@ -168,7 +184,6 @@ export default function AuthConfirm() {
                   <p className="text-xs text-gray-600 font-mono mt-1">mínimo 8 caracteres</p>
                 </div>
 
-                {/* Confirmar senha */}
                 <div>
                   <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Confirmar Senha</label>
                   <div className={`flex items-center bg-dark-700 border rounded-md transition-all ${
@@ -177,27 +192,19 @@ export default function AuthConfirm() {
                       : 'border-dark-400 focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420]'
                   }`}>
                     <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                    <input
-                      type="password"
-                      aria-label="Confirmar nova senha"
+                    <input type="password" aria-label="Confirmar nova senha"
                       className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                    />
+                      placeholder="••••••••" value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)} />
                   </div>
                   {confirmPassword && confirmPassword !== newPassword && (
                     <p className="text-xs text-red-400 font-mono mt-1">Senhas não coincidem</p>
                   )}
                 </div>
 
-                {saveError && (
-                  <p className="text-xs text-red-400 font-mono">{saveError}</p>
-                )}
+                {saveError && <p className="text-xs text-red-400 font-mono">{saveError}</p>}
 
-                <button
-                  onClick={handleSetPassword}
-                  disabled={saving}
+                <button onClick={handleSetPassword} disabled={saving}
                   className="btn-solid w-full py-3 mt-1 disabled:opacity-50 disabled:cursor-not-allowed">
                   {saving ? 'Salvando...' : '// SALVAR NOVA SENHA'}
                 </button>
