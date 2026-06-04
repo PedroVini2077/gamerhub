@@ -3,7 +3,8 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
-import { Save, Camera, X, MapPin, Gamepad2, Tv, Play, MessageSquare, Swords } from 'lucide-react';
+import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords } from 'lucide-react';
+import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
@@ -23,8 +24,8 @@ export default function Profile() {
   const [playstyle, setPlaystyle]         = useState('');
   const [favoriteGames, setFavoriteGames] = useState('');
   const [discord, setDiscord]             = useState('');
-  const [twitch, setTv]               = useState('');
-  const [youtube, setPlay]             = useState('');
+  const [twitch, setTwitch]            = useState('');
+  const [youtube, setYoutube]          = useState('');
   const [saving, setSaving]               = useState(false);
   const [stats, setStats]                 = useState({ posts: 0, likes: 0 });
   const [uploading, setUploading]         = useState(false);
@@ -41,8 +42,8 @@ export default function Profile() {
       setPlaystyle(profile.playstyle || '');
       setFavoriteGames(profile.favorite_games || '');
       setDiscord(profile.discord || '');
-      setTv(profile.twitch || '');
-      setPlay(profile.youtube || '');
+      setTwitch(profile.twitch || '');
+      setYoutube(profile.youtube || '');
       setAvatarUrl(profile.avatar_url);
     }
     if (user) fetchStats();
@@ -285,9 +286,9 @@ export default function Profile() {
         </h3>
 
         {[
-          { icon: MessageSquare, label: 'Discord', placeholder: 'usuario#0000 ou usuario', value: discord, set: setDiscord },
-          { icon: Tv,        label: 'Tv',  placeholder: 'seu canal da Tv',      value: twitch,   set: setTv },
-          { icon: Play,       label: 'YouTube', placeholder: 'seu canal do YouTube',     value: youtube,  set: setPlay },
+          { icon: FaDiscord, label: 'Discord', placeholder: 'usuario#0000 ou usuario', value: discord, set: setDiscord },
+          { icon: FaTwitch,  label: 'Twitch',  placeholder: 'seu canal da Twitch',      value: twitch,   set: setTwitch },
+          { icon: FaYoutube, label: 'YouTube', placeholder: 'seu canal do YouTube',      value: youtube,  set: setYoutube },
         ].map(({ icon: Icon, label, placeholder, value, set }) => (
           <div key={label}>
             <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">{label}</label>

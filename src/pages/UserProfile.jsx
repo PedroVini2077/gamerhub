@@ -3,7 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
-import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords, Tv, Play, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords } from 'lucide-react';
+import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
@@ -149,19 +150,19 @@ export default function UserProfile() {
           <div className="mt-3 pt-3 border-t border-dark-500 flex flex-wrap gap-3">
             {profile.discord && (
               <span className="flex items-center gap-1.5 text-xs font-mono text-gray-400">
-                <MessageSquare size={12} className="text-indigo-400" />{profile.discord}
+                <FaDiscord className="text-indigo-400" size={13} />{profile.discord}
               </span>
             )}
             {profile.twitch && (
               <a href={`https://twitch.tv/${profile.twitch}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs font-mono text-purple-400 hover:text-purple-300 transition-colors">
-                <Tv size={12} />{profile.twitch}
+                <FaTwitch size={13} />{profile.twitch}
               </a>
             )}
             {profile.youtube && (
               <a href={`https://youtube.com/@${profile.youtube}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs font-mono text-red-400 hover:text-red-300 transition-colors">
-                <Play size={12} />{profile.youtube}
+                <FaYoutube size={13} />{profile.youtube}
               </a>
             )}
           </div>
