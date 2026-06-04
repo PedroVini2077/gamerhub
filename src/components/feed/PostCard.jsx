@@ -12,6 +12,30 @@ import MediaCarousel from '../ui/MediaCarousel';
 import MediaPlayer from '../ui/MediaPlayer';
 import EmbedPlayer from '../ui/EmbedPlayer';
 
+function EditCountdown({ createdAt }) {
+  const [countdown, setCountdown] = useState('');
+  useEffect(() => {
+    function update() {
+      const elapsed = (Date.now() - new Date(createdAt).getTime()) / 1000;
+      const remaining = (EDIT_LIMIT_MINUTES * 60) - elapsed;
+      if (remaining <= 0) { setCountdown('00:00'); return; }
+      const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+      const s = Math.floor(remaining % 60).toString().padStart(2, '0');
+      setCountdown(`${m}:${s}`);
+    }
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  return (
+    <p className="text-xs font-mono flex items-center gap-1"
+      style={{ color: countdown <= '05:00' ? '#ff4444' : '#6b7280' }}>
+      ⏱ Tempo restante: <span className="font-bold ml-1">{countdown}</span>
+    </p>
+  );
+}
+
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
   curiosidade: { label: 'Curiosidade', cls: 'tag-purple' },
@@ -32,23 +56,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [editIsLive, setEditIsLive] = useState(post.is_live || false);
   const [saving, setSaving] = useState(false);
 
-  const [countdown, setCountdown] = useState('');
   const mediaIntervalRef = useRef(null);
-
-useEffect(() => {
-  if (!editing) return;
-  function updateCountdown() {
-    const elapsed = (Date.now() - new Date(post.created_at).getTime()) / 1000;
-    const remaining = (EDIT_LIMIT_MINUTES * 60) - elapsed;
-    if (remaining <= 0) { setEditing(false); return; }
-    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-    const s = Math.floor(remaining % 60).toString().padStart(2, '0');
-    setCountdown(`${m}:${s}`);
-  }
-  updateCountdown();
-  const interval = setInterval(updateCountdown, 1000);
-  return () => clearInterval(interval);
-}, [editing]);
 
   const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
@@ -221,10 +229,7 @@ useEffect(() => {
               <X size={12} /> Cancelar
             </button>
           </div>
-          <p className="text-xs font-mono flex items-center gap-1"
-            style={{ color: countdown <= '05:00' ? '#ff4444' : '#6b7280' }}>
-            ⏱ Tempo restante: <span className="font-bold ml-1">{countdown}</span>
-          </p>
+          <EditCountdown createdAt={post.created_at} />
         </div>
       ) : (
         post.content && <p className="text-sm text-gray-400 leading-relaxed mb-2">{post.content}</p>

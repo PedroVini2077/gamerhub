@@ -61,6 +61,14 @@ function getPasswordStrength(pwd) {
 const STRENGTH_LABELS = ['', 'Fraca', 'Razoável', 'Boa', 'Forte'];
 const STRENGTH_COLORS = ['', '#ff4444', '#ffaa00', '#39ff14bb', '#39ff14'];
 
+function InputWrap({ children }) {
+  return (
+    <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
+      {children}
+    </div>
+  );
+}
+
 const maxBirthDate = new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 export default function Login() {
@@ -188,12 +196,6 @@ export default function Login() {
   function handleKey(e) {
     if (e.key === 'Enter') handleSubmit();
   }
-
-  const InputWrap = ({ children }) => (
-    <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-      {children}
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
