@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
 import { Send } from 'lucide-react';
 
-export default function MuralForm({ onPost }) {
+const MuralForm = memo(function MuralForm({ onPost }) {
   const { user, profile } = useAuth();
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,4 +61,6 @@ export default function MuralForm({ onPost }) {
       </div>
     </div>
   );
-}
+});
+
+export default MuralForm;

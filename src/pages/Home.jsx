@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
@@ -21,7 +21,7 @@ export default function Home() {
   const fetchDebounceRef = useRef(null);
   userRef.current = user;
 
-  async function fetchPosts() {
+  const fetchPosts = useCallback(async () => {
     const { data } = await supabase
       .from('posts')
       .select('*, profiles(id, username, avatar_url, role, bio, created_at), user_id, audio_url, audio_type, audio_name, edited_at, embed_url, embed_type, is_live, expires_at')
@@ -30,7 +30,7 @@ export default function Home() {
     setPosts(data || []);
     setLoading(false);
     setNewPosts(0);
-  }
+  }, []);
 
   useEffect(() => {
     fetchPosts().then(() => { loadedRef.current = true; });

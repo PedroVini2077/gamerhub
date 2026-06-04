@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -160,6 +160,29 @@ function KeyForm({ onAdd }) {
   );
 }
 
+function UnlockCountdownBtn({ onConfirm }) {
+  const [countdown, setCountdown] = useState(10);
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+  return (
+    <button
+      onClick={countdown > 0 ? undefined : onConfirm}
+      disabled={countdown > 0}
+      className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+      style={countdown > 0
+        ? { background: '#111', color: '#555', border: '1px solid #333', cursor: 'not-allowed' }
+        : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>
+      {countdown > 0
+        ? `Aguarde ${countdown}s...`
+        : <><LockOpen size={12} />Confirmar Desbloqueio</>
+      }
+    </button>
+  );
+}
+
 function ReactivationModal({ live, isSuperAdmin, onSubmit, onClose }) {
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
@@ -259,8 +282,6 @@ export default function Admin() {
   const [blockedLogins, setBlockedLogins] = useState([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unlockModal, setUnlockModal] = useState(null);
-  const [unlockCountdown, setUnlockCountdown] = useState(10);
-  const unlockTimerRef = useRef(null);
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
@@ -274,17 +295,6 @@ export default function Admin() {
     if (tab === 'super' && isSuperAdmin) fetchBlockedLogins();
   }, [tab]);
 
-  useEffect(() => {
-    if (!unlockModal) { clearInterval(unlockTimerRef.current); return; }
-    setUnlockCountdown(10);
-    unlockTimerRef.current = setInterval(() => {
-      setUnlockCountdown(c => {
-        if (c <= 1) { clearInterval(unlockTimerRef.current); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(unlockTimerRef.current);
-  }, [unlockModal]);
 
   useEffect(() => {
     if (tab === 'logs') fetchLogs(logCat);
@@ -1073,18 +1083,7 @@ export default function Admin() {
                     className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
                     Cancelar
                   </button>
-                  <button
-                    onClick={handleUnlock}
-                    disabled={unlockCountdown > 0}
-                    className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
-                    style={unlockCountdown > 0
-                      ? { background: '#111', color: '#555', border: '1px solid #333', cursor: 'not-allowed' }
-                      : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>
-                    {unlockCountdown > 0
-                      ? `Aguarde ${unlockCountdown}s...`
-                      : <><LockOpen size={12} />Confirmar Desbloqueio</>
-                    }
-                  </button>
+                  <UnlockCountdownBtn key={unlockModal?.email} onConfirm={handleUnlock} />
                 </div>
               </div>
             </div>,

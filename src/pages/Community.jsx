@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import MuralCard from '../components/community/MuralCard';
 import MuralForm from '../components/community/MuralForm';
@@ -10,7 +10,7 @@ export default function Community() {
   const [loading, setLoading] = useState(true);
   const fetchDebounceRef = useRef(null);
 
-  async function fetch() {
+  const fetch = useCallback(async () => {
     const { data } = await supabase
       .from('community_posts')
       .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
@@ -18,7 +18,7 @@ export default function Community() {
       .limit(50);
     setItems(data || []);
     setLoading(false);
-  }
+  }, []);
 
   useEffect(() => { fetch(); }, []);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
@@ -50,7 +50,7 @@ function CommentCard({ comment, onDelete }) {
   );
 }
 
-export default function CommentSection({ postId, postOwnerId, registerRefresh }) {
+const CommentSection = memo(function CommentSection({ postId, postOwnerId, registerRefresh }) {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState([]);
   const [text, setText] = useState('');
@@ -165,4 +165,6 @@ export default function CommentSection({ postId, postOwnerId, registerRefresh })
       )}
     </div>
   );
-}
+});
+
+export default CommentSection;

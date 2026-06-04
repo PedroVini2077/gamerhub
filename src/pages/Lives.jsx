@@ -32,6 +32,7 @@ export default function Lives() {
   const [viewerCount, setViewerCount] = useState(0);
   const bottomRef = useRef(null);
   const activeLiveRef = useRef(null);
+  const chatInputRef = useRef(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
@@ -116,6 +117,7 @@ export default function Lives() {
   }, [activeLive]);
 
   useEffect(() => {
+    if (document.activeElement === chatInputRef.current) return;
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -437,6 +439,7 @@ export default function Lives() {
             <div className="p-3 border-t border-dark-500 flex gap-2">
               <input
                 id="live-chat-input"
+                ref={chatInputRef}
                 aria-label="Mensagem de chat ao vivo"
                 className="input-gamer flex-1 text-sm py-1.5"
                 placeholder="Manda um comentário..."

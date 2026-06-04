@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
@@ -10,7 +10,7 @@ import MediaPlayer from '../ui/MediaPlayer';
 
 const categories = ['dica', 'curiosidade', 'news'];
 
-export default function PostForm({ onPost }) {
+const PostForm = memo(function PostForm({ onPost }) {
   const { user, profile } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -299,4 +299,6 @@ export default function PostForm({ onPost }) {
       </div>
     </div>
   );
-}
+});
+
+export default PostForm;
