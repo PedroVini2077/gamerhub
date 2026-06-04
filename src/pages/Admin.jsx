@@ -548,27 +548,24 @@ export default function Admin() {
   async function handleBan(userId, banned) {
     const target = users.find(u => u.id === userId);
     const { error } = await supabase.from('profiles').update({ banned }).eq('id', userId);
-    if (error) { toast.error('Erro'); return; }
-
-    // Sincroniza o login_rate_limits: ban bloqueia login, unban libera
-    await supabase.rpc('admin_set_login_block', { p_profile_id: userId, p_blocked: banned });
-
-    toast.success(banned ? 'Usuário banido' : 'Usuário desbanido');
-    await logAction(
-      banned ? 'admin_ban' : 'admin_unban',
-      `@${target?.username || userId} foi ${banned ? 'banido' : 'desbanido'} por @${profile?.username}`,
-      'security', banned ? 'warning' : 'info'
-    );
-    if (banned) {
-      await supabase.from('admin_notifications').insert({
-        type: 'user_banned',
-        title: 'Usuário banido',
-        message: `@${target?.username || userId} foi banido por @${profile?.username}`,
-        audience: 'all_admins',
-      });
+    if (error) toast.error('Erro');
+    else {
+      toast.success(banned ? 'Usuário banido' : 'Usuário desbanido');
+      await logAction(
+        banned ? 'admin_ban' : 'admin_unban',
+        `@${target?.username || userId} foi ${banned ? 'banido' : 'desbanido'} por @${profile?.username}`,
+        'security', banned ? 'warning' : 'info'
+      );
+      if (banned) {
+        await supabase.from('admin_notifications').insert({
+          type: 'user_banned',
+          title: 'Usuário banido',
+          message: `@${target?.username || userId} foi banido por @${profile?.username}`,
+          audience: 'all_admins',
+        });
+      }
+      fetchAll();
     }
-    fetchAll();
-    if (isSuperAdmin) fetchBlockedLogins();
   }
 
   async function handleDeletePosts(userId, username) {
