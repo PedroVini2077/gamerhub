@@ -1,52 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Zap, Mail, Lock, User, AlertTriangle, ShieldOff, ArrowLeft, Calendar, MapPin, Gamepad2 } from 'lucide-react';
-import { logSecurity } from '../lib/auditLog';
-
-const RATE_KEY = 'gh_login_attempts';
-const LOCKOUT_MS     = [0, 0, 30_000, 60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000];
-const PERMANENT_AFTER = 7;
-const PERMANENT_MS    = 24 * 60 * 60_000;
+import { Zap, Mail, Lock, User, ArrowLeft, Calendar, MapPin, Gamepad2 } from 'lucide-react';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const PLATFORMS = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
 
-function loadState() {
-  try { return JSON.parse(localStorage.getItem(RATE_KEY)) || {}; } catch { return {}; }
-}
-function saveState(s) {
-  try { localStorage.setItem(RATE_KEY, JSON.stringify(s)); } catch {}
-}
-function clearRateLimit() {
-  try { localStorage.removeItem(RATE_KEY); } catch {}
-}
-function recordFailedAttempt() {
-  const s = loadState();
-  const attempts = (s.attempts || 0) + 1;
-  const permanent = attempts >= PERMANENT_AFTER;
-  const delayMs = permanent ? PERMANENT_MS : (LOCKOUT_MS[attempts] ?? LOCKOUT_MS.at(-1));
-  const blockedUntil = delayMs > 0 ? Date.now() + delayMs : null;
-  saveState({ attempts, blockedUntil, permanent });
-  return { attempts, blockedUntil, permanent };
-}
-function getBlockStatus() {
-  const s = loadState();
-  if (!s.blockedUntil || Date.now() >= s.blockedUntil) return { blocked: false, attempts: s.attempts || 0 };
-  return { blocked: true, permanent: !!s.permanent, remainingMs: s.blockedUntil - Date.now(), blockedUntil: s.blockedUntil, attempts: s.attempts || 0 };
-}
-function formatCountdown(ms) {
-  const totalSec = Math.ceil(ms / 1000);
-  if (totalSec < 60) return `${totalSec}s`;
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  if (min < 60) return sec > 0 ? `${min}min ${sec}s` : `${min}min`;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return m > 0 ? `${h}h ${m}min` : `${h}h`;
-}
 function getPasswordStrength(pwd) {
   if (!pwd) return 0;
   let score = 0;
@@ -69,19 +30,6 @@ function InputWrap({ children }) {
   );
 }
 
-function LiveCountdown({ blockedUntil }) {
-  const [text, setText] = useState(() => formatCountdown(Math.max(0, blockedUntil - Date.now())));
-  useEffect(() => {
-    const t = setInterval(() => {
-      const ms = blockedUntil - Date.now();
-      if (ms <= 0) { setText('0s'); clearInterval(t); return; }
-      setText(formatCountdown(ms));
-    }, 500);
-    return () => clearInterval(t);
-  }, [blockedUntil]);
-  return <span className="font-bold tabular-nums">{text}</span>;
-}
-
 const maxBirthDate = new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 export default function Login() {
@@ -96,14 +44,6 @@ export default function Login() {
   const [uf, setUf]                         = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('');
   const [loading, setLoading]               = useState(false);
-  const [blockStatus, setBlockStatus]       = useState(() => getBlockStatus());
-  useEffect(() => {
-    if (!blockStatus.blocked) return;
-    const remaining = blockStatus.blockedUntil - Date.now();
-    if (remaining <= 0) { setBlockStatus(getBlockStatus()); return; }
-    const t = setTimeout(() => setBlockStatus(getBlockStatus()), remaining);
-    return () => clearTimeout(t);
-  }, [blockStatus.blocked, blockStatus.blockedUntil]);
 
   function switchMode(m) {
     setMode(m);
@@ -116,9 +56,6 @@ export default function Login() {
   const passwordStrength = mode === 'register' ? getPasswordStrength(password) : 0;
 
   async function handleSubmit() {
-    // Sem early return por bloqueio do cliente — o botão já está disabled via blockStatus.
-    // Deixar chegar ao servidor garante que o bloqueio seja gravado no login_rate_limits
-    // e apareça no painel do super admin.
     if (!email) { toast.error('Preencha seu email'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast.error('Informe um email válido'); return; }
     if (mode !== 'forgot' && !password) { toast.error('Preencha sua senha'); return; }
@@ -139,46 +76,9 @@ export default function Login() {
 
     // ── Login ──
     if (mode === 'login') {
-      const { data: blockData } = await supabase.rpc('check_login_block', { p_email: email.trim() });
-      if (blockData?.blocked) {
-        const serverMs = blockData.blocked_until
-          ? new Date(blockData.blocked_until).getTime()
-          : Date.now() + PERMANENT_MS;
-        // +2s de margem para evitar race condition entre o timer do cliente e o bloqueio do servidor
-        const blockedUntilMs = Math.max(serverMs, Date.now()) + 2000;
-        saveState({ attempts: blockData.attempts, blockedUntil: blockedUntilMs, permanent: !!blockData.permanent });
-        setBlockStatus(getBlockStatus());
-        setLoading(false);
-        return;
-      }
-
       const { error } = await signInWithEmail(email, password);
-      if (error) {
-        const next = recordFailedAttempt();
-        setBlockStatus(getBlockStatus());
-        if (next.blocked) {
-          const msg = next.permanent
-            ? 'Conta bloqueada por 24h por excesso de tentativas.'
-            : `Muitas tentativas. Aguarde ${formatCountdown(next.blockedUntil - Date.now())}.`;
-          toast.error(msg);
-          logSecurity(
-            next.permanent ? 'auth_permanent_block' : 'auth_rate_limited',
-            next.permanent
-              ? `Bloqueio permanente (24h) ativado para "${email}" após ${next.attempts} tentativas`
-              : `Rate limiting ativado para "${email}" (${next.attempts} tentativas)`,
-            email, next.attempts
-          );
-        } else {
-          const attemptsLeft = LOCKOUT_MS.length - 1 - next.attempts;
-          const warn = attemptsLeft > 0 ? ` (${attemptsLeft} tentativa${attemptsLeft > 1 ? 's' : ''} até bloqueio)` : '';
-          toast.error(error.message + warn);
-          logSecurity('auth_login_failed', `Tentativa ${next.attempts} de login falhou para "${email}"`, email, next.attempts);
-        }
-      } else {
-        supabase.rpc('clear_login_rate_limit', { p_email: email.trim() });
-        clearRateLimit();
-        navigate('/');
-      }
+      if (error) toast.error(error.message);
+      else navigate('/');
     }
 
     // ── Cadastro ──
@@ -204,23 +104,6 @@ export default function Login() {
 
   function handleKey(e) {
     if (e.key === 'Enter') handleSubmit();
-  }
-
-  async function handleCheckBlock() {
-    if (!email.trim()) { toast.error('Informe seu email para verificar'); return; }
-    const { data } = await supabase.rpc('check_login_block', { p_email: email.trim() });
-    if (!data?.blocked) {
-      clearRateLimit();
-      setBlockStatus({ blocked: false, attempts: 0 });
-      toast.success('Acesso liberado! Você pode fazer login agora.');
-    } else {
-      const serverMs = data.blocked_until
-        ? new Date(data.blocked_until).getTime()
-        : Date.now() + PERMANENT_MS;
-      saveState({ attempts: data.attempts, blockedUntil: Math.max(serverMs, Date.now()) + 2000, permanent: !!data.permanent });
-      setBlockStatus(getBlockStatus());
-      toast('Conta ainda bloqueada.', { icon: '🔒' });
-    }
   }
 
   return (
@@ -255,36 +138,6 @@ export default function Login() {
                   {m === 'login' ? 'Entrar' : 'Registrar'}
                 </button>
               ))}
-            </div>
-          )}
-
-          {/* Banner de bloqueio */}
-          {blockStatus.blocked && (
-            <div className={`mb-4 flex items-start gap-2 p-3 rounded-lg border ${
-              blockStatus.permanent ? 'border-red-600/40 bg-red-600/10' : 'border-red-400/30 bg-red-400/5'
-            }`}>
-              {blockStatus.permanent
-                ? <ShieldOff size={14} className="text-red-500 shrink-0 mt-0.5" />
-                : <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />}
-              <div className="text-xs font-mono">
-                {blockStatus.permanent ? (
-                  <p className="text-red-500">
-                    Conta bloqueada por <span className="font-bold">excesso de tentativas</span>.
-                    Aguarde <span className="font-bold"><LiveCountdown blockedUntil={blockStatus.blockedUntil} /></span> ou redefina sua senha.
-                  </p>
-                ) : (
-                  <p className="text-red-400">
-                    Muitas tentativas falhas. Aguarde{' '}
-                    <LiveCountdown blockedUntil={blockStatus.blockedUntil} />{' '}
-                    para tentar novamente.
-                  </p>
-                )}
-                <button type="button" onClick={handleCheckBlock}
-                  className="text-gray-600 hover:text-neon-green transition-colors mt-1.5 block"
-                  style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>
-                  Admin desbloqueou sua conta? Verificar
-                </button>
-              </div>
             </div>
           )}
 
@@ -431,17 +284,16 @@ export default function Login() {
             )}
 
             {/* Botão principal */}
-            <button onClick={handleSubmit} disabled={loading || blockStatus.blocked}
+            <button onClick={handleSubmit} disabled={loading}
               className="btn-solid w-full py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? 'Aguarde...'
-                : blockStatus.blocked ? <>// BLOQUEADO (<LiveCountdown blockedUntil={blockStatus.blockedUntil} />)</>
                 : mode === 'login'    ? '// ENTRAR'
                 : mode === 'register' ? '// CRIAR CONTA'
                 : '// ENVIAR LINK DE RECUPERAÇÃO'}
             </button>
 
             {/* Link esqueci senha — só no login */}
-            {mode === 'login' && !blockStatus.blocked && (
+            {mode === 'login' && (
               <button type="button" onClick={() => switchMode('forgot')}
                 className="w-full text-center text-xs text-gray-600 hover:text-gray-400 font-mono transition-colors">
                 Esqueci minha senha

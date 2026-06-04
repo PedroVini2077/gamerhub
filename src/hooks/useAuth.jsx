@@ -47,12 +47,6 @@ export function AuthProvider({ children }) {
 
     const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
-    // Registrar falha no servidor IMEDIATAMENTE após o retorno do signInWithPassword,
-    // antes de qualquer mudança de estado de auth que bloquearia o rpc() subsequente.
-    if (result.error) {
-      await supabase.rpc('record_login_failure', { p_email: email.trim() });
-    }
-
     if (result.data?.user) {
       const p = await fetchProfile(result.data.user.id);
       if (p?.banned) {

@@ -14,17 +14,3 @@ export async function logAudit(action, details, options = {}) {
     // logging nunca deve quebrar o fluxo principal
   }
 }
-
-export async function logSecurity(action, details, email, attempts, metadata = null) {
-  try {
-    await supabase.rpc('log_security_event', {
-      p_action: action,
-      p_details: details,
-      p_email: email || null,
-      p_attempts: attempts || 0,
-      p_metadata: metadata,
-    });
-  } catch {
-    // idem
-  }
-}

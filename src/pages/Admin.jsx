@@ -11,7 +11,6 @@ import {
   RotateCcw, CheckCircle, XCircle, Crown, ScrollText, Bell,
   VolumeX, UserPlus, Radio, Tv, LogIn, LogOut,
   AlertTriangle, ShieldAlert, ShieldOff, Pencil, Activity,
-  Lock, LockOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
@@ -160,29 +159,6 @@ function KeyForm({ onAdd }) {
   );
 }
 
-function UnlockCountdownBtn({ onConfirm }) {
-  const [countdown, setCountdown] = useState(10);
-  useEffect(() => {
-    if (countdown <= 0) return;
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [countdown]);
-  return (
-    <button
-      onClick={countdown > 0 ? undefined : onConfirm}
-      disabled={countdown > 0}
-      className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
-      style={countdown > 0
-        ? { background: '#111', color: '#555', border: '1px solid #333', cursor: 'not-allowed' }
-        : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>
-      {countdown > 0
-        ? `Aguarde ${countdown}s...`
-        : <><LockOpen size={12} />Confirmar Desbloqueio</>
-      }
-    </button>
-  );
-}
-
 function ReactivationModal({ live, isSuperAdmin, onSubmit, onClose }) {
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
@@ -279,10 +255,6 @@ export default function Admin() {
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
   const [notifLoading, setNotifLoading] = useState(false);
-  const [blockedLogins, setBlockedLogins] = useState([]);
-  const [blockedLoading, setBlockedLoading] = useState(false);
-  const [unlockModal, setUnlockModal] = useState(null);
-
   // Refs para evitar closure stale nos callbacks do realtime
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
@@ -298,7 +270,6 @@ export default function Admin() {
     if (tab === 'lives' || tab === 'super') fetchLiveMod();
     if (tab === 'notifs') fetchNotifications();
     if (tab === 'logs') fetchLogs(logCat);
-    if (tab === 'super' && isSuperAdmin) fetchBlockedLogins();
   }, [tab]);
 
 
@@ -324,9 +295,6 @@ export default function Admin() {
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
         if (tabRef.current === 'logs') fetchLogs(logCatRef.current);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'login_rate_limits' }, () => {
-        if (tabRef.current === 'super' && isSuperAdmin) fetchBlockedLogins();
       })
       .subscribe();
     return () => supabase.removeChannel(channel);
@@ -433,26 +401,6 @@ export default function Admin() {
       setReadIds(new Set((notifs || []).map(n => n.id)));
     }
     setNotifLoading(false);
-  }
-
-  async function fetchBlockedLogins() {
-    setBlockedLoading(true);
-    const { data } = await supabase.rpc('get_blocked_logins');
-    setBlockedLogins(data || []);
-    setBlockedLoading(false);
-  }
-
-  async function handleUnlock() {
-    if (!unlockModal) return;
-    const { error } = await supabase.rpc('admin_unlock_login', { p_email: unlockModal.email });
-    if (error) { toast.error('Erro ao desbloquear login'); return; }
-    logAudit('admin_unlock_login',
-      `Super admin @${profile?.username} desbloqueou o login de ${unlockModal.email}`,
-      { category: 'security', severity: 'warning', metadata: { email: unlockModal.email } }
-    );
-    toast.success(`Login de ${unlockModal.email} desbloqueado`);
-    setUnlockModal(null);
-    fetchBlockedLogins();
   }
 
   async function logAction(action, details, category = 'admin', severity = 'info') {
@@ -1049,56 +997,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* Modal de desbloqueio de login — super admin */}
-          {unlockModal && createPortal(
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              style={{ background: 'rgba(0,0,0,0.92)' }}
-              onClick={() => setUnlockModal(null)}>
-              <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-red-500/30 p-5 space-y-4 animate-fade-up"
-                onClick={e => e.stopPropagation()}
-                style={{ boxShadow: '0 0 40px #ef444425' }}>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ShieldAlert size={14} className="text-red-400" />
-                    <h3 className="font-display text-sm text-red-400 uppercase tracking-wider">Atenção</h3>
-                  </div>
-                  <button onClick={() => setUnlockModal(null)}
-                    className="text-gray-500 hover:text-white transition-colors">
-                    <X size={15} />
-                  </button>
-                </div>
-
-                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                  <p className="text-sm font-mono text-red-300 font-bold leading-relaxed">
-                    ⚠️ CUIDADO: Você está prestes a desbloquear um possível invasor.
-                  </p>
-                  <p className="text-xs font-mono text-gray-400 mt-2 leading-relaxed">
-                    Este usuário excedeu o limite de tentativas consecutivas. Pode ser um ataque ou alguém com dificuldade de acesso. Se não reconhece este email, não desbloqueie — oriente a redefinir a senha.
-                  </p>
-                </div>
-
-                <div className="bg-dark-700 rounded-lg px-3 py-2.5 border border-dark-500 space-y-1">
-                  <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Email</p>
-                  <p className="text-sm font-mono text-white break-all">{unlockModal.email}</p>
-                  {unlockModal.username && (
-                    <p className="text-xs text-gray-400 font-mono">@{unlockModal.username}</p>
-                  )}
-                  <p className="text-xs text-red-400 font-mono">{unlockModal.attempts} tentativas de login registradas</p>
-                </div>
-
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => setUnlockModal(null)}
-                    className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
-                    Cancelar
-                  </button>
-                  <UnlockCountdownBtn key={unlockModal?.email} onConfirm={handleUnlock} />
-                </div>
-              </div>
-            </div>,
-            document.body
-          )}
-
           {tab === 'super' && isSuperAdmin && (
             <div className="space-y-4">
               <div className="card p-4 border-yellow-400/20" style={{ boxShadow: '0 0 20px #eab30810' }}>
@@ -1107,62 +1005,6 @@ export default function Admin() {
                   <h3 className="font-display text-sm text-yellow-400 uppercase tracking-wider">Área Super Admin</h3>
                 </div>
                 <p className="text-xs text-gray-600 font-mono mt-1">Acesso exclusivo — super admins only.</p>
-              </div>
-
-              {/* Logins Bloqueados */}
-              <div className="card p-4 border-red-500/20" style={{ boxShadow: '0 0 20px #ef444415' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Lock size={14} className="text-red-400" />
-                    <h3 className="font-display text-sm text-red-400 uppercase tracking-wider">Logins Bloqueados</h3>
-                  </div>
-                  <button onClick={fetchBlockedLogins}
-                    className="text-xs text-gray-500 hover:text-neon-green font-mono transition-colors">
-                    Atualizar
-                  </button>
-                </div>
-                {blockedLoading ? (
-                  <p className="text-xs text-gray-500 font-mono py-2">Carregando...</p>
-                ) : blockedLogins.length === 0 ? (
-                  <div className="text-center py-4">
-                    <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />
-                    <p className="text-xs text-gray-500 font-mono">Nenhuma atividade suspeita de login</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {blockedLogins.map(entry => (
-                      <div key={entry.email}
-                        className={`bg-dark-700 rounded-lg p-3 border flex items-center justify-between gap-2 ${
-                          entry.currently_blocked ? 'border-red-500/10' : 'border-dark-500'
-                        }`}>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-mono text-white truncate">{entry.email}</p>
-                          <div className="flex gap-2 mt-0.5 flex-wrap items-center">
-                            {entry.username && (
-                              <span className="text-xs text-gray-400 font-mono">@{entry.username}</span>
-                            )}
-                            <span className="text-xs text-red-400 font-mono">{entry.attempts} tentativas</span>
-                            {entry.permanent ? (
-                              <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>permanente</span>
-                            ) : entry.currently_blocked ? (
-                              <span className="text-xs text-orange-400 font-mono">
-                                até {new Date(entry.blocked_until).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-gray-500 font-mono">
-                                não bloqueado agora · última {new Date(entry.updated_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <button onClick={() => setUnlockModal(entry)}
-                          className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
-                          <LockOpen size={11} />{entry.currently_blocked ? 'Desbloquear' : 'Limpar'}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {!liveMod.requests?.length ? (
