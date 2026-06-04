@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
-import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords, Twitch, Youtube, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords, Tv, Play, MessageSquare } from 'lucide-react';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
@@ -155,13 +155,13 @@ export default function UserProfile() {
             {profile.twitch && (
               <a href={`https://twitch.tv/${profile.twitch}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs font-mono text-purple-400 hover:text-purple-300 transition-colors">
-                <Twitch size={12} />{profile.twitch}
+                <Tv size={12} />{profile.twitch}
               </a>
             )}
             {profile.youtube && (
               <a href={`https://youtube.com/@${profile.youtube}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs font-mono text-red-400 hover:text-red-300 transition-colors">
-                <Youtube size={12} />{profile.youtube}
+                <Play size={12} />{profile.youtube}
               </a>
             )}
           </div>
