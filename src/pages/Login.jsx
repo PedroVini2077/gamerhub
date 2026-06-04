@@ -152,7 +152,6 @@ export default function Login() {
 
       const { error } = await signInWithEmail(email, password);
       if (error) {
-        await supabase.rpc('record_login_failure', { p_email: email.trim() });
         const next = recordFailedAttempt();
         setBlockStatus(getBlockStatus());
         if (next.blocked) {
