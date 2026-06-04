@@ -144,13 +144,20 @@ export function AuthProvider({ children }) {
     if (user) await fetchProfile(user.id);
   }
 
+  // Logout do usuário banido: encerra a sessão e força ida pro login com a página recarregada,
+  // garantindo que o overlay suma e o estado fique limpo independente de qualquer race.
+  async function signOutBanned() {
+    try { await signOut(); } catch { /* ignora — o redirect abaixo garante o estado limpo */ }
+    window.location.replace('/login');
+  }
+
   return (
     <AuthContext.Provider value={{ user, profile, loading, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>
       {bannedScreen && (
         <BannedScreen
           reason={bannedScreen.reason}
           details={bannedScreen.details}
-          onSignOut={signOut}
+          onSignOut={signOutBanned}
         />
       )}
       {children}

@@ -1,14 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ShieldOff, LogOut } from 'lucide-react';
 
 export default function BannedScreen({ reason, details, onSignOut }) {
   const [countdown, setCountdown] = useState(6);
+  const firedRef = useRef(false);
+
+  function doSignOut() {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    onSignOut();
+  }
 
   useEffect(() => {
-    if (countdown <= 0) { onSignOut(); return; }
+    if (countdown <= 0) { doSignOut(); return; }
     const t = setTimeout(() => setCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [countdown, onSignOut]);
+  }, [countdown]);
 
   return (
     <div
@@ -57,7 +64,7 @@ export default function BannedScreen({ reason, details, onSignOut }) {
             ...
           </p>
           <button
-            onClick={onSignOut}
+            onClick={doSignOut}
             className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-bold rounded border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
           >
             <LogOut size={13} /> Sair agora
