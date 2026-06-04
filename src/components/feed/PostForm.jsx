@@ -243,7 +243,7 @@ export default function PostForm({ onPost }) {
 
       <div className="flex flex-wrap items-center gap-2">
         {categories.map(c => (
-          <button key={c} onClick={() => setCategory(c)}
+          <button key={c} type="button" onClick={() => setCategory(c)}
             className={`tag cursor-pointer transition-all ${category === c ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'}`}>
             {c}
           </button>

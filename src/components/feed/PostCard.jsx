@@ -33,6 +33,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [saving, setSaving] = useState(false);
 
   const [countdown, setCountdown] = useState('');
+  const mediaIntervalRef = useRef(null);
 
 useEffect(() => {
   if (!editing) return;
@@ -56,7 +57,11 @@ useEffect(() => {
   const minutesSince = (Date.now() - new Date(post.created_at).getTime()) / 60000;
   const canEdit = isOwner && minutesSince <= EDIT_LIMIT_MINUTES;
 
-  useEffect(() => { fetchLikes(); fetchMedia(); }, [post.id, user]);
+  useEffect(() => {
+    fetchLikes();
+    fetchMedia();
+    return () => clearInterval(mediaIntervalRef.current);
+  }, [post.id, user]);
 
   async function fetchMedia() {
   const { data } = await supabase.from('post_media').select('*')
@@ -66,12 +71,12 @@ useEffect(() => {
   const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
   if ((!data || data.length === 0) && age < 60) {
     let attempts = 0;
-    const interval = setInterval(async () => {
+    mediaIntervalRef.current = setInterval(async () => {
       attempts++;
       const { data: retry } = await supabase.from('post_media').select('*')
         .eq('post_id', post.id).order('position');
       if ((retry && retry.length > 0) || attempts >= 5) {
-        clearInterval(interval);
+        clearInterval(mediaIntervalRef.current);
         if (retry && retry.length > 0) setPostMedia(retry);
       }
     }, 2000);

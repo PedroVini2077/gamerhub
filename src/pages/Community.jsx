@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import MuralCard from '../components/community/MuralCard';
 import MuralForm from '../components/community/MuralForm';
@@ -8,6 +8,7 @@ import { Users } from 'lucide-react';
 export default function Community() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const fetchDebounceRef = useRef(null);
 
   async function fetch() {
     const { data } = await supabase
@@ -21,7 +22,10 @@ export default function Community() {
 
   useEffect(() => { fetch(); }, []);
 
-  useRealtime('community_posts', () => fetch());
+  useRealtime('community_posts', () => {
+    clearTimeout(fetchDebounceRef.current);
+    fetchDebounceRef.current = setTimeout(fetch, 300);
+  });
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">

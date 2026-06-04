@@ -99,6 +99,7 @@ export default function MediaCarousel({ items, postTitle }) {
             <img
               src={current.url}
               alt={postTitle}
+              loading="lazy"
               className="w-full h-auto object-contain"
               style={{ maxHeight: 500 }}
             />
@@ -163,7 +164,7 @@ export default function MediaCarousel({ items, postTitle }) {
                 borderColor: i === index ? '#39ff14' : '#2e2e3e',
                 boxShadow: i === index ? '0 0 8px #39ff1440' : 'none' }}>
               {item.type === 'image'
-                ? <img src={item.url} className="w-full h-full object-cover" />
+                ? <img src={item.url} loading="lazy" className="w-full h-full object-cover" />
                 : item.type === 'video'
                 ? <div className="w-full h-full bg-dark-700 flex items-center justify-center"><Film size={16} className="text-neon-green" /></div>
                 : <div className="w-full h-full bg-dark-700 flex items-center justify-center"><Music size={16} className="text-neon-green" /></div>

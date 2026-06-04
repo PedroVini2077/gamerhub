@@ -18,6 +18,7 @@ export default function Home() {
   const [filterCat, setFilterCat] = useState('todos');
   const loadedRef = useRef(false);
   const userRef = useRef(user);
+  const fetchDebounceRef = useRef(null);
   userRef.current = user;
 
   async function fetchPosts() {
@@ -36,14 +37,17 @@ export default function Home() {
   }, []);
 
   useRealtime('posts', (payload) => {
-  if (!loadedRef.current) return;
-  if (payload.eventType === 'INSERT') {
-    if (payload.new?.user_id === userRef.current?.id) {
-      setTimeout(() => fetchPosts(), 5000);
-    } else setNewPosts(n => n + 1);
-  }
-  if (payload.eventType === 'DELETE') fetchPosts();
-});
+    if (!loadedRef.current) return;
+    if (payload.eventType === 'INSERT') {
+      if (payload.new?.user_id === userRef.current?.id) {
+        setTimeout(() => fetchPosts(), 5000);
+      } else setNewPosts(n => n + 1);
+    }
+    if (payload.eventType === 'DELETE') {
+      clearTimeout(fetchDebounceRef.current);
+      fetchDebounceRef.current = setTimeout(() => fetchPosts(), 500);
+    }
+  });
 
   // Filtragem memoizada — não recalcula se posts/search/filterCat não mudarem
   const filtered = useMemo(() => posts.filter(p => {

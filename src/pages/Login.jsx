@@ -167,6 +167,7 @@ export default function Login() {
             {['login', 'register'].map(m => (
               <button
                 key={m}
+                type="button"
                 onClick={() => setMode(m)}
                 className={`flex-1 py-2.5 text-xs font-display tracking-widest uppercase transition-all ${
                   mode === m ? 'bg-neon-green/10 text-neon-green' : 'text-gray-500 hover:text-gray-300'

@@ -11,6 +11,7 @@ export default function Avatar({ profile, size = 36, className = '' }) {
         <img
           src={profile.avatar_url}
           alt={letter}
+          loading="lazy"
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         />
       ) : (
