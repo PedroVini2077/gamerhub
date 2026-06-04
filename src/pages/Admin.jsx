@@ -1055,7 +1055,7 @@ export default function Admin() {
                     {blockedLogins.map(entry => (
                       <div key={entry.email}
                         className={`bg-dark-700 rounded-lg p-3 border flex items-center justify-between gap-2 ${
-                          entry.permanent ? 'border-red-600/30' : entry.currently_blocked ? 'border-red-500/10' : 'border-dark-500'
+                          entry.permanent ? 'border-red-600/30' : 'border-red-500/10'
                         }`}>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-mono text-white truncate">{entry.email}</p>
@@ -1066,12 +1066,10 @@ export default function Admin() {
                             <span className="text-xs text-red-400 font-mono">{entry.attempts} tentativas</span>
                             {entry.permanent ? (
                               <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>permanente</span>
-                            ) : entry.currently_blocked ? (
+                            ) : (
                               <span className="text-xs text-orange-400 font-mono">
                                 bloqueado até {new Date(entry.blocked_until).toLocaleString('pt-BR', { timeStyle: 'short', dateStyle: 'short' })}
                               </span>
-                            ) : (
-                              <span className="text-xs text-gray-500 font-mono">liberado</span>
                             )}
                           </div>
                         </div>
