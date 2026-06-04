@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
+import BannedScreen from '../components/ui/BannedScreen';
 
 const AuthContext = createContext(null);
 
@@ -11,6 +12,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [bannedScreen, setBannedScreen] = useState(null);
 
   async function fetchProfile(userId) {
     const { data, error } = await supabase
@@ -39,6 +41,28 @@ export function AuthProvider({ children }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Detecta ban em tempo real enquanto o usuário está logado
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`profile-ban-watch-${user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.new?.banned) {
+          setBannedScreen({
+            reason: payload.new.ban_reason || 'Violação dos termos de uso',
+            details: payload.new.ban_details || null,
+          });
+        }
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [user?.id]);
 
   async function signInWithEmail(email, password) {
     if (!email?.trim() || !password) {
@@ -122,6 +146,13 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>
+      {bannedScreen && (
+        <BannedScreen
+          reason={bannedScreen.reason}
+          details={bannedScreen.details}
+          onSignOut={signOut}
+        />
+      )}
       {children}
     </AuthContext.Provider>
   );

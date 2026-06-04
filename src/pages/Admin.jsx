@@ -67,11 +67,12 @@ function StatCard({ icon: Icon, label, value, color }) {
   );
 }
 
-function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts }) {
+function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, pendingUnbanIds }) {
   const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
   const canEdit = !isMe && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const canBan = !isMe && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
+  const hasUnbanPending = pendingUnbanIds?.has(user.id);
   const availableRoles = ROLES.filter(r => r !== user.role).filter(r =>
     isSuperAdmin ? true : r !== 'super_admin'
   );
@@ -139,10 +140,16 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, 
                 </button>
               )}
               {user.banned && !isSuperAdmin && (
-                <button onClick={() => { onRequestUnban(user); setExpanded(false); }}
-                  className="flex items-center gap-1.5 text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/10 px-3 py-1.5 rounded transition-all">
-                  <RotateCcw size={12} />Solicitar Desbanimento
-                </button>
+                hasUnbanPending ? (
+                  <span className="flex items-center gap-1.5 text-xs font-mono text-gray-500 border border-dark-400 px-3 py-1.5 rounded cursor-default">
+                    <Clock size={12} />Em análise...
+                  </span>
+                ) : (
+                  <button onClick={() => { onRequestUnban(user); setExpanded(false); }}
+                    className="flex items-center gap-1.5 text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/10 px-3 py-1.5 rounded transition-all">
+                    <RotateCcw size={12} />Solicitar Desbanimento
+                  </button>
+                )
               )}
               {user.role === 'user' && !user.banned && (
                 <button onClick={() => onDeletePosts(user.id, user.username)}
@@ -761,6 +768,7 @@ export default function Admin() {
   });
   const pendingUnbanCount = unbanRequests.length;
   const pendingCount = (liveMod.requests?.length || 0) + pendingUnbanCount;
+  const pendingUnbanIds = new Set(unbanRequests.map(r => r.target_user_id));
 
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
@@ -901,9 +909,10 @@ export default function Admin() {
             <div className="space-y-3">
               {/* Campo de busca */}
               <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                 <input
-                  className="input-gamer w-full pl-8 text-xs"
+                  className="input-gamer w-full text-xs"
+                  style={{ paddingLeft: '2rem' }}
                   placeholder="Buscar por username..."
                   value={userSearch}
                   onChange={e => setUserSearch(e.target.value)}
@@ -937,7 +946,8 @@ export default function Admin() {
                   onBanClick={u => setBanModal(u)}
                   onUnbanDirect={handleUnbanDirect}
                   onRequestUnban={u => setUnbanReqModal(u)}
-                  onDeletePosts={handleDeletePosts} />
+                  onDeletePosts={handleDeletePosts}
+                  pendingUnbanIds={pendingUnbanIds} />
               ))}
             </div>
           )}
