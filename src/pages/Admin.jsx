@@ -1424,39 +1424,60 @@ export default function Admin() {
                 ))}
               </div>
 
-              {!liveMod.requests?.length ? (
-                <div className="card p-8 text-center">
-                  <CheckCircle size={28} className="text-neon-green/40 mx-auto mb-2" />
-                  <p className="text-xs font-mono text-gray-500">Nenhuma solicitação de live pendente</p>
+              {/* Solicitações de reativação de live — admin → super admin */}
+              <div className="card p-4 border-yellow-400/20" style={{ boxShadow: '0 0 20px #eab30810' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Shield size={14} className="text-yellow-400" />
+                    <h3 className="font-display text-sm text-yellow-400 uppercase tracking-wider">
+                      Solicitações de Live
+                    </h3>
+                    {(liveMod.requests?.length || 0) > 0 && (
+                      <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>
+                        {liveMod.requests.length}
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={fetchLiveMod} disabled={refreshing}
+                    className="text-xs text-gray-500 hover:text-yellow-400 font-mono transition-colors flex items-center gap-1">
+                    <RotateCcw size={11} className={refreshing ? 'animate-spin' : ''} />
+                    Atualizar
+                  </button>
                 </div>
-              ) : liveMod.requests.map(req => (
-                <div key={req.id} className="card p-4 border-yellow-400/10 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-white font-mono truncate">"{req.post_title}"</p>
-                      <p className="text-xs text-gray-500 font-mono mt-0.5">
-                        por <span className="text-yellow-400">{req.admin_username}</span>
-                        {' · '}{new Date(req.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
-                      </p>
+                {!liveMod.requests?.length ? (
+                  <div className="text-center py-4">
+                    <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />
+                    <p className="text-xs font-mono text-gray-500">Nenhuma solicitação de live pendente</p>
+                  </div>
+                ) : liveMod.requests.map(req => (
+                  <div key={req.id} className="bg-dark-700 rounded-lg p-3 border border-yellow-400/10 space-y-3 mb-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white font-mono truncate">"{req.post_title}"</p>
+                        <p className="text-xs text-gray-500 font-mono mt-0.5">
+                          por <span className="text-yellow-400">{req.admin_username}</span>
+                          {' · '}{new Date(req.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </p>
+                      </div>
+                      <span className="tag tag-purple shrink-0 text-xs">pendente</span>
                     </div>
-                    <span className="tag tag-purple shrink-0 text-xs">pendente</span>
+                    <div className="bg-dark-600 rounded-lg px-3 py-2 border border-dark-500">
+                      <p className="text-xs font-mono text-neon-green font-bold">{req.reason}</p>
+                      {req.details && <p className="text-xs font-mono text-gray-400 mt-0.5">{req.details}</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleApproveRequest(req)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
+                        <CheckCircle size={12} /> Aprovar e Reativar
+                      </button>
+                      <button onClick={() => handleDenyRequest(req)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
+                        <XCircle size={12} /> Negar
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
-                    <p className="text-xs font-mono text-neon-green font-bold">{req.reason}</p>
-                    {req.details && <p className="text-xs font-mono text-gray-400 mt-0.5">{req.details}</p>}
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleApproveRequest(req)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
-                      <CheckCircle size={12} /> Aprovar e Reativar
-                    </button>
-                    <button onClick={() => handleDenyRequest(req)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
-                      <XCircle size={12} /> Negar
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </>
