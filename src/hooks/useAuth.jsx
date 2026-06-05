@@ -158,7 +158,8 @@ export function AuthProvider({ children }) {
         Object.entries(extraFields).filter(([k, v]) => allowed.includes(k) && v)
       );
       if (Object.keys(updates).length > 0) {
-        await supabase.from('profiles').update(updates).eq('id', data.user.id);
+        const { error: extraErr } = await supabase.from('profiles').update(updates).eq('id', data.user.id);
+        if (extraErr) console.warn('[GamerHub] Erro ao salvar campos extras do perfil:', extraErr.message);
       }
     }
 

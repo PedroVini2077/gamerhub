@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './hooks/useAuth.jsx';
 import Sidebar from './components/layout/Sidebar';
@@ -31,13 +31,14 @@ function PageLoader() {
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
   return (
     <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="md:ml-60 flex flex-col min-h-screen">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 pt-20 pb-8 px-4 md:px-6 max-w-6xl w-full mx-auto">
-          <ErrorBoundary>
+          <ErrorBoundary key={location.pathname}>
             <Suspense fallback={<PageLoader />}>
               {children}
             </Suspense>
