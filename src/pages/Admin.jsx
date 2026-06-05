@@ -20,8 +20,8 @@ import BanModal from '../components/ui/BanModal';
 import ReasonModal from '../components/ui/ReasonModal';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
-const ROLES = ['user', 'admin', 'super_admin'];
-const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
+const ROLES = ['user', 'admin', 'super_admin']; // 'owner' nunca é atribuível pelo painel
+const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
 const REACTIVATE_REASONS = [
   'Encerrada por engano',
   'Problema técnico',
@@ -72,8 +72,8 @@ function StatCard({ icon: Icon, label, value, color }) {
 function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, pendingUnbanIds }) {
   const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
-  const canEdit = !isMe && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
-  const canBan = !isMe && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
+  const canEdit = !isMe && user.role !== 'owner' && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
+  const canBan  = !isMe && user.role !== 'owner' && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const hasUnbanPending = pendingUnbanIds?.has(user.id);
   const availableRoles = ROLES.filter(r => r !== user.role).filter(r =>
     isSuperAdmin ? true : r !== 'super_admin'

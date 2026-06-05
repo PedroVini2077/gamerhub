@@ -7,8 +7,9 @@ export function useRole() {
   return {
     role,
     isUser: true,
-    isAdmin: role === 'admin' || role === 'super_admin',
-    isSuperAdmin: role === 'super_admin',
+    isOwner:      role === 'owner',
+    isAdmin:      role === 'admin' || role === 'super_admin' || role === 'owner',
+    isSuperAdmin: role === 'super_admin' || role === 'owner',
     isBanned: profile?.banned || false,
   };
 }

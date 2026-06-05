@@ -1,4 +1,4 @@
-import { Shield, Star, Swords, Zap, Target, Flame, Crown } from 'lucide-react';
+import { Shield, Star, Swords, Zap, Target, Flame, Crown, Gem } from 'lucide-react';
 
 export const RANK_TIERS = [
   {
@@ -130,6 +130,26 @@ export function getSubRankProgress(xp = 0) {
     needed:  Math.floor(perSub),
     pct:     Math.round((current / perSub) * 100),
   };
+}
+
+// Rank especial exclusivo do dono da plataforma — não relacionado a XP
+export const OWNER_RANK = {
+  tier:        'fundador',
+  label:       'Fundador',
+  icon:        Gem,
+  color:       '#f97316',
+  glow:        'rgba(249,115,22,0.45)',
+  textClass:   'text-orange-400',
+  borderWidth: 3,
+  subRanks:    1,
+  subRank:     1,
+};
+
+// Retorna a borda correta: owner sempre laranja, outros baseados em XP
+export function getBorderForProfile(profile, xp = null) {
+  if (profile?.role === 'owner') return OWNER_RANK;
+  if (xp != null) return getRankFromXP(xp);
+  return null;
 }
 
 export const XP_SOURCES = [

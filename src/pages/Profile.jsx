@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
-import { getRankFromXP, getRankLabel, getSubRankProgress, RANK_TIERS } from '../lib/ranks';
+import { getRankLabel, getSubRankProgress, RANK_TIERS, getBorderForProfile } from '../lib/ranks';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const PLATFORMS  = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
@@ -130,10 +130,11 @@ export default function Profile() {
   const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
   const maxBirthDate = new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const rank     = xpData ? getRankFromXP(xpData.xp) : null;
-  const progress = xpData ? getSubRankProgress(xpData.xp) : null;
+  const isOwner  = profile?.role === 'owner';
+  const rank     = getBorderForProfile(profile, xpData?.xp ?? null);
+  const progress = (!isOwner && xpData) ? getSubRankProgress(xpData.xp) : null;
   const RankIcon = rank?.icon;
-  const nextTier = rank ? RANK_TIERS.find(t => t.minXP > rank.minXP) : null;
+  const nextTier = (!isOwner && rank) ? RANK_TIERS.find(t => t.minXP > rank.minXP) : null;
 
   if (!user) return (
     <div className="max-w-md mx-auto card p-10 text-center mt-10">
@@ -203,7 +204,7 @@ export default function Profile() {
                 <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
                   style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
                   {RankIcon && <RankIcon size={10} />}
-                  {getRankLabel(rank)}
+                  {isOwner ? 'Fundador' : getRankLabel(rank)}
                 </span>
               )}
             </div>
@@ -238,38 +239,43 @@ export default function Profile() {
           ))}
         </div>
 
-        {/* Rank + barra de progresso */}
-        {rank && progress && (
-          <div className="bg-dark-700 rounded-lg p-3 border border-dark-400 space-y-2">
+        {/* Rank / Fundador + barra de progresso */}
+        {rank && (
+          <div className="bg-dark-700 rounded-lg p-3 border border-dark-400 space-y-2"
+            style={isOwner ? { borderColor: `${rank.color}30`, boxShadow: `0 0 12px ${rank.glow}` } : {}}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 {RankIcon && <RankIcon size={13} style={{ color: rank.color }} />}
                 <span className="text-sm font-display font-bold" style={{ color: rank.color }}>
-                  {getRankLabel(rank)}
+                  {isOwner ? 'Fundador — Criador da plataforma' : getRankLabel(rank)}
                 </span>
               </div>
-              <Link to="/ranks" className="text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors">
-                ver todos →
-              </Link>
+              {!isOwner && (
+                <Link to="/ranks" className="text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors">
+                  ver todos →
+                </Link>
+              )}
             </div>
 
-            {progress.needed != null ? (
-              <>
-                <div className="w-full h-1.5 bg-dark-500 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 6px ${rank.glow}` }}
-                  />
-                </div>
-                <p className="text-xs font-mono text-gray-500">
-                  {progress.current} / {progress.needed} XP
-                  {nextTier && rank.subRank === rank.subRanks && (
-                    <span className="text-gray-600"> · próximo: {nextTier.label}</span>
-                  )}
-                </p>
-              </>
-            ) : (
-              <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo atingido! 👑</p>
+            {!isOwner && progress && (
+              progress.needed != null ? (
+                <>
+                  <div className="w-full h-1.5 bg-dark-500 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 6px ${rank.glow}` }}
+                    />
+                  </div>
+                  <p className="text-xs font-mono text-gray-500">
+                    {progress.current} / {progress.needed} XP
+                    {nextTier && rank.subRank === rank.subRanks && (
+                      <span className="text-gray-600"> · próximo: {nextTier.label}</span>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo atingido! 👑</p>
+              )
             )}
           </div>
         )}

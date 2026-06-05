@@ -5,7 +5,7 @@ import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
 import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
-import { getRankFromXP, getRankLabel, getSubRankProgress } from '../lib/ranks';
+import { getRankLabel, getSubRankProgress, getBorderForProfile } from '../lib/ranks';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
@@ -90,8 +90,9 @@ export default function UserProfile() {
 
   const age = calcAge(profile.birth_date);
   const hasSocials = profile.discord || profile.twitch || profile.youtube;
-  const rank     = xpData ? getRankFromXP(xpData.xp) : null;
-  const progress = xpData ? getSubRankProgress(xpData.xp) : null;
+  const isOwner  = profile?.role === 'owner';
+  const rank     = getBorderForProfile(profile, xpData?.xp ?? null);
+  const progress = (!isOwner && xpData) ? getSubRankProgress(xpData.xp) : null;
   const RankIcon = rank?.icon;
 
   return (
@@ -119,7 +120,7 @@ export default function UserProfile() {
                 <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
                   style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
                   {RankIcon && <RankIcon size={10} />}
-                  {getRankLabel(rank)}
+                  {isOwner ? 'Fundador' : getRankLabel(rank)}
                 </span>
               )}
               {profile.playstyle && (
@@ -201,29 +202,35 @@ export default function UserProfile() {
           ))}
         </div>
 
-        {/* Rank progress */}
-        {rank && progress && (
+        {/* Rank / Fundador progress */}
+        {rank && (
           <div className="mt-3 pt-3 border-t border-dark-500 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                {RankIcon && <RankIcon size={12} style={{ color: rank.color }} />}
-                <span className="text-xs font-display font-bold" style={{ color: rank.color }}>
-                  {getRankLabel(rank)}
-                </span>
-              </div>
-              {progress.needed != null && (
-                <span className="text-xs font-mono text-gray-500">{progress.current}/{progress.needed} XP</span>
-              )}
-            </div>
-            {progress.needed != null ? (
-              <div className="w-full h-1 bg-dark-500 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 4px ${rank.glow}` }}
-                />
-              </div>
+            {isOwner ? (
+              <p className="text-xs font-mono font-bold" style={{ color: rank.color }}>
+                ✦ Criador da plataforma
+              </p>
             ) : (
-              <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo 👑</p>
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    {RankIcon && <RankIcon size={12} style={{ color: rank.color }} />}
+                    <span className="text-xs font-display font-bold" style={{ color: rank.color }}>
+                      {getRankLabel(rank)}
+                    </span>
+                  </div>
+                  {progress?.needed != null && (
+                    <span className="text-xs font-mono text-gray-500">{progress.current}/{progress.needed} XP</span>
+                  )}
+                </div>
+                {progress?.needed != null ? (
+                  <div className="w-full h-1 bg-dark-500 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full"
+                      style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 4px ${rank.glow}` }} />
+                  </div>
+                ) : (
+                  <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo 👑</p>
+                )}
+              </>
             )}
           </div>
         )}

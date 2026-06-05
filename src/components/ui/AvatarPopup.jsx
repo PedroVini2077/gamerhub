@@ -6,11 +6,11 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import Avatar from './Avatar';
 import BanModal from './BanModal';
 import { X, ExternalLink, Ban } from 'lucide-react';
-import { getRankFromXP, getRankLabel } from '../../lib/ranks';
+import { getRankLabel, getBorderForProfile, OWNER_RANK } from '../../lib/ranks';
 
-const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
-const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
-const ROLE_RANK  = { user: 1, admin: 2, super_admin: 3 };
+const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
+const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin', owner: 'Fundador' };
+const ROLE_RANK  = { user: 1, admin: 2, super_admin: 3, owner: 4 };
 
 export default function AvatarPopup({ profile, size = 36, className = '', postsCount, disablePopup = false, onBanned }) {
   const { profile: viewer } = useAuth();
@@ -33,7 +33,8 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
     setExtra({ posts: count || 0, xp: xpData?.xp ?? 0 });
   }
 
-  const rank = extra?.xp != null ? getRankFromXP(extra.xp) : null;
+  const rank = getBorderForProfile(profile, extra?.xp ?? null);
+  const isOwner = profile?.role === 'owner';
   const RankIcon = rank?.icon;
 
   return (
@@ -73,15 +74,17 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
                 <X size={14} />
               </button>
 
-              {/* Badge de rank */}
+              {/* Badge de rank / Fundador */}
               {rank && (
                 <div
                   className="relative flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-mono font-bold"
                   style={{ borderColor: `${rank.color}40`, color: rank.color, background: `${rank.color}12` }}
                 >
                   {RankIcon && <RankIcon size={11} />}
-                  {getRankLabel(rank)}
-                  <span className="text-gray-500 font-normal ml-1">{extra.xp} XP</span>
+                  {isOwner ? 'Fundador' : getRankLabel(rank)}
+                  {!isOwner && extra?.xp != null && (
+                    <span className="text-gray-500 font-normal ml-1">{extra.xp} XP</span>
+                  )}
                 </div>
               )}
             </div>

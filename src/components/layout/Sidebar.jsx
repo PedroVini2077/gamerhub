@@ -4,6 +4,7 @@ import { Home, Users, Key, User, Zap, X, Shield, Settings, FileText } from 'luci
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
+import { getBorderForProfile } from '../../lib/ranks';
 import { useEffect, useState } from 'react';
 import { formatNumber } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
@@ -107,12 +108,16 @@ export default function Sidebar({ open, onClose }) {
         {profile && (
           <div className="px-4 py-4 border-t border-dark-500">
             <div className="flex items-center gap-3">
-              <Avatar profile={profile} size={32} />
+              <Avatar profile={profile} size={32} rankBorder={getBorderForProfile(profile)} />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-mono text-white truncate">{profile.username}</p>
-                <p className="text-xs text-gray-500 font-mono">{role}</p>
+                <p className="text-xs font-mono truncate"
+                  style={{ color: profile.role === 'owner' ? '#f97316' : '#6b7280' }}>
+                  {profile.role === 'owner' ? 'Fundador' : role}
+                </p>
               </div>
-              <div className="w-2 h-2 rounded-full bg-neon-green animate-pulse shrink-0" />
+              <div className="w-2 h-2 rounded-full animate-pulse shrink-0"
+                style={{ background: profile.role === 'owner' ? '#f97316' : '#39ff14' }} />
             </div>
           </div>
         )}

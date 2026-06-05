@@ -3,7 +3,7 @@ import { Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { RANK_TIERS, XP_SOURCES, getRankFromXP, getRankLabel, getSubRankProgress, ROMAN } from '../lib/ranks';
+import { RANK_TIERS, XP_SOURCES, getRankFromXP, getRankLabel, getSubRankProgress, ROMAN, OWNER_RANK } from '../lib/ranks';
 
 export default function Ranks() {
   const { user } = useAuth();
@@ -113,9 +113,36 @@ export default function Ranks() {
         </div>
       )}
 
-      {/* Todos os ranks */}
+      {/* Tier especial — Fundador */}
       <div className="space-y-3">
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider px-1">Todos os Ranks</p>
+
+        <div className="card p-4 space-y-2"
+          style={{ borderColor: `${OWNER_RANK.color}40`, boxShadow: `0 0 25px ${OWNER_RANK.glow}` }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono px-2 py-0.5 rounded"
+              style={{ background: `${OWNER_RANK.color}20`, color: OWNER_RANK.color }}>
+              TIER EXCLUSIVO
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              style={{ border: `3px solid ${OWNER_RANK.color}`, background: `${OWNER_RANK.color}12`, boxShadow: `0 0 14px ${OWNER_RANK.glow}` }}>
+              <OWNER_RANK.icon size={18} style={{ color: OWNER_RANK.color }} />
+            </div>
+            <div>
+              <p className="font-display font-bold text-sm" style={{ color: OWNER_RANK.color }}>
+                Fundador
+              </p>
+              <p className="text-xs font-mono text-gray-500">Criador da plataforma · rank único, não obtido por XP</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Ranks por XP */}
+      <div className="space-y-3">
+        <p className="text-xs font-mono text-gray-500 uppercase tracking-wider px-1">Ranks por XP</p>
         {RANK_TIERS.map(tier => {
           const TierIcon = tier.icon;
           const isCurrentTier = myRank?.tier === tier.tier;
