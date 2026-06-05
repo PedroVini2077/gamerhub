@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import KeyEditor from '../components/keys/KeyEditor';
 import Avatar from '../components/ui/Avatar';
 import BanModal from '../components/ui/BanModal';
+import ReasonModal from '../components/ui/ReasonModal';
 
 const ROLES = ['user', 'admin', 'super_admin'];
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -403,6 +404,8 @@ export default function Admin() {
   const [userSearch, setUserSearch] = useState('');
   const [banModal, setBanModal] = useState(null);
   const [unbanReqModal, setUnbanReqModal] = useState(null);
+  const [unbanDirectModal, setUnbanDirectModal] = useState(null); // super admin desbane direto
+  const [denyUnbanModal, setDenyUnbanModal] = useState(null);     // super admin nega solicitação
   const [unbanRequests, setUnbanRequests] = useState([]);
   const [unbanReqLoading, setUnbanReqLoading] = useState(false);
   const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
@@ -702,15 +705,16 @@ export default function Admin() {
     }
   }
 
-  async function handleUnbanDirect(targetUser) {
-    const note = window.prompt(`Motivo do desbanimento de @${targetUser.username} (opcional):`);
-    if (note === null) return; // cancelou
+  async function confirmUnbanDirect(note) {
+    const targetUser = unbanDirectModal;
+    if (!targetUser) return;
     const { error } = await supabase.rpc('unban_user', {
       p_user_id: targetUser.id,
-      p_note: note.trim() || null,
+      p_note: note || null,
     });
     if (error) { toast.error('Erro ao desbanir'); return; }
     toast.success(`@${targetUser.username} desbanido`);
+    setUnbanDirectModal(null);
     fetchAll();
   }
 
@@ -757,15 +761,16 @@ export default function Admin() {
     fetchAll();
   }
 
-  async function handleDenyUnban(req) {
-    const note = window.prompt('Nota para o admin (opcional):') ?? undefined;
-    if (note === null) return;
+  async function confirmDenyUnban(note) {
+    const req = denyUnbanModal;
+    if (!req) return;
     const { error } = await supabase.rpc('deny_unban_request', {
       p_request_id: req.id,
       p_note: note || null,
     });
     if (error) { toast.error('Erro ao negar'); return; }
     toast.success('Solicitação negada');
+    setDenyUnbanModal(null);
     fetchUnbanRequests();
   }
 
@@ -819,6 +824,37 @@ export default function Admin() {
           target={unbanReqModal}
           onClose={() => setUnbanReqModal(null)}
           onSent={() => fetchAll()}
+        />
+      )}
+
+      {unbanDirectModal && (
+        <ReasonModal
+          title="Desbanir Usuário"
+          icon={Shield}
+          accent="green"
+          target={unbanDirectModal}
+          subtitle="O usuário voltará a ter acesso ao site. Registre o motivo do desbanimento (vai para os logs)."
+          label="Motivo do desbanimento"
+          placeholder="Por que está desbanindo?"
+          confirmLabel="Desbanir"
+          confirmIcon={Shield}
+          onConfirm={confirmUnbanDirect}
+          onClose={() => setUnbanDirectModal(null)}
+        />
+      )}
+
+      {denyUnbanModal && (
+        <ReasonModal
+          title="Negar Solicitação"
+          icon={XCircle}
+          accent="red"
+          subtitle={`Negar o desbanimento de @${denyUnbanModal.target_username} solicitado por @${denyUnbanModal.requesting_admin_username}. O usuário continua banido.`}
+          label="Nota para o admin"
+          placeholder="Por que está negando? (visível nos logs)"
+          confirmLabel="Negar"
+          confirmIcon={XCircle}
+          onConfirm={confirmDenyUnban}
+          onClose={() => setDenyUnbanModal(null)}
         />
       )}
 
@@ -957,7 +993,7 @@ export default function Admin() {
                 <UserRow key={u.id} user={u} currentUserId={user?.id}
                   isSuperAdmin={isSuperAdmin} onRoleChange={handleRoleChange}
                   onBanClick={u => setBanModal(u)}
-                  onUnbanDirect={handleUnbanDirect}
+                  onUnbanDirect={u => setUnbanDirectModal(u)}
                   onRequestUnban={u => setUnbanReqModal(u)}
                   onDeletePosts={handleDeletePosts}
                   pendingUnbanIds={pendingUnbanIds} />
@@ -1429,7 +1465,7 @@ export default function Admin() {
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
                         <CheckCircle size={12} /> Aprovar e Desbanir
                       </button>
-                      <button onClick={() => handleDenyUnban(req)}
+                      <button onClick={() => setDenyUnbanModal(req)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
                         <XCircle size={12} /> Negar
                       </button>
