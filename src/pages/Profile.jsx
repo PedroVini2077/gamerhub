@@ -3,9 +3,10 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
-import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords } from 'lucide-react';
+import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
+import { getRankFromXP, getRankLabel, getSubRankProgress, RANK_TIERS } from '../lib/ranks';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const PLATFORMS  = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
@@ -28,6 +29,7 @@ export default function Profile() {
   const [youtube, setYoutube]          = useState('');
   const [saving, setSaving]               = useState(false);
   const [stats, setStats]                 = useState({ posts: 0, likes: 0 });
+  const [xpData, setXpData]               = useState(null);
   const [uploading, setUploading]         = useState(false);
   const [avatarUrl, setAvatarUrl]         = useState(null);
   const [showFull, setShowFull]           = useState(false);
@@ -50,10 +52,14 @@ export default function Profile() {
   }, [profile, user]);
 
   async function fetchStats() {
-    const { data } = await supabase.from('posts').select('likes').eq('user_id', user.id);
-    if (data) {
-      setStats({ posts: data.length, likes: data.reduce((s, p) => s + (p.likes || 0), 0) });
+    const [{ data: postsData }, { data: xp }] = await Promise.all([
+      supabase.from('posts').select('likes').eq('user_id', user.id),
+      supabase.rpc('get_user_xp', { p_user_id: user.id }),
+    ]);
+    if (postsData) {
+      setStats({ posts: postsData.length, likes: postsData.reduce((s, p) => s + (p.likes || 0), 0) });
     }
+    if (xp) setXpData(xp);
   }
 
   async function compressImage(file) {
@@ -122,8 +128,12 @@ export default function Profile() {
   }
 
   const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
-
   const maxBirthDate = new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const rank     = xpData ? getRankFromXP(xpData.xp) : null;
+  const progress = xpData ? getSubRankProgress(xpData.xp) : null;
+  const RankIcon = rank?.icon;
+  const nextTier = rank ? RANK_TIERS.find(t => t.minXP > rank.minXP) : null;
 
   if (!user) return (
     <div className="max-w-md mx-auto card p-10 text-center mt-10">
@@ -163,11 +173,17 @@ export default function Profile() {
       <div className="card p-6">
         <div className="flex items-center gap-4 mb-5">
           <div className="relative shrink-0">
-            <div className="w-16 h-16 rounded-full border-2 border-neon-green/40 overflow-hidden bg-dark-400 flex items-center justify-center cursor-pointer"
-              style={{ boxShadow: '0 0 20px #39ff1420' }} onClick={() => avatarUrl && setShowFull(true)}>
+            <div
+              className="w-16 h-16 rounded-full overflow-hidden bg-dark-400 flex items-center justify-center cursor-pointer"
+              style={{
+                border: rank ? `${rank.borderWidth ?? 2}px solid ${rank.color}` : '2px solid #39ff1440',
+                boxShadow: rank ? `0 0 18px ${rank.glow}` : '0 0 18px #39ff1420',
+              }}
+              onClick={() => avatarUrl && setShowFull(true)}
+            >
               {avatarUrl
                 ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                : <span className="font-display text-2xl text-neon-green font-bold">{profile?.username?.[0]?.toUpperCase() || '?'}</span>
+                : <span className="font-display text-2xl font-bold" style={{ color: rank?.color || '#39ff14' }}>{profile?.username?.[0]?.toUpperCase() || '?'}</span>
               }
             </div>
             <button onClick={() => fileRef.current?.click()} disabled={uploading} title="Trocar foto"
@@ -178,10 +194,19 @@ export default function Profile() {
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="font-display text-lg font-bold text-white">{profile?.username || '...'}</h2>
-            <p className="text-xs text-gray-500 font-mono">{user.email}</p>
-            <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'} mt-1 inline-block`}>{profile?.role || 'user'}</span>
+            <p className="text-xs text-gray-500 font-mono truncate">{user.email}</p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>{profile?.role || 'user'}</span>
+              {rank && (
+                <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
+                  style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
+                  {RankIcon && <RankIcon size={10} />}
+                  {getRankLabel(rank)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -194,17 +219,60 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="card p-4">
-        <h3 className="font-display text-xs text-gray-500 tracking-widest uppercase mb-3">Stats do Jogador</h3>
-        <div className="grid grid-cols-3 gap-4 text-center">
-          {[{ label: 'Posts', value: stats.posts }, { label: 'Likes', value: stats.likes }, { label: 'Rank', value: '#—' }].map(s => (
+      {/* Stats + Rank */}
+      <div className="card p-4 space-y-3">
+        <h3 className="font-display text-xs text-gray-500 tracking-widest uppercase flex items-center gap-2">
+          <Trophy size={12} />Stats do Jogador
+        </h3>
+
+        <div className="grid grid-cols-3 gap-3 text-center">
+          {[
+            { label: 'Posts',  value: stats.posts, color: 'text-neon-green' },
+            { label: 'Likes',  value: stats.likes, color: 'text-neon-purple' },
+            { label: 'XP',     value: xpData?.xp ?? '—', color: 'text-yellow-400' },
+          ].map(s => (
             <div key={s.label} className="bg-dark-700 rounded p-3 border border-dark-400">
-              <p className="font-display text-lg font-bold text-neon-green">{s.value}</p>
+              <p className={`font-display text-lg font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-gray-500 font-mono">{s.label}</p>
             </div>
           ))}
         </div>
+
+        {/* Rank + barra de progresso */}
+        {rank && progress && (
+          <div className="bg-dark-700 rounded-lg p-3 border border-dark-400 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                {RankIcon && <RankIcon size={13} style={{ color: rank.color }} />}
+                <span className="text-sm font-display font-bold" style={{ color: rank.color }}>
+                  {getRankLabel(rank)}
+                </span>
+              </div>
+              <Link to="/ranks" className="text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors">
+                ver todos →
+              </Link>
+            </div>
+
+            {progress.needed != null ? (
+              <>
+                <div className="w-full h-1.5 bg-dark-500 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 6px ${rank.glow}` }}
+                  />
+                </div>
+                <p className="text-xs font-mono text-gray-500">
+                  {progress.current} / {progress.needed} XP
+                  {nextTier && rank.subRank === rank.subRanks && (
+                    <span className="text-gray-600"> · próximo: {nextTier.label}</span>
+                  )}
+                </p>
+              </>
+            ) : (
+              <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo atingido! 👑</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Informações pessoais */}

@@ -5,6 +5,7 @@ import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
 import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
+import { getRankFromXP, getRankLabel, getSubRankProgress } from '../lib/ranks';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
@@ -20,6 +21,7 @@ export default function UserProfile() {
   const [profile, setProfile]   = useState(null);
   const [posts, setPosts]       = useState([]);
   const [stats, setStats]       = useState({ posts: 0, likes: 0 });
+  const [xpData, setXpData]     = useState(null);
   const [loading, setLoading]   = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showPhoto, setShowPhoto] = useState(false);
@@ -35,7 +37,7 @@ export default function UserProfile() {
     if (!profileData) { setNotFound(true); setLoading(false); return; }
     setProfile(profileData);
 
-    const [{ data: postsData }, { count: likesCount }] = await Promise.all([
+    const [{ data: postsData }, { count: likesCount }, { data: xp }] = await Promise.all([
       supabase.from('posts')
         .select('*, profiles(username, avatar_url), user_id')
         .eq('user_id', profileData.id)
@@ -46,10 +48,12 @@ export default function UserProfile() {
           (await supabase.from('posts').select('id').eq('user_id', profileData.id))
             .data?.map(p => p.id) || []
         ),
+      supabase.rpc('get_user_xp', { p_user_id: profileData.id }),
     ]);
 
     setPosts(postsData || []);
     setStats({ posts: postsData?.length || 0, likes: likesCount || 0 });
+    if (xp) setXpData(xp);
     setLoading(false);
   }
 
@@ -86,6 +90,9 @@ export default function UserProfile() {
 
   const age = calcAge(profile.birth_date);
   const hasSocials = profile.discord || profile.twitch || profile.youtube;
+  const rank     = xpData ? getRankFromXP(xpData.xp) : null;
+  const progress = xpData ? getSubRankProgress(xpData.xp) : null;
+  const RankIcon = rank?.icon;
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -97,12 +104,24 @@ export default function UserProfile() {
       <div className="card p-6">
         <div className="flex items-start gap-4 mb-4">
           <button onClick={() => profile?.avatar_url && setShowPhoto(true)} className="shrink-0">
-            <Avatar profile={profile} size={64} className={profile?.avatar_url ? 'cursor-pointer hover:ring-2 hover:ring-neon-green/50 transition-all' : ''} />
+            <Avatar
+              profile={profile}
+              size={64}
+              className={profile?.avatar_url ? 'cursor-pointer' : ''}
+              rankBorder={rank}
+            />
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-display text-xl font-bold text-white">{profile.username}</h1>
               <span className={`tag ${roleColors[profile.role] || 'tag-cyan'}`}>{profile.role}</span>
+              {rank && (
+                <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
+                  style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
+                  {RankIcon && <RankIcon size={10} />}
+                  {getRankLabel(rank)}
+                </span>
+              )}
               {profile.playstyle && (
                 <span className="tag tag-purple text-xs">{PLAYSTYLE_LABELS[profile.playstyle]}</span>
               )}
@@ -169,17 +188,45 @@ export default function UserProfile() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-dark-500">
+        <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-dark-500">
           {[
-            { label: 'Posts',           value: stats.posts, color: 'text-neon-green' },
-            { label: 'Likes recebidos', value: stats.likes, color: 'text-neon-purple' },
+            { label: 'Posts',  value: stats.posts, color: 'text-neon-green' },
+            { label: 'Likes',  value: stats.likes, color: 'text-neon-purple' },
+            { label: 'XP',     value: xpData?.xp ?? '—', color: 'text-yellow-400' },
           ].map(s => (
             <div key={s.label} className="bg-dark-700 rounded p-3 text-center border border-dark-400">
-              <p className={`font-display text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className={`font-display text-xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-gray-500 font-mono">{s.label}</p>
             </div>
           ))}
         </div>
+
+        {/* Rank progress */}
+        {rank && progress && (
+          <div className="mt-3 pt-3 border-t border-dark-500 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                {RankIcon && <RankIcon size={12} style={{ color: rank.color }} />}
+                <span className="text-xs font-display font-bold" style={{ color: rank.color }}>
+                  {getRankLabel(rank)}
+                </span>
+              </div>
+              {progress.needed != null && (
+                <span className="text-xs font-mono text-gray-500">{progress.current}/{progress.needed} XP</span>
+              )}
+            </div>
+            {progress.needed != null ? (
+              <div className="w-full h-1 bg-dark-500 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 4px ${rank.glow}` }}
+                />
+              </div>
+            ) : (
+              <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo 👑</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Posts do usuário */}

@@ -13,13 +13,14 @@ import AuthConfirm from './pages/AuthConfirm';
 import NotFound from './pages/NotFound';
 
 // Lazy loading — carregam só quando o usuário acessar
-const Community = lazy(() => import('./pages/Community'));
-const Keys      = lazy(() => import('./pages/Keys'));
-const Profile   = lazy(() => import('./pages/Profile'));
-const Admin     = lazy(() => import('./pages/Admin'));
-const Settings  = lazy(() => import('./pages/Settings'));
+const Community   = lazy(() => import('./pages/Community'));
+const Keys        = lazy(() => import('./pages/Keys'));
+const Profile     = lazy(() => import('./pages/Profile'));
+const Admin       = lazy(() => import('./pages/Admin'));
+const Settings    = lazy(() => import('./pages/Settings'));
 const UserProfile = lazy(() => import('./pages/UserProfile'));
-const Lives     = lazy(() => import('./pages/Lives'));
+const Lives       = lazy(() => import('./pages/Lives'));
+const Ranks       = lazy(() => import('./pages/Ranks'));
 
 function PageLoader() {
   return (
@@ -78,6 +79,7 @@ export default function App() {
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
           <Route path="/lives" element={<Layout><Lives /></Layout>} />
           <Route path="/lives/:id" element={<Layout><Lives /></Layout>} />
+          <Route path="/ranks" element={<Layout><Ranks /></Layout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>

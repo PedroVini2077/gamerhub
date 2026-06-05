@@ -6,15 +6,16 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import Avatar from './Avatar';
 import BanModal from './BanModal';
 import { X, ExternalLink, Ban } from 'lucide-react';
+import { getRankFromXP, getRankLabel } from '../../lib/ranks';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
-const ROLE_RANK = { user: 1, admin: 2, super_admin: 3 };
+const ROLE_RANK  = { user: 1, admin: 2, super_admin: 3 };
 
 export default function AvatarPopup({ profile, size = 36, className = '', postsCount, disablePopup = false, onBanned }) {
   const { profile: viewer } = useAuth();
-  const [open, setOpen] = useState(false);
-  const [extra, setExtra] = useState(postsCount !== undefined ? { posts: postsCount } : null);
+  const [open, setOpen]       = useState(false);
+  const [extra, setExtra]     = useState(postsCount !== undefined ? { posts: postsCount, xp: null } : null);
   const [banModal, setBanModal] = useState(false);
 
   const canBan = viewer && profile &&
@@ -24,21 +25,29 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
 
   async function handleOpen() {
     setOpen(true);
-    if (extra || !profile?.id) return;
-    const { count } = await supabase
-      .from('posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', profile.id);
-    setExtra({ posts: count || 0 });
+    if (extra?.xp !== undefined || !profile?.id) return;
+    const [{ count }, { data: xpData }] = await Promise.all([
+      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', profile.id),
+      supabase.rpc('get_user_xp', { p_user_id: profile.id }),
+    ]);
+    setExtra({ posts: count || 0, xp: xpData?.xp ?? 0 });
   }
+
+  const rank = extra?.xp != null ? getRankFromXP(extra.xp) : null;
+  const RankIcon = rank?.icon;
 
   return (
     <>
-      <button onClick={disablePopup ? undefined : handleOpen} className="block rounded-full focus:outline-none shrink-0" style={disablePopup ? { cursor: 'default' } : {}}>
+      <button
+        onClick={disablePopup ? undefined : handleOpen}
+        className="block rounded-full focus:outline-none shrink-0"
+        style={disablePopup ? { cursor: 'default' } : {}}
+      >
         <Avatar
           profile={profile}
           size={size}
-          className={`cursor-pointer hover:ring-2 hover:ring-neon-green/50 transition-all ${className}`}
+          className={`${!disablePopup ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''} ${className}`}
+          rankBorder={rank}
         />
       </button>
 
@@ -50,35 +59,48 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
         >
           <div
             className="relative w-72 rounded-2xl overflow-hidden border border-dark-400 bg-dark-700 animate-fade-up"
-            style={{ boxShadow: '0 0 40px #39ff1420' }}
+            style={{ boxShadow: rank ? `0 0 40px ${rank.glow}` : '0 0 40px #39ff1420' }}
             onClick={e => e.stopPropagation()}
           >
-            <div className="relative bg-dark-800 pt-8 pb-6 flex flex-col items-center">
+            {/* Header com avatar */}
+            <div className="relative bg-dark-800 pt-8 pb-6 flex flex-col items-center gap-2">
               <div className="absolute inset-0 grid-bg opacity-40" />
-              <Avatar profile={profile} size={88} className="relative ring-2 ring-neon-green/40" />
+              <Avatar profile={profile} size={88} className="relative" rankBorder={rank} />
               <button
                 onClick={() => setOpen(false)}
                 className="absolute top-3 right-3 w-7 h-7 rounded-full bg-dark-600/90 border border-dark-400 flex items-center justify-center text-gray-400 hover:text-white"
               >
                 <X size={14} />
               </button>
+
+              {/* Badge de rank */}
+              {rank && (
+                <div
+                  className="relative flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-mono font-bold"
+                  style={{ borderColor: `${rank.color}40`, color: rank.color, background: `${rank.color}12` }}
+                >
+                  {RankIcon && <RankIcon size={11} />}
+                  {getRankLabel(rank)}
+                  <span className="text-gray-500 font-normal ml-1">{extra.xp} XP</span>
+                </div>
+              )}
             </div>
 
+            {/* Nome e role */}
             <div className="px-5 py-4 text-center border-b border-dark-500">
               <h3 className="font-display text-xl font-bold text-white mb-2">{profile?.username}</h3>
               <div className="flex items-center justify-center gap-2 flex-wrap">
                 <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>
                   {roleLabels[profile?.role] || 'Player'}
                 </span>
-                {profile?.banned && (
-                  <span className="tag tag-pink">banido</span>
-                )}
+                {profile?.banned && <span className="tag tag-pink">banido</span>}
               </div>
               {profile?.bio && (
                 <p className="text-xs text-gray-400 font-mono mt-3 leading-relaxed">{profile.bio}</p>
               )}
             </div>
 
+            {/* Stats */}
             <div className="grid grid-cols-2 divide-x divide-dark-500 border-b border-dark-500">
               <div className="py-3 text-center">
                 <p className="text-xs text-gray-500 font-mono mb-1">Posts</p>
@@ -96,6 +118,7 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
               </div>
             </div>
 
+            {/* Ações */}
             <div className="p-4 space-y-2">
               <Link
                 to={`/u/${profile?.username}`}
@@ -104,7 +127,6 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
               >
                 Ver perfil completo <ExternalLink size={12} />
               </Link>
-
               {canBan && (
                 <button
                   onClick={() => { setOpen(false); setBanModal(true); }}
