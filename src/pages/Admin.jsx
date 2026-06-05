@@ -18,6 +18,7 @@ import KeyEditor from '../components/keys/KeyEditor';
 import Avatar from '../components/ui/Avatar';
 import BanModal from '../components/ui/BanModal';
 import ReasonModal from '../components/ui/ReasonModal';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const ROLES = ['user', 'admin', 'super_admin'];
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -408,6 +409,7 @@ export default function Admin() {
   const [denyUnbanModal, setDenyUnbanModal] = useState(null);     // super admin nega solicitação
   const [unbanRequests, setUnbanRequests] = useState([]);
   const [unbanReqLoading, setUnbanReqLoading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null);
   const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
@@ -625,13 +627,23 @@ export default function Admin() {
     fetchLiveMod();
   }
 
-  async function handleEndLive(postId, title) {
-    if (!confirm('Encerrar esta live?')) return;
-    const { error } = await supabase.from('posts').update({ is_live: false }).eq('id', postId);
-    if (error) { toast.error('Erro ao encerrar live'); return; }
-    toast.success('Live encerrada');
-    await logAction('live_ended', `Live "${title}" encerrada pelo admin`);
-    fetchLiveMod();
+  function handleEndLive(postId, title) {
+    setConfirmModal({
+      title: 'Encerrar Live',
+      icon: Tv,
+      accent: 'red',
+      message: `Encerrar a live "${title}"? O streamer não poderá retomá-la sem uma nova solicitação.`,
+      confirmLabel: 'Encerrar',
+      confirmIcon: X,
+      onConfirm: async () => {
+        const { error } = await supabase.from('posts').update({ is_live: false }).eq('id', postId);
+        if (error) { toast.error('Erro ao encerrar live'); return; }
+        toast.success('Live encerrada');
+        await logAction('live_ended', `Live "${title}" encerrada pelo admin`);
+        setConfirmModal(null);
+        fetchLiveMod();
+      },
+    });
   }
 
   async function handleReactivateDirect(live, reason, details) {
@@ -718,39 +730,63 @@ export default function Admin() {
     fetchAll();
   }
 
-  async function handleDeletePosts(userId, username) {
-    if (!confirm(`Deletar todos os posts de ${username}?`)) return;
-    const { error } = await supabase.from('posts').delete().eq('user_id', userId);
-    if (error) toast.error('Erro ao deletar posts');
-    else {
-      toast.success('Posts deletados');
-      await logAction('admin_delete_posts',
-        `Todos os posts de @${username} deletados por @${profile?.username}`,
-        'admin', 'warning');
-      fetchAll();
-    }
+  function handleDeletePosts(userId, username) {
+    setConfirmModal({
+      title: 'Deletar Todos os Posts',
+      icon: Trash2,
+      accent: 'red',
+      message: `Deletar todos os posts de @${username}? Esta ação é irreversível.`,
+      confirmLabel: 'Deletar Tudo',
+      confirmIcon: Trash2,
+      onConfirm: async () => {
+        const { error } = await supabase.from('posts').delete().eq('user_id', userId);
+        if (error) { toast.error('Erro ao deletar posts'); return; }
+        toast.success('Posts deletados');
+        await logAction('admin_delete_posts',
+          `Todos os posts de @${username} deletados por @${profile?.username}`,
+          'admin', 'warning');
+        setConfirmModal(null);
+        fetchAll();
+      },
+    });
   }
 
-  async function handleDeletePost(postId) {
-    if (!confirm('Deletar este post?')) return;
-    const { error } = await supabase.from('posts').delete().eq('id', postId);
-    if (error) toast.error('Erro');
-    else {
-      toast.success('Post deletado');
-      await logAction('admin_delete_post', `Post deletado pelo admin @${profile?.username}`, 'admin', 'warning');
-      fetchAll();
-    }
+  function handleDeletePost(postId) {
+    setConfirmModal({
+      title: 'Deletar Post',
+      icon: Trash2,
+      accent: 'red',
+      message: 'Deletar este post permanentemente? Esta ação não pode ser desfeita.',
+      confirmLabel: 'Deletar',
+      confirmIcon: Trash2,
+      onConfirm: async () => {
+        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        if (error) { toast.error('Erro ao deletar post'); return; }
+        toast.success('Post deletado');
+        await logAction('admin_delete_post', `Post deletado pelo admin @${profile?.username}`, 'admin', 'warning');
+        setConfirmModal(null);
+        fetchAll();
+      },
+    });
   }
 
-  async function handleDeleteKey(keyId) {
-    if (!confirm('Remover este item?')) return;
-    const { error } = await supabase.from('game_keys').delete().eq('id', keyId);
-    if (error) toast.error('Erro');
-    else {
-      toast.success('Removido');
-      await logAction('admin_delete_key', `Key removida pelo admin @${profile?.username}`, 'admin', 'info');
-      fetchAll();
-    }
+  function handleDeleteKey(keyId) {
+    setConfirmModal({
+      title: 'Remover Key / Promo',
+      icon: Key,
+      accent: 'red',
+      message: 'Remover este item permanentemente?',
+      confirmLabel: 'Remover',
+      confirmIcon: Trash2,
+      onConfirm: async () => {
+        const { error } = await supabase.from('game_keys').delete().eq('id', keyId);
+        if (error) { toast.error('Erro ao remover item'); return; }
+        toast.success('Removido');
+        await logAction('admin_delete_key', `Key removida pelo admin @${profile?.username}`, 'admin', 'info');
+        setConfirmModal(null);
+        fetchAll();
+      },
+    });
   }
 
   async function handleApproveUnban(req) {
@@ -855,6 +891,19 @@ export default function Admin() {
           confirmIcon={XCircle}
           onConfirm={confirmDenyUnban}
           onClose={() => setDenyUnbanModal(null)}
+        />
+      )}
+
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          icon={confirmModal.icon}
+          accent={confirmModal.accent}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          confirmIcon={confirmModal.confirmIcon}
+          onConfirm={confirmModal.onConfirm}
+          onClose={() => setConfirmModal(null)}
         />
       )}
 
