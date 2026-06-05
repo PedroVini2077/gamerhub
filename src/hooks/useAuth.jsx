@@ -26,15 +26,33 @@ export function AuthProvider({ children }) {
     return data ?? null;
   }
 
+  // Mostra a tela de banido a partir de uma checagem EXPLÍCITA (carga inicial,
+  // realtime ou poll). Não é um effect reativo sobre profile.banned de propósito:
+  // durante o login de uma conta banida há uma sessão transitória que setaria
+  // profile.banned por um instante antes do signOut — isso faria a tela piscar
+  // na página de login. As checagens explícitas evitam esse falso-positivo.
+  function applyBannedCheck(p) {
+    if (p?.banned) {
+      setBannedScreen({
+        reason: p.ban_reason || 'Violação dos termos de uso',
+        details: p.ban_details || null,
+      });
+    }
+  }
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) {
+        const p = await fetchProfile(session.user.id);
+        applyBannedCheck(p); // usuário que recarrega a página já banido cai na tela
+      }
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      // Não checa ban aqui: o SIGNED_IN do login de uma conta banida é transitório.
       if (session?.user) fetchProfile(session.user.id);
       else setProfile(null);
     });
@@ -65,20 +83,13 @@ export function AuthProvider({ children }) {
 
     // Fallback confiável: revalida o profile a cada 20s. Se o realtime perder o
     // evento (timing da subscription, reconexão), o ban ainda é capturado aqui.
-    const poll = setInterval(() => fetchProfile(user.id), 20000);
+    const poll = setInterval(async () => {
+      const p = await fetchProfile(user.id);
+      applyBannedCheck(p);
+    }, 20000);
 
     return () => { supabase.removeChannel(channel); clearInterval(poll); };
   }, [user?.id]);
-
-  // Sempre que o profile indicar banimento (via realtime, poll ou refresh), mostra a tela.
-  useEffect(() => {
-    if (profile?.banned) {
-      setBannedScreen({
-        reason: profile.ban_reason || 'Violação dos termos de uso',
-        details: profile.ban_details || null,
-      });
-    }
-  }, [profile?.banned, profile?.ban_reason, profile?.ban_details]);
 
   async function signInWithEmail(email, password) {
     if (!email?.trim() || !password) {
@@ -88,14 +99,20 @@ export function AuthProvider({ children }) {
     const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
     if (result.data?.user) {
-      const p = await fetchProfile(result.data.user.id);
+      // Checagem de ban via query direta (sem setProfile) para não poluir o estado
+      // global durante o handshake de uma conta banida que será deslogada em seguida.
+      const { data: p } = await supabase
+        .from('profiles').select('*').eq('id', result.data.user.id).single();
       if (p?.banned) {
+        // Registra a tentativa (log + notificação aos admins) enquanto ainda há sessão
+        await supabase.rpc('record_banned_login_attempt', { p_email: email.trim() });
         await supabase.auth.signOut();
-        logAudit('auth_banned_attempt',
-          `Tentativa de login de conta banida (@${p.username || email.trim()})`,
-          { category: 'security', severity: 'warning', metadata: { email: email.trim() } }
-        );
-        return { error: { message: 'Sua conta foi banida. Entre em contato com o suporte.' } };
+        // banned:true sinaliza ao Login para NÃO contar como tentativa de senha errada
+        return {
+          banned: true,
+          reason: p.ban_reason || null,
+          error: { message: 'Sua conta foi banida. Entre em contato com o suporte.' },
+        };
       }
       logAudit('auth_login_success',
         `@${p?.username || email.trim()} fez login`,

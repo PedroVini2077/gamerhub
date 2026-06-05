@@ -127,7 +127,13 @@ export default function Login() {
       }
 
       // 2. Tenta autenticar
-      const { error } = await signInWithEmail(email, password);
+      const { error, banned } = await signInWithEmail(email, password);
+      if (banned) {
+        // Conta banida com senha correta: NÃO conta como tentativa de senha errada
+        toast.error('Sua conta foi banida. Entre em contato com o suporte.');
+        setLoading(false);
+        return;
+      }
       if (error) {
         // 3. Registra a falha no servidor e reflete o novo estado
         const { data: after } = await supabase.rpc('register_login_attempt', { p_email: email.trim() });

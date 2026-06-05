@@ -103,7 +103,14 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, 
         <div className="border-t border-dark-500 bg-dark-700 px-4 py-3 space-y-3">
           {user.banned && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 space-y-0.5">
-              <p className="text-xs font-mono text-red-400 font-bold">{user.ban_reason}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-xs font-mono text-red-400 font-bold">{user.ban_reason}</p>
+                {user.ban_count > 1 && (
+                  <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>
+                    reincidente · {user.ban_count}x
+                  </span>
+                )}
+              </div>
               {user.ban_details && <p className="text-xs font-mono text-gray-400">{user.ban_details}</p>}
               <p className="text-xs font-mono text-gray-500">
                 banido por @{user.banned_by_username || '?'}
@@ -696,7 +703,12 @@ export default function Admin() {
   }
 
   async function handleUnbanDirect(targetUser) {
-    const { error } = await supabase.rpc('unban_user', { p_user_id: targetUser.id });
+    const note = window.prompt(`Motivo do desbanimento de @${targetUser.username} (opcional):`);
+    if (note === null) return; // cancelou
+    const { error } = await supabase.rpc('unban_user', {
+      p_user_id: targetUser.id,
+      p_note: note.trim() || null,
+    });
     if (error) { toast.error('Erro ao desbanir'); return; }
     toast.success(`@${targetUser.username} desbanido`);
     fetchAll();
@@ -1165,6 +1177,8 @@ export default function Admin() {
                   ? <RotateCcw size={15} className="text-yellow-400" />
                   : n.type === 'unban_approved'
                   ? <Shield size={15} className="text-neon-green" />
+                  : n.type === 'banned_login_attempt'
+                  ? <ShieldAlert size={15} className="text-red-400" />
                   : <Bell size={15} className="text-gray-500" />;
                 return (
                   <div key={n.id} className={`card p-4 flex items-start gap-3 transition-all ${
