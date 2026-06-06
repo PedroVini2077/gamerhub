@@ -4,23 +4,11 @@ import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Zap, Mail, Lock, User, ArrowLeft, Calendar, MapPin, Gamepad2, AlertTriangle, ShieldOff } from 'lucide-react';
+import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../lib/password';
+import { calcAge, MIN_SIGNUP_AGE } from '../lib/date';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const PLATFORMS = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
-
-function getPasswordStrength(pwd) {
-  if (!pwd) return 0;
-  let score = 0;
-  if (pwd.length >= 8)  score++;
-  if (pwd.length >= 12) score++;
-  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
-  if (/\d/.test(pwd)) score++;
-  if (/[^A-Za-z0-9]/.test(pwd)) score++;
-  return Math.min(score, 4);
-}
-
-const STRENGTH_LABELS = ['', 'Fraca', 'Razoável', 'Boa', 'Forte'];
-const STRENGTH_COLORS = ['', '#ff4444', '#ffaa00', '#39ff14bb', '#39ff14'];
 
 function formatCountdown(ms) {
   const totalSec = Math.max(0, Math.ceil(ms / 1000));
@@ -162,8 +150,8 @@ export default function Login() {
       if (password.length < 8) { toast.error('Senha precisa ter pelo menos 8 caracteres'); setLoading(false); return; }
       if (password !== confirmPassword) { toast.error('Senhas não coincidem'); setLoading(false); return; }
       if (!birthDate) { toast.error('Informe sua data de nascimento'); setLoading(false); return; }
-      const age = (Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-      if (age < 13) { toast.error('Você precisa ter pelo menos 13 anos para se cadastrar'); setLoading(false); return; }
+      const age = calcAge(birthDate);
+      if (age < MIN_SIGNUP_AGE) { toast.error(`Você precisa ter pelo menos ${MIN_SIGNUP_AGE} anos para se cadastrar`); setLoading(false); return; }
 
       const extraFields = {};
       if (birthDate)        extraFields.birth_date = birthDate;

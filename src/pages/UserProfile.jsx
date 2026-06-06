@@ -6,15 +6,11 @@ import Avatar from '../components/ui/Avatar';
 import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { getRankLabel, getSubRankProgress, getBorderForProfile } from '../lib/ranks';
+import { calcAge } from '../lib/date';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
 const PLAYSTYLE_LABELS = { casual: 'Casual', competitivo: 'Competitivo', ambos: 'Casual & Competitivo' };
-
-function calcAge(birthDate) {
-  if (!birthDate) return null;
-  return Math.floor((Date.now() - new Date(birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-}
 
 export default function UserProfile() {
   const { username } = useParams();

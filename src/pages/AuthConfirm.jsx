@@ -2,19 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Zap, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
-
-function getPasswordStrength(pwd) {
-  if (!pwd) return 0;
-  let s = 0;
-  if (pwd.length >= 8)  s++;
-  if (pwd.length >= 12) s++;
-  if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) s++;
-  if (/\d/.test(pwd)) s++;
-  if (/[^A-Za-z0-9]/.test(pwd)) s++;
-  return Math.min(s, 4);
-}
-const STRENGTH_LABELS = ['', 'Fraca', 'Razoável', 'Boa', 'Forte'];
-const STRENGTH_COLORS = ['', '#ff4444', '#ffaa00', '#39ff14bb', '#39ff14'];
+import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../lib/password';
 
 export default function AuthConfirm() {
   const [searchParams] = useSearchParams();
