@@ -117,7 +117,16 @@ src/
 │   ├── auditLog.js        # logAudit() -> RPC log_audit_event
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── format.js          # Formatação de números (1K, 1M...)
+│   ├── password.js        # Força de senha (compartilhado Login/AuthConfirm)
+│   ├── date.js            # Cálculo de idade / idade mínima de cadastro
 │   └── motion.js          # Variantes Framer Motion compartilhadas
+├── services/              # Camada de acesso a dados (Supabase) por domínio
+│   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
+│   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
+│   ├── communityService.js# Mural da comunidade
+│   ├── liveService.js     # Chat de live, silenciamentos
+│   ├── keyService.js      # Keys/promos, stats do site
+│   └── authService.js     # Trocar senha/email, deletar conta
 ├── pages/
 │   ├── Home.jsx           # Feed principal
 │   ├── Login.jsx          # Login / cadastro / recuperação de senha
@@ -134,9 +143,15 @@ src/
 │   └── NotFound.jsx       # 404
 └── components/
     ├── ErrorBoundary.jsx
+    ├── auth/              # LoginForm, RegisterForm, ForgotForm, InputWrap
     ├── feed/              # PostCard, PostForm, CommentSection
     ├── community/         # MuralCard, MuralForm
     ├── keys/             # KeyEditor
+    ├── lives/            # LivesList, ChatPanel, ModPanel
+    ├── admin/            # UsersPanel, PostsPanel, LivesPanel, KeysPanel,
+    │                     # NotifsPanel, LogsPanel, SuperAdminPanel
+    ├── owner/            # PainelTab, UsuariosTab, LogsTab, SiteTab,
+    │                     # NotificacoesTab, MetricasTab
     ├── layout/           # Header, Sidebar, RightPanel
     └── ui/               # Avatar, AvatarPopup, BanModal, BannedScreen,
                           # ConfirmModal, ReasonModal, EmbedPlayer,
@@ -427,6 +442,10 @@ Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 - **`post-media`** (público): imagens/vídeos/áudios dos posts; upload por
   autenticados, delete pelo dono do post.
 
+> Os buckets são públicos para leitura via URL (CDN), mas **não** permitem
+> *listar* arquivos (a policy ampla de SELECT em `storage.objects` foi removida)
+> — o acesso por URL pública continua funcionando.
+
 ### Realtime
 
 Publicação `supabase_realtime` inclui: `posts`, `post_media`, `profiles`,
@@ -441,6 +460,11 @@ detecção de ban, banner/manutenção e sincronização dos painéis.
 - Cliente usa **anon key**; a proteção real está no **RLS** + funções
   `SECURITY DEFINER`.
 - Hierarquia de cargos **imposta no banco** (não confia só na UI).
+- Funções `SECURITY DEFINER` administrativas/owner têm `EXECUTE` **revogado de
+  `anon`** (defesa em profundidade): além da checagem interna por `auth.uid()`,
+  usuários não autenticados sequer conseguem invocá-las via RPC. Só permanecem
+  abertas a `anon` as do fluxo de login (`check_login_status`,
+  `register_login_attempt`) e a leitura de XP (`get_user_xp`).
 - Bloqueio de login server-side; tela de banido em tempo real.
 - Headers de segurança na Vercel (`X-Frame-Options`, `X-Content-Type-Options`,
   `Referrer-Policy`, `Permissions-Policy`, etc.).

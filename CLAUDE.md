@@ -19,6 +19,14 @@
 - **Foco atual do projeto:** parar de adicionar features novas e **melhorar a
   base existente** — organização, manutenção, escalabilidade, segurança,
   performance e documentação. Evoluir sem quebrar o que já funciona.
+- **Cortar código sempre que possível — nunca criar arquivos enormes.** Ao
+  escrever ou mexer em qualquer arquivo, pensar antes: dá pra quebrar em
+  componentes/hooks/services menores? Se um arquivo está crescendo demais
+  (regra de bolso: ~300+ linhas ou misturando responsabilidades), dividir.
+  Preferir muitos arquivos pequenos e focados a poucos arquivos gigantes.
+  Extrair UI repetida em componentes, lógica repetida em hooks/utils, acesso a
+  dados em services. **Pensar SEMPRE em otimização e escalabilidade** — não só
+  "funciona", mas "aguenta crescer e é fácil de manter".
 
 ## Stack
 

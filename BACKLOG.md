@@ -23,8 +23,17 @@
 
 ### Banco / Segurança
 - ⬜ **Ativar proteção contra senha vazada (HIBP)** no Auth do Supabase.
-  *Ação manual no painel (Authentication → Policies) — precisa do dono.*
+  *Ação manual no painel (Authentication → Policies) — precisa do dono.
+  Não dá pra automatizar via SQL/MCP (é toggle de config do Auth).*
 - ⬜ **Mover extensão `pg_net`** do schema `public` para um schema dedicado.
+  *Adiado de propósito: `ALTER EXTENSION ... SET SCHEMA` pode quebrar
+  webhooks/triggers que referenciam `net.*`. Baixo benefício × risco real —
+  fazer só com janela de teste dedicada.*
+- ✅ **Revogar `EXECUTE` de `anon`** nas funções `SECURITY DEFINER` admin/owner e
+  de pós-login (defesa em profundidade — `REVOKE ... FROM PUBLIC, anon` + `GRANT
+  ... TO authenticated`). Abertas a anon só as do fluxo de login
+  (`check_login_status`, `register_login_attempt`) e `get_user_xp`. Testado em
+  ROLLBACK. *(documentado no README)*
 - ✅ **Endurecer INSERT de `notifications`** — feito: notificações de like/
   comentário agora são geradas por trigger SECURITY DEFINER
   (`notify_post_like` / `notify_post_comment`), respeitando notif_likes/
@@ -32,44 +41,60 @@
   retirado de `PostCard`/`CommentSection`. *(documentar no README)*
 
 ### Frontend / Arquitetura
-- ⬜ **Camada de Services (`src/services/`)** — migrar **gradualmente** todo o
-  acesso ao Supabase (hoje espalhado nas páginas/componentes) para serviços por
-  domínio: `authService`, `profileService`, `postService`, `communityService`,
-  `liveService`, `keyService`, `adminService`, `ownerService`, `storageService`.
-  Objetivo: desacoplar UI de dados, centralizar tratamento de erro, facilitar
-  testes. Fazer arquivo por arquivo, começando por `postService`/`profileService`.
+- ✅ **Camada de Services (`src/services/`)** — migrado o acesso ao Supabase das
+  páginas/componentes para serviços por domínio: `postService`, `profileService`,
+  `communityService`, `liveService`, `keyService`, `authService`. (Os painéis
+  admin/owner ainda chamam RPCs direto via `supabase.rpc` — tudo bem, são chamadas
+  pontuais; consolidar num `adminService`/`ownerService` fica como melhoria futura
+  se a duplicação crescer.) *(documentado no README)*
 
 ---
 
 ## 🟢 Recomendado
 
-### Quebrar arquivos grandes (sem mudar comportamento/visual)
-- ⬜ **`Admin.jsx` (1591 linhas)** → `components/admin/*` (UsersPanel, PostsPanel,
-  LivesPanel, KeysPanel, NotifsPanel, LogsPanel, SuperAdminPanel).
-- ⬜ **`Owner.jsx` (906)** → `components/owner/*` (um arquivo por aba).
-- ⬜ **`Lives.jsx` (603)** → `LivePlayer`, `ChatPanel`, `ModPanel`, `LivesList`.
-- ⬜ **`Login.jsx` (416)** → `LoginForm`, `RegisterForm`, `ForgotForm`.
+### Quebrar arquivos grandes (sem mudar comportamento/visual) — ✅ feito
+- ✅ **`Admin.jsx`** → `components/admin/*` (UsersPanel, PostsPanel, LivesPanel,
+  KeysPanel, NotifsPanel, LogsPanel, SuperAdminPanel).
+- ✅ **`Owner.jsx`** → `components/owner/*` (um arquivo por aba).
+- ✅ **`Lives.jsx`** → `LivesList`, `ChatPanel`, `ModPanel`.
+- ✅ **`Login.jsx`** → `LoginForm`, `RegisterForm`, `ForgotForm`, `InputWrap`.
 
 ### Banco / Performance (impacto cresce com o volume — hoje é pequeno)
+- ℹ️ **`unused_index` (advisor)**: ~15 índices (quase todos de FK) aparecem como
+  "não usados". **Mantidos de propósito** — são índices de chave estrangeira /
+  colunas de join que passam a ser usados conforme o volume cresce. Removê-los
+  agora prejudicaria escalabilidade. Não é dívida; é precaução.
 - ✅ **`auth_rls_initplan`**: `auth.uid()` envolvido em `(select auth.uid())`
   em todas as políticas. Verificado em ROLLBACK (anon/user/admin). *(feito)*
 - ✅ **`multiple_permissive_policies`**: consolidadas em `posts`, `community_posts`,
   `comments`, `profiles` (UPDATE) e `admin_logs` (SELECT). **Bônus de segurança:**
   o INSERT de `posts`/`community_posts` tinha 2 políticas permissivas OR'd que
   anulavam a regra "banido não posta" — agora é AND numa só política (furo
-  fechado, validado em ROLLBACK e em produção). *(falta só `site_config` SELECT,
-  baixo impacto — policy ALL do owner + select_all=true)*
-- ⬜ **Listagem de buckets públicos** (`avatars`, `post-media`): restringir a
-  policy de SELECT do `storage.objects` para não permitir listar todos os
-  arquivos (o acesso por URL pública continua). Validar que não quebra exibição.
+  fechado, validado em ROLLBACK e em produção). **`site_config` SELECT** também
+  consolidado: a policy `ALL` do owner virou `INSERT/UPDATE/DELETE`, deixando o
+  SELECT só com `select_all`. *(feito)*
+- ✅ **Listagem de buckets públicos** (`avatars`, `post-media`): removidas as
+  policies amplas de SELECT em `storage.objects` que permitiam listar todos os
+  arquivos. Acesso por URL pública (CDN) continua — app só usa `getPublicUrl` +
+  `upload`, nunca `.list()`. *(feito)*
 
 ### Qualidade de código
-- ⬜ Consolidar helpers duplicados: força de senha (`Login`+`AuthConfirm`),
-  cálculo de idade (`UserProfile`+`Header`), data mínima de nascimento
-  (`Login`+`Profile`), regex de username (`useAuth`+`Login`).
-- ⬜ Padronizar tratamento de erro nas queries (junto com a camada de services).
-- ⬜ Padronizar senha mínima (hoje 6 em `Settings`, 8 em `Login`).
+- ✅ Consolidar helpers duplicados: força de senha → `lib/password.js`; idade /
+  data mínima de nascimento → `lib/date.js`. *(feito)*
+- ✅ Padronizar senha mínima em **8** caracteres (Settings agora alinhado ao
+  Login; validação de email no Settings via regex completa). *(feito)*
+- ✅ Acessibilidade: `aria-label` nos botões só-ícone do `PostForm`; `alt` nas
+  imagens de prévia/thumbnail. *(feito)*
+- ✅ Guarda de cancelamento em `PostCard` (evita setState após desmontar / race
+  entre respostas de mídia/likes). *(feito)*
+- ⬜ Padronizar tratamento de erro nas queries (envelopar respostas dos services
+  num formato único `{ data, error }` e tratar na UI de forma consistente).
 - ⬜ Skeletons de loading no lugar de "..." em texto.
+- ⬜ **Baseline de lint** (`npm run lint`): ~37 erros pré-existentes, quase todos
+  `react-hooks/set-state-in-effect` (setState dentro de useEffect) e alguns
+  `exhaustive-deps`. O build é limpo e os padrões funcionam; corrigir exige
+  refatorar effects um a um (derivar estado / usar `key` em vez de setState no
+  effect). Fazer **gradualmente**, arquivo por arquivo, sem mudar comportamento.
 
 ---
 

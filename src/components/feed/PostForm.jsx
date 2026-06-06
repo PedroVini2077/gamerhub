@@ -207,7 +207,7 @@ const PostForm = memo(function PostForm({ onPost }) {
             <div key={i} className="relative rounded-lg overflow-hidden border border-dark-400 bg-dark-700"
               style={{ width: 72, height: 72 }}>
               {m.type === 'image'
-                ? <img src={m.preview} className="w-full h-full object-cover" />
+                ? <img src={m.preview} alt={`Prévia da mídia ${i + 1}`} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                     <Film size={20} className="text-neon-green" />
                     <span className="text-xs text-gray-500 font-mono">vídeo</span>
@@ -237,11 +237,11 @@ const PostForm = memo(function PostForm({ onPost }) {
         <div className="flex gap-1 ml-1">
           {medias.length < 10 && (
             <>
-              <button onClick={() => handleMediaSelect('image')} title="Imagem (máx 5MB)"
+              <button onClick={() => handleMediaSelect('image')} title="Imagem (máx 5MB)" aria-label="Adicionar imagem (máx 5MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Image size={16} />
               </button>
-              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 100MB)"
+              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 100MB)" aria-label="Adicionar vídeo (máx 100MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Film size={16} />
               </button>
@@ -249,12 +249,12 @@ const PostForm = memo(function PostForm({ onPost }) {
           )}
           {!audio && (
             <>
-              <button onClick={() => audioFileRef.current.click()} title="Música (máx 20MB)"
+              <button onClick={() => audioFileRef.current.click()} title="Música (máx 20MB)" aria-label="Adicionar música (máx 20MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Music size={16} />
               </button>
               {!showRecorder && (
-                <button onClick={() => setShowRecorder(true)} title="Gravar áudio"
+                <button onClick={() => setShowRecorder(true)} title="Gravar áudio" aria-label="Gravar áudio"
                   className="text-gray-500 hover:text-neon-green transition-colors p-1">
                   <Mic size={16} />
                 </button>
@@ -262,7 +262,7 @@ const PostForm = memo(function PostForm({ onPost }) {
             </>
           )}
           {!showEmbed && (
-            <button onClick={() => setShowEmbed(true)} title="Link externo"
+            <button onClick={() => setShowEmbed(true)} title="Link externo" aria-label="Adicionar link externo"
               className="text-gray-500 hover:text-neon-green transition-colors p-1">
               <Link size={16} />
             </button>

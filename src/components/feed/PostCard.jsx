@@ -66,13 +66,17 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const canEdit = isOwner && minutesSince <= EDIT_LIMIT_MINUTES;
 
   useEffect(() => {
-    fetchLikes();
-    fetchMedia();
-    return () => clearTimeout(mediaIntervalRef.current);
+    // Guarda de cancelamento: impede setState após desmontar ou troca de post,
+    // evitando que uma resposta antiga sobrescreva a atual.
+    let cancelled = false;
+    fetchLikes(() => cancelled);
+    fetchMedia(() => cancelled);
+    return () => { cancelled = true; clearTimeout(mediaIntervalRef.current); };
   }, [post.id, user]);
 
-  async function fetchMedia() {
+  async function fetchMedia(isCancelled) {
     const data = await fetchPostMedia(post.id);
+    if (isCancelled()) return;
     setPostMedia(data);
 
     const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
@@ -83,6 +87,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
         if (attempt >= delays.length) return;
         mediaIntervalRef.current = setTimeout(async () => {
           const retryData = await fetchPostMedia(post.id);
+          if (isCancelled()) return;
           if (retryData.length > 0) {
             setPostMedia(retryData);
           } else {
@@ -95,8 +100,9 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     }
   }
 
-  async function fetchLikes() {
+  async function fetchLikes(isCancelled) {
     const { count, liked: isLiked } = await fetchLikeStatus(post.id, user?.id);
+    if (isCancelled()) return;
     setLikeCount(count);
     setLiked(isLiked);
   }

@@ -59,8 +59,8 @@ export default function Settings_() {
   }
 
   async function handleChangePassword() {
-    if (!newPassword || newPassword.length < 6) {
-      toast.error('Senha precisa ter pelo menos 6 caracteres');
+    if (!newPassword || newPassword.length < 8) {
+      toast.error('Senha precisa ter pelo menos 8 caracteres');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -81,7 +81,7 @@ export default function Settings_() {
   }
 
   async function handleChangeEmail() {
-    if (!newEmail || !newEmail.includes('@')) {
+    if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail.trim())) {
       toast.error('Email inválido');
       return;
     }
@@ -212,7 +212,7 @@ export default function Settings_() {
 
         {showPasswordForm && (
           <div className="space-y-3 animate-fade-up pb-2">
-            <input id="new-password" aria-label="Nova senha" className="input-gamer" type="password" placeholder="Nova senha (mín. 6 caracteres)"
+            <input id="new-password" aria-label="Nova senha" className="input-gamer" type="password" placeholder="Nova senha (mín. 8 caracteres)"
               value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             <input id="confirm-password" aria-label="Confirmar nova senha" className="input-gamer" type="password" placeholder="Confirmar nova senha"
               value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
