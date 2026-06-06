@@ -24,6 +24,31 @@
   `bg-dark-800 rounded-2xl`, animação `animate-fade-up`. Evitar `window.prompt`
   / `window.confirm` para ações do usuário — usar modais no estilo do site.
 - Tipografia mono para dados técnicos, `font-display` para títulos.
+- **Animações**: usar Framer Motion com as variantes compartilhadas em
+  `src/lib/motion.js` (`fadeTab`, `gridContainer`/`gridCard`, `listContainer`/
+  `listItem`). Não duplicar variantes — importar de lá. Transição de página
+  global via `PageTransition` + `AnimatePresence` no `App.jsx`.
+- **Ícones**: Lucide para UI geral; `react-icons/fa6` para marcas (Discord,
+  Twitch, YouTube) com as cores oficiais. Evitar emojis como ícones de UI.
+
+## Auditoria periódica do projeto (plano em 3 fases)
+
+Quando o dono pedir "auditoria", "testes do site", "caçar bugs/brechas" ou
+similar, seguir este plano em ordem (frontend → backend → banco), uma fase por
+vez, e ao fim de **cada** fase entregar um relatório do que foi encontrado e só
+aplicar correções após aprovação do dono.
+
+- **FASE 1 — Frontend**: build limpo; lint (`rules-of-hooks`, dead code);
+  Rules of Hooks (nenhum hook após early return / condicional); memory leaks
+  (subscriptions/timers/realtime sem cleanup); race conditions; validação de
+  inputs; estados de loading/erro cobertos; acessibilidade básica.
+- **FASE 2 — Backend**: revisar todas as funções `SECURITY DEFINER` (checagem
+  de role correta e explícita via `auth.uid()`); validação de parâmetros;
+  tratamento de erro; risco de SQL injection; lógica de negócio (ban, bloqueio
+  de login, XP).
+- **FASE 3 — Banco**: políticas RLS por tabela; publicação realtime correta
+  (`supabase_realtime`); índices em colunas filtradas/ordenadas; integridade
+  (FKs, cascades); rodar os advisors de segurança e performance do Supabase.
 
 ## Sistemas já implementados
 
