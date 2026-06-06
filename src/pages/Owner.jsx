@@ -429,7 +429,7 @@ function LogsTab() {
                   <span className="text-xs font-mono font-bold text-gray-200">
                     {log.actor_username || 'sistema'}
                   </span>
-                  <span className="text-xs font-mono text-gray-400 truncate">{log.action}</span>
+                  <span className="text-xs font-mono text-gray-400 break-all">{log.action}</span>
                   <span className="text-xs font-mono px-1.5 py-0.5 rounded shrink-0"
                     style={{
                       color:      SEV_COLOR[log.severity] || '#6b7280',
@@ -439,7 +439,7 @@ function LogsTab() {
                   </span>
                 </div>
                 {log.details && (
-                  <p className="text-xs text-gray-600 font-mono mt-0.5 truncate">{log.details}</p>
+                  <p className="text-xs text-gray-600 font-mono mt-0.5 break-words">{log.details}</p>
                 )}
               </div>
               <p className="text-xs font-mono text-gray-700 shrink-0 whitespace-nowrap">
@@ -717,10 +717,12 @@ function NotificacoesTab() {
                 className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
                 <span className="text-sm shrink-0 leading-none mt-0.5">{cfg.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-mono text-gray-200">{n.title}</p>
-                  {n.body && (
-                    <p className="text-xs font-mono text-gray-600 mt-0.5 truncate">{n.body}</p>
-                  )}
+                  <p className="text-xs font-mono break-words" style={{ color: cfg.color }}>
+                    {n.body || n.action}
+                  </p>
+                  <p className="text-xs font-mono text-gray-600 mt-0.5 break-words">
+                    {n.actor && n.actor !== 'sistema' ? `@${n.actor} · ` : ''}{n.action}
+                  </p>
                 </div>
                 <p className="text-xs font-mono text-gray-700 shrink-0 whitespace-nowrap">
                   {new Date(n.created_at).toLocaleString('pt-BR', {

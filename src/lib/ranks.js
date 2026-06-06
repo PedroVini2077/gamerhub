@@ -1,4 +1,5 @@
-import { Shield, Star, Swords, Zap, Target, Flame, Crown, Gem, FileText, Heart, MessageCircle, Tv, PenLine, Camera, Gamepad2, Hash, Radio, Play } from 'lucide-react';
+import { Shield, Star, Swords, Zap, Target, Flame, Crown, Gem, FileText, Heart, MessageCircle, Tv, PenLine, Camera, Gamepad2 } from 'lucide-react';
+import { FaDiscord, FaTwitch, FaYoutube } from 'react-icons/fa6';
 
 export const RANK_TIERS = [
   {
@@ -159,8 +160,8 @@ export const XP_SOURCES = [
   { icon: Tv,           label: 'Criar uma live',      xp: 50, oneTime: false },
   { icon: PenLine,      label: 'Preencher bio',       xp: 50, oneTime: true  },
   { icon: Camera,       label: 'Definir avatar',      xp: 30, oneTime: true  },
-  { icon: Gamepad2,     label: 'Definir plataforma',  xp: 15, oneTime: true  },
-  { icon: Hash,         label: 'Conectar Discord',    xp: 15, oneTime: true  },
-  { icon: Radio,        label: 'Conectar Twitch',     xp: 15, oneTime: true  },
-  { icon: Play,         label: 'Conectar YouTube',    xp: 15, oneTime: true  },
+  { icon: Gamepad2,     label: 'Definir plataforma',  xp: 15, oneTime: true,  color: '#9ca3af' },
+  { icon: FaDiscord,    label: 'Conectar Discord',    xp: 15, oneTime: true,  color: '#5865F2' },
+  { icon: FaTwitch,     label: 'Conectar Twitch',     xp: 15, oneTime: true,  color: '#9146FF' },
+  { icon: FaYoutube,    label: 'Conectar YouTube',    xp: 15, oneTime: true,  color: '#FF0000' },
 ];
