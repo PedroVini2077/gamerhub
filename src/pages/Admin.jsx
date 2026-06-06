@@ -1006,8 +1006,7 @@ export default function Admin() {
         </div>
       ) : (
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={tab} variants={fadeTab} initial="initial" animate="animate" exit="exit"
-            className="space-y-3">
+          <motion.div key={tab} variants={fadeTab} initial="initial" animate="animate" exit="exit">
           {tab === 'users' && (
             <div className="space-y-3">
               {/* Campo de busca */}
