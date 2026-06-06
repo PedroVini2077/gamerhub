@@ -212,7 +212,7 @@ export default function Ranks() {
           {XP_SOURCES.map((src, i) => (
             <div key={i} className="flex items-center justify-between py-2 border-b border-dark-600 last:border-0">
               <div className="flex items-center gap-2">
-                <span className="text-base">{src.emoji}</span>
+                <src.icon size={15} className="text-gray-500 shrink-0" />
                 <span className="text-xs font-mono text-gray-300">{src.label}</span>
                 {src.oneTime && (
                   <span className="text-xs font-mono text-gray-600 bg-dark-600 px-1.5 py-0.5 rounded">

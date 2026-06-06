@@ -1,4 +1,4 @@
-import { Shield, Star, Swords, Zap, Target, Flame, Crown, Gem } from 'lucide-react';
+import { Shield, Star, Swords, Zap, Target, Flame, Crown, Gem, FileText, Heart, MessageCircle, Tv, PenLine, Camera, Gamepad2, Hash, Radio, Play } from 'lucide-react';
 
 export const RANK_TIERS = [
   {
@@ -153,14 +153,14 @@ export function getBorderForProfile(profile, xp = null) {
 }
 
 export const XP_SOURCES = [
-  { emoji: '📝', label: 'Criar um post',        xp: 20,  oneTime: false },
-  { emoji: '❤️', label: 'Receber um like',      xp: 5,   oneTime: false },
-  { emoji: '💬', label: 'Fazer um comentário',  xp: 3,   oneTime: false },
-  { emoji: '📺', label: 'Criar uma live',        xp: 50,  oneTime: false },
-  { emoji: '✍️', label: 'Preencher bio',         xp: 50,  oneTime: true  },
-  { emoji: '🖼️', label: 'Definir avatar',        xp: 30,  oneTime: true  },
-  { emoji: '🎮', label: 'Definir plataforma',    xp: 15,  oneTime: true  },
-  { emoji: '🎮', label: 'Conectar Discord',       xp: 15,  oneTime: true  },
-  { emoji: '🟣', label: 'Conectar Twitch',        xp: 15,  oneTime: true  },
-  { emoji: '🔴', label: 'Conectar YouTube',       xp: 15,  oneTime: true  },
+  { icon: FileText,     label: 'Criar um post',       xp: 20, oneTime: false },
+  { icon: Heart,        label: 'Receber um like',     xp: 5,  oneTime: false },
+  { icon: MessageCircle,label: 'Fazer um comentário', xp: 3,  oneTime: false },
+  { icon: Tv,           label: 'Criar uma live',      xp: 50, oneTime: false },
+  { icon: PenLine,      label: 'Preencher bio',       xp: 50, oneTime: true  },
+  { icon: Camera,       label: 'Definir avatar',      xp: 30, oneTime: true  },
+  { icon: Gamepad2,     label: 'Definir plataforma',  xp: 15, oneTime: true  },
+  { icon: Hash,         label: 'Conectar Discord',    xp: 15, oneTime: true  },
+  { icon: Radio,        label: 'Conectar Twitch',     xp: 15, oneTime: true  },
+  { icon: Play,         label: 'Conectar YouTube',    xp: 15, oneTime: true  },
 ];
