@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { fadeTab, gridContainer, gridCard } from '../lib/motion';
 import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -57,7 +59,7 @@ function UnlockCountdownBtn({ onConfirm }) {
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="card p-5 flex items-center gap-4">
+    <motion.div variants={gridCard} className="card p-5 flex items-center gap-4">
       <div className={`w-10 h-10 rounded flex items-center justify-center ${color}`}>
         <Icon size={18} />
       </div>
@@ -65,7 +67,7 @@ function StatCard({ icon: Icon, label, value, color }) {
         <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">{label}</p>
         <p className="text-2xl font-display font-bold text-white">{value}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -970,11 +972,12 @@ export default function Admin() {
         <p className="text-xs text-gray-500 font-mono">Área restrita. Acesso controlado por hierarquia.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <motion.div className="grid grid-cols-3 gap-3"
+        variants={gridContainer} initial="initial" animate="animate">
         <StatCard icon={Users} label="Usuários" value={stats.users} color="bg-neon-cyan/10 text-neon-cyan" />
         <StatCard icon={FileText} label="Posts" value={stats.posts} color="bg-neon-green/10 text-neon-green" />
         <StatCard icon={Key} label="Keys" value={stats.keys} color="bg-neon-purple/10 text-neon-purple" />
-      </div>
+      </motion.div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 pt-2">
         {tabs.map(({ id, label, icon: Icon, badge }) => (
@@ -1002,7 +1005,9 @@ export default function Admin() {
           <p className="font-mono text-gray-500 text-sm animate-pulse">Carregando...</p>
         </div>
       ) : (
-        <>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={tab} variants={fadeTab} initial="initial" animate="animate" exit="exit"
+            className="space-y-3">
           {tab === 'users' && (
             <div className="space-y-3">
               {/* Campo de busca */}
@@ -1579,7 +1584,8 @@ export default function Admin() {
               </div>
             </div>
           )}
-        </>
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
   );

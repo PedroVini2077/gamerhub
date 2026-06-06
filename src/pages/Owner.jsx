@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, memo, useDeferredValue } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fadeTab, gridContainer, gridCard, listContainer, listItem } from '../lib/motion';
 import {
   Gem, Activity, Users, FileText, Settings, Shield,
-  Zap, Key, ChevronDown, Search, RefreshCw,
+  Key, ChevronDown, Search, RefreshCw,
   ToggleLeft, ToggleRight, AlertTriangle, UserX, UserCheck,
   Bell, TrendingUp, Mail, Wifi,
 } from 'lucide-react';
@@ -15,26 +16,6 @@ import ConfirmModal from '../components/ui/ConfirmModal';
 
 const OC = '#f97316';
 const OG = 'rgba(249,115,22,0.15)';
-
-const fadeTab = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -4, transition: { duration: 0.12 } },
-};
-const gridContainer = {
-  animate: { transition: { staggerChildren: 0.05 } },
-};
-const gridCard = {
-  initial: { opacity: 0, y: 16, scale: 0.97 },
-  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: 'easeOut' } },
-};
-const listContainer = {
-  animate: { transition: { staggerChildren: 0.04 } },
-};
-const listItem = {
-  initial: { opacity: 0, x: -10 },
-  animate: { opacity: 1, x: 0, transition: { duration: 0.2 } },
-};
 
 // ─── Painel Tab ──────────────────────────────────────────────────────────────
 

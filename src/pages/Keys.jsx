@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { fadeTab, listContainer, listItem } from '../lib/motion';
 import { supabase } from '../lib/supabase';
-import { Key, Tag, Copy, Check, ExternalLink } from 'lucide-react';
+import { Key, Copy, Check, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function KeyCard({ item }) {
@@ -100,26 +102,38 @@ export default function Keys() {
 
       {loading ? (
         <div className="card p-5 animate-pulse h-32" />
-      ) : tab === 'keys' ? (
-        keys.length === 0 ? (
-          <div className="card p-8 text-center">
-            <p className="font-mono text-gray-500 text-sm">Sem keys disponíveis no momento</p>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {keys.map(k => <KeyCard key={k.id} item={k} />)}
-          </div>
-        )
       ) : (
-        promos.length === 0 ? (
-          <div className="card p-8 text-center">
-            <p className="font-mono text-gray-500 text-sm">Sem promoções ativas no momento</p>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {promos.map(p => <PromoCard key={p.id} item={p} />)}
-          </div>
-        )
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={tab} variants={fadeTab} initial="initial" animate="animate" exit="exit">
+            {tab === 'keys' ? (
+              keys.length === 0 ? (
+                <div className="card p-8 text-center">
+                  <p className="font-mono text-gray-500 text-sm">Sem keys disponíveis no momento</p>
+                </div>
+              ) : (
+                <motion.div className="grid gap-3 sm:grid-cols-2"
+                  variants={listContainer} initial="initial" animate="animate">
+                  {keys.map(k => (
+                    <motion.div key={k.id} variants={listItem}><KeyCard item={k} /></motion.div>
+                  ))}
+                </motion.div>
+              )
+            ) : (
+              promos.length === 0 ? (
+                <div className="card p-8 text-center">
+                  <p className="font-mono text-gray-500 text-sm">Sem promoções ativas no momento</p>
+                </div>
+              ) : (
+                <motion.div className="grid gap-3 sm:grid-cols-2"
+                  variants={listContainer} initial="initial" animate="animate">
+                  {promos.map(p => (
+                    <motion.div key={p.id} variants={listItem}><PromoCard item={p} /></motion.div>
+                  ))}
+                </motion.div>
+              )
+            )}
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
   );

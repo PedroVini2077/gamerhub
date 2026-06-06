@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { listContainer, listItem } from '../lib/motion';
 import { supabase } from '../lib/supabase';
 import MuralCard from '../components/community/MuralCard';
 import MuralForm from '../components/community/MuralForm';
@@ -49,9 +51,14 @@ export default function Community() {
           <p className="font-mono text-gray-500 text-sm">Mural vazio. Quebra o gelo!</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {items.map(i => <MuralCard key={i.id} item={i} onDelete={fetch} />)}
-        </div>
+        <motion.div className="space-y-3"
+          variants={listContainer} initial="initial" animate="animate">
+          {items.map(i => (
+            <motion.div key={i.id} variants={listItem}>
+              <MuralCard item={i} onDelete={fetch} />
+            </motion.div>
+          ))}
+        </motion.div>
       )}
     </div>
   );

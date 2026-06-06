@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom';
-import { X, ZoomIn } from 'lucide-react';
+import { X } from 'lucide-react';
 
 export default function MediaLightbox({ src, type, title, onClose }) {
   return createPortal(

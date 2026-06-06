@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { listContainer, listItem } from '../lib/motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, Users, VolumeX } from 'lucide-react';
@@ -563,9 +565,11 @@ export default function Lives() {
           <p className="text-gray-600 font-mono text-xs mt-1">Volte mais tarde!</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <motion.div className="space-y-4"
+          variants={listContainer} initial="initial" animate="animate">
           {lives.map(live => (
-            <div key={live.id} className="card p-4 cursor-pointer hover:border-neon-green/30 transition-all"
+            <motion.div key={live.id} variants={listItem}
+              className="card p-4 cursor-pointer hover:border-neon-green/30 transition-all"
               onClick={() => enterLive(live)}>
               <div className="flex items-center gap-3 mb-3">
                 <AvatarPopup profile={live.profiles} size={36} />
@@ -590,9 +594,9 @@ export default function Lives() {
                 </span>
                 <span className="text-xs font-mono text-neon-green">Entrar na live →</span>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );

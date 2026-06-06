@@ -22,7 +22,6 @@ const PostForm = memo(function PostForm({ onPost }) {
   const [embedUrl, setEmbedUrl] = useState('');
   const [showEmbed, setShowEmbed] = useState(false);
   const [isLive, setIsLive] = useState(false);
-  const [expiresAt, setExpiresAt] = useState('');
   const [showRecorder, setShowRecorder] = useState(false);
   const [activeType, setActiveType] = useState(null);
   const fileRef = useRef(null);
@@ -135,7 +134,7 @@ const PostForm = memo(function PostForm({ onPost }) {
       );
       setTitle(''); setContent(''); setMedias([]);
       setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
-      setIsLive(false); setExpiresAt('');
+      setIsLive(false);
       removeAudio();
       onPost?.();
     } catch (err) {

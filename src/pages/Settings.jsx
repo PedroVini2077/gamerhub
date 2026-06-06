@@ -26,7 +26,7 @@ function Toggle({ value, onChange }) {
 }
 
 export default function Settings_() {
-  const { user, profile, refreshProfile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
@@ -261,9 +262,12 @@ export default function Profile() {
               progress.needed != null ? (
                 <>
                   <div className="w-full h-1.5 bg-dark-500 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 6px ${rank.glow}` }}
+                    <motion.div
+                      className="h-full rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress.pct}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut', delay: 0.15 }}
+                      style={{ background: rank.color, boxShadow: `0 0 6px ${rank.glow}` }}
                     />
                   </div>
                   <p className="text-xs font-mono text-gray-500">

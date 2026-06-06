@@ -36,6 +36,7 @@ export default function MediaCarousel({ items, postTitle }) {
   const [lightbox, setLightbox] = useState(false);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+  const mouseStartX = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -64,7 +65,6 @@ export default function MediaCarousel({ items, postTitle }) {
     touchStartX.current = null;
   }
 
-  const mouseStartX = useRef(null);
   function handleMouseDown(e) { mouseStartX.current = e.clientX; }
   function handleMouseUp(e) {
     if (mouseStartX.current === null) return;

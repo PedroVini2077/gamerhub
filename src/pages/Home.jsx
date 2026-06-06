@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { listContainer, listItem } from '../lib/motion';
 import { supabase } from '../lib/supabase';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
@@ -139,16 +141,14 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <motion.div className="space-y-4"
+            variants={listContainer} initial="initial" animate="animate">
             {filtered.map(p => (
-              <PostCard
-                key={p.id}
-                post={p}
-                onDelete={fetchPosts}
-
-              />
+              <motion.div key={p.id} variants={listItem}>
+                <PostCard post={p} onDelete={fetchPosts} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
       <RightPanel />

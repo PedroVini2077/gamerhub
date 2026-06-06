@@ -6,7 +6,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import Avatar from './Avatar';
 import BanModal from './BanModal';
 import { X, ExternalLink, Ban } from 'lucide-react';
-import { getRankLabel, getBorderForProfile, OWNER_RANK } from '../../lib/ranks';
+import { getRankLabel, getBorderForProfile } from '../../lib/ranks';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin', owner: 'Fundador' };
