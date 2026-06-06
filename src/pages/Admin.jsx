@@ -707,14 +707,12 @@ export default function Admin() {
   }
 
   async function handleRoleChange(userId, newRole) {
-    const target = users.find(u => u.id === userId);
-    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+    // Troca de role via RPC com hierarquia validada no servidor.
+    // O log de auditoria é gravado dentro da própria função admin_set_role.
+    const { error } = await supabase.rpc('admin_set_role', { p_user_id: userId, p_new_role: newRole });
     if (error) toast.error('Sem permissão ou erro ao atualizar');
     else {
       toast.success(`Role → ${newRole}`);
-      await logAction('admin_role_changed',
-        `Role de @${target?.username || userId} alterada para "${newRole}" por @${profile?.username}`,
-        'admin', 'info');
       fetchAll();
     }
   }
