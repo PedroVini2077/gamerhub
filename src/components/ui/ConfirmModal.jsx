@@ -5,6 +5,8 @@ const ACCENTS = {
   green:  { border: 'border-neon-green/30', glow: '#22c55e15', text: 'text-neon-green',  btnBg: '#22c55e15', btnColor: '#22c55e', btnBorder: '#22c55e40' },
   red:    { border: 'border-red-500/30',    glow: '#ef444415', text: 'text-red-400',     btnBg: '#ef444415', btnColor: '#f87171', btnBorder: '#ef444440' },
   yellow: { border: 'border-yellow-400/30', glow: '#eab30815', text: 'text-yellow-400',  btnBg: '#eab30815', btnColor: '#fbbf24', btnBorder: '#eab30840' },
+  orange: { border: 'border-orange-400/30', glow: '#f9731615', text: 'text-orange-400',  btnBg: '#f9731615', btnColor: '#f97316', btnBorder: '#f9731640' },
+  purple: { border: 'border-purple-500/30', glow: '#a855f715', text: 'text-purple-400',  btnBg: '#a855f715', btnColor: '#c084fc', btnBorder: '#a855f740' },
 };
 
 export default function ConfirmModal({

@@ -1,10 +1,13 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './hooks/useAuth.jsx';
+import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
+import { useRole } from './hooks/useRole';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import ErrorBoundary from './components/ErrorBoundary';
+import GlobalBanner from './components/ui/GlobalBanner';
+import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
 import Home from './pages/Home';
@@ -21,6 +24,7 @@ const Settings    = lazy(() => import('./pages/Settings'));
 const UserProfile = lazy(() => import('./pages/UserProfile'));
 const Lives       = lazy(() => import('./pages/Lives'));
 const Ranks       = lazy(() => import('./pages/Ranks'));
+const Owner       = lazy(() => import('./pages/Owner'));
 
 function PageLoader() {
   return (
@@ -30,20 +34,66 @@ function PageLoader() {
   );
 }
 
+function MaintenancePage() {
+  return (
+    <div className="flex items-center justify-center min-h-64 py-20">
+      <div className="card p-10 text-center max-w-sm space-y-3">
+        <p className="text-4xl">🔧</p>
+        <p className="font-display text-lg text-gray-200">Em Manutenção</p>
+        <p className="text-xs font-mono text-gray-500 leading-relaxed">
+          O GamerHub está temporariamente em manutenção. Voltamos em breve!
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function Layout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [maintenance, setMaintenance]   = useState(false);
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const location  = useLocation();
+  const { user, profile } = useAuth();
+  const { isOwner } = useRole();
+
+  useEffect(() => {
+    supabase.from('site_config').select('value').eq('key', 'maintenance_mode').maybeSingle()
+      .then(({ data }) => {
+        setMaintenance(data?.value === 'true');
+        setConfigLoaded(true);
+      });
+
+    const ch = supabase.channel('layout_maint')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_config' }, payload => {
+        if (payload.new?.key === 'maintenance_mode') {
+          setMaintenance(payload.new.value === 'true');
+        }
+      }).subscribe();
+
+    return () => supabase.removeChannel(ch);
+  }, []);
+
+  // Só bloqueia quando: config carregada + manutenção ativa + perfil resolvido + não é owner
+  // profileSettled evita flash de manutenção enquanto o perfil do owner carrega
+  const profileSettled = !user || profile !== null;
+  const showMaintenance = configLoaded && maintenance && profileSettled && !isOwner;
+
   return (
     <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="md:ml-60 flex flex-col min-h-screen">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 pt-20 pb-8 px-4 md:px-6 max-w-6xl w-full mx-auto">
-          <ErrorBoundary key={location.pathname}>
-            <Suspense fallback={<PageLoader />}>
-              {children}
-            </Suspense>
-          </ErrorBoundary>
+          <GlobalBanner />
+          {showMaintenance ? (
+            <MaintenancePage />
+          ) : (
+            <ErrorBoundary key={location.pathname}>
+              <Suspense fallback={<PageLoader />}>
+                {children}
+              </Suspense>
+            </ErrorBoundary>
+          )}
         </main>
       </div>
     </div>
@@ -80,6 +130,7 @@ export default function App() {
           <Route path="/lives" element={<Layout><Lives /></Layout>} />
           <Route path="/lives/:id" element={<Layout><Lives /></Layout>} />
           <Route path="/ranks" element={<Layout><Ranks /></Layout>} />
+          <Route path="/owner" element={<Layout><Owner /></Layout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>

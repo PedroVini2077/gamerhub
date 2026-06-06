@@ -1,6 +1,6 @@
-import { Tv, Trophy } from 'lucide-react';
+import { Tv, Trophy, Gem } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Key, User, Zap, X, Shield, Settings, FileText } from 'lucide-react';
+import { Home, Users, Key, User, Zap, X, Shield, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
@@ -11,7 +11,7 @@ import { supabase } from '../../lib/supabase';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
-  const { isAdmin, role } = useRole();
+  const { isAdmin, isOwner, role } = useRole();
   const [stats, setStats] = useState({ users: 0, postsToday: 0, keys: 0 });
 
   async function fetchStats() {
@@ -38,8 +38,9 @@ export default function Sidebar({ open, onClose }) {
     { to: '/ranks', icon: Trophy, label: 'Ranks' },
     { to: '/settings', icon: Settings, label: 'Configurações' },
     ...(isAdmin ? [{ to: '/admin', icon: Shield, label: 'Admin', highlight: true }] : []),
-    { to: '/lives', icon: Tv, label: 'Lives' }, 
- ];
+    ...(isOwner ? [{ to: '/owner', icon: Gem,    label: 'Fundador', ownerLink: true }] : []),
+    { to: '/lives', icon: Tv, label: 'Lives' },
+  ];
 
   return (
     <>
@@ -63,7 +64,7 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav className="flex-1 py-6 px-2 space-y-1">
-          {nav.map(({ to, icon: Icon, label, highlight }) => (
+          {nav.map(({ to, icon: Icon, label, highlight, ownerLink }) => (
             <NavLink
               key={to}
               to={to}
@@ -71,12 +72,16 @@ export default function Sidebar({ open, onClose }) {
               className={({ isActive }) => `
                 flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-all font-body tracking-wide
                 ${isActive
-                  ? highlight
-                    ? 'bg-neon-purple/10 border-l-2 border-neon-purple text-neon-purple'
-                    : 'bg-neon-green/10 border-l-2 border-neon-green text-neon-green'
-                  : highlight
-                    ? 'text-neon-purple/60 hover:text-neon-purple hover:bg-dark-600 border-l-2 border-transparent'
-                    : 'text-gray-400 hover:text-white hover:bg-dark-600 border-l-2 border-transparent'
+                  ? ownerLink
+                    ? 'bg-orange-400/10 border-l-2 border-orange-400 text-orange-400'
+                    : highlight
+                      ? 'bg-neon-purple/10 border-l-2 border-neon-purple text-neon-purple'
+                      : 'bg-neon-green/10 border-l-2 border-neon-green text-neon-green'
+                  : ownerLink
+                    ? 'text-orange-400/50 hover:text-orange-400 hover:bg-dark-600 border-l-2 border-transparent'
+                    : highlight
+                      ? 'text-neon-purple/60 hover:text-neon-purple hover:bg-dark-600 border-l-2 border-transparent'
+                      : 'text-gray-400 hover:text-white hover:bg-dark-600 border-l-2 border-transparent'
                 }
               `}
               onClick={onClose}
