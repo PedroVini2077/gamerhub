@@ -25,12 +25,11 @@
 - ⬜ **Ativar proteção contra senha vazada (HIBP)** no Auth do Supabase.
   *Ação manual no painel (Authentication → Policies) — precisa do dono.*
 - ⬜ **Mover extensão `pg_net`** do schema `public` para um schema dedicado.
-- ⬜ **Endurecer INSERT de `notifications`** — hoje a policy é "sempre-true"
-  (qualquer usuário pode criar notificação para qualquer um, com qualquer texto).
-  O cliente insere direto em likes/comentários (`PostCard`, `CommentSection`).
-  Correção correta: gerar as notificações por **trigger/RPC SECURITY DEFINER**
-  (a partir de `post_likes`/`comments`) e então restringir/remover o INSERT
-  direto do cliente. *(não feito agora para não quebrar likes/comentários)*
+- ✅ **Endurecer INSERT de `notifications`** — feito: notificações de like/
+  comentário agora são geradas por trigger SECURITY DEFINER
+  (`notify_post_like` / `notify_post_comment`), respeitando notif_likes/
+  notif_comments; policy "sempre-true" removida e INSERT direto do cliente
+  retirado de `PostCard`/`CommentSection`. *(documentar no README)*
 
 ### Frontend / Arquitetura
 - ⬜ **Camada de Services (`src/services/`)** — migrar **gradualmente** todo o

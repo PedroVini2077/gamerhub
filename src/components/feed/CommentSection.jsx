@@ -50,7 +50,7 @@ function CommentCard({ comment, onDelete }) {
   );
 }
 
-const CommentSection = memo(function CommentSection({ postId, postOwnerId, registerRefresh }) {
+const CommentSection = memo(function CommentSection({ postId, registerRefresh }) {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState([]);
   const [text, setText] = useState('');
@@ -99,13 +99,8 @@ const CommentSection = memo(function CommentSection({ postId, postOwnerId, regis
       logAudit('comment_added', `@${profile?.username} comentou em um post`, { category: 'content' });
       setText('');
       fetchComments();
-      if (postOwnerId && postOwnerId !== user?.id) {
-        await supabase.from('notifications').insert({
-          user_id: postOwnerId,
-          type: 'comment',
-          message: `${profile?.username || 'Alguém'} comentou no seu post`,
-        });
-      }
+      // A notificação ao dono do post é criada por trigger no banco
+      // (notify_post_comment), respeitando a preferência notif_comments.
     }
     setLoading(false);
   }

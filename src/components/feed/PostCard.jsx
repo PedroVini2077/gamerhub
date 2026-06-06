@@ -118,12 +118,8 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     } else {
       await supabase.from('post_likes').insert({ post_id: post.id, user_id: user.id });
       setLiked(true); setLikeCount(c => c + 1);
-      if (post.user_id && post.user_id !== user.id) {
-        await supabase.from('notifications').insert({
-          user_id: post.user_id, type: 'like',
-          message: `${profile?.username || 'Alguém'} curtiu seu post "${post.title}"`,
-        });
-      }
+      // A notificação ao dono do post é criada por trigger no banco
+      // (notify_post_like), respeitando a preferência notif_likes.
     }
     setLikeLoading(false);
   }
