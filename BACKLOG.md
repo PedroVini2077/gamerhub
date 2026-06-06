@@ -25,6 +25,12 @@
 - ⬜ **Ativar proteção contra senha vazada (HIBP)** no Auth do Supabase.
   *Ação manual no painel (Authentication → Policies) — precisa do dono.*
 - ⬜ **Mover extensão `pg_net`** do schema `public` para um schema dedicado.
+- ⬜ **Endurecer INSERT de `notifications`** — hoje a policy é "sempre-true"
+  (qualquer usuário pode criar notificação para qualquer um, com qualquer texto).
+  O cliente insere direto em likes/comentários (`PostCard`, `CommentSection`).
+  Correção correta: gerar as notificações por **trigger/RPC SECURITY DEFINER**
+  (a partir de `post_likes`/`comments`) e então restringir/remover o INSERT
+  direto do cliente. *(não feito agora para não quebrar likes/comentários)*
 
 ### Frontend / Arquitetura
 - ⬜ **Camada de Services (`src/services/`)** — migrar **gradualmente** todo o
@@ -44,6 +50,17 @@
 - ⬜ **`Owner.jsx` (906)** → `components/owner/*` (um arquivo por aba).
 - ⬜ **`Lives.jsx` (603)** → `LivePlayer`, `ChatPanel`, `ModPanel`, `LivesList`.
 - ⬜ **`Login.jsx` (416)** → `LoginForm`, `RegisterForm`, `ForgotForm`.
+
+### Banco / Performance (impacto cresce com o volume — hoje é pequeno)
+- ⬜ **`auth_rls_initplan`**: envolver `auth.uid()` em subquery
+  `(select auth.uid())` nas ~43 políticas RLS restantes, para o Postgres avaliar
+  uma vez por query em vez de por linha. *(já aplicado nas políticas novas)*
+- ⬜ **`multiple_permissive_policies`**: consolidar políticas permissivas
+  duplicadas por tabela/ação (`posts`, `comments`, `community_posts`,
+  `admin_logs` SELECT, `site_config` SELECT, etc.).
+- ⬜ **Listagem de buckets públicos** (`avatars`, `post-media`): restringir a
+  policy de SELECT do `storage.objects` para não permitir listar todos os
+  arquivos (o acesso por URL pública continua). Validar que não quebra exibição.
 
 ### Qualidade de código
 - ⬜ Consolidar helpers duplicados: força de senha (`Login`+`AuthConfirm`),
