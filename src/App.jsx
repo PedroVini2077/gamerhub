@@ -7,6 +7,7 @@ import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import ErrorBoundary from './components/ErrorBoundary';
 import GlobalBanner from './components/ui/GlobalBanner';
+import FeatureGate from './components/ui/FeatureGate';
 import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
@@ -121,14 +122,14 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/auth/confirm" element={<AuthConfirm />} />
           <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/community" element={<Layout><Community /></Layout>} />
-          <Route path="/keys" element={<Layout><Keys /></Layout>} />
+          <Route path="/community" element={<Layout><FeatureGate flag="feature_community"><Community /></FeatureGate></Layout>} />
+          <Route path="/keys" element={<Layout><FeatureGate flag="feature_keys"><Keys /></FeatureGate></Layout>} />
           <Route path="/profile" element={<Layout><Profile /></Layout>} />
           <Route path="/u/:username" element={<Layout><UserProfile /></Layout>} />
           <Route path="/settings" element={<Layout><Settings /></Layout>} />
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
-          <Route path="/lives" element={<Layout><Lives /></Layout>} />
-          <Route path="/lives/:id" element={<Layout><Lives /></Layout>} />
+          <Route path="/lives" element={<Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout>} />
+          <Route path="/lives/:id" element={<Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout>} />
           <Route path="/ranks" element={<Layout><Ranks /></Layout>} />
           <Route path="/owner" element={<Layout><Owner /></Layout>} />
           <Route path="*" element={<NotFound />} />

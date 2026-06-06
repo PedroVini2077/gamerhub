@@ -91,6 +91,21 @@ export function AuthProvider({ children }) {
     return () => { supabase.removeChannel(channel); clearInterval(poll); };
   }, [user?.id]);
 
+  const [onlineCount, setOnlineCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const ch = supabase.channel('gamerhub-presence');
+    ch.on('presence', { event: 'sync' }, () => {
+      setOnlineCount(Object.keys(ch.presenceState()).length);
+    }).subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await ch.track({ user_id: user.id });
+      }
+    });
+    return () => supabase.removeChannel(ch);
+  }, [user?.id]);
+
   async function signInWithEmail(email, password) {
     if (!email?.trim() || !password) {
       return { error: { message: 'Preencha email e senha.' } };
@@ -186,7 +201,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, onlineCount, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>
       {bannedScreen && (
         <BannedScreen
           reason={bannedScreen.reason}

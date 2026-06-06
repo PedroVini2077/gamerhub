@@ -3,19 +3,21 @@ import {
   Gem, Activity, Users, FileText, Settings, Shield,
   Zap, Key, ChevronDown, Search, RefreshCw,
   ToggleLeft, ToggleRight, AlertTriangle, UserX, UserCheck,
+  Bell, TrendingUp, Mail, Wifi,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useRole } from '../hooks/useRole';
+import { useAuth } from '../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
-const OC = '#f97316'; // owner color
-const OG = 'rgba(249,115,22,0.15)'; // owner glow
+const OC = '#f97316';
+const OG = 'rgba(249,115,22,0.15)';
 
 // ─── Painel Tab ──────────────────────────────────────────────────────────────
 
-function PainelTab() {
+function PainelTab({ onlineCount }) {
   const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,20 +46,20 @@ function PainelTab() {
   );
 
   const row1 = [
-    { label: 'Membros',      value: stats.total_users,  color: '#22d3ee', Icon: Users   },
-    { label: 'Admins',       value: stats.admins,        color: '#a855f7', Icon: Shield  },
-    { label: 'Banidos',      value: stats.banned_users,  color: '#ef4444', Icon: UserX   },
-    { label: 'Lives Ativas', value: stats.active_lives,  color: '#39ff14', Icon: Zap     },
+    { label: 'Membros',  value: stats.total_users,  color: '#22d3ee', Icon: Users  },
+    { label: 'Online',   value: onlineCount,         color: '#39ff14', Icon: Wifi   },
+    { label: 'Admins',   value: stats.admins,        color: '#a855f7', Icon: Shield },
+    { label: 'Banidos',  value: stats.banned_users,  color: '#ef4444', Icon: UserX  },
   ];
   const row2 = [
-    { label: 'Posts Hoje',   value: stats.posts_today,  color: '#fbbf24', Icon: FileText },
-    { label: 'Posts Semana', value: stats.posts_week,   color: OC,        Icon: FileText },
-    { label: 'Total Posts',  value: stats.total_posts,  color: '#d1d5db', Icon: FileText },
-    { label: 'Keys',         value: stats.total_keys,   color: '#39ff14', Icon: Key      },
+    { label: 'Posts Hoje', value: stats.posts_today, color: '#fbbf24', Icon: FileText },
+    { label: 'Posts 30d',  value: stats.posts_30d,   color: OC,        Icon: FileText },
+    { label: 'Keys Hoje',  value: stats.keys_today,  color: '#22d3ee', Icon: Key     },
+    { label: 'Keys Total', value: stats.total_keys,  color: '#39ff14', Icon: Key     },
   ];
 
-  const daily   = stats.daily_signups || [];
-  const maxCnt  = Math.max(...daily.map(d => d.count), 1);
+  const daily  = stats.daily_signups || [];
+  const maxCnt = Math.max(...daily.map(d => d.count), 1);
 
   return (
     <div className="space-y-4">
@@ -85,7 +87,6 @@ function PainelTab() {
         ))}
       </div>
 
-      {/* Gráfico de novos membros */}
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">
@@ -143,7 +144,6 @@ function UserRow({ user, onSetRole, onBan }) {
       >
         <div className="w-2 h-2 rounded-full shrink-0"
           style={{ background: ROLE_COLOR[user.role] || '#6b7280' }} />
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-mono text-white">{user.username}</span>
@@ -166,46 +166,69 @@ function UserRow({ user, onSetRole, onBan }) {
             {ROLE_LABEL[user.role] || user.role} · {user.xp ?? 0} XP · {user.post_count ?? 0} posts
           </p>
         </div>
-
         <ChevronDown size={14}
           className={`text-gray-600 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="px-4 pb-3 pt-2 border-t border-dark-600 flex flex-wrap gap-2 items-center">
-          <Link to={`/u/${user.username}`}
-            className="px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-400 hover:text-white hover:border-gray-400 transition-colors">
-            Ver perfil
-          </Link>
+        <div className="px-4 pb-3 pt-2 border-t border-dark-600 space-y-2">
+          <div className="space-y-1">
+            {user.email && (
+              <p className="flex items-center gap-1.5 text-xs font-mono text-gray-600">
+                <Mail size={10} className="shrink-0" />{user.email}
+              </p>
+            )}
+            {user.banned && user.ban_reason && (
+              <p className="text-xs font-mono text-red-400/70">
+                Motivo: {user.ban_reason}{user.ban_details ? ` — ${user.ban_details}` : ''}
+              </p>
+            )}
+            {user.banned_by_username && (
+              <p className="text-xs font-mono text-gray-600">
+                Banido por @{user.banned_by_username}
+                {user.banned_at
+                  ? ` em ${new Date(user.banned_at).toLocaleDateString('pt-BR')}`
+                  : ''}
+              </p>
+            )}
+            {user.ban_count > 0 && (
+              <p className="text-xs font-mono text-gray-700">{user.ban_count}× banido no histórico</p>
+            )}
+          </div>
 
-          {!isOwnerUser && (
-            <>
-              {['user', 'admin', 'super_admin'].map(r => (
-                <button key={r}
-                  disabled={user.role === r}
-                  onClick={() => onSetRole(user.id, user.username, r)}
-                  className={`px-3 py-1.5 text-xs font-mono border rounded transition-colors ${
-                    user.role === r
-                      ? 'border-dark-500 text-dark-400 cursor-default'
-                      : 'border-dark-400 text-gray-500 hover:border-orange-400/50 hover:text-orange-400'
+          <div className="flex flex-wrap gap-2 items-center">
+            <Link to={`/u/${user.username}`}
+              className="px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-400 hover:text-white hover:border-gray-400 transition-colors">
+              Ver perfil
+            </Link>
+
+            {!isOwnerUser && (
+              <>
+                {['user', 'admin', 'super_admin'].map(r => (
+                  <button key={r}
+                    disabled={user.role === r}
+                    onClick={() => onSetRole(user.id, user.username, r)}
+                    className={`px-3 py-1.5 text-xs font-mono border rounded transition-colors ${
+                      user.role === r
+                        ? 'border-dark-500 text-dark-400 cursor-default'
+                        : 'border-dark-400 text-gray-500 hover:border-orange-400/50 hover:text-orange-400'
+                    }`}>
+                    → {ROLE_LABEL[r]}
+                  </button>
+                ))}
+                <div className="flex-1" />
+                <button onClick={() => onBan(user)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border rounded transition-colors ${
+                    user.banned
+                      ? 'border-green-400/30 text-green-400 hover:bg-green-400/10'
+                      : 'border-red-400/30 text-red-400 hover:bg-red-400/10'
                   }`}>
-                  → {ROLE_LABEL[r]}
+                  {user.banned ? <UserCheck size={12} /> : <UserX size={12} />}
+                  {user.banned ? 'Desbanir' : 'Banir'}
                 </button>
-              ))}
-
-              <div className="flex-1" />
-
-              <button onClick={() => onBan(user)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border rounded transition-colors ${
-                  user.banned
-                    ? 'border-green-400/30 text-green-400 hover:bg-green-400/10'
-                    : 'border-red-400/30 text-red-400 hover:bg-red-400/10'
-                }`}>
-                {user.banned ? <UserCheck size={12} /> : <UserX size={12} />}
-                {user.banned ? 'Desbanir' : 'Banir'}
-              </button>
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -340,8 +363,8 @@ const SEV_COLOR = { info: '#6b7280', warning: '#f59e0b', critical: '#ef4444' };
 const CAT_EMOJI = { auth: '🔐', security: '🛡️', content: '📝', admin: '⚙️', system: '🔧' };
 
 function LogsTab() {
-  const [logs, setLogs]       = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs]         = useState([]);
+  const [loading, setLoading]   = useState(true);
   const [category, setCategory] = useState('');
   const [severity, setSeverity] = useState('');
   const [offset, setOffset]     = useState(0);
@@ -363,7 +386,7 @@ function LogsTab() {
   useEffect(() => { setOffset(0); load(0); }, [load]);
 
   function prev() { const o = Math.max(0, offset - LIMIT); setOffset(o); load(o); }
-  function next() { const o = offset + LIMIT;               setOffset(o); load(o); }
+  function next() { const o = offset + LIMIT; setOffset(o); load(o); }
 
   return (
     <div className="space-y-4">
@@ -453,7 +476,7 @@ function LogsTab() {
 
 const BANNER_COLORS = [
   { label: 'Laranja', value: 'orange', hex: '#f97316' },
-  { label: 'Vermelho', value: 'red',    hex: '#ef4444' },
+  { label: 'Vermelho', value: 'red',   hex: '#ef4444' },
   { label: 'Amarelo',  value: 'yellow', hex: '#eab308' },
   { label: 'Verde',    value: 'green',  hex: '#39ff14' },
   { label: 'Ciano',    value: 'cyan',   hex: '#22d3ee' },
@@ -461,11 +484,13 @@ const BANNER_COLORS = [
 ];
 
 function SiteTab() {
-  const [config, setConfig]   = useState({
-    banner_enabled: 'false', banner_text: '', banner_color: 'orange', maintenance_mode: 'false',
+  const [config, setConfig] = useState({
+    banner_enabled: 'false', banner_text: '', banner_color: 'orange',
+    maintenance_mode: 'false',
+    feature_keys: 'true', feature_lives: 'true', feature_community: 'true',
   });
-  const [saving, setSaving]   = useState(false);
-  const [loaded, setLoaded]   = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     supabase.from('site_config').select('key, value').then(({ data }) => {
@@ -547,7 +572,6 @@ function SiteTab() {
           </div>
         </div>
 
-        {/* Preview */}
         {config.banner_text?.trim() && (
           <div className="rounded-lg px-4 py-2.5 text-xs font-mono text-center"
             style={{
@@ -584,6 +608,40 @@ function SiteTab() {
         )}
       </div>
 
+      {/* Feature Flags */}
+      <div className="card p-5">
+        <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Feature Flags</p>
+        <div>
+          {[
+            { key: 'feature_keys',      label: 'Keys & Promos',      desc: 'Sistema de game keys e promoções' },
+            { key: 'feature_lives',     label: 'Lives',              desc: 'Sistema de lives ao vivo' },
+            { key: 'feature_community', label: 'Comunidade (Mural)', desc: 'Mural de postagens da comunidade' },
+          ].map(f => {
+            const enabled = config[f.key] !== 'false';
+            return (
+              <div key={f.key}
+                className="flex items-center justify-between py-2.5 border-b border-dark-600 last:border-0">
+                <div>
+                  <p className="text-xs font-mono text-gray-300">{f.label}</p>
+                  <p className="text-xs font-mono text-gray-600">{f.desc}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const next = enabled ? 'false' : 'true';
+                    setConfig(c => ({ ...c, [f.key]: next }));
+                    saveKey(f.key, next);
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-mono transition-colors shrink-0 ml-4"
+                  style={{ color: enabled ? '#39ff14' : '#6b7280' }}>
+                  {enabled ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+                  {enabled ? 'Ativo' : 'Desligado'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {saving && (
         <p className="text-xs font-mono text-center animate-pulse" style={{ color: OC }}>
           Salvando...
@@ -593,29 +651,212 @@ function SiteTab() {
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Notificações Tab ────────────────────────────────────────────────────────
+
+const KIND_CFG = {
+  ban:          { emoji: '🚫', color: '#ef4444' },
+  unban:        { emoji: '✅', color: '#22c55e' },
+  role_change:  { emoji: '🔑', color: '#f97316' },
+  alert:        { emoji: '⚠️', color: '#ef4444' },
+  delete:       { emoji: '🗑️', color: '#6b7280' },
+  new_user:     { emoji: '👤', color: '#22d3ee' },
+  new_live:     { emoji: '📡', color: '#39ff14' },
+  live_ended:   { emoji: '📴', color: '#6b7280' },
+  activity:     { emoji: '⚙️', color: '#6b7280' },
+  notification: { emoji: '🔔', color: '#a855f7' },
+  user_banned:  { emoji: '🚫', color: '#ef4444' },
+};
+
+function NotificacoesTab() {
+  const [notifs, setNotifs]   = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.rpc('owner_get_notifications', { p_limit: 50 });
+    if (error) toast.error('Erro: ' + error.message);
+    else setNotifs(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+    const ch = supabase.channel('owner-notif-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, load)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, load)
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }, [load]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">
+          Últimas 50 notificações
+        </p>
+        <button onClick={load}
+          className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors">
+          <RefreshCw size={12} />Atualizar
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-1.5">
+          {[...Array(8)].map((_, i) => <div key={i} className="h-12 bg-dark-700 rounded-lg animate-pulse" />)}
+        </div>
+      ) : notifs.length === 0 ? (
+        <div className="card p-8 text-center">
+          <p className="text-xs text-gray-500 font-mono">Nenhuma notificação.</p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {notifs.map((n, i) => {
+            const cfg = KIND_CFG[n.kind] || { emoji: '📋', color: '#6b7280' };
+            return (
+              <div key={n.id ?? i}
+                className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
+                <span className="text-sm shrink-0 leading-none mt-0.5">{cfg.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-mono text-gray-200">{n.title}</p>
+                  {n.body && (
+                    <p className="text-xs font-mono text-gray-600 mt-0.5 truncate">{n.body}</p>
+                  )}
+                </div>
+                <p className="text-xs font-mono text-gray-700 shrink-0 whitespace-nowrap">
+                  {new Date(n.created_at).toLocaleString('pt-BR', {
+                    day: '2-digit', month: '2-digit',
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Métricas Tab ────────────────────────────────────────────────────────────
+
+function MetricasTab() {
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.rpc('owner_get_metrics');
+    if (error) toast.error('Erro: ' + error.message);
+    else setMetrics(data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return (
+    <div className="space-y-3">
+      {[...Array(3)].map((_, i) => <div key={i} className="h-32 bg-dark-700 rounded-xl animate-pulse" />)}
+    </div>
+  );
+
+  if (!metrics) return (
+    <div className="card p-8 text-center">
+      <p className="text-xs text-gray-500 font-mono">Erro ao carregar métricas.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {[
+          { label: 'Ativos 7d',    value: metrics.active_7d,    color: '#39ff14', Icon: Activity   },
+          { label: 'Inativos 30d', value: metrics.inactive_30d, color: '#ef4444', Icon: UserX      },
+          { label: 'XP Total',     value: metrics.total_xp,     color: OC,        Icon: TrendingUp },
+        ].map(c => (
+          <div key={c.label} className="card p-4" style={{ borderColor: `${c.color}25` }}>
+            <c.Icon size={13} style={{ color: c.color }} className="mb-2 opacity-60" />
+            <p className="font-display text-2xl font-bold" style={{ color: c.color }}>
+              {c.value ?? 0}
+            </p>
+            <p className="text-xs font-mono text-gray-500 mt-0.5">{c.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {metrics.top_users?.length > 0 && (
+        <div className="card p-5">
+          <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Top usuários por XP</p>
+          <div className="space-y-2">
+            {metrics.top_users.map((u, i) => (
+              <div key={u.id} className="flex items-center gap-3 px-3 py-2 bg-dark-700 rounded-lg">
+                <span className="text-xs font-mono font-bold w-5 text-center"
+                  style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#d1d5db' : i === 2 ? OC : '#6b7280' }}>
+                  {i + 1}
+                </span>
+                <Link to={`/u/${u.username}`}
+                  className="flex-1 text-xs font-mono text-gray-200 hover:text-orange-400 transition-colors">
+                  @{u.username}
+                </Link>
+                <span className="text-xs font-mono font-bold" style={{ color: OC }}>{u.xp} XP</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {metrics.top_posts?.length > 0 && (
+        <div className="card p-5">
+          <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Posts mais curtidos</p>
+          <div className="space-y-2">
+            {metrics.top_posts.map((p, i) => (
+              <div key={p.id} className="flex items-center gap-3 px-3 py-2 bg-dark-700 rounded-lg">
+                <span className="text-xs font-mono font-bold w-5 text-center"
+                  style={{ color: i === 0 ? '#fbbf24' : i === 1 ? '#d1d5db' : i === 2 ? OC : '#6b7280' }}>
+                  {i + 1}
+                </span>
+                <p className="flex-1 text-xs font-mono text-gray-400 truncate">{p.content}</p>
+                <span className="text-xs font-mono font-bold" style={{ color: '#22d3ee' }}>
+                  {p.likes} ♥
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button onClick={load}
+        className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors">
+        <RefreshCw size={12} />Atualizar
+      </button>
+    </div>
+  );
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: 'painel',   label: 'Painel',     Icon: Activity  },
-  { id: 'usuarios', label: 'Usuários',   Icon: Users     },
-  { id: 'logs',     label: 'Audit Logs', Icon: FileText  },
-  { id: 'site',     label: 'Site',       Icon: Settings  },
+  { id: 'painel',       label: 'Painel',       Icon: Activity   },
+  { id: 'usuarios',     label: 'Usuários',     Icon: Users      },
+  { id: 'logs',         label: 'Audit Logs',   Icon: FileText   },
+  { id: 'site',         label: 'Site',         Icon: Settings   },
+  { id: 'notificacoes', label: 'Notificações', Icon: Bell       },
+  { id: 'metricas',     label: 'Métricas',     Icon: TrendingUp },
 ];
 
 export default function Owner() {
-  const { isOwner } = useRole();
-  const navigate    = useNavigate();
-  const [tab, setTab] = useState('painel');
+  const { isOwner }              = useRole();
+  const { loading, onlineCount } = useAuth();
+  const navigate                 = useNavigate();
+  const [tab, setTab]            = useState('painel');
 
   useEffect(() => {
-    if (isOwner === false) navigate('/');
-  }, [isOwner, navigate]);
+    if (!loading && !isOwner) navigate('/');
+  }, [loading, isOwner, navigate]);
 
-  if (!isOwner) return null;
+  if (loading || !isOwner) return null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 pb-8">
-      {/* Header */}
       <div className="card p-5" style={{ borderColor: '#f9731635', boxShadow: `0 0 30px ${OG}` }}>
         <div className="flex items-center gap-2 mb-1">
           <Gem size={15} style={{ color: OC }} />
@@ -628,7 +869,6 @@ export default function Owner() {
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="flex border-b border-dark-500 overflow-x-auto">
         {TABS.map(({ id, label, Icon }) => (
           <button key={id} onClick={() => setTab(id)}
@@ -642,10 +882,12 @@ export default function Owner() {
         ))}
       </div>
 
-      {tab === 'painel'   && <PainelTab />}
-      {tab === 'usuarios' && <UsuariosTab />}
-      {tab === 'logs'     && <LogsTab />}
-      {tab === 'site'     && <SiteTab />}
+      {tab === 'painel'       && <PainelTab onlineCount={onlineCount} />}
+      {tab === 'usuarios'     && <UsuariosTab />}
+      {tab === 'logs'         && <LogsTab />}
+      {tab === 'site'         && <SiteTab />}
+      {tab === 'notificacoes' && <NotificacoesTab />}
+      {tab === 'metricas'     && <MetricasTab />}
     </div>
   );
 }
