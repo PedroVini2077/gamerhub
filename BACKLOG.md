@@ -51,9 +51,8 @@
 - ⬜ **`Login.jsx` (416)** → `LoginForm`, `RegisterForm`, `ForgotForm`.
 
 ### Banco / Performance (impacto cresce com o volume — hoje é pequeno)
-- ⬜ **`auth_rls_initplan`**: envolver `auth.uid()` em subquery
-  `(select auth.uid())` nas ~43 políticas RLS restantes, para o Postgres avaliar
-  uma vez por query em vez de por linha. *(já aplicado nas políticas novas)*
+- ✅ **`auth_rls_initplan`**: `auth.uid()` envolvido em `(select auth.uid())`
+  em todas as políticas. Verificado em ROLLBACK (anon/user/admin). *(feito)*
 - ⬜ **`multiple_permissive_policies`**: consolidar políticas permissivas
   duplicadas por tabela/ação (`posts`, `comments`, `community_posts`,
   `admin_logs` SELECT, `site_config` SELECT, etc.).
@@ -82,6 +81,17 @@
 - ⬜ **2FA** no login.
 - ⬜ Afinar detecção de ban (hoje realtime + polling de 20s como fallback).
 - ⬜ Exportar logs de auditoria (CSV) no painel do dono.
+
+---
+
+## 🎯 Features aprovadas (fazer só DEPOIS de consolidar a base)
+
+> Pedidas pelo dono, mas conscientemente adiadas — o foco agora é consolidar.
+
+- ⬜ **Likes em comentários** — usuários poderem curtir comentários uns dos
+  outros (provável tabela `comment_likes` espelhando `post_likes`).
+- ⬜ **Responder comentários** (threads/replies) — comentar em cima de um
+  comentário (provável `comments.parent_id` self-FK + UI aninhada).
 
 ---
 
