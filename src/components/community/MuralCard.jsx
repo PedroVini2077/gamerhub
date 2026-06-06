@@ -2,7 +2,7 @@ import { Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
-import { supabase } from '../../lib/supabase';
+import { deleteMuralPost } from '../../services/communityService';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
@@ -14,9 +14,7 @@ export default function MuralCard({ item, onDelete }) {
 
   async function handleDelete() {
     if (!confirm('Deletar esta mensagem?')) return;
-    let q = supabase.from('community_posts').delete().eq('id', item.id);
-    if (!isAdmin) q = q.eq('user_id', user.id);
-    const { error } = await q;
+    const { error } = await deleteMuralPost(item.id, user.id, isAdmin);
     if (error) toast.error('Erro ao deletar');
     else {
       toast.success('Mensagem deletada');

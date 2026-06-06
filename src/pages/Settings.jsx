@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { supabase } from '../lib/supabase';
+import { updateProfile } from '../services/profileService';
+import { changePassword, changeEmail, deleteOwnAccount } from '../services/authService';
 import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
 import { Settings, Lock, Mail, Bell, Shield, ChevronRight } from 'lucide-react';
@@ -49,9 +50,9 @@ export default function Settings_() {
     if (field === 'likes') setNotifLikes(value);
     else setNotifComments(value);
 
-    const { error } = await supabase.from('profiles').update({
+    const { error } = await updateProfile(user.id, {
       [field === 'likes' ? 'notif_likes' : 'notif_comments']: value
-    }).eq('id', user.id);
+    });
 
     if (error) toast.error('Erro ao salvar preferência');
     else toast.success('Preferência salva!');
@@ -67,7 +68,7 @@ export default function Settings_() {
       return;
     }
     setChangingPassword(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await changePassword(newPassword);
     if (error) toast.error('Erro ao trocar senha');
     else {
       toast.success('Senha atualizada!');
@@ -85,7 +86,7 @@ export default function Settings_() {
       return;
     }
     setChangingEmail(true);
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    const { error } = await changeEmail(newEmail);
     if (error) toast.error('Erro ao alterar email');
     else {
       toast.success('Confirmação enviada para o novo email!');
@@ -104,7 +105,7 @@ export default function Settings_() {
 
     setDeletingAccount(true);
     try {
-      const { error } = await supabase.rpc('delete_own_account');
+      const { error } = await deleteOwnAccount();
       if (error) toast.error('Erro ao deletar conta.');
       else {
         logAudit('auth_account_deleted', `@${profile?.username} deletou a própria conta`, { category: 'security', severity: 'warning' });

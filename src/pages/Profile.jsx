@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { supabase } from '../lib/supabase';
+import { fetchProfileStats, updateProfile, uploadAvatar } from '../services/profileService';
 import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
 import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy } from 'lucide-react';
@@ -53,13 +53,8 @@ export default function Profile() {
   }, [profile, user]);
 
   async function fetchStats() {
-    const [{ data: postsData }, { data: xp }] = await Promise.all([
-      supabase.from('posts').select('likes').eq('user_id', user.id),
-      supabase.rpc('get_user_xp', { p_user_id: user.id }),
-    ]);
-    if (postsData) {
-      setStats({ posts: postsData.length, likes: postsData.reduce((s, p) => s + (p.likes || 0), 0) });
-    }
+    const { posts, likes, xp } = await fetchProfileStats(user.id);
+    setStats({ posts, likes });
     if (xp) setXpData(xp);
   }
 
@@ -89,15 +84,12 @@ export default function Profile() {
     setUploading(true);
     toast.loading('Processando imagem...', { id: 'upload' });
     const compressed = await compressImage(file);
-    const path = `${user.id}/avatar.jpg`;
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+    const { url, error: uploadError } = await uploadAvatar(user.id, compressed);
     if (uploadError) { toast.error('Erro ao fazer upload', { id: 'upload' }); setUploading(false); return; }
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-    const finalUrl = publicUrl + '?t=' + Date.now();
-    const { error: updateError } = await supabase.from('profiles').update({ avatar_url: finalUrl }).eq('id', user.id);
+    const { error: updateError } = await updateProfile(user.id, { avatar_url: url });
     if (updateError) { toast.error('Erro ao salvar avatar', { id: 'upload' }); }
     else {
-      setAvatarUrl(finalUrl);
+      setAvatarUrl(url);
       await refreshProfile();
       toast.success('Avatar atualizado!', { id: 'upload' });
       logAudit('profile_avatar_updated', `@${profile?.username} atualizou o avatar`, { category: 'profile' });
@@ -118,7 +110,7 @@ export default function Profile() {
       twitch:         twitch.trim() || null,
       youtube:        youtube.trim() || null,
     };
-    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+    const { error } = await updateProfile(user.id, updates);
     if (error) toast.error('Erro ao salvar: ' + error.message);
     else {
       await refreshProfile();

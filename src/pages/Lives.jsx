@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { fetchActiveLives, endLivePost } from '../services/postService';
+import { fetchLiveMessages, fetchLiveTimeouts, sendChatMessage, deleteChatMessage, silenceUser, unsilenceUser } from '../services/liveService';
 import { Tv, MessageCircle, Send, X, Trash2, Clock, Shield, Users, VolumeX } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { logAudit } from '../lib/auditLog';
@@ -140,32 +142,20 @@ export default function Lives() {
   }
 
   async function fetchLives() {
-    const { data } = await supabase.from('posts')
-      .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
-      .eq('is_live', true)
-      .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
-      .not('embed_url', 'is', null)
-      .order('created_at', { ascending: false });
-    setLives(data || []);
+    const data = await fetchActiveLives();
+    setLives(data);
     setLoading(false);
   }
 
   async function fetchMessages(postId) {
     if (!postId) return;
-    const { data } = await supabase.from('live_chat')
-      .select('id, message, created_at, user_id, profiles(id, username, avatar_url, role, bio, created_at)')
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true })
-      .limit(100);
-    setMessages(data || []);
+    const data = await fetchLiveMessages(postId);
+    setMessages(data);
   }
 
   async function fetchTimeouts(postId) {
     if (!postId) return;
-    const { data } = await supabase.from('live_chat_timeouts')
-      .select('*').eq('post_id', postId);
-    const map = {};
-    (data || []).forEach(t => { map[t.user_id] = t; });
+    const map = await fetchLiveTimeouts(postId);
     setTimeouts(map);
     setIsSilenced(!!(user && map[user.id] && new Date(map[user.id].expires_at) > new Date()));
   }
@@ -173,61 +163,42 @@ export default function Lives() {
   async function sendMessage() {
     if (!msg.trim() || !user || !activeLive || sending || isSilenced) return;
     setSending(true);
-    await supabase.from('live_chat').insert({
-      post_id: activeLive.id, user_id: user.id, message: msg.trim()
-    });
+    await sendChatMessage({ postId: activeLive.id, userId: user.id, message: msg.trim() });
     setMsg('');
     setSending(false);
   }
 
   async function deleteMessage(msgId) {
     const isMod = isAdmin || (activeLive && user && activeLive.user_id === user.id);
-    let q = supabase.from('live_chat').delete().eq('id', msgId);
-    if (!isMod) q = q.eq('user_id', user.id);
-    await q;
+    await deleteChatMessage(msgId, isMod, user.id);
     logAudit('live_chat_delete', `@${profile?.username} deletou uma mensagem no chat da live "${activeLive?.title}"`, { category: 'live' });
   }
 
   async function endLive() {
     if (!activeLive) return;
-    await supabase.from('posts').update({ is_live: false }).eq('id', activeLive.id);
+    await endLivePost(activeLive.id);
     logAudit('live_ended', `@${profile?.username} encerrou a live "${activeLive.title}"`, { category: 'live' });
     setLiveEnded(true);
   }
 
-  async function silenceUser(userId, minutes) {
+  async function handleSilenceUser(userId, minutes) {
     if (!activeLive) return;
     setSilencingUser(userId);
     setSilenceMenu(null);
-    const expires = new Date(Date.now() + minutes * 60000).toISOString();
-
-    const { error: delError } = await supabase.from('live_chat_timeouts')
-      .delete()
-      .eq('post_id', activeLive.id)
-      .eq('user_id', userId);
-    if (delError) toast.error('DELETE falhou: ' + delError.message);
-
-    const { error: insError } = await supabase.from('live_chat_timeouts').insert({
-      post_id: activeLive.id,
-      user_id: userId,
-      expires_at: expires,
-      created_by: user.id,
-    });
-    if (insError) {
-      toast.error('INSERT falhou: ' + insError.message);
+    const { error } = await silenceUser({ postId: activeLive.id, userId, minutes, createdBy: user.id });
+    if (error) {
+      toast.error('Erro ao silenciar');
     } else {
       toast.success('Usuário silenciado por ' + minutes + ' min');
       logAudit('live_silence', `@${profile?.username} silenciou um usuário por ${minutes}min na live "${activeLive.title}"`, { category: 'live' });
     }
-
     setSilencingUser(null);
     await fetchTimeouts(activeLive.id);
   }
 
-  async function unsilenceUser(userId) {
+  async function handleUnsilenceUser(userId) {
     if (!activeLive) return;
-    await supabase.from('live_chat_timeouts').delete()
-      .eq('post_id', activeLive.id).eq('user_id', userId);
+    await unsilenceUser({ postId: activeLive.id, userId });
     logAudit('live_unsilence', `@${profile?.username} removeu silêncio na live "${activeLive.title}"`, { category: 'live' });
     await fetchTimeouts(activeLive.id);
   }
@@ -320,7 +291,7 @@ export default function Lives() {
                       <p className="text-xs font-mono font-bold text-yellow-400">{msgProfile?.username || 'Usuário'}</p>
                       <p className="text-xs font-mono text-gray-600">{remaining} min restantes</p>
                     </div>
-                    <button onClick={() => unsilenceUser(t.user_id)}
+                    <button onClick={() => handleUnsilenceUser(t.user_id)}
                       className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded transition-all">
                       Remover
                     </button>
@@ -351,7 +322,7 @@ export default function Lives() {
                       </span>
                     </div>
                     {silenced ? (
-                      <button onClick={() => unsilenceUser(p.id)}
+                      <button onClick={() => handleUnsilenceUser(p.id)}
                         className="text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:border-yellow-400/60 hover:bg-yellow-400/5 px-2 py-0.5 rounded transition-all active:scale-95">
                         <VolumeX size={10} className="inline mr-1" />Remover
                       </button>
@@ -372,7 +343,7 @@ export default function Lives() {
                             style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
                             <p className="text-xs font-mono text-gray-500 px-2 pb-1 border-b border-dark-500">Silenciar por:</p>
                             {[5, 10, 30, 60].map(min => (
-                              <button key={min} type="button" onClick={() => silenceUser(p.id, min)}
+                              <button key={min} type="button" onClick={() => handleSilenceUser(p.id, min)}
                                 className="text-xs font-mono text-gray-400 hover:text-yellow-400 hover:bg-dark-600 px-3 py-1 rounded text-left transition-colors active:scale-95">
                                 {min} min
                               </button>

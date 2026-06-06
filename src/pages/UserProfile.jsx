@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { fetchUserPosts } from '../services/postService';
+import { fetchProfileByUsername, fetchUserXP, fetchUserLikesCount } from '../services/profileService';
 import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
 import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords } from 'lucide-react';
@@ -27,28 +28,19 @@ export default function UserProfile() {
 
   async function fetchProfile() {
     setLoading(true);
-    const { data: profileData } = await supabase
-      .from('profiles').select('*').eq('username', username).single();
+    const profileData = await fetchProfileByUsername(username);
 
     if (!profileData) { setNotFound(true); setLoading(false); return; }
     setProfile(profileData);
 
-    const [{ data: postsData }, { count: likesCount }, { data: xp }] = await Promise.all([
-      supabase.from('posts')
-        .select('*, profiles(username, avatar_url), user_id')
-        .eq('user_id', profileData.id)
-        .order('created_at', { ascending: false }),
-      supabase.from('post_likes')
-        .select('*', { count: 'exact', head: true })
-        .in('post_id',
-          (await supabase.from('posts').select('id').eq('user_id', profileData.id))
-            .data?.map(p => p.id) || []
-        ),
-      supabase.rpc('get_user_xp', { p_user_id: profileData.id }),
+    const [postsData, likesCount, xp] = await Promise.all([
+      fetchUserPosts(profileData.id),
+      fetchUserLikesCount(profileData.id),
+      fetchUserXP(profileData.id),
     ]);
 
-    setPosts(postsData || []);
-    setStats({ posts: postsData?.length || 0, likes: likesCount || 0 });
+    setPosts(postsData);
+    setStats({ posts: postsData.length, likes: likesCount });
     if (xp) setXpData(xp);
     setLoading(false);
   }

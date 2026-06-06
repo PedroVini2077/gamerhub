@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeTab, listContainer, listItem } from '../lib/motion';
-import { supabase } from '../lib/supabase';
+import { fetchGameKeys } from '../services/keyService';
 import { Key, Copy, Check, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -64,14 +64,11 @@ export default function Keys() {
   const [tab, setTab] = useState('keys');
 
   useEffect(() => {
-    supabase.from('game_keys').select('*').order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          setKeys(data.filter(k => !k.is_promo && k.key_code));
-          setPromos(data.filter(k => k.is_promo));
-        }
-        setLoading(false);
-      });
+    fetchGameKeys().then(({ keys: k, promos: p }) => {
+      setKeys(k);
+      setPromos(p);
+      setLoading(false);
+    });
   }, []);
 
   return (

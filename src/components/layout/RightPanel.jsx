@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { fetchGameKeys, fetchSiteStats } from '../../services/keyService';
 import { Tag, ExternalLink, Gift, Users, FileText, Key } from 'lucide-react';
 import { formatNumber } from '../../lib/format';
 
@@ -8,30 +8,9 @@ export default function RightPanel() {
   const [promos, setPromos] = useState([]);
   const [stats, setStats] = useState({ users: 0, postsToday: 0, keysCount: 0 });
 
-  async function fetchKeys() {
-    const { data } = await supabase.from('game_keys').select('*').order('created_at', { ascending: false }).limit(10);
-    if (data) {
-      setKeys(data.filter(k => !k.is_promo && k.key_code));
-      setPromos(data.filter(k => k.is_promo));
-    }
-  }
-
-  async function fetchStats() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const [{ count: users }, { count: postsToday }, { count: keysCount }] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
-      supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
-      supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
-    ]);
-
-    setStats({ users: users || 0, postsToday: postsToday || 0, keysCount: keysCount || 0 });
-  }
-
   useEffect(() => {
-    fetchKeys();
-    fetchStats();
+    fetchGameKeys(10).then(({ keys: k, promos: p }) => { setKeys(k); setPromos(p); });
+    fetchSiteStats().then(setStats);
   }, []);
 
 

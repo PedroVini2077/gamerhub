@@ -1,5 +1,5 @@
 import { useState, useRef, memo } from 'react';
-import { supabase } from '../../lib/supabase';
+import { createPost, uploadAudio, uploadPostMediaFiles } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
 import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
@@ -84,46 +84,28 @@ const PostForm = memo(function PostForm({ onPost }) {
       let audio_type = null;
 
       if (audio?.file) {
-        const ext = audio.file.name.split('.').pop();
-        const path = `${user.id}/audio-${Date.now()}.${ext}`;
-        const { error } = await supabase.storage.from('post-media')
-          .upload(path, audio.file, { contentType: audio.file.type });
+        const { url, error } = await uploadAudio(user.id, audio.file);
         if (error) throw error;
-        const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
-        audio_url = publicUrl;
+        audio_url = url;
         audio_type = audio.type === 'recorded' ? 'recorded' : 'music';
       }
 
-      const embedInfo = embedUrl ? getEmbedInfo(embedUrl) : null;
-
-      const { data: post, error: postError } = await supabase.from('posts').insert({
-        user_id: profile?.id,
+      const { data: post, error: postError } = await createPost({
+        userId: profile?.id,
         title: title.trim(),
         content: content.trim() || null,
         category,
-        audio_url,
-        audio_type,
-        audio_name: audioName.trim() || null,
-        embed_url: embedUrl.trim() || null,
-        embed_type: embedInfo?.type || null,
-        is_live: isLive,
-        was_live: isLive,
-        expires_at: null,
-      }).select().single();
+        audioUrl: audio_url,
+        audioType: audio_type,
+        audioName: audioName.trim() || null,
+        embedUrl: embedUrl.trim() || null,
+        isLive,
+      });
 
       if (postError) throw postError;
 
       if (medias.length > 0) {
-        const rows = [];
-        for (let i = 0; i < medias.length; i++) {
-          const { file, type } = medias[i];
-          const ext = file.name.split('.').pop();
-          const path = `${user.id}/${post.id}-${i}.${ext}`;
-          await supabase.storage.from('post-media').upload(path, file, { contentType: file.type });
-          const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
-          rows.push({ post_id: post.id, url: publicUrl, type, position: i });
-        }
-        await supabase.from('post_media').insert(rows);
+        await uploadPostMediaFiles(user.id, post.id, medias);
       }
 
       toast.success('Post publicado!', { id: toastId });

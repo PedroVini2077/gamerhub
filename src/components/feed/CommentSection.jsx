@@ -1,5 +1,5 @@
 import { useState, useEffect, memo } from 'react';
-import { supabase } from '../../lib/supabase';
+import { fetchComments, fetchCommentCount, addComment, deleteComment } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { logAudit } from '../../lib/auditLog';
@@ -14,9 +14,7 @@ function CommentCard({ comment, onDelete }) {
 
   async function handleDelete() {
     if (!confirm('Deletar comentário?')) return;
-    let q = supabase.from('comments').delete().eq('id', comment.id);
-    if (!isAdmin) q = q.eq('user_id', user.id);
-    const { error } = await q;
+    const { error } = await deleteComment(comment.id, user.id, isAdmin);
     if (error) toast.error('Erro ao deletar');
     else {
       logAudit('comment_deleted', `@${profile?.username} deletou um comentário de @${comment.profiles?.username}`, { category: 'content' });
@@ -59,48 +57,35 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
   const [count, setCount] = useState(0);
 
   async function fetchCount() {
-    const { count } = await supabase
-      .from('comments')
-      .select('*', { count: 'exact', head: true })
-      .eq('post_id', postId);
-    setCount(count || 0);
+    const count = await fetchCommentCount(postId);
+    setCount(count);
   }
 
-  async function fetchComments() {
-    const { data } = await supabase
-      .from('comments')
-      .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true });
-    setComments(data || []);
-    setCount(data?.length || 0);
+  async function fetchCommentList() {
+    const data = await fetchComments(postId);
+    setComments(data);
+    setCount(data.length);
   }
 
   useEffect(() => {
     fetchCount();
-    if (registerRefresh) registerRefresh(fetchComments);
+    if (registerRefresh) registerRefresh(fetchCommentList);
   }, [postId]);
 
   useEffect(() => {
-    if (open) fetchComments();
+    if (open) fetchCommentList();
   }, [open]);
 
   async function handleSubmit() {
     if (!text.trim()) return;
     setLoading(true);
-    const { error } = await supabase.from('comments').insert({
-      post_id: postId,
-      user_id: profile?.id,
-      content: text.trim(),
-    });
+    const { error } = await addComment({ postId, userId: profile?.id, content: text.trim() });
     if (error) {
       toast.error('Erro ao comentar');
     } else {
       logAudit('comment_added', `@${profile?.username} comentou em um post`, { category: 'content' });
       setText('');
-      fetchComments();
-      // A notificação ao dono do post é criada por trigger no banco
-      // (notify_post_comment), respeitando a preferência notif_comments.
+      fetchCommentList();
     }
     setLoading(false);
   }
@@ -127,7 +112,7 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
           {comments.length > 0 && (
             <div className="bg-dark-700 rounded-lg px-3 py-1 mb-3">
               {comments.map(c => (
-                <CommentCard key={c.id} comment={c} onDelete={fetchComments} />
+                <CommentCard key={c.id} comment={c} onDelete={fetchCommentList} />
               ))}
             </div>
           )}

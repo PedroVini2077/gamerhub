@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
-import { supabase } from '../../lib/supabase';
+import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia, deletePost, updatePost } from '../../services/postService';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
@@ -72,20 +72,18 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   }, [post.id, user]);
 
   async function fetchMedia() {
-    const { data } = await supabase.from('post_media').select('*')
-      .eq('post_id', post.id).order('position');
-    setPostMedia(data || []);
+    const data = await fetchPostMedia(post.id);
+    setPostMedia(data);
 
     const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
-    if ((!data || data.length === 0) && age < 60) {
+    if (data.length === 0 && age < 60) {
       const delays = [1000, 2000, 4000, 8000];
       let attempt = 0;
       function scheduleRetry() {
         if (attempt >= delays.length) return;
         mediaIntervalRef.current = setTimeout(async () => {
-          const { data: retryData } = await supabase.from('post_media').select('*')
-            .eq('post_id', post.id).order('position');
-          if (retryData && retryData.length > 0) {
+          const retryData = await fetchPostMedia(post.id);
+          if (retryData.length > 0) {
             setPostMedia(retryData);
           } else {
             attempt++;
@@ -98,14 +96,9 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   }
 
   async function fetchLikes() {
-    const { count } = await supabase.from('post_likes')
-      .select('*', { count: 'exact', head: true }).eq('post_id', post.id);
-    setLikeCount(count || 0);
-    if (user) {
-      const { data } = await supabase.from('post_likes').select('id')
-        .eq('post_id', post.id).eq('user_id', user.id).maybeSingle();
-      setLiked(!!data);
-    }
+    const { count, liked: isLiked } = await fetchLikeStatus(post.id, user?.id);
+    setLikeCount(count);
+    setLiked(isLiked);
   }
 
   async function handleLike() {
@@ -113,22 +106,18 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     if (likeLoading) return;
     setLikeLoading(true);
     if (liked) {
-      await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', user.id);
+      await unlikePost(post.id, user.id);
       setLiked(false); setLikeCount(c => c - 1);
     } else {
-      await supabase.from('post_likes').insert({ post_id: post.id, user_id: user.id });
+      await likePost(post.id, user.id);
       setLiked(true); setLikeCount(c => c + 1);
-      // A notificação ao dono do post é criada por trigger no banco
-      // (notify_post_like), respeitando a preferência notif_likes.
     }
     setLikeLoading(false);
   }
 
   async function handleDelete() {
     if (!confirm('Deletar este post?')) return;
-    let q = supabase.from('posts').delete().eq('id', post.id);
-    if (!isAdmin) q = q.eq('user_id', user.id);
-    const { error } = await q;
+    const { error } = await deletePost(post.id, user.id, isAdmin);
     if (error) toast.error('Erro ao deletar');
     else {
       toast.success('Post deletado');
@@ -139,14 +128,12 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   async function handleSaveEdit() {
     setSaving(true);
-    let q = supabase.from('posts').update({
-      content: editContent.trim() || null,
-      is_live: editIsLive,
-      was_live: post.was_live || editIsLive,
-      edited_at: new Date().toISOString()
-    }).eq('id', post.id);
-    if (!isAdmin) q = q.eq('user_id', user.id);
-    const { error } = await q;
+    const { error } = await updatePost(
+      post.id,
+      { content: editContent, isLive: editIsLive, wasLive: post.was_live || editIsLive },
+      user.id,
+      isAdmin
+    );
     if (error) toast.error('Erro ao salvar');
     else {
       toast.success('Post editado!');

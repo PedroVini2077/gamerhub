@@ -1,5 +1,5 @@
 import { useState, memo } from 'react';
-import { supabase } from '../../lib/supabase';
+import { addMuralPost } from '../../services/communityService';
 import { useAuth } from '../../hooks/useAuth';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
@@ -19,10 +19,7 @@ const MuralForm = memo(function MuralForm({ onPost }) {
   async function handleSubmit() {
     if (!message.trim()) return;
     setLoading(true);
-    const { error } = await supabase.from('community_posts').insert({
-      user_id: profile?.id,
-      message: message.trim(),
-    });
+    const { error } = await addMuralPost({ userId: profile?.id, message: message.trim() });
     if (error) toast.error('Erro ao enviar mensagem');
     else {
       toast.success('Mensagem enviada!');

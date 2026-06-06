@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
-import { supabase } from '../lib/supabase';
+import { fetchMuralPosts } from '../services/communityService';
 import MuralCard from '../components/community/MuralCard';
 import MuralForm from '../components/community/MuralForm';
 import { useRealtime } from '../hooks/useRealtime';
@@ -13,12 +13,8 @@ export default function Community() {
   const fetchDebounceRef = useRef(null);
 
   const fetch = useCallback(async () => {
-    const { data } = await supabase
-      .from('community_posts')
-      .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    setItems(data || []);
+    const data = await fetchMuralPosts(50);
+    setItems(data);
     setLoading(false);
   }, []);
 

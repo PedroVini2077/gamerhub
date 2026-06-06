@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
-import { supabase } from '../lib/supabase';
+import { fetchFeedPosts } from '../services/postService';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
@@ -24,12 +24,8 @@ export default function Home() {
   userRef.current = user;
 
   const fetchPosts = useCallback(async () => {
-    const { data } = await supabase
-      .from('posts')
-      .select('*, profiles(id, username, avatar_url, role, bio, created_at), user_id, audio_url, audio_type, audio_name, edited_at, embed_url, embed_type, is_live, expires_at')
-      .order('created_at', { ascending: false })
-      .limit(30);
-    setPosts(data || []);
+    const data = await fetchFeedPosts(30);
+    setPosts(data);
     setLoading(false);
     setNewPosts(0);
   }, []);
