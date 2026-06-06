@@ -53,9 +53,12 @@
 ### Banco / Performance (impacto cresce com o volume — hoje é pequeno)
 - ✅ **`auth_rls_initplan`**: `auth.uid()` envolvido em `(select auth.uid())`
   em todas as políticas. Verificado em ROLLBACK (anon/user/admin). *(feito)*
-- ⬜ **`multiple_permissive_policies`**: consolidar políticas permissivas
-  duplicadas por tabela/ação (`posts`, `comments`, `community_posts`,
-  `admin_logs` SELECT, `site_config` SELECT, etc.).
+- ✅ **`multiple_permissive_policies`**: consolidadas em `posts`, `community_posts`,
+  `comments`, `profiles` (UPDATE) e `admin_logs` (SELECT). **Bônus de segurança:**
+  o INSERT de `posts`/`community_posts` tinha 2 políticas permissivas OR'd que
+  anulavam a regra "banido não posta" — agora é AND numa só política (furo
+  fechado, validado em ROLLBACK e em produção). *(falta só `site_config` SELECT,
+  baixo impacto — policy ALL do owner + select_all=true)*
 - ⬜ **Listagem de buckets públicos** (`avatars`, `post-media`): restringir a
   policy de SELECT do `storage.objects` para não permitir listar todos os
   arquivos (o acesso por URL pública continua). Validar que não quebra exibição.
