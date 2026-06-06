@@ -3,45 +3,11 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Zap, Mail, Lock, User, ArrowLeft, Calendar, MapPin, Gamepad2, AlertTriangle, ShieldOff } from 'lucide-react';
-import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../lib/password';
+import { Zap } from 'lucide-react';
 import { calcAge, MIN_SIGNUP_AGE } from '../lib/date';
-
-const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-const PLATFORMS = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
-
-function formatCountdown(ms) {
-  const totalSec = Math.max(0, Math.ceil(ms / 1000));
-  if (totalSec < 60) return `${totalSec}s`;
-  const min = Math.floor(totalSec / 60);
-  const sec = totalSec % 60;
-  return sec > 0 ? `${min}min ${sec}s` : `${min}min`;
-}
-
-// Contagem regressiva apenas visual — o servidor é quem realmente bloqueia.
-function LiveCountdown({ until, onExpire }) {
-  const [ms, setMs] = useState(() => until - Date.now());
-  useEffect(() => {
-    const t = setInterval(() => {
-      const left = until - Date.now();
-      setMs(left);
-      if (left <= 0) { clearInterval(t); onExpire?.(); }
-    }, 500);
-    return () => clearInterval(t);
-  }, [until, onExpire]);
-  // translate="no" evita que o Google Tradutor brigue com o texto que muda a cada 0,5s
-  return <span translate="no" className="notranslate font-bold tabular-nums">{formatCountdown(ms)}</span>;
-}
-
-function InputWrap({ children }) {
-  return (
-    <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-      {children}
-    </div>
-  );
-}
-
-const maxBirthDate = new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+import LoginForm from '../components/auth/LoginForm';
+import RegisterForm from '../components/auth/RegisterForm';
+import ForgotForm from '../components/auth/ForgotForm';
 
 export default function Login() {
   const { signInWithEmail, signUpWithEmail } = useAuth();
@@ -57,11 +23,10 @@ export default function Login() {
   const [loading, setLoading]               = useState(false);
   const [block, setBlock]                   = useState(null); // { permanent, blocked_until } | null
 
-  // Bloqueado se for permanente ou se ainda não passou o tempo do servidor
   const isBlocked = !!block && (block.permanent || (block.blocked_until && new Date(block.blocked_until).getTime() > Date.now()));
 
-  // Enquanto bloqueado, consulta o servidor periodicamente — assim o desbloqueio
-  // feito pelo super admin no painel reflete pro usuário sem precisar recarregar.
+  // Enquanto bloqueado, consulta o servidor periodicamente para refletir
+  // desbloqueio feito pelo admin sem precisar recarregar a página.
   useEffect(() => {
     if (!isBlocked || !email.trim()) return;
     const t = setInterval(async () => {
@@ -80,8 +45,6 @@ export default function Login() {
     setSelectedPlatform('');
   }
 
-  const passwordStrength = mode === 'register' ? getPasswordStrength(password) : 0;
-
   async function handleSubmit() {
     if (!email) { toast.error('Preencha seu email'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast.error('Informe um email válido'); return; }
@@ -90,7 +53,6 @@ export default function Login() {
 
     setLoading(true);
 
-    // ── Esqueci minha senha ──
     if (mode === 'forgot') {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: window.location.origin + '/auth/confirm',
@@ -101,9 +63,7 @@ export default function Login() {
       return;
     }
 
-    // ── Login ──
     if (mode === 'login') {
-      // 1. Servidor decide se está bloqueado (única fonte de verdade)
       const { data: status } = await supabase.rpc('check_login_status', { p_email: email.trim() });
       if (status?.blocked) {
         setBlock({ permanent: status.permanent, blocked_until: status.blocked_until });
@@ -114,16 +74,13 @@ export default function Login() {
         return;
       }
 
-      // 2. Tenta autenticar
       const { error, banned } = await signInWithEmail(email, password);
       if (banned) {
-        // Conta banida com senha correta: NÃO conta como tentativa de senha errada
         toast.error('Sua conta foi banida. Entre em contato com o suporte.');
         setLoading(false);
         return;
       }
       if (error) {
-        // 3. Registra a falha no servidor e reflete o novo estado
         const { data: after } = await supabase.rpc('register_login_attempt', { p_email: email.trim() });
         if (after?.blocked) {
           setBlock({ permanent: after.permanent, blocked_until: after.blocked_until });
@@ -136,16 +93,13 @@ export default function Login() {
           toast.error(error.message + aviso);
         }
       } else {
-        // 4. Sucesso — zera o contador e entra.
-        // await é obrigatório: o builder do supabase-js é lazy e só dispara a
-        // requisição quando aguardado — sem isso o reset nunca era enviado.
+        // await obrigatório: o builder do supabase-js é lazy — sem await o reset nunca é enviado.
         await supabase.rpc('reset_login_attempts');
         setBlock(null);
         navigate('/');
       }
     }
 
-    // ── Cadastro ──
     if (mode === 'register') {
       if (password.length < 8) { toast.error('Senha precisa ter pelo menos 8 caracteres'); setLoading(false); return; }
       if (password !== confirmPassword) { toast.error('Senhas não coincidem'); setLoading(false); return; }
@@ -166,10 +120,6 @@ export default function Login() {
     setLoading(false);
   }
 
-  function handleKey(e) {
-    if (e.key === 'Enter') handleSubmit();
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -183,216 +133,38 @@ export default function Login() {
         </div>
 
         <div className="card p-7">
-          {/* Header — tabs ou voltar */}
-          {mode === 'forgot' ? (
-            <div className="flex items-center gap-3 mb-6">
-              <button type="button" onClick={() => switchMode('login')}
-                className="text-gray-500 hover:text-neon-green transition-colors">
-                <ArrowLeft size={16} />
-              </button>
-              <span className="text-xs font-display text-gray-300 tracking-widest uppercase">Recuperar Senha</span>
-            </div>
-          ) : (
-            <div className="flex border border-dark-400 rounded overflow-hidden mb-6">
-              {['login', 'register'].map(m => (
-                <button key={m} type="button" onClick={() => switchMode(m)}
-                  className={`flex-1 py-2.5 text-xs font-display tracking-widest uppercase transition-all ${
-                    mode === m ? 'bg-neon-green/10 text-neon-green' : 'text-gray-500 hover:text-gray-300'
-                  }`}>
-                  {m === 'login' ? 'Entrar' : 'Registrar'}
-                </button>
-              ))}
-            </div>
+          {mode === 'login' && (
+            <LoginForm
+              email={email} setEmail={setEmail}
+              password={password} setPassword={setPassword}
+              loading={loading} block={block} setBlock={setBlock}
+              onSubmit={handleSubmit}
+              onForgot={() => switchMode('forgot')}
+              onSwitchToRegister={() => switchMode('register')}
+            />
           )}
-
-          {/* Banner de bloqueio — só no login */}
-          {mode === 'login' && isBlocked && (
-            <div className={`mb-4 flex items-start gap-2 p-3 rounded-lg border ${
-              block.permanent ? 'border-red-600/40 bg-red-600/10' : 'border-red-400/30 bg-red-400/5'
-            }`}>
-              {block.permanent
-                ? <ShieldOff size={14} className="text-red-500 shrink-0 mt-0.5" />
-                : <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />}
-              <div className="text-xs font-mono">
-                {block.permanent ? (
-                  <p className="text-red-500">
-                    Conta bloqueada por <span className="font-bold">excesso de tentativas</span>.
-                    Redefina sua senha ou contate o suporte.
-                  </p>
-                ) : (
-                  <p className="text-red-400">
-                    Muitas tentativas falhas. Aguarde{' '}
-                    <LiveCountdown until={new Date(block.blocked_until).getTime()} onExpire={() => setBlock(null)} />{' '}
-                    para tentar novamente.
-                  </p>
-                )}
-              </div>
-            </div>
+          {mode === 'register' && (
+            <RegisterForm
+              email={email} setEmail={setEmail}
+              password={password} setPassword={setPassword}
+              confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+              username={username} setUsername={setUsername}
+              birthDate={birthDate} setBirthDate={setBirthDate}
+              uf={uf} setUf={setUf}
+              selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform}
+              loading={loading}
+              onSubmit={handleSubmit}
+              onSwitchToLogin={() => switchMode('login')}
+            />
           )}
-
-          <div className="space-y-4">
-            {/* Descrição modo forgot */}
-            {mode === 'forgot' && (
-              <p className="text-xs text-gray-400 font-mono leading-relaxed">
-                Informe seu email cadastrado e enviaremos um link para redefinir sua senha.
-              </p>
-            )}
-
-            {/* Username — só no cadastro */}
-            {mode === 'register' && (
-              <div>
-                <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Username</label>
-                <InputWrap>
-                  <span className="pl-3 pr-2 text-gray-500 shrink-0"><User size={14} /></span>
-                  <input id="username" aria-label="Nome de usuário"
-                    className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                    placeholder="seu_nick_aqui" value={username}
-                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                    onKeyDown={handleKey} maxLength={20} />
-                </InputWrap>
-                <p className="text-xs text-gray-600 font-mono mt-1">3-20 chars · letras minúsculas, números e _</p>
-              </div>
-            )}
-
-            {/* Email */}
-            <div>
-              <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Email</label>
-              <InputWrap>
-                <span className="pl-3 pr-2 text-gray-500 shrink-0"><Mail size={14} /></span>
-                <input id="email" aria-label="Email" type="email"
-                  className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                  placeholder="gamer@email.com" value={email}
-                  onChange={e => { setEmail(e.target.value); if (block) setBlock(null); }} onKeyDown={handleKey} />
-              </InputWrap>
-            </div>
-
-            {/* Senha — oculta no forgot */}
-            {mode !== 'forgot' && (
-              <div>
-                <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Senha</label>
-                <InputWrap>
-                  <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                  <input id="password" aria-label="Senha" type="password"
-                    className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                    placeholder="••••••••" value={password}
-                    onChange={e => setPassword(e.target.value)} onKeyDown={handleKey} />
-                </InputWrap>
-                {mode === 'register' && (
-                  <div className="mt-2 flex items-center gap-2" style={{ visibility: password ? 'visible' : 'hidden' }}>
-                    <div className="flex gap-1 flex-1">
-                      {[1,2,3,4].map(n => (
-                        <div key={n} className="h-1 flex-1 rounded-full transition-all duration-300"
-                          style={{ background: n <= passwordStrength ? STRENGTH_COLORS[passwordStrength] : '#2e2e3e' }} />
-                      ))}
-                    </div>
-                    <span className="text-xs font-mono w-16 text-right"
-                      style={{ color: STRENGTH_COLORS[passwordStrength] || '#6b7280' }}>
-                      {STRENGTH_LABELS[passwordStrength]}
-                    </span>
-                  </div>
-                )}
-                {mode === 'register' && (
-                  <p className="text-xs text-gray-600 font-mono mt-1">mínimo 8 caracteres</p>
-                )}
-              </div>
-            )}
-
-            {/* Confirmar Senha — só no cadastro */}
-            {mode === 'register' && (
-              <div>
-                <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Confirmar Senha</label>
-                <div className={`flex items-center bg-dark-700 border rounded-md transition-all ${
-                  confirmPassword && confirmPassword !== password
-                    ? 'border-red-400/60'
-                    : 'border-dark-400 focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420]'
-                }`}>
-                  <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                  <input aria-label="Confirmar senha" type="password"
-                    className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                    placeholder="••••••••" value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)} onKeyDown={handleKey} />
-                </div>
-                <p className="text-xs font-mono mt-1" style={{
-                  color: '#f87171',
-                  visibility: confirmPassword && confirmPassword !== password ? 'visible' : 'hidden'
-                }}>Senhas não coincidem</p>
-              </div>
-            )}
-
-            {/* Data de Nascimento — só no cadastro */}
-            {mode === 'register' && (
-              <div>
-                <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">
-                  Data de Nascimento <span className="text-red-400">*</span>
-                </label>
-                <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-                  <span className="pl-3 pr-2 text-gray-500 shrink-0"><Calendar size={14} /></span>
-                  <input aria-label="Data de nascimento" type="date"
-                    className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white outline-none font-body"
-                    value={birthDate} onChange={e => setBirthDate(e.target.value)}
-                    max={maxBirthDate} />
-                </div>
-                <p className="text-xs text-gray-600 font-mono mt-1">Exigido pela LGPD · mínimo 13 anos</p>
-              </div>
-            )}
-
-            {/* Estado — só no cadastro, opcional */}
-            {mode === 'register' && (
-              <div>
-                <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">
-                  Estado <span className="text-gray-600 normal-case">(opcional)</span>
-                </label>
-                <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-                  <span className="pl-3 pr-2 text-gray-500 shrink-0"><MapPin size={14} /></span>
-                  <select aria-label="Estado" value={uf} onChange={e => setUf(e.target.value)}
-                    className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white outline-none font-body appearance-none">
-                    <option value="" className="bg-dark-800">Selecione seu estado...</option>
-                    {BR_STATES.map(s => <option key={s} value={s} className="bg-dark-800">{s}</option>)}
-                  </select>
-                </div>
-              </div>
-            )}
-
-            {/* Plataforma — só no cadastro, opcional */}
-            {mode === 'register' && (
-              <div>
-                <label className="block text-xs text-gray-400 font-mono mb-2 uppercase tracking-wider">
-                  Plataforma Principal <span className="text-gray-600 normal-case">(opcional)</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {PLATFORMS.map(p => (
-                    <button key={p} type="button" onClick={() => setSelectedPlatform(selectedPlatform === p ? '' : p)}
-                      className={`tag cursor-pointer transition-all flex items-center gap-1 ${
-                        selectedPlatform === p ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'
-                      }`}>
-                      <Gamepad2 size={10} />{p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Botão principal */}
-            <button onClick={handleSubmit} disabled={loading || (mode === 'login' && isBlocked)}
-              className="btn-solid w-full py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? 'Aguarde...'
-                : (mode === 'login' && isBlocked)
-                  ? (block.permanent
-                      ? '// BLOQUEADO'
-                      : <>// BLOQUEADO (<LiveCountdown until={new Date(block.blocked_until).getTime()} onExpire={() => setBlock(null)} />)</>)
-                : mode === 'login'    ? '// ENTRAR'
-                : mode === 'register' ? '// CRIAR CONTA'
-                : '// ENVIAR LINK DE RECUPERAÇÃO'}
-            </button>
-
-            {/* Link esqueci senha — só no login */}
-            {mode === 'login' && (
-              <button type="button" onClick={() => switchMode('forgot')}
-                className="w-full text-center text-xs text-gray-600 hover:text-gray-400 font-mono transition-colors">
-                Esqueci minha senha
-              </button>
-            )}
-          </div>
+          {mode === 'forgot' && (
+            <ForgotForm
+              email={email} setEmail={setEmail}
+              loading={loading}
+              onSubmit={handleSubmit}
+              onBack={() => switchMode('login')}
+            />
+          )}
         </div>
 
         <p className="text-center text-xs text-gray-600 font-mono mt-4">
