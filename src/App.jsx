@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { useRole } from './hooks/useRole';
@@ -8,6 +9,7 @@ import Header from './components/layout/Header';
 import ErrorBoundary from './components/ErrorBoundary';
 import GlobalBanner from './components/ui/GlobalBanner';
 import FeatureGate from './components/ui/FeatureGate';
+import PageTransition from './components/ui/PageTransition';
 import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
@@ -86,15 +88,21 @@ function Layout({ children }) {
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 pt-20 pb-8 px-4 md:px-6 max-w-6xl w-full mx-auto">
           <GlobalBanner />
-          {showMaintenance ? (
-            <MaintenancePage />
-          ) : (
-            <ErrorBoundary key={location.pathname}>
-              <Suspense fallback={<PageLoader />}>
-                {children}
-              </Suspense>
-            </ErrorBoundary>
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            {showMaintenance ? (
+              <PageTransition key="maintenance">
+                <MaintenancePage />
+              </PageTransition>
+            ) : (
+              <PageTransition key={location.pathname}>
+                <ErrorBoundary key={location.pathname}>
+                  <Suspense fallback={<PageLoader />}>
+                    {children}
+                  </Suspense>
+                </ErrorBoundary>
+              </PageTransition>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     </div>

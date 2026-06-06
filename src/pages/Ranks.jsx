@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -72,8 +73,13 @@ export default function Ranks() {
                     <span>{myProgress.pct}%</span>
                   </div>
                   <div className="w-full h-2 bg-dark-500 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${myProgress.pct}%`, background: myRank.color, boxShadow: `0 0 8px ${myRank.glow}` }} />
+                    <motion.div
+                      className="h-full rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${myProgress.pct}%` }}
+                      transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
+                      style={{ background: myRank.color, boxShadow: `0 0 8px ${myRank.glow}` }}
+                    />
                   </div>
                 </div>
               ) : (

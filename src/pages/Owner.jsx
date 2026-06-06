@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo, useDeferredValue } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gem, Activity, Users, FileText, Settings, Shield,
   Zap, Key, ChevronDown, Search, RefreshCw,
@@ -14,6 +15,26 @@ import ConfirmModal from '../components/ui/ConfirmModal';
 
 const OC = '#f97316';
 const OG = 'rgba(249,115,22,0.15)';
+
+const fadeTab = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
+  exit:    { opacity: 0, y: -4, transition: { duration: 0.12 } },
+};
+const gridContainer = {
+  animate: { transition: { staggerChildren: 0.05 } },
+};
+const gridCard = {
+  initial: { opacity: 0, y: 16, scale: 0.97 },
+  animate: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: 'easeOut' } },
+};
+const listContainer = {
+  animate: { transition: { staggerChildren: 0.04 } },
+};
+const listItem = {
+  initial: { opacity: 0, x: -10 },
+  animate: { opacity: 1, x: 0, transition: { duration: 0.2 } },
+};
 
 // ─── Painel Tab ──────────────────────────────────────────────────────────────
 
@@ -63,29 +84,31 @@ function PainelTab({ onlineCount }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3"
+        variants={gridContainer} initial="initial" animate="animate">
         {row1.map(c => (
-          <div key={c.label} className="card p-4" style={{ borderColor: `${c.color}25` }}>
+          <motion.div key={c.label} variants={gridCard} className="card p-4" style={{ borderColor: `${c.color}25` }}>
             <c.Icon size={13} style={{ color: c.color }} className="mb-2 opacity-60" />
             <p className="font-display text-2xl font-bold" style={{ color: c.color }}>
               {c.value ?? 0}
             </p>
             <p className="text-xs font-mono text-gray-500 mt-0.5">{c.label}</p>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3"
+        variants={gridContainer} initial="initial" animate="animate">
         {row2.map(c => (
-          <div key={c.label} className="card p-4" style={{ borderColor: `${c.color}25` }}>
+          <motion.div key={c.label} variants={gridCard} className="card p-4" style={{ borderColor: `${c.color}25` }}>
             <c.Icon size={13} style={{ color: c.color }} className="mb-2 opacity-60" />
             <p className="font-display text-2xl font-bold" style={{ color: c.color }}>
               {c.value ?? 0}
             </p>
             <p className="text-xs font-mono text-gray-500 mt-0.5">{c.label}</p>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
@@ -132,7 +155,7 @@ function PainelTab({ onlineCount }) {
 const ROLE_COLOR = { owner: OC, super_admin: '#39ff14', admin: '#a855f7', user: '#6b7280' };
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
-function UserRow({ user, onSetRole, onBan }) {
+const UserRow = memo(function UserRow({ user, onSetRole, onBan }) {
   const [open, setOpen] = useState(false);
   const isOwnerUser     = user.role === 'owner';
 
@@ -233,7 +256,7 @@ function UserRow({ user, onSetRole, onBan }) {
       )}
     </div>
   );
-}
+});
 
 function UsuariosTab() {
   const [users, setUsers]     = useState([]);
@@ -241,6 +264,7 @@ function UsuariosTab() {
   const [search, setSearch]   = useState('');
   const [filter, setFilter]   = useState('all');
   const [confirm, setConfirm] = useState(null);
+  const deferredSearch        = useDeferredValue(search);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -304,13 +328,13 @@ function UsuariosTab() {
     }
   }
 
-  const filtered = users.filter(u => {
-    if (search && !u.username?.toLowerCase().includes(search.toLowerCase())) return false;
+  const filtered = useMemo(() => users.filter(u => {
+    if (deferredSearch && !u.username?.toLowerCase().includes(deferredSearch.toLowerCase())) return false;
     if (filter === 'admin'       && u.role !== 'admin')       return false;
     if (filter === 'super_admin' && u.role !== 'super_admin') return false;
     if (filter === 'banned'      && !u.banned)                return false;
     return true;
-  });
+  }), [users, deferredSearch, filter]);
 
   return (
     <div className="space-y-4">
@@ -417,9 +441,10 @@ function LogsTab() {
           {[...Array(8)].map((_, i) => <div key={i} className="h-12 bg-dark-700 rounded-lg animate-pulse" />)}
         </div>
       ) : (
-        <div className="space-y-1">
+        <motion.div className="space-y-1"
+          variants={listContainer} initial="initial" animate="animate">
           {logs.map(log => (
-            <div key={log.id}
+            <motion.div key={log.id} variants={listItem}
               className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
               <span className="shrink-0 text-sm leading-none mt-0.5">
                 {CAT_EMOJI[log.category] || '📋'}
@@ -448,14 +473,14 @@ function LogsTab() {
                   hour: '2-digit', minute: '2-digit',
                 })}
               </p>
-            </div>
+            </motion.div>
           ))}
           {logs.length === 0 && (
             <div className="card p-8 text-center">
               <p className="text-xs text-gray-500 font-mono">Nenhum log encontrado.</p>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       <div className="flex gap-2 justify-center">
@@ -709,11 +734,12 @@ function NotificacoesTab() {
           <p className="text-xs text-gray-500 font-mono">Nenhuma notificação.</p>
         </div>
       ) : (
-        <div className="space-y-1">
+        <motion.div className="space-y-1"
+          variants={listContainer} initial="initial" animate="animate">
           {notifs.map((n, i) => {
             const cfg = KIND_CFG[n.kind] || { emoji: '📋', color: '#6b7280' };
             return (
-              <div key={n.id ?? i}
+              <motion.div key={n.id ?? i} variants={listItem}
                 className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
                 <span className="text-sm shrink-0 leading-none mt-0.5">{cfg.emoji}</span>
                 <div className="flex-1 min-w-0">
@@ -730,10 +756,10 @@ function NotificacoesTab() {
                     hour: '2-digit', minute: '2-digit',
                   })}
                 </p>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
     </div>
   );
@@ -884,12 +910,16 @@ export default function Owner() {
         ))}
       </div>
 
-      {tab === 'painel'       && <PainelTab onlineCount={onlineCount} />}
-      {tab === 'usuarios'     && <UsuariosTab />}
-      {tab === 'logs'         && <LogsTab />}
-      {tab === 'site'         && <SiteTab />}
-      {tab === 'notificacoes' && <NotificacoesTab />}
-      {tab === 'metricas'     && <MetricasTab />}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div key={tab} variants={fadeTab} initial="initial" animate="animate" exit="exit">
+          {tab === 'painel'       && <PainelTab onlineCount={onlineCount} />}
+          {tab === 'usuarios'     && <UsuariosTab />}
+          {tab === 'logs'         && <LogsTab />}
+          {tab === 'site'         && <SiteTab />}
+          {tab === 'notificacoes' && <NotificacoesTab />}
+          {tab === 'metricas'     && <MetricasTab />}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

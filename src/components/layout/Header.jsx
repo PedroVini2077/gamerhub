@@ -2,6 +2,7 @@ import { Menu, LogIn, LogOut, Bell, X, Heart, Users } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -60,14 +61,21 @@ export default function Header({ onMenuClick }) {
             )}
           </button>
 
-          {open && (
+          <AnimatePresence>
+            {open && (
             <>
               {/* Overlay pra fechar */}
               <div
                 className="fixed inset-0 z-40"
                 onClick={() => setOpen(false)}
               />
-              <div className="absolute right-0 top-10 w-80 notif-panel bg-dark-700 border border-dark-400 rounded shadow-xl z-50">
+              <motion.div
+                className="absolute right-0 top-10 w-80 notif-panel bg-dark-700 border border-dark-400 rounded shadow-xl z-50"
+                initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+              >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-dark-500">
                   <span className="text-xs font-display text-gray-300 uppercase tracking-wider">
                     Notificações
@@ -117,9 +125,10 @@ export default function Header({ onMenuClick }) {
                     </div>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             </>
-          )}
+            )}
+          </AnimatePresence>
         </div>
       )}
 
