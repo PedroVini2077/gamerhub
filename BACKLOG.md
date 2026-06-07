@@ -22,14 +22,12 @@
 ## 🟠 Importante
 
 ### Banco / Segurança
-- ⬜ **Owner deve poder aprovar/negar pedidos de desban.** Hoje
-  `approve_unban_request` e `deny_unban_request` exigem `role = 'super_admin'`
-  estrito — o `owner` fica de fora. Na prática o owner desbane direto via
-  `unban_user`, então não trava o dia a dia; mas se um dia existir só owner e
-  nenhum super_admin, os pedidos pendentes ficariam sem quem revisasse.
-  *Correção simples:* trocar a checagem por `role NOT IN ('super_admin','owner')`
-  nas duas funções (mudança aditiva, não altera o caminho atual do super_admin).
-  Validar em ROLLBACK depois. *(achado na validação de integração das RPCs.)*
+- ✅ **Owner agora pode aprovar/negar pedidos de desban.** `approve_unban_request`
+  e `deny_unban_request` trocaram a checagem de `role = 'super_admin'` estrito
+  para `role NOT IN ('super_admin','owner')` — mudança aditiva, não altera o
+  caminho do super_admin. Testado em transação com ROLLBACK usando usuários
+  reais (owner aprova ✓, owner nega ✓, admin comum continua bloqueado ✓) antes
+  de aplicar via migration. *(migration `allow_owner_review_unban_requests`)*
 - ⬜ **Ativar proteção contra senha vazada (HIBP)** no Auth do Supabase.
   *Ação manual no painel (Authentication → Policies) — precisa do dono.
   Não dá pra automatizar via SQL/MCP (é toggle de config do Auth).*
@@ -115,10 +113,27 @@
   imagens de prévia/thumbnail. *(feito)*
 - ✅ Guarda de cancelamento em `PostCard` (evita setState após desmontar / race
   entre respostas de mídia/likes). *(feito)*
-- ⬜ Padronizar tratamento de erro nas queries (envelopar respostas dos services
-  num formato único `{ data, error }` e tratar na UI de forma consistente).
-- ⬜ Skeletons de loading no lugar de "..." em texto.
-- 🟡 **Baseline de lint** (`npm run lint`): **0 erros, 45 warnings**. Os erros
+- 🟡 **Padronizar tratamento de erro nas queries** (envelopar respostas dos
+  services num formato único `{ data, error }`). *Avaliado: hoje os 6 services
+  (`postService`, `profileService`, etc.) retornam formatos diferentes —
+  alguns só `data`, alguns `{ data, error }`, alguns `{ url, error }`, alguns
+  nada. Mudar a **assinatura** de ~30 funções espalhadas por ~10 componentes é
+  refactor estrutural de verdade: qualquer `const { data } = await fetchX()`
+  que vire `{ data, error }` quebra silenciosamente se o consumidor não for
+  ajustado junto — exatamente o tipo de mudança que o CLAUDE.md pede plano +
+  aprovação antes (não é "aditiva e segura", é mudar contrato). Além disso o
+  React Query já absorve a maior parte do tratamento de erro nas páginas
+  migradas. Fica para quando fizer sentido revisar os services como um todo —
+  não uma "leva" de consolidação casual.*
+- ✅ **Skeletons de loading** — trocados os últimos textos `"Carregando..."` em
+  listas por skeletons (`animate-pulse` + `bg-dark-700 rounded`, no padrão já
+  usado em `Home`/`UsuariosTab`/`LogsTab`): `NotifsPanel`, `SuperAdminPanel`
+  (bloqueados + pedidos de desban), `Admin.jsx` (loading geral) e `Lives.jsx`.
+  Os "Carregando..." que sobraram são labels de botão (`Salvando...`,
+  `Atualizar`, `Carregar mais`) — esses são textuais por natureza, não viram
+  skeleton. *(feito)*
+- 🟡 **Baseline de lint** (`npm run lint`): **0 erros, 34 warnings** (era 45).
+  Os erros
   que sobravam eram regras de "React Compiler readiness" do preset
   (`set-state-in-effect`, `refs`, `purity`, `immutability`) + `react-refresh`,
   disparando em padrões idiomáticos/funcionando. Como o projeto **não usa o
@@ -141,9 +156,12 @@
   Migrados: `Keys`, `Ranks` (read-only); `Home`, `Community` (realtime via
   `useRealtime` invalidando/recarregando a query); abas do Owner —
   `PainelTab`, `MetricasTab`, `NotificacoesTab` (realtime + refetch),
-  `LogsTab` (paginação server-side virou parte da `queryKey`), `UsuariosTab`.
-  Resultado: lint **45 → 37 warnings**, `set-state-in-effect`/`exhaustive-deps`
-  de 34 → 24 — *de verdade*, não escondido (o padrão `useEffect`+`setState`
+  `LogsTab` (paginação server-side virou parte da `queryKey`), `UsuariosTab`;
+  `Header` (notificações — `markAllRead` usa `queryClient.setQueryData` pra
+  manter o update otimista local), `Sidebar` (stats compactos) e `RightPanel`
+  (keys/promos + stats — duas queries independentes).
+  Resultado: lint **45 → 34 warnings**, `set-state-in-effect`/`exhaustive-deps`
+  caíram bastante — *de verdade*, não escondido (o padrão `useEffect`+`setState`
   que disparava os warnings deixou de existir nesses arquivos).
   **Ficam de fora de propósito** (avaliados e descartados, não esquecidos):
   - `Lives` — chat/presença/timeouts/timers são event-driven e mutáveis, não
@@ -159,8 +177,7 @@
     `loadMoreKeys`) já integrada no fluxo. Migrar é refatoração estrutural
     grande com risco real de quebrar banimento/moderação/notificações — pede
     plano dedicado e aprovação antes, não cabe nesta leva gradual.
-  *Resta (se decidirmos seguir):* `Header`/`Sidebar`/`RightPanel` (pequenos,
-  baixo risco) e, com plano à parte, `Admin.jsx`.
+  *Resta (com plano à parte, não cabe nesta leva):* `Admin.jsx`.
 - ⬜ **Paginação / virtualização** em listas longas (usuários, logs, posts, chat).
   *(Admin já pagina posts/keys — ver seção Performance acima.)*
 - ⬜ **Migração para TypeScript** (introduz a pasta `types/`).

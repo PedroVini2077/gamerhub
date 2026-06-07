@@ -715,8 +715,8 @@ export default function Admin() {
       </div>
 
       {loading ? (
-        <div className="card p-8 text-center">
-          <p className="font-mono text-gray-500 text-sm animate-pulse">Carregando...</p>
+        <div className="space-y-2">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-14 bg-dark-700 rounded-xl animate-pulse" />)}
         </div>
       ) : (
         <AnimatePresence mode="wait" initial={false}>

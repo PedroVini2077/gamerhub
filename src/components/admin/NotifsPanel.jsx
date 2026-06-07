@@ -30,8 +30,8 @@ export default function NotifsPanel({ notifications, readIds, notifLoading, fetc
       </div>
 
       {notifLoading ? (
-        <div className="card p-8 text-center">
-          <p className="text-xs font-mono text-gray-500 animate-pulse">Carregando notificações...</p>
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-dark-700 rounded-xl animate-pulse" />)}
         </div>
       ) : notifications.length === 0 ? (
         <div className="card p-8 text-center">

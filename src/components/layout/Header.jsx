@@ -1,35 +1,36 @@
 import { Menu, LogIn, LogOut, Bell, X, Heart, Users } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 export default function Header({ onMenuClick }) {
   const { user, profile, signOut } = useAuth();
-  const [notifs, setNotifs] = useState([]);
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (user) fetchNotifs();
-  }, [user]);
-
-  async function fetchNotifs() {
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setNotifs(data || []);
-  }
+  const { data: notifs = [] } = useQuery({
+    queryKey: ['header_notifications', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
   async function markAllRead() {
     await supabase.from('notifications')
       .update({ read: true })
       .eq('user_id', user.id);
-    setNotifs(n => n.map(x => ({ ...x, read: true })));
+    queryClient.setQueryData(['header_notifications', user?.id], (old = []) => old.map(x => ({ ...x, read: true })));
   }
 
   async function handleSignOut() {

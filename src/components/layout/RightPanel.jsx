@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchGameKeys, fetchSiteStats } from '../../services/keyService';
 import { Tag, ExternalLink, Gift, Users, FileText, Key } from 'lucide-react';
 import { formatNumber } from '../../lib/format';
 
 export default function RightPanel() {
-  const [keys, setKeys] = useState([]);
-  const [promos, setPromos] = useState([]);
-  const [stats, setStats] = useState({ users: 0, postsToday: 0, keysCount: 0 });
+  const { data: keysData } = useQuery({
+    queryKey: ['right_panel_keys'],
+    queryFn: () => fetchGameKeys(10),
+  });
+  const keys = keysData?.keys ?? [];
+  const promos = keysData?.promos ?? [];
 
-  useEffect(() => {
-    fetchGameKeys(10).then(({ keys: k, promos: p }) => { setKeys(k); setPromos(p); });
-    fetchSiteStats().then(setStats);
-  }, []);
-
+  const { data: stats = { users: 0, postsToday: 0, keysCount: 0 } } = useQuery({
+    queryKey: ['right_panel_stats'],
+    queryFn: fetchSiteStats,
+  });
 
 
   return (

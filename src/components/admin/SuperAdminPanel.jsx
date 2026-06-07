@@ -29,7 +29,9 @@ export default function SuperAdminPanel({
           </button>
         </div>
         {blockedLoading ? (
-          <p className="text-xs text-gray-500 font-mono py-2">Carregando...</p>
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-dark-700 rounded-lg animate-pulse" />)}
+          </div>
         ) : blockedLogins.length === 0 ? (
           <div className="text-center py-4">
             <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />
@@ -83,7 +85,9 @@ export default function SuperAdminPanel({
           </button>
         </div>
         {unbanReqLoading ? (
-          <p className="text-xs text-gray-500 font-mono py-2">Carregando...</p>
+          <div className="space-y-2">
+            {[...Array(2)].map((_, i) => <div key={i} className="h-28 bg-dark-700 rounded-lg animate-pulse" />)}
+          </div>
         ) : unbanRequests.length === 0 ? (
           <div className="text-center py-4">
             <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />

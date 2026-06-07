@@ -5,30 +5,27 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
 import { getBorderForProfile } from '../../lib/ranks';
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { formatNumber } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
   const { isAdmin, isOwner, role } = useRole();
-  const [stats, setStats] = useState({ users: 0, postsToday: 0, keys: 0 });
 
-  async function fetchStats() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const [{ count: users }, { count: postsToday }, { count: keys }] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }),
-      supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
-      supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
-    ]);
-    setStats({ users: users || 0, postsToday: postsToday || 0, keys: keys || 0 });
-  }
-
-  useEffect(() => {
-    fetchStats();
-
-  }, []);
+  const { data: stats = { users: 0, postsToday: 0, keys: 0 } } = useQuery({
+    queryKey: ['sidebar_stats'],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const [{ count: users }, { count: postsToday }, { count: keys }] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+        supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
+      ]);
+      return { users: users || 0, postsToday: postsToday || 0, keys: keys || 0 };
+    },
+  });
 
   const nav = [
     { to: '/', icon: Home, label: 'Feed' },

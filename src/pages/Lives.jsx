@@ -204,8 +204,8 @@ export default function Lives() {
   const uniqueChatters = [...new Map(messages.map(m => [m.user_id, m.profiles])).values()];
 
   if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-gray-500 font-mono text-sm animate-pulse">Carregando lives...</p>
+    <div className="space-y-2">
+      {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-dark-700 rounded-xl animate-pulse" />)}
     </div>
   );
 
