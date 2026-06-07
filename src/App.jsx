@@ -112,6 +112,11 @@ function Layout({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Rede de segurança de nível raiz: pega crashes de render em QUALQUER
+          rota (inclusive Login/AuthConfirm/NotFound, fora do Layout) e até do
+          próprio AuthProvider — evita tela branca total. Os ErrorBoundary
+          por-rota dentro do Layout continuam como camada granular. */}
+      <ErrorBoundary>
       <AuthProvider>
         <Toaster
           position="bottom-right"
@@ -143,6 +148,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

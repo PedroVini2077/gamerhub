@@ -14,6 +14,11 @@
   entregar, não depois.
 - **Não entregar sem ter certeza.** O dono cansou de gastar tempo resolvendo
   erros que deveriam ter sido pegos antes. Na dúvida, validar.
+- **Base sólida acima de tudo — não basta "bonito e funciona".** O objetivo é um
+  site concreto e real, com o mínimo de falhas, que não vire ruínas no futuro.
+  Priorizar robustez, resiliência a erros e solidez sobre aparência ou features.
+  Ao consolidar, preferir mudanças **aditivas e seguras** (que não alteram o
+  caminho feliz) e ir **gradualmente**, validando cada passo — nada pode quebrar.
 - **Scripts de teste avulsos:** rodar e, se passar, **apagar** — nunca commitar
   script de teste.
 - **Foco atual do projeto:** parar de adicionar features novas e **melhorar a
