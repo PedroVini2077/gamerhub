@@ -133,9 +133,20 @@
 
 ## 🔵 Futuro
 
-- ⬜ **Cache de dados** (React Query ou SWR): dedupe de requests, invalidação,
-  sincronização entre componentes.
+- 🟡 **Cache de dados — React Query** (`@tanstack/react-query`): dedupe de
+  requests, invalidação, sincronização entre componentes. **Em migração
+  gradual.** Fundação pronta (`lib/queryClient.js` + `QueryClientProvider` no
+  `App.jsx`; defaults: `staleTime 30s`, `refetchOnWindowFocus false` pra poupar
+  egress, `retry 1`). Migrados: `Keys`, `Ranks` (read-only), `Home`, `Community`
+  (realtime via `useRealtime` invalidando/recarregando a query).
+  *Falta:* painéis (`Admin`, abas do `Owner`) e secundários (`Header`,
+  `Sidebar`, `RightPanel`, etc.).
+  **`Lives` fica de fora de propósito** — a lista de lives até daria, mas a
+  página é majoritariamente chat/presença/timeouts/timers orientados a evento e
+  mutáveis, que não mapeiam pra `useQuery`; forçar traria ganho marginal e risco
+  de quebrar o chat ao vivo.
 - ⬜ **Paginação / virtualização** em listas longas (usuários, logs, posts, chat).
+  *(Admin já pagina posts/keys — ver seção Performance acima.)*
 - ⬜ **Migração para TypeScript** (introduz a pasta `types/`).
 - 🟡 **Testes** — Vitest configurado; **unitários da lógica pura prontos**
   (`src/lib/__tests__/`: ranks/XP, password, date, embed, format — 30 testes).

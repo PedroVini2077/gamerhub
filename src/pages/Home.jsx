@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
 import { fetchFeedPosts } from '../services/postService';
@@ -13,37 +14,35 @@ const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
 
 export default function Home() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [newPosts, setNewPosts] = useState(0);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('todos');
-  const loadedRef = useRef(false);
   const userRef = useRef(user);
   const fetchDebounceRef = useRef(null);
   userRef.current = user;
 
-  const fetchPosts = useCallback(async () => {
-    const data = await fetchFeedPosts(30);
-    setPosts(data);
-    setLoading(false);
-    setNewPosts(0);
-  }, []);
+  const { data: posts = [], isPending: loading, isSuccess, refetch } = useQuery({
+    queryKey: ['feed_posts'],
+    queryFn: () => fetchFeedPosts(30),
+  });
 
-  useEffect(() => {
-    fetchPosts().then(() => { loadedRef.current = true; });
-  }, []);
+  // Recarrega o feed e zera o contador de "novos posts" (mesmo efeito que o
+  // antigo fetchPosts). Usado pelo botão de novos posts, pós-criar e pós-deletar.
+  const reloadPosts = useCallback(() => {
+    setNewPosts(0);
+    refetch();
+  }, [refetch]);
 
   useRealtime('posts', (payload) => {
-    if (!loadedRef.current) return;
+    if (!isSuccess) return;
     if (payload.eventType === 'INSERT') {
       if (payload.new?.user_id === userRef.current?.id) {
-        setTimeout(() => fetchPosts(), 5000);
+        setTimeout(() => reloadPosts(), 5000);
       } else setNewPosts(n => n + 1);
     }
     if (payload.eventType === 'DELETE') {
       clearTimeout(fetchDebounceRef.current);
-      fetchDebounceRef.current = setTimeout(() => fetchPosts(), 500);
+      fetchDebounceRef.current = setTimeout(() => reloadPosts(), 500);
     }
   });
 
@@ -111,14 +110,14 @@ export default function Home() {
 
         {newPosts > 0 && (
           <button
-            onClick={fetchPosts}
+            onClick={reloadPosts}
             className="w-full card p-3 text-center text-xs font-mono text-neon-green border-neon-green/30 hover:bg-neon-green/5 transition-colors animate-fade-up"
           >
             ↑ {newPosts} novo{newPosts > 1 ? 's' : ''} post{newPosts > 1 ? 's' : ''} — clique para ver
           </button>
         )}
 
-        <PostForm onPost={fetchPosts} />
+        <PostForm onPost={reloadPosts} />
 
         {loading ? (
           <div className="space-y-4">
@@ -141,7 +140,7 @@ export default function Home() {
             variants={listContainer} initial="initial" animate="animate">
             {filtered.map(p => (
               <motion.div key={p.id} variants={listItem}>
-                <PostCard post={p} onDelete={fetchPosts} />
+                <PostCard post={p} onDelete={reloadPosts} />
               </motion.div>
             ))}
           </motion.div>

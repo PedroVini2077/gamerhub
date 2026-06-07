@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
 import { fetchMuralPosts } from '../services/communityService';
@@ -8,21 +9,18 @@ import { useRealtime } from '../hooks/useRealtime';
 import { Users } from 'lucide-react';
 
 export default function Community() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const fetchDebounceRef = useRef(null);
 
-  const fetch = useCallback(async () => {
-    const data = await fetchMuralPosts(50);
-    setItems(data);
-    setLoading(false);
-  }, []);
+  const { data: items = [], isPending: loading, refetch } = useQuery({
+    queryKey: ['mural_posts'],
+    queryFn: () => fetchMuralPosts(50),
+  });
 
-  useEffect(() => { fetch(); }, []);
+  const reload = useCallback(() => { refetch(); }, [refetch]);
 
   useRealtime('community_posts', () => {
     clearTimeout(fetchDebounceRef.current);
-    fetchDebounceRef.current = setTimeout(fetch, 300);
+    fetchDebounceRef.current = setTimeout(reload, 300);
   });
 
   return (
@@ -35,7 +33,7 @@ export default function Community() {
         <p className="text-xs text-gray-500 font-mono">Fale com a galera — sem filtro, só respeito.</p>
       </div>
 
-      <MuralForm onPost={fetch} />
+      <MuralForm onPost={reload} />
 
       {loading ? (
         <div className="card p-5 animate-pulse">
@@ -51,7 +49,7 @@ export default function Community() {
           variants={listContainer} initial="initial" animate="animate">
           {items.map(i => (
             <motion.div key={i.id} variants={listItem}>
-              <MuralCard item={i} onDelete={fetch} />
+              <MuralCard item={i} onDelete={reload} />
             </motion.div>
           ))}
         </motion.div>
