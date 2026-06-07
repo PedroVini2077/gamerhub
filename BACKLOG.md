@@ -28,9 +28,13 @@
   caminho do super_admin. Testado em transação com ROLLBACK usando usuários
   reais (owner aprova ✓, owner nega ✓, admin comum continua bloqueado ✓) antes
   de aplicar via migration. *(migration `allow_owner_review_unban_requests`)*
-- ⬜ **Ativar proteção contra senha vazada (HIBP)** no Auth do Supabase.
-  *Ação manual no painel (Authentication → Policies) — precisa do dono.
-  Não dá pra automatizar via SQL/MCP (é toggle de config do Auth).*
+- 🔒 **Proteção contra senha vazada (HIBP) — não disponível agora (precisa
+  upgrade pro plano Pro).** Localizada em **Authentication → Sign In/Providers
+  → Email → "Prevent use of leaked passwords"** — confirmado visualmente: o
+  toggle aparece mas fica travado, com aviso "*Only available on Pro plan and
+  above*". A organização (`PedroVini2077's Org`) está no **plano Free**, então
+  não é "ação pendente do dono" — é limitação de plano mesmo. Reavaliar se/quando
+  decidirem fazer upgrade pro Pro (~US$25/mês).
 - ⬜ **Mover extensão `pg_net`** do schema `public` para um schema dedicado.
   *Adiado de propósito: `ALTER EXTENSION ... SET SCHEMA` pode quebrar
   webhooks/triggers que referenciam `net.*`. Baixo benefício × risco real —
