@@ -1,64 +1,21 @@
-import { useState, useEffect, memo } from 'react';
-import { fetchComments, fetchCommentCount, addComment, deleteComment } from '../../services/postService';
+import { useState, useEffect, useMemo, memo } from 'react';
+import { fetchComments, fetchCommentCount, addComment } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
-import { useRole } from '../../hooks/useRole';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
-import { Send, Trash2, MessageSquare } from 'lucide-react';
-import AvatarPopup from '../ui/AvatarPopup';
-
-function CommentCard({ comment, onDelete }) {
-  const { user, profile } = useAuth();
-  const { isAdmin } = useRole();
-  const canDelete = user && (isAdmin || user.id === comment.user_id);
-
-  async function handleDelete() {
-    if (!confirm('Deletar comentário?')) return;
-    const { error } = await deleteComment(comment.id, user.id, isAdmin);
-    if (error) toast.error('Erro ao deletar');
-    else {
-      logAudit('comment_deleted', `@${profile?.username} deletou um comentário de @${comment.profiles?.username}`, { category: 'content' });
-      onDelete?.();
-    }
-  }
-
-  return (
-    <div className="flex items-start gap-2.5 py-2.5 border-b border-dark-600 last:border-0">
-      <AvatarPopup profile={comment.profiles} size={28} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-xs font-semibold text-white">
-            {comment.profiles?.username || 'Gamer'}
-          </span>
-          <span className="text-xs text-gray-600 font-mono">
-            {new Date(comment.created_at).toLocaleString('pt-BR', {
-              day: '2-digit', month: '2-digit',
-              hour: '2-digit', minute: '2-digit'
-            })}
-          </span>
-        </div>
-        <p className="text-xs text-gray-300 leading-relaxed break-words">{comment.content}</p>
-      </div>
-      {canDelete && (
-        <button onClick={handleDelete} className="text-gray-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">
-          <Trash2 size={12} />
-        </button>
-      )}
-    </div>
-  );
-}
+import { MessageSquare } from 'lucide-react';
+import CommentCard from './CommentCard';
+import CommentComposer from './CommentComposer';
 
 const CommentSection = memo(function CommentSection({ postId, registerRefresh }) {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState([]);
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
 
   async function fetchCount() {
-    const count = await fetchCommentCount(postId);
-    setCount(count);
+    const c = await fetchCommentCount(postId);
+    setCount(c);
   }
 
   async function fetchCommentList() {
@@ -76,25 +33,33 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
     if (open) fetchCommentList();
   }, [open]);
 
-  async function handleSubmit() {
-    if (!text.trim()) return;
-    setLoading(true);
-    const { error } = await addComment({ postId, userId: profile?.id, content: text.trim() });
+  // Agrupa em árvore de 1 nível: raízes + respostas achatadas sob o ancestral raiz.
+  const { roots, repliesByRoot } = useMemo(() => {
+    const byId = Object.fromEntries(comments.map(c => [c.id, c]));
+    const rootIdOf = (c) => {
+      let cur = c;
+      while (cur.parent_id && byId[cur.parent_id]) cur = byId[cur.parent_id];
+      return cur.id;
+    };
+    const rootList = comments.filter(c => !c.parent_id);
+    const byRoot = {};
+    for (const c of comments) {
+      if (!c.parent_id) continue;
+      const rid = rootIdOf(c);
+      (byRoot[rid] ||= []).push(c);
+    }
+    return { roots: rootList, repliesByRoot: byRoot };
+  }, [comments]);
+
+  async function submitComment(content, parentId = null) {
+    const { error } = await addComment({ postId, userId: profile?.id, content, parentId });
     if (error) {
       toast.error('Erro ao comentar');
-    } else {
-      logAudit('comment_added', `@${profile?.username} comentou em um post`, { category: 'content' });
-      setText('');
-      fetchCommentList();
+      return false;
     }
-    setLoading(false);
-  }
-
-  function handleKey(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
+    logAudit('comment_added', `@${profile?.username} ${parentId ? 'respondeu um comentário' : 'comentou em um post'}`, { category: 'content' });
+    await fetchCommentList();
+    return true;
   }
 
   return (
@@ -109,35 +74,22 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
 
       {open && (
         <div className="mt-3 space-y-1 animate-fade-up">
-          {comments.length > 0 && (
+          {roots.length > 0 && (
             <div className="bg-dark-700 rounded-lg px-3 py-1 mb-3">
-              {comments.map(c => (
-                <CommentCard key={c.id} comment={c} onDelete={fetchCommentList} />
+              {roots.map(c => (
+                <CommentCard
+                  key={c.id}
+                  comment={c}
+                  replies={repliesByRoot[c.id] || []}
+                  onDelete={fetchCommentList}
+                  onReply={(parentId, text) => submitComment(text, parentId)}
+                />
               ))}
             </div>
           )}
 
           {user ? (
-            <div className="flex gap-2 items-end">
-              <textarea
-                id="comment-input"
-                aria-label="Escreva um comentário"
-                className="input-gamer resize-none flex-1 text-sm"
-                rows={2}
-                placeholder="Escreva um comentário... (Enter para enviar)"
-                value={text}
-                onChange={e => setText(e.target.value)}
-                onKeyDown={handleKey}
-                maxLength={500}
-              />
-              <button
-                onClick={handleSubmit}
-                disabled={loading || !text.trim()}
-                className="btn-neon py-2 px-3 shrink-0 flex items-center gap-1"
-              >
-                <Send size={13} />
-              </button>
-            </div>
+            <CommentComposer onSubmit={(text) => submitComment(text)} />
           ) : (
             <p className="text-xs text-gray-500 font-mono">Faça login para comentar</p>
           )}

@@ -143,12 +143,32 @@ export async function fetchCommentCount(postId) {
   return count || 0;
 }
 
-export async function addComment({ postId, userId, content }) {
-  return supabase.from('comments').insert({ post_id: postId, user_id: userId, content });
+export async function addComment({ postId, userId, content, parentId = null }) {
+  return supabase.from('comments').insert({ post_id: postId, user_id: userId, content, parent_id: parentId });
 }
 
 export async function deleteComment(commentId, userId, isAdmin) {
   let q = supabase.from('comments').delete().eq('id', commentId);
   if (!isAdmin) q = q.eq('user_id', userId);
   return q;
+}
+
+// ─── Curtidas em comentários ───────────────────────────────────────────────────
+
+export async function fetchCommentLikeStatus(commentId, userId) {
+  const [{ count }, { data: liked }] = await Promise.all([
+    supabase.from('comment_likes').select('*', { count: 'exact', head: true }).eq('comment_id', commentId),
+    userId
+      ? supabase.from('comment_likes').select('id').eq('comment_id', commentId).eq('user_id', userId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  return { count: count || 0, liked: !!liked };
+}
+
+export async function likeComment(commentId, userId) {
+  return supabase.from('comment_likes').insert({ comment_id: commentId, user_id: userId });
+}
+
+export async function unlikeComment(commentId, userId) {
+  return supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId);
 }
