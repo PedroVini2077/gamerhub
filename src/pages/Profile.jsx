@@ -8,6 +8,7 @@ import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy } from
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { getRankLabel, getSubRankProgress, RANK_TIERS, getBorderForProfile } from '../lib/ranks';
+import StaffApplicationCard from '../components/profile/StaffApplicationCard';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
 const PLATFORMS  = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
@@ -283,6 +284,9 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* Candidatura a staff — só faz sentido pra quem ainda é usuário comum */}
+      {profile?.role === 'user' && <StaffApplicationCard userId={user.id} />}
 
       {/* Informações pessoais */}
       <div className="card p-5 space-y-4">

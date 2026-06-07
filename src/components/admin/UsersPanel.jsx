@@ -1,19 +1,15 @@
 import { useState } from 'react';
-import { Users, Ban, Shield, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { Users, Ban, Shield, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search, UserPlus, ShieldAlert } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
-const ROLES = ['user', 'admin', 'super_admin'];
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
 
-function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, pendingUnbanIds }) {
+function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, pendingUnbanIds }) {
   const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
   const canEdit = !isMe && user.role !== 'owner' && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const canBan  = !isMe && user.role !== 'owner' && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const hasUnbanPending = pendingUnbanIds?.has(user.id);
-  const availableRoles = ROLES.filter(r => r !== user.role).filter(r =>
-    isSuperAdmin ? true : r !== 'super_admin'
-  );
 
   return (
     <div className="card overflow-hidden">
@@ -58,14 +54,26 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, 
           )}
           {canEdit && !user.banned && (
             <div>
-              <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Mudar role para:</p>
+              <p className="text-xs text-gray-500 font-mono uppercase tracking-wider mb-2">Cargo:</p>
               <div className="flex gap-2 flex-wrap">
-                {availableRoles.map(r => (
-                  <button key={r} onClick={() => { onRoleChange(user.id, r); setExpanded(false); }}
-                    className={`tag cursor-pointer hover:opacity-100 transition-opacity ${roleColors[r]}`}>
-                    → {r}
+                {user.role === 'user' && (
+                  <button onClick={() => { onNominate(user, 'admin'); setExpanded(false); }}
+                    className="flex items-center gap-1.5 text-xs font-mono text-purple-300/80 hover:text-purple-300 border border-purple-400/30 hover:border-purple-400/60 px-3 py-1.5 rounded transition-all">
+                    <UserPlus size={12} />Indicar para Staff
                   </button>
-                ))}
+                )}
+                {user.role === 'admin' && isSuperAdmin && (
+                  <button onClick={() => { onNominate(user, 'super_admin'); setExpanded(false); }}
+                    className="flex items-center gap-1.5 text-xs font-mono text-neon-green/80 hover:text-neon-green border border-neon-green/30 hover:border-neon-green/60 px-3 py-1.5 rounded transition-all">
+                    <UserPlus size={12} />Indicar p/ Super Admin
+                  </button>
+                )}
+                {(user.role === 'admin' || user.role === 'super_admin') && (
+                  <button onClick={() => { onDemote(user); setExpanded(false); }}
+                    className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
+                    <ShieldAlert size={12} />Solicitar rebaixamento
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -113,7 +121,7 @@ function UserRow({ user, currentUserId, isSuperAdmin, onRoleChange, onBanClick, 
 export default function UsersPanel({
   users, currentUserId, isSuperAdmin,
   userSearch, setUserSearch, filterRole, setFilterRole,
-  handleRoleChange, setBanModal, setUnbanDirectModal, setUnbanReqModal,
+  onNominate, onDemote, setBanModal, setUnbanDirectModal, setUnbanReqModal,
   handleDeletePosts, pendingUnbanIds,
 }) {
   const searchLower = userSearch.toLowerCase();
@@ -160,7 +168,7 @@ export default function UsersPanel({
         </div>
       ) : filteredUsers.map(u => (
         <UserRow key={u.id} user={u} currentUserId={currentUserId}
-          isSuperAdmin={isSuperAdmin} onRoleChange={handleRoleChange}
+          isSuperAdmin={isSuperAdmin} onNominate={onNominate} onDemote={onDemote}
           onBanClick={u => setBanModal(u)}
           onUnbanDirect={u => setUnbanDirectModal(u)}
           onRequestUnban={u => setUnbanReqModal(u)}

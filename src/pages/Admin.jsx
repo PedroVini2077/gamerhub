@@ -11,7 +11,7 @@ import {
   Shield, X, Users, FileText, Key,
   RotateCcw, CheckCircle, XCircle, Crown,
   Bell, Activity, Trash2, Tv,
-  ShieldAlert, LockOpen,
+  ShieldAlert, LockOpen, UserPlus,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BanModal from '../components/ui/BanModal';
@@ -24,6 +24,8 @@ import KeysPanel from '../components/admin/KeysPanel';
 import NotifsPanel from '../components/admin/NotifsPanel';
 import LogsPanel from '../components/admin/LogsPanel';
 import SuperAdminPanel from '../components/admin/SuperAdminPanel';
+import StaffTab from '../components/admin/StaffTab';
+import { nominateStaff, requestRoleDemotion } from '../services/staffService';
 
 const REACTIVATE_REASONS = [
   'Encerrada por engano', 'Problema técnico', 'Live continuou', 'Pedido do criador', 'Outro',
@@ -36,6 +38,8 @@ const REACTIVATE_REASONS = [
 // devagar que posts.
 const PAGE_SIZE = 20;
 const MAX_USERS = 1000;
+
+const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
 function UnlockCountdownBtn({ onConfirm }) {
   const [countdown, setCountdown] = useState(10);
@@ -224,6 +228,7 @@ export default function Admin() {
   const [unbanRequests, setUnbanRequests] = useState([]);
   const [unbanReqLoading, setUnbanReqLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [demoteModal, setDemoteModal] = useState(null);
   const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
@@ -505,10 +510,41 @@ export default function Admin() {
     fetchLogs();
   }
 
-  async function handleRoleChange(userId, newRole) {
-    const { error } = await supabase.rpc('admin_set_role', { p_user_id: userId, p_new_role: newRole });
-    if (error) toast.error('Sem permissão ou erro ao atualizar');
-    else { toast.success(`Role → ${newRole}`); fetchAll(); }
+  function handleNominate(targetUser, targetRole) {
+    setConfirmModal({
+      title: 'Indicar para Staff',
+      message: `Indicar "${targetUser.username}" para o cargo de ${ROLE_LABEL[targetRole]}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
+      accent: 'purple', confirmLabel: 'Indicar', icon: UserPlus,
+      onConfirm: async () => {
+        try {
+          await nominateStaff(targetUser.id, targetRole);
+          setConfirmModal(null);
+          toast.success(`Indicação de ${targetUser.username} enviada para análise.`);
+        } catch (e) { toast.error(e.message); setConfirmModal(null); }
+      },
+    });
+  }
+
+  function handleDemote(targetUser) {
+    setDemoteModal({
+      title: 'Solicitar Rebaixamento',
+      icon: ShieldAlert,
+      accent: 'red',
+      target: targetUser,
+      subtitle: `"${targetUser.username}" passaria de ${ROLE_LABEL[targetUser.role]} para Usuário. A solicitação é enviada para análise — só vira realidade após aprovação do fundador ou de um super admin, com motivo registrado.`,
+      label: 'Motivo do rebaixamento',
+      placeholder: 'Descreva o que motivou essa solicitação (mínimo 10 caracteres)...',
+      required: true,
+      confirmLabel: 'Enviar solicitação',
+      confirmIcon: ShieldAlert,
+      onConfirm: async (notes) => {
+        try {
+          await requestRoleDemotion(targetUser.id, 'user', notes);
+          setDemoteModal(null);
+          toast.success(`Solicitação de rebaixamento de ${targetUser.username} enviada para análise.`);
+        } catch (e) { toast.error(e.message); }
+      },
+    });
   }
 
   async function confirmUnbanDirect(note) {
@@ -601,6 +637,7 @@ export default function Admin() {
     { id: 'keys',   label: 'Keys & Promos', icon: Key      },
     { id: 'notifs', label: 'Notificações',  icon: Bell, badge: unreadCount },
     { id: 'logs',   label: 'Logs',          icon: Activity },
+    ...(isSuperAdmin ? [{ id: 'staff', label: 'Staff',        icon: UserPlus }] : []),
     ...(isSuperAdmin ? [{ id: 'super', label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
@@ -634,6 +671,9 @@ export default function Admin() {
       )}
       {confirmModal && (
         <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />
+      )}
+      {demoteModal && (
+        <ReasonModal {...demoteModal} onClose={() => setDemoteModal(null)} />
       )}
       {unlockModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -726,7 +766,7 @@ export default function Admin() {
                 users={users} currentUserId={user?.id} isSuperAdmin={isSuperAdmin}
                 userSearch={userSearch} setUserSearch={setUserSearch}
                 filterRole={filterRole} setFilterRole={setFilterRole}
-                handleRoleChange={handleRoleChange}
+                onNominate={handleNominate} onDemote={handleDemote}
                 setBanModal={setBanModal} setUnbanDirectModal={setUnbanDirectModal}
                 setUnbanReqModal={setUnbanReqModal} handleDeletePosts={handleDeletePosts}
                 pendingUnbanIds={pendingUnbanIds}
@@ -763,6 +803,7 @@ export default function Admin() {
                 logsLoading={logsLoading} fetchLogs={fetchLogs}
               />
             )}
+            {tab === 'staff' && isSuperAdmin && <StaffTab />}
             {tab === 'super' && isSuperAdmin && (
               <SuperAdminPanel
                 blockedLogins={blockedLogins} blockedLoading={blockedLoading}

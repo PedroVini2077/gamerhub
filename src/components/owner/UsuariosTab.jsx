@@ -1,17 +1,19 @@
 import { useState, useMemo, memo } from 'react';
 import { useDeferredValue } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Mail, UserX, UserCheck, Search, RefreshCw } from 'lucide-react';
+import { ChevronDown, Mail, UserX, UserCheck, Search, RefreshCw, UserPlus, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../ui/ConfirmModal';
+import ReasonModal from '../ui/ReasonModal';
+import { nominateStaff, requestRoleDemotion } from '../../services/staffService';
 
 const OC = '#f97316';
 const ROLE_COLOR = { owner: OC, super_admin: '#39ff14', admin: '#a855f7', user: '#6b7280' };
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
-const UserRow = memo(function UserRow({ user, onSetRole, onBan }) {
+const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan }) {
   const [open, setOpen] = useState(false);
   const isOwnerUser = user.role === 'owner';
 
@@ -76,18 +78,24 @@ const UserRow = memo(function UserRow({ user, onSetRole, onBan }) {
 
             {!isOwnerUser && (
               <>
-                {['user', 'admin', 'super_admin'].map(r => (
-                  <button key={r}
-                    disabled={user.role === r}
-                    onClick={() => onSetRole(user.id, user.username, r)}
-                    className={`px-3 py-1.5 text-xs font-mono border rounded transition-colors ${
-                      user.role === r
-                        ? 'border-dark-500 text-dark-400 cursor-default'
-                        : 'border-dark-400 text-gray-500 hover:border-orange-400/50 hover:text-orange-400'
-                    }`}>
-                    → {ROLE_LABEL[r]}
+                {user.role === 'user' && (
+                  <button onClick={() => onNominate(user, 'admin')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-500 hover:border-purple-400/50 hover:text-purple-300 transition-colors">
+                    <UserPlus size={12} /> Indicar para Staff
                   </button>
-                ))}
+                )}
+                {user.role === 'admin' && (
+                  <button onClick={() => onNominate(user, 'super_admin')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-500 hover:border-neon-green/50 hover:text-neon-green transition-colors">
+                    <UserPlus size={12} /> Indicar p/ Super Admin
+                  </button>
+                )}
+                {(user.role === 'admin' || user.role === 'super_admin') && (
+                  <button onClick={() => onDemote(user)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-500 hover:border-red-400/50 hover:text-red-400 transition-colors">
+                    <ShieldAlert size={12} /> Solicitar rebaixamento
+                  </button>
+                )}
                 <div className="flex-1" />
                 <button onClick={() => onBan(user)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border rounded transition-colors ${
@@ -111,6 +119,7 @@ export default function UsuariosTab() {
   const [search, setSearch]   = useState('');
   const [filter, setFilter]   = useState('all');
   const [confirm, setConfirm] = useState(null);
+  const [reason, setReason]   = useState(null);
   const deferredSearch        = useDeferredValue(search);
 
   const { data: users = [], isPending: loading, refetch } = useQuery({
@@ -122,20 +131,41 @@ export default function UsuariosTab() {
     },
   });
 
-  async function handleSetRole(userId, username, newRole) {
+  function handleNominate(user, targetRole) {
     setConfirm({
-      title: 'Alterar Role',
-      message: `Alterar a role de "${username}" para "${ROLE_LABEL[newRole]}"?`,
-      accent: 'orange',
-      confirmLabel: 'Confirmar',
+      title: 'Indicar para Staff',
+      message: `Indicar "${user.username}" para o cargo de ${ROLE_LABEL[targetRole]}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
+      accent: 'purple',
+      confirmLabel: 'Indicar',
+      icon: UserPlus,
       onConfirm: async () => {
-        const { error } = await supabase.rpc('owner_set_role', {
-          p_target_user_id: userId,
-          p_new_role: newRole,
-        });
-        setConfirm(null);
-        if (error) toast.error(error.message);
-        else { toast.success(`Role de ${username} → ${newRole}`); refetch(); }
+        try {
+          await nominateStaff(user.id, targetRole);
+          setConfirm(null);
+          toast.success(`Indicação de ${user.username} enviada para análise.`);
+        } catch (e) { toast.error(e.message); setConfirm(null); }
+      },
+    });
+  }
+
+  function handleDemote(user) {
+    setReason({
+      title: 'Solicitar Rebaixamento',
+      icon: ShieldAlert,
+      accent: 'red',
+      target: user,
+      subtitle: `"${user.username}" passaria de ${ROLE_LABEL[user.role]} para Usuário. A solicitação é enviada para análise — só vira realidade após aprovação do fundador ou de um super admin, com motivo registrado.`,
+      label: 'Motivo do rebaixamento',
+      placeholder: 'Descreva o que motivou essa solicitação (mínimo 10 caracteres)...',
+      required: true,
+      confirmLabel: 'Enviar solicitação',
+      confirmIcon: ShieldAlert,
+      onConfirm: async (notes) => {
+        try {
+          await requestRoleDemotion(user.id, 'user', notes);
+          setReason(null);
+          toast.success(`Solicitação de rebaixamento de ${user.username} enviada para análise.`);
+        } catch (e) { toast.error(e.message); }
       },
     });
   }
@@ -217,12 +247,13 @@ export default function UsuariosTab() {
       ) : (
         <div className="space-y-2">
           {filtered.map(u => (
-            <UserRow key={u.id} user={u} onSetRole={handleSetRole} onBan={handleBan} />
+            <UserRow key={u.id} user={u} onNominate={handleNominate} onDemote={handleDemote} onBan={handleBan} />
           ))}
         </div>
       )}
 
       {confirm && <ConfirmModal {...confirm} onClose={() => setConfirm(null)} />}
+      {reason && <ReasonModal {...reason} onClose={() => setReason(null)} />}
     </div>
   );
 }
