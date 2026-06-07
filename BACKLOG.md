@@ -111,8 +111,19 @@
 - ⬜ **Migração para TypeScript** (introduz a pasta `types/`).
 - 🟡 **Testes** — Vitest configurado; **unitários da lógica pura prontos**
   (`src/lib/__tests__/`: ranks/XP, password, date, embed, format — 30 testes).
-  *Falta:* testes de integração das RPCs/RLS (ban, login-block, XP no banco) e
-  E2E dos fluxos críticos (login, postar, banir). Crescer gradualmente.
+  **Integração das RPCs/RLS validada** (manual, em transação `DO`/`ROLLBACK`,
+  simulando `authenticated` + claims JWT — nada tocou produção). Cobertura:
+  - `register_login_attempt`/`check_login_status`: bloqueio temp na 5ª, sem
+    double-count durante o bloqueio, permanente na 10ª, normalização de email.
+  - `ban_user`/`unban_user`: hierarquia (comum não bane; admin não bane igual/
+    superior; admin bane comum com cascade total da atividade; só super_admin+
+    desbane).
+  - Guarda de privilégio + RLS de `profiles`: sem auto-promoção a owner, sem
+    auto-desban, edição da própria bio ok, edição de perfil alheio bloqueada.
+  - `get_user_xp`: fórmula conferida (posts/likes/comentários/lives + bônus).
+  - `admin_set_role`/`owner_set_role`: todas as fronteiras de autorização.
+  *(scripts não commitados — regra do CLAUDE.md de script de teste avulso.)*
+  *Falta:* E2E dos fluxos críticos (login, postar, banir). Crescer gradualmente.
 - ⬜ **Soft delete** de posts (campo `deleted_at` em vez de delete físico).
 - ⬜ **2FA** no login.
 - ⬜ Afinar detecção de ban (hoje realtime + polling de 20s como fallback).
