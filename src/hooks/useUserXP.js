@@ -6,11 +6,11 @@ export function useUserXP(userId) {
     queryKey: ['user_xp', userId],
     queryFn: async () => {
       const { data } = await supabase.rpc('get_user_xp', { p_user_id: userId });
-      return data?.xp ?? 0;
+      return data ?? null;
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
   });
 
-  return data ?? null;
+  return data?.xp ?? null;
 }
