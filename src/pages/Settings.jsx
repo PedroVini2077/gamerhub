@@ -39,12 +39,15 @@ export default function Settings_() {
   const [notifComments, setNotifComments] = useState(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
+  // Mesmo cuidado do Profile: sincroniza só quando o usuário muda, não a cada
+  // novo objeto `profile` (poll/realtime), senão um toggle alterado mas ainda
+  // não persistido pode "voltar" sozinho para o valor salvo.
   useEffect(() => {
     if (profile) {
       setNotifLikes(profile.notif_likes ?? true);
       setNotifComments(profile.notif_comments ?? true);
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   async function handleToggleNotif(field, value) {
     if (field === 'likes') setNotifLikes(value);

@@ -36,6 +36,10 @@ export default function Profile() {
   const [showFull, setShowFull]           = useState(false);
   const fileRef = useRef(null);
 
+  // Só popula o form a partir do profile quando o USUÁRIO muda (login/logout) —
+  // não a cada novo objeto `profile` (poll de 20s / realtime / refreshProfile()
+  // após salvar). Caso contrário, qualquer refresh em segundo plano sobrescreve
+  // o que o usuário está digitando, "resetando" o formulário no meio da edição.
   useEffect(() => {
     if (profile) {
       setBio(profile.bio || '');
@@ -49,8 +53,11 @@ export default function Profile() {
       setYoutube(profile.youtube || '');
       setAvatarUrl(profile.avatar_url);
     }
+  }, [profile?.id]);
+
+  useEffect(() => {
     if (user) fetchStats();
-  }, [profile, user]);
+  }, [user]);
 
   async function fetchStats() {
     const { posts, likes, xp } = await fetchProfileStats(user.id);
