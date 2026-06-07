@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
 import { getBorderForProfile } from '../../lib/ranks';
+import { useUserXP } from '../../hooks/useUserXP';
 import { useQuery } from '@tanstack/react-query';
 import { formatNumber } from '../../lib/format';
 import { supabase } from '../../lib/supabase';
@@ -12,6 +13,7 @@ import { supabase } from '../../lib/supabase';
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
   const { isAdmin, isOwner, role } = useRole();
+  const xp = useUserXP(profile?.id);
 
   const { data: stats = { users: 0, postsToday: 0, keys: 0 } } = useQuery({
     queryKey: ['sidebar_stats'],
@@ -110,7 +112,7 @@ export default function Sidebar({ open, onClose }) {
         {profile && (
           <div className="px-4 py-4 border-t border-dark-500">
             <div className="flex items-center gap-3">
-              <Avatar profile={profile} size={32} rankBorder={getBorderForProfile(profile)} />
+              <Avatar profile={profile} size={32} rankBorder={getBorderForProfile(profile, xp)} />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-mono text-white truncate">{profile.username}</p>
                 <p className="text-xs font-mono truncate"

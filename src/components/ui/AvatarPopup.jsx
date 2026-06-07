@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { useUserXP } from '../../hooks/useUserXP';
 import Avatar from './Avatar';
 import BanModal from './BanModal';
 import { X, ExternalLink, Ban } from 'lucide-react';
@@ -14,8 +15,9 @@ const ROLE_RANK  = { user: 1, admin: 2, super_admin: 3, owner: 4 };
 
 export default function AvatarPopup({ profile, size = 36, className = '', postsCount, disablePopup = false, onBanned }) {
   const { profile: viewer } = useAuth();
+  const xp = useUserXP(profile?.id);
   const [open, setOpen]       = useState(false);
-  const [extra, setExtra]     = useState(postsCount !== undefined ? { posts: postsCount, xp: null } : null);
+  const [posts, setPosts]     = useState(postsCount);
   const [banModal, setBanModal] = useState(false);
 
   const canBan = viewer && profile &&
@@ -25,15 +27,12 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
 
   async function handleOpen() {
     setOpen(true);
-    if (extra?.xp !== undefined || !profile?.id) return;
-    const [{ count }, { data: xpData }] = await Promise.all([
-      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', profile.id),
-      supabase.rpc('get_user_xp', { p_user_id: profile.id }),
-    ]);
-    setExtra({ posts: count || 0, xp: xpData?.xp ?? 0 });
+    if (posts !== undefined || !profile?.id) return;
+    const { count } = await supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', profile.id);
+    setPosts(count || 0);
   }
 
-  const rank = getBorderForProfile(profile, extra?.xp ?? null);
+  const rank = getBorderForProfile(profile, xp);
   const isOwner = profile?.role === 'owner';
   const RankIcon = rank?.icon;
 
@@ -82,8 +81,8 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
                 >
                   {RankIcon && <RankIcon size={11} />}
                   {isOwner ? 'Fundador' : getRankLabel(rank)}
-                  {!isOwner && extra?.xp != null && (
-                    <span className="text-gray-500 font-normal ml-1">{extra.xp} XP</span>
+                  {!isOwner && xp != null && (
+                    <span className="text-gray-500 font-normal ml-1">{xp} XP</span>
                   )}
                 </div>
               )}
@@ -108,7 +107,7 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
               <div className="py-3 text-center">
                 <p className="text-xs text-gray-500 font-mono mb-1">Posts</p>
                 <p className="text-lg font-bold font-mono text-neon-green">
-                  {extra ? extra.posts : '...'}
+                  {posts !== undefined ? posts : '...'}
                 </p>
               </div>
               <div className="py-3 text-center">
