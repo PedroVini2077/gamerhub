@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
 import { RefreshCw } from 'lucide-react';
@@ -9,35 +10,34 @@ const SEV_COLOR = { info: '#6b7280', warning: '#f59e0b', critical: '#ef4444' };
 const CAT_EMOJI = { auth: '🔐', security: '🛡️', content: '📝', admin: '⚙️', system: '🔧' };
 
 export default function LogsTab() {
-  const [logs, setLogs]         = useState([]);
-  const [loading, setLoading]   = useState(true);
   const [category, setCategory] = useState('');
   const [severity, setSeverity] = useState('');
   const [offset, setOffset]     = useState(0);
   const LIMIT = 30;
 
-  const load = useCallback(async (off = 0) => {
-    setLoading(true);
-    const { data, error } = await supabase.rpc('owner_get_audit_logs', {
-      p_limit:    LIMIT,
-      p_offset:   off,
-      p_category: category || null,
-      p_severity: severity || null,
-    });
-    if (error) toast.error('Erro ao carregar logs: ' + error.message);
-    else setLogs(data || []);
-    setLoading(false);
-  }, [category, severity]);
+  const { data: logs = [], isPending: loading, refetch } = useQuery({
+    queryKey: ['owner_audit_logs', category, severity, offset],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('owner_get_audit_logs', {
+        p_limit:    LIMIT,
+        p_offset:   offset,
+        p_category: category || null,
+        p_severity: severity || null,
+      });
+      if (error) { toast.error('Erro ao carregar logs: ' + error.message); return []; }
+      return data || [];
+    },
+  });
 
-  useEffect(() => { setOffset(0); load(0); }, [load]);
-
-  function prev() { const o = Math.max(0, offset - LIMIT); setOffset(o); load(o); }
-  function next() { const o = offset + LIMIT; setOffset(o); load(o); }
+  function changeCategory(v) { setCategory(v); setOffset(0); }
+  function changeSeverity(v) { setSeverity(v); setOffset(0); }
+  function prev() { setOffset(o => Math.max(0, o - LIMIT)); }
+  function next() { setOffset(o => o + LIMIT); }
 
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
-        <select value={category} onChange={e => setCategory(e.target.value)}
+        <select value={category} onChange={e => changeCategory(e.target.value)}
           className="px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 focus:outline-none">
           <option value="">Todas as categorias</option>
           <option value="auth">Auth</option>
@@ -45,14 +45,14 @@ export default function LogsTab() {
           <option value="content">Content</option>
           <option value="admin">Admin</option>
         </select>
-        <select value={severity} onChange={e => setSeverity(e.target.value)}
+        <select value={severity} onChange={e => changeSeverity(e.target.value)}
           className="px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 focus:outline-none">
           <option value="">Todos os níveis</option>
           <option value="info">Info</option>
           <option value="warning">Warning</option>
           <option value="critical">Critical</option>
         </select>
-        <button onClick={() => load(offset)}
+        <button onClick={() => refetch()}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors">
           <RefreshCw size={14} />
         </button>

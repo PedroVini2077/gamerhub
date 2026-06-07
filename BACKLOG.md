@@ -137,14 +137,30 @@
   requests, invalidação, sincronização entre componentes. **Em migração
   gradual.** Fundação pronta (`lib/queryClient.js` + `QueryClientProvider` no
   `App.jsx`; defaults: `staleTime 30s`, `refetchOnWindowFocus false` pra poupar
-  egress, `retry 1`). Migrados: `Keys`, `Ranks` (read-only), `Home`, `Community`
-  (realtime via `useRealtime` invalidando/recarregando a query).
-  *Falta:* painéis (`Admin`, abas do `Owner`) e secundários (`Header`,
-  `Sidebar`, `RightPanel`, etc.).
-  **`Lives` fica de fora de propósito** — a lista de lives até daria, mas a
-  página é majoritariamente chat/presença/timeouts/timers orientados a evento e
-  mutáveis, que não mapeiam pra `useQuery`; forçar traria ganho marginal e risco
-  de quebrar o chat ao vivo.
+  egress, `retry 1`).
+  Migrados: `Keys`, `Ranks` (read-only); `Home`, `Community` (realtime via
+  `useRealtime` invalidando/recarregando a query); abas do Owner —
+  `PainelTab`, `MetricasTab`, `NotificacoesTab` (realtime + refetch),
+  `LogsTab` (paginação server-side virou parte da `queryKey`), `UsuariosTab`.
+  Resultado: lint **45 → 37 warnings**, `set-state-in-effect`/`exhaustive-deps`
+  de 34 → 24 — *de verdade*, não escondido (o padrão `useEffect`+`setState`
+  que disparava os warnings deixou de existir nesses arquivos).
+  **Ficam de fora de propósito** (avaliados e descartados, não esquecidos):
+  - `Lives` — chat/presença/timeouts/timers são event-driven e mutáveis, não
+    mapeiam pra `useQuery`; forçar traria ganho marginal e risco de quebrar o
+    chat ao vivo.
+  - `SiteTab` (Owner) — é editor de config com estado local otimista
+    (toggle → salva na hora), não uma lista de leitura; migrar exigiria
+    `useMutation` + updates otimistas pra ganho nenhum.
+  - **`Admin.jsx`** — ~10 funções de fetch interdependentes (`fetchAll` +
+    `fetchLiveMod`/`fetchLogs`/`fetchNotifications`/`fetchBlockedLogins`/
+    `fetchUnbanRequests`...), um canal realtime único que despacha por aba
+    ativa (`tabRef`/`logCatRef`) e a paginação nova (`loadMorePosts`/
+    `loadMoreKeys`) já integrada no fluxo. Migrar é refatoração estrutural
+    grande com risco real de quebrar banimento/moderação/notificações — pede
+    plano dedicado e aprovação antes, não cabe nesta leva gradual.
+  *Resta (se decidirmos seguir):* `Header`/`Sidebar`/`RightPanel` (pequenos,
+  baixo risco) e, com plano à parte, `Admin.jsx`.
 - ⬜ **Paginação / virtualização** em listas longas (usuários, logs, posts, chat).
   *(Admin já pagina posts/keys — ver seção Performance acima.)*
 - ⬜ **Migração para TypeScript** (introduz a pasta `types/`).

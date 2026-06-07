@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { gridContainer, gridCard } from '../../lib/motion';
 import { Users, Shield, FileText, Key, RefreshCw, Wifi } from 'lucide-react';
@@ -8,18 +8,15 @@ import toast from 'react-hot-toast';
 const OC = '#f97316';
 
 export default function PainelTab({ onlineCount }) {
-  const [stats, setStats]     = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase.rpc('owner_get_stats');
-    if (error) toast.error('Erro ao carregar stats: ' + error.message);
-    else setStats(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { data: stats, isPending: loading, refetch } = useQuery({
+    queryKey: ['owner_stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('owner_get_stats');
+      if (error) { toast.error('Erro ao carregar stats: ' + error.message); return null; }
+      return data;
+    },
+    retry: false,
+  });
 
   if (loading) return (
     <div className="space-y-3">
@@ -103,7 +100,7 @@ export default function PainelTab({ onlineCount }) {
         </div>
       </div>
 
-      <button onClick={load}
+      <button onClick={() => refetch()}
         className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors">
         <RefreshCw size={12} />Atualizar
       </button>

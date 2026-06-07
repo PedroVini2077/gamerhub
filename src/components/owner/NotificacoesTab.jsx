@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
 import { RefreshCw } from 'lucide-react';
@@ -20,31 +21,28 @@ const KIND_CFG = {
 };
 
 export default function NotificacoesTab() {
-  const [notifs, setNotifs]   = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase.rpc('owner_get_notifications', { p_limit: 50 });
-    if (error) toast.error('Erro: ' + error.message);
-    else setNotifs(data || []);
-    setLoading(false);
-  }, []);
+  const { data: notifs = [], isPending: loading, refetch } = useQuery({
+    queryKey: ['owner_notifications'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('owner_get_notifications', { p_limit: 50 });
+      if (error) { toast.error('Erro: ' + error.message); return []; }
+      return data || [];
+    },
+  });
 
   useEffect(() => {
-    load();
     const ch = supabase.channel('owner-notif-live')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, load)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, load)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => refetch())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => refetch())
       .subscribe();
     return () => supabase.removeChannel(ch);
-  }, [load]);
+  }, [refetch]);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Últimas 50 notificações</p>
-        <button onClick={load}
+        <button onClick={() => refetch()}
           className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors">
           <RefreshCw size={12} />Atualizar
         </button>

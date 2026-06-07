@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { useDeferredValue } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Mail, UserX, UserCheck, Search, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -107,22 +108,19 @@ const UserRow = memo(function UserRow({ user, onSetRole, onBan }) {
 });
 
 export default function UsuariosTab() {
-  const [users, setUsers]     = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState('');
   const [filter, setFilter]   = useState('all');
   const [confirm, setConfirm] = useState(null);
   const deferredSearch        = useDeferredValue(search);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase.rpc('owner_get_users');
-    if (error) toast.error('Erro ao carregar usuários: ' + error.message);
-    else setUsers(data || []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { data: users = [], isPending: loading, refetch } = useQuery({
+    queryKey: ['owner_users'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('owner_get_users');
+      if (error) { toast.error('Erro ao carregar usuários: ' + error.message); return []; }
+      return data || [];
+    },
+  });
 
   async function handleSetRole(userId, username, newRole) {
     setConfirm({
@@ -137,7 +135,7 @@ export default function UsuariosTab() {
         });
         setConfirm(null);
         if (error) toast.error(error.message);
-        else { toast.success(`Role de ${username} → ${newRole}`); load(); }
+        else { toast.success(`Role de ${username} → ${newRole}`); refetch(); }
       },
     });
   }
@@ -153,7 +151,7 @@ export default function UsuariosTab() {
           const { error } = await supabase.rpc('unban_user', { p_user_id: user.id });
           setConfirm(null);
           if (error) toast.error(error.message);
-          else { toast.success(`${user.username} desbanido!`); load(); }
+          else { toast.success(`${user.username} desbanido!`); refetch(); }
         },
       });
     } else {
@@ -170,7 +168,7 @@ export default function UsuariosTab() {
           });
           setConfirm(null);
           if (error) toast.error(error.message);
-          else { toast.success(`${user.username} banido!`); load(); }
+          else { toast.success(`${user.username} banido!`); refetch(); }
         },
       });
     }
@@ -200,7 +198,7 @@ export default function UsuariosTab() {
           <option value="super_admin">Super Admins</option>
           <option value="banned">Banidos</option>
         </select>
-        <button onClick={load}
+        <button onClick={() => refetch()}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors">
           <RefreshCw size={14} />
         </button>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Activity, TrendingUp, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
@@ -7,18 +7,15 @@ import toast from 'react-hot-toast';
 const OC = '#f97316';
 
 export default function MetricasTab() {
-  const [metrics, setMetrics] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase.rpc('owner_get_metrics');
-    if (error) toast.error('Erro: ' + error.message);
-    else setMetrics(data);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  const { data: metrics, isPending: loading, refetch } = useQuery({
+    queryKey: ['owner_metrics'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('owner_get_metrics');
+      if (error) { toast.error('Erro: ' + error.message); return null; }
+      return data;
+    },
+    retry: false,
+  });
 
   if (loading) return (
     <div className="space-y-3">
@@ -87,7 +84,7 @@ export default function MetricasTab() {
         </div>
       )}
 
-      <button onClick={load}
+      <button onClick={() => refetch()}
         className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors">
         <RefreshCw size={12} />Atualizar
       </button>
