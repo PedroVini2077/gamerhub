@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
-import { Tv } from 'lucide-react';
 import AvatarPopup from '../ui/AvatarPopup';
 
 export default function LivesList({ lives, enterLive }) {

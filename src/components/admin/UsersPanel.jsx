@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Users, Ban, Shield, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import Avatar from '../ui/Avatar';
 
 const ROLES = ['user', 'admin', 'super_admin'];

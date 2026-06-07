@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeTab } from '../lib/motion';
-import { Gem, Activity, Users, FileText, Settings, Shield, Key, Bell, TrendingUp } from 'lucide-react';
+import { Gem, Activity, Users, FileText, Settings, Bell, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';

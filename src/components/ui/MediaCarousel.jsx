@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Maximize2, Film, Music, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
@@ -37,11 +37,8 @@ export default function MediaCarousel({ items, postTitle }) {
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
   const mouseStartX = useRef(null);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }, []);
+  // Detecção de touch só precisa rodar uma vez — useState lazy evita um effect extra.
+  const [isMobile] = useState(() => 'ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   if (!items || items.length === 0) return null;
 

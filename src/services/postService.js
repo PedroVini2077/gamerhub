@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { getEmbedInfo } from '../components/ui/EmbedPlayer';
+import { getEmbedInfo } from '../lib/embed';
 
 const POST_SELECT = '*, profiles(id, username, avatar_url, role, bio, created_at), user_id, audio_url, audio_type, audio_name, edited_at, embed_url, embed_type, is_live, expires_at';
 

@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
 import { logAudit } from '../../lib/auditLog';
 import AudioRecorder from '../ui/AudioRecorder';
-import EmbedPlayer, { getEmbedInfo } from '../ui/EmbedPlayer';
+import EmbedPlayer from '../ui/EmbedPlayer';
+import { getEmbedInfo } from '../../lib/embed';
 import MediaPlayer from '../ui/MediaPlayer';
 
 const categories = ['dica', 'curiosidade', 'news'];

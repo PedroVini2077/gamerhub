@@ -1,4 +1,4 @@
-import { FileText, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 export default function PostsPanel({ posts, handleDeletePost }) {
   if (posts.length === 0) return (

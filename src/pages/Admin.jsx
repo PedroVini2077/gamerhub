@@ -25,7 +25,6 @@ import NotifsPanel from '../components/admin/NotifsPanel';
 import LogsPanel from '../components/admin/LogsPanel';
 import SuperAdminPanel from '../components/admin/SuperAdminPanel';
 
-const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
 const REACTIVATE_REASONS = [
   'Encerrada por engano', 'Problema técnico', 'Live continuou', 'Pedido do criador', 'Outro',
 ];
