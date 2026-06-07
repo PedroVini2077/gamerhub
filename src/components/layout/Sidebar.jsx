@@ -44,7 +44,7 @@ export default function Sidebar({ open, onClose }) {
       {open && <div className="fixed inset-0 bg-black/60 z-20 md:hidden" onClick={onClose} />}
       <aside className={`
         fixed top-0 left-0 h-full w-60 bg-dark-800 border-r border-dark-500 z-30
-        flex flex-col transition-transform duration-300
+        flex flex-col overflow-y-auto transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
       `}>
         {/* Logo */}
