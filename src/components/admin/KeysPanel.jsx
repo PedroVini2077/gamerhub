@@ -64,7 +64,7 @@ function KeyForm({ onAdd }) {
   );
 }
 
-export default function KeysPanel({ keys, fetchAll, handleDeleteKey }) {
+export default function KeysPanel({ keys, fetchAll, handleDeleteKey, hasMore, loadingMore, onLoadMore }) {
   return (
     <div className="space-y-4">
       <KeyForm onAdd={fetchAll} />
@@ -88,6 +88,12 @@ export default function KeysPanel({ keys, fetchAll, handleDeleteKey }) {
             </button>
           </div>
         ))}
+        {hasMore && (
+          <button onClick={onLoadMore} disabled={loadingMore}
+            className="btn-neon w-full py-2.5 text-xs disabled:opacity-40">
+            {loadingMore ? 'Carregando...' : 'Carregar mais'}
+          </button>
+        )}
       </div>
     </div>
   );

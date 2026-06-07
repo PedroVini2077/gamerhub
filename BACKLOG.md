@@ -85,6 +85,26 @@
   policies amplas de SELECT em `storage.objects` que permitiam listar todos os
   arquivos. Acesso por URL pública (CDN) continua — app só usa `getPublicUrl` +
   `upload`, nunca `.list()`. *(feito)*
+- ✅ **Paginação no Admin** — `fetchAll` carregava `posts`/`game_keys` por
+  inteiro sem teto (landmine de escalabilidade: hoje são poucas linhas, mas
+  cresce com o uso). Agora pagina em blocos de 20 com botão "Carregar mais"
+  (`PostsPanel`/`KeysPanel` + `loadMorePosts`/`loadMoreKeys` em `Admin.jsx`,
+  via `.range()` + contagem exata `head: true` pros `StatCard`s continuarem
+  certos). **`UsersPanel` continua carregando a lista inteira** de propósito —
+  busca por username, filtro por role e os badges de contagem dependem do
+  dataset completo, e a base de usuários cresce bem mais devagar; só ganhou um
+  teto de segurança (`limit(1000)`) pra nunca ficar 100% sem limite. Mudança
+  zero-impacto hoje (9 posts/6 keys < 20 = botão nem aparece). *(feito)*
+- ✅ **Egress de mídia (alerta de cota do Supabase)** — vídeos brutos até 100MB
+  sendo servidos sem compressão estouravam o "cached egress bandwidth" do plano
+  free (16 arquivos `.mp4`, 260MB, até 49MB cada). Reduzido o teto de upload de
+  vídeo em `PostForm` de **100MB → 25MB** (com dica pro usuário preferir colar
+  link do YouTube/Twitch/TikTok pra clipes longos — usa `EmbedPlayer`, sem
+  consumir storage/egress do site) e adicionado `cacheControl: 31536000` (1
+  ano) nos uploads de `post-media` — caminhos são únicos por post/timestamp
+  (nunca sobrescritos), então cache longo no CDN é seguro e reduz egress
+  repetido. *(feito — compressão de vídeo client-side ficou de fora: exigiria
+  ferramenta pesada tipo ffmpeg.wasm, peso/risco não compensa agora)*
 
 ### Qualidade de código
 - ✅ Consolidar helpers duplicados: força de senha → `lib/password.js`; idade /

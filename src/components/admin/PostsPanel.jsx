@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react';
 
-export default function PostsPanel({ posts, handleDeletePost }) {
+export default function PostsPanel({ posts, handleDeletePost, hasMore, loadingMore, onLoadMore }) {
   if (posts.length === 0) return (
     <div className="card p-8 text-center">
       <p className="font-mono text-gray-500 text-sm">Nenhum post ainda</p>
@@ -23,6 +23,12 @@ export default function PostsPanel({ posts, handleDeletePost }) {
           </button>
         </div>
       ))}
+      {hasMore && (
+        <button onClick={onLoadMore} disabled={loadingMore}
+          className="btn-neon w-full py-2.5 text-xs disabled:opacity-40">
+          {loadingMore ? 'Carregando...' : 'Carregar mais'}
+        </button>
+      )}
     </div>
   );
 }

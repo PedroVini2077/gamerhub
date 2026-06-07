@@ -40,7 +40,7 @@ const PostForm = memo(function PostForm({ onPost }) {
   function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const maxMB = activeType === 'image' ? 5 : 100;
+    const maxMB = activeType === 'image' ? 5 : 25;
     if (file.size > maxMB * 1024 * 1024) {
       toast.error(`Máximo ${maxMB}MB`);
       e.target.value = '';
@@ -242,7 +242,7 @@ const PostForm = memo(function PostForm({ onPost }) {
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Image size={16} />
               </button>
-              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 100MB)" aria-label="Adicionar vídeo (máx 100MB)"
+              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 25MB) — prefira colar um link do YouTube/Twitch/TikTok pra clipes longos" aria-label="Adicionar vídeo (máx 25MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Film size={16} />
               </button>

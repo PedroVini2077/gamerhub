@@ -105,7 +105,7 @@ export async function fetchPostMedia(postId) {
 export async function uploadAudio(userId, audioFile) {
   const ext = audioFile.name.split('.').pop();
   const path = `${userId}/audio-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from('post-media').upload(path, audioFile, { contentType: audioFile.type });
+  const { error } = await supabase.storage.from('post-media').upload(path, audioFile, { contentType: audioFile.type, cacheControl: '31536000' });
   if (error) return { url: null, error };
   const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
   return { url: publicUrl, error: null };
@@ -117,7 +117,7 @@ export async function uploadPostMediaFiles(userId, postId, medias) {
     const { file, type } = medias[i];
     const ext = file.name.split('.').pop();
     const path = `${userId}/${postId}-${i}.${ext}`;
-    await supabase.storage.from('post-media').upload(path, file, { contentType: file.type });
+    await supabase.storage.from('post-media').upload(path, file, { contentType: file.type, cacheControl: '31536000' });
     const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
   }

@@ -29,6 +29,14 @@ const REACTIVATE_REASONS = [
   'Encerrada por engano', 'Problema técnico', 'Live continuou', 'Pedido do criador', 'Outro',
 ];
 
+// Posts/keys crescem sem limite com o uso do site — pagina em blocos pra não
+// carregar tudo de uma vez (landmine de escalabilidade do `fetchAll` antigo).
+// Usuários continuam carregados por inteiro: a busca/filtros/badges de role do
+// UsersPanel dependem da lista completa, e a base de usuários cresce bem mais
+// devagar que posts.
+const PAGE_SIZE = 20;
+const MAX_USERS = 1000;
+
 function UnlockCountdownBtn({ onConfirm }) {
   const [countdown, setCountdown] = useState(10);
   useEffect(() => {
@@ -201,6 +209,10 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [posts, setPosts] = useState([]);
   const [keys, setKeys] = useState([]);
+  const [postsHasMore, setPostsHasMore] = useState(false);
+  const [keysHasMore, setKeysHasMore] = useState(false);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
+  const [loadingMoreKeys, setLoadingMoreKeys] = useState(false);
   const [stats, setStats] = useState({ users: 0, posts: 0, keys: 0 });
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('todos');
@@ -275,21 +287,53 @@ export default function Admin() {
   async function fetchAll() {
     setLoading(true);
     const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
-    const [{ data: u }, { data: p }, { data: k }, { data: allNotifs }, { data: reads }] = await Promise.all([
-      supabase.from('profiles').select('*').order('role').order('username'),
-      supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }),
-      supabase.from('game_keys').select('*').order('created_at', { ascending: false }),
+    const [
+      { data: u }, { data: p }, { data: k },
+      { count: postsCount }, { count: keysCount },
+      { data: allNotifs }, { data: reads },
+    ] = await Promise.all([
+      supabase.from('profiles').select('*').order('role').order('username').limit(MAX_USERS),
+      supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
+      supabase.from('game_keys').select('*').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
+      supabase.from('posts').select('id', { count: 'exact', head: true }),
+      supabase.from('game_keys').select('id', { count: 'exact', head: true }),
       supabase.from('admin_notifications').select('id').in('audience', audience),
       supabase.from('admin_notification_reads').select('notification_id').eq('admin_id', user.id),
     ]);
     setUsers(u || []);
     setPosts(p || []);
     setKeys(k || []);
-    setStats({ users: u?.length || 0, posts: p?.length || 0, keys: k?.length || 0 });
+    setPostsHasMore((p?.length || 0) < (postsCount ?? 0));
+    setKeysHasMore((k?.length || 0) < (keysCount ?? 0));
+    setStats({ users: u?.length || 0, posts: postsCount ?? p?.length ?? 0, keys: keysCount ?? k?.length ?? 0 });
     setReadIds(new Set((reads || []).map(r => r.notification_id)));
     setNotifications(allNotifs || []);
     setLoading(false);
     fetchUnbanRequests();
+  }
+
+  async function loadMorePosts() {
+    setLoadingMorePosts(true);
+    const { data, count } = await supabase
+      .from('posts').select('*, profiles(username)', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(posts.length, posts.length + PAGE_SIZE - 1);
+    const next = [...posts, ...(data || [])];
+    setPosts(next);
+    setPostsHasMore(next.length < (count ?? next.length));
+    setLoadingMorePosts(false);
+  }
+
+  async function loadMoreKeys() {
+    setLoadingMoreKeys(true);
+    const { data, count } = await supabase
+      .from('game_keys').select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(keys.length, keys.length + PAGE_SIZE - 1);
+    const next = [...keys, ...(data || [])];
+    setKeys(next);
+    setKeysHasMore(next.length < (count ?? next.length));
+    setLoadingMoreKeys(false);
   }
 
   async function fetchLiveMod() {
@@ -688,7 +732,12 @@ export default function Admin() {
                 pendingUnbanIds={pendingUnbanIds}
               />
             )}
-            {tab === 'posts' && <PostsPanel posts={posts} handleDeletePost={handleDeletePost} />}
+            {tab === 'posts' && (
+              <PostsPanel
+                posts={posts} handleDeletePost={handleDeletePost}
+                hasMore={postsHasMore} loadingMore={loadingMorePosts} onLoadMore={loadMorePosts}
+              />
+            )}
             {tab === 'lives' && (
               <LivesPanel
                 liveMod={liveMod} refreshing={refreshing} fetchLiveMod={fetchLiveMod}
@@ -696,7 +745,12 @@ export default function Admin() {
                 setReactivateModal={setReactivateModal} isSuperAdmin={isSuperAdmin}
               />
             )}
-            {tab === 'keys' && <KeysPanel keys={keys} fetchAll={fetchAll} handleDeleteKey={handleDeleteKey} />}
+            {tab === 'keys' && (
+              <KeysPanel
+                keys={keys} fetchAll={fetchAll} handleDeleteKey={handleDeleteKey}
+                hasMore={keysHasMore} loadingMore={loadingMoreKeys} onLoadMore={loadMoreKeys}
+              />
+            )}
             {tab === 'notifs' && (
               <NotifsPanel
                 notifications={notifications} readIds={readIds}
