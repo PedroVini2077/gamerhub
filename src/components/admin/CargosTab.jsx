@@ -7,9 +7,9 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ReasonModal from '../ui/ReasonModal';
 import {
-  fetchStaffNominations, fetchDemotionRequests,
-  reviewStaffNomination, decideStaffTrial, decideRoleDemotion,
-} from '../../services/staffService';
+  fetchRoleNominations, fetchDemotionRequests,
+  reviewRoleNomination, decideRoleTrial, decideRoleDemotion,
+} from '../../services/roleNominationService';
 
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
@@ -62,13 +62,13 @@ function daysUntil(dateStr) {
   return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
 }
 
-export default function StaffTab() {
+export default function CargosTab() {
   const [open, setOpen]     = useState(null); // id da linha expandida
   const [modal, setModal]   = useState(null);
 
   const { data: nominations = [], isPending: loadingNom, refetch: refetchNom } = useQuery({
-    queryKey: ['staff_nominations', 'pending_trial'],
-    queryFn: () => fetchStaffNominations(['pending', 'trial_active']),
+    queryKey: ['role_nominations', 'pending_trial'],
+    queryFn: () => fetchRoleNominations(['pending', 'trial_active']),
   });
 
   const { data: demotions = [], isPending: loadingDem, refetch: refetchDem } = useQuery({
@@ -96,7 +96,7 @@ export default function StaffTab() {
       confirmIcon: isReject ? X : Check,
       onConfirm: async (notes) => {
         try {
-          await reviewStaffNomination(nomination.id, decision, notes);
+          await reviewRoleNomination(nomination.id, decision, notes);
           toast.success(isReject ? 'Indicação rejeitada.' : 'Indicação aprovada — avaliação iniciada.');
           setModal(null);
           refetchAll();
@@ -123,7 +123,7 @@ export default function StaffTab() {
       label: 'Observações',
       onConfirm: async (notes) => {
         try {
-          await decideStaffTrial(nomination.id, decision, notes);
+          await decideRoleTrial(nomination.id, decision, notes);
           toast.success({ confirm: 'Cargo confirmado.', extend: 'Avaliação estendida.', revert: 'Avaliação revertida.' }[decision]);
           setModal(null);
           refetchAll();
@@ -162,7 +162,7 @@ export default function StaffTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">
-          Indicações, avaliações e rebaixamentos de staff
+          Indicações, avaliações e rebaixamentos de cargo
         </p>
         <button onClick={refetchAll}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors">
@@ -232,7 +232,7 @@ export default function StaffTab() {
               <Clock size={12} /> Em avaliação ({trials.length})
             </h3>
             {trials.length === 0 ? (
-              <p className="text-xs font-mono text-gray-600 px-1">Nenhum staff em período de avaliação.</p>
+              <p className="text-xs font-mono text-gray-600 px-1">Nenhuma avaliação em andamento.</p>
             ) : (
               <motion.div variants={listContainer} initial="hidden" animate="visible" className="space-y-2">
                 {trials.map(nom => {

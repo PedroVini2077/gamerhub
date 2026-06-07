@@ -59,7 +59,7 @@ function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBa
                 {user.role === 'user' && (
                   <button onClick={() => { onNominate(user, 'admin'); setExpanded(false); }}
                     className="flex items-center gap-1.5 text-xs font-mono text-purple-300/80 hover:text-purple-300 border border-purple-400/30 hover:border-purple-400/60 px-3 py-1.5 rounded transition-all">
-                    <UserPlus size={12} />Indicar para Staff
+                    <UserPlus size={12} />Indicar para Admin
                   </button>
                 )}
                 {user.role === 'admin' && isSuperAdmin && (

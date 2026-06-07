@@ -13,7 +13,7 @@ const DEMOTION_SELECT = `
   requester:profiles!role_change_requests_requested_by_fkey(id, username)
 `;
 
-export async function checkStaffEligibility(userId, targetRole = 'admin') {
+export async function checkRoleEligibility(userId, targetRole = 'admin') {
   const { data, error } = await supabase.rpc('check_staff_eligibility', {
     p_user_id: userId, p_target_role: targetRole,
   });
@@ -21,7 +21,7 @@ export async function checkStaffEligibility(userId, targetRole = 'admin') {
   return data;
 }
 
-export async function fetchStaffNominations(statuses) {
+export async function fetchRoleNominations(statuses) {
   let query = supabase.from('staff_nominations').select(NOMINATION_SELECT).order('created_at', { ascending: false });
   if (statuses?.length) query = query.in('status', statuses);
   const { data, error } = await query;
@@ -37,7 +37,7 @@ export async function fetchDemotionRequests(statuses) {
   return data || [];
 }
 
-export async function nominateStaff(candidateId, targetRole) {
+export async function nominateForRole(candidateId, targetRole) {
   const { data, error } = await supabase.rpc('nominate_staff', {
     p_candidate_id: candidateId, p_target_role: targetRole,
   });
@@ -45,14 +45,14 @@ export async function nominateStaff(candidateId, targetRole) {
   return data;
 }
 
-export async function reviewStaffNomination(nominationId, decision, notes) {
+export async function reviewRoleNomination(nominationId, decision, notes) {
   const { error } = await supabase.rpc('review_staff_nomination', {
     p_nomination_id: nominationId, p_decision: decision, p_notes: notes || null,
   });
   if (error) throw error;
 }
 
-export async function decideStaffTrial(nominationId, decision, notes) {
+export async function decideRoleTrial(nominationId, decision, notes) {
   const { error } = await supabase.rpc('decide_staff_trial', {
     p_nomination_id: nominationId, p_decision: decision, p_notes: notes || null,
   });

@@ -24,8 +24,8 @@ import KeysPanel from '../components/admin/KeysPanel';
 import NotifsPanel from '../components/admin/NotifsPanel';
 import LogsPanel from '../components/admin/LogsPanel';
 import SuperAdminPanel from '../components/admin/SuperAdminPanel';
-import StaffTab from '../components/admin/StaffTab';
-import { nominateStaff, requestRoleDemotion, notifyOwner } from '../services/staffService';
+import CargosTab from '../components/admin/CargosTab';
+import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/roleNominationService';
 
 const REACTIVATE_REASONS = [
   'Encerrada por engano', 'Problema técnico', 'Live continuou', 'Pedido do criador', 'Outro',
@@ -521,12 +521,12 @@ export default function Admin() {
 
   function handleNominate(targetUser, targetRole) {
     setConfirmModal({
-      title: 'Indicar para Staff',
+      title: `Indicar para ${ROLE_LABEL[targetRole]}`,
       message: `Indicar "${targetUser.username}" para o cargo de ${ROLE_LABEL[targetRole]}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
       accent: 'purple', confirmLabel: 'Indicar', icon: UserPlus,
       onConfirm: async () => {
         try {
-          await nominateStaff(targetUser.id, targetRole);
+          await nominateForRole(targetUser.id, targetRole);
           setConfirmModal(null);
           toast.success(`Indicação de ${targetUser.username} enviada para análise.`);
         } catch (e) { toast.error(e.message); setConfirmModal(null); }
@@ -646,7 +646,7 @@ export default function Admin() {
     { id: 'keys',   label: 'Keys & Promos', icon: Key      },
     { id: 'notifs', label: 'Notificações',  icon: Bell, badge: unreadCount },
     { id: 'logs',   label: 'Logs',          icon: Activity },
-    ...(isSuperAdmin ? [{ id: 'staff', label: 'Staff',        icon: UserPlus }] : []),
+    ...(isSuperAdmin ? [{ id: 'cargos', label: 'Cargos',       icon: UserPlus }] : []),
     ...(isSuperAdmin ? [{ id: 'super', label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
@@ -827,7 +827,7 @@ export default function Admin() {
                 logsLoading={logsLoading} fetchLogs={fetchLogs}
               />
             )}
-            {tab === 'staff' && isSuperAdmin && <StaffTab />}
+            {tab === 'cargos' && isSuperAdmin && <CargosTab />}
             {tab === 'super' && isSuperAdmin && (
               <SuperAdminPanel
                 blockedLogins={blockedLogins} blockedLoading={blockedLoading}

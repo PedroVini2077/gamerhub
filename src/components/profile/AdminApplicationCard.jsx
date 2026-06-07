@@ -4,7 +4,7 @@ import { ShieldCheck, Check, X, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import ConfirmModal from '../ui/ConfirmModal';
-import { checkStaffEligibility, nominateStaff } from '../../services/staffService';
+import { checkRoleEligibility, nominateForRole } from '../../services/roleNominationService';
 
 const CRITERIA = [
   { key: 'account_age_ok', label: 'Conta com 60+ dias' },
@@ -17,11 +17,11 @@ const STATUS_LABEL = {
   trial_active: { label: 'Em período de avaliação como Admin', color: '#39ff14' },
 };
 
-export default function StaffApplicationCard({ userId }) {
+export default function AdminApplicationCard({ userId }) {
   const [confirming, setConfirming] = useState(false);
 
   const { data: nomination, isPending: loadingNom, refetch: refetchNom } = useQuery({
-    queryKey: ['my_staff_nomination', userId],
+    queryKey: ['my_role_nomination', userId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('staff_nominations')
@@ -36,14 +36,14 @@ export default function StaffApplicationCard({ userId }) {
   });
 
   const { data: eligibility, isPending: loadingElig } = useQuery({
-    queryKey: ['my_staff_eligibility', userId],
-    queryFn: () => checkStaffEligibility(userId, 'admin'),
+    queryKey: ['my_role_eligibility', userId],
+    queryFn: () => checkRoleEligibility(userId, 'admin'),
     enabled: !!userId && !nomination,
   });
 
   async function handleApply() {
     try {
-      await nominateStaff(userId, 'admin');
+      await nominateForRole(userId, 'admin');
       toast.success('Candidatura enviada! A equipe vai analisar em breve.');
       setConfirming(false);
       refetchNom();
@@ -58,7 +58,7 @@ export default function StaffApplicationCard({ userId }) {
   return (
     <div className="card p-5 space-y-3">
       <h3 className="font-display text-xs text-gray-500 tracking-widest uppercase flex items-center gap-2">
-        <ShieldCheck size={12} />Quero ser Staff
+        <ShieldCheck size={12} />Quero ser Admin
       </h3>
 
       {nomination ? (
@@ -114,7 +114,7 @@ export default function StaffApplicationCard({ userId }) {
 
       {confirming && (
         <ConfirmModal
-          title="Candidatar-se a Staff"
+          title="Candidatar-se a Admin"
           icon={ShieldCheck}
           accent="green"
           message="Sua candidatura a Admin será enviada para análise da equipe. Se aprovada, você recebe o cargo imediatamente, mas em período de avaliação — com checagens periódicas até a confirmação definitiva."

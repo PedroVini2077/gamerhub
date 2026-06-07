@@ -7,7 +7,7 @@ import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../ui/ConfirmModal';
 import ReasonModal from '../ui/ReasonModal';
-import { nominateStaff, requestRoleDemotion } from '../../services/staffService';
+import { nominateForRole, requestRoleDemotion } from '../../services/roleNominationService';
 
 const OC = '#f97316';
 const ROLE_COLOR = { owner: OC, super_admin: '#39ff14', admin: '#a855f7', user: '#6b7280' };
@@ -82,7 +82,7 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
                 {user.role === 'user' && (
                   <button onClick={() => onNominate(user, 'admin')}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-500 hover:border-purple-400/50 hover:text-purple-300 transition-colors">
-                    <UserPlus size={12} /> Indicar para Staff
+                    <UserPlus size={12} /> Indicar para Admin
                   </button>
                 )}
                 {user.role === 'admin' && (
@@ -161,14 +161,14 @@ export default function UsuariosTab() {
 
   function handleNominate(user, targetRole) {
     setConfirm({
-      title: 'Indicar para Staff',
+      title: `Indicar para ${ROLE_LABEL[targetRole]}`,
       message: `Indicar "${user.username}" para o cargo de ${ROLE_LABEL[targetRole]}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
       accent: 'purple',
       confirmLabel: 'Indicar',
       icon: UserPlus,
       onConfirm: async () => {
         try {
-          await nominateStaff(user.id, targetRole);
+          await nominateForRole(user.id, targetRole);
           setConfirm(null);
           toast.success(`Indicação de ${user.username} enviada para análise.`);
         } catch (e) { toast.error(e.message); setConfirm(null); }
