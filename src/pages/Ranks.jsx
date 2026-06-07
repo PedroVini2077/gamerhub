@@ -7,7 +7,8 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { RANK_TIERS, XP_SOURCES, getRankFromXP, getRankLabel, getSubRankProgress, ROMAN, OWNER_RANK } from '../lib/ranks';
 
 export default function Ranks() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isOwner = profile?.role === 'owner';
 
   const { data: xpData, isLoading: loading } = useQuery({
     queryKey: ['user_xp', user?.id],
@@ -15,7 +16,7 @@ export default function Ranks() {
       const { data } = await supabase.rpc('get_user_xp', { p_user_id: user.id });
       return data ?? null;
     },
-    enabled: !!user,
+    enabled: !!user && !isOwner,
   });
 
   const myRank     = xpData ? getRankFromXP(xpData.xp) : null;
@@ -38,7 +39,28 @@ export default function Ranks() {
       </div>
 
       {/* Card do próprio rank (se logado) */}
-      {user && (
+      {user && isOwner && (
+        <div className="card p-5"
+          style={{ borderColor: `${OWNER_RANK.color}30`, boxShadow: `0 0 30px ${OWNER_RANK.glow}` }}>
+          <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Seu Rank Atual</p>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+              style={{ border: `3px solid ${OWNER_RANK.color}`, background: `${OWNER_RANK.color}10`, boxShadow: `0 0 14px ${OWNER_RANK.glow}` }}>
+              <OWNER_RANK.icon size={22} style={{ color: OWNER_RANK.color }} />
+            </div>
+            <div>
+              <p className="font-display text-lg font-bold" style={{ color: OWNER_RANK.color }}>Fundador</p>
+              <p className="text-xs font-mono text-gray-500">Selo único do criador da plataforma</p>
+            </div>
+          </div>
+          <p className="text-xs font-mono text-gray-500 mt-3 leading-relaxed">
+            Esse título é exclusivo e fixo — não é obtido por XP nem pode ser superado.
+            O sistema de ranks abaixo é a trilha que os demais jogadores percorrem pra subir de nível.
+          </p>
+        </div>
+      )}
+
+      {user && !isOwner && (
         <div className="card p-5"
           style={myRank ? { borderColor: `${myRank.color}30`, boxShadow: `0 0 30px ${myRank.glow}` } : {}}>
           <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Seu Rank Atual</p>
