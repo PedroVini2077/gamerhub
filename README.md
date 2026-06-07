@@ -83,7 +83,14 @@ npm run dev       # ambiente de desenvolvimento (Vite)
 npm run build     # build de produção -> dist/
 npm run preview   # serve o build localmente
 npm run lint      # ESLint
+npm test          # Vitest — testes unitários da lógica pura (run único)
+npm run test:watch# Vitest em modo watch
 ```
+
+> **Testes:** a lógica pura crítica (XP/ranks, força de senha, idade, parsing de
+> embed, formatação) tem cobertura unitária em `src/lib/__tests__/`. São testes
+> sem DOM/rede — rápidos e determinísticos — que travam o comportamento correto
+> contra regressões. Rodar `npm test` antes de entregar mudanças nessa lógica.
 
 ### Variáveis de ambiente
 

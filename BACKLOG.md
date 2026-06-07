@@ -109,7 +109,10 @@
   sincronização entre componentes.
 - ⬜ **Paginação / virtualização** em listas longas (usuários, logs, posts, chat).
 - ⬜ **Migração para TypeScript** (introduz a pasta `types/`).
-- ⬜ **Testes** (unitários nas regras de XP/ranks e RLS; E2E nos fluxos críticos).
+- 🟡 **Testes** — Vitest configurado; **unitários da lógica pura prontos**
+  (`src/lib/__tests__/`: ranks/XP, password, date, embed, format — 30 testes).
+  *Falta:* testes de integração das RPCs/RLS (ban, login-block, XP no banco) e
+  E2E dos fluxos críticos (login, postar, banir). Crescer gradualmente.
 - ⬜ **Soft delete** de posts (campo `deleted_at` em vez de delete físico).
 - ⬜ **2FA** no login.
 - ⬜ Afinar detecção de ban (hoje realtime + polling de 20s como fallback).
