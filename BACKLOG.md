@@ -207,14 +207,20 @@
 
 ---
 
-## 🎯 Features aprovadas (fazer só DEPOIS de consolidar a base)
+## 🎯 Features aprovadas
 
-> Pedidas pelo dono, mas conscientemente adiadas — o foco agora é consolidar.
-
-- ⬜ **Likes em comentários** — usuários poderem curtir comentários uns dos
-  outros (provável tabela `comment_likes` espelhando `post_likes`).
-- ⬜ **Responder comentários** (threads/replies) — comentar em cima de um
-  comentário (provável `comments.parent_id` self-FK + UI aninhada).
+- ✅ **Likes em comentários** — tabela `comment_likes` (RLS espelhando
+  `post_likes`, SELECT público + INSERT/DELETE da própria linha) + trigger
+  `notify_comment_like` (SECURITY DEFINER, respeita `notif_likes`, ignora
+  self-like). Service `fetchCommentLikeStatus`/`likeComment`/`unlikeComment`,
+  hook `useCommentLike`, botão de coração no `CommentCard`. Testado em ROLLBACK
+  com dados reais antes de aplicar.
+- ✅ **Responder comentários** (threads/replies) — coluna `comments.parent_id`
+  (self-FK, `ON DELETE CASCADE`) + índice. `notify_post_comment` atualizado:
+  resposta notifica o autor do comentário pai ("respondeu seu comentário");
+  comentário raiz continua notificando o dono do post. UI achatada em 1 nível
+  (respostas de respostas viram irmãs sob a raiz) com composer inline.
+  Testado em ROLLBACK (raiz/reply/self-reply/cascade) antes de aplicar.
 
 ---
 
