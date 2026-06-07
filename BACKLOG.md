@@ -22,6 +22,14 @@
 ## 🟠 Importante
 
 ### Banco / Segurança
+- ⬜ **Owner deve poder aprovar/negar pedidos de desban.** Hoje
+  `approve_unban_request` e `deny_unban_request` exigem `role = 'super_admin'`
+  estrito — o `owner` fica de fora. Na prática o owner desbane direto via
+  `unban_user`, então não trava o dia a dia; mas se um dia existir só owner e
+  nenhum super_admin, os pedidos pendentes ficariam sem quem revisasse.
+  *Correção simples:* trocar a checagem por `role NOT IN ('super_admin','owner')`
+  nas duas funções (mudança aditiva, não altera o caminho atual do super_admin).
+  Validar em ROLLBACK depois. *(achado na validação de integração das RPCs.)*
 - ⬜ **Ativar proteção contra senha vazada (HIBP)** no Auth do Supabase.
   *Ação manual no painel (Authentication → Policies) — precisa do dono.
   Não dá pra automatizar via SQL/MCP (é toggle de config do Auth).*
