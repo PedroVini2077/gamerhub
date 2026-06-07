@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeTab, listContainer, listItem } from '../lib/motion';
 import { fetchGameKeys } from '../services/keyService';
@@ -58,18 +59,14 @@ function PromoCard({ item }) {
 }
 
 export default function Keys() {
-  const [keys, setKeys] = useState([]);
-  const [promos, setPromos] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('keys');
 
-  useEffect(() => {
-    fetchGameKeys().then(({ keys: k, promos: p }) => {
-      setKeys(k);
-      setPromos(p);
-      setLoading(false);
-    });
-  }, []);
+  const { data, isPending: loading } = useQuery({
+    queryKey: ['game_keys'],
+    queryFn: fetchGameKeys,
+  });
+  const keys = data?.keys ?? [];
+  const promos = data?.promos ?? [];
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">

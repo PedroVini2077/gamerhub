@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -8,16 +8,15 @@ import { RANK_TIERS, XP_SOURCES, getRankFromXP, getRankLabel, getSubRankProgress
 
 export default function Ranks() {
   const { user } = useAuth();
-  const [xpData, setXpData] = useState(null);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    setLoading(true);
-    supabase.rpc('get_user_xp', { p_user_id: user.id })
-      .then(({ data }) => { if (data) setXpData(data); })
-      .finally(() => setLoading(false));
-  }, [user]);
+  const { data: xpData, isLoading: loading } = useQuery({
+    queryKey: ['user_xp', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase.rpc('get_user_xp', { p_user_id: user.id });
+      return data ?? null;
+    },
+    enabled: !!user,
+  });
 
   const myRank     = xpData ? getRankFromXP(xpData.xp) : null;
   const myProgress = xpData ? getSubRankProgress(xpData.xp) : null;
