@@ -1,7 +1,7 @@
 import { useState, useMemo, memo } from 'react';
 import { useDeferredValue } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Mail, UserX, UserCheck, Search, RefreshCw, UserPlus, ShieldAlert } from 'lucide-react';
+import { ChevronDown, Mail, UserX, UserCheck, Search, RefreshCw, UserPlus, ShieldAlert, Siren } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -13,8 +13,9 @@ const OC = '#f97316';
 const ROLE_COLOR = { owner: OC, super_admin: '#39ff14', admin: '#a855f7', user: '#6b7280' };
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
-const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan }) {
+const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOverride }) {
   const [open, setOpen] = useState(false);
+  const [showOverride, setShowOverride] = useState(false);
   const isOwnerUser = user.role === 'owner';
 
   return (
@@ -109,6 +110,33 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan }) {
               </>
             )}
           </div>
+
+          {!isOwnerUser && (
+            <div>
+              <button onClick={() => setShowOverride(o => !o)}
+                className="flex items-center gap-1.5 text-xs font-mono text-gray-700 hover:text-yellow-500 transition-colors">
+                <Siren size={11} />
+                {showOverride ? 'Ocultar override de emergência' : 'Override de emergência'}
+              </button>
+              {showOverride && (
+                <div className="mt-2 p-2.5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 space-y-2">
+                  <p className="text-xs font-mono text-yellow-500/70 leading-relaxed">
+                    Define o cargo na hora, ignorando indicação e avaliação. Use só em situações
+                    excepcionais (bugs, comportamento inesperado do sistema, etc) — fica registrado
+                    nos logs de auditoria como ação manual do fundador.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['user', 'admin', 'super_admin'].filter(r => r !== user.role).map(r => (
+                      <button key={r} onClick={() => { onOverride(user, r); setShowOverride(false); }}
+                        className="px-2.5 py-1 text-xs font-mono border border-yellow-500/30 rounded text-yellow-500/80 hover:bg-yellow-500/10 transition-colors">
+                        → {ROLE_LABEL[r]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -166,6 +194,22 @@ export default function UsuariosTab() {
           setReason(null);
           toast.success(`Solicitação de rebaixamento de ${user.username} enviada para análise.`);
         } catch (e) { toast.error(e.message); }
+      },
+    });
+  }
+
+  function handleOverride(user, newRole) {
+    setConfirm({
+      title: 'Override de Emergência',
+      message: `Definir o cargo de "${user.username}" diretamente para ${ROLE_LABEL[newRole]}? Isso IGNORA todo o processo de indicação e avaliação — use apenas em situações excepcionais (bugs, comportamento inesperado do sistema, etc). A ação fica registrada nos logs de auditoria.`,
+      accent: 'red',
+      confirmLabel: 'Definir cargo',
+      icon: Siren,
+      onConfirm: async () => {
+        const { error } = await supabase.rpc('owner_set_role', { p_target_user_id: user.id, p_new_role: newRole });
+        setConfirm(null);
+        if (error) toast.error(error.message);
+        else { toast.success(`Cargo de ${user.username} definido para ${ROLE_LABEL[newRole]}.`); refetch(); }
       },
     });
   }
@@ -247,7 +291,8 @@ export default function UsuariosTab() {
       ) : (
         <div className="space-y-2">
           {filtered.map(u => (
-            <UserRow key={u.id} user={u} onNominate={handleNominate} onDemote={handleDemote} onBan={handleBan} />
+            <UserRow key={u.id} user={u} onNominate={handleNominate} onDemote={handleDemote}
+              onBan={handleBan} onOverride={handleOverride} />
           ))}
         </div>
       )}

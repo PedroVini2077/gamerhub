@@ -18,6 +18,7 @@ const KIND_CFG = {
   activity:     { emoji: '⚙️', color: '#6b7280' },
   notification: { emoji: '🔔', color: '#a855f7' },
   user_banned:  { emoji: '🚫', color: '#ef4444' },
+  staff_alert:  { emoji: '🚨', color: '#ef4444' },
 };
 
 export default function NotificacoesTab() {

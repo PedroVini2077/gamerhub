@@ -73,3 +73,8 @@ export async function decideRoleDemotion(requestId, decision, notes) {
   });
   if (error) throw error;
 }
+
+export async function notifyOwner(message) {
+  const { error } = await supabase.rpc('notify_owner', { p_message: message });
+  if (error) throw error;
+}

@@ -11,7 +11,7 @@ import {
   Shield, X, Users, FileText, Key,
   RotateCcw, CheckCircle, XCircle, Crown,
   Bell, Activity, Trash2, Tv,
-  ShieldAlert, LockOpen, UserPlus,
+  ShieldAlert, LockOpen, UserPlus, Siren, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BanModal from '../components/ui/BanModal';
@@ -25,7 +25,7 @@ import NotifsPanel from '../components/admin/NotifsPanel';
 import LogsPanel from '../components/admin/LogsPanel';
 import SuperAdminPanel from '../components/admin/SuperAdminPanel';
 import StaffTab from '../components/admin/StaffTab';
-import { nominateStaff, requestRoleDemotion } from '../services/staffService';
+import { nominateStaff, requestRoleDemotion, notifyOwner } from '../services/staffService';
 
 const REACTIVATE_REASONS = [
   'Encerrada por engano', 'Problema técnico', 'Live continuou', 'Pedido do criador', 'Outro',
@@ -229,6 +229,7 @@ export default function Admin() {
   const [unbanReqLoading, setUnbanReqLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [demoteModal, setDemoteModal] = useState(null);
+  const [alertOwnerModal, setAlertOwnerModal] = useState(false);
   const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
@@ -510,6 +511,14 @@ export default function Admin() {
     fetchLogs();
   }
 
+  async function handleAlertOwner(message) {
+    try {
+      await notifyOwner(message);
+      setAlertOwnerModal(false);
+      toast.success('Alerta enviado ao fundador.');
+    } catch (e) { toast.error(e.message); }
+  }
+
   function handleNominate(targetUser, targetRole) {
     setConfirmModal({
       title: 'Indicar para Staff',
@@ -675,6 +684,13 @@ export default function Admin() {
       {demoteModal && (
         <ReasonModal {...demoteModal} onClose={() => setDemoteModal(null)} />
       )}
+      {alertOwnerModal && (
+        <ReasonModal title="Alertar o Fundador" icon={Siren} accent="red"
+          subtitle="Use isso pra avisar o fundador sobre instabilidades no site ou problemas no painel administrativo. A mensagem chega como notificação direta, com seu nome e cargo."
+          label="Descreva o problema" placeholder="O que está acontecendo? (mínimo 10 caracteres)"
+          required confirmLabel="Enviar alerta" confirmIcon={Send}
+          onConfirm={handleAlertOwner} onClose={() => setAlertOwnerModal(false)} />
+      )}
       {unlockModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.92)' }} onClick={() => setUnlockModal(null)}>
@@ -719,13 +735,21 @@ export default function Admin() {
       )}
 
       <div className="card p-5 border-neon-purple/20">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield size={16} className="text-neon-purple" />
-          <h1 className="font-display text-sm text-neon-purple tracking-widest uppercase">
-            Painel Admin — {role}
-          </h1>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Shield size={16} className="text-neon-purple" />
+              <h1 className="font-display text-sm text-neon-purple tracking-widest uppercase">
+                Painel Admin — {role}
+              </h1>
+            </div>
+            <p className="text-xs text-gray-500 font-mono">Área restrita. Acesso controlado por hierarquia.</p>
+          </div>
+          <button onClick={() => setAlertOwnerModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-red-400/80 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 rounded transition-all shrink-0">
+            <Siren size={12} />Alertar o Fundador
+          </button>
         </div>
-        <p className="text-xs text-gray-500 font-mono">Área restrita. Acesso controlado por hierarquia.</p>
       </div>
 
       <motion.div className="grid grid-cols-3 gap-3"
