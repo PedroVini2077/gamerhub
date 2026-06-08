@@ -3,8 +3,11 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Eletricidade EXCLUSIVA do Hero: arcos de raio que disparam em volta da logo
-// + flashes de "trovão". Tudo imperativo no useFrame (sem re-render do React)
-// e barato — só linhas e uma luz. Decorativo; a cena já respeita
+// + flashes de "trovão". Cada arco carrega sua própria luz, que acende no
+// ponto onde ele "atinge" — assim ilumina de verdade o que está por perto
+// (a logo, os objetos flutuantes), igual um relâmpago real clareia o céu por
+// onde passa, em vez de só desenhar uma linha brilhante. Tudo imperativo no
+// useFrame (sem re-render do React). Decorativo; a cena já respeita
 // prefers-reduced-motion (Scene3D nem monta nesse caso).
 
 const SEGMENTS = 9;
@@ -16,6 +19,7 @@ const ORIGIN = new THREE.Vector3(0, 1.45, -0.7); // perto da logo
 function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) {
   const lineRef = useRef(null);
   const matRef = useRef(null);
+  const lightRef = useRef(null);
   // `delay` (constante por arco) desencontra o primeiro disparo sem usar
   // Math.random no render; a aleatoriedade real fica no useFrame.
   const timing = useRef({ next: delay, life: 0 });
@@ -26,7 +30,10 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
     const T = timing.current;
     if (T.life > 0) {
       T.life -= delta;
-      if (matRef.current) matRef.current.opacity = Math.max(0, T.life / 0.2);
+      // Luz e linha somem juntas, no mesmo ritmo de "estala e apaga".
+      const fade = Math.max(0, T.life / 0.2);
+      if (matRef.current) matRef.current.opacity = fade;
+      if (lightRef.current) lightRef.current.intensity = fade * 6;
     }
     if (clock.elapsedTime >= T.next) {
       const angle = Math.random() * Math.PI * 2;
@@ -45,25 +52,39 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
       geometry.attributes.position.needsUpdate = true;
       T.life = 0.2;
       if (matRef.current) matRef.current.opacity = 1;
+      // A luz fica no meio do caminho do arco — ilumina de verdade a área
+      // por onde ele passou (logo + objetos por perto), na cor do raio,
+      // exatamente como um relâmpago real clareia o que está ao redor.
+      if (lightRef.current) {
+        lightRef.current.position.set(
+          THREE.MathUtils.lerp(ORIGIN.x, tx, 0.5),
+          THREE.MathUtils.lerp(ORIGIN.y, ty, 0.5),
+          THREE.MathUtils.lerp(ORIGIN.z, tz, 0.5) + 0.5,
+        );
+        lightRef.current.intensity = 6;
+      }
       T.next = clock.elapsedTime + gap[0] + Math.random() * (gap[1] - gap[0]);
     }
   });
 
   return (
-    <line ref={lineRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[new Float32Array((SEGMENTS + 1) * 3), 3]} />
-      </bufferGeometry>
-      <lineBasicMaterial
-        ref={matRef}
-        color={color}
-        transparent
-        opacity={0}
-        blending={THREE.AdditiveBlending}
-        toneMapped={false}
-        depthWrite={false}
-      />
-    </line>
+    <>
+      <pointLight ref={lightRef} color={color} intensity={0} distance={3.4} decay={2} />
+      <line ref={lineRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[new Float32Array((SEGMENTS + 1) * 3), 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial
+          ref={matRef}
+          color={color}
+          transparent
+          opacity={0}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+          depthWrite={false}
+        />
+      </line>
+    </>
   );
 }
 

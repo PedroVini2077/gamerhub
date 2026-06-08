@@ -52,8 +52,6 @@ export function LogoBolt() {
   const groupRef = useRef(null);
   const meshRef = useRef(null);
   const matRef = useRef(null);
-  const light1Ref = useRef(null);
-  const light2Ref = useRef(null);
 
   // Em telas estreitas o logo encolhe um pouco pra não dominar a largura.
   const scale = THREE.MathUtils.clamp(viewport.width / 6, 0.72, 1);
@@ -64,36 +62,24 @@ export function LogoBolt() {
   useFrame(({ clock }, delta) => {
     // Giro contínuo no eixo Y revela a espessura/profundidade da extrusão.
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.5;
-    const t = clock.elapsedTime;
-    // Duas luzes orbitando em raios/velocidades diferentes: o destaque
-    // especular *percorre* a superfície metálica conforme circulam e o raio
-    // gira — luz real em tempo real (a rasterização do three.js já resolve
-    // isso, sem precisar de ray tracing) em vez de só variar a intensidade
-    // emissiva, que pisca por igual sem "correr" pela peça.
-    if (light1Ref.current) {
-      light1Ref.current.position.set(Math.cos(t * 0.6) * 1.3, Math.sin(t * 0.6) * 1.05, 0.95 + Math.sin(t * 0.4) * 0.5);
+    // Flicker elétrico: zumbido neon constante + faísca forte ocasional —
+    // dá vida de "energizado" à logo sem custo (só mexe na intensidade).
+    if (matRef.current) {
+      const buzz = Math.sin(clock.elapsedTime * 38) * 0.07;
+      const spark = Math.random() < 0.025 ? Math.random() * 0.9 : 0;
+      matRef.current.emissiveIntensity = 0.55 + buzz + spark;
     }
-    if (light2Ref.current) {
-      light2Ref.current.position.set(Math.cos(t * 0.46 + Math.PI) * 1.15, Math.cos(t * 0.5) * 0.95, 0.7 + Math.cos(t * 0.33) * 0.5);
-    }
-    // Zumbido leve e estável — a sensação de "vivo" agora vem das luzes
-    // correndo pela superfície, não de um pisca-pisca aleatório uniforme.
-    if (matRef.current) matRef.current.emissiveIntensity = 0.5 + Math.sin(t * 1.6) * 0.08;
   });
 
   return (
     <group ref={groupRef} position={[0, 1.45, -1]} scale={scale}>
-      {/* Luzes que orbitam a logo — geram destaque especular que se desloca
-          pela superfície do metal conforme giram, em vez de brilho fixo. */}
-      <pointLight ref={light1Ref} color="#7df9ff" intensity={2.4} distance={4.5} decay={2} />
-      <pointLight ref={light2Ref} color="#bf00ff" intensity={1.9} distance={4.5} decay={2} />
       {/* Inclinação fixa no X pra sempre mostrar um pouco do topo (volume). */}
       <mesh ref={meshRef} geometry={geometry} rotation={[0.34, 0, 0]}>
         <meshStandardMaterial
           ref={matRef}
           color="#1e8c0c"
           emissive="#39ff14"
-          emissiveIntensity={0.5}
+          emissiveIntensity={0.55}
           metalness={0.55}
           roughness={0.28}
         />
