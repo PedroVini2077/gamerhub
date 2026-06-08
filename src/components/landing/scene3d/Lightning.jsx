@@ -16,13 +16,16 @@ const ORIGIN = new THREE.Vector3(0, 1.45, -0.7); // perto da logo
 // Um arco: relâmpago em zigue-zague que "estala" e some, com intervalos
 // aleatórios. Caminho gerado por interpolação + jitter perpendicular. A
 // geometria é acessada só via lineRef dentro do useFrame (nunca no render).
+const LINE_LIFE = 0.2;
+const LIGHT_LIFE = 0.36;
+
 function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) {
   const lineRef = useRef(null);
   const matRef = useRef(null);
   const lightRef = useRef(null);
   // `delay` (constante por arco) desencontra o primeiro disparo sem usar
   // Math.random no render; a aleatoriedade real fica no useFrame.
-  const timing = useRef({ next: delay, life: 0 });
+  const timing = useRef({ next: delay, life: 0, lightLife: 0 });
 
   useFrame(({ clock }, delta) => {
     const geometry = lineRef.current?.geometry;
@@ -30,10 +33,16 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
     const T = timing.current;
     if (T.life > 0) {
       T.life -= delta;
-      // Luz e linha somem juntas, no mesmo ritmo de "estala e apaga".
-      const fade = Math.max(0, T.life / 0.2);
-      if (matRef.current) matRef.current.opacity = fade;
-      if (lightRef.current) lightRef.current.intensity = fade * 6;
+      // O traço "estala" — some rápido e seco, igual um relâmpago de verdade.
+      if (matRef.current) matRef.current.opacity = Math.max(0, T.life / LINE_LIFE);
+    }
+    if (T.lightLife > 0) {
+      T.lightLife -= delta;
+      // A luz dura um pouco mais e segue uma curva em sino (sobe e desce
+      // suave) — brilho residual de relâmpago no ambiente, não um flash de
+      // câmera ligando/desligando seco feito a logo "piscar".
+      const p = THREE.MathUtils.clamp(1 - T.lightLife / LIGHT_LIFE, 0, 1);
+      if (lightRef.current) lightRef.current.intensity = Math.sin(p * Math.PI) * 4.5;
     }
     if (clock.elapsedTime >= T.next) {
       const angle = Math.random() * Math.PI * 2;
@@ -50,18 +59,19 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
         pos[i * 3 + 2] = THREE.MathUtils.lerp(ORIGIN.z, tz, t) + (Math.random() - 0.5) * j * 0.5;
       }
       geometry.attributes.position.needsUpdate = true;
-      T.life = 0.2;
+      T.life = LINE_LIFE;
+      T.lightLife = LIGHT_LIFE;
       if (matRef.current) matRef.current.opacity = 1;
       // A luz fica no meio do caminho do arco — ilumina de verdade a área
       // por onde ele passou (logo + objetos por perto), na cor do raio,
-      // exatamente como um relâmpago real clareia o que está ao redor.
+      // exatamente como um relâmpago real clareia o que está ao redor (a
+      // posição é fixada aqui; a intensidade sobe/desce sozinha no useFrame).
       if (lightRef.current) {
         lightRef.current.position.set(
           THREE.MathUtils.lerp(ORIGIN.x, tx, 0.5),
           THREE.MathUtils.lerp(ORIGIN.y, ty, 0.5),
           THREE.MathUtils.lerp(ORIGIN.z, tz, 0.5) + 0.5,
         );
-        lightRef.current.intensity = 6;
       }
       T.next = clock.elapsedTime + gap[0] + Math.random() * (gap[1] - gap[0]);
     }
@@ -69,7 +79,7 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
 
   return (
     <>
-      <pointLight ref={lightRef} color={color} intensity={0} distance={3.4} decay={2} />
+      <pointLight ref={lightRef} color={color} intensity={0} distance={4} decay={1.7} />
       <line ref={lineRef}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[new Float32Array((SEGMENTS + 1) * 3), 3]} />

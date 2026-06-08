@@ -62,12 +62,12 @@ export function LogoBolt() {
   useFrame(({ clock }, delta) => {
     // Giro contínuo no eixo Y revela a espessura/profundidade da extrusão.
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.5;
-    // Flicker elétrico: zumbido neon constante + faísca forte ocasional —
-    // dá vida de "energizado" à logo sem custo (só mexe na intensidade).
+    // Zumbido neon suave (duas ondas sobrepostas, sem saltos bruscos) — dá
+    // vida de "energizado" sem competir com o flash real dos raios, que
+    // agora é quem ilumina a logo de fato.
     if (matRef.current) {
-      const buzz = Math.sin(clock.elapsedTime * 38) * 0.07;
-      const spark = Math.random() < 0.025 ? Math.random() * 0.9 : 0;
-      matRef.current.emissiveIntensity = 0.55 + buzz + spark;
+      const t = clock.elapsedTime;
+      matRef.current.emissiveIntensity = 0.55 + Math.sin(t * 1.7) * 0.06 + Math.sin(t * 11) * 0.03;
     }
   });
 
