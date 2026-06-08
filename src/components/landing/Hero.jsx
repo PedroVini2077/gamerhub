@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Zap, ChevronDown } from 'lucide-react';
-import { heroTitle, heroFade } from '../../lib/landingMotion';
+import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
+import ElectricTitle from './ElectricTitle';
 
 export default function Hero() {
   return (
@@ -32,12 +33,7 @@ export default function Hero() {
           </span>
         </motion.div>
 
-        <motion.h1
-          variants={heroTitle} initial="initial" animate="animate"
-          className="font-display font-black text-5xl md:text-7xl text-white mb-4"
-        >
-          GAMER<span className="text-neon-green" style={{ textShadow: '0 0 30px #39ff14' }}>HUB</span>
-        </motion.h1>
+        <ElectricTitle />
 
         <motion.p
           variants={heroFade(0.25)} initial="initial" animate="animate"

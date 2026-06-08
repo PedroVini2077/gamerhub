@@ -34,11 +34,33 @@ export default {
         "slide-in": "slideIn 0.3s ease-out",
         "fade-up": "fadeUp 0.4s ease-out",
         scanline: "scanline 8s linear infinite",
+        "electric-buzz": "electricBuzz 5s ease-in-out infinite",
+        "electric-spark": "electricSpark 4s ease-in-out infinite",
       },
       keyframes: {
         pulseNeon: {
           "0%, 100%": { opacity: 1 },
           "50%": { opacity: 0.6 },
+        },
+        // Zumbido de neon instável — a palavra HUB "vacila" em momentos
+        // irregulares, como uma letra elétrica mal aterrada.
+        electricBuzz: {
+          "0%, 100%": { opacity: 1, textShadow: "0 0 30px #39ff14, 0 0 60px #39ff1450" },
+          "8%": { opacity: 0.7, textShadow: "0 0 12px #39ff14" },
+          "10%": { opacity: 1, textShadow: "0 0 30px #39ff14, 0 0 60px #39ff1450" },
+          "53%": { opacity: 1 },
+          "55%": { opacity: 0.5, textShadow: "0 0 8px #39ff14" },
+          "57%": { opacity: 1, textShadow: "0 0 30px #39ff14, 0 0 60px #39ff1450" },
+          "78%": { opacity: 0.85 },
+          "80%": { opacity: 1 },
+        },
+        // Faísca: surge, brilha forte e some — fica invisível na maior
+        // parte do ciclo. Delays/durações diferentes por raio dão a
+        // sensação de disparos espaçados ao redor do texto.
+        electricSpark: {
+          "0%, 90%, 100%": { opacity: 0, transform: "scale(0.5)" },
+          "93%": { opacity: 1, transform: "scale(1.25)" },
+          "96%": { opacity: 0, transform: "scale(0.6)" },
         },
         slideIn: {
           from: { transform: "translateX(-20px)", opacity: 0 },
