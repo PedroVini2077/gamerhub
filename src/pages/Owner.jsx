@@ -50,7 +50,7 @@ export default function Owner() {
         </p>
       </div>
 
-      <div className="flex border-b border-dark-500 overflow-x-auto">
+      <div className="flex border-b border-dark-500 overflow-x-auto overflow-y-hidden">
         {TABS.map(({ id, label, Icon }) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-mono uppercase tracking-wider border-b-2 -mb-px whitespace-nowrap transition-colors ${
