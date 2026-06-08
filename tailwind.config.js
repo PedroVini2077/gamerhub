@@ -35,7 +35,7 @@ export default {
         "fade-up": "fadeUp 0.4s ease-out",
         scanline: "scanline 8s linear infinite",
         "electric-buzz": "electricBuzz 5s ease-in-out infinite",
-        "electric-spark": "electricSpark 4s ease-in-out infinite",
+        "electric-arc": "electricArc 4s ease-in-out infinite",
       },
       keyframes: {
         pulseNeon: {
@@ -54,13 +54,16 @@ export default {
           "78%": { opacity: 0.85 },
           "80%": { opacity: 1 },
         },
-        // Faísca: surge, brilha forte e some — fica invisível na maior
-        // parte do ciclo. Delays/durações diferentes por raio dão a
-        // sensação de disparos espaçados ao redor do texto.
-        electricSpark: {
-          "0%, 90%, 100%": { opacity: 0, transform: "scale(0.5)" },
-          "93%": { opacity: 1, transform: "scale(1.25)" },
-          "96%": { opacity: 0, transform: "scale(0.6)" },
+        // Arco elétrico: "estala" — surge, treme entre brilho forte e fraco
+        // (como descarga real) e some, ficando invisível no resto do ciclo.
+        // Durações/atrasos diferentes por arco dão disparos espaçados.
+        electricArc: {
+          "0%, 100%": { opacity: 0 },
+          "87%": { opacity: 0 },
+          "89%": { opacity: 1 },
+          "91%": { opacity: 0.25 },
+          "93%": { opacity: 0.9 },
+          "96%": { opacity: 0 },
         },
         slideIn: {
           from: { transform: "translateX(-20px)", opacity: 0 },
