@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { LogoBolt, FloatingShapes } from './SceneObjects';
+import Lightning from './Lightning';
 
 // Cena 3D exclusiva do Hero — carregada sob demanda (ver Scene3D.jsx) pra não
 // pesar no bundle inicial. Só geometria simples + materiais emissivos: leve o
@@ -19,6 +20,7 @@ export default function LandingScene() {
       <pointLight position={[-4, -2, 3]} intensity={1.1} color="#bf00ff" />
       <LogoBolt />
       <FloatingShapes />
+      <Lightning />
     </Canvas>
   );
 }

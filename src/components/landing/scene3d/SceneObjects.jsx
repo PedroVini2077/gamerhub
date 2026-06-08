@@ -7,19 +7,19 @@ import * as THREE from 'three';
 function useBoltGeometry() {
   return useMemo(() => {
     const shape = new THREE.Shape();
-    shape.moveTo(0.083, 0.83);
-    shape.lineTo(-0.75, -0.17);
-    shape.lineTo(0, -0.17);
-    shape.lineTo(-0.083, -0.83);
-    shape.lineTo(0.75, 0.17);
-    shape.lineTo(0, 0.17);
+    shape.moveTo(0.06, 0.85);
+    shape.lineTo(-0.7, -0.12);
+    shape.lineTo(-0.04, -0.12);
+    shape.lineTo(-0.06, -0.85);
+    shape.lineTo(0.7, 0.12);
+    shape.lineTo(0.04, 0.12);
     shape.closePath();
 
     const geometry = new THREE.ExtrudeGeometry(shape, {
-      depth: 0.55,
+      depth: 0.28,
       bevelEnabled: true,
-      bevelThickness: 0.09,
-      bevelSize: 0.07,
+      bevelThickness: 0.05,
+      bevelSize: 0.04,
       bevelSegments: 4,
     });
     geometry.center();
@@ -51,16 +51,24 @@ export function LogoBolt() {
   const { viewport } = useThree();
   const groupRef = useRef(null);
   const meshRef = useRef(null);
+  const matRef = useRef(null);
 
   // Em telas estreitas o logo encolhe um pouco pra não dominar a largura.
   const scale = THREE.MathUtils.clamp(viewport.width / 6, 0.72, 1);
 
   // Flutua de leve (menos que os objetos ao redor).
   useBob(groupRef, { speed: 0.7, amplitude: 0.1, baseY: 1.45 });
-  // Giro contínuo no eixo Y: revela a espessura/profundidade da extrusão a
-  // cada volta. Com depth alto a borda "de lado" lê como barra 3D, não risco.
-  useFrame((_, delta) => {
+
+  useFrame(({ clock }, delta) => {
+    // Giro contínuo no eixo Y revela a espessura/profundidade da extrusão.
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.5;
+    // Flicker elétrico: zumbido neon constante + faísca forte ocasional —
+    // dá vida de "energizado" à logo sem custo (só mexe na intensidade).
+    if (matRef.current) {
+      const buzz = Math.sin(clock.elapsedTime * 38) * 0.07;
+      const spark = Math.random() < 0.025 ? Math.random() * 0.9 : 0;
+      matRef.current.emissiveIntensity = 0.55 + buzz + spark;
+    }
   });
 
   return (
@@ -68,9 +76,10 @@ export function LogoBolt() {
       {/* Inclinação fixa no X pra sempre mostrar um pouco do topo (volume). */}
       <mesh ref={meshRef} geometry={geometry} rotation={[0.34, 0, 0]}>
         <meshStandardMaterial
+          ref={matRef}
           color="#1e8c0c"
           emissive="#39ff14"
-          emissiveIntensity={0.5}
+          emissiveIntensity={0.55}
           metalness={0.55}
           roughness={0.28}
         />
