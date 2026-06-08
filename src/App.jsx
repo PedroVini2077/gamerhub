@@ -12,9 +12,13 @@ import ErrorBoundary from './components/ErrorBoundary';
 import GlobalBanner from './components/ui/GlobalBanner';
 import FeatureGate from './components/ui/FeatureGate';
 import PageTransition from './components/ui/PageTransition';
+import SplashScreen from './components/ui/SplashScreen';
+import RequireAuth from './components/auth/RequireAuth';
+import GuestOnly from './components/auth/GuestOnly';
 import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
+import Landing from './pages/Landing';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import AuthConfirm from './pages/AuthConfirm';
@@ -111,6 +115,37 @@ function Layout({ children }) {
   );
 }
 
+// Decide entre Landing (guest) e o feed (logado) na rota raiz — sem mudar a URL.
+function HomeOrLanding() {
+  const { user } = useAuth();
+  return user ? <Layout><Home /></Layout> : <Landing />;
+}
+
+// Splash enquanto a sessão resolve — evita flash de Landing↔Home/guard.
+function AppRoutes() {
+  const { loading } = useAuth();
+  if (loading) return <SplashScreen />;
+
+  return (
+    <Routes>
+      <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
+      <Route path="/auth/confirm" element={<AuthConfirm />} />
+      <Route path="/" element={<HomeOrLanding />} />
+      <Route path="/community" element={<RequireAuth><Layout><FeatureGate flag="feature_community"><Community /></FeatureGate></Layout></RequireAuth>} />
+      <Route path="/keys" element={<RequireAuth><Layout><FeatureGate flag="feature_keys"><Keys /></FeatureGate></Layout></RequireAuth>} />
+      <Route path="/profile" element={<RequireAuth><Layout><Profile /></Layout></RequireAuth>} />
+      <Route path="/u/:username" element={<RequireAuth><Layout><UserProfile /></Layout></RequireAuth>} />
+      <Route path="/settings" element={<RequireAuth><Layout><Settings /></Layout></RequireAuth>} />
+      <Route path="/admin" element={<RequireAuth><Layout><Admin /></Layout></RequireAuth>} />
+      <Route path="/lives" element={<RequireAuth><Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout></RequireAuth>} />
+      <Route path="/lives/:id" element={<RequireAuth><Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout></RequireAuth>} />
+      <Route path="/ranks" element={<RequireAuth><Layout><Ranks /></Layout></RequireAuth>} />
+      <Route path="/owner" element={<RequireAuth><Layout><Owner /></Layout></RequireAuth>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -134,22 +169,7 @@ export default function App() {
             success: { iconTheme: { primary: '#39ff14', secondary: '#060608' } },
           }}
         />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/auth/confirm" element={<AuthConfirm />} />
-          <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/community" element={<Layout><FeatureGate flag="feature_community"><Community /></FeatureGate></Layout>} />
-          <Route path="/keys" element={<Layout><FeatureGate flag="feature_keys"><Keys /></FeatureGate></Layout>} />
-          <Route path="/profile" element={<Layout><Profile /></Layout>} />
-          <Route path="/u/:username" element={<Layout><UserProfile /></Layout>} />
-          <Route path="/settings" element={<Layout><Settings /></Layout>} />
-          <Route path="/admin" element={<Layout><Admin /></Layout>} />
-          <Route path="/lives" element={<Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout>} />
-          <Route path="/lives/:id" element={<Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout>} />
-          <Route path="/ranks" element={<Layout><Ranks /></Layout>} />
-          <Route path="/owner" element={<Layout><Owner /></Layout>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppRoutes />
       </AuthProvider>
       </QueryClientProvider>
       </ErrorBoundary>
