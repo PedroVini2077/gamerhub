@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { heroTitle } from '../../lib/landingMotion';
 
@@ -33,37 +34,45 @@ const ARCS = [
 // pisca como neon mal aterrado e arcos em zigue-zague (não ícones — traços
 // reais, igual aos raios 3D) cruzam o texto em disparos espaçados.
 export default function ElectricTitle() {
+  // Os arcos só começam a "estalar" depois que o título termina de aparecer —
+  // antes disso ficam fora do DOM, evitando o flash de traços estáticos
+  // (sem a animação rodando ainda) por cima da frase ainda se formando.
+  const [revealed, setRevealed] = useState(false);
+
   return (
     <motion.h1
       variants={heroTitle} initial="initial" animate="animate"
+      onAnimationComplete={() => setRevealed(true)}
       className="relative font-display font-black text-5xl md:text-7xl text-white mb-4"
     >
       GAMER
       <span className="text-neon-green animate-electric-buzz" style={{ textShadow: '0 0 30px #39ff14' }}>
         HUB
       </span>
-      <svg
-        aria-hidden
-        viewBox="0 0 100 20"
-        className="absolute -inset-x-3 -inset-y-4 w-[calc(100%+1.5rem)] h-[calc(100%+2rem)] pointer-events-none overflow-visible"
-      >
-        {ARCS.map((arc, i) => (
-          <path
-            key={i}
-            d={arc.d}
-            fill="none"
-            stroke={arc.color}
-            strokeWidth={arc.width}
-            strokeLinecap="round"
-            className="animate-electric-arc"
-            style={{
-              animationDuration: arc.dur,
-              animationDelay: arc.delay,
-              filter: `drop-shadow(0 0 1.5px ${arc.color})`,
-            }}
-          />
-        ))}
-      </svg>
+      {revealed && (
+        <svg
+          aria-hidden
+          viewBox="0 0 100 20"
+          className="absolute -inset-x-3 -inset-y-4 w-[calc(100%+1.5rem)] h-[calc(100%+2rem)] pointer-events-none overflow-visible"
+        >
+          {ARCS.map((arc, i) => (
+            <path
+              key={i}
+              d={arc.d}
+              fill="none"
+              stroke={arc.color}
+              strokeWidth={arc.width}
+              strokeLinecap="round"
+              className="animate-electric-arc"
+              style={{
+                animationDuration: arc.dur,
+                animationDelay: arc.delay,
+                filter: `drop-shadow(0 0 1.5px ${arc.color})`,
+              }}
+            />
+          ))}
+        </svg>
+      )}
     </motion.h1>
   );
 }
