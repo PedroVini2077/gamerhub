@@ -2,6 +2,24 @@ import { useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+// Curvas de entrada — funções puras do tempo decorrido (sem Math.random/Date.now,
+// pra respeitar a pureza exigida pelo React em código de render/useFrame).
+function easeOutCubic(t) {
+  return 1 - (1 - t) ** 3;
+}
+function easeOutBack(t) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
+}
+
+const LOGO_GROW_TIME = 0.85;  // duração do crescimento do raio (segundos)
+const LOGO_FLASH_TIME = 0.45; // duração do flash de luz que "acende" o raio
+
+const SHAPE_BASE_DELAY = 0.25; // espera antes do primeiro objeto aparecer
+const SHAPE_STAGGER = 0.16;    // intervalo entre o aparecimento de cada objeto
+const SHAPE_POP_TIME = 0.6;    // duração do "pop" de cada objeto
+
 // Silhueta de raio — mesmo desenho do ícone Zap (lucide) da marca, extrudado
 // em 3D com bastante profundidade pra ler como objeto sólido, não chapa.
 function useBoltGeometry() {
@@ -52,6 +70,7 @@ export function LogoBolt() {
   const groupRef = useRef(null);
   const meshRef = useRef(null);
   const matRef = useRef(null);
+  const flashRef = useRef(null);
 
   // Em telas estreitas o logo encolhe um pouco pra não dominar a largura.
   const scale = THREE.MathUtils.clamp(viewport.width / 6, 0.72, 1);
@@ -60,21 +79,39 @@ export function LogoBolt() {
   useBob(groupRef, { speed: 0.7, amplitude: 0.1, baseY: 1.45 });
 
   useFrame(({ clock }, delta) => {
-    // Giro contínuo no eixo Y revela a espessura/profundidade da extrusão.
-    if (meshRef.current) meshRef.current.rotation.y += delta * 0.5;
+    const t = clock.elapsedTime;
+
+    // Nasce de um clarão — o raio "surge" iluminado por um flash que estoura
+    // e decai rápido, e o sólido cresce de dentro dele (igual um raio de
+    // verdade: primeiro a luz, depois a forma se revela).
+    const growP = THREE.MathUtils.clamp(t / LOGO_GROW_TIME, 0, 1);
+    const entranceScale = easeOutCubic(growP);
+    const flashP = THREE.MathUtils.clamp(t / LOGO_FLASH_TIME, 0, 1);
+    const flashBurst = (1 - flashP) ** 2; // 1 → 0, decaimento rápido
+
+    if (meshRef.current) {
+      // Giro contínuo no eixo Y revela a espessura/profundidade da extrusão.
+      meshRef.current.rotation.y += delta * 0.5;
+      meshRef.current.scale.setScalar(entranceScale);
+    }
+    if (flashRef.current) {
+      flashRef.current.intensity = flashBurst * 14;
+    }
     // Zumbido neon suave (duas ondas sobrepostas, sem saltos bruscos) — dá
     // vida de "energizado" sem competir com o flash real dos raios, que
-    // agora é quem ilumina a logo de fato.
+    // agora é quem ilumina a logo de fato. Durante o nascimento, o brilho
+    // recebe um boost extra que acompanha o flash.
     if (matRef.current) {
-      const t = clock.elapsedTime;
-      matRef.current.emissiveIntensity = 0.55 + Math.sin(t * 1.7) * 0.06 + Math.sin(t * 11) * 0.03;
+      matRef.current.emissiveIntensity = 0.55 + Math.sin(t * 1.7) * 0.06 + Math.sin(t * 11) * 0.03 + flashBurst * 1.4;
     }
   });
 
   return (
     <group ref={groupRef} position={[0, 1.45, -1]} scale={scale}>
+      {/* Clarão que acompanha o nascimento do raio — estoura e decai rápido. */}
+      <pointLight ref={flashRef} position={[0, 0, 1.2]} color="#aaffaa" intensity={0} distance={6} />
       {/* Inclinação fixa no X pra sempre mostrar um pouco do topo (volume). */}
-      <mesh ref={meshRef} geometry={geometry} rotation={[0.34, 0, 0]}>
+      <mesh ref={meshRef} geometry={geometry} rotation={[0.34, 0, 0]} scale={0}>
         <meshStandardMaterial
           ref={matRef}
           color="#1e8c0c"
@@ -103,21 +140,33 @@ function ShapeGeometry({ kind, scale }) {
   return <icosahedronGeometry args={[scale, 0]} />;
 }
 
-function FloatingShape({ kind, color, x, y, z, scale, sizeScale, speed, phase }) {
+function FloatingShape({ kind, color, x, y, z, scale, sizeScale, speed, phase, index }) {
   const ref = useRef(null);
+  const matRef = useRef(null);
+  const delay = SHAPE_BASE_DELAY + index * SHAPE_STAGGER;
   useBob(ref, { speed, amplitude: 0.3, baseY: y, phase });
   useTilt(ref, { speed: speed * 0.7, amplitude: 0.5, phase });
 
+  useFrame(({ clock }) => {
+    // Cada objeto "materializa" com um leve estouro (overshoot) defasado no
+    // tempo — como se fossem condensando a partir da energia do raio central.
+    const popP = THREE.MathUtils.clamp((clock.elapsedTime - delay) / SHAPE_POP_TIME, 0, 1);
+    const pop = popP <= 0 ? 0 : easeOutBack(popP);
+    if (ref.current) ref.current.scale.setScalar(sizeScale * Math.max(pop, 0));
+    if (matRef.current) matRef.current.opacity = 0.55 * THREE.MathUtils.clamp(popP, 0, 1);
+  });
+
   return (
-    <mesh ref={ref} position={[x, y, z]} scale={sizeScale}>
+    <mesh ref={ref} position={[x, y, z]} scale={0}>
       <ShapeGeometry kind={kind} scale={scale} />
       <meshStandardMaterial
+        ref={matRef}
         color={color}
         emissive={color}
         emissiveIntensity={0.6}
         wireframe
         transparent
-        opacity={0.55}
+        opacity={0}
       />
     </mesh>
   );
@@ -132,6 +181,6 @@ export function FloatingShapes() {
   const sizeScale = THREE.MathUtils.clamp(viewport.width / 6, 0.55, 1);
 
   return SHAPES.map((shape, i) => (
-    <FloatingShape key={i} {...shape} x={shape.fx * halfWidth} sizeScale={sizeScale} />
+    <FloatingShape key={i} {...shape} index={i} x={shape.fx * halfWidth} sizeScale={sizeScale} />
   ));
 }
