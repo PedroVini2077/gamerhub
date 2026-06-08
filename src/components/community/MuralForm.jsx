@@ -51,10 +51,19 @@ const MuralForm = memo(function MuralForm({ onPost }) {
           onKeyDown={handleKey}
           maxLength={500}
         />
-        <button onClick={handleSubmit} disabled={loading} className="btn-purple flex items-center gap-2 shrink-0">
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !message.trim()}
+          className="btn-purple flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <Send size={14} />
-          Enviar
+          {loading ? 'Enviando...' : 'Enviar'}
         </button>
+      </div>
+      <div className="flex justify-end mt-2">
+        <span className={`text-xs font-mono ${message.length >= 500 ? 'text-red-400' : 'text-gray-600'}`}>
+          {message.length}/500
+        </span>
       </div>
     </div>
   );
