@@ -1,20 +1,30 @@
 import { useRef, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
-import { fetchMuralPosts } from '../services/communityService';
+import { fetchMuralPage } from '../services/communityService';
 import MuralCard from '../components/community/MuralCard';
 import MuralForm from '../components/community/MuralForm';
 import { useRealtime } from '../hooks/useRealtime';
 import { Users } from 'lucide-react';
 
+const PAGE_SIZE = 20;
+
 export default function Community() {
   const fetchDebounceRef = useRef(null);
 
-  const { data: items = [], isPending: loading, refetch } = useQuery({
+  const {
+    data, isPending: loading, refetch,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['mural_posts'],
-    queryFn: () => fetchMuralPosts(50),
+    queryFn: ({ pageParam }) => fetchMuralPage({ limit: PAGE_SIZE, before: pageParam }),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) =>
+      lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
   });
+
+  const items = data?.pages.flat() ?? [];
 
   const reload = useCallback(() => { refetch(); }, [refetch]);
 
@@ -45,14 +55,26 @@ export default function Community() {
           <p className="font-mono text-gray-500 text-sm">Mural vazio. Quebra o gelo!</p>
         </div>
       ) : (
-        <motion.div className="space-y-3"
-          variants={listContainer} initial="initial" animate="animate">
-          {items.map(i => (
-            <motion.div key={i.id} variants={listItem}>
-              <MuralCard item={i} onDelete={reload} />
-            </motion.div>
-          ))}
-        </motion.div>
+        <>
+          <motion.div className="space-y-3"
+            variants={listContainer} initial="initial" animate="animate">
+            {items.map(i => (
+              <motion.div key={i.id} variants={listItem}>
+                <MuralCard item={i} onDelete={reload} />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {hasNextPage && (
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="btn-neon w-full py-2.5 text-xs disabled:opacity-50"
+            >
+              {isFetchingNextPage ? 'Carregando...' : 'Carregar mais'}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
