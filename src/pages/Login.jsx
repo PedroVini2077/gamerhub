@@ -7,6 +7,7 @@ import { Zap, ArrowLeft } from 'lucide-react';
 import { calcAge, MIN_SIGNUP_AGE } from '../lib/date';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
+import RegisterSuccess from '../components/auth/RegisterSuccess';
 import ForgotForm from '../components/auth/ForgotForm';
 
 export default function Login() {
@@ -22,6 +23,7 @@ export default function Login() {
   const [selectedPlatform, setSelectedPlatform] = useState('');
   const [loading, setLoading]               = useState(false);
   const [block, setBlock]                   = useState(null); // { permanent, blocked_until } | null
+  const [registeredEmail, setRegisteredEmail] = useState(null); // email pendente de confirmação (mostra tela "verifique seu email")
 
   const isBlocked = !!block && (block.permanent || (block.blocked_until && new Date(block.blocked_until).getTime() > Date.now()));
 
@@ -43,6 +45,7 @@ export default function Login() {
     setBirthDate('');
     setUf('');
     setSelectedPlatform('');
+    setRegisteredEmail(null);
   }
 
   async function handleSubmit() {
@@ -114,7 +117,7 @@ export default function Login() {
 
       const { error } = await signUpWithEmail(email, password, username, extraFields);
       if (error) toast.error(error.message);
-      else toast.success('Conta criada! Verifique seu email.');
+      else setRegisteredEmail(email.trim());
     }
 
     setLoading(false);
@@ -150,18 +153,22 @@ export default function Login() {
             />
           )}
           {mode === 'register' && (
-            <RegisterForm
-              email={email} setEmail={setEmail}
-              password={password} setPassword={setPassword}
-              confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
-              username={username} setUsername={setUsername}
-              birthDate={birthDate} setBirthDate={setBirthDate}
-              uf={uf} setUf={setUf}
-              selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform}
-              loading={loading}
-              onSubmit={handleSubmit}
-              onSwitchToLogin={() => switchMode('login')}
-            />
+            registeredEmail ? (
+              <RegisterSuccess email={registeredEmail} onBackToLogin={() => switchMode('login')} />
+            ) : (
+              <RegisterForm
+                email={email} setEmail={setEmail}
+                password={password} setPassword={setPassword}
+                confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+                username={username} setUsername={setUsername}
+                birthDate={birthDate} setBirthDate={setBirthDate}
+                uf={uf} setUf={setUf}
+                selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform}
+                loading={loading}
+                onSubmit={handleSubmit}
+                onSwitchToLogin={() => switchMode('login')}
+              />
+            )
           )}
           {mode === 'forgot' && (
             <ForgotForm
