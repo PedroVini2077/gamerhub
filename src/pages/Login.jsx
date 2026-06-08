@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Zap } from 'lucide-react';
+import { Zap, ArrowLeft } from 'lucide-react';
 import { calcAge, MIN_SIGNUP_AGE } from '../lib/date';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
@@ -123,6 +123,12 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-neon-green transition-colors mb-6"
+        >
+          <ArrowLeft size={14} /> Voltar para a página inicial
+        </Link>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
             <Zap size={28} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 10px #39ff14)' }} />

@@ -6,7 +6,7 @@ import Scene3D from './Scene3D';
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+    <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-x-clip">
       {/* Glows flutuantes — assinatura exclusiva da landing, não existem no resto do site */}
       <motion.div
         aria-hidden

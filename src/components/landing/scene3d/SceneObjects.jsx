@@ -1,9 +1,9 @@
 import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 // Silhueta de raio — mesmo desenho do ícone Zap (lucide) da marca, extrudado
-// em 3D. É o "logo" que flutua no centro do Hero.
+// em 3D com bastante profundidade pra ler como objeto sólido, não chapa.
 function useBoltGeometry() {
   return useMemo(() => {
     const shape = new THREE.Shape();
@@ -16,11 +16,11 @@ function useBoltGeometry() {
     shape.closePath();
 
     const geometry = new THREE.ExtrudeGeometry(shape, {
-      depth: 0.16,
+      depth: 0.55,
       bevelEnabled: true,
-      bevelThickness: 0.035,
-      bevelSize: 0.03,
-      bevelSegments: 3,
+      bevelThickness: 0.09,
+      bevelSize: 0.07,
+      bevelSegments: 4,
     });
     geometry.center();
     return geometry;
@@ -48,36 +48,44 @@ function useTilt(ref, { speed = 1, amplitude = 0.5, phase = 0 }) {
 
 export function LogoBolt() {
   const geometry = useBoltGeometry();
+  const { viewport } = useThree();
   const groupRef = useRef(null);
   const meshRef = useRef(null);
 
-  useBob(groupRef, { speed: 0.8, amplitude: 0.16, baseY: 1.6 });
-  // Giro no próprio plano (eixo Z) — mantém a "cara" do raio sempre virada
-  // pra câmera, em vez de mostrar a borda fina da extrusão de lado.
+  // Em telas estreitas o logo encolhe um pouco pra não dominar a largura.
+  const scale = THREE.MathUtils.clamp(viewport.width / 6, 0.72, 1);
+
+  // Flutua de leve (menos que os objetos ao redor).
+  useBob(groupRef, { speed: 0.7, amplitude: 0.1, baseY: 1.45 });
+  // Giro contínuo no eixo Y: revela a espessura/profundidade da extrusão a
+  // cada volta. Com depth alto a borda "de lado" lê como barra 3D, não risco.
   useFrame((_, delta) => {
-    if (meshRef.current) meshRef.current.rotation.z -= delta * 0.28;
+    if (meshRef.current) meshRef.current.rotation.y += delta * 0.5;
   });
 
   return (
-    <group ref={groupRef} position={[0, 1.6, -1.6]} scale={0.92}>
-      <mesh ref={meshRef} geometry={geometry} rotation={[0.3, 0, 0]}>
+    <group ref={groupRef} position={[0, 1.45, -1]} scale={scale}>
+      {/* Inclinação fixa no X pra sempre mostrar um pouco do topo (volume). */}
+      <mesh ref={meshRef} geometry={geometry} rotation={[0.34, 0, 0]}>
         <meshStandardMaterial
-          color="#0d3d05"
+          color="#1e8c0c"
           emissive="#39ff14"
-          emissiveIntensity={0.9}
-          metalness={0.3}
-          roughness={0.35}
+          emissiveIntensity={0.5}
+          metalness={0.55}
+          roughness={0.28}
         />
       </mesh>
     </group>
   );
 }
 
+// fx = posição X relativa à largura visível (–1..1) — assim os objetos ficam
+// nos cantos em qualquer proporção de tela, inclusive no celular (retrato).
 const SHAPES = [
-  { kind: 'icosahedron', color: '#bf00ff', position: [-2.5, 1.1, -1],    scale: 0.46, speed: 0.6, phase: 0 },
-  { kind: 'octahedron',  color: '#00ffff', position: [2.4, -0.9, -0.6],  scale: 0.4,  speed: 0.8, phase: 1.4 },
-  { kind: 'torus',       color: '#39ff14', position: [-1.9, -1.5, -1.4], scale: 0.34, speed: 0.5, phase: 2.6 },
-  { kind: 'icosahedron', color: '#00ffff', position: [2.1, 1.6, -1.6],   scale: 0.27, speed: 0.9, phase: 3.8 },
+  { kind: 'icosahedron', color: '#bf00ff', fx: -0.72, y: 1.45,  z: -1,   scale: 0.46, speed: 0.6, phase: 0 },
+  { kind: 'octahedron',  color: '#00ffff', fx: 0.74,  y: 1.5,   z: -1.2, scale: 0.4,  speed: 0.8, phase: 1.4 },
+  { kind: 'torus',       color: '#39ff14', fx: -0.66, y: -1.55, z: -1.4, scale: 0.34, speed: 0.5, phase: 2.6 },
+  { kind: 'icosahedron', color: '#00ffff', fx: 0.72,  y: -1.45, z: -1.6, scale: 0.27, speed: 0.9, phase: 3.8 },
 ];
 
 function ShapeGeometry({ kind, scale }) {
@@ -86,13 +94,13 @@ function ShapeGeometry({ kind, scale }) {
   return <icosahedronGeometry args={[scale, 0]} />;
 }
 
-function FloatingShape({ kind, color, position, scale, speed, phase }) {
+function FloatingShape({ kind, color, x, y, z, scale, sizeScale, speed, phase }) {
   const ref = useRef(null);
-  useBob(ref, { speed, amplitude: 0.3, baseY: position[1], phase });
+  useBob(ref, { speed, amplitude: 0.3, baseY: y, phase });
   useTilt(ref, { speed: speed * 0.7, amplitude: 0.5, phase });
 
   return (
-    <mesh ref={ref} position={position}>
+    <mesh ref={ref} position={[x, y, z]} scale={sizeScale}>
       <ShapeGeometry kind={kind} scale={scale} />
       <meshStandardMaterial
         color={color}
@@ -107,7 +115,14 @@ function FloatingShape({ kind, color, position, scale, speed, phase }) {
 }
 
 // Objetos geométricos flutuantes ao redor do logo — wireframe translúcido pra
-// dar profundidade sem competir visualmente com o raio central.
+// dar profundidade sem competir visualmente com o raio central. Posições e
+// tamanho se adaptam à largura da viewport (aparecem também no celular).
 export function FloatingShapes() {
-  return SHAPES.map((shape, i) => <FloatingShape key={i} {...shape} />);
+  const { viewport } = useThree();
+  const halfWidth = viewport.width / 2;
+  const sizeScale = THREE.MathUtils.clamp(viewport.width / 6, 0.55, 1);
+
+  return SHAPES.map((shape, i) => (
+    <FloatingShape key={i} {...shape} x={shape.fx * halfWidth} sizeScale={sizeScale} />
+  ));
 }
