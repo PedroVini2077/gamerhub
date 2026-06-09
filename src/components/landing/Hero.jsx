@@ -1,13 +1,23 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Zap, ChevronDown } from 'lucide-react';
 import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
+import IntroLightning from './IntroLightning';
 
 export default function Hero() {
+  // O raio de abertura cobre o Hero, estoura, some e então libera o conteúdo.
+  const [introDone, setIntroDone] = useState(false);
+  const show = introDone ? 'animate' : 'initial';
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-x-clip">
+      <AnimatePresence>
+        {!introDone && <IntroLightning key="intro" onComplete={() => setIntroDone(true)} />}
+      </AnimatePresence>
+
       {/* Glows flutuantes — assinatura exclusiva da landing, não existem no resto do site */}
       <motion.div
         aria-hidden
@@ -26,24 +36,24 @@ export default function Hero() {
       <Scene3D className="absolute inset-0 z-[1] opacity-90" />
 
       <div className="relative z-10 flex flex-col items-center">
-        <motion.div variants={heroFade(0)} initial="initial" animate="animate" className="flex items-center gap-2 mb-5">
+        <motion.div variants={heroFade(0)} initial="initial" animate={show} className="flex items-center gap-2 mb-5">
           <Zap size={20} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 10px #39ff14)' }} />
           <span className="font-mono text-xs tracking-[0.3em] text-neon-green uppercase">
             Sua base de operações gamer
           </span>
         </motion.div>
 
-        <ElectricTitle />
+        <ElectricTitle active={introDone} />
 
         <motion.p
-          variants={heroFade(0.25)} initial="initial" animate="animate"
+          variants={heroFade(0.25)} initial="initial" animate={show}
           className="max-w-xl text-gray-400 font-body text-base md:text-lg mb-9"
         >
           Feed colaborativo, mural da comunidade, lives ao vivo, ranks e XP —
           tudo num só lugar, feito pra quem vive games.
         </motion.p>
 
-        <motion.div variants={heroFade(0.45)} initial="initial" animate="animate">
+        <motion.div variants={heroFade(0.45)} initial="initial" animate={show}>
           <Link to="/login" className="btn-solid py-3.5 px-9 text-sm">Entrar / Criar conta</Link>
         </motion.div>
       </div>

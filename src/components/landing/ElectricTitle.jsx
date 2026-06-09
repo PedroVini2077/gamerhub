@@ -33,7 +33,7 @@ const ARCS = [
 // Título do Hero com eletricidade de verdade correndo pela palavra: o "HUB"
 // pisca como neon mal aterrado e arcos em zigue-zague (não ícones — traços
 // reais, igual aos raios 3D) cruzam o texto em disparos espaçados.
-export default function ElectricTitle() {
+export default function ElectricTitle({ active = true }) {
   // Os arcos só começam a "estalar" depois que o título termina de aparecer —
   // antes disso ficam fora do DOM, evitando o flash de traços estáticos
   // (sem a animação rodando ainda) por cima da frase ainda se formando.
@@ -41,8 +41,10 @@ export default function ElectricTitle() {
 
   return (
     <motion.h1
-      variants={heroTitle} initial="initial" animate="animate"
-      onAnimationComplete={() => setRevealed(true)}
+      variants={heroTitle} initial="initial" animate={active ? 'animate' : 'initial'}
+      // só revela os arcos quando a entrada do título de fato rodou (active) —
+      // evita o onAnimationComplete disparar à toa quando animate === initial.
+      onAnimationComplete={() => { if (active) setRevealed(true); }}
       className="relative font-display font-black text-5xl md:text-7xl text-white mb-4"
     >
       GAMER
@@ -67,6 +69,10 @@ export default function ElectricTitle() {
               style={{
                 animationDuration: arc.dur,
                 animationDelay: arc.delay,
+                // backwards: durante o atraso, usa o keyframe 0% (opacity 0) em
+                // vez do estado padrão do path (visível) — sem isso todos os
+                // arcos apareciam de uma vez e sumiam um a um conforme o delay.
+                animationFillMode: 'backwards',
                 filter: `drop-shadow(0 0 1.5px ${arc.color})`,
               }}
             />

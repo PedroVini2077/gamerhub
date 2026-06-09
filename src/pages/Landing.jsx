@@ -46,9 +46,9 @@ export default function Landing() {
         <FeatureSection
           icon={Tv}
           eyebrow="Lives"
-          title="Lives ao vivo, com chat na hora"
-          description="Assista e participe de transmissões ao vivo de outros jogadores, converse no chat em tempo real e acompanhe quem está online."
-          details="Lives integradas com chat ao vivo, moderação, presença online e notificações — tudo direto na plataforma."
+          title="Suas lives do Twitch e YouTube, com chat na hora"
+          description="Traga sua transmissão do Twitch ou do YouTube e assista as dos outros membros direto no Hub — com chat em tempo real e contador de espectadores ao vivo."
+          details="Embeds de Twitch e YouTube com chat próprio do Hub, moderação, presença online e contador de espectadores em tempo real — sem sair da plataforma."
           accent="cyan"
           mockup={<LivesMockup />}
         />
