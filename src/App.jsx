@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { queryClient } from './lib/queryClient';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { useRole } from './hooks/useRole';
@@ -170,6 +171,7 @@ export default function App() {
           }}
         />
         <AppRoutes />
+        <SpeedInsights />
       </AuthProvider>
       </QueryClientProvider>
       </ErrorBoundary>
