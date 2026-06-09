@@ -4,7 +4,7 @@
 export function getEmbedInfo(url) {
   if (!url) return null;
 
-  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/);
   if (yt) return { type: 'youtube', id: yt[1], label: 'YouTube', color: '#ff0000', icon: '▶️' };
 
   const twVod = url.match(/twitch\.tv\/videos\/(\d+)/);
