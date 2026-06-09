@@ -30,17 +30,6 @@ export const fadeUpReveal = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
 };
 
-// Barra neon que varre o card de cima pra baixo "revelando" o conteúdo —
-// usar dentro de RevealCard (overlay com origin-top + scaleY). Propaga do
-// pai junto com fadeUpReveal (mesmas chaves initial/animate).
-// (clipPath foi descartado: o Framer Motion trava a transição inteira em
-// opacity:0 ao animá-lo via variants/whileInView, sem erro no console —
-// scaleY é uma propriedade simples e não tem esse problema.)
-export const scanSweep = {
-  initial: { scaleY: 1 },
-  animate: { scaleY: 0, transition: { duration: 0.5, delay: 0.15, ease: 'easeIn' } },
-};
-
 // Container com filhos em cascata — filhos usam fadeUpReveal e herdam
 // initial/animate do pai por propagação (não declaram os próprios)
 export const staggerContainer = (stagger = 0.12) => ({
