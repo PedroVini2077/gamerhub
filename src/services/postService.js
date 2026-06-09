@@ -9,6 +9,8 @@ export async function fetchFeedPosts(limit = 30) {
   const { data } = await supabase
     .from('posts')
     .select(POST_SELECT)
+    // Lives de jogadores (live_kind preenchido) vivem só na aba Lives.
+    .is('live_kind', null)
     .order('created_at', { ascending: false })
     .limit(limit);
   return data || [];
@@ -19,6 +21,8 @@ export async function fetchUserPosts(userId) {
     .from('posts')
     .select('*, profiles(username, avatar_url), user_id')
     .eq('user_id', userId)
+    // idem: lives de jogadores não aparecem no perfil, só na aba Lives.
+    .is('live_kind', null)
     .order('created_at', { ascending: false });
   return data || [];
 }
@@ -36,7 +40,7 @@ export async function fetchActiveLives() {
 
 // ─── Post CRUD ───────────────────────────────────────────────────────────────
 
-export async function createPost({ userId, title, content, category, audioUrl, audioType, audioName, embedUrl, isLive }) {
+export async function createPost({ userId, title, content, category, audioUrl, audioType, audioName, embedUrl, isLive, liveKind, liveKindLabel }) {
   const embedInfo = embedUrl ? getEmbedInfo(embedUrl) : null;
   return supabase.from('posts').insert({
     user_id: userId,
@@ -51,6 +55,10 @@ export async function createPost({ userId, title, content, category, audioUrl, a
     is_live: isLive,
     was_live: isLive,
     expires_at: null,
+    // Tipo de live de jogador (null = post/live comum). Rótulo só faz sentido
+    // quando "outro".
+    live_kind: liveKind || null,
+    live_kind_label: liveKind === 'outro' ? (liveKindLabel?.trim() || null) : null,
   }).select().single();
 }
 

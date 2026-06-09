@@ -91,9 +91,18 @@ export default function LivesList({ lives, enterLive }) {
           <h3 className="font-bold text-white mb-1">{live.title}</h3>
           {live.content && <p className="text-sm text-gray-400">{live.content}</p>}
           <div className="mt-3 flex items-center justify-between">
-            <span className="tag tag-purple text-xs">
-              {live.embed_type === 'twitch' ? 'Twitch' : 'YouTube'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="tag tag-purple text-xs">
+                {live.embed_type === 'twitch' ? 'Twitch' : 'YouTube'}
+              </span>
+              {live.live_kind && (
+                <span className="tag tag-green text-xs">
+                  {live.live_kind === 'gameplay' ? 'Gameplay'
+                    : live.live_kind === 'react' ? 'React'
+                    : (live.live_kind_label || 'Outro')}
+                </span>
+              )}
+            </div>
             <span className="text-xs font-mono text-neon-green">Entrar na live →</span>
           </div>
         </motion.div>

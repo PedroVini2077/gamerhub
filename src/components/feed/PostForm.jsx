@@ -174,8 +174,8 @@ const PostForm = memo(function PostForm({ onPost }) {
       <p className="text-xs font-mono text-red-400/80 mb-2 flex items-center gap-1"><AlertTriangle size={11} />Cole um link válido começando com https://</p>
     )}
 
-    {/* Opção de live */}
-    {embedUrl && embedUrl.match(/^https?:\/\//) && getEmbedInfo(embedUrl)?.type === 'twitch' && (
+    {/* Opção de live — Twitch e YouTube transmitem ao vivo de verdade no embed */}
+    {embedUrl && embedUrl.match(/^https?:\/\//) && ['twitch', 'youtube'].includes(getEmbedInfo(embedUrl)?.type) && (
       <div className="mt-2">
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={isLive} onChange={e => setIsLive(e.target.checked)}
