@@ -32,6 +32,10 @@
   Extrair UI repetida em componentes, lógica repetida em hooks/utils, acesso a
   dados em services. **Pensar SEMPRE em otimização e escalabilidade** — não só
   "funciona", mas "aguenta crescer e é fácil de manter".
+- **Sempre atualizar o `README.md` quando novas features forem adicionadas.**
+  Não deixar para depois — ao entregar qualquer feature nova, verificar se o
+  README reflete o estado atual (estrutura de pastas, tabela de funcionalidades,
+  banco de dados, convenções). O README é a documentação viva do projeto.
 
 ## Stack
 
