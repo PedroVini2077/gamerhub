@@ -1,4 +1,4 @@
-import { Menu, LogIn, LogOut, Bell, X, Heart, Users } from 'lucide-react';
+import { Menu, LogIn, LogOut, Bell, X, Heart, Users, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
@@ -108,8 +108,8 @@ export default function Header({ onMenuClick }) {
                         !n.read ? 'bg-neon-green/5' : ''
                       }`}
                     >
-                      <div className={`mt-0.5 shrink-0 ${n.type === 'like' ? 'text-neon-green' : 'text-neon-purple'}`}>
-                        {n.type === 'like' ? <Heart size={13} /> : <Users size={13} />}
+                      <div className={`mt-0.5 shrink-0 ${n.type === 'like' ? 'text-neon-green' : n.type === 'moderation' ? 'text-orange-400' : 'text-neon-purple'}`}>
+                        {n.type === 'like' ? <Heart size={13} /> : n.type === 'moderation' ? <ShieldAlert size={13} /> : <Users size={13} />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-300 leading-relaxed">{n.message}</p>

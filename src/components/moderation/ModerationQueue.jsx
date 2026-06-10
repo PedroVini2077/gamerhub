@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Clock, ShieldAlert, UserX } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ShieldAlert, UserX, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import {
@@ -22,10 +22,14 @@ function ContentPreview({ contentType, contentId }) {
       const table = contentType === 'post' ? 'posts'
         : contentType === 'comment' ? 'comments'
         : 'community_posts';
-      const textCol = contentType === 'mural' ? 'message' : contentType === 'post' ? 'title' : 'content';
+      const selectCols = contentType === 'post'
+        ? 'id, title, content, user_id, profiles(username)'
+        : contentType === 'mural'
+        ? 'id, message, user_id, profiles(username)'
+        : 'id, content, user_id, profiles(username)';
       const { data } = await supabase
         .from(table)
-        .select(`id, ${textCol}, user_id, profiles(username)`)
+        .select(selectCols)
         .eq('id', contentId)
         .single();
       setContent(data);
@@ -34,13 +38,21 @@ function ContentPreview({ contentType, contentId }) {
   }, [contentType, contentId]);
 
   if (!content) return <p className="text-xs font-mono text-gray-600 italic">Carregando...</p>;
-  const text = content.title || content.content || content.message || '';
+  const body = content.content || content.message || '';
   return (
     <div className="bg-dark-700 rounded-lg p-3 space-y-1">
       <p className="text-xs font-mono text-gray-500">
         @{content.profiles?.username || '?'} · {CONTENT_LABEL[contentType]}
       </p>
-      <p className="text-sm text-gray-200 line-clamp-3 leading-relaxed">{text || '(sem texto)'}</p>
+      {content.title && (
+        <p className="text-sm font-semibold text-white">{content.title}</p>
+      )}
+      {body && (
+        <p className="text-sm text-gray-300 line-clamp-4 leading-relaxed">{body}</p>
+      )}
+      {!content.title && !body && (
+        <p className="text-sm text-gray-600 italic">(sem texto)</p>
+      )}
     </div>
   );
 }
@@ -66,6 +78,7 @@ export default function ModerationQueue() {
   const [reports, setReports] = useState({});
   const [actions, setActions] = useState({});
   const [banTarget, setBanTarget] = useState(null);
+  const [resolving, setResolving] = useState(new Set());
   const PAGE_SIZE = 20;
 
   const load = useCallback(async (p = 0) => {
@@ -74,7 +87,6 @@ export default function ModerationQueue() {
     setItems(data);
     setTotalCount(count);
 
-    // Busca relatórios agrupados por content_id
     const ids = data.map(i => i.content_id);
     if (ids.length > 0) {
       const reps = await fetchReports({ status: 'pending' });
@@ -99,59 +111,68 @@ export default function ModerationQueue() {
   }, [load]);
 
   async function handleResolve(item, decision) {
-    const { error } = await resolveQueueItem(item.id, decision, item.content_type, item.content_id);
-    if (error) { toast.error('Erro ao resolver item'); return; }
+    if (resolving.has(item.id)) return;
+    setResolving(s => new Set([...s, item.id]));
+    try {
+      const { error } = await resolveQueueItem(item.id, decision, item.content_type, item.content_id);
+      if (error) { toast.error('Erro ao resolver item'); return; }
 
-    // Garante a ocultação ao confirmar (idempotente). Hoje o gatilho 'report' já
-    // oculta automático, mas itens de wordlist/IA entram na fila sem ocultar —
-    // assim "Confirmar ocultação" funciona independente de como foi enfileirado.
-    if (decision === 'approved' && item.content_type !== 'chat') {
-      await hideContent(item.content_type, item.content_id);
-    }
+      if (decision === 'approved' && item.content_type !== 'chat') {
+        await hideContent(item.content_type, item.content_id);
+      }
 
-    // Marca todos os reports deste conteúdo como revisados
-    const reps = reports[item.content_id] || [];
-    await Promise.all(reps.map(r => updateReportStatus(r.id, decision === 'approved' ? 'reviewed' : 'dismissed')));
+      const reps = reports[item.content_id] || [];
+      await Promise.all(reps.map(r => updateReportStatus(r.id, decision === 'approved' ? 'reviewed' : 'dismissed')));
 
-    // Se aprovado (mantém oculto) + ação selecionada → cria violação (e suspende, se for o caso)
-    const action = actions[item.id];
-    if (decision === 'approved' && action) {
-      const table = item.content_type === 'post' ? 'posts'
-        : item.content_type === 'comment' ? 'comments' : 'community_posts';
-      const { data } = await supabase.from(table).select('user_id').eq('id', item.content_id).single();
-      const userId = data?.user_id;
+      // Busca o author do conteúdo (usado pra violação e notificação)
+      let authorId = null;
+      if (item.content_type !== 'chat') {
+        const table = item.content_type === 'post' ? 'posts'
+          : item.content_type === 'comment' ? 'comments' : 'community_posts';
+        const { data: cd } = await supabase.from(table).select('user_id').eq('id', item.content_id).single();
+        authorId = cd?.user_id ?? null;
+      }
 
-      if (userId) {
-        await addViolation({
-          userId,
-          contentType: item.content_type,
-          contentId: item.content_id,
-          reason: reps[0]?.reason || 'moderação manual',
-          actionTaken: action,
-          points: ACTION_POINTS[action] ?? 1,
-        });
-        // Materializa a suspensão temporária real (RLS bloqueia criar conteúdo)
-        if (action === 'suspend_1d' || action === 'suspend_7d') {
-          const { error: suspErr } = await applySuspension(userId, action === 'suspend_7d' ? 7 : 1);
-          if (suspErr) toast.error('Violação criada, mas falha ao suspender: ' + suspErr.message);
+      if (authorId) {
+        const action = actions[item.id];
+        if (decision === 'approved' && action) {
+          await addViolation({
+            userId: authorId,
+            contentType: item.content_type,
+            contentId: item.content_id,
+            reason: reps[0]?.reason || 'moderação manual',
+            actionTaken: action,
+            points: ACTION_POINTS[action] ?? 1,
+          });
+          if (action === 'suspend_1d' || action === 'suspend_7d') {
+            const { error: suspErr } = await applySuspension(authorId, action === 'suspend_7d' ? 7 : 1);
+            if (suspErr) toast.error('Violação criada, mas falha ao suspender: ' + suspErr.message);
+          }
+        }
+
+        // Notifica o autor sobre a ocultação
+        if (decision === 'approved') {
+          const label = CONTENT_LABEL[item.content_type]?.toLowerCase() || 'conteúdo';
+          await supabase.from('notifications').insert({
+            user_id: authorId,
+            type: 'moderation',
+            message: `Seu ${label} foi ocultado pela moderação por violar as regras da comunidade.`,
+          });
         }
       }
-    }
 
-    toast.success(decision === 'approved' ? 'Ocultação confirmada' : 'Conteúdo restaurado');
-    load(page);
+      toast.success(decision === 'approved' ? 'Ocultação confirmada' : 'Conteúdo restaurado');
+      load(page);
+    } finally {
+      setResolving(s => { const n = new Set(s); n.delete(item.id); return n; });
+    }
   }
 
-  async function getContentUserId(item) {
+  async function handleBan(item) {
     const table = item.content_type === 'post' ? 'posts'
       : item.content_type === 'comment' ? 'comments'
       : 'community_posts';
     const { data } = await supabase.from(table).select('user_id, profiles(username, role, avatar_url, bio, created_at)').eq('id', item.content_id).single();
-    return data;
-  }
-
-  async function handleBan(item) {
-    const data = await getContentUserId(item);
     if (data) setBanTarget({ id: data.user_id, ...data.profiles });
   }
 
@@ -174,6 +195,7 @@ export default function ModerationQueue() {
 
       {items.map(item => {
         const reps = reports[item.content_id] || [];
+        const isResolving = resolving.has(item.id);
         return (
           <div key={item.id} className="card p-4 border-orange-500/20 space-y-3">
             <div className="flex items-center justify-between gap-2">
@@ -212,17 +234,22 @@ export default function ModerationQueue() {
 
             <div className="flex gap-2">
               <button onClick={() => handleResolve(item, 'approved')}
-                className="flex-1 py-2 text-xs font-mono font-bold rounded flex items-center justify-center gap-1.5 transition-all"
+                disabled={isResolving}
+                className="flex-1 py-2 text-xs font-mono font-bold rounded flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: '#ef444415', color: '#f87171', border: '1px solid #ef444440' }}>
-                <CheckCircle size={12} /> Confirmar ocultação
+                {isResolving
+                  ? <><Loader2 size={12} className="animate-spin" /> Processando...</>
+                  : <><CheckCircle size={12} /> Confirmar ocultação</>}
               </button>
               <button onClick={() => handleResolve(item, 'rejected')}
-                className="flex-1 py-2 text-xs font-mono rounded flex items-center justify-center gap-1.5 transition-all"
+                disabled={isResolving}
+                className="flex-1 py-2 text-xs font-mono rounded flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: '#22c55e15', color: '#4ade80', border: '1px solid #22c55e40' }}>
                 <XCircle size={12} /> Restaurar
               </button>
               <button onClick={() => handleBan(item)}
-                className="px-3 py-2 text-xs font-mono rounded flex items-center gap-1.5 transition-all"
+                disabled={isResolving}
+                className="px-3 py-2 text-xs font-mono rounded flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ background: '#7c3aed15', color: '#a78bfa', border: '1px solid #7c3aed40' }}>
                 <UserX size={12} /> Banir
               </button>
