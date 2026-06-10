@@ -283,8 +283,9 @@ RLS conferido. O que entrou:
   suspensão temporária real (ex.: coluna `suspended_until` em `profiles` +
   checagem no login/post). Hoje a escalação leva direto a ban; suspensão por
   janela de tempo ainda não bloqueia o usuário.
-- ⬜ Denúncia de **mensagens do chat de live** (`content_type='chat'` já existe
-  no schema, mas o botão ainda não foi posto no chat).
+- ✅ Denúncia de **mensagens do chat de live** — feito (botão ⚑ no `ChatPanel`,
+  `content_type='chat'`). As denúncias caem na aba Denúncias para o admin agir
+  com as ferramentas de mod de live; chat não tem auto-hide (é efêmero).
 - ✅ Editar os thresholds pela aba **Site** do Owner — feito (`SiteTab` com 3
   campos numéricos: ocultar / suspender / banir).
 

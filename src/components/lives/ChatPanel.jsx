@@ -1,5 +1,7 @@
-import { MessageCircle, Send, VolumeX, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { MessageCircle, Send, VolumeX, Trash2, Flag } from 'lucide-react';
 import AvatarPopup from '../ui/AvatarPopup';
+import ReportModal from '../ui/ReportModal';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
@@ -9,6 +11,7 @@ export default function ChatPanel({
   isSilenced, canModerate, deleteMessage, isUserSilenced,
   user, bottomRef, chatInputRef,
 }) {
+  const [reportingId, setReportingId] = useState(null);
   return (
     <div className="card flex flex-col" style={{ height: 380 }}>
       <div className="flex items-center gap-2 p-3 border-b border-dark-500">
@@ -24,6 +27,7 @@ export default function ChatPanel({
         {messages.map(m => {
           const silenced = isUserSilenced(m.user_id);
           const canDelete = canModerate || (user && m.user_id === user.id);
+          const canReport = user && m.user_id !== user.id;
           return (
             <div key={m.id} className="flex items-start gap-2 group">
               <AvatarPopup profile={m.profiles} size={24} />
@@ -41,12 +45,20 @@ export default function ChatPanel({
                 </div>
                 <span className="text-xs text-gray-300 break-words">{m.message}</span>
               </div>
-              {canDelete && (
-                <button onClick={() => deleteMessage(m.id)}
-                  className="hidden group-hover:flex text-gray-600 hover:text-red-400 transition-colors shrink-0 p-0.5">
-                  <Trash2 size={11} />
-                </button>
-              )}
+              <div className="hidden group-hover:flex items-center gap-1 shrink-0">
+                {canReport && (
+                  <button onClick={() => setReportingId(m.id)} aria-label="Denunciar mensagem"
+                    className="text-gray-600 hover:text-orange-400 transition-colors p-0.5">
+                    <Flag size={11} />
+                  </button>
+                )}
+                {canDelete && (
+                  <button onClick={() => deleteMessage(m.id)} aria-label="Deletar mensagem"
+                    className="text-gray-600 hover:text-red-400 transition-colors p-0.5">
+                    <Trash2 size={11} />
+                  </button>
+                )}
+              </div>
             </div>
           );
         })}
@@ -79,6 +91,10 @@ export default function ChatPanel({
         )
       ) : (
         <p className="text-xs text-gray-600 font-mono text-center p-3">Faça login para comentar</p>
+      )}
+
+      {reportingId && (
+        <ReportModal contentType="chat" contentId={reportingId} onClose={() => setReportingId(null)} />
       )}
     </div>
   );
