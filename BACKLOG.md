@@ -294,19 +294,33 @@ RLS conferido. O que entrou:
 
 ---
 
-### Fase 2 — Moderação IA de texto 🟡 BLOQUEADA (conta OpenAI sem quota)
+### Fase 2 — Moderação IA de texto ⏸️ EM STANDBY (adiada — sem orçamento agora)
 
-> **Status:** código NÃO construído ainda — bloqueado por dependência externa.
-> O dono passou uma chave (`sk-proj-...`), mas o endpoint retorna **HTTP 429**
-> em toda chamada, **sem headers `x-ratelimit-*`/`retry-after`** e com
-> `type: invalid_request_error`. A chave é válida (não é 401), mas a **conta
-> OpenAI está com quota zero** — o endpoint de Moderation é grátis, porém a
-> OpenAI exige a conta ativada com meio de pagamento para liberar qualquer
-> quota. **Ação pendente do dono:** ativar billing em platform.openai.com
-> (Settings → Billing, ~US$5 de crédito), aguardar propagar e gerar chave nova
-> (a antiga vazou no chat). Quando destravar: construir + deployar + testar a
-> Edge Function de ponta a ponta. Nada foi escrito/deployado para não entregar
-> código não testável (regra do CLAUDE.md).
+> **Status:** **em standby por decisão do dono** — sem código construído.
+> Motivo: a OpenAI exige conta com billing ativado (~US$5 de crédito) para
+> liberar **qualquer** quota, mesmo a Moderation API sendo gratuita por chamada.
+> Quando testamos com a chave passada, o endpoint retornou **HTTP 429** em toda
+> chamada (sem headers `x-ratelimit-*`/`retry-after`, `type: invalid_request_error`)
+> — chave válida, mas **conta com quota zero**. O dono não pode pagar nada agora,
+> então isso fica parado. **Nada foi escrito/deployado** (regra do CLAUDE.md:
+> não entregar código não testável).
+>
+> **Para retomar no futuro** (qualquer uma destas destrava):
+> 1. Ativar billing na OpenAI (platform.openai.com → Settings → Billing,
+>    ~US$5), gerar chave nova (a antiga vazou no chat — revogar), guardar como
+>    secret `OPENAI_API_KEY` no Supabase (Edge Functions → Secrets) e avisar.
+> 2. **OU** avaliar alternativa gratuita sem billing (ver abaixo).
+>
+> **Alternativas gratuitas a investigar quando retomar** (não exigem cartão):
+> - **Modelo local de toxicidade no cliente** — ex. `@tensorflow-models/toxicity`
+>   (TensorFlow.js) roda no browser, sem API/custo; porém só inglês e adiciona
+>   peso ao bundle. Avaliar custo-benefício.
+> - **Perspective API (Google)** — gratuita, suporta português, mas exige
+>   solicitar acesso/quota. Sem cartão.
+> - **HuggingFace Inference API** — tier gratuito com modelos de toxicidade
+>   multilíngues; também via Edge Function.
+> - Por ora, a **wordlist síncrona da Fase 1 já cobre o caso mais comum**
+>   (palavrões/termos banidos) sem nenhuma dependência externa.
 
 Usar **OpenAI Moderation API** (gratuita, sem limite de uso documentado,
 suporta português):
@@ -325,7 +339,9 @@ o POST do usuário — conteúdo aparece, se reprovado é ocultado após ~1-2s).
 
 ---
 
-### Fase 3 — Moderação IA de imagem (futuro / gratuito) ⬜
+### Fase 3 — Moderação IA de imagem (futuro) ⏸️ depende da Fase 2
+
+> Mesma dependência da Fase 2 (chave OpenAI com billing) — fica em standby junto.
 
 **OpenAI Moderation API (omni-moderation-latest)** também suporta imagens
 via URL pública:
