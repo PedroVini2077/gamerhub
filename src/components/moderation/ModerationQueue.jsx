@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Eye, Clock, ShieldAlert, UserX } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ShieldAlert, UserX } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import {
