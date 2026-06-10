@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchBlockedWords } from '../services/moderationService';
+import { findBlockedWord } from '../lib/wordlist';
 
 export function useBlockedWords() {
   const { data: words = [] } = useQuery({
@@ -9,10 +10,8 @@ export function useBlockedWords() {
   });
 
   function checkContent(text) {
-    if (!text) return { blocked: false, word: null };
-    const lower = text.toLowerCase();
-    const found = words.find(w => lower.includes(w.word.toLowerCase()));
-    return { blocked: !!found, word: found?.word || null };
+    const found = findBlockedWord(text, words);
+    return { blocked: !!found, word: found || null };
   }
 
   return { words, checkContent };

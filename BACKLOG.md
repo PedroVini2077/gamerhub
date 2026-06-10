@@ -272,7 +272,10 @@ RLS conferido. O que entrou:
 - ✅ **Botão ⚑ Denunciar** em `PostCard`, `CommentCard`, `MuralCard` (oculto pro
   próprio autor e pra anon) + banner de "oculto por denúncias".
 - ✅ **Filtro wordlist síncrono** no `PostForm` e `CommentSection` (bloqueia o
-  submit antes de ir pro banco).
+  submit antes de ir pro banco). **Match de palavra inteira** (`lib/wordlist.js`,
+  via `\p{L}` nas bordas) — não casa substring (ex.: "ass" não bloqueia
+  "classe"/"massa"/"passar"), tolerante a pontuação e case-insensitive. Testado
+  (9 casos: substring não casa / palavra inteira casa / acento difere / frase).
 - ✅ **Aba "Moderação" no Admin** (`ModerationPanel`) com 4 sub-abas:
   `ModerationQueue` (fila + seleção de ação + ban direto), `ReportsList`
   (denúncias filtráveis por status), `WordlistManager` (CRUD palavrões com
