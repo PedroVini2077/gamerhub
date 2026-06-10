@@ -25,6 +25,7 @@ import NotifsPanel from '../components/admin/NotifsPanel';
 import LogsPanel from '../components/admin/LogsPanel';
 import SuperAdminPanel from '../components/admin/SuperAdminPanel';
 import CargosTab from '../components/admin/CargosTab';
+import ModerationPanel from '../components/moderation/ModerationPanel';
 import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/roleNominationService';
 
 const REACTIVATE_REASONS = [
@@ -643,14 +644,15 @@ export default function Admin() {
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
   const tabs = [
-    { id: 'users',  label: 'Usuários',     icon: Users    },
-    { id: 'posts',  label: 'Posts',         icon: FileText },
-    { id: 'lives',  label: 'Mod de Lives',  icon: Shield   },
-    { id: 'keys',   label: 'Keys & Promos', icon: Key      },
-    { id: 'notifs', label: 'Notificações',  icon: Bell, badge: unreadCount },
-    { id: 'logs',   label: 'Logs',          icon: Activity },
+    { id: 'users',      label: 'Usuários',     icon: Users       },
+    { id: 'posts',      label: 'Posts',         icon: FileText    },
+    { id: 'moderation', label: 'Moderação',     icon: ShieldAlert },
+    { id: 'lives',      label: 'Mod de Lives',  icon: Shield      },
+    { id: 'keys',       label: 'Keys & Promos', icon: Key         },
+    { id: 'notifs',     label: 'Notificações',  icon: Bell, badge: unreadCount },
+    { id: 'logs',       label: 'Logs',          icon: Activity    },
     ...(isSuperAdmin ? [{ id: 'cargos', label: 'Cargos',       icon: UserPlus }] : []),
-    ...(isSuperAdmin ? [{ id: 'super', label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
+    ...(isSuperAdmin ? [{ id: 'super',  label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
   return (
@@ -805,6 +807,7 @@ export default function Admin() {
                 hasMore={postsHasMore} loadingMore={loadingMorePosts} onLoadMore={loadMorePosts}
               />
             )}
+            {tab === 'moderation' && <ModerationPanel />}
             {tab === 'lives' && (
               <LivesPanel
                 liveMod={liveMod} refreshing={refreshing} fetchLiveMod={fetchLiveMod}

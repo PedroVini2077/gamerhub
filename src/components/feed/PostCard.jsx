@@ -1,4 +1,4 @@
-import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv } from 'lucide-react';
+import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv, Flag, EyeOff } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
@@ -13,6 +13,7 @@ import MediaCarousel from '../ui/MediaCarousel';
 import MediaPlayer from '../ui/MediaPlayer';
 import EmbedPlayer from '../ui/EmbedPlayer';
 import ConfirmModal from '../ui/ConfirmModal';
+import ReportModal from '../ui/ReportModal';
 
 function EditCountdown({ createdAt }) {
   const [countdown, setCountdown] = useState('');
@@ -59,6 +60,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   const mediaIntervalRef = useRef(null);
 
@@ -157,8 +159,16 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     setSaving(false);
   }
 
+  const canReport = user && user.id !== post.user_id;
+
   return (
-    <div className="card p-5 animate-fade-up">
+    <div className={`card p-5 animate-fade-up ${post.hidden_at ? 'border-yellow-500/30' : ''}`}>
+      {post.hidden_at && (
+        <div className="flex items-center gap-2 text-xs font-mono text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2 mb-3">
+          <EyeOff size={12} />
+          <span>Conteúdo oculto por denúncias — visível apenas para admins.</span>
+        </div>
+      )}
       <div className="flex items-center gap-3 mb-3">
         <AvatarPopup profile={post.profiles} size={36} disablePopup={disablePopup} />
         <div>
@@ -174,6 +184,12 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <span className={`tag ${cat.cls}`}>{cat.label}</span>
+          {canReport && (
+            <button onClick={() => setReporting(true)} aria-label="Denunciar post"
+              className="text-gray-600 hover:text-orange-400 transition-colors">
+              <Flag size={13} />
+            </button>
+          )}
           {canEdit && !editing && (
             <button onClick={() => setEditing(true)}
               className="text-gray-600 hover:text-neon-green transition-colors">
@@ -281,6 +297,9 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
           onConfirm={handleDelete}
           onClose={() => !deleting && setConfirming(false)}
         />
+      )}
+      {reporting && (
+        <ReportModal contentType="post" contentId={post.id} onClose={() => setReporting(false)} />
       )}
     </div>
   );

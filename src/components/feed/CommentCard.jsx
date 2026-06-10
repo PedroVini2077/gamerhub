@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Heart, Reply } from 'lucide-react';
+import { Trash2, Heart, Reply, Flag } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { useCommentLike } from '../../hooks/useCommentLike';
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
 import CommentComposer from './CommentComposer';
 import ConfirmModal from '../ui/ConfirmModal';
+import ReportModal from '../ui/ReportModal';
 
 export default function CommentCard({ comment, replies = [], onDelete, onReply, isReply = false }) {
   const { user, profile } = useAuth();
@@ -18,7 +19,9 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
   const [replying, setReplying] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const canDelete = canDeleteContent(user?.id, role, comment.user_id, comment.profiles?.role);
+  const canReport = user && user.id !== comment.user_id;
 
   async function handleDelete() {
     setDeleting(true);
@@ -76,6 +79,12 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
                 <Reply size={12} /> Responder
               </button>
             )}
+            {canReport && (
+              <button onClick={() => setReporting(true)}
+                className="flex items-center gap-1 text-xs font-mono text-gray-600 hover:text-orange-400 transition-colors">
+                <Flag size={11} />
+              </button>
+            )}
           </div>
         </div>
         {canDelete && (
@@ -97,6 +106,10 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
           onConfirm={handleDelete}
           onClose={() => !deleting && setConfirming(false)}
         />
+      )}
+
+      {reporting && (
+        <ReportModal contentType="comment" contentId={comment.id} onClose={() => setReporting(false)} />
       )}
 
       {replying && (

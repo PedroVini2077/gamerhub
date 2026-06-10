@@ -1,6 +1,7 @@
 import { useState, useRef, memo } from 'react';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { useBlockedWords } from '../../hooks/useBlockedWords';
 import toast from 'react-hot-toast';
 import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
 import { logAudit } from '../../lib/auditLog';
@@ -13,6 +14,7 @@ const categories = ['dica', 'curiosidade', 'news'];
 
 const PostForm = memo(function PostForm({ onPost }) {
   const { user, profile } = useAuth();
+  const { checkContent } = useBlockedWords();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [audioName, setAudioName] = useState('');
@@ -74,6 +76,11 @@ const PostForm = memo(function PostForm({ onPost }) {
     if (!title.trim()) { toast.error('Preencha o título!'); return; }
     if (embedUrl.trim() && !getEmbedInfo(embedUrl.trim())) {
       toast.error('Link não suportado. Use YouTube, Twitch ou TikTok.');
+      return;
+    }
+    const check = checkContent(`${title} ${content}`);
+    if (check.blocked) {
+      toast.error(`Conteúdo não permitido: contém termo bloqueado.`);
       return;
     }
 

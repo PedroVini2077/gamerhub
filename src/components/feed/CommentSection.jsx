@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, memo } from 'react';
 import { fetchComments, fetchCommentCount, addComment } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { useBlockedWords } from '../../hooks/useBlockedWords';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
 import { MessageSquare } from 'lucide-react';
@@ -9,6 +10,7 @@ import CommentComposer from './CommentComposer';
 
 const CommentSection = memo(function CommentSection({ postId, registerRefresh }) {
   const { user, profile } = useAuth();
+  const { checkContent } = useBlockedWords();
   const [comments, setComments] = useState([]);
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -52,6 +54,8 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
   }, [comments]);
 
   async function submitComment(content, parentId = null) {
+    const check = checkContent(content);
+    if (check.blocked) { toast.error('Comentário contém termo bloqueado.'); return false; }
     const { error } = await addComment({ postId, userId: profile?.id, content, parentId });
     if (error) {
       toast.error('Erro ao comentar');

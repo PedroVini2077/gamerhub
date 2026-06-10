@@ -1,0 +1,122 @@
+import { supabase } from '../lib/supabase';
+
+// ─── Reports ──────────────────────────────────────────────────────────────────
+
+export async function createReport({ contentType, contentId, reason, details }) {
+  return supabase.from('reports').insert({
+    reporter_id: (await supabase.auth.getUser()).data.user?.id,
+    content_type: contentType,
+    content_id: contentId,
+    reason,
+    details: details?.trim() || null,
+  });
+}
+
+export async function fetchReports({ status = null, contentType = null } = {}) {
+  let q = supabase.from('reports').select('*, reporter:profiles!reporter_id(username, avatar_url)')
+    .order('created_at', { ascending: false });
+  if (status)      q = q.eq('status', status);
+  if (contentType) q = q.eq('content_type', contentType);
+  const { data } = await q;
+  return data || [];
+}
+
+export async function updateReportStatus(reportId, status) {
+  return supabase.from('reports').update({ status }).eq('id', reportId);
+}
+
+// ─── Moderation Queue ─────────────────────────────────────────────────────────
+
+export async function fetchModerationQueue(status = 'pending', page = 0, pageSize = 20) {
+  const { data, count } = await supabase
+    .from('moderation_queue')
+    .select('*, profiles!reviewed_by(username)', { count: 'exact' })
+    .eq('status', status)
+    .order('created_at', { ascending: false })
+    .range(page * pageSize, (page + 1) * pageSize - 1);
+  return { items: data || [], count: count || 0 };
+}
+
+export async function resolveQueueItem(queueId, decision, contentType, contentId) {
+  const userId = (await supabase.auth.getUser()).data.user?.id;
+
+  if (decision === 'approved') {
+    // confirm hide: already hidden by trigger, just mark reviewed
+  } else if (decision === 'rejected') {
+    // restore content
+    const table = contentType === 'post' ? 'posts'
+      : contentType === 'comment' ? 'comments'
+      : 'community_posts';
+    await supabase.from(table).update({ hidden_at: null }).eq('id', contentId);
+  }
+
+  return supabase.from('moderation_queue').update({
+    status: decision,
+    reviewed_by: userId,
+    reviewed_at: new Date().toISOString(),
+  }).eq('id', queueId);
+}
+
+// Enfileira manualmente (ex: admin oculta via wordlist)
+export async function enqueueContent(contentType, contentId, triggerType = 'wordlist') {
+  return supabase.from('moderation_queue').insert({ content_type: contentType, content_id: contentId, trigger_type: triggerType });
+}
+
+// ─── Blocked Words ────────────────────────────────────────────────────────────
+
+export async function fetchBlockedWords() {
+  const { data } = await supabase.from('blocked_words').select('*').order('word');
+  return data || [];
+}
+
+export async function addBlockedWord(word, severity = 'medium') {
+  const userId = (await supabase.auth.getUser()).data.user?.id;
+  return supabase.from('blocked_words').insert({ word: word.trim().toLowerCase(), severity, created_by: userId });
+}
+
+export async function removeBlockedWord(wordId) {
+  return supabase.from('blocked_words').delete().eq('id', wordId);
+}
+
+// ─── Violations ───────────────────────────────────────────────────────────────
+
+export async function fetchViolations(userId = null, page = 0, pageSize = 20) {
+  let q = supabase
+    .from('violations')
+    .select('*, user_profile:profiles!user_id(username, avatar_url), reviewer:profiles!reviewed_by(username)', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(page * pageSize, (page + 1) * pageSize - 1);
+  if (userId) q = q.eq('user_id', userId);
+  const { data, count } = await q;
+  return { items: data || [], count: count || 0 };
+}
+
+export async function addViolation({ userId, contentType, contentId, reason, actionTaken, points, notes }) {
+  const reviewerId = (await supabase.auth.getUser()).data.user?.id;
+  return supabase.from('violations').insert({
+    user_id: userId,
+    content_type: contentType || null,
+    content_id: contentId || null,
+    reason: reason || null,
+    action_taken: actionTaken,
+    points: points ?? 1,
+    reviewed_by: reviewerId,
+    notes: notes?.trim() || null,
+  });
+}
+
+// ─── Hide / Restore (ação direta do admin) ───────────────────────────────────
+
+export async function hideContent(contentType, contentId) {
+  const table = contentType === 'post' ? 'posts'
+    : contentType === 'comment' ? 'comments'
+    : 'community_posts';
+  return supabase.from(table).update({ hidden_at: new Date().toISOString() }).eq('id', contentId);
+}
+
+export async function restoreContent(contentType, contentId) {
+  const table = contentType === 'post' ? 'posts'
+    : contentType === 'comment' ? 'comments'
+    : 'community_posts';
+  return supabase.from(table).update({ hidden_at: null }).eq('id', contentId);
+}

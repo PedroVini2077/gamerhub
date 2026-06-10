@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Trash2, Heart } from 'lucide-react';
+import { Trash2, Heart, Flag, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
@@ -13,6 +13,7 @@ import { timeAgo } from '../../lib/date';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
 import ConfirmModal from '../ui/ConfirmModal';
+import ReportModal from '../ui/ReportModal';
 import MediaCarousel from '../ui/MediaCarousel';
 
 export default function MuralCard({ item, onDelete }) {
@@ -20,6 +21,8 @@ export default function MuralCard({ item, onDelete }) {
   const { isAdmin, role } = useRole();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const canReport = user && user.id !== item.user_id;
   const [media, setMedia] = useState([]);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -95,7 +98,13 @@ export default function MuralCard({ item, onDelete }) {
   }
 
   return (
-    <div className="card p-4 animate-fade-up border-transparent hover:border-neon-purple/25 transition-colors">
+    <div className={`card p-4 animate-fade-up border-transparent hover:border-neon-purple/25 transition-colors ${item.hidden_at ? 'border-yellow-500/30' : ''}`}>
+      {item.hidden_at && (
+        <div className="flex items-center gap-2 text-xs font-mono text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2 mb-3">
+          <EyeOff size={12} />
+          <span>Conteúdo oculto por denúncias — visível apenas para admins.</span>
+        </div>
+      )}
       <div className="flex items-start gap-3">
         <AvatarPopup profile={item.profiles} size={36} />
         <div className="flex-1 min-w-0">
@@ -112,15 +121,23 @@ export default function MuralCard({ item, onDelete }) {
             <p className="text-sm text-gray-300 leading-relaxed break-words whitespace-pre-wrap">{item.message}</p>
           )}
         </div>
-        {canDelete && (
-          <button
-            onClick={() => setConfirming(true)}
-            aria-label="Deletar mensagem"
-            className="text-gray-600 hover:text-red-400 transition-colors shrink-0"
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {canReport && (
+            <button onClick={() => setReporting(true)} aria-label="Denunciar mensagem"
+              className="text-gray-600 hover:text-orange-400 transition-colors">
+              <Flag size={13} />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={() => setConfirming(true)}
+              aria-label="Deletar mensagem"
+              className="text-gray-600 hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {media.length > 0 && (
@@ -153,6 +170,9 @@ export default function MuralCard({ item, onDelete }) {
           onConfirm={handleDelete}
           onClose={() => !deleting && setConfirming(false)}
         />
+      )}
+      {reporting && (
+        <ReportModal contentType="mural" contentId={item.id} onClose={() => setReporting(false)} />
       )}
     </div>
   );
