@@ -226,10 +226,11 @@
 
 ---
 
-## 🛡️ Sistema de Moderação de Conteúdo — EM ANDAMENTO
+## 🛡️ Sistema de Moderação de Conteúdo — FASE 1 ✅ FEITA
 
-> **Status:** Arquitetura definida, perguntas respondidas, **Fase 1 aprovada para
-> implementação.** A sessão acabou antes de começar o código — retomar daqui.
+> **Status:** **Fase 1 (MVP) implementada e no ar.** Reports + wordlist +
+> violations + escalação + aba admin completos. Documentado no README.
+> Próximas fases (IA) dependem de chave de API externa do dono — ver abaixo.
 
 ### Decisões do dono (já tomadas, não perguntar de novo)
 
@@ -241,163 +242,50 @@
 
 ---
 
-### Onde paramos
+### Fase 1 — MVP ✅ FEITA
 
-Apresentamos o plano detalhado da Fase 1 e o dono aprovou. A sessão expirou
-antes de escrever uma linha de código. Na próxima sessão: **começar a
-implementação direto, sem perguntas** — o plano está aqui.
+Migration `moderation_phase1` aplicada + 9 arquivos de frontend. Build limpo,
+RLS conferido. O que entrou:
 
----
+- ✅ **Tabelas:** `reports`, `blocked_words`, `violations`, `moderation_queue`
+  (todas com RLS: reporter vê os próprios; admin+ vê tudo; `blocked_words` tem
+  SELECT público pro filtro client-side).
+- ✅ **Coluna `hidden_at`** em `posts`, `comments`, `community_posts` (soft-hide
+  reversível). Políticas SELECT recriadas (`posts_select`/`comments_select`/
+  `community_posts_select`): não-admin não vê conteúdo oculto; admin+ vê com
+  banner "⚠ Oculto por denúncias".
+- ✅ **Trigger `trigger_report_auto_hide`:** ao atingir `mod_report_threshold`
+  (3) denúncias no mesmo conteúdo → preenche `hidden_at` + enfileira em
+  `moderation_queue` (sem duplicar item pendente).
+- ✅ **Trigger `trigger_violation_escalation` + `apply_mod_auto_ban`:** soma os
+  pontos das `violations` do usuário; ao atingir `mod_ban_threshold` (15) → ban
+  automático pelo sistema (SECURITY DEFINER, sem caller role, com cascade da
+  atividade + log + notificação aos admins). Pontos por ação: warn 1 / hide 2 /
+  suspend_1d 5 / suspend_7d 10.
+- ✅ **Thresholds em `site_config`:** `mod_report_threshold=3`,
+  `mod_ban_threshold=15`, `mod_suspend_threshold=8`.
+- ✅ **`moderationService.js`** — createReport, fetchReports, updateReportStatus,
+  fetchModerationQueue, resolveQueueItem, fetchBlockedWords, add/removeBlockedWord,
+  fetchViolations, addViolation, hideContent, restoreContent.
+- ✅ **`useBlockedWords.js`** — React Query (TTL 5min) + `checkContent(text)`.
+- ✅ **`ReportModal.jsx`** — modal de denúncia (6 motivos + detalhe), padrão do site.
+- ✅ **Botão ⚑ Denunciar** em `PostCard`, `CommentCard`, `MuralCard` (oculto pro
+  próprio autor e pra anon) + banner de "oculto por denúncias".
+- ✅ **Filtro wordlist síncrono** no `PostForm` e `CommentSection` (bloqueia o
+  submit antes de ir pro banco).
+- ✅ **Aba "Moderação" no Admin** (`ModerationPanel`) com 4 sub-abas:
+  `ModerationQueue` (fila + seleção de ação + ban direto), `ReportsList`
+  (denúncias filtráveis por status), `WordlistManager` (CRUD palavrões com
+  severidade), `ViolationsPanel` (histórico paginado + filtro por usuário).
 
-### Fase 1 — MVP (implementar agora) 🟡
-
-#### Banco de dados — migrations a criar
-
-**1. Tabela `reports`**
-```sql
-CREATE TABLE reports (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  reporter_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
-  content_type text NOT NULL CHECK (content_type IN ('post','comment','mural','chat')),
-  content_id uuid NOT NULL,
-  reason text NOT NULL CHECK (reason IN ('spam','hate','nsfw','harassment','misinformation','other')),
-  details text,
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','reviewed','dismissed')),
-  created_at timestamptz DEFAULT now()
-);
--- RLS: reporter vê só seus próprios; admin+ veem tudo
-```
-
-**2. Tabela `blocked_words`**
-```sql
-CREATE TABLE blocked_words (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  word text UNIQUE NOT NULL,
-  severity text NOT NULL DEFAULT 'medium' CHECK (severity IN ('low','medium','high')),
-  created_at timestamptz DEFAULT now(),
-  created_by uuid REFERENCES profiles(id)
-);
--- RLS: SELECT público (anon/auth) pra funcionar no cliente; INSERT/UPDATE/DELETE só admin+
-```
-
-**3. Tabela `violations`** (histórico de infrações confirmadas por um moderador)
-```sql
-CREATE TABLE violations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
-  content_type text,
-  content_id uuid,
-  reason text,
-  action_taken text CHECK (action_taken IN ('warn','hide','suspend_1d','suspend_7d','ban')),
-  points int NOT NULL DEFAULT 1,
-  reviewed_by uuid REFERENCES profiles(id),
-  created_at timestamptz DEFAULT now()
-);
--- RLS: usuário vê só as próprias; admin+ veem tudo
-```
-
-**4. Tabela `moderation_queue`** (itens aguardando revisão humana)
-```sql
-CREATE TABLE moderation_queue (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  content_type text NOT NULL,
-  content_id uuid NOT NULL,
-  trigger_type text NOT NULL CHECK (trigger_type IN ('report','wordlist','ai')),
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  reviewed_by uuid REFERENCES profiles(id),
-  created_at timestamptz DEFAULT now()
-);
--- RLS: só admin+ lê/escreve
-```
-
-**5. Coluna `hidden_at`** nas tabelas de conteúdo
-```sql
-ALTER TABLE posts ADD COLUMN hidden_at timestamptz;
-ALTER TABLE comments ADD COLUMN hidden_at timestamptz;
-ALTER TABLE mural_posts ADD COLUMN hidden_at timestamptz;
--- Conteúdo com hidden_at != null fica invisível para não-admins
--- Admins+ veem com banner "⚠ Oculto por denúncias"
-```
-
-**6. Trigger de auto-hide** (3 reports = oculta + enfileira)
-```sql
--- Trigger em `reports` que conta reports do mesmo content_id
--- Quando count >= [threshold em site_config], preenche hidden_at
--- e insere em moderation_queue com trigger_type='report'
-```
-
-**7. Sistema de pontos e escalação** (via `violations`)
-```
-warn     = 1pt
-hide     = 2pt
-suspend_1d = 5pt
-suspend_7d = 10pt
-ban      = direto (via ban_user existente)
-
-Thresholds configuráveis em site_config (chaves: mod_warn_threshold,
-mod_suspend_threshold, mod_ban_threshold)
-Trigger em violations: ao INSERT, soma pontos do user_id e aplica escalação
-automática chamando ban_user() se atingir o threshold de ban.
-```
-
-#### Frontend — componentes a criar
-
-**`src/services/moderationService.js`** (novo)
-- `fetchReports(filters)` — lista de denúncias com filtros
-- `createReport({ contentType, contentId, reason, details })` — submete denuncia
-- `fetchModerationQueue(status)` — fila de revisão paginada
-- `approveHide(queueId, contentType, contentId)` — confirma ocultação
-- `restoreContent(contentType, contentId)` — desfaz ocultação
-- `fetchBlockedWords()` — lista para cache no cliente
-- `addBlockedWord(word, severity)` — admin+
-- `removeBlockedWord(wordId)` — admin+
-- `fetchViolations(userId?)` — histórico de infrações
-
-**`src/hooks/useBlockedWords.js`** (novo)
-- Wrapper React Query: busca `blocked_words`, TTL 5min
-- Exporta `checkContent(text)` → `{ blocked: bool, word: string | null }`
-- Usado no PostForm e CommentSection antes de submeter
-
-**`src/components/ui/ReportModal.jsx`** (novo)
-- Modal no padrão do site (`createPortal`)
-- Props: `contentType`, `contentId`, `onClose`
-- Radio buttons de motivo + textarea de detalhes
-- Submit chama `createReport` + toast de confirmação
-- Não mostra para anon nem para o próprio autor do conteúdo
-
-**`src/components/moderation/ModerationQueue.jsx`** (novo)
-- Lista de itens da fila (cards com preview do conteúdo + dados do report)
-- Actions: "Confirmar ocultação" | "Restaurar" | "Banir usuário"
-- Paginação (blocos de 20)
-
-**`src/components/moderation/WordlistManager.jsx`** (novo)
-- CRUD de palavras bloqueadas (tabela + form inline)
-- Colunas: palavra, severidade, data, criador, ações
-
-**`src/components/moderation/ViolationsPanel.jsx`** (novo)
-- Histórico de infrações filtráveis por usuário/tipo/período
-
-#### Modificações em arquivos existentes
-
-| Arquivo | O que muda |
-|---|---|
-| `src/pages/Admin.jsx` | Nova aba "Moderação" com sub-abas: Fila / Denúncias / Wordlist / Violações |
-| `src/components/feed/PostCard.jsx` | Botão "⚑ Denunciar" no menu (oculto para o próprio autor); hidden_at → banner cinza |
-| `src/components/feed/CommentCard.jsx` | Idem |
-| `src/components/community/MuralCard.jsx` | Idem |
-| `src/components/PostForm.jsx` (ou onde está o form de criar post) | Validação wordlist antes de submeter via `checkContent()` |
-| `src/services/postService.js` | `fetchFeedPosts` filtra `hidden_at IS NULL` pra não-admins |
-| `src/services/communityService.js` | Idem pra mural |
-
-#### Ordem de implementação recomendada
-
-1. Banco (migrations: tabelas → colunas hidden_at → trigger de auto-hide → trigger de escalação → RLS)
-2. `moderationService.js` + `useBlockedWords.js`
-3. Filtro wordlist no PostForm / CommentSection
-4. `ReportModal.jsx` + botão "Denunciar" nos cards
-5. Ocultar conteúdo com `hidden_at != null` (feed / mural / perfil)
-6. Admin: aba Moderação com ModerationQueue + WordlistManager + ViolationsPanel
-7. Build + teste manual completo antes de commitar
+**Pendências menores da Fase 1** (não bloqueiam, ⬜ a fazer):
+- ⬜ `suspend_1d`/`suspend_7d` hoje só **pontuam** — falta materializar a
+  suspensão temporária real (ex.: coluna `suspended_until` em `profiles` +
+  checagem no login/post). Hoje a escalação leva direto a ban; suspensão por
+  janela de tempo ainda não bloqueia o usuário.
+- ⬜ Denúncia de **mensagens do chat de live** (`content_type='chat'` já existe
+  no schema, mas o botão ainda não foi posto no chat).
+- ⬜ Editar os thresholds pela aba **Site** do Owner (hoje só direto no banco).
 
 ---
 

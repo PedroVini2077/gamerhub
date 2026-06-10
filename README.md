@@ -131,7 +131,9 @@ src/
 ├── hooks/
 │   ├── useAuth.jsx        # Sessão, perfil, detecção de ban, presença online
 │   ├── useRole.js         # Deriva flags isOwner/isAdmin/isSuperAdmin/isBanned
-│   └── useRealtime.js     # Helper genérico de subscription Postgres changes
+│   ├── useRealtime.js     # Helper genérico de subscription Postgres changes
+│   ├── useCommentLike.js  # Estado de like de comentário
+│   └── useBlockedWords.js # Cache da wordlist + checkContent() (filtro de moderação)
 ├── lib/
 │   ├── supabase.js        # Cliente Supabase
 │   ├── queryClient.js     # React Query client (staleTime 30s, retry 1)
@@ -149,7 +151,8 @@ src/
 │   ├── communityService.js# Mural da comunidade
 │   ├── liveService.js     # Chat de live, silenciamentos
 │   ├── keyService.js      # Keys/promos, stats do site
-│   └── authService.js     # Trocar senha/email, deletar conta
+│   ├── authService.js     # Trocar senha/email, deletar conta
+│   └── moderationService.js # Denúncias, fila, wordlist, infrações, hide/restore
 ├── pages/
 │   ├── Landing.jsx        # Página pública para visitantes não logados
 │   ├── Home.jsx           # Feed principal
@@ -176,12 +179,14 @@ src/
     │                      # NotifsPanel, LogsPanel, SuperAdminPanel
     ├── owner/             # PainelTab, UsuariosTab, LogsTab, SiteTab,
     │                      # NotificacoesTab, MetricasTab
+    ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,
+    │                      # WordlistManager, ViolationsPanel
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene3D
     │   └── scene3d/       # LandingScene, Lightning, SceneObjects (LogoBolt/FloatingShapes)
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
-                           # ConfirmModal, ReasonModal, EmbedPlayer,
+                           # ConfirmModal, ReasonModal, ReportModal, EmbedPlayer,
                            # MediaCarousel, MediaLightbox, MediaPlayer,
                            # AudioRecorder, GlobalBanner, FeatureGate,
                            # PageTransition
@@ -452,6 +457,8 @@ aparece como **borda do avatar** e no `AvatarPopup`.
   **banir/desbanir**; **deletar todos os posts** de um usuário; fluxo de
   solicitação de desbanimento.
 - **Posts**: listar e deletar posts (paginado em blocos de 20).
+- **Moderação**: central de moderação de conteúdo (ver seção abaixo) — fila de
+  revisão, denúncias, palavras bloqueadas e histórico de infrações.
 - **Mod de Lives**: usuários silenciados (com tempo restante), lives ativas
   (encerrar), lives encerradas (solicitar reativação), fila de solicitações.
 - **Keys & Promos**: adicionar/editar/remover keys e promoções (paginado).
@@ -526,6 +533,41 @@ Tabela `site_config` (chave/valor), editável só pelo owner via
   admin. Geradas por triggers (`notify_admin_new_user`, `notify_admin_new_live`,
   `notify_admin_reactivation_request`) e por funções de ban/segurança.
 
+### Moderação de conteúdo
+
+Sistema de moderação com **denúncias da comunidade**, **filtro de palavras** e
+**revisão humana**, com ações sempre **reversíveis** (soft-hide, nunca delete
+automático). Fluxo: filtro barato síncrono → ocultação automática por denúncias
+→ fila de revisão do admin → escalação de infrações.
+
+- **Denunciar** (`ReportModal`): botão ⚑ em posts, comentários e mural (oculto
+  para o próprio autor e para visitantes). 6 motivos (spam, ódio, conteúdo
+  adulto, assédio, desinformação, outro) + detalhe opcional. Cada usuário só
+  denuncia o mesmo conteúdo uma vez (`UNIQUE (reporter_id, content_type,
+  content_id)`).
+- **Filtro de palavras** (`blocked_words` + `useBlockedWords`): wordlist com
+  severidade, lida no cliente (cache React Query 5min) e checada **antes de
+  enviar** post/comentário (`checkContent` faz matching parcial). Bloqueio
+  síncrono, sem custo de API.
+- **Ocultação automática** (`hidden_at` + trigger `trigger_report_auto_hide`):
+  ao atingir `mod_report_threshold` (3) denúncias, o conteúdo é ocultado
+  (soft-hide) e entra na fila. As políticas RLS de SELECT escondem conteúdo
+  oculto de não-admins; admins+ veem com banner "⚠ Oculto por denúncias".
+- **Fila de revisão** (`moderation_queue` + `ModerationQueue`): admin vê preview
+  do conteúdo + denúncias, escolhe uma ação (aviso / ocultar / suspender) e
+  decide **confirmar a ocultação**, **restaurar** o conteúdo ou **banir** o
+  autor direto.
+- **Infrações e escalação** (`violations` + trigger `trigger_violation_escalation`):
+  cada ação confirmada vira pontos (warn 1, hide 2, suspend_1d 5, suspend_7d 10).
+  Ao somar `mod_ban_threshold` (15) pontos, `apply_mod_auto_ban` **bane o usuário
+  automaticamente** (com cascade da atividade, log e notificação aos admins).
+- **Painel** (`ModerationPanel`, aba Admin) com sub-abas: **Fila**, **Denúncias**
+  (filtráveis por status), **Palavrões** (CRUD) e **Infrações** (histórico
+  paginado, filtro por usuário).
+
+Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
+`mod_suspend_threshold`), editáveis no banco.
+
 ---
 
 ## 🗄️ Banco de dados
@@ -555,7 +597,11 @@ todas as tabelas públicas.**
 | `admin_logs`                 | Trilha de auditoria                                              |
 | `admin_notifications`        | Notificações para admins                                         |
 | `admin_notification_reads`   | Marcação de lidas por admin                                      |
-| `site_config`                | Configuração global (manutenção, flags, banner)                  |
+| `site_config`                | Configuração global (manutenção, flags, banner, thresholds de moderação) |
+| `reports`                    | Denúncias da comunidade (tipo/id do conteúdo, motivo, status)    |
+| `blocked_words`              | Wordlist de palavras bloqueadas (com severidade)                |
+| `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor)     |
+| `moderation_queue`           | Fila de revisão humana (origem: denúncia/wordlist/IA/escalação) |
 
 #### Colunas relevantes em `posts`
 
@@ -576,6 +622,13 @@ Constraints: `CHECK (live_kind IN ('gameplay','react','outro'))` e
 | Coluna      | Tipo | Descrição                                                        |
 | ----------- | ---- | ---------------------------------------------------------------- |
 | `parent_id` | uuid | FK self-referencial para comentário pai (NULL = raiz)            |
+
+#### Coluna `hidden_at` (moderação)
+
+`posts`, `comments` e `community_posts` têm `hidden_at timestamptz` (NULL =
+visível). Quando preenchida, o conteúdo fica oculto para não-admins via RLS
+(soft-hide reversível). Preenchida pelo trigger de denúncias ou manualmente por
+um admin; restaurar é só voltar a `NULL`.
 
 ### Funções (RPCs / triggers)
 
@@ -606,6 +659,14 @@ Constraints: `CHECK (live_kind IN ('gameplay','react','outro'))` e
 - `notify_comment_like` (comment_likes INSERT) — notificação de like em
   comentário (SECURITY DEFINER).
 - `notify_admin_reactivation_request` (live_reactivation_requests INSERT).
+- `handle_report_auto_hide` (reports INSERT, SECURITY DEFINER) — ao atingir
+  `mod_report_threshold` denúncias, oculta o conteúdo (`hidden_at`) e enfileira
+  em `moderation_queue`.
+- `handle_violation_escalation` (violations INSERT, SECURITY DEFINER) — soma os
+  pontos do usuário e chama `apply_mod_auto_ban` ao atingir `mod_ban_threshold`.
+- `apply_mod_auto_ban(user_id, points)` (SECURITY DEFINER) — ban automático pelo
+  sistema (sem caller role): marca `banned`, apaga a atividade, gera log +
+  notificação.
 
 Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 `search_path` fixo e **checagem de role explícita via `auth.uid()`**. Helpers:
