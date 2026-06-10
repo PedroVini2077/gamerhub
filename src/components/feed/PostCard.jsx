@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
 import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia, deletePost, updatePost } from '../../services/postService';
+import { canDeleteContent } from '../../lib/roles';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
@@ -11,6 +12,7 @@ import AvatarPopup from '../ui/AvatarPopup';
 import MediaCarousel from '../ui/MediaCarousel';
 import MediaPlayer from '../ui/MediaPlayer';
 import EmbedPlayer from '../ui/EmbedPlayer';
+import ConfirmModal from '../ui/ConfirmModal';
 
 function EditCountdown({ createdAt }) {
   const [countdown, setCountdown] = useState('');
@@ -46,7 +48,7 @@ const EDIT_LIMIT_MINUTES = 30;
 
 export default function PostCard({ post, onDelete, disablePopup = false }) {
   const { user, profile } = useAuth();
-  const { isAdmin } = useRole();
+  const { isAdmin, role } = useRole();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [likeLoading, setLikeLoading] = useState(false);
@@ -55,12 +57,14 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [editContent, setEditContent] = useState(post.content || '');
   const [editIsLive, setEditIsLive] = useState(post.is_live || false);
   const [saving, setSaving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const mediaIntervalRef = useRef(null);
 
   const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
-  const canDelete = user && (isAdmin || user.id === post.user_id);
+  const canDelete = canDeleteContent(user?.id, role, post.user_id, post.profiles?.role);
   const isOwner = user && user.id === post.user_id;
   const minutesSince = (Date.now() - new Date(post.created_at).getTime()) / 60000;
   const canEdit = isOwner && minutesSince <= EDIT_LIMIT_MINUTES;
@@ -122,14 +126,18 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   }
 
   async function handleDelete() {
-    if (!confirm('Deletar este post?')) return;
+    setDeleting(true);
     const { error } = await deletePost(post.id, user.id, isAdmin);
-    if (error) toast.error('Erro ao deletar');
-    else {
-      toast.success('Post deletado');
-      logAudit('post_deleted', `@${profile?.username} deletou o post "${post.title}"`, { category: 'content' });
-      onDelete?.();
+    if (error) {
+      toast.error(error.message || 'Erro ao deletar');
+      setDeleting(false);
+      return;
     }
+    toast.success('Post deletado');
+    logAudit('post_deleted', `@${profile?.username} deletou o post "${post.title}"`, { category: 'content' });
+    setConfirming(false);
+    setDeleting(false);
+    onDelete?.();
   }
 
   async function handleSaveEdit() {
@@ -173,7 +181,8 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
             </button>
           )}
           {canDelete && (
-            <button onClick={handleDelete} className="text-gray-600 hover:text-red-400 transition-colors">
+            <button onClick={() => setConfirming(true)} aria-label="Deletar post"
+              className="text-gray-600 hover:text-red-400 transition-colors">
               <Trash2 size={14} />
             </button>
           )}
@@ -259,6 +268,19 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
         </div>
       ) : (
         <CommentSection postId={post.id} postOwnerId={post.user_id} />
+      )}
+
+      {confirming && (
+        <ConfirmModal
+          title="Deletar post"
+          icon={Trash2}
+          accent="red"
+          message="Tem certeza que quer deletar este post? Essa ação não pode ser desfeita."
+          confirmLabel={deleting ? 'Deletando...' : 'Deletar'}
+          confirmIcon={Trash2}
+          onConfirm={handleDelete}
+          onClose={() => !deleting && setConfirming(false)}
+        />
       )}
     </div>
   );

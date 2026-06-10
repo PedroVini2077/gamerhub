@@ -5,25 +5,33 @@ import { useRole } from '../../hooks/useRole';
 import { useCommentLike } from '../../hooks/useCommentLike';
 import { deleteComment } from '../../services/postService';
 import { logAudit } from '../../lib/auditLog';
+import { canDeleteContent } from '../../lib/roles';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
 import CommentComposer from './CommentComposer';
+import ConfirmModal from '../ui/ConfirmModal';
 
 export default function CommentCard({ comment, replies = [], onDelete, onReply, isReply = false }) {
   const { user, profile } = useAuth();
-  const { isAdmin } = useRole();
+  const { isAdmin, role } = useRole();
   const { liked, count, loading, toggle } = useCommentLike(comment.id);
   const [replying, setReplying] = useState(false);
-  const canDelete = user && (isAdmin || user.id === comment.user_id);
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const canDelete = canDeleteContent(user?.id, role, comment.user_id, comment.profiles?.role);
 
   async function handleDelete() {
-    if (!confirm('Deletar comentário?')) return;
+    setDeleting(true);
     const { error } = await deleteComment(comment.id, user.id, isAdmin);
-    if (error) toast.error('Erro ao deletar');
-    else {
-      logAudit('comment_deleted', `@${profile?.username} deletou um comentário de @${comment.profiles?.username}`, { category: 'content' });
-      onDelete?.();
+    if (error) {
+      toast.error(error.message || 'Erro ao deletar');
+      setDeleting(false);
+      return;
     }
+    logAudit('comment_deleted', `@${profile?.username} deletou um comentário de @${comment.profiles?.username}`, { category: 'content' });
+    setConfirming(false);
+    setDeleting(false);
+    onDelete?.();
   }
 
   async function submitReply(text) {
@@ -71,11 +79,25 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
           </div>
         </div>
         {canDelete && (
-          <button onClick={handleDelete} className="text-gray-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">
+          <button onClick={() => setConfirming(true)} aria-label="Deletar comentário"
+            className="text-gray-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">
             <Trash2 size={12} />
           </button>
         )}
       </div>
+
+      {confirming && (
+        <ConfirmModal
+          title="Deletar comentário"
+          icon={Trash2}
+          accent="red"
+          message="Tem certeza que quer deletar este comentário? Essa ação não pode ser desfeita."
+          confirmLabel={deleting ? 'Deletando...' : 'Deletar'}
+          confirmIcon={Trash2}
+          onConfirm={handleDelete}
+          onClose={() => !deleting && setConfirming(false)}
+        />
+      )}
 
       {replying && (
         <div className="mt-2 pl-6 animate-fade-up">

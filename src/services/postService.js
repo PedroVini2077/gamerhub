@@ -74,9 +74,14 @@ export async function updatePost(postId, { content, isLive, wasLive }, userId, i
 }
 
 export async function deletePost(postId, userId, isAdmin) {
-  let q = supabase.from('posts').delete().eq('id', postId);
+  let q = supabase.from('posts').delete({ count: 'exact' }).eq('id', postId);
   if (!isAdmin) q = q.eq('user_id', userId);
-  return q;
+  const { error, count } = await q;
+  if (error) return { error };
+  // count 0 sem erro = RLS bloqueou (ex.: sem hierarquia). Antes isso virava
+  // "sucesso" falso — o toast aparecia mas nada era deletado.
+  if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
+  return { error: null };
 }
 
 export async function endLivePost(postId) {
@@ -156,9 +161,12 @@ export async function addComment({ postId, userId, content, parentId = null }) {
 }
 
 export async function deleteComment(commentId, userId, isAdmin) {
-  let q = supabase.from('comments').delete().eq('id', commentId);
+  let q = supabase.from('comments').delete({ count: 'exact' }).eq('id', commentId);
   if (!isAdmin) q = q.eq('user_id', userId);
-  return q;
+  const { error, count } = await q;
+  if (error) return { error };
+  if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
+  return { error: null };
 }
 
 // ─── Curtidas em comentários ───────────────────────────────────────────────────

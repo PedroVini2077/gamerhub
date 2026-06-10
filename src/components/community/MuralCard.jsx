@@ -8,6 +8,7 @@ import {
   fetchMuralLikeStatus, likeMuralPost, unlikeMuralPost,
 } from '../../services/communityService';
 import { logAudit } from '../../lib/auditLog';
+import { canDeleteContent } from '../../lib/roles';
 import { timeAgo } from '../../lib/date';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
@@ -16,7 +17,7 @@ import MediaCarousel from '../ui/MediaCarousel';
 
 export default function MuralCard({ item, onDelete }) {
   const { user, profile } = useAuth();
-  const { isAdmin } = useRole();
+  const { isAdmin, role } = useRole();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [media, setMedia] = useState([]);
@@ -25,7 +26,7 @@ export default function MuralCard({ item, onDelete }) {
   const [likeLoading, setLikeLoading] = useState(false);
   const retryRef = useRef(null);
 
-  const canDelete = user && (isAdmin || user.id === item.user_id);
+  const canDelete = canDeleteContent(user?.id, role, item.user_id, item.profiles?.role);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,7 +83,7 @@ export default function MuralCard({ item, onDelete }) {
     setDeleting(true);
     const { error } = await deleteMuralPost(item.id, user.id, isAdmin);
     if (error) {
-      toast.error('Erro ao deletar');
+      toast.error(error.message || 'Erro ao deletar');
       setDeleting(false);
       return;
     }

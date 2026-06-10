@@ -125,62 +125,147 @@ export function LogoBolt() {
   );
 }
 
+// ─── Objetos gamer flutuantes ────────────────────────────────────────────────
+// Trocamos os sólidos abstratos (icosaedro/octaedro/toro) por objetos com cara
+// de game — gamepad, headset, troféu e caveira — montados com primitivas 3D
+// reais (volumétricos, com profundidade de verdade), não chapas extrudadas.
+
+// Material neon padrão (corpo dos objetos) — emissivo pra brilhar sozinho mesmo
+// contra o fundo escuro, no mesmo tom dos raios da marca.
+function NeonMaterial({ color }) {
+  return (
+    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} metalness={0.5} roughness={0.3} />
+  );
+}
+
+// Material escuro pros recortes (botões, almofadas do headset, olhos da caveira)
+// — dá contraste pra leitura da forma sem precisar de uma segunda cor neon.
+function DarkMaterial() {
+  return <meshStandardMaterial color="#0b0e13" emissive="#0b0e13" emissiveIntensity={0.15} metalness={0.3} roughness={0.6} />;
+}
+
+// Controle de videogame: corpo arredondado + dois grips + d-pad e botões.
+function GamepadModel({ color }) {
+  const buttons = [[0.34, 0.16], [0.34, -0.08], [0.22, 0.04], [0.46, 0.04]];
+  return (
+    <group rotation={[0.12, 0, 0]}>
+      <mesh scale={[1.15, 0.62, 0.42]}>
+        <icosahedronGeometry args={[0.6, 1]} /><NeonMaterial color={color} />
+      </mesh>
+      <mesh position={[-0.5, -0.28, 0]} rotation={[0, 0, 0.6]} scale={[0.34, 0.52, 0.36]}>
+        <icosahedronGeometry args={[0.5, 1]} /><NeonMaterial color={color} />
+      </mesh>
+      <mesh position={[0.5, -0.28, 0]} rotation={[0, 0, -0.6]} scale={[0.34, 0.52, 0.36]}>
+        <icosahedronGeometry args={[0.5, 1]} /><NeonMaterial color={color} />
+      </mesh>
+      {/* d-pad (cruz) à esquerda */}
+      <mesh position={[-0.34, 0.04, 0.25]}><boxGeometry args={[0.18, 0.06, 0.06]} /><DarkMaterial /></mesh>
+      <mesh position={[-0.34, 0.04, 0.25]}><boxGeometry args={[0.06, 0.18, 0.06]} /><DarkMaterial /></mesh>
+      {/* botões à direita */}
+      {buttons.map(([bx, by], i) => (
+        <mesh key={i} position={[bx, by, 0.25]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.06, 10]} /><DarkMaterial />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// Headset: arco (meia-rosca) no topo + duas conchas com almofada interna.
+function HeadsetModel({ color }) {
+  return (
+    <group>
+      <mesh>
+        <torusGeometry args={[0.6, 0.11, 12, 24, Math.PI]} /><NeonMaterial color={color} />
+      </mesh>
+      {[-0.6, 0.6].map((cx, i) => (
+        <group key={i} position={[cx, -0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <mesh><cylinderGeometry args={[0.22, 0.22, 0.2, 18]} /><NeonMaterial color={color} /></mesh>
+          <mesh><cylinderGeometry args={[0.13, 0.13, 0.24, 18]} /><DarkMaterial /></mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+// Troféu: taça cônica + aro + alças laterais + haste + base.
+function TrophyModel({ color }) {
+  return (
+    <group position={[0, -0.12, 0]}>
+      <mesh position={[0, 0.44, 0]}><cylinderGeometry args={[0.38, 0.2, 0.46, 20]} /><NeonMaterial color={color} /></mesh>
+      <mesh position={[0, 0.68, 0]}><cylinderGeometry args={[0.4, 0.37, 0.07, 20]} /><NeonMaterial color={color} /></mesh>
+      {/* alças laterais — meia-rosca abrindo pra fora, na altura do bocal */}
+      <mesh position={[-0.38, 0.56, 0]} rotation={[0, 0, 0]}>
+        <torusGeometry args={[0.2, 0.055, 10, 18, Math.PI]} /><NeonMaterial color={color} />
+      </mesh>
+      <mesh position={[0.38, 0.56, 0]} rotation={[0, 0, Math.PI]}>
+        <torusGeometry args={[0.2, 0.055, 10, 18, Math.PI]} /><NeonMaterial color={color} />
+      </mesh>
+      <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.06, 0.06, 0.22, 12]} /><NeonMaterial color={color} /></mesh>
+      <mesh position={[0, -0.04, 0]}><cylinderGeometry args={[0.26, 0.3, 0.12, 20]} /><NeonMaterial color={color} /></mesh>
+    </group>
+  );
+}
+
+// Caveira low-poly: crânio (icosaedro) + maxilar + olhos e nariz escuros.
+function SkullModel({ color }) {
+  return (
+    <group>
+      <mesh position={[0, 0.12, 0]}><icosahedronGeometry args={[0.55, 1]} /><NeonMaterial color={color} /></mesh>
+      <mesh position={[0, -0.38, 0.05]} scale={[0.72, 0.5, 0.72]}>
+        <icosahedronGeometry args={[0.4, 1]} /><NeonMaterial color={color} />
+      </mesh>
+      {[-0.2, 0.2].map((ex, i) => (
+        <mesh key={i} position={[ex, 0.16, 0.44]}><sphereGeometry args={[0.13, 10, 10]} /><DarkMaterial /></mesh>
+      ))}
+      <mesh position={[0, -0.04, 0.5]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.07, 0.16, 4]} /><DarkMaterial />
+      </mesh>
+    </group>
+  );
+}
+
+const MODELS = { gamepad: GamepadModel, headset: HeadsetModel, trophy: TrophyModel, skull: SkullModel };
+
 // fx = posição X relativa à largura visível (–1..1) — assim os objetos ficam
 // nos cantos em qualquer proporção de tela, inclusive no celular (retrato).
 const SHAPES = [
-  { kind: 'icosahedron', color: '#bf00ff', fx: -0.72, y: 1.45,  z: -1,   scale: 0.46, speed: 0.6, phase: 0 },
-  { kind: 'octahedron',  color: '#00ffff', fx: 0.74,  y: 1.5,   z: -1.2, scale: 0.4,  speed: 0.8, phase: 1.4 },
-  { kind: 'torus',       color: '#39ff14', fx: -0.66, y: -1.55, z: -1.4, scale: 0.34, speed: 0.5, phase: 2.6 },
-  { kind: 'icosahedron', color: '#00ffff', fx: 0.72,  y: -1.45, z: -1.6, scale: 0.27, speed: 0.9, phase: 3.8 },
+  { kind: 'gamepad', color: '#39ff14', fx: -0.72, y: 1.45,  z: -1,   scale: 0.62, speed: 0.6, phase: 0 },
+  { kind: 'headset', color: '#bf00ff', fx: 0.74,  y: 1.5,   z: -1.2, scale: 0.58, speed: 0.8, phase: 1.4 },
+  { kind: 'trophy',  color: '#ffb020', fx: -0.66, y: -1.55, z: -1.4, scale: 0.56, speed: 0.5, phase: 2.6 },
+  { kind: 'skull',   color: '#00ffff', fx: 0.72,  y: -1.45, z: -1.6, scale: 0.5,  speed: 0.9, phase: 3.8 },
 ];
 
-function ShapeGeometry({ kind, scale }) {
-  if (kind === 'octahedron') return <octahedronGeometry args={[scale, 0]} />;
-  if (kind === 'torus') return <torusGeometry args={[scale, scale * 0.4, 12, 28]} />;
-  return <icosahedronGeometry args={[scale, 0]} />;
-}
-
-function FloatingShape({ kind, color, x, y, z, scale, sizeScale, speed, phase, index }) {
+function FloatingShape({ kind, color, x, y, z, modelScale, sizeScale, speed, phase, index }) {
   const ref = useRef(null);
-  const matRef = useRef(null);
   const delay = SHAPE_BASE_DELAY + index * SHAPE_STAGGER;
+  const Model = MODELS[kind];
   useBob(ref, { speed, amplitude: 0.3, baseY: y, phase });
-  useTilt(ref, { speed: speed * 0.7, amplitude: 0.5, phase });
+  useTilt(ref, { speed: speed * 0.7, amplitude: 0.4, phase });
 
   useFrame(({ clock }) => {
     // Cada objeto "materializa" com um leve estouro (overshoot) defasado no
     // tempo — como se fossem condensando a partir da energia do raio central.
     const popP = THREE.MathUtils.clamp((clock.elapsedTime - delay) / SHAPE_POP_TIME, 0, 1);
     const pop = popP <= 0 ? 0 : easeOutBack(popP);
-    if (ref.current) ref.current.scale.setScalar(sizeScale * Math.max(pop, 0));
-    if (matRef.current) matRef.current.opacity = 0.55 * THREE.MathUtils.clamp(popP, 0, 1);
+    if (ref.current) ref.current.scale.setScalar(sizeScale * modelScale * Math.max(pop, 0));
   });
 
   return (
-    <mesh ref={ref} position={[x, y, z]} scale={0}>
-      <ShapeGeometry kind={kind} scale={scale} />
-      <meshStandardMaterial
-        ref={matRef}
-        color={color}
-        emissive={color}
-        emissiveIntensity={0.6}
-        wireframe
-        transparent
-        opacity={0}
-      />
-    </mesh>
+    <group ref={ref} position={[x, y, z]} scale={0}>
+      <Model color={color} />
+    </group>
   );
 }
 
-// Objetos geométricos flutuantes ao redor do logo — wireframe translúcido pra
-// dar profundidade sem competir visualmente com o raio central. Posições e
-// tamanho se adaptam à largura da viewport (aparecem também no celular).
+// Objetos gamer flutuantes ao redor do logo. Posições e tamanho se adaptam à
+// largura da viewport (aparecem também no celular).
 export function FloatingShapes() {
   const { viewport } = useThree();
   const halfWidth = viewport.width / 2;
   const sizeScale = THREE.MathUtils.clamp(viewport.width / 6, 0.55, 1);
 
   return SHAPES.map((shape, i) => (
-    <FloatingShape key={i} {...shape} index={i} x={shape.fx * halfWidth} sizeScale={sizeScale} />
+    <FloatingShape key={i} {...shape} index={i} x={shape.fx * halfWidth} modelScale={shape.scale} sizeScale={sizeScale} />
   ));
 }

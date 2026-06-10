@@ -22,9 +22,12 @@ export async function sendChatMessage({ postId, userId, message }) {
 }
 
 export async function deleteChatMessage(messageId, isMod, userId) {
-  let q = supabase.from('live_chat').delete().eq('id', messageId);
+  let q = supabase.from('live_chat').delete({ count: 'exact' }).eq('id', messageId);
   if (!isMod) q = q.eq('user_id', userId);
-  return q;
+  const { error, count } = await q;
+  if (error) return { error };
+  if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
+  return { error: null };
 }
 
 export async function silenceUser({ postId, userId, minutes, createdBy }) {

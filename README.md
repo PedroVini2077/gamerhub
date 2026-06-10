@@ -605,8 +605,15 @@ Constraints: `CHECK (live_kind IN ('gameplay','react','outro'))` e
 - `notify_admin_reactivation_request` (live_reactivation_requests INSERT).
 
 Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
-`search_path` fixo e **checagem de role explícita via `auth.uid()`**. Helper
-`role_rank(text)` ranqueia os cargos.
+`search_path` fixo e **checagem de role explícita via `auth.uid()`**. Helpers:
+- `role_rank(text)` — ranqueia os cargos (user 1 → owner 4).
+- `can_moderate_content(author_id)` — retorna `true` só se o rank do ator
+  (`auth.uid()`) for **estritamente maior** que o do autor. Usado nas políticas
+  RLS de DELETE de `posts`, `comments`, `community_posts` e `live_chat` pra
+  impor a hierarquia: o autor sempre apaga o próprio conteúdo; admin modera só
+  quem está abaixo (owner > super_admin > admin > user). Fecha o furo em que
+  admin apagava conteúdo de super_admin/owner e em que o owner não conseguia
+  moderar nada (e via "sucesso" falso, porque RLS bloqueado não é erro).
 
 ### Storage (buckets)
 
@@ -655,6 +662,10 @@ Migrados: `Keys`, `Ranks`, `Home`, `Community`, abas do Owner (`PainelTab`,
   cliente removido; banidos não burlam filtros via INSERT de notification.
 - RLS consolidada: políticas múltiplas permissivas unificadas; bug "banido ainda
   posta" corrigido (INSERT de posts/community_posts era OR'd — agora AND).
+- **Hierarquia de moderação imposta no DELETE** (`can_moderate_content`): admin
+  não apaga mais conteúdo de super_admin/owner; owner passou a moderar de fato.
+  No cliente, os serviços de delete usam `count: 'exact'` e tratam 0 linhas
+  como erro real (acabou o "sucesso" falso quando o RLS bloqueia).
 - Bloqueio de login server-side; tela de banido em tempo real.
 - `auth_rls_initplan`: `auth.uid()` envolto em `(select auth.uid())` em todas
   as políticas — evita re-avaliação por linha.

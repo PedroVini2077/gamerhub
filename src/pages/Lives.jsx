@@ -175,7 +175,8 @@ export default function Lives() {
 
   async function deleteMessage(msgId) {
     const isMod = isAdmin || (activeLive && user && activeLive.user_id === user.id);
-    await deleteChatMessage(msgId, isMod, user.id);
+    const { error } = await deleteChatMessage(msgId, isMod, user.id);
+    if (error) { toast.error(error.message || 'Erro ao deletar'); return; }
     logAudit('live_chat_delete', `@${profile?.username} deletou uma mensagem no chat da live "${activeLive?.title}"`, { category: 'live' });
   }
 

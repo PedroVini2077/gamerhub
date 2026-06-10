@@ -26,9 +26,14 @@ export async function addMuralPost({ userId, message }) {
 }
 
 export async function deleteMuralPost(id, userId, isAdmin) {
-  let q = supabase.from('community_posts').delete().eq('id', id);
+  let q = supabase.from('community_posts').delete({ count: 'exact' }).eq('id', id);
   if (!isAdmin) q = q.eq('user_id', userId);
-  return q;
+  const { error, count } = await q;
+  if (error) return { error };
+  // count 0 sem erro = RLS bloqueou (ex.: admin tentando moderar owner). Antes
+  // virava "sucesso" falso.
+  if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
+  return { error: null };
 }
 
 // ─── Mídia ───────────────────────────────────────────────────────────────────

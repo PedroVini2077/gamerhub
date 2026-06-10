@@ -572,9 +572,11 @@ export default function Admin() {
       message: `Deletar todos os posts de @${username}? Esta ação é irreversível.`,
       confirmLabel: 'Deletar Tudo', confirmIcon: Trash2,
       onConfirm: async () => {
-        const { error } = await supabase.from('posts').delete().eq('user_id', userId);
+        const { error, count } = await supabase.from('posts').delete({ count: 'exact' }).eq('user_id', userId);
         if (error) { toast.error('Erro ao deletar posts'); return; }
-        toast.success('Posts deletados');
+        // count 0 sem erro = RLS bloqueou (sem hierarquia) ou não havia posts.
+        if (!count) { toast.error('Nenhum post deletado (sem permissão ou nada a apagar)'); return; }
+        toast.success(`${count} post${count > 1 ? 's' : ''} deletado${count > 1 ? 's' : ''}`);
         await logAction('admin_delete_posts', `Todos os posts de @${username} deletados por @${profile?.username}`, 'admin', 'warning');
         setConfirmModal(null);
         fetchAll();
@@ -588,8 +590,9 @@ export default function Admin() {
       message: 'Deletar este post permanentemente? Esta ação não pode ser desfeita.',
       confirmLabel: 'Deletar', confirmIcon: Trash2,
       onConfirm: async () => {
-        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        const { error, count } = await supabase.from('posts').delete({ count: 'exact' }).eq('id', postId);
         if (error) { toast.error('Erro ao deletar post'); return; }
+        if (!count) { toast.error('Você não tem permissão para deletar este post'); return; }
         toast.success('Post deletado');
         await logAction('admin_delete_post', `Post deletado pelo admin @${profile?.username}`, 'admin', 'warning');
         setConfirmModal(null);
