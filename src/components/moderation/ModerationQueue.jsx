@@ -87,6 +87,17 @@ export default function ModerationQueue() {
 
   useEffect(() => { load(page); }, [page, load]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('moderation_queue_realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'moderation_queue' }, () => {
+        load(0);
+        setPage(0);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
+
   async function handleResolve(item, decision) {
     const { error } = await resolveQueueItem(item.id, decision, item.content_type, item.content_id);
     if (error) { toast.error('Erro ao resolver item'); return; }

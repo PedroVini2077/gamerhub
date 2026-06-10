@@ -172,7 +172,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
       {post.hidden_at && (
         <div className="flex items-center gap-2 text-xs font-mono text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2 mb-3">
           <EyeOff size={12} />
-          <span>Conteúdo oculto por denúncias — visível apenas para admins.</span>
+          <span>Conteúdo oculto pela moderação — visível apenas para admins.</span>
         </div>
       )}
       <div className="flex items-center gap-3 mb-3">
