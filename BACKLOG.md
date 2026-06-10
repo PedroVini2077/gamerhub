@@ -294,7 +294,19 @@ RLS conferido. O que entrou:
 
 ---
 
-### Fase 2 — Moderação IA de texto (futuro / gratuito) ⬜
+### Fase 2 — Moderação IA de texto 🟡 BLOQUEADA (conta OpenAI sem quota)
+
+> **Status:** código NÃO construído ainda — bloqueado por dependência externa.
+> O dono passou uma chave (`sk-proj-...`), mas o endpoint retorna **HTTP 429**
+> em toda chamada, **sem headers `x-ratelimit-*`/`retry-after`** e com
+> `type: invalid_request_error`. A chave é válida (não é 401), mas a **conta
+> OpenAI está com quota zero** — o endpoint de Moderation é grátis, porém a
+> OpenAI exige a conta ativada com meio de pagamento para liberar qualquer
+> quota. **Ação pendente do dono:** ativar billing em platform.openai.com
+> (Settings → Billing, ~US$5 de crédito), aguardar propagar e gerar chave nova
+> (a antiga vazou no chat). Quando destravar: construir + deployar + testar a
+> Edge Function de ponta a ponta. Nada foi escrito/deployado para não entregar
+> código não testável (regra do CLAUDE.md).
 
 Usar **OpenAI Moderation API** (gratuita, sem limite de uso documentado,
 suporta português):
