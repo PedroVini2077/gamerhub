@@ -177,22 +177,31 @@ function RoundedBox({ w, h, d, r = 0.12, color, dark, ...props }) {
   return <mesh geometry={geo} {...props}>{dark ? <DarkMaterial /> : <NeonMaterial color={color} />}</mesh>;
 }
 
-// Console moderno (estilo torre vertical): núcleo escuro entre dois painéis
-// neon levemente flareados, com LED de energia na frente e base.
+// Vídeo game: console horizontal (slot de disco + LED + vents) com um CONTROLE
+// na frente — é o controle que deixa claro, de cara, que é um vídeo game.
 function ConsoleModel({ color }) {
   return (
-    <group rotation={[0, 0.32, 0]}>
-      {/* núcleo escuro */}
-      <mesh><boxGeometry args={[0.42, 1.14, 0.46]} /><DarkMaterial /></mesh>
-      {/* painéis laterais neon, um pouco mais altos e levemente flareados */}
-      <RoundedBox w={0.13} h={1.28} d={0.54} r={0.05} color={color} position={[-0.3, 0, 0]} rotation={[0, 0, 0.05]} />
-      <RoundedBox w={0.13} h={1.28} d={0.54} r={0.05} color={color} position={[0.3, 0, 0]} rotation={[0, 0, -0.05]} />
-      {/* faixa/LED de energia no núcleo (frente) */}
-      <mesh position={[0, 0.12, 0.24]}><boxGeometry args={[0.03, 0.52, 0.02]} /><NeonMaterial color={color} /></mesh>
-      {/* slot/entrada escura na frente */}
-      <mesh position={[0, -0.32, 0.24]}><boxGeometry args={[0.22, 0.03, 0.02]} /><NeonMaterial color={color} /></mesh>
-      {/* base */}
-      <mesh position={[0, -0.64, 0]}><cylinderGeometry args={[0.24, 0.3, 0.08, 28]} /><DarkMaterial /></mesh>
+    <group rotation={[0.1, -0.18, 0]}>
+      {/* console (slab horizontal) */}
+      <RoundedBox w={1.05} h={0.3} d={0.62} r={0.08} color={color} position={[0, 0.3, 0]} />
+      {/* ranhura de ventilação no topo */}
+      <mesh position={[0.22, 0.46, 0]}><boxGeometry args={[0.46, 0.02, 0.42]} /><DarkMaterial /></mesh>
+      {/* slot de disco na frente */}
+      <mesh position={[0.12, 0.3, 0.32]}><boxGeometry args={[0.5, 0.045, 0.02]} /><DarkMaterial /></mesh>
+      {/* LED de power */}
+      <mesh position={[-0.4, 0.3, 0.33]}><boxGeometry args={[0.05, 0.05, 0.02]} /><NeonMaterial color={color} /></mesh>
+      {/* controle apoiado na frente, levemente inclinado pra cima */}
+      <group position={[0, -0.26, 0.36]} rotation={[0.55, 0, 0]} scale={0.6}>
+        <RoundedBox w={0.74} h={0.34} d={0.18} r={0.15} color={color} />
+        <RoundedBox w={0.26} h={0.4} d={0.17} r={0.11} color={color} position={[-0.3, -0.13, 0]} rotation={[0, 0, 0.55]} />
+        <RoundedBox w={0.26} h={0.4} d={0.17} r={0.11} color={color} position={[0.3, -0.13, 0]} rotation={[0, 0, -0.55]} />
+        {/* analógicos */}
+        {[-0.16, 0.16].map((sx, i) => (
+          <mesh key={i} position={[sx, -0.02, 0.11]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.06, 0.06, 0.05, 12]} /><DarkMaterial />
+          </mesh>
+        ))}
+      </group>
     </group>
   );
 }
@@ -225,30 +234,38 @@ function HeadsetModel({ color }) {
   );
 }
 
-// Gabinete de PC gamer: torre + painel de vidro escuro com fans RGB (anéis
-// neon) + botão de power no topo + pés.
+// Setup de PC gamer: torre (gabinete) com fans RGB atrás do vidro + um MONITOR
+// do lado. O monitor é o que tira a cara de "caixa de som" e deixa claro que é
+// um PC.
 function PCCaseModel({ color }) {
-  const fans = [0.3, 0.0, -0.3];
+  const fans = [0.26, 0.0, -0.26];
   return (
-    <group rotation={[0, -0.2, 0]}>
-      {/* torre */}
-      <RoundedBox w={0.74} h={1.2} d={0.66} r={0.07} color={color} />
-      {/* painel de vidro lateral (frente), levemente à direita p/ sobrar a faixa de I/O */}
-      <mesh position={[0.05, 0, 0.32]}><boxGeometry args={[0.52, 1.04, 0.06]} /><DarkMaterial /></mesh>
-      {/* fans com anel neon + cubo central, atrás do vidro */}
-      {fans.map((fy, i) => (
-        <group key={i} position={[0.05, fy, 0.36]}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.15, 0.15, 0.03, 20]} /><DarkMaterial /></mesh>
-          <mesh><torusGeometry args={[0.135, 0.022, 10, 22]} /><NeonMaterial color={color} /></mesh>
-          <mesh><sphereGeometry args={[0.045, 10, 10]} /><NeonMaterial color={color} /></mesh>
-        </group>
-      ))}
-      {/* faixa de I/O e botão de power no topo */}
-      <mesh position={[-0.22, 0.61, 0.12]}><cylinderGeometry args={[0.04, 0.04, 0.04, 14]} /><NeonMaterial color={color} /></mesh>
-      {/* pés */}
-      {[-0.28, 0.28].map((fx, i) => (
-        <mesh key={i} position={[fx, -0.63, 0]}><boxGeometry args={[0.1, 0.08, 0.5]} /><DarkMaterial /></mesh>
-      ))}
+    <group rotation={[0, -0.18, 0]}>
+      {/* torre (esquerda) */}
+      <group position={[-0.46, 0, 0]}>
+        <RoundedBox w={0.5} h={1.0} d={0.5} r={0.06} color={color} />
+        {/* painel de vidro escuro */}
+        <mesh position={[0.05, 0, 0.25]}><boxGeometry args={[0.34, 0.84, 0.05]} /><DarkMaterial /></mesh>
+        {/* fans RGB (anel neon + hub) */}
+        {fans.map((fy, i) => (
+          <group key={i} position={[0.05, fy, 0.29]}>
+            <mesh><torusGeometry args={[0.1, 0.018, 10, 20]} /><NeonMaterial color={color} /></mesh>
+            <mesh><sphereGeometry args={[0.03, 8, 8]} /><NeonMaterial color={color} /></mesh>
+          </group>
+        ))}
+      </group>
+      {/* monitor (direita) */}
+      <group position={[0.42, 0, 0]}>
+        {/* moldura */}
+        <RoundedBox w={0.86} h={0.54} d={0.06} r={0.03} color={color} position={[0, 0.22, 0]} />
+        {/* tela escura */}
+        <mesh position={[0, 0.22, 0.045]}><boxGeometry args={[0.76, 0.44, 0.02]} /><DarkMaterial /></mesh>
+        {/* linha neon na tela (cara de UI ligada) */}
+        <mesh position={[0, 0.14, 0.06]}><boxGeometry args={[0.5, 0.03, 0.01]} /><NeonMaterial color={color} /></mesh>
+        {/* pescoço + base */}
+        <mesh position={[0, -0.16, 0]}><boxGeometry args={[0.07, 0.22, 0.07]} /><DarkMaterial /></mesh>
+        <mesh position={[0, -0.29, 0.02]}><boxGeometry args={[0.34, 0.05, 0.2]} /><DarkMaterial /></mesh>
+      </group>
     </group>
   );
 }
@@ -287,9 +304,9 @@ const MODELS = { console: ConsoleModel, headset: HeadsetModel, pccase: PCCaseMod
 // fx = posição X relativa à largura visível (–1..1) — assim os objetos ficam
 // nos cantos em qualquer proporção de tela, inclusive no celular (retrato).
 const SHAPES = [
-  { kind: 'console', color: '#39ff14', fx: -0.72, y: 1.45,  z: -1,   scale: 0.52, speed: 0.6, phase: 0 },
+  { kind: 'console', color: '#39ff14', fx: -0.72, y: 1.45,  z: -1,   scale: 0.5,  speed: 0.6, phase: 0 },
   { kind: 'headset', color: '#bf00ff', fx: 0.74,  y: 1.5,   z: -1.2, scale: 0.58, speed: 0.8, phase: 1.4 },
-  { kind: 'pccase',  color: '#ffb020', fx: -0.66, y: -1.55, z: -1.4, scale: 0.52, speed: 0.5, phase: 2.6 },
+  { kind: 'pccase',  color: '#ffb020', fx: -0.66, y: -1.55, z: -1.4, scale: 0.46, speed: 0.5, phase: 2.6 },
   { kind: 'skull',   color: '#00ffff', fx: 0.72,  y: -1.45, z: -1.6, scale: 0.5,  speed: 0.9, phase: 3.8 },
 ];
 
