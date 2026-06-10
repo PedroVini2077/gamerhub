@@ -200,7 +200,7 @@
   - `admin_set_role`/`owner_set_role`: todas as fronteiras de autorização.
   *(scripts não commitados — regra do CLAUDE.md de script de teste avulso.)*
   *Falta:* E2E dos fluxos críticos (login, postar, banir). Crescer gradualmente.
-- ⬜ **Soft delete** de posts (campo `deleted_at` em vez de delete físico).
+- ✅ **Soft delete** de posts (campo `deleted_at` em vez de delete físico — RPCs `soft_delete_post`/`restore_post`, banner vermelho para admins, botão restaurar no PostsPanel).
 - ⬜ **2FA** no login.
 - ⬜ Afinar detecção de ban (hoje realtime + polling de 20s como fallback).
 - ✅ Exportar logs de auditoria (CSV) no painel do dono — botão "Exportar CSV" na
@@ -300,65 +300,22 @@ RLS conferido. O que entrou:
 
 ---
 
-### Fase 2 — Moderação IA de texto ⏸️ EM STANDBY (adiada — sem orçamento agora)
+### Fase 2 — Moderação IA de texto ✅ FEITA (HuggingFace)
 
-> **Status:** **em standby por decisão do dono** — sem código construído.
-> Motivo: a OpenAI exige conta com billing ativado (~US$5 de crédito) para
-> liberar **qualquer** quota, mesmo a Moderation API sendo gratuita por chamada.
-> Quando testamos com a chave passada, o endpoint retornou **HTTP 429** em toda
-> chamada (sem headers `x-ratelimit-*`/`retry-after`, `type: invalid_request_error`)
-> — chave válida, mas **conta com quota zero**. O dono não pode pagar nada agora,
-> então isso fica parado. **Nada foi escrito/deployado** (regra do CLAUDE.md:
-> não entregar código não testável).
->
-> **Para retomar no futuro** (qualquer uma destas destrava):
-> 1. Ativar billing na OpenAI (platform.openai.com → Settings → Billing,
->    ~US$5), gerar chave nova (a antiga vazou no chat — revogar), guardar como
->    secret `OPENAI_API_KEY` no Supabase (Edge Functions → Secrets) e avisar.
-> 2. **OU** avaliar alternativa gratuita sem billing (ver abaixo).
->
-> **Alternativas gratuitas a investigar quando retomar** (não exigem cartão):
-> - **Modelo local de toxicidade no cliente** — ex. `@tensorflow-models/toxicity`
->   (TensorFlow.js) roda no browser, sem API/custo; porém só inglês e adiciona
->   peso ao bundle. Avaliar custo-benefício.
-> - **Perspective API (Google)** — gratuita, suporta português, mas exige
->   solicitar acesso/quota. Sem cartão.
-> - **HuggingFace Inference API** — tier gratuito com modelos de toxicidade
->   multilíngues; também via Edge Function.
-> - Por ora, a **wordlist síncrona da Fase 1 já cobre o caso mais comum**
->   (palavrões/termos banidos) sem nenhuma dependência externa.
-
-Usar **OpenAI Moderation API** (gratuita, sem limite de uso documentado,
-suporta português):
-- Endpoint: `POST https://api.openai.com/v1/moderations`
-- Payload: `{ "model": "omni-moderation-latest", "input": "<texto>" }`
-- Retorna categorias: `hate`, `harassment`, `sexual`, `violence`, `self-harm`,
-  `illicit`, etc. com scores 0–1
-- Chamada via **Supabase Edge Function** (não expor a API key no cliente)
-- Fluxo: POST de conteúdo → Edge Function chama Moderation API → se score
-  alto (> threshold) → insere em `moderation_queue` com `trigger_type='ai'`
-  e aplica soft-hide
-- Edge Function existente `send-email` serve de referência de padrão
-
-Thresholds configuráveis em `site_config`. Moderação assíncrona (não bloqueia
-o POST do usuário — conteúdo aparece, se reprovado é ocultado após ~1-2s).
+> **Status:** implementado com **HuggingFace free tier** (sem billing, sem cartão).
+> Modelo: `unitary/multilingual-toxic-xlm-roberta`. Edge Function `moderate-text`
+> (v4) no ar. Threshold configurável em `site_config` → `mod_ai_text_threshold` (0.7).
+> Fire-and-forget: não bloqueia o POST. Conteúdo flaggado → soft-hide + fila admin.
+> Secret necessária: `HUGGINGFACE_API_KEY` em Supabase → Edge Functions → Secrets.
 
 ---
 
-### Fase 3 — Moderação IA de imagem (futuro) ⏸️ depende da Fase 2
+### Fase 3 — Moderação IA de imagem ✅ FEITA (HuggingFace)
 
-> Mesma dependência da Fase 2 (chave OpenAI com billing) — fica em standby junto.
-
-**OpenAI Moderation API (omni-moderation-latest)** também suporta imagens
-via URL pública:
-```json
-{
-  "model": "omni-moderation-latest",
-  "input": [{"type": "image_url", "image_url": {"url": "<public_url>"}}]
-}
-```
-- Imagens do `post-media` têm `getPublicUrl` → URL passável direto
-- Mesma Edge Function da Fase 2 aceita `input` como array misto
+> **Status:** implementado com **HuggingFace free tier**.
+> Modelo: `Falconsai/nsfw_image_detection`. Edge Function `moderate-image` (v3) no ar.
+> Threshold configurável em `site_config` → `mod_ai_image_threshold` (0.85).
+> Processa até 4 imagens por post. Fire-and-forget. NSFW flaggado → soft-hide + fila admin.
 
 ---
 
@@ -372,12 +329,14 @@ via URL pública:
 
 ---
 
-### Fase 5 — Google Safe Browsing (futuro / gratuito) ⬜
+### Fase 5 — Google Safe Browsing ✅ FEITA
 
-Para links postados (embed_url, links no texto):
-- API gratuita (1M requests/dia): verifica se URL é phishing/malware/unwanted
-- Também assíncrono via Edge Function
-- Posts com link perigoso: hidden + notificação ao admin
+> **Status:** implementado. Edge Function `moderate-links` (v1) no ar.
+> Verifica `embed_url` de posts contra MALWARE, SOCIAL_ENGINEERING, UNWANTED_SOFTWARE.
+> Fire-and-forget. URL perigosa → soft-hide + fila admin com `trigger_type='links'`.
+> **Secret necessária:** `GOOGLE_SAFE_BROWSING_KEY` em Supabase → Edge Functions → Secrets.
+> Sem a chave configurada, a função retorna `safe: true` sem erros (graceful skip).
+> Como obter a chave: console.cloud.google.com → APIs → Safe Browsing API → Credentials (grátis, 1M req/dia).
 
 ---
 

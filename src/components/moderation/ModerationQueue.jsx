@@ -9,8 +9,8 @@ import {
 import BanModal from '../ui/BanModal';
 
 const CONTENT_LABEL = { post: 'Post', comment: 'Comentário', mural: 'Mural', chat: 'Chat' };
-const TRIGGER_LABEL  = { report: 'Denúncias', wordlist: 'Palavrão', ai: 'IA', escalation: 'Escalação' };
-const TRIGGER_COLOR  = { report: 'text-orange-400', wordlist: 'text-yellow-400', ai: 'text-purple-400', escalation: 'text-red-400' };
+const TRIGGER_LABEL  = { report: 'Denúncias', wordlist: 'Palavrão', ai: 'IA', escalation: 'Escalação', links: 'Link perigoso' };
+const TRIGGER_COLOR  = { report: 'text-orange-400', wordlist: 'text-yellow-400', ai: 'text-purple-400', escalation: 'text-red-400', links: 'text-red-500' };
 
 const ACTION_POINTS = { warn: 1, hide: 2, suspend_1d: 5, suspend_7d: 10 };
 

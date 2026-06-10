@@ -1,6 +1,6 @@
 import { useState, useRef, memo } from 'react';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../../services/postService';
-import { moderateText, moderateImages } from '../../services/moderationService';
+import { moderateText, moderateImages, moderateLinks } from '../../services/moderationService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
 import { suspendedUntil } from '../../lib/roles';
@@ -132,6 +132,7 @@ const PostForm = memo(function PostForm({ onPost }) {
 
       toast.success('Post publicado!', { id: toastId });
       moderateText('post', post.id, `${title.trim()} ${content.trim()}`);
+      if (embedUrl.trim()) moderateLinks('post', post.id, embedUrl.trim());
       // logAudit omitido: o trigger log_post_event no banco já gera content_post_created
       setTitle(''); setContent(''); setMedias([]);
       setAudioName(''); setEmbedUrl(''); setShowEmbed(false);

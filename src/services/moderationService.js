@@ -132,6 +132,18 @@ export async function moderateText(contentType, contentId, text) {
   }).catch(() => {});
 }
 
+// Fire-and-forget: link — Google Safe Browsing (não bloqueia o fluxo).
+export async function moderateLinks(contentType, contentId, url) {
+  if (!url?.trim()) return;
+  const auth = await getAuthHeader();
+  if (!auth) return;
+  fetch(`${SUPABASE_URL}/functions/v1/moderate-links`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: SUPABASE_ANON },
+    body: JSON.stringify({ content_type: contentType, content_id: contentId, url }),
+  }).catch(() => {});
+}
+
 // Fire-and-forget: imagens (apenas URLs de imagem, vídeos são ignorados).
 export async function moderateImages(contentType, contentId, imageUrls) {
   if (!imageUrls?.length) return;
