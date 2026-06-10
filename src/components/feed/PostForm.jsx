@@ -132,11 +132,7 @@ const PostForm = memo(function PostForm({ onPost }) {
 
       toast.success('Post publicado!', { id: toastId });
       moderateText('post', post.id, `${title.trim()} ${content.trim()}`);
-      logAudit(
-        isLive ? 'live_created' : 'post_created',
-        `@${profile?.username} ${isLive ? 'criou uma live' : 'publicou um post'}: "${title.trim()}"`,
-        { category: isLive ? 'live' : 'content' }
-      );
+      // logAudit omitido: o trigger log_post_event no banco já gera content_post_created
       setTitle(''); setContent(''); setMedias([]);
       setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
       setIsLive(false);
