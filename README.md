@@ -522,6 +522,8 @@ Tabela `site_config` (chave/valor), editável só pelo owner via
 - `feature_keys`, `feature_lives`, `feature_community` — feature flags que
   ligam/desligam seções (via `FeatureGate`).
 - Banner global (`GlobalBanner`): texto, cor e visibilidade.
+- `mod_report_threshold`, `mod_suspend_threshold`, `mod_ban_threshold` —
+  gatilhos do sistema de moderação (ajustáveis na aba Site).
 
 ### Logs de auditoria & notificações de admin
 
@@ -566,7 +568,7 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   paginado, filtro por usuário).
 
 Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
-`mod_suspend_threshold`), editáveis no banco.
+`mod_suspend_threshold`), editáveis pela aba **Site** do painel do Owner.
 
 ---
 

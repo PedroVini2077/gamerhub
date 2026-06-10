@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react';
+import { ToggleLeft, ToggleRight, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -18,6 +18,7 @@ export default function SiteTab() {
     banner_enabled: 'false', banner_text: '', banner_color: 'orange',
     maintenance_mode: 'false',
     feature_keys: 'true', feature_lives: 'true', feature_community: 'true',
+    mod_report_threshold: '3', mod_suspend_threshold: '8', mod_ban_threshold: '15',
   });
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -163,6 +164,40 @@ export default function SiteTab() {
             );
           })}
         </div>
+      </div>
+
+      {/* Moderação */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <ShieldAlert size={14} className="text-orange-400" />
+          <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Limites de Moderação</p>
+        </div>
+        <p className="text-xs font-mono text-gray-600 -mt-2">
+          Ajuste os gatilhos automáticos do sistema de moderação.
+        </p>
+        {[
+          { key: 'mod_report_threshold',  label: 'Denúncias para ocultar',  desc: 'Quantas denúncias ocultam um conteúdo automaticamente' },
+          { key: 'mod_suspend_threshold', label: 'Pontos para suspensão',   desc: 'Pontos de infração que sinalizam suspensão' },
+          { key: 'mod_ban_threshold',     label: 'Pontos para ban',         desc: 'Pontos de infração que banem o usuário automaticamente' },
+        ].map(f => (
+          <div key={f.key} className="flex items-center justify-between gap-4 py-2 border-b border-dark-600 last:border-0">
+            <div className="min-w-0">
+              <p className="text-xs font-mono text-gray-300">{f.label}</p>
+              <p className="text-xs font-mono text-gray-600">{f.desc}</p>
+            </div>
+            <input
+              type="number" min="1" max="999"
+              value={config[f.key]}
+              onChange={e => setConfig(c => ({ ...c, [f.key]: e.target.value }))}
+              onBlur={e => {
+                const v = Math.max(1, Math.min(999, parseInt(e.target.value, 10) || 1));
+                setConfig(c => ({ ...c, [f.key]: String(v) }));
+                saveKey(f.key, v);
+              }}
+              className="w-16 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-orange-400/50 focus:outline-none shrink-0"
+            />
+          </div>
+        ))}
       </div>
 
       {saving && (

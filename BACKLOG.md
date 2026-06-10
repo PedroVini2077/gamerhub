@@ -285,7 +285,8 @@ RLS conferido. O que entrou:
   janela de tempo ainda não bloqueia o usuário.
 - ⬜ Denúncia de **mensagens do chat de live** (`content_type='chat'` já existe
   no schema, mas o botão ainda não foi posto no chat).
-- ⬜ Editar os thresholds pela aba **Site** do Owner (hoje só direto no banco).
+- ✅ Editar os thresholds pela aba **Site** do Owner — feito (`SiteTab` com 3
+  campos numéricos: ocultar / suspender / banir).
 
 ---
 
