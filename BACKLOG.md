@@ -224,6 +224,252 @@
 
 ---
 
+---
+
+## 🛡️ Sistema de Moderação de Conteúdo — EM ANDAMENTO
+
+> **Status:** Arquitetura definida, perguntas respondidas, **Fase 1 aprovada para
+> implementação.** A sessão acabou antes de começar o código — retomar daqui.
+
+### Decisões do dono (já tomadas, não perguntar de novo)
+
+| Questão | Decisão |
+|---|---|
+| Escopo inicial | **Fase 1 MVP** — reports + wordlist + violations + escalação + aba admin |
+| APIs externas | **Só gratuitas** — OpenAI Moderation API (texto + imagem) e Google Safe Browsing |
+| Ação automática | **Soft-hide + fila para revisão humana** (reversível, nunca ban direto) |
+
+---
+
+### Onde paramos
+
+Apresentamos o plano detalhado da Fase 1 e o dono aprovou. A sessão expirou
+antes de escrever uma linha de código. Na próxima sessão: **começar a
+implementação direto, sem perguntas** — o plano está aqui.
+
+---
+
+### Fase 1 — MVP (implementar agora) 🟡
+
+#### Banco de dados — migrations a criar
+
+**1. Tabela `reports`**
+```sql
+CREATE TABLE reports (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  content_type text NOT NULL CHECK (content_type IN ('post','comment','mural','chat')),
+  content_id uuid NOT NULL,
+  reason text NOT NULL CHECK (reason IN ('spam','hate','nsfw','harassment','misinformation','other')),
+  details text,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','reviewed','dismissed')),
+  created_at timestamptz DEFAULT now()
+);
+-- RLS: reporter vê só seus próprios; admin+ veem tudo
+```
+
+**2. Tabela `blocked_words`**
+```sql
+CREATE TABLE blocked_words (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  word text UNIQUE NOT NULL,
+  severity text NOT NULL DEFAULT 'medium' CHECK (severity IN ('low','medium','high')),
+  created_at timestamptz DEFAULT now(),
+  created_by uuid REFERENCES profiles(id)
+);
+-- RLS: SELECT público (anon/auth) pra funcionar no cliente; INSERT/UPDATE/DELETE só admin+
+```
+
+**3. Tabela `violations`** (histórico de infrações confirmadas por um moderador)
+```sql
+CREATE TABLE violations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  content_type text,
+  content_id uuid,
+  reason text,
+  action_taken text CHECK (action_taken IN ('warn','hide','suspend_1d','suspend_7d','ban')),
+  points int NOT NULL DEFAULT 1,
+  reviewed_by uuid REFERENCES profiles(id),
+  created_at timestamptz DEFAULT now()
+);
+-- RLS: usuário vê só as próprias; admin+ veem tudo
+```
+
+**4. Tabela `moderation_queue`** (itens aguardando revisão humana)
+```sql
+CREATE TABLE moderation_queue (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  content_type text NOT NULL,
+  content_id uuid NOT NULL,
+  trigger_type text NOT NULL CHECK (trigger_type IN ('report','wordlist','ai')),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  reviewed_by uuid REFERENCES profiles(id),
+  created_at timestamptz DEFAULT now()
+);
+-- RLS: só admin+ lê/escreve
+```
+
+**5. Coluna `hidden_at`** nas tabelas de conteúdo
+```sql
+ALTER TABLE posts ADD COLUMN hidden_at timestamptz;
+ALTER TABLE comments ADD COLUMN hidden_at timestamptz;
+ALTER TABLE mural_posts ADD COLUMN hidden_at timestamptz;
+-- Conteúdo com hidden_at != null fica invisível para não-admins
+-- Admins+ veem com banner "⚠ Oculto por denúncias"
+```
+
+**6. Trigger de auto-hide** (3 reports = oculta + enfileira)
+```sql
+-- Trigger em `reports` que conta reports do mesmo content_id
+-- Quando count >= [threshold em site_config], preenche hidden_at
+-- e insere em moderation_queue com trigger_type='report'
+```
+
+**7. Sistema de pontos e escalação** (via `violations`)
+```
+warn     = 1pt
+hide     = 2pt
+suspend_1d = 5pt
+suspend_7d = 10pt
+ban      = direto (via ban_user existente)
+
+Thresholds configuráveis em site_config (chaves: mod_warn_threshold,
+mod_suspend_threshold, mod_ban_threshold)
+Trigger em violations: ao INSERT, soma pontos do user_id e aplica escalação
+automática chamando ban_user() se atingir o threshold de ban.
+```
+
+#### Frontend — componentes a criar
+
+**`src/services/moderationService.js`** (novo)
+- `fetchReports(filters)` — lista de denúncias com filtros
+- `createReport({ contentType, contentId, reason, details })` — submete denuncia
+- `fetchModerationQueue(status)` — fila de revisão paginada
+- `approveHide(queueId, contentType, contentId)` — confirma ocultação
+- `restoreContent(contentType, contentId)` — desfaz ocultação
+- `fetchBlockedWords()` — lista para cache no cliente
+- `addBlockedWord(word, severity)` — admin+
+- `removeBlockedWord(wordId)` — admin+
+- `fetchViolations(userId?)` — histórico de infrações
+
+**`src/hooks/useBlockedWords.js`** (novo)
+- Wrapper React Query: busca `blocked_words`, TTL 5min
+- Exporta `checkContent(text)` → `{ blocked: bool, word: string | null }`
+- Usado no PostForm e CommentSection antes de submeter
+
+**`src/components/ui/ReportModal.jsx`** (novo)
+- Modal no padrão do site (`createPortal`)
+- Props: `contentType`, `contentId`, `onClose`
+- Radio buttons de motivo + textarea de detalhes
+- Submit chama `createReport` + toast de confirmação
+- Não mostra para anon nem para o próprio autor do conteúdo
+
+**`src/components/moderation/ModerationQueue.jsx`** (novo)
+- Lista de itens da fila (cards com preview do conteúdo + dados do report)
+- Actions: "Confirmar ocultação" | "Restaurar" | "Banir usuário"
+- Paginação (blocos de 20)
+
+**`src/components/moderation/WordlistManager.jsx`** (novo)
+- CRUD de palavras bloqueadas (tabela + form inline)
+- Colunas: palavra, severidade, data, criador, ações
+
+**`src/components/moderation/ViolationsPanel.jsx`** (novo)
+- Histórico de infrações filtráveis por usuário/tipo/período
+
+#### Modificações em arquivos existentes
+
+| Arquivo | O que muda |
+|---|---|
+| `src/pages/Admin.jsx` | Nova aba "Moderação" com sub-abas: Fila / Denúncias / Wordlist / Violações |
+| `src/components/feed/PostCard.jsx` | Botão "⚑ Denunciar" no menu (oculto para o próprio autor); hidden_at → banner cinza |
+| `src/components/feed/CommentCard.jsx` | Idem |
+| `src/components/community/MuralCard.jsx` | Idem |
+| `src/components/PostForm.jsx` (ou onde está o form de criar post) | Validação wordlist antes de submeter via `checkContent()` |
+| `src/services/postService.js` | `fetchFeedPosts` filtra `hidden_at IS NULL` pra não-admins |
+| `src/services/communityService.js` | Idem pra mural |
+
+#### Ordem de implementação recomendada
+
+1. Banco (migrations: tabelas → colunas hidden_at → trigger de auto-hide → trigger de escalação → RLS)
+2. `moderationService.js` + `useBlockedWords.js`
+3. Filtro wordlist no PostForm / CommentSection
+4. `ReportModal.jsx` + botão "Denunciar" nos cards
+5. Ocultar conteúdo com `hidden_at != null` (feed / mural / perfil)
+6. Admin: aba Moderação com ModerationQueue + WordlistManager + ViolationsPanel
+7. Build + teste manual completo antes de commitar
+
+---
+
+### Fase 2 — Moderação IA de texto (futuro / gratuito) ⬜
+
+Usar **OpenAI Moderation API** (gratuita, sem limite de uso documentado,
+suporta português):
+- Endpoint: `POST https://api.openai.com/v1/moderations`
+- Payload: `{ "model": "omni-moderation-latest", "input": "<texto>" }`
+- Retorna categorias: `hate`, `harassment`, `sexual`, `violence`, `self-harm`,
+  `illicit`, etc. com scores 0–1
+- Chamada via **Supabase Edge Function** (não expor a API key no cliente)
+- Fluxo: POST de conteúdo → Edge Function chama Moderation API → se score
+  alto (> threshold) → insere em `moderation_queue` com `trigger_type='ai'`
+  e aplica soft-hide
+- Edge Function existente `send-email` serve de referência de padrão
+
+Thresholds configuráveis em `site_config`. Moderação assíncrona (não bloqueia
+o POST do usuário — conteúdo aparece, se reprovado é ocultado após ~1-2s).
+
+---
+
+### Fase 3 — Moderação IA de imagem (futuro / gratuito) ⬜
+
+**OpenAI Moderation API (omni-moderation-latest)** também suporta imagens
+via URL pública:
+```json
+{
+  "model": "omni-moderation-latest",
+  "input": [{"type": "image_url", "image_url": {"url": "<public_url>"}}]
+}
+```
+- Imagens do `post-media` têm `getPublicUrl` → URL passável direto
+- Mesma Edge Function da Fase 2 aceita `input` como array misto
+
+---
+
+### Fase 4 — Moderação de vídeo (futuro — custoso) ⬜
+
+- Frame sampling: extrair 1 frame/segundo via ffmpeg.wasm (pesado) ou
+  via Edge Function com biblioteca de extração
+- Cada frame enviado para a Moderation API de imagem
+- Alternativa: só moderar thumbnail (mais leve, menos cobertura)
+- Depende de decisão sobre upgrade do plano Supabase para mais recursos
+
+---
+
+### Fase 5 — Google Safe Browsing (futuro / gratuito) ⬜
+
+Para links postados (embed_url, links no texto):
+- API gratuita (1M requests/dia): verifica se URL é phishing/malware/unwanted
+- Também assíncrono via Edge Function
+- Posts com link perigoso: hidden + notificação ao admin
+
+---
+
+### Notas de arquitetura importantes
+
+- **Sempre soft-hide, nunca delete automático.** O moderador humano tem a
+  palavra final. Ação automática reversível.
+- **`site_config` como centro de configuração:** thresholds de reports para
+  auto-hide, thresholds de pontos para escalação, toggle de cada fase ativa/
+  inativa — tudo lá, editável pelo dono sem deploy.
+- **A Edge Function de moderação IA não precisa de tier pago do Supabase** —
+  Edge Functions estão disponíveis no plano Free (500k invocações/mês).
+- **OpenAI Moderation API é grátis e multilíngue** — funciona bem em
+  português, não exige Fine-tuning.
+- **Reutilizar `ban_user()` existente** — a função já existe, já tem hierarquia,
+  já faz cascade. O trigger de escalação só precisa chamá-la.
+
+---
+
 ## 💡 Ideias soltas (a avaliar)
 
 > Espaço pra jogar ideias de feature que surgirem, sem compromisso. Quando
