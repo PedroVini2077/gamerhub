@@ -2,9 +2,20 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Download } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { toCSV, downloadCSV } from '../../lib/csv';
 import toast from 'react-hot-toast';
+
+const CSV_COLUMNS = [
+  { key: 'created_at', label: 'data', format: v => new Date(v).toISOString() },
+  { key: 'actor_username', label: 'autor' },
+  { key: 'action', label: 'acao' },
+  { key: 'category', label: 'categoria' },
+  { key: 'severity', label: 'severidade' },
+  { key: 'details', label: 'detalhes' },
+  { key: 'metadata', label: 'metadata' },
+];
 
 const SEV_COLOR = { info: '#6b7280', warning: '#f59e0b', critical: '#ef4444' };
 const CAT_EMOJI = { auth: '🔐', security: '🛡️', content: '📝', admin: '⚙️', system: '🔧' };
@@ -13,7 +24,23 @@ export default function LogsTab() {
   const [category, setCategory] = useState('');
   const [severity, setSeverity] = useState('');
   const [offset, setOffset]     = useState(0);
+  const [exporting, setExporting] = useState(false);
   const LIMIT = 30;
+  const EXPORT_MAX = 5000;
+
+  async function exportCSV() {
+    setExporting(true);
+    const { data, error } = await supabase.rpc('owner_get_audit_logs', {
+      p_limit: EXPORT_MAX, p_offset: 0,
+      p_category: category || null, p_severity: severity || null,
+    });
+    setExporting(false);
+    if (error) { toast.error('Erro ao exportar: ' + error.message); return; }
+    if (!data?.length) { toast.error('Nenhum log para exportar.'); return; }
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    downloadCSV(`gamerhub-logs-${stamp}.csv`, toCSV(data, CSV_COLUMNS));
+    toast.success(`${data.length} log(s) exportado(s).`);
+  }
 
   const { data: logs = [], isPending: loading, refetch } = useQuery({
     queryKey: ['owner_audit_logs', category, severity, offset],
@@ -55,6 +82,11 @@ export default function LogsTab() {
         <button onClick={() => refetch()}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors">
           <RefreshCw size={14} />
+        </button>
+        <button onClick={exportCSV} disabled={exporting}
+          className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 hover:text-orange-400 hover:border-orange-400/50 disabled:opacity-40 transition-colors">
+          <Download size={14} />
+          {exporting ? 'Exportando...' : 'Exportar CSV'}
         </button>
       </div>
 

@@ -143,6 +143,8 @@ src/
 │   ├── format.js          # Formatação de números (1K, 1M...)
 │   ├── password.js        # Força de senha (compartilhado Login/AuthConfirm)
 │   ├── date.js            # Cálculo de idade / idade mínima de cadastro
+│   ├── csv.js             # Geração + download de CSV (export de logs)
+│   ├── wordlist.js        # Match de palavra inteira do filtro de moderação
 │   ├── motion.js          # Variantes Framer Motion compartilhadas (fade, grid, list)
 │   └── landingMotion.js   # Variantes de animação exclusivas da landing (hero, reveal, stagger)
 ├── services/              # Camada de acesso a dados (Supabase) por domínio
@@ -529,7 +531,9 @@ Tabela `site_config` (chave/valor), editável só pelo owner via
 
 - **`admin_logs`**: trilha de auditoria (ação, detalhes, categoria, severidade,
   ator, metadata JSON). Escrito pelo front via `logAudit()` →
-  `log_audit_event`, e por várias funções/triggers do banco.
+  `log_audit_event`, e por várias funções/triggers do banco. A aba **Logs** do
+  painel do dono permite **exportar em CSV** (respeita os filtros de categoria/
+  severidade; até 5000 linhas, com BOM UTF-8 pro Excel).
 - **`admin_notifications`** + **`admin_notification_reads`**: notificações para
   admins (audiência `all_admins` ou `super_admin`), com controle de lidas por
   admin. Geradas por triggers (`notify_admin_new_user`, `notify_admin_new_live`,

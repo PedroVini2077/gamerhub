@@ -203,7 +203,10 @@
 - ⬜ **Soft delete** de posts (campo `deleted_at` em vez de delete físico).
 - ⬜ **2FA** no login.
 - ⬜ Afinar detecção de ban (hoje realtime + polling de 20s como fallback).
-- ⬜ Exportar logs de auditoria (CSV) no painel do dono.
+- ✅ Exportar logs de auditoria (CSV) no painel do dono — botão "Exportar CSV" na
+  aba Logs (`LogsTab`), respeita os filtros ativos, busca até 5000 linhas via
+  `owner_get_audit_logs`, gera CSV no cliente (`lib/csv.js`, RFC 4180 + BOM
+  UTF-8). Testado o escaping (vírgula/aspas/quebra/objeto/null). *(no README)*
 
 ---
 
