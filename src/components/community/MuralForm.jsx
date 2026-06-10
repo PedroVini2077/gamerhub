@@ -2,6 +2,7 @@ import { useState, useRef, memo } from 'react';
 import { addMuralPost, uploadMuralMediaFiles } from '../../services/communityService';
 import { useAuth } from '../../hooks/useAuth';
 import { logAudit } from '../../lib/auditLog';
+import { moderateText } from '../../services/moderationService';
 import toast from 'react-hot-toast';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 
@@ -48,6 +49,7 @@ const MuralForm = memo(function MuralForm({ onPost }) {
       if (mediaErr) toast.error('Mensagem enviada, mas falhou o upload de imagem');
     }
     toast.success('Mensagem enviada!');
+    moderateText('mural', post.id, message.trim());
     logAudit('mural_post', `@${profile?.username} escreveu no mural da comunidade`, { category: 'content' });
     medias.forEach(m => URL.revokeObjectURL(m.preview));
     setMessage('');

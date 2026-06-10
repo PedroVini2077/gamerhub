@@ -1,5 +1,6 @@
 import { useState, useRef, memo } from 'react';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../../services/postService';
+import { moderateText } from '../../services/moderationService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
 import { suspendedUntil } from '../../lib/roles';
@@ -129,6 +130,7 @@ const PostForm = memo(function PostForm({ onPost }) {
       }
 
       toast.success('Post publicado!', { id: toastId });
+      moderateText('post', post.id, `${title.trim()} ${content.trim()}`);
       logAudit(
         isLive ? 'live_created' : 'post_created',
         `@${profile?.username} ${isLive ? 'criou uma live' : 'publicou um post'}: "${title.trim()}"`,

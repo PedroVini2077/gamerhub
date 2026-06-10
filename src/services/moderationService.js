@@ -1,5 +1,8 @@
 import { supabase } from '../lib/supabase';
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
 export async function createReport({ contentType, contentId, reason, details }) {
@@ -108,6 +111,26 @@ export async function addViolation({ userId, contentType, contentId, reason, act
     reviewed_by: reviewerId,
     notes: notes?.trim() || null,
   });
+}
+
+// ─── Moderação IA (Fase 2 — HuggingFace) ─────────────────────────────────────
+
+// Fire-and-forget: chama a Edge Function de moderação de texto em background.
+// Não bloqueia o fluxo do usuário — o conteúdo aparece normalmente e só é
+// ocultado se o modelo retornar score acima do threshold configurado.
+export async function moderateText(contentType, contentId, text) {
+  if (!text?.trim()) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return;
+  fetch(`${SUPABASE_URL}/functions/v1/moderate-text`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: SUPABASE_ANON,
+    },
+    body: JSON.stringify({ content_type: contentType, content_id: contentId, text }),
+  }).catch(() => {}); // silencia erros de rede — moderação é best-effort
 }
 
 // ─── Hide / Restore (ação direta do admin) ───────────────────────────────────

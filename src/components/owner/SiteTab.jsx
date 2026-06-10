@@ -19,6 +19,7 @@ export default function SiteTab() {
     maintenance_mode: 'false',
     feature_keys: 'true', feature_lives: 'true', feature_community: 'true',
     mod_report_threshold: '3', mod_suspend_threshold: '8', mod_ban_threshold: '15',
+    mod_ai_enabled: 'false', mod_ai_text_threshold: '0.7',
   });
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -198,6 +199,43 @@ export default function SiteTab() {
             />
           </div>
         ))}
+      </div>
+
+      {/* Moderação IA */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldAlert size={14} className="text-purple-400" />
+            <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Moderação IA (HuggingFace)</p>
+          </div>
+          <button onClick={() => toggle('mod_ai_enabled')}
+            className="flex items-center gap-1.5 text-xs font-mono transition-colors shrink-0"
+            style={{ color: config.mod_ai_enabled === 'true' ? '#a855f7' : '#6b7280' }}>
+            {config.mod_ai_enabled === 'true' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
+            {config.mod_ai_enabled === 'true' ? 'Ativa' : 'Desligada'}
+          </button>
+        </div>
+        <p className="text-xs font-mono text-gray-600 -mt-2">
+          Analisa texto de posts, comentários e mural com IA e oculta automaticamente se o score de toxicidade ultrapassar o limite. Requer secret <code className="text-purple-400">HUGGINGFACE_API_KEY</code> configurado.
+        </p>
+        <div className="flex items-center justify-between gap-4 py-2 border-t border-dark-600">
+          <div>
+            <p className="text-xs font-mono text-gray-300">Limite de toxicidade</p>
+            <p className="text-xs font-mono text-gray-600">Score mínimo para ocultar (0.0 – 1.0). Padrão: 0.7</p>
+          </div>
+          <input
+            type="number" min="0.1" max="1.0" step="0.05"
+            value={config.mod_ai_text_threshold}
+            onChange={e => setConfig(c => ({ ...c, mod_ai_text_threshold: e.target.value }))}
+            onBlur={e => {
+              const v = Math.max(0.1, Math.min(1.0, parseFloat(e.target.value) || 0.7));
+              const rounded = Math.round(v * 100) / 100;
+              setConfig(c => ({ ...c, mod_ai_text_threshold: String(rounded) }));
+              saveKey('mod_ai_text_threshold', rounded);
+            }}
+            className="w-20 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-purple-400/50 focus:outline-none shrink-0"
+          />
+        </div>
       </div>
 
       {saving && (

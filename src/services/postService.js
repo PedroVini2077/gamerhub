@@ -157,7 +157,9 @@ export async function fetchCommentCount(postId) {
 }
 
 export async function addComment({ postId, userId, content, parentId = null }) {
-  return supabase.from('comments').insert({ post_id: postId, user_id: userId, content, parent_id: parentId });
+  return supabase.from('comments')
+    .insert({ post_id: postId, user_id: userId, content, parent_id: parentId })
+    .select('id').single();
 }
 
 export async function deleteComment(commentId, userId, isAdmin) {

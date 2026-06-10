@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, memo } from 'react';
 import { fetchComments, fetchCommentCount, addComment } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
+import { moderateText } from '../../services/moderationService';
 import { suspendedUntil } from '../../lib/roles';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
@@ -59,11 +60,12 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
   async function submitComment(content, parentId = null) {
     const check = checkContent(content);
     if (check.blocked) { toast.error('Comentário contém termo bloqueado.'); return false; }
-    const { error } = await addComment({ postId, userId: profile?.id, content, parentId });
+    const { data: comment, error } = await addComment({ postId, userId: profile?.id, content, parentId });
     if (error) {
       toast.error('Erro ao comentar');
       return false;
     }
+    if (comment?.id) moderateText('comment', comment.id, content);
     logAudit('comment_added', `@${profile?.username} ${parentId ? 'respondeu um comentário' : 'comentou em um post'}`, { category: 'content' });
     await fetchCommentList();
     return true;
