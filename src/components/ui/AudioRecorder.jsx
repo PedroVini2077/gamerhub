@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, Pause, Trash2, Check, MicOff } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function AudioRecorder({ onRecorded, onCancel }) {
   const [recording, setRecording] = useState(false);
@@ -41,7 +42,7 @@ export default function AudioRecorder({ onRecorded, onCancel }) {
       timerRef.current = setInterval(() => setTime(t => t + 1), 1000);
     } catch (err) {
       if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        alert('Nenhum microfone encontrado neste dispositivo.');
+        toast.error('Nenhum microfone encontrado neste dispositivo.');
       } else {
         setPermissionDenied(true);
       }

@@ -4,8 +4,9 @@ import { updateProfile } from '../services/profileService';
 import { changePassword, changeEmail, deleteOwnAccount } from '../services/authService';
 import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
-import { Settings, Lock, Mail, Bell, Shield, ChevronRight } from 'lucide-react';
+import { Settings, Lock, Mail, Bell, Shield, ChevronRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 function Toggle({ value, onChange }) {
   return (
@@ -38,6 +39,9 @@ export default function Settings_() {
   const [notifLikes, setNotifLikes] = useState(null);
   const [notifComments, setNotifComments] = useState(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  // null | 'first' | 'last' — exclusão de conta com dupla confirmação via modal
+  // do site (substitui os confirm() nativos do navegador).
+  const [confirmStage, setConfirmStage] = useState(null);
 
   // Mesmo cuidado do Profile: sincroniza só quando o usuário muda, não a cada
   // novo objeto `profile` (poll/realtime), senão um toggle alterado mas ainda
@@ -100,12 +104,7 @@ export default function Settings_() {
     setChangingEmail(false);
   }
 
-  async function handleDeleteAccount() {
-    const confirmed = confirm('Tem certeza? Essa ação é IRREVERSÍVEL.\nTodos os seus dados serão deletados.');
-    if (!confirmed) return;
-    const doubleConfirm = confirm('Última chance. Confirmar exclusão da conta?');
-    if (!doubleConfirm) return;
-
+  async function confirmDeleteAccount() {
     setDeletingAccount(true);
     try {
       const { error } = await deleteOwnAccount();
@@ -119,6 +118,7 @@ export default function Settings_() {
       toast.error('Erro de conexão. Tente novamente.');
     }
     setDeletingAccount(false);
+    setConfirmStage(null);
   }
 
   const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
@@ -256,13 +256,39 @@ export default function Settings_() {
         <h2 className="font-display text-xs text-red-400 tracking-widest uppercase mb-2">Zona de Perigo</h2>
         <p className="text-xs text-gray-500 font-mono mb-3">Ações irreversíveis. Pense bem antes de continuar.</p>
         <button
-          onClick={handleDeleteAccount}
+          onClick={() => setConfirmStage('first')}
           disabled={deletingAccount}
           className="text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-4 py-2 rounded transition-all"
         >
           {deletingAccount ? 'Deletando...' : 'Deletar minha conta'}
         </button>
       </div>
+
+      {confirmStage === 'first' && (
+        <ConfirmModal
+          title="Deletar conta"
+          icon={Trash2}
+          accent="red"
+          message="Tem certeza? Essa ação é IRREVERSÍVEL. Todos os seus dados (posts, comentários e perfil) serão apagados para sempre."
+          confirmLabel="Continuar"
+          confirmIcon={Trash2}
+          onConfirm={() => setConfirmStage('last')}
+          onClose={() => setConfirmStage(null)}
+        />
+      )}
+
+      {confirmStage === 'last' && (
+        <ConfirmModal
+          title="Última chance"
+          icon={Trash2}
+          accent="red"
+          message="Confirmar a exclusão definitiva da sua conta? Não dá pra desfazer."
+          confirmLabel={deletingAccount ? 'Deletando...' : 'Deletar conta'}
+          confirmIcon={Trash2}
+          onConfirm={confirmDeleteAccount}
+          onClose={() => !deletingAccount && setConfirmStage(null)}
+        />
+      )}
     </div>
   );
 }
