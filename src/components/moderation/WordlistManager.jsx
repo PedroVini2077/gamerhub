@@ -70,7 +70,7 @@ export default function WordlistManager() {
         </div>
         <div className="flex items-start gap-2 text-xs font-mono text-gray-500">
           <AlertCircle size={12} className="mt-0.5 shrink-0 text-yellow-400" />
-          <span>Matching parcial (ex: "merda" bloqueia "merdinha"). Use com cuidado para evitar falsos positivos.</span>
+          <span>Bloqueia a <b>palavra inteira</b>, ignorando maiúsculas (ex: "idiota" bloqueia "idiota" e "idiota!", mas não "idiotas" nem dentro de outra palavra). Cadastre variações/plurais se precisar.</span>
         </div>
       </div>
 

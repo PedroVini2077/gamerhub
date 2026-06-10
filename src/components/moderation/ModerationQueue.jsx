@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import {
   fetchModerationQueue, resolveQueueItem, fetchReports,
-  updateReportStatus, addViolation, applySuspension,
+  updateReportStatus, addViolation, applySuspension, hideContent,
 } from '../../services/moderationService';
 import BanModal from '../ui/BanModal';
 
@@ -90,6 +90,13 @@ export default function ModerationQueue() {
   async function handleResolve(item, decision) {
     const { error } = await resolveQueueItem(item.id, decision, item.content_type, item.content_id);
     if (error) { toast.error('Erro ao resolver item'); return; }
+
+    // Garante a ocultação ao confirmar (idempotente). Hoje o gatilho 'report' já
+    // oculta automático, mas itens de wordlist/IA entram na fila sem ocultar —
+    // assim "Confirmar ocultação" funciona independente de como foi enfileirado.
+    if (decision === 'approved' && item.content_type !== 'chat') {
+      await hideContent(item.content_type, item.content_id);
+    }
 
     // Marca todos os reports deste conteúdo como revisados
     const reps = reports[item.content_id] || [];
