@@ -132,9 +132,13 @@ export function LogoBolt() {
 
 // Material neon padrão (corpo dos objetos) — emissivo pra brilhar sozinho mesmo
 // contra o fundo escuro, no mesmo tom dos raios da marca.
-function NeonMaterial({ color }) {
+function NeonMaterial({ color, double }) {
   return (
-    <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} metalness={0.5} roughness={0.3} />
+    <meshStandardMaterial
+      color={color} emissive={color} emissiveIntensity={0.45}
+      metalness={0.45} roughness={0.32}
+      side={double ? THREE.DoubleSide : THREE.FrontSide}
+    />
   );
 }
 
@@ -144,83 +148,143 @@ function DarkMaterial() {
   return <meshStandardMaterial color="#0b0e13" emissive="#0b0e13" emissiveIntensity={0.15} metalness={0.3} roughness={0.6} />;
 }
 
-// Controle de videogame: corpo arredondado + dois grips + d-pad e botões.
+// Caixa com cantos arredondados (silhueta retangular + bevel + profundidade) —
+// dá volumes limpos pro gamepad/headset, bem melhor que esferas/icosaedros
+// fundidos (que saíam "blobados").
+function roundedBoxGeometry(w, h, d, r) {
+  const s = new THREE.Shape();
+  const x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h);
+  s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r);
+  s.quadraticCurveTo(x, y, x + r, y);
+  const bevel = Math.min(0.05, r * 0.6);
+  const geo = new THREE.ExtrudeGeometry(s, {
+    depth: d - bevel * 2, bevelEnabled: true,
+    bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 8,
+  });
+  geo.center();
+  return geo;
+}
+
+function RoundedBox({ w, h, d, r = 0.12, color, dark, ...props }) {
+  const geo = useMemo(() => roundedBoxGeometry(w, h, d, r), [w, h, d, r]);
+  return <mesh geometry={geo} {...props}>{dark ? <DarkMaterial /> : <NeonMaterial color={color} />}</mesh>;
+}
+
+// Controle de videogame: corpo e grips arredondados + analógicos, d-pad e botões.
 function GamepadModel({ color }) {
-  const buttons = [[0.34, 0.16], [0.34, -0.08], [0.22, 0.04], [0.46, 0.04]];
+  const buttons = [[0.2, 0.18], [0.2, 0.04], [0.13, 0.11], [0.27, 0.11]];
   return (
-    <group rotation={[0.12, 0, 0]}>
-      <mesh scale={[1.15, 0.62, 0.42]}>
-        <icosahedronGeometry args={[0.6, 1]} /><NeonMaterial color={color} />
-      </mesh>
-      <mesh position={[-0.5, -0.28, 0]} rotation={[0, 0, 0.6]} scale={[0.34, 0.52, 0.36]}>
-        <icosahedronGeometry args={[0.5, 1]} /><NeonMaterial color={color} />
-      </mesh>
-      <mesh position={[0.5, -0.28, 0]} rotation={[0, 0, -0.6]} scale={[0.34, 0.52, 0.36]}>
-        <icosahedronGeometry args={[0.5, 1]} /><NeonMaterial color={color} />
-      </mesh>
-      {/* d-pad (cruz) à esquerda */}
-      <mesh position={[-0.34, 0.04, 0.25]}><boxGeometry args={[0.18, 0.06, 0.06]} /><DarkMaterial /></mesh>
-      <mesh position={[-0.34, 0.04, 0.25]}><boxGeometry args={[0.06, 0.18, 0.06]} /><DarkMaterial /></mesh>
-      {/* botões à direita */}
+    <group rotation={[0.18, 0, 0]}>
+      <RoundedBox w={1.25} h={0.6} d={0.32} r={0.27} color={color} />
+      <RoundedBox w={0.42} h={0.66} d={0.3} r={0.19} color={color} position={[-0.5, -0.27, 0]} rotation={[0, 0, 0.5]} />
+      <RoundedBox w={0.42} h={0.66} d={0.3} r={0.19} color={color} position={[0.5, -0.27, 0]} rotation={[0, 0, -0.5]} />
+      {/* analógicos (base + cabeça) */}
+      {[-0.27, 0.34].map((sx, i) => (
+        <group key={i} position={[sx, -0.06, 0.17]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.1, 0.11, 0.07, 16]} /><DarkMaterial /></mesh>
+          <mesh position={[0, 0, 0.05]}><sphereGeometry args={[0.085, 14, 14]} /><DarkMaterial /></mesh>
+        </group>
+      ))}
+      {/* d-pad (cruz) */}
+      <mesh position={[-0.32, 0.16, 0.17]}><boxGeometry args={[0.17, 0.055, 0.06]} /><DarkMaterial /></mesh>
+      <mesh position={[-0.32, 0.16, 0.17]}><boxGeometry args={[0.055, 0.17, 0.06]} /><DarkMaterial /></mesh>
+      {/* botões de ação */}
       {buttons.map(([bx, by], i) => (
-        <mesh key={i} position={[bx, by, 0.25]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.05, 0.05, 0.06, 10]} /><DarkMaterial />
+        <mesh key={i} position={[bx, by, 0.17]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.042, 0.042, 0.06, 12]} /><DarkMaterial />
         </mesh>
       ))}
     </group>
   );
 }
 
-// Headset: arco (meia-rosca) no topo + duas conchas com almofada interna.
+// Headset gamer: arco no topo + conchas com almofada + haste de microfone.
 function HeadsetModel({ color }) {
   return (
     <group>
-      <mesh>
-        <torusGeometry args={[0.6, 0.11, 12, 24, Math.PI]} /><NeonMaterial color={color} />
+      {/* arco (levemente achatado) */}
+      <mesh scale={[1, 0.92, 1]}>
+        <torusGeometry args={[0.6, 0.1, 16, 32, Math.PI]} /><NeonMaterial color={color} />
       </mesh>
-      {[-0.6, 0.6].map((cx, i) => (
-        <group key={i} position={[cx, -0.05, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <mesh><cylinderGeometry args={[0.22, 0.22, 0.2, 18]} /><NeonMaterial color={color} /></mesh>
-          <mesh><cylinderGeometry args={[0.13, 0.13, 0.24, 18]} /><DarkMaterial /></mesh>
+      {/* conchas + almofada externa, espelhadas */}
+      {[-1, 1].map((s, i) => (
+        <group key={i}>
+          <mesh position={[0.6 * s, -0.02, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.23, 0.23, 0.22, 24]} /><NeonMaterial color={color} />
+          </mesh>
+          <mesh position={[0.72 * s, -0.02, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.14, 0.14, 0.04, 24]} /><DarkMaterial />
+          </mesh>
         </group>
       ))}
+      {/* haste do microfone saindo da concha esquerda, curvando pra frente */}
+      <mesh position={[-0.66, -0.3, 0.14]} rotation={[0.55, 0, 0.4]}>
+        <cylinderGeometry args={[0.022, 0.022, 0.42, 8]} /><NeonMaterial color={color} />
+      </mesh>
+      <mesh position={[-0.5, -0.5, 0.3]}><sphereGeometry args={[0.055, 12, 12]} /><DarkMaterial /></mesh>
     </group>
   );
 }
 
-// Troféu: taça cônica + aro + alças laterais + haste + base.
+// Troféu via superfície de revolução (LatheGeometry) — perfil 2D girado 360°,
+// que é exatamente como taças são feitas: base larga → haste fina → taça
+// flareada. Bem mais convincente que empilhar cilindros.
 function TrophyModel({ color }) {
+  const geo = useMemo(() => {
+    const profile = [
+      [0.0, -0.5], [0.32, -0.5], [0.32, -0.44], [0.13, -0.4], [0.1, -0.34], // base
+      [0.07, -0.33], [0.07, -0.15],                                          // haste
+      [0.12, -0.12], [0.36, 0.04], [0.4, 0.32], [0.38, 0.36],               // taça
+      [0.3, 0.34], [0.3, 0.28],                                             // lábio interno
+    ].map(([x, y]) => new THREE.Vector2(x, y));
+    return new THREE.LatheGeometry(profile, 36);
+  }, []);
   return (
-    <group position={[0, -0.12, 0]}>
-      <mesh position={[0, 0.44, 0]}><cylinderGeometry args={[0.38, 0.2, 0.46, 20]} /><NeonMaterial color={color} /></mesh>
-      <mesh position={[0, 0.68, 0]}><cylinderGeometry args={[0.4, 0.37, 0.07, 20]} /><NeonMaterial color={color} /></mesh>
-      {/* alças laterais — meia-rosca abrindo pra fora, na altura do bocal */}
-      <mesh position={[-0.38, 0.56, 0]} rotation={[0, 0, 0]}>
-        <torusGeometry args={[0.2, 0.055, 10, 18, Math.PI]} /><NeonMaterial color={color} />
+    <group position={[0, 0.02, 0]}>
+      <mesh geometry={geo}><NeonMaterial color={color} double /></mesh>
+      {/* alças laterais */}
+      <mesh position={[-0.33, 0.18, 0]} rotation={[0, 0, -0.3]}>
+        <torusGeometry args={[0.15, 0.038, 12, 20, Math.PI]} /><NeonMaterial color={color} />
       </mesh>
-      <mesh position={[0.38, 0.56, 0]} rotation={[0, 0, Math.PI]}>
-        <torusGeometry args={[0.2, 0.055, 10, 18, Math.PI]} /><NeonMaterial color={color} />
+      <mesh position={[0.33, 0.18, 0]} rotation={[0, 0, Math.PI + 0.3]}>
+        <torusGeometry args={[0.15, 0.038, 12, 20, Math.PI]} /><NeonMaterial color={color} />
       </mesh>
-      <mesh position={[0, 0.12, 0]}><cylinderGeometry args={[0.06, 0.06, 0.22, 12]} /><NeonMaterial color={color} /></mesh>
-      <mesh position={[0, -0.04, 0]}><cylinderGeometry args={[0.26, 0.3, 0.12, 20]} /><NeonMaterial color={color} /></mesh>
     </group>
   );
 }
 
-// Caveira low-poly: crânio (icosaedro) + maxilar + olhos e nariz escuros.
+// Caveira low-poly: crânio + maxilar + órbitas/nariz escuros + dentes.
 function SkullModel({ color }) {
   return (
     <group>
-      <mesh position={[0, 0.12, 0]}><icosahedronGeometry args={[0.55, 1]} /><NeonMaterial color={color} /></mesh>
-      <mesh position={[0, -0.38, 0.05]} scale={[0.72, 0.5, 0.72]}>
+      <mesh position={[0, 0.16, 0]} scale={[1, 1.05, 0.96]}>
+        <icosahedronGeometry args={[0.5, 2]} /><NeonMaterial color={color} />
+      </mesh>
+      <mesh position={[0, -0.24, 0.06]} scale={[0.6, 0.5, 0.58]}>
         <icosahedronGeometry args={[0.4, 1]} /><NeonMaterial color={color} />
       </mesh>
-      {[-0.2, 0.2].map((ex, i) => (
-        <mesh key={i} position={[ex, 0.16, 0.44]}><sphereGeometry args={[0.13, 10, 10]} /><DarkMaterial /></mesh>
+      {/* órbitas (fundas, levemente ovais) */}
+      {[-0.19, 0.19].map((ex, i) => (
+        <mesh key={i} position={[ex, 0.18, 0.4]} scale={[1, 1.15, 0.7]}>
+          <sphereGeometry args={[0.15, 16, 16]} /><DarkMaterial />
+        </mesh>
       ))}
-      <mesh position={[0, -0.04, 0.5]} rotation={[Math.PI, 0, 0]}>
-        <coneGeometry args={[0.07, 0.16, 4]} /><DarkMaterial />
+      {/* nariz */}
+      <mesh position={[0, 0.0, 0.46]} rotation={[Math.PI, 0, 0]}>
+        <coneGeometry args={[0.06, 0.15, 3]} /><DarkMaterial />
       </mesh>
+      {/* dentes: faixa escura + ranhuras neon */}
+      <mesh position={[0, -0.33, 0.32]}><boxGeometry args={[0.33, 0.13, 0.12]} /><DarkMaterial /></mesh>
+      {[-0.12, -0.04, 0.04, 0.12].map((tx, i) => (
+        <mesh key={i} position={[tx, -0.33, 0.39]}><boxGeometry args={[0.022, 0.13, 0.04]} /><NeonMaterial color={color} /></mesh>
+      ))}
     </group>
   );
 }

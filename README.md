@@ -252,10 +252,13 @@ estado de autenticação.
   decai rápido — "primeiro a luz, depois a forma se revela". Roda
   continuamente no eixo Y, revelando a profundidade da extrusão; zumbido neon
   suave de `emissiveIntensity` sem flickering.
-- **`FloatingShapes`**: icosaedros, octaedros e toro wireframe flutuantes ao
-  redor do raio. Cada um "materializa" com overshoot (`easeOutBack`) em
-  cascata temporal (`SHAPE_STAGGER = 0.16s`), partindo de escala 0 com
-  opacidade 0 e chegando ao tamanho final com leve estouro.
+- **`FloatingShapes`**: objetos gamer 3D flutuantes nos cantos — **gamepad**
+  (corpo arredondado + analógicos/d-pad/botões), **headset** (arco + conchas +
+  microfone), **troféu** (taça via `LatheGeometry`/superfície de revolução +
+  alças) e **caveira** (crânio + órbitas + dentes). Montados com primitivas e
+  caixas arredondadas (`roundedBoxGeometry`), materiais neon emissivos com
+  recortes escuros pra leitura. Cada um "materializa" com overshoot
+  (`easeOutBack`) em cascata temporal (`SHAPE_STAGGER = 0.16s`).
 - **`Lightning`**: raios 3D animados cruzando a cena.
 
 **Intro de abertura** (`IntroLightning`):
