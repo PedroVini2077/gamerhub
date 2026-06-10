@@ -73,6 +73,14 @@ export async function updatePost(postId, { content, isLive, wasLive }, userId, i
   return q;
 }
 
+export async function softDeletePost(postId) {
+  return supabase.rpc('soft_delete_post', { p_post_id: postId });
+}
+
+export async function restorePost(postId) {
+  return supabase.rpc('restore_post', { p_post_id: postId });
+}
+
 export async function deletePost(postId, userId, isAdmin) {
   let q = supabase.from('posts').delete({ count: 'exact' }).eq('id', postId);
   if (!isAdmin) q = q.eq('user_id', userId);
@@ -126,6 +134,7 @@ export async function uploadAudio(userId, audioFile) {
 
 export async function uploadPostMediaFiles(userId, postId, medias) {
   const rows = [];
+  const imageUrls = [];
   for (let i = 0; i < medias.length; i++) {
     const { file, type } = medias[i];
     const ext = file.name.split('.').pop();
@@ -133,8 +142,10 @@ export async function uploadPostMediaFiles(userId, postId, medias) {
     await supabase.storage.from('post-media').upload(path, file, { contentType: file.type, cacheControl: '31536000' });
     const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
+    if (type === 'image') imageUrls.push(publicUrl);
   }
-  return supabase.from('post_media').insert(rows);
+  const result = await supabase.from('post_media').insert(rows);
+  return { ...result, imageUrls };
 }
 
 // ─── Comments ────────────────────────────────────────────────────────────────

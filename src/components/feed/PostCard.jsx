@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
-import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia, deletePost, updatePost } from '../../services/postService';
+import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia, softDeletePost, updatePost } from '../../services/postService';
 import { canDeleteContent } from '../../lib/roles';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
@@ -129,14 +129,14 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   async function handleDelete() {
     setDeleting(true);
-    const { error } = await deletePost(post.id, user.id, isAdmin);
+    const { error } = await softDeletePost(post.id);
     if (error) {
-      toast.error(error.message || 'Erro ao deletar');
+      toast.error(error.message || 'Erro ao excluir');
       setDeleting(false);
       return;
     }
-    toast.success('Post deletado');
-    logAudit('post_deleted', `@${profile?.username} deletou o post "${post.title}"`, { category: 'content' });
+    toast.success('Post excluído');
+    logAudit('post_deleted', `@${profile?.username} excluiu o post "${post.title}"`, { category: 'content' });
     setConfirming(false);
     setDeleting(false);
     onDelete?.();
@@ -163,6 +163,12 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   return (
     <div className={`card p-5 animate-fade-up ${post.hidden_at ? 'border-yellow-500/30' : ''}`}>
+      {post.deleted_at && (
+        <div className="flex items-center gap-2 text-xs font-mono text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
+          <Trash2 size={12} />
+          <span>Post excluído — visível apenas para admins. Use o painel admin para restaurar.</span>
+        </div>
+      )}
       {post.hidden_at && (
         <div className="flex items-center gap-2 text-xs font-mono text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2 mb-3">
           <EyeOff size={12} />

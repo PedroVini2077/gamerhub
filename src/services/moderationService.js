@@ -113,24 +113,35 @@ export async function addViolation({ userId, contentType, contentId, reason, act
   });
 }
 
-// ─── Moderação IA (Fase 2 — HuggingFace) ─────────────────────────────────────
+// ─── Moderação IA (Fases 2 e 3 — HuggingFace) ────────────────────────────────
 
-// Fire-and-forget: chama a Edge Function de moderação de texto em background.
-// Não bloqueia o fluxo do usuário — o conteúdo aparece normalmente e só é
-// ocultado se o modelo retornar score acima do threshold configurado.
+async function getAuthHeader() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? `Bearer ${session.access_token}` : null;
+}
+
+// Fire-and-forget: texto — não bloqueia o fluxo do usuário.
 export async function moderateText(contentType, contentId, text) {
   if (!text?.trim()) return;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) return;
+  const auth = await getAuthHeader();
+  if (!auth) return;
   fetch(`${SUPABASE_URL}/functions/v1/moderate-text`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-      apikey: SUPABASE_ANON,
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: SUPABASE_ANON },
     body: JSON.stringify({ content_type: contentType, content_id: contentId, text }),
-  }).catch(() => {}); // silencia erros de rede — moderação é best-effort
+  }).catch(() => {});
+}
+
+// Fire-and-forget: imagens (apenas URLs de imagem, vídeos são ignorados).
+export async function moderateImages(contentType, contentId, imageUrls) {
+  if (!imageUrls?.length) return;
+  const auth = await getAuthHeader();
+  if (!auth) return;
+  fetch(`${SUPABASE_URL}/functions/v1/moderate-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: SUPABASE_ANON },
+    body: JSON.stringify({ content_type: contentType, content_id: contentId, image_urls: imageUrls }),
+  }).catch(() => {});
 }
 
 // ─── Hide / Restore (ação direta do admin) ───────────────────────────────────

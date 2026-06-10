@@ -1,6 +1,6 @@
 import { useState, useRef, memo } from 'react';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../../services/postService';
-import { moderateText } from '../../services/moderationService';
+import { moderateText, moderateImages } from '../../services/moderationService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
 import { suspendedUntil } from '../../lib/roles';
@@ -126,7 +126,8 @@ const PostForm = memo(function PostForm({ onPost }) {
       if (postError) throw postError;
 
       if (medias.length > 0) {
-        await uploadPostMediaFiles(user.id, post.id, medias);
+        const { imageUrls } = await uploadPostMediaFiles(user.id, post.id, medias);
+        moderateImages('post', post.id, imageUrls);
       }
 
       toast.success('Post publicado!', { id: toastId });

@@ -587,15 +587,30 @@ export default function Admin() {
 
   function handleDeletePost(postId) {
     setConfirmModal({
-      title: 'Deletar Post', icon: Trash2, accent: 'red',
-      message: 'Deletar este post permanentemente? Esta ação não pode ser desfeita.',
-      confirmLabel: 'Deletar', confirmIcon: Trash2,
+      title: 'Excluir Post', icon: Trash2, accent: 'red',
+      message: 'Excluir este post? O post ficará oculto mas pode ser restaurado pelo admin.',
+      confirmLabel: 'Excluir', confirmIcon: Trash2,
       onConfirm: async () => {
-        const { error, count } = await supabase.from('posts').delete({ count: 'exact' }).eq('id', postId);
-        if (error) { toast.error('Erro ao deletar post'); return; }
-        if (!count) { toast.error('Você não tem permissão para deletar este post'); return; }
-        toast.success('Post deletado');
-        await logAction('admin_delete_post', `Post deletado pelo admin @${profile?.username}`, 'admin', 'warning');
+        const { error } = await supabase.rpc('soft_delete_post', { p_post_id: postId });
+        if (error) { toast.error('Erro ao excluir post: ' + error.message); return; }
+        toast.success('Post excluído');
+        await logAction('admin_delete_post', `Post excluído (soft) pelo admin @${profile?.username}`, 'admin', 'warning');
+        setConfirmModal(null);
+        fetchAll();
+      },
+    });
+  }
+
+  function handleRestorePost(postId) {
+    setConfirmModal({
+      title: 'Restaurar Post', icon: RotateCcw, accent: 'green',
+      message: 'Restaurar este post? Ele voltará a aparecer no feed.',
+      confirmLabel: 'Restaurar', confirmIcon: RotateCcw,
+      onConfirm: async () => {
+        const { error } = await supabase.rpc('restore_post', { p_post_id: postId });
+        if (error) { toast.error('Erro ao restaurar post: ' + error.message); return; }
+        toast.success('Post restaurado');
+        await logAction('admin_restore_post', `Post restaurado pelo admin @${profile?.username}`, 'admin', 'info');
         setConfirmModal(null);
         fetchAll();
       },
@@ -803,7 +818,7 @@ export default function Admin() {
             )}
             {tab === 'posts' && (
               <PostsPanel
-                posts={posts} handleDeletePost={handleDeletePost}
+                posts={posts} handleDeletePost={handleDeletePost} handleRestorePost={handleRestorePost}
                 hasMore={postsHasMore} loadingMore={loadingMorePosts} onLoadMore={loadMorePosts}
               />
             )}
