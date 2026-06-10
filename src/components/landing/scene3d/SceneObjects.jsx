@@ -177,30 +177,22 @@ function RoundedBox({ w, h, d, r = 0.12, color, dark, ...props }) {
   return <mesh geometry={geo} {...props}>{dark ? <DarkMaterial /> : <NeonMaterial color={color} />}</mesh>;
 }
 
-// Controle de videogame: corpo e grips arredondados + analógicos, d-pad e botões.
-function GamepadModel({ color }) {
-  const buttons = [[0.2, 0.18], [0.2, 0.04], [0.13, 0.11], [0.27, 0.11]];
+// Console moderno (estilo torre vertical): núcleo escuro entre dois painéis
+// neon levemente flareados, com LED de energia na frente e base.
+function ConsoleModel({ color }) {
   return (
-    <group rotation={[0.18, 0, 0]}>
-      <RoundedBox w={1.25} h={0.6} d={0.32} r={0.27} color={color} />
-      <RoundedBox w={0.42} h={0.66} d={0.3} r={0.19} color={color} position={[-0.5, -0.27, 0]} rotation={[0, 0, 0.5]} />
-      <RoundedBox w={0.42} h={0.66} d={0.3} r={0.19} color={color} position={[0.5, -0.27, 0]} rotation={[0, 0, -0.5]} />
-      {/* analógicos (base + cabeça) */}
-      {[-0.27, 0.34].map((sx, i) => (
-        <group key={i} position={[sx, -0.06, 0.17]}>
-          <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.1, 0.11, 0.07, 16]} /><DarkMaterial /></mesh>
-          <mesh position={[0, 0, 0.05]}><sphereGeometry args={[0.085, 14, 14]} /><DarkMaterial /></mesh>
-        </group>
-      ))}
-      {/* d-pad (cruz) */}
-      <mesh position={[-0.32, 0.16, 0.17]}><boxGeometry args={[0.17, 0.055, 0.06]} /><DarkMaterial /></mesh>
-      <mesh position={[-0.32, 0.16, 0.17]}><boxGeometry args={[0.055, 0.17, 0.06]} /><DarkMaterial /></mesh>
-      {/* botões de ação */}
-      {buttons.map(([bx, by], i) => (
-        <mesh key={i} position={[bx, by, 0.17]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.042, 0.042, 0.06, 12]} /><DarkMaterial />
-        </mesh>
-      ))}
+    <group rotation={[0, 0.32, 0]}>
+      {/* núcleo escuro */}
+      <mesh><boxGeometry args={[0.42, 1.14, 0.46]} /><DarkMaterial /></mesh>
+      {/* painéis laterais neon, um pouco mais altos e levemente flareados */}
+      <RoundedBox w={0.13} h={1.28} d={0.54} r={0.05} color={color} position={[-0.3, 0, 0]} rotation={[0, 0, 0.05]} />
+      <RoundedBox w={0.13} h={1.28} d={0.54} r={0.05} color={color} position={[0.3, 0, 0]} rotation={[0, 0, -0.05]} />
+      {/* faixa/LED de energia no núcleo (frente) */}
+      <mesh position={[0, 0.12, 0.24]}><boxGeometry args={[0.03, 0.52, 0.02]} /><NeonMaterial color={color} /></mesh>
+      {/* slot/entrada escura na frente */}
+      <mesh position={[0, -0.32, 0.24]}><boxGeometry args={[0.22, 0.03, 0.02]} /><NeonMaterial color={color} /></mesh>
+      {/* base */}
+      <mesh position={[0, -0.64, 0]}><cylinderGeometry args={[0.24, 0.3, 0.08, 28]} /><DarkMaterial /></mesh>
     </group>
   );
 }
@@ -233,29 +225,30 @@ function HeadsetModel({ color }) {
   );
 }
 
-// Troféu via superfície de revolução (LatheGeometry) — perfil 2D girado 360°,
-// que é exatamente como taças são feitas: base larga → haste fina → taça
-// flareada. Bem mais convincente que empilhar cilindros.
-function TrophyModel({ color }) {
-  const geo = useMemo(() => {
-    const profile = [
-      [0.0, -0.5], [0.32, -0.5], [0.32, -0.44], [0.13, -0.4], [0.1, -0.34], // base
-      [0.07, -0.33], [0.07, -0.15],                                          // haste
-      [0.12, -0.12], [0.36, 0.04], [0.4, 0.32], [0.38, 0.36],               // taça
-      [0.3, 0.34], [0.3, 0.28],                                             // lábio interno
-    ].map(([x, y]) => new THREE.Vector2(x, y));
-    return new THREE.LatheGeometry(profile, 36);
-  }, []);
+// Gabinete de PC gamer: torre + painel de vidro escuro com fans RGB (anéis
+// neon) + botão de power no topo + pés.
+function PCCaseModel({ color }) {
+  const fans = [0.3, 0.0, -0.3];
   return (
-    <group position={[0, 0.02, 0]}>
-      <mesh geometry={geo}><NeonMaterial color={color} double /></mesh>
-      {/* alças laterais */}
-      <mesh position={[-0.33, 0.18, 0]} rotation={[0, 0, -0.3]}>
-        <torusGeometry args={[0.15, 0.038, 12, 20, Math.PI]} /><NeonMaterial color={color} />
-      </mesh>
-      <mesh position={[0.33, 0.18, 0]} rotation={[0, 0, Math.PI + 0.3]}>
-        <torusGeometry args={[0.15, 0.038, 12, 20, Math.PI]} /><NeonMaterial color={color} />
-      </mesh>
+    <group rotation={[0, -0.2, 0]}>
+      {/* torre */}
+      <RoundedBox w={0.74} h={1.2} d={0.66} r={0.07} color={color} />
+      {/* painel de vidro lateral (frente), levemente à direita p/ sobrar a faixa de I/O */}
+      <mesh position={[0.05, 0, 0.32]}><boxGeometry args={[0.52, 1.04, 0.06]} /><DarkMaterial /></mesh>
+      {/* fans com anel neon + cubo central, atrás do vidro */}
+      {fans.map((fy, i) => (
+        <group key={i} position={[0.05, fy, 0.36]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.15, 0.15, 0.03, 20]} /><DarkMaterial /></mesh>
+          <mesh><torusGeometry args={[0.135, 0.022, 10, 22]} /><NeonMaterial color={color} /></mesh>
+          <mesh><sphereGeometry args={[0.045, 10, 10]} /><NeonMaterial color={color} /></mesh>
+        </group>
+      ))}
+      {/* faixa de I/O e botão de power no topo */}
+      <mesh position={[-0.22, 0.61, 0.12]}><cylinderGeometry args={[0.04, 0.04, 0.04, 14]} /><NeonMaterial color={color} /></mesh>
+      {/* pés */}
+      {[-0.28, 0.28].map((fx, i) => (
+        <mesh key={i} position={[fx, -0.63, 0]}><boxGeometry args={[0.1, 0.08, 0.5]} /><DarkMaterial /></mesh>
+      ))}
     </group>
   );
 }
@@ -289,14 +282,14 @@ function SkullModel({ color }) {
   );
 }
 
-const MODELS = { gamepad: GamepadModel, headset: HeadsetModel, trophy: TrophyModel, skull: SkullModel };
+const MODELS = { console: ConsoleModel, headset: HeadsetModel, pccase: PCCaseModel, skull: SkullModel };
 
 // fx = posição X relativa à largura visível (–1..1) — assim os objetos ficam
 // nos cantos em qualquer proporção de tela, inclusive no celular (retrato).
 const SHAPES = [
-  { kind: 'gamepad', color: '#39ff14', fx: -0.72, y: 1.45,  z: -1,   scale: 0.62, speed: 0.6, phase: 0 },
+  { kind: 'console', color: '#39ff14', fx: -0.72, y: 1.45,  z: -1,   scale: 0.52, speed: 0.6, phase: 0 },
   { kind: 'headset', color: '#bf00ff', fx: 0.74,  y: 1.5,   z: -1.2, scale: 0.58, speed: 0.8, phase: 1.4 },
-  { kind: 'trophy',  color: '#ffb020', fx: -0.66, y: -1.55, z: -1.4, scale: 0.56, speed: 0.5, phase: 2.6 },
+  { kind: 'pccase',  color: '#ffb020', fx: -0.66, y: -1.55, z: -1.4, scale: 0.52, speed: 0.5, phase: 2.6 },
   { kind: 'skull',   color: '#00ffff', fx: 0.72,  y: -1.45, z: -1.6, scale: 0.5,  speed: 0.9, phase: 3.8 },
 ];
 
