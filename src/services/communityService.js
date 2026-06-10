@@ -51,6 +51,7 @@ export async function fetchMuralMedia(postId) {
 // usuário pra casar com as policies de storage já existentes.
 export async function uploadMuralMediaFiles(userId, postId, medias) {
   const rows = [];
+  const imageUrls = [];
   for (let i = 0; i < medias.length; i++) {
     const { file, type } = medias[i];
     const ext = file.name.split('.').pop();
@@ -58,8 +59,10 @@ export async function uploadMuralMediaFiles(userId, postId, medias) {
     await supabase.storage.from('post-media').upload(path, file, { contentType: file.type, cacheControl: '31536000' });
     const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
+    imageUrls.push(publicUrl);
   }
-  return supabase.from('community_post_media').insert(rows);
+  const result = await supabase.from('community_post_media').insert(rows);
+  return { ...result, imageUrls };
 }
 
 // ─── Reações (curtidas) ────────────────────────────────────────────────────────
