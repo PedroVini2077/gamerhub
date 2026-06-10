@@ -278,11 +278,14 @@ RLS conferido. O que entrou:
   (denúncias filtráveis por status), `WordlistManager` (CRUD palavrões com
   severidade), `ViolationsPanel` (histórico paginado + filtro por usuário).
 
-**Pendências menores da Fase 1** (não bloqueiam, ⬜ a fazer):
-- ⬜ `suspend_1d`/`suspend_7d` hoje só **pontuam** — falta materializar a
-  suspensão temporária real (ex.: coluna `suspended_until` em `profiles` +
-  checagem no login/post). Hoje a escalação leva direto a ban; suspensão por
-  janela de tempo ainda não bloqueia o usuário.
+**Pendências menores da Fase 1:**
+- ✅ `suspend_1d`/`suspend_7d` **materializam suspensão temporária real** — feito
+  (migration `moderation_temp_suspension`): coluna `profiles.suspended_until`,
+  RLS de INSERT bloqueia suspenso em post/comentário/mural/chat,
+  `apply_suspension(user_id, days)` com hierarquia, coluna protegida no
+  trigger-guarda, aviso `SuspendedNotice` na UI. Testado em ROLLBACK (5 casos:
+  suspenso não posta / limpo posta / expirado posta / admin suspende comum /
+  admin não suspende owner).
 - ✅ Denúncia de **mensagens do chat de live** — feito (botão ⚑ no `ChatPanel`,
   `content_type='chat'`). As denúncias caem na aba Denúncias para o admin agir
   com as ferramentas de mod de live; chat não tem auto-hide (é efêmero).

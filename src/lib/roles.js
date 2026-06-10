@@ -20,3 +20,12 @@ export function canDeleteContent(viewerId, viewerRole, authorId, authorRole) {
   if (viewerId === authorId) return true;
   return canModerate(viewerRole, authorRole);
 }
+
+// Suspensão temporária ativa? Retorna a data de fim (Date) se ativa, senão null.
+// A segurança real está no RLS (suspenso não cria conteúdo); isto é só pra UI
+// explicar ao usuário em vez de deixá-lo tomar erro silencioso.
+export function suspendedUntil(profile) {
+  if (!profile?.suspended_until) return null;
+  const until = new Date(profile.suspended_until);
+  return until > new Date() ? until : null;
+}

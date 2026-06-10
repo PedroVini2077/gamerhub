@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MessageCircle, Send, VolumeX, Trash2, Flag } from 'lucide-react';
 import AvatarPopup from '../ui/AvatarPopup';
 import ReportModal from '../ui/ReportModal';
+import SuspendedNotice from '../ui/SuspendedNotice';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
@@ -9,7 +10,7 @@ const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' 
 export default function ChatPanel({
   messages, msg, setMsg, sendMessage, sending,
   isSilenced, canModerate, deleteMessage, isUserSilenced,
-  user, bottomRef, chatInputRef,
+  user, suspended, bottomRef, chatInputRef,
 }) {
   const [reportingId, setReportingId] = useState(null);
   return (
@@ -66,7 +67,11 @@ export default function ChatPanel({
       </div>
 
       {user ? (
-        isSilenced ? (
+        suspended ? (
+          <div className="p-3 border-t border-dark-500">
+            <SuspendedNotice until={suspended} compact />
+          </div>
+        ) : isSilenced ? (
           <div className="p-3 border-t border-dark-500 text-center">
             <p className="text-xs font-mono text-yellow-500 flex items-center justify-center gap-1.5">
               <VolumeX size={12} />Você está silenciado neste chat

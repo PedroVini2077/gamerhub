@@ -186,8 +186,8 @@ src/
     │                      # LandingShot, Scene3D
     │   └── scene3d/       # LandingScene, Lightning, SceneObjects (LogoBolt/FloatingShapes)
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
-                           # ConfirmModal, ReasonModal, ReportModal, EmbedPlayer,
-                           # MediaCarousel, MediaLightbox, MediaPlayer,
+                           # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
+                           # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
                            # AudioRecorder, GlobalBanner, FeatureGate,
                            # PageTransition
 ```
@@ -563,6 +563,13 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   cada ação confirmada vira pontos (warn 1, hide 2, suspend_1d 5, suspend_7d 10).
   Ao somar `mod_ban_threshold` (15) pontos, `apply_mod_auto_ban` **bane o usuário
   automaticamente** (com cascade da atividade, log e notificação aos admins).
+- **Suspensão temporária** (`profiles.suspended_until` + `apply_suspension`): as
+  ações `suspend_1d`/`suspend_7d` **bloqueiam o usuário de criar conteúdo** (post,
+  comentário, mural, chat) pelo período, via RLS (os `WITH CHECK` de INSERT
+  excluem `banned` **ou** `suspended_until > now()`). O usuário continua
+  navegando/lendo — diferente do ban, que tranca o site. A UI mostra um aviso
+  (`SuspendedNotice`) no lugar do campo de criação. A coluna é protegida no
+  `guard_profile_privileged_cols` (o suspenso não limpa sozinho).
 - **Painel** (`ModerationPanel`, aba Admin) com sub-abas: **Fila**, **Denúncias**
   (filtráveis por status), **Palavrões** (CRUD) e **Infrações** (histórico
   paginado, filtro por usuário).
@@ -632,6 +639,12 @@ visível). Quando preenchida, o conteúdo fica oculto para não-admins via RLS
 (soft-hide reversível). Preenchida pelo trigger de denúncias ou manualmente por
 um admin; restaurar é só voltar a `NULL`.
 
+#### Coluna `suspended_until` em `profiles` (moderação)
+
+`suspended_until timestamptz` (NULL = não suspenso). Quando `> now()`, o usuário
+não cria conteúdo (post/comentário/mural/chat) — imposto pelos `WITH CHECK` de
+INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspension`.
+
 ### Funções (RPCs / triggers)
 
 **Chamadas pelo front (RPC):**
@@ -669,6 +682,8 @@ um admin; restaurar é só voltar a `NULL`.
 - `apply_mod_auto_ban(user_id, points)` (SECURITY DEFINER) — ban automático pelo
   sistema (sem caller role): marca `banned`, apaga a atividade, gera log +
   notificação.
+- `apply_suspension(user_id, days)` (SECURITY DEFINER) — suspende temporariamente
+  (valida hierarquia, seta `suspended_until`, gera log + notificação).
 
 Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 `search_path` fixo e **checagem de role explícita via `auth.uid()`**. Helpers:

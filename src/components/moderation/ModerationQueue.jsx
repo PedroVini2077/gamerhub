@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import {
   fetchModerationQueue, resolveQueueItem, fetchReports,
-  updateReportStatus, addViolation,
+  updateReportStatus, addViolation, applySuspension,
 } from '../../services/moderationService';
 import BanModal from '../ui/BanModal';
 
@@ -95,14 +95,13 @@ export default function ModerationQueue() {
     const reps = reports[item.content_id] || [];
     await Promise.all(reps.map(r => updateReportStatus(r.id, decision === 'approved' ? 'reviewed' : 'dismissed')));
 
-    // Se aprovado (mantém oculto) + ação selecionada → cria violação
+    // Se aprovado (mantém oculto) + ação selecionada → cria violação (e suspende, se for o caso)
     const action = actions[item.id];
     if (decision === 'approved' && action) {
-      const userId = reps[0]?.content_id
-        ? (await supabase.from(
-            item.content_type === 'post' ? 'posts' : item.content_type === 'comment' ? 'comments' : 'community_posts'
-          ).select('user_id').eq('id', item.content_id).single()).data?.user_id
-        : null;
+      const table = item.content_type === 'post' ? 'posts'
+        : item.content_type === 'comment' ? 'comments' : 'community_posts';
+      const { data } = await supabase.from(table).select('user_id').eq('id', item.content_id).single();
+      const userId = data?.user_id;
 
       if (userId) {
         await addViolation({
@@ -113,6 +112,11 @@ export default function ModerationQueue() {
           actionTaken: action,
           points: ACTION_POINTS[action] ?? 1,
         });
+        // Materializa a suspensão temporária real (RLS bloqueia criar conteúdo)
+        if (action === 'suspend_1d' || action === 'suspend_7d') {
+          const { error: suspErr } = await applySuspension(userId, action === 'suspend_7d' ? 7 : 1);
+          if (suspErr) toast.error('Violação criada, mas falha ao suspender: ' + suspErr.message);
+        }
       }
     }
 

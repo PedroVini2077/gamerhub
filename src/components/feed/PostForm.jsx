@@ -2,6 +2,8 @@ import { useState, useRef, memo } from 'react';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
+import { suspendedUntil } from '../../lib/roles';
+import SuspendedNotice from '../ui/SuspendedNotice';
 import toast from 'react-hot-toast';
 import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
 import { logAudit } from '../../lib/auditLog';
@@ -31,6 +33,16 @@ const PostForm = memo(function PostForm({ onPost }) {
   const audioFileRef = useRef(null);
 
   if (!user) return null;
+
+  const suspended = suspendedUntil(profile);
+  if (suspended) {
+    return (
+      <div className="card p-5">
+        <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
+        <SuspendedNotice until={suspended} />
+      </div>
+    );
+  }
 
   function handleMediaSelect(type) {
     if (medias.length >= 10) { toast.error('Máximo 10 mídias por post'); return; }

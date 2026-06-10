@@ -2,15 +2,18 @@ import { useState, useEffect, useMemo, memo } from 'react';
 import { fetchComments, fetchCommentCount, addComment } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
+import { suspendedUntil } from '../../lib/roles';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';
 import { MessageSquare } from 'lucide-react';
 import CommentCard from './CommentCard';
 import CommentComposer from './CommentComposer';
+import SuspendedNotice from '../ui/SuspendedNotice';
 
 const CommentSection = memo(function CommentSection({ postId, registerRefresh }) {
   const { user, profile } = useAuth();
   const { checkContent } = useBlockedWords();
+  const suspended = suspendedUntil(profile);
   const [comments, setComments] = useState([]);
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(0);
@@ -92,10 +95,12 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
             </div>
           )}
 
-          {user ? (
-            <CommentComposer onSubmit={(text) => submitComment(text)} />
-          ) : (
+          {!user ? (
             <p className="text-xs text-gray-500 font-mono">Faça login para comentar</p>
+          ) : suspended ? (
+            <SuspendedNotice until={suspended} compact />
+          ) : (
+            <CommentComposer onSubmit={(text) => submitComment(text)} />
           )}
         </div>
       )}

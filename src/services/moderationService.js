@@ -91,6 +91,11 @@ export async function fetchViolations(userId = null, page = 0, pageSize = 20) {
   return { items: data || [], count: count || 0 };
 }
 
+// Suspensão temporária (1 ou 7 dias). Bloqueia criar conteúdo via RLS.
+export async function applySuspension(userId, days) {
+  return supabase.rpc('apply_suspension', { p_user_id: userId, p_days: days });
+}
+
 export async function addViolation({ userId, contentType, contentId, reason, actionTaken, points, notes }) {
   const reviewerId = (await supabase.auth.getUser()).data.user?.id;
   return supabase.from('violations').insert({

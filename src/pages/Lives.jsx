@@ -7,6 +7,7 @@ import { Tv, X, Users, Shield, Radio } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { logAudit } from '../lib/auditLog';
 import { useRole } from '../hooks/useRole';
+import { suspendedUntil } from '../lib/roles';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
 import ChatPanel from '../components/lives/ChatPanel';
 import ModPanel from '../components/lives/ModPanel';
@@ -293,6 +294,7 @@ export default function Lives() {
         deleteMessage={deleteMessage}
         isUserSilenced={isUserSilenced}
         user={user}
+        suspended={suspendedUntil(profile)}
         bottomRef={bottomRef}
         chatInputRef={chatInputRef}
       />
