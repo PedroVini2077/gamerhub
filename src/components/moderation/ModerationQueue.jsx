@@ -171,6 +171,7 @@ export default function ModerationQueue() {
   async function handleBan(item) {
     const table = item.content_type === 'post' ? 'posts'
       : item.content_type === 'comment' ? 'comments'
+      : item.content_type === 'chat' ? 'live_chat'
       : 'community_posts';
     const { data } = await supabase.from(table).select('user_id, profiles(username, role, avatar_url, bio, created_at)').eq('id', item.content_id).single();
     if (data) setBanTarget({ id: data.user_id, ...data.profiles });

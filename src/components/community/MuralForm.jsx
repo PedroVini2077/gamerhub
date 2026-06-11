@@ -1,8 +1,11 @@
 import { useState, useRef, memo } from 'react';
 import { addMuralPost, uploadMuralMediaFiles } from '../../services/communityService';
 import { useAuth } from '../../hooks/useAuth';
+import { useBlockedWords } from '../../hooks/useBlockedWords';
 import { logAudit } from '../../lib/auditLog';
 import { moderateText, moderateImages } from '../../services/moderationService';
+import { suspendedUntil } from '../../lib/roles';
+import SuspendedNotice from '../ui/SuspendedNotice';
 import toast from 'react-hot-toast';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 
@@ -11,6 +14,7 @@ const MAX_MB = 5;
 
 const MuralForm = memo(function MuralForm({ onPost }) {
   const { user, profile } = useAuth();
+  const { checkContent } = useBlockedWords();
   const [message, setMessage] = useState('');
   const [medias, setMedias] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,6 +23,13 @@ const MuralForm = memo(function MuralForm({ onPost }) {
   if (!user) return (
     <div className="card p-4 text-center">
       <p className="text-sm text-gray-500 font-mono">Faça login para participar do mural</p>
+    </div>
+  );
+
+  const suspended = suspendedUntil(profile);
+  if (suspended) return (
+    <div className="card p-4">
+      <SuspendedNotice until={suspended} />
     </div>
   );
 
@@ -37,6 +48,13 @@ const MuralForm = memo(function MuralForm({ onPost }) {
 
   async function handleSubmit() {
     if (!message.trim() && medias.length === 0) return;
+    if (message.trim()) {
+      const check = checkContent(message);
+      if (check.blocked) {
+        toast.error('Conteúdo não permitido: contém termo bloqueado.');
+        return;
+      }
+    }
     setLoading(true);
     const { data: post, error } = await addMuralPost({ userId: profile?.id, message: message.trim() });
     if (error || !post) {
