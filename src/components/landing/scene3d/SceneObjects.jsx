@@ -134,28 +134,28 @@ function DiamondModel({ color }) {
   );
 }
 
-function KnotModel({ color }) {
+function DodecaModel({ color }) {
   const ref = useRef(null);
   useFrame((_, delta) => {
     if (!ref.current) return;
-    ref.current.rotation.y += delta * 0.42;
-    ref.current.rotation.x += delta * 0.18;
+    ref.current.rotation.y += delta * 0.38;
+    ref.current.rotation.x += delta * 0.22;
   });
   return (
     <mesh ref={ref}>
-      <torusKnotGeometry args={[0.38, 0.12, 110, 16, 2, 3]} />
+      <dodecahedronGeometry args={[0.62, 0]} />
       <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} {...WIRE} />
     </mesh>
   );
 }
 
-const MODELS = { gem: GemModel, ring: RingModel, diamond: DiamondModel, knot: KnotModel };
+const MODELS = { gem: GemModel, ring: RingModel, diamond: DiamondModel, dodeca: DodecaModel };
 
 const SHAPES = [
   { kind: 'gem',     color: '#39ff14', fx: -0.72, y:  1.45, z: -1,   scale: 0.9,  speed: 0.6, phase: 0   },
   { kind: 'ring',    color: '#bf00ff', fx:  0.74, y:  1.5,  z: -1.2, scale: 0.95, speed: 0.8, phase: 1.4 },
   { kind: 'diamond', color: '#ffb020', fx: -0.66, y: -1.55, z: -1.4, scale: 0.85, speed: 0.5, phase: 2.6 },
-  { kind: 'knot',    color: '#00ffff', fx:  0.72, y: -1.45, z: -1.6, scale: 0.9,  speed: 0.9, phase: 3.8 },
+  { kind: 'dodeca',  color: '#00ffff', fx:  0.72, y: -1.45, z: -1.6, scale: 0.9,  speed: 0.9, phase: 3.8 },
 ];
 
 function FloatingShape({ kind, color, x, y, z, modelScale, sizeScale, speed, phase, index }) {
