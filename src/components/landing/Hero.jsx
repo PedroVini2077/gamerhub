@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Zap, ChevronDown } from 'lucide-react';
+import { Zap, ChevronDown, PauseCircle } from 'lucide-react';
 import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
@@ -55,6 +55,13 @@ export default function Hero() {
 
         <motion.div variants={heroFade(0.45)} initial="initial" animate={show}>
           <Link to="/login" className="btn-solid py-3.5 px-9 text-sm">Entrar / Criar conta</Link>
+        </motion.div>
+
+        <motion.div variants={heroFade(0.65)} initial="initial" animate={show}>
+          <div className="mt-5 flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 text-yellow-400/60 font-mono text-xs">
+            <PauseCircle size={13} className="shrink-0" />
+            <span>Projeto pausado · Limite de banda da infraestrutura gratuita atingido · Em breve de volta</span>
+          </div>
         </motion.div>
       </div>
 
