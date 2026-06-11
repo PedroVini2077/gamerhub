@@ -66,17 +66,22 @@ export default function CargosTab() {
   const [open, setOpen]     = useState(null); // id da linha expandida
   const [modal, setModal]   = useState(null);
 
-  const { data: nominations = [], isPending: loadingNom, isFetching: fetchingNom, refetch: refetchNom } = useQuery({
+  const { data: nominations = [], isPending: loadingNom, refetch: refetchNom } = useQuery({
     queryKey: ['role_nominations', 'pending_trial'],
     queryFn: () => fetchRoleNominations(['pending', 'trial_active']),
   });
 
-  const { data: demotions = [], isPending: loadingDem, isFetching: fetchingDem, refetch: refetchDem } = useQuery({
+  const { data: demotions = [], isPending: loadingDem, refetch: refetchDem } = useQuery({
     queryKey: ['role_change_requests', 'pending'],
     queryFn: () => fetchDemotionRequests(['pending']),
   });
 
-  const isFetching = fetchingNom || fetchingDem;
+  const [refreshing, setRefreshing] = useState(false);
+  async function handleRefresh() {
+    setRefreshing(true);
+    await Promise.all([refetchNom(), refetchDem(), new Promise(r => setTimeout(r, 500))]);
+    setRefreshing(false);
+  }
 
   const pending = nominations.filter(n => n.status === 'pending');
   const trials  = nominations.filter(n => n.status === 'trial_active');
@@ -166,9 +171,9 @@ export default function CargosTab() {
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">
           Indicações, avaliações e rebaixamentos de cargo
         </p>
-        <button onClick={refetchAll} disabled={isFetching}
+        <button onClick={handleRefresh} disabled={refreshing}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-          <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
         </button>
       </div>
 

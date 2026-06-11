@@ -5,7 +5,18 @@
 
 ## Regras de trabalho (preferências do dono)
 
-- **Sempre responder em português.**
+- **Sem emojis na UI — somente ícones Lucide (ou react-icons/fa6 para marcas).**
+  O site usa design com ícones reais. Nunca usar emojis como elementos visuais
+  em componentes, labels, badges, listas ou qualquer parte da interface. Emojis
+  deixam o site com cara de IA/chatbot. Usar sempre `lucide-react` (ex: `<Trash2>`,
+  `<Bell>`, `<Shield>`) ou `react-icons/fa6` para logos de plataformas (Discord,
+  Twitch, YouTube).
+- **Botões de "Atualizar" / refresh devem ter loading mínimo de 500ms.**
+  Usar `Promise.all([fetch(), new Promise(r => setTimeout(r, 500))])` para que
+  o spinner seja sempre visível mesmo quando o dado vem do cache. Padrão:
+  estado local `refreshing`, botão `disabled={refreshing}`, ícone com
+  `className={refreshing ? 'animate-spin' : ''}`.
+
 - **Trabalhar sempre na branch `main`.** Não criar/usar outras branches sem
   permissão explícita.
 - **SEMPRE testar antes de entregar.** Rodar `npm run build`; quando houver

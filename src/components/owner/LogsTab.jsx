@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
-import { RefreshCw, Download } from 'lucide-react';
+import { RefreshCw, Download, Lock, Shield, FileText, Settings2, Wrench } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toCSV, downloadCSV } from '../../lib/csv';
 import toast from 'react-hot-toast';
@@ -18,7 +18,14 @@ const CSV_COLUMNS = [
 ];
 
 const SEV_COLOR = { info: '#6b7280', warning: '#f59e0b', critical: '#ef4444' };
-const CAT_EMOJI = { auth: '🔐', security: '🛡️', content: '📝', admin: '⚙️', system: '🔧' };
+const CAT_ICON = {
+  auth:     { Icon: Lock,      color: '#22c55e' },
+  security: { Icon: Shield,    color: '#ef4444' },
+  content:  { Icon: FileText,  color: '#60a5fa' },
+  admin:    { Icon: Settings2, color: '#f97316' },
+  system:   { Icon: Wrench,    color: '#6b7280' },
+};
+const DEFAULT_CAT = { Icon: FileText, color: '#6b7280' };
 
 export default function LogsTab() {
   const [category, setCategory] = useState('');
@@ -42,7 +49,9 @@ export default function LogsTab() {
     toast.success(`${data.length} log(s) exportado(s).`);
   }
 
-  const { data: logs = [], isPending: loading, isFetching, refetch } = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data: logs = [], isPending: loading, refetch } = useQuery({
     queryKey: ['owner_audit_logs', category, severity, offset],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_audit_logs', {
@@ -60,6 +69,11 @@ export default function LogsTab() {
   function changeSeverity(v) { setSeverity(v); setOffset(0); }
   function prev() { setOffset(o => Math.max(0, o - LIMIT)); }
   function next() { setOffset(o => o + LIMIT); }
+  async function handleRefresh() {
+    setRefreshing(true);
+    await Promise.all([refetch(), new Promise(r => setTimeout(r, 500))]);
+    setRefreshing(false);
+  }
 
   return (
     <div className="space-y-4">
@@ -79,9 +93,9 @@ export default function LogsTab() {
           <option value="warning">Warning</option>
           <option value="critical">Critical</option>
         </select>
-        <button onClick={() => refetch()} disabled={isFetching}
+        <button onClick={handleRefresh} disabled={refreshing}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-          <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
         </button>
         <button onClick={exportCSV} disabled={exporting}
           className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 hover:text-orange-400 hover:border-orange-400/50 disabled:opacity-40 transition-colors">
@@ -100,9 +114,7 @@ export default function LogsTab() {
           {logs.map(log => (
             <motion.div key={log.id} variants={listItem}
               className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
-              <span className="shrink-0 text-sm leading-none mt-0.5">
-                {CAT_EMOJI[log.category] || '📋'}
-              </span>
+              {(() => { const { Icon, color } = CAT_ICON[log.category] || DEFAULT_CAT; return <Icon size={14} style={{ color }} className="shrink-0 mt-0.5" />; })()}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-mono font-bold text-gray-200">

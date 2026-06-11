@@ -1,28 +1,34 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
-import { RefreshCw } from 'lucide-react';
+import {
+  RefreshCw, UserX, UserCheck, Key, AlertTriangle, Trash2,
+  UserPlus, Tv, MonitorOff, Settings2, Bell, Siren, FileText,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
 const KIND_CFG = {
-  ban:          { emoji: '🚫', color: '#ef4444' },
-  unban:        { emoji: '✅', color: '#22c55e' },
-  role_change:  { emoji: '🔑', color: '#f97316' },
-  alert:        { emoji: '⚠️', color: '#ef4444' },
-  delete:       { emoji: '🗑️', color: '#6b7280' },
-  new_user:     { emoji: '👤', color: '#22d3ee' },
-  new_live:     { emoji: '📡', color: '#39ff14' },
-  live_ended:   { emoji: '📴', color: '#6b7280' },
-  activity:     { emoji: '⚙️', color: '#6b7280' },
-  notification: { emoji: '🔔', color: '#a855f7' },
-  user_banned:  { emoji: '🚫', color: '#ef4444' },
-  staff_alert:  { emoji: '🚨', color: '#ef4444' },
+  ban:          { Icon: UserX,         color: '#ef4444' },
+  unban:        { Icon: UserCheck,     color: '#22c55e' },
+  role_change:  { Icon: Key,           color: '#f97316' },
+  alert:        { Icon: AlertTriangle, color: '#ef4444' },
+  delete:       { Icon: Trash2,        color: '#6b7280' },
+  new_user:     { Icon: UserPlus,      color: '#22d3ee' },
+  new_live:     { Icon: Tv,            color: '#39ff14' },
+  live_ended:   { Icon: MonitorOff,     color: '#6b7280' },
+  activity:     { Icon: Settings2,     color: '#6b7280' },
+  notification: { Icon: Bell,          color: '#a855f7' },
+  user_banned:  { Icon: UserX,         color: '#ef4444' },
+  staff_alert:  { Icon: Siren,         color: '#ef4444' },
 };
+const DEFAULT_KIND = { Icon: FileText, color: '#6b7280' };
 
 export default function NotificacoesTab() {
-  const { data: notifs = [], isPending: loading, isFetching, refetch } = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data: notifs = [], isPending: loading, refetch } = useQuery({
     queryKey: ['owner_notifications'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_notifications', { p_limit: 50 });
@@ -39,14 +45,20 @@ export default function NotificacoesTab() {
     return () => supabase.removeChannel(ch);
   }, [refetch]);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    await Promise.all([refetch(), new Promise(r => setTimeout(r, 500))]);
+    setRefreshing(false);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Últimas 50 notificações</p>
-        <button onClick={() => refetch()} disabled={isFetching}
+        <button onClick={handleRefresh} disabled={refreshing}
           className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-          <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
-          {isFetching ? 'Atualizando...' : 'Atualizar'}
+          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+          {refreshing ? 'Atualizando...' : 'Atualizar'}
         </button>
       </div>
 
@@ -62,11 +74,12 @@ export default function NotificacoesTab() {
         <motion.div className="space-y-1"
           variants={listContainer} initial="initial" animate="animate">
           {notifs.map((n, i) => {
-            const cfg = KIND_CFG[n.kind] || { emoji: '📋', color: '#6b7280' };
+            const cfg = KIND_CFG[n.kind] || DEFAULT_KIND;
+            const { Icon } = cfg;
             return (
               <motion.div key={n.id ?? i} variants={listItem}
                 className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
-                <span className="text-sm shrink-0 leading-none mt-0.5">{cfg.emoji}</span>
+                <Icon size={14} style={{ color: cfg.color }} className="shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-mono break-words" style={{ color: cfg.color }}>
                     {n.body || n.action}

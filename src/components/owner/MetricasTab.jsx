@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, TrendingUp, RefreshCw } from 'lucide-react';
+import { Activity, TrendingUp, RefreshCw, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -7,7 +8,8 @@ import toast from 'react-hot-toast';
 const OC = '#f97316';
 
 export default function MetricasTab() {
-  const { data: metrics, isPending: loading, isFetching, refetch } = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+  const { data: metrics, isPending: loading, refetch } = useQuery({
     queryKey: ['owner_metrics'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_metrics');
@@ -77,17 +79,17 @@ export default function MetricasTab() {
                   {i + 1}
                 </span>
                 <p className="flex-1 text-xs font-mono text-gray-400 truncate">{p.content}</p>
-                <span className="text-xs font-mono font-bold" style={{ color: '#22d3ee' }}>{p.likes} ♥</span>
+                <span className="text-xs font-mono font-bold flex items-center gap-1" style={{ color: '#22d3ee' }}>{p.likes} <Heart size={10} /></span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <button onClick={() => refetch()} disabled={isFetching}
+      <button onClick={async () => { setRefreshing(true); await Promise.all([refetch(), new Promise(r => setTimeout(r, 500))]); setRefreshing(false); }} disabled={refreshing}
         className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-        <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
-        {isFetching ? 'Atualizando...' : 'Atualizar'}
+        <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+        {refreshing ? 'Atualizando...' : 'Atualizar'}
       </button>
     </div>
   );

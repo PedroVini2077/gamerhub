@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { ToggleLeft, ToggleRight, AlertTriangle, ShieldAlert, Megaphone } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -106,7 +106,7 @@ export default function SiteTab() {
               border:     `1px solid ${currentColor.hex}35`,
               color:      currentColor.hex,
             }}>
-            📢 {config.banner_text}
+            <Megaphone size={12} className="shrink-0" /> {config.banner_text}
           </div>
         )}
       </div>

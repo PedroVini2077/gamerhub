@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { gridContainer, gridCard } from '../../lib/motion';
@@ -8,7 +9,8 @@ import toast from 'react-hot-toast';
 const OC = '#f97316';
 
 export default function PainelTab({ onlineCount }) {
-  const { data: stats, isPending: loading, isFetching, refetch } = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+  const { data: stats, isPending: loading, refetch } = useQuery({
     queryKey: ['owner_stats'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_stats');
@@ -100,10 +102,10 @@ export default function PainelTab({ onlineCount }) {
         </div>
       </div>
 
-      <button onClick={() => refetch()} disabled={isFetching}
+      <button onClick={async () => { setRefreshing(true); await Promise.all([refetch(), new Promise(r => setTimeout(r, 500))]); setRefreshing(false); }} disabled={refreshing}
         className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-        <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
-        {isFetching ? 'Atualizando...' : 'Atualizar'}
+        <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+        {refreshing ? 'Atualizando...' : 'Atualizar'}
       </button>
     </div>
   );
