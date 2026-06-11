@@ -24,18 +24,19 @@ export default function ViolationsPanel() {
     setLoading(true);
     let userId = null;
     if (username.trim()) {
-      const { data: profile } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id')
-        .ilike('username', username.trim())
-        .maybeSingle();
-      if (!profile) {
+        .ilike('username', `%${username.trim()}%`)
+        .limit(50);
+      if (!profiles?.length) {
         setItems([]);
         setCount(0);
         setLoading(false);
         return;
       }
-      userId = profile.id;
+      // Se só um resultado, filtra direto; se vários, busca violations de todos
+      userId = profiles.length === 1 ? profiles[0].id : profiles.map(p => p.id);
     }
     const { items: data, count: total } = await fetchViolations(userId, p, PAGE_SIZE);
     setItems(data);
@@ -43,7 +44,10 @@ export default function ViolationsPanel() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(0, filter); }, [filter, load]);
+  useEffect(() => {
+    const t = setTimeout(() => { load(0, filter); }, 400);
+    return () => clearTimeout(t);
+  }, [filter, load]);
 
   return (
     <div className="space-y-4">

@@ -89,7 +89,8 @@ export async function fetchViolations(userId = null, page = 0, pageSize = 20) {
     .select('*, user_profile:profiles!user_id(username, avatar_url), reviewer:profiles!reviewed_by(username)', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1);
-  if (userId) q = q.eq('user_id', userId);
+  if (Array.isArray(userId)) q = q.in('user_id', userId);
+  else if (userId) q = q.eq('user_id', userId);
   const { data, count } = await q;
   return { items: data || [], count: count || 0 };
 }
