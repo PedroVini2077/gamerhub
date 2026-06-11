@@ -129,30 +129,33 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     setLikeLoading(false);
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-    const { error } = await softDeletePost(post.id);
-    if (error) {
-      toast.error(error.message || 'Erro ao excluir');
-      setDeleting(false);
-      return;
-    }
-    logAudit('post_deleted', `@${profile?.username} excluiu o post "${post.title}"`, { category: 'content' });
+  function handleDelete() {
     setConfirming(false);
-    setDeleting(false);
-
     let count = 5;
     setDeleteCountdown(count);
     countdownRef.current = setInterval(() => {
       count--;
+      setDeleteCountdown(count);
       if (count <= 0) {
         clearInterval(countdownRef.current);
+        countdownRef.current = null;
         setDeleteCountdown(null);
-        onDelete?.();
-      } else {
-        setDeleteCountdown(count);
+        // Só executa o delete ao final do countdown
+        setDeleting(true);
+        softDeletePost(post.id).then(({ error }) => {
+          if (error) { toast.error(error.message || 'Erro ao excluir'); setDeleting(false); return; }
+          logAudit('post_deleted', `@${profile?.username} excluiu o post "${post.title}"`, { category: 'content' });
+          setDeleting(false);
+          onDelete?.();
+        });
       }
     }, 1000);
+  }
+
+  function cancelDelete() {
+    clearInterval(countdownRef.current);
+    countdownRef.current = null;
+    setDeleteCountdown(null);
   }
 
   async function handleSaveEdit() {
@@ -176,15 +179,17 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   return (
     <div className={`card p-5 animate-fade-up ${post.hidden_at ? 'border-yellow-500/30' : ''}`}>
-      {(post.deleted_at || deleteCountdown !== null) && (
+      {deleteCountdown !== null && (
         <div className="flex items-center gap-2 text-xs font-mono text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
           <Trash2 size={12} />
-          <span>
-            Post excluído — visível apenas para admins.
-            {deleteCountdown !== null
-              ? ` Sumindo do feed em ${deleteCountdown}s...`
-              : ' Use o painel admin para restaurar.'}
-          </span>
+          <span className="flex-1">Excluindo post em {deleteCountdown}s...</span>
+          <button onClick={cancelDelete} className="text-gray-400 hover:text-white underline ml-2 shrink-0">Cancelar</button>
+        </div>
+      )}
+      {post.deleted_at && deleteCountdown === null && (
+        <div className="flex items-center gap-2 text-xs font-mono text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
+          <Trash2 size={12} />
+          <span>Post excluído — visível apenas para admins. Use o painel admin para restaurar.</span>
         </div>
       )}
       {post.hidden_at && (
