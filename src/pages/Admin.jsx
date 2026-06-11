@@ -296,13 +296,14 @@ export default function Admin() {
     const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
     const [
       { data: u }, { data: p }, { data: k },
-      { count: postsCount }, { count: keysCount },
+      { count: postsCount }, { count: activePostsCount }, { count: keysCount },
       { data: allNotifs }, { data: reads },
     ] = await Promise.all([
       supabase.from('profiles').select('*').order('role').order('username').limit(MAX_USERS),
       supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
       supabase.from('game_keys').select('*').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
       supabase.from('posts').select('id', { count: 'exact', head: true }),
+      supabase.from('posts').select('id', { count: 'exact', head: true }).is('deleted_at', null),
       supabase.from('game_keys').select('id', { count: 'exact', head: true }),
       supabase.from('admin_notifications').select('id').in('audience', audience),
       supabase.from('admin_notification_reads').select('notification_id').eq('admin_id', user.id),
@@ -312,7 +313,7 @@ export default function Admin() {
     setKeys(k || []);
     setPostsHasMore((p?.length || 0) < (postsCount ?? 0));
     setKeysHasMore((k?.length || 0) < (keysCount ?? 0));
-    setStats({ users: u?.length || 0, posts: postsCount ?? p?.length ?? 0, keys: keysCount ?? k?.length ?? 0 });
+    setStats({ users: u?.length || 0, posts: activePostsCount ?? 0, keys: keysCount ?? k?.length ?? 0 });
     setReadIds(new Set((reads || []).map(r => r.notification_id)));
     setNotifications(allNotifs || []);
     setLoading(false);
