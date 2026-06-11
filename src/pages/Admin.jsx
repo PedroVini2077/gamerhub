@@ -618,6 +618,39 @@ export default function Admin() {
     });
   }
 
+  function handlePermanentDeletePost(postId, title) {
+    setConfirmModal({
+      title: 'Apagar Permanentemente', icon: Trash2, accent: 'red',
+      message: `Apagar o post "${title}" de forma permanente? Esta ação não pode ser desfeita.`,
+      confirmLabel: 'Apagar para sempre', confirmIcon: Trash2,
+      onConfirm: async () => {
+        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        if (error) { toast.error('Erro ao apagar: ' + error.message); return; }
+        toast.success('Post apagado permanentemente');
+        await logAction('admin_permanent_delete_post', `Post "${title}" apagado permanentemente pelo admin @${profile?.username}`, 'admin', 'warning');
+        setConfirmModal(null);
+        fetchAll();
+      },
+    });
+  }
+
+  function handlePermanentDeleteAllDeleted() {
+    const count = posts.filter(p => p.deleted_at).length;
+    setConfirmModal({
+      title: 'Apagar Todos os Excluídos', icon: Trash2, accent: 'red',
+      message: `Apagar permanentemente ${count} post(s) na lixeira? Esta ação não pode ser desfeita.`,
+      confirmLabel: `Apagar ${count} post(s)`, confirmIcon: Trash2,
+      onConfirm: async () => {
+        const { error } = await supabase.from('posts').delete().not('deleted_at', 'is', null);
+        if (error) { toast.error('Erro ao apagar: ' + error.message); return; }
+        toast.success(`${count} post(s) apagados permanentemente`);
+        await logAction('admin_permanent_delete_all', `${count} posts da lixeira apagados permanentemente pelo admin @${profile?.username}`, 'admin', 'warning');
+        setConfirmModal(null);
+        fetchAll();
+      },
+    });
+  }
+
   function handleDeleteKey(keyId) {
     setConfirmModal({
       title: 'Remover Key / Promo', icon: Key, accent: 'red',
@@ -820,6 +853,8 @@ export default function Admin() {
             {tab === 'posts' && (
               <PostsPanel
                 posts={posts} handleDeletePost={handleDeletePost} handleRestorePost={handleRestorePost}
+                handlePermanentDeletePost={handlePermanentDeletePost}
+                handlePermanentDeleteAllDeleted={handlePermanentDeleteAllDeleted}
                 hasMore={postsHasMore} loadingMore={loadingMorePosts} onLoadMore={loadMorePosts}
               />
             )}
