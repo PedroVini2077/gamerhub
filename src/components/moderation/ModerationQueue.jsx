@@ -150,13 +150,13 @@ export default function ModerationQueue() {
           }
         }
 
-        // Notifica o autor sobre a ocultação
+        // Notifica o autor sobre a ocultação (via RPC — tabela não tem INSERT policy)
         if (decision === 'approved') {
           const label = CONTENT_LABEL[item.content_type]?.toLowerCase() || 'conteúdo';
-          await supabase.from('notifications').insert({
-            user_id: authorId,
-            type: 'moderation',
-            message: `Seu ${label} foi ocultado pela moderação por violar as regras da comunidade.`,
+          await supabase.rpc('notify_user', {
+            p_user_id: authorId,
+            p_type: 'moderation',
+            p_message: `Seu ${label} foi ocultado pela moderação por violar as regras da comunidade.`,
           });
         }
       }

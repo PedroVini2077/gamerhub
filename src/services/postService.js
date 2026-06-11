@@ -9,8 +9,8 @@ export async function fetchFeedPosts(limit = 30) {
   const { data } = await supabase
     .from('posts')
     .select(POST_SELECT)
-    // Lives de jogadores (live_kind preenchido) vivem só na aba Lives.
     .is('live_kind', null)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
   return data || [];
@@ -21,8 +21,8 @@ export async function fetchUserPosts(userId) {
     .from('posts')
     .select('*, profiles(username, avatar_url), user_id')
     .eq('user_id', userId)
-    // idem: lives de jogadores não aparecem no perfil, só na aba Lives.
     .is('live_kind', null)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
   return data || [];
 }

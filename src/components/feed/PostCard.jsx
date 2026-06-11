@@ -60,9 +60,11 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteCountdown, setDeleteCountdown] = useState(null);
   const [reporting, setReporting] = useState(false);
 
   const mediaIntervalRef = useRef(null);
+  const countdownRef = useRef(null);
 
   const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
@@ -77,7 +79,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     let cancelled = false;
     fetchLikes(() => cancelled);
     fetchMedia(() => cancelled);
-    return () => { cancelled = true; clearTimeout(mediaIntervalRef.current); };
+    return () => { cancelled = true; clearTimeout(mediaIntervalRef.current); clearInterval(countdownRef.current); };
   }, [post.id, user]);
 
   async function fetchMedia(isCancelled) {
@@ -135,11 +137,22 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
       setDeleting(false);
       return;
     }
-    toast.success('Post excluído');
     logAudit('post_deleted', `@${profile?.username} excluiu o post "${post.title}"`, { category: 'content' });
     setConfirming(false);
     setDeleting(false);
-    onDelete?.();
+
+    let count = 5;
+    setDeleteCountdown(count);
+    countdownRef.current = setInterval(() => {
+      count--;
+      if (count <= 0) {
+        clearInterval(countdownRef.current);
+        setDeleteCountdown(null);
+        onDelete?.();
+      } else {
+        setDeleteCountdown(count);
+      }
+    }, 1000);
   }
 
   async function handleSaveEdit() {
@@ -163,10 +176,15 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   return (
     <div className={`card p-5 animate-fade-up ${post.hidden_at ? 'border-yellow-500/30' : ''}`}>
-      {post.deleted_at && (
+      {(post.deleted_at || deleteCountdown !== null) && (
         <div className="flex items-center gap-2 text-xs font-mono text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
           <Trash2 size={12} />
-          <span>Post excluído — visível apenas para admins. Use o painel admin para restaurar.</span>
+          <span>
+            Post excluído — visível apenas para admins.
+            {deleteCountdown !== null
+              ? ` Sumindo do feed em ${deleteCountdown}s...`
+              : ' Use o painel admin para restaurar.'}
+          </span>
         </div>
       )}
       {post.hidden_at && (
