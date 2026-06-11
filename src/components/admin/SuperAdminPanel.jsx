@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Crown, Lock, RotateCcw, CheckCircle, XCircle, Shield } from 'lucide-react';
 
 export default function SuperAdminPanel({
@@ -5,6 +6,26 @@ export default function SuperAdminPanel({
   unbanRequests, unbanReqLoading, fetchUnbanRequests, setDenyUnbanModal, handleApproveUnban, pendingUnbanCount,
   liveMod, refreshing, fetchLiveMod, handleApproveRequest, handleDenyRequest,
 }) {
+  const [spinBlocked, setSpinBlocked] = useState(false);
+  const [spinUnban, setSpinUnban]     = useState(false);
+  const [spinLive, setSpinLive]       = useState(false);
+
+  async function refreshBlocked() {
+    setSpinBlocked(true);
+    await Promise.all([fetchBlockedLogins(), new Promise(r => setTimeout(r, 500))]);
+    setSpinBlocked(false);
+  }
+  async function refreshUnban() {
+    setSpinUnban(true);
+    await Promise.all([fetchUnbanRequests(), new Promise(r => setTimeout(r, 500))]);
+    setSpinUnban(false);
+  }
+  async function refreshLive() {
+    setSpinLive(true);
+    await Promise.all([fetchLiveMod(), new Promise(r => setTimeout(r, 500))]);
+    setSpinLive(false);
+  }
+
   return (
     <div className="space-y-4">
       <div className="card p-4 border-yellow-400/20" style={{ boxShadow: '0 0 20px #eab30810' }}>
@@ -22,10 +43,10 @@ export default function SuperAdminPanel({
             <Lock size={14} className="text-red-400" />
             <h3 className="font-display text-sm text-red-400 uppercase tracking-wider">Usuários Bloqueados</h3>
           </div>
-          <button onClick={fetchBlockedLogins} disabled={blockedLoading}
-            className="text-xs text-gray-500 hover:text-neon-green font-mono transition-colors flex items-center gap-1">
-            <RotateCcw size={11} className={blockedLoading ? 'animate-spin' : ''} />
-            {blockedLoading ? 'Carregando...' : 'Atualizar'}
+          <button onClick={refreshBlocked} disabled={spinBlocked || blockedLoading}
+            className="text-xs text-gray-500 hover:text-neon-green font-mono transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+            <RotateCcw size={11} className={spinBlocked || blockedLoading ? 'animate-spin' : ''} />
+            {spinBlocked || blockedLoading ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
         {blockedLoading ? (
@@ -78,10 +99,10 @@ export default function SuperAdminPanel({
               <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>{pendingUnbanCount}</span>
             )}
           </div>
-          <button onClick={fetchUnbanRequests} disabled={unbanReqLoading}
-            className="text-xs text-gray-500 hover:text-yellow-400 font-mono transition-colors flex items-center gap-1">
-            <RotateCcw size={11} className={unbanReqLoading ? 'animate-spin' : ''} />
-            Atualizar
+          <button onClick={refreshUnban} disabled={spinUnban || unbanReqLoading}
+            className="text-xs text-gray-500 hover:text-yellow-400 font-mono transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+            <RotateCcw size={11} className={spinUnban || unbanReqLoading ? 'animate-spin' : ''} />
+            {spinUnban || unbanReqLoading ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
         {unbanReqLoading ? (
@@ -132,10 +153,10 @@ export default function SuperAdminPanel({
               <span className="tag tag-pink" style={{ fontSize: 9, padding: '1px 5px' }}>{liveMod.requests.length}</span>
             )}
           </div>
-          <button onClick={fetchLiveMod} disabled={refreshing}
-            className="text-xs text-gray-500 hover:text-yellow-400 font-mono transition-colors flex items-center gap-1">
-            <RotateCcw size={11} className={refreshing ? 'animate-spin' : ''} />
-            Atualizar
+          <button onClick={refreshLive} disabled={spinLive || refreshing}
+            className="text-xs text-gray-500 hover:text-yellow-400 font-mono transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+            <RotateCcw size={11} className={spinLive || refreshing ? 'animate-spin' : ''} />
+            {spinLive || refreshing ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>
         {!liveMod.requests?.length ? (

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Activity, RotateCcw, ScrollText, FileText, LogIn, LogOut, AlertTriangle, UserPlus, Ban, Clock, ShieldOff, LockOpen, Trash2, Pencil, Tv, CheckCircle, XCircle, Crown, Shield } from 'lucide-react';
 
 const iconMap = {
@@ -27,6 +28,13 @@ const iconMap = {
 };
 
 export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchLogs }) {
+  const [spinning, setSpinning] = useState(false);
+  async function handleRefresh() {
+    setSpinning(true);
+    await Promise.all([fetchLogs(logCat), new Promise(r => setTimeout(r, 500))]);
+    setSpinning(false);
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -34,10 +42,10 @@ export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchL
           <Activity size={15} className="text-neon-purple" />
           <h3 className="font-display text-sm text-neon-purple uppercase tracking-wider">Atividade do Site</h3>
         </div>
-        <button onClick={() => fetchLogs(logCat)} disabled={logsLoading}
-          className="text-xs font-mono text-gray-500 hover:text-neon-purple transition-colors flex items-center gap-1">
-          <RotateCcw size={11} className={logsLoading ? 'animate-spin' : ''} />
-          {logsLoading ? 'Carregando...' : 'Atualizar'}
+        <button onClick={handleRefresh} disabled={spinning || logsLoading}
+          className="text-xs font-mono text-gray-500 hover:text-neon-purple transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+          <RotateCcw size={11} className={spinning || logsLoading ? 'animate-spin' : ''} />
+          {spinning || logsLoading ? 'Atualizando...' : 'Atualizar'}
         </button>
       </div>
 

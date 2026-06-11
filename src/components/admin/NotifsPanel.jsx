@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Bell, RotateCcw, UserPlus, Radio, Tv, ShieldAlert, Ban, Shield } from 'lucide-react';
 
 function getNotifIcon(type) {
@@ -15,6 +16,13 @@ function getNotifIcon(type) {
 }
 
 export default function NotifsPanel({ notifications, readIds, notifLoading, fetchNotifications }) {
+  const [spinning, setSpinning] = useState(false);
+  async function handleRefresh() {
+    setSpinning(true);
+    await Promise.all([fetchNotifications(), new Promise(r => setTimeout(r, 500))]);
+    setSpinning(false);
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -22,10 +30,10 @@ export default function NotifsPanel({ notifications, readIds, notifLoading, fetc
           <Bell size={15} className="text-neon-cyan" />
           <h3 className="font-display text-sm text-neon-cyan uppercase tracking-wider">Notificações</h3>
         </div>
-        <button onClick={fetchNotifications} disabled={notifLoading}
-          className="text-xs font-mono text-gray-500 hover:text-neon-cyan transition-colors">
-          <RotateCcw size={11} className={`inline mr-1 ${notifLoading ? 'animate-spin' : ''}`} />
-          {notifLoading ? 'Carregando...' : 'Atualizar'}
+        <button onClick={handleRefresh} disabled={spinning || notifLoading}
+          className="text-xs font-mono text-gray-500 hover:text-neon-cyan transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+          <RotateCcw size={11} className={spinning || notifLoading ? 'animate-spin' : ''} />
+          {spinning || notifLoading ? 'Atualizando...' : 'Atualizar'}
         </button>
       </div>
 

@@ -1,9 +1,17 @@
+import { useState } from 'react';
 import { Shield, Clock, VolumeX, Tv, RotateCcw } from 'lucide-react';
 
 export default function LivesPanel({
   liveMod, refreshing, fetchLiveMod,
   unsilenceUser, handleEndLive, setReactivateModal, isSuperAdmin,
 }) {
+  const [spinning, setSpinning] = useState(false);
+  async function handleRefresh() {
+    setSpinning(true);
+    await Promise.all([fetchLiveMod(), new Promise(r => setTimeout(r, 500))]);
+    setSpinning(false);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -11,10 +19,10 @@ export default function LivesPanel({
           <Shield size={16} className="text-neon-green" />
           <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">Moderação de Lives</h3>
         </div>
-        <button onClick={fetchLiveMod} disabled={refreshing}
-          className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors flex items-center gap-1">
-          <RotateCcw size={11} className={`inline mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Atualizando...' : 'Atualizar'}
+        <button onClick={handleRefresh} disabled={spinning || refreshing}
+          className="text-xs font-mono text-gray-500 hover:text-neon-green transition-colors flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
+          <RotateCcw size={11} className={spinning || refreshing ? 'animate-spin' : ''} />
+          {spinning || refreshing ? 'Atualizando...' : 'Atualizar'}
         </button>
       </div>
 
