@@ -259,13 +259,14 @@ estado de autenticação.
   decai rápido — "primeiro a luz, depois a forma se revela". Roda
   continuamente no eixo Y, revelando a profundidade da extrusão; zumbido neon
   suave de `emissiveIntensity` sem flickering.
-- **`FloatingShapes`**: objetos gamer 3D flutuantes nos cantos — **console**
-  (núcleo escuro entre painéis neon, estilo torre), **headset** (arco + conchas
-  + microfone), **gabinete de PC** (torre com vidro escuro + fans RGB em anéis
-  neon) e **caveira** (crânio + órbitas + dentes). Montados com primitivas e
-  caixas arredondadas (`roundedBoxGeometry`), materiais neon emissivos com
-  recortes escuros pra leitura. Cada um "materializa" com overshoot
-  (`easeOutBack`) em cascata temporal (`SHAPE_STAGGER = 0.16s`).
+- **`FloatingShapes`**: formas geométricas 3D wireframe flutuantes nos quatro
+  cantos — **gem** (dois icosaedros contra-rotativos, verde-neon), **ring**
+  (toro, roxo), **diamond** (octaedro, laranja) e **dodeca** (dodecaedro,
+  ciano). Todos com `wireframe: true` e `depthWrite: false` para ficarem
+  visualmente atrás do raio. O `LogoBolt` usa `renderOrder={1}` para garantir
+  que sempre renderize por cima, independente da posição Z. Cada forma
+  materializa com overshoot (`easeOutBack`) em cascata temporal
+  (`SHAPE_STAGGER = 0.16s`).
 - **`Lightning`**: raios 3D animados cruzando a cena.
 
 **Intro de abertura** (`IntroLightning`):
