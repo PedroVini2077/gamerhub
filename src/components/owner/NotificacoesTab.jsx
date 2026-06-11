@@ -22,7 +22,7 @@ const KIND_CFG = {
 };
 
 export default function NotificacoesTab() {
-  const { data: notifs = [], isPending: loading, refetch } = useQuery({
+  const { data: notifs = [], isPending: loading, isFetching, refetch } = useQuery({
     queryKey: ['owner_notifications'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_notifications', { p_limit: 50 });
@@ -43,9 +43,10 @@ export default function NotificacoesTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Últimas 50 notificações</p>
-        <button onClick={() => refetch()}
-          className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors">
-          <RefreshCw size={12} />Atualizar
+        <button onClick={() => refetch()} disabled={isFetching}
+          className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
+          {isFetching ? 'Atualizando...' : 'Atualizar'}
         </button>
       </div>
 

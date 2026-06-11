@@ -150,7 +150,7 @@ export default function UsuariosTab() {
   const [reason, setReason]   = useState(null);
   const deferredSearch        = useDeferredValue(search);
 
-  const { data: users = [], isPending: loading, refetch } = useQuery({
+  const { data: users = [], isPending: loading, isFetching, refetch } = useQuery({
     queryKey: ['owner_users'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_users');
@@ -272,9 +272,9 @@ export default function UsuariosTab() {
           <option value="super_admin">Super Admins</option>
           <option value="banned">Banidos</option>
         </select>
-        <button onClick={() => refetch()}
-          className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors">
-          <RefreshCw size={14} />
+        <button onClick={() => refetch()} disabled={isFetching}
+          className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
         </button>
       </div>
 

@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 const OC = '#f97316';
 
 export default function PainelTab({ onlineCount }) {
-  const { data: stats, isPending: loading, refetch } = useQuery({
+  const { data: stats, isPending: loading, isFetching, refetch } = useQuery({
     queryKey: ['owner_stats'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_stats');
@@ -100,9 +100,10 @@ export default function PainelTab({ onlineCount }) {
         </div>
       </div>
 
-      <button onClick={() => refetch()}
-        className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors">
-        <RefreshCw size={12} />Atualizar
+      <button onClick={() => refetch()} disabled={isFetching}
+        className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+        <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
+        {isFetching ? 'Atualizando...' : 'Atualizar'}
       </button>
     </div>
   );

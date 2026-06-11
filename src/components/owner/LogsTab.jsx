@@ -42,7 +42,7 @@ export default function LogsTab() {
     toast.success(`${data.length} log(s) exportado(s).`);
   }
 
-  const { data: logs = [], isPending: loading, refetch } = useQuery({
+  const { data: logs = [], isPending: loading, isFetching, refetch } = useQuery({
     queryKey: ['owner_audit_logs', category, severity, offset],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('owner_get_audit_logs', {
@@ -79,9 +79,9 @@ export default function LogsTab() {
           <option value="warning">Warning</option>
           <option value="critical">Critical</option>
         </select>
-        <button onClick={() => refetch()}
-          className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors">
-          <RefreshCw size={14} />
+        <button onClick={() => refetch()} disabled={isFetching}
+          className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
         </button>
         <button onClick={exportCSV} disabled={exporting}
           className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 hover:text-orange-400 hover:border-orange-400/50 disabled:opacity-40 transition-colors">
