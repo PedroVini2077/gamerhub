@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 
 const ACCENTS = {
   green:  { border: 'border-neon-green/30', glow: '#22c55e15', text: 'text-neon-green',  btnBg: '#22c55e15', btnColor: '#22c55e', btnBorder: '#22c55e40' },
@@ -14,12 +15,18 @@ export default function ConfirmModal({
   confirmLabel = 'Confirmar', confirmIcon: ConfirmIcon,
   onConfirm, onClose,
 }) {
+  const [loading, setLoading] = useState(false);
   const a = ACCENTS[accent] || ACCENTS.red;
+
+  async function handleConfirm() {
+    setLoading(true);
+    try { await onConfirm(); } finally { setLoading(false); }
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.92)' }}
-      onClick={onClose}>
+      onClick={loading ? undefined : onClose}>
       <div className={`w-full max-w-sm bg-dark-800 rounded-2xl border ${a.border} p-5 space-y-4 animate-fade-up`}
         onClick={e => e.stopPropagation()}
         style={{ boxShadow: `0 0 40px ${a.glow}` }}>
@@ -29,7 +36,7 @@ export default function ConfirmModal({
             {Icon && <Icon size={14} className={a.text} />}
             <h3 className={`font-display text-sm ${a.text} uppercase tracking-wider`}>{title}</h3>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+          <button onClick={onClose} disabled={loading} className="text-gray-500 hover:text-white transition-colors disabled:opacity-40">
             <X size={15} />
           </button>
         </div>
@@ -39,14 +46,16 @@ export default function ConfirmModal({
         )}
 
         <div className="flex gap-2">
-          <button onClick={onClose}
-            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
+          <button onClick={onClose} disabled={loading}
+            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
             Cancelar
           </button>
-          <button onClick={onConfirm}
-            className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+          <button onClick={handleConfirm} disabled={loading}
+            className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ background: a.btnBg, color: a.btnColor, border: `1px solid ${a.btnBorder}` }}>
-            {ConfirmIcon && <ConfirmIcon size={12} />}{confirmLabel}
+            {loading
+              ? <><Loader2 size={12} className="animate-spin" /> Aguarde...</>
+              : <>{ConfirmIcon && <ConfirmIcon size={12} />}{confirmLabel}</>}
           </button>
         </div>
       </div>
