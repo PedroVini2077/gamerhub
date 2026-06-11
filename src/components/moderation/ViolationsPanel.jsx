@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchViolations } from '../../services/moderationService';
+import { supabase } from '../../lib/supabase';
 import { ShieldAlert } from 'lucide-react';
 
 const ACTION_LABEL = {
@@ -19,9 +20,24 @@ export default function ViolationsPanel() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter]   = useState('');
 
-  const load = useCallback(async (p = 0, userId = '') => {
+  const load = useCallback(async (p = 0, username = '') => {
     setLoading(true);
-    const { items: data, count: total } = await fetchViolations(userId || null, p, PAGE_SIZE);
+    let userId = null;
+    if (username.trim()) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .ilike('username', username.trim())
+        .maybeSingle();
+      if (!profile) {
+        setItems([]);
+        setCount(0);
+        setLoading(false);
+        return;
+      }
+      userId = profile.id;
+    }
+    const { items: data, count: total } = await fetchViolations(userId, p, PAGE_SIZE);
     setItems(data);
     setCount(total);
     setLoading(false);
@@ -31,7 +47,7 @@ export default function ViolationsPanel() {
 
   return (
     <div className="space-y-4">
-      <input className="input-gamer text-sm" placeholder="Filtrar por user_id (UUID)..."
+      <input className="input-gamer text-sm" placeholder="Filtrar por @username..."
         value={filter} onChange={e => { setFilter(e.target.value); setPage(0); }} />
 
       {loading && items.length === 0 ? (
