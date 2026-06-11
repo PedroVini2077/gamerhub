@@ -67,7 +67,7 @@ export function LogoBolt() {
   return (
     <group ref={groupRef} position={[0, 1.45, -1]} scale={scale}>
       <pointLight ref={flashRef} position={[0, 0, 1.2]} color="#aaffaa" intensity={0} distance={6} />
-      <mesh ref={meshRef} geometry={geometry} rotation={[0.34, 0, 0]} scale={0}>
+      <mesh ref={meshRef} geometry={geometry} rotation={[0.34, 0, 0]} scale={0} renderOrder={1}>
         <meshStandardMaterial ref={matRef} color="#1e8c0c" emissive="#39ff14" emissiveIntensity={0.55} metalness={0.55} roughness={0.28} />
       </mesh>
     </group>
@@ -75,8 +75,12 @@ export function LogoBolt() {
 }
 
 // ─── Formas geométricas flutuantes ──────────────────────────────────────────
+// Todas as formas são wireframe com depthWrite={false} para ficarem sempre
+// atrás de qualquer outro objeto da cena (o raio usa renderOrder=1).
 
-// Icosaedro: sólido neon + cage wireframe sobrepost — cara de cristal/gema.
+const WIRE = { wireframe: true, depthWrite: false };
+
+// Dois icosaedros contra-rotativos — cara de grafo/rede digital.
 function GemModel({ color }) {
   const innerRef = useRef(null);
   const outerRef = useRef(null);
@@ -88,17 +92,16 @@ function GemModel({ color }) {
     <group>
       <mesh ref={innerRef}>
         <icosahedronGeometry args={[0.52, 1]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} metalness={0.7} roughness={0.15} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.6} {...WIRE} />
       </mesh>
       <mesh ref={outerRef}>
         <icosahedronGeometry args={[0.74, 1]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.18} wireframe transparent opacity={0.35} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25} {...WIRE} />
       </mesh>
     </group>
   );
 }
 
-// Toro girando no próprio eixo — forma clássica, leitura imediata.
 function RingModel({ color }) {
   const ref = useRef(null);
   useFrame((_, delta) => {
@@ -108,13 +111,12 @@ function RingModel({ color }) {
   });
   return (
     <mesh ref={ref}>
-      <torusGeometry args={[0.48, 0.18, 20, 40]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.48} metalness={0.6} roughness={0.22} />
+      <torusGeometry args={[0.48, 0.18, 16, 32]} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.55} {...WIRE} />
     </mesh>
   );
 }
 
-// Octaedro (diamante) girando lentamente — facetas nítidas captam a luz bem.
 function DiamondModel({ color }) {
   const ref = useRef(null);
   useFrame(({ clock }, delta) => {
@@ -126,13 +128,12 @@ function DiamondModel({ color }) {
     <group ref={ref}>
       <mesh>
         <octahedronGeometry args={[0.6, 0]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.48} metalness={0.75} roughness={0.12} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.55} {...WIRE} />
       </mesh>
     </group>
   );
 }
 
-// Torus knot — forma complexa, muito sci-fi, auto-oclusão cria profundidade.
 function KnotModel({ color }) {
   const ref = useRef(null);
   useFrame((_, delta) => {
@@ -143,7 +144,7 @@ function KnotModel({ color }) {
   return (
     <mesh ref={ref}>
       <torusKnotGeometry args={[0.38, 0.12, 110, 16, 2, 3]} />
-      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.45} metalness={0.6} roughness={0.25} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} {...WIRE} />
     </mesh>
   );
 }
