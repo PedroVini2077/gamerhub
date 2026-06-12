@@ -331,8 +331,9 @@ transições discretas das páginas internas.
 
 - Criação de posts (`PostForm`) com:
   - Título + conteúdo; categorias `dica` / `curiosidade` / `news`.
-  - Até **10 mídias** por post: imagens (≤5MB) e vídeos (≤25MB — reduzido de
-    100MB para poupar cota de egress; clipes longos via embed são recomendados).
+  - Até **10 mídias** por post: imagens (≤5MB) e vídeos (≤10MB — reduzido de
+    100MB→25MB→10MB para poupar cota de egress; clipes longos via embed são
+    recomendados).
   - **Áudio**: upload (≤20MB) ou **gravação pelo microfone** (`AudioRecorder`).
   - **Embeds**: YouTube, Twitch, TikTok (`EmbedPlayer` / `getEmbedInfo`).
     Suporta URLs de `youtube.com/live/` além dos formatos padrão.
@@ -705,9 +706,16 @@ Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 
 - **`avatars`** (público): avatar do usuário; upload/update/delete restritos ao
   dono pela pasta `auth.uid()/...`.
-- **`post-media`** (público): imagens/vídeos/áudios dos posts; upload por
-  autenticados, delete pelo dono do post. `cacheControl: 31536000` (1 ano)
-  — paths únicos por post/timestamp, nunca sobrescritos, cache longo seguro.
+- **`post-media`** (público): imagens/vídeos/áudios dos posts e do mural;
+  upload por autenticados, delete pelo dono do arquivo (pasta = `auth.uid()`).
+  `cacheControl: 31536000` (1 ano) — paths únicos por post/timestamp, nunca
+  sobrescritos, cache longo seguro.
+- **Limpeza ao deletar**: `deletePost` / `deleteMuralPost` removem os arquivos
+  do Storage junto com o post (`lib/storage.js`, best-effort — a policy só
+  permite apagar arquivo próprio, então post deletado por admin pode deixar
+  órfão; aceitável e raro). Antes dessa limpeza, **nenhum** delete removia o
+  arquivo — o bucket acumulou 330 MB de órfãos (zerados em 2026-06-12 via
+  edge function `cleanup-orphans`, hoje um stub desativado).
 
 > Os buckets são públicos para leitura via URL (CDN), mas **não** permitem
 > *listar* arquivos — o acesso por URL pública continua funcionando.

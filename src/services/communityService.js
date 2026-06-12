@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { removeFilesFromStorage } from '../lib/storage';
 
 const MURAL_SELECT = '*, profiles(id, username, avatar_url, role, bio, created_at)';
 
@@ -26,6 +27,9 @@ export async function addMuralPost({ userId, message }) {
 }
 
 export async function deleteMuralPost(id, userId, isAdmin) {
+  // Coleta as URLs de mídia ANTES do delete — somem no cascade e o arquivo
+  // ficaria órfão eterno no Storage.
+  const { data: media } = await supabase.from('community_post_media').select('url').eq('post_id', id);
   let q = supabase.from('community_posts').delete({ count: 'exact' }).eq('id', id);
   if (!isAdmin) q = q.eq('user_id', userId);
   const { error, count } = await q;
@@ -33,6 +37,7 @@ export async function deleteMuralPost(id, userId, isAdmin) {
   // count 0 sem erro = RLS bloqueou (ex.: admin tentando moderar owner). Antes
   // virava "sucesso" falso.
   if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
+  await removeFilesFromStorage((media || []).map((m) => m.url));
   return { error: null };
 }
 
