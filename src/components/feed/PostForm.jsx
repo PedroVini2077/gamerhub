@@ -55,9 +55,13 @@ const PostForm = memo(function PostForm({ onPost }) {
   function handleFileChange(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const maxMB = activeType === 'image' ? 5 : 25;
+    // Vídeo limitado a 10MB: egress (banda CDN) é a cota mais apertada do
+    // free tier — clipes longos devem ir via embed YouTube/Twitch/TikTok.
+    const maxMB = activeType === 'image' ? 5 : 10;
     if (file.size > maxMB * 1024 * 1024) {
-      toast.error(`Máximo ${maxMB}MB`);
+      toast.error(activeType === 'video'
+        ? `Máximo ${maxMB}MB — pra vídeos maiores, cole um link do YouTube/Twitch/TikTok`
+        : `Máximo ${maxMB}MB`);
       e.target.value = '';
       return;
     }
@@ -261,7 +265,7 @@ const PostForm = memo(function PostForm({ onPost }) {
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Image size={16} />
               </button>
-              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 25MB) — prefira colar um link do YouTube/Twitch/TikTok pra clipes longos" aria-label="Adicionar vídeo (máx 25MB)"
+              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 10MB) — prefira colar um link do YouTube/Twitch/TikTok pra clipes longos" aria-label="Adicionar vídeo (máx 10MB)"
                 className="text-gray-500 hover:text-neon-green transition-colors p-1">
                 <Film size={16} />
               </button>

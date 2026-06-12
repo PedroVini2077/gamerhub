@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { getEmbedInfo } from '../lib/embed';
+import { removeFilesFromStorage } from '../lib/storage';
 
 const POST_SELECT = '*, profiles(id, username, avatar_url, role, bio, created_at), user_id, audio_url, audio_type, audio_name, edited_at, embed_url, embed_type, is_live, expires_at';
 
@@ -82,6 +83,12 @@ export async function restorePost(postId) {
 }
 
 export async function deletePost(postId, userId, isAdmin) {
+  // Coleta as URLs de mídia ANTES do delete — as linhas de post_media somem
+  // no cascade e os paths do Storage seriam perdidos (arquivo órfão eterno).
+  const [{ data: media }, { data: post }] = await Promise.all([
+    supabase.from('post_media').select('url').eq('post_id', postId),
+    supabase.from('posts').select('audio_url, media_url').eq('id', postId).maybeSingle(),
+  ]);
   let q = supabase.from('posts').delete({ count: 'exact' }).eq('id', postId);
   if (!isAdmin) q = q.eq('user_id', userId);
   const { error, count } = await q;
@@ -89,6 +96,8 @@ export async function deletePost(postId, userId, isAdmin) {
   // count 0 sem erro = RLS bloqueou (ex.: sem hierarquia). Antes isso virava
   // "sucesso" falso — o toast aparecia mas nada era deletado.
   if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
+  const urls = [...(media || []).map((m) => m.url), post?.audio_url, post?.media_url];
+  await removeFilesFromStorage(urls);
   return { error: null };
 }
 
