@@ -356,6 +356,191 @@ RLS conferido. O que entrou:
 
 ---
 
+## 🔬 Auditoria de Custos, Performance & Escalabilidade (jun/2026)
+
+> **Status:** auditoria **só de diagnóstico** — nada implementado, nenhum
+> arquivo de lógica alterado. Conduzida com o projeto **pausado**, sem tocar no
+> Supabase (pra não gerar egress), a partir do código-fonte +
+> `DATABASE_SCHEMA_BACKUP.sql`. Contexto: a org estourou o **Cached Egress**
+> (13,3 GB / 5 GB do plano Free) — a lente desta auditoria é **custo de
+> recurso**, não feature. Atacar na ordem das ondas (final da seção) ao retomar.
+>
+> Origem: prompt "Auditoria Completa de Custos, Performance e Escalabilidade".
+> Cada item: **problema · impacto hoje · impacto futuro · motivo técnico · plano**.
+
+### 🔴 Crítico (driver direto de egress / risco de estourar cota)
+
+- ⬜ **C1 — Imagens de post e mural sobem SEM compressão/resize.**
+  - *Problema:* o avatar é comprimido (`Profile.jsx` → canvas 400px, JPEG 0.85),
+    mas imagens de post (`PostForm.jsx`) e de mural (`MuralForm.jsx`) vão **cruas**
+    pro bucket, só com teto de tamanho (5MB). Uma foto de celular de 4MB é
+    servida em resolução total pelo CDN.
+  - *Impacto hoje:* cada visualização baixa o arquivo full-res → é o **maior
+    driver de egress** depois do vídeo (que já limitamos pra 10MB).
+  - *Impacto futuro:* cresce linearmente com (nº de imagens × nº de
+    visualizações). É exatamente o padrão que estourou a cota.
+  - *Motivo técnico:* sem resize/recompressão client-side, o tamanho do arquivo
+    = tamanho do egress por view; sem `WebP` perde-se ~30% extra.
+  - *Plano:* extrair a `compressImage` do `Profile.jsx` para `lib/image.js`
+    (reutilizável), aplicar em `PostForm`/`MuralForm` antes do upload
+    (resize p/ ~1280px no maior lado, JPEG/WebP qualidade ~0.8). Aditivo, baixo
+    risco. **Maior ganho de egress por esforço.**
+
+- ⬜ **C2 — N+1 de queries no feed/mural + coluna `posts.likes` morta.**
+  - *Problema:* cada `PostCard` dispara, ao montar, **3 queries** (contagem de
+    likes + status de like + `post_media`). Feed de 30 posts = **~90 requests**.
+    O mural tem o mesmo padrão (`MuralCard`, ~3/card). Pior: existe a coluna
+    desnormalizada `posts.likes integer DEFAULT 0` mas **nenhum trigger a
+    mantém** — o feed conta `post_likes` ao vivo (N+1), enquanto
+    `fetchProfileStats` e `owner_get_metrics` ("top posts") **ordenam/somam por
+    `posts.likes`, que está sempre 0** (stats de likes do perfil e ranking de
+    posts hoje estão errados/zerados).
+  - *Impacto hoje:* ~90 requests por carga de feed = carga de DB + egress de API
+    multiplicada por cada usuário que abre a home.
+  - *Impacto futuro:* escala com (posts × usuários). É o gargalo de banco nº 1.
+  - *Motivo técnico:* dado relacional buscado por item em vez de em lote/join;
+    desnormalização existente não conectada.
+  - *Plano (resolve as duas coisas de uma vez):*
+    1. Trigger `AFTER INSERT/DELETE ON post_likes` que mantém `posts.likes`
+       (e equivalente p/ `community_post_likes`). Backfill único dos contadores.
+    2. Feed passa a **ler `posts.likes` direto** (zero query de contagem por card)
+       e a trazer `post_media(*)` **aninhado no select** do feed (1 query em vez
+       de 30). Status "eu curti" em **lote** (1 query `in(post_ids)`).
+    3. `fetchProfileStats`/`owner_get_metrics` passam a usar o contador correto.
+  - *Cuidado:* mudar o shape do retorno do feed exige ajustar `PostCard` junto
+    — pede plano + validação (regra do CLAUDE.md). Fazer gradual.
+
+- ⬜ **C3 — Realtime `event:'*'` sem filtro em tabelas quentes + publicação inchada.**
+  - *Problema:* `useRealtime('posts', ...)` (Home) escuta **todas** as mudanças
+    de `posts` (INSERT/UPDATE/DELETE) e transmite pra **todos** os clientes no
+    feed — mas o handler só usa INSERT/DELETE. Toda edição de post, e (depois do
+    C2) toda mudança de `posts.likes`, viraria broadcast pra todo mundo. Além
+    disso a publicação `supabase_realtime` inclui `post_media` e `admin_logs`
+    (tabela de auditoria de alto volume) — `admin_logs` só interessa a um punhado
+    de admins, mas é publicada globalmente. `profiles` usa **REPLICA IDENTITY
+    FULL** (manda a linha inteira a cada update).
+  - *Impacto hoje:* baixo (poucos usuários), mas é **egress de realtime que
+    cresce com (mudanças × conexões)** — o tipo de custo que não aparece até
+    escalar e aí dói.
+  - *Impacto futuro:* com N usuários no feed, cada like/edição = N mensagens.
+  - *Motivo técnico:* `postgres_changes` sem `event`/`filter` específico assina
+    o fluxo inteiro da tabela.
+  - *Plano:* (a) `useRealtime` aceitar `event` e `filter` opcionais; Home assinar
+    só `INSERT`; (b) revisar a publicação — tirar `post_media` (a UI já refaz via
+    retry) e `admin_logs` (o painel admin pode usar refetch/poll dedicado);
+    (c) avaliar `REPLICA IDENTITY` default + filtro no watch de ban (só precisa
+    de `id` + `banned`). Validar cada passo isolado.
+
+### 🟠 Alto impacto
+
+- ⬜ **A1 — Polling de ban a cada 20s, por usuário.**
+  - *Problema:* `useAuth` já tem subscription realtime no próprio `profile` pra
+    detectar ban, **e ainda** roda `setInterval(fetchProfile, 20000)` como
+    fallback — um `SELECT * FROM profiles` por usuário a cada 20s.
+  - *Impacto futuro:* 1.000 usuários logados = ~50 queries/s permanentes só de
+    fallback de ban, 24/7, mesmo sem ninguém fazer nada.
+  - *Motivo técnico:* fallback redundante com o realtime no caminho feliz.
+  - *Plano:* subir o intervalo p/ 60s **e** só pollar com a aba visível
+    (`document.visibilityState`); ou disparar o revalidate só no `visibilitychange`.
+    Mudança pequena e segura. (Já está no backlog como "afinar detecção de ban".)
+
+- ⬜ **A2 — Zero retenção em tabelas de log/efêmeras (sem pg_cron).**
+  - *Problema:* `admin_logs`, `login_attempts`, `notifications` e `live_chat`
+    crescem **sem teto**. Chat de lives encerradas há meses continua no banco. Não
+    há nenhum job pg_cron de limpeza.
+  - *Impacto hoje:* pequeno; *futuro:* infla `Storage Size` do banco (já em 21%),
+    deixa queries/índices mais lentos e aumenta o custo de backup.
+  - *Motivo técnico:* tabelas append-only sem TTL.
+  - *Plano:* job(s) pg_cron de limpeza: `admin_logs` > 90 dias, `login_attempts`
+    resolvidos > 30 dias, `notifications` lidas > 30 dias, `live_chat` de lives
+    encerradas > 7 dias. Tudo reversível e parametrizável. Rodar primeiro como
+    `SELECT count(*)` pra dimensionar antes de deletar.
+
+- ⬜ **A3 — Avatar sem `cacheControl` (re-download de hora em hora).**
+  - *Problema:* `uploadAvatar` (`profileService.js`) não passa `cacheControl` →
+    usa o default do Supabase (~1h). Os uploads de `post-media` já usam 1 ano.
+  - *Impacto:* o avatar de cada usuário é re-baixado do CDN ~1×/hora por viewer —
+    egress recorrente e evitável (avatar aparece em todo card do feed).
+  - *Motivo técnico:* sem `cacheControl` longo, o CDN revalida cedo.
+  - *Plano:* `cacheControl: '31536000'` no upload de avatar — o cache-buster
+    `?t=${Date.now()}` que já gravamos na URL garante a invalidação na troca.
+    Fix de 1 linha, ganho recorrente.
+
+### 🟡 Médio impacto
+
+- ⬜ **M1 — `SELECT *` no feed e no perfil.** `POST_SELECT` e `fetchProfile`
+  trazem todas as colunas (inclusive `ban_details`, `ban_reason`, campos que a
+  UI não usa no card). *Plano:* enumerar só as colunas necessárias por contexto —
+  reduz payload/egress de cada request. Baixo risco, gradual.
+- ⬜ **M2 — `fetchUserLikesCount` redundante / stats inconsistentes.** Recalcula
+  likes a partir de `post_likes` quando deveria usar o contador desnormalizado
+  (depende do C2). Some junto com o C2. *Plano:* unificar a fonte de verdade dos
+  contadores após o trigger do C2.
+- ⬜ **M3 — Bundle 3D ~880KB (≈237KB gzip).** O chunk `LandingScene` (three +
+  fiber) é o maior asset. **Já é lazy** (`Scene3D` só carrega na landing e
+  respeita `prefers-reduced-motion`) e é servido pela **Vercel, não pelo
+  Supabase** — então **não** pesa no egress que estourou. Fica como melhoria de
+  UX/performance de carregamento, não de custo Supabase. *Plano (opcional):*
+  importar só o necessário de three, simplificar geometrias.
+
+### 🔵 Baixo impacto
+
+- ⬜ **B1 — Presence global num canal único** (`gamerhub-presence`): todo usuário
+  online entra no mesmo canal; cada `sync` recalcula o estado. Cresce com
+  usuários simultâneos (tendência O(N) de tráfego de presença). Hoje irrelevante;
+  revisitar se "online agora" passar de algumas centenas.
+- ⬜ **B2 — Retry de mídia** no `PostCard`/`MuralCard` (até 4×/3×) dispara queries
+  extras quando a mídia demora a subir. Aceitável; o C2 (media aninhada no feed)
+  reduz a necessidade.
+- ℹ️ **B3 — Busca/filtro client-side** sobre os 30 posts carregados: não é custo,
+  é limitação funcional (já consta no backlog como "busca server-side no feed").
+
+---
+
+### 🏆 Ranking — 10 maiores consumidores potenciais de recurso
+
+> Estimativa **qualitativa** do ganho ao otimizar cada um (lente: egress + carga
+> de banco). Ordem = prioridade de ataque.
+
+| # | Item | Recurso | Ganho esperado ao otimizar |
+|---|------|---------|----------------------------|
+| 1 | C1 — Imagens sem compressão | Egress (Storage CDN) | **Altíssimo** — corta o maior driver de egress restante |
+| 2 | C2 — N+1 no feed + `posts.likes` morta | DB + Egress de API | **Altíssimo** — ~90 → ~2 requests por feed |
+| 3 | C3 — Realtime `*` + publicação inchada | Egress de Realtime | **Alto (escala)** — evita explosão com nº de conexões |
+| 4 | A2 — Sem retenção (pg_cron) | Storage de banco | **Alto (longo prazo)** — segura o crescimento do DB |
+| 5 | A1 — Polling de ban 20s | DB (queries constantes) | **Alto (escala)** — remove carga de fundo por usuário |
+| 6 | A3 — Avatar sem cacheControl | Egress (CDN) | **Médio** — corta re-download horário, fix trivial |
+| 7 | M1 — `SELECT *` | Egress de payload | **Médio** — payloads menores em todo fetch |
+| 8 | B1 — Presence global | Realtime | **Médio (só em escala)** |
+| 9 | M3 — Bundle 3D | Egress Vercel (não Supabase) | **Médio (UX)** — não afeta a cota que estourou |
+| 10 | B2 — Retry de mídia | DB | **Baixo** — somado ao C2 quase some |
+
+---
+
+### 🗺️ Plano de implementação (ondas — atacar nesta ordem ao retomar)
+
+Cada onda é **aditiva, validável e reversível**; testar (build + ROLLBACK no
+Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
+
+- **Onda 1 — Egress rápido, baixo risco (aditivo puro):**
+  C1 (compressão de imagem em post/mural) · A3 (cacheControl no avatar) ·
+  C3-a (realtime do feed só `INSERT`) · A1 (poll 20s→60s + visibilidade).
+  *→ ataca direto o que estourou a cota, sem mudar contrato de dados.*
+- **Onda 2 — Carga de banco (precisa de migration + ajuste de UI casado):**
+  C2 (trigger de `posts.likes` + backfill → feed lê contador + `post_media`
+  aninhada + like-status em lote) · M2 (unificar stats) · M1 (`SELECT` enxuto).
+  *→ derruba o N+1; exige plano dedicado e validação (muda shape do feed).*
+- **Onda 3 — Retenção & realtime estrutural:**
+  A2 (jobs pg_cron de limpeza) · C3-b/c (enxugar publicação `supabase_realtime`,
+  revisar `REPLICA IDENTITY`).
+  *→ segura o crescimento de longo prazo do banco e do realtime.*
+- **Onda 4 — Estrutural / futuro (decisão do dono):**
+  Migração de mídia pro **Cloudflare R2** (10GB egress grátis/mês, egress
+  ilimitado R2↔Cloudflare CDN) — solução definitiva se o site crescer ·
+  M3 (aligeirar bundle 3D) · B1 (presence em escala).
+
+---
+
 ## 💡 Ideias soltas (a avaliar)
 
 > Espaço pra jogar ideias de feature que surgirem, sem compromisso. Quando
