@@ -88,9 +88,37 @@ Deploy na Vercel (`vercel.json` com rewrite SPA e headers de segurança).
 
 ## ▶️ Como rodar
 
+**Pré-requisitos:** [Node.js](https://nodejs.org) 18+ (recomendado 20+) e npm,
+[Git](https://git-scm.com) e uma conta no [Supabase](https://supabase.com)
+(plano Free serve) para criar o backend.
+
+**1. Clonar o repositório**
+
+```bash
+git clone https://github.com/PedroVini2077/gamerhub.git
+cd gamerhub
+```
+
+> Via SSH: `git clone git@github.com:PedroVini2077/gamerhub.git`
+
+**2. Instalar dependências**
+
 ```bash
 npm install
-npm run dev       # ambiente de desenvolvimento (Vite)
+```
+
+**3. Configurar as variáveis de ambiente** (ver [seção abaixo](#variáveis-de-ambiente)) —
+criar o `.env` na raiz com a URL e a anon key do seu projeto Supabase.
+
+**4. Recriar o banco** (se for um projeto Supabase novo): aplicar o
+`DATABASE_SCHEMA_BACKUP.sql` no SQL Editor do Supabase — ele recria tabelas,
+RLS, funções, triggers e índices. Buckets de storage e publicação realtime
+estão documentados no fim do arquivo (criar pelo dashboard).
+
+**5. Rodar**
+
+```bash
+npm run dev       # ambiente de desenvolvimento (Vite) — http://localhost:5173
 npm run build     # build de produção -> dist/
 npm run preview   # serve o build localmente
 npm run lint      # ESLint
