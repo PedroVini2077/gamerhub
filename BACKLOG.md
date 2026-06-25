@@ -12,6 +12,27 @@
 
 ## 🔴 Crítico
 
+- ⬜ **Projeto Supabase pausado e sob restrição de serviço — não despausa mais
+  sozinho.** Ao tentar "Resume" no dashboard, erro: *"Failed to restore
+  project: This organization is currently under service restrictions. The
+  project can only be restored once restrictions are lifted or organization is
+  upgraded to paid plan."* Ou seja: não é mais a trava temporária de cota
+  (egress 267%) que resetaria no próximo ciclo — a organização entrou em
+  restrição de serviço e o "Resume" fica bloqueado até **upgrade pro plano
+  pago (Pro, ~R$129/mês)** ou a Supabase remover a restrição manualmente
+  (não acontece sozinho com o projeto pausado, já que pausado não gera uso).
+  Opções levantadas (decisão adiada por enquanto):
+  1. Pagar o Pro por 1 mês, destravar e tirar um backup real de **dados**
+     (não só schema — já temos o `DATABASE_SCHEMA_BACKUP.sql`), decidir depois
+     se mantém o plano.
+  2. Criar projeto novo gratuito e recriar o schema do
+     `DATABASE_SCHEMA_BACKUP.sql` — **perde os dados** que estavam no banco
+     pausado (fica inacessível enquanto a restrição existir).
+  3. Abrir chamado no suporte da Supabase explicando que é projeto
+     pessoal/hobby, antes de decidir entre pagar ou recriar (sem garantia de
+     resposta favorável).
+  *Owner decidiu por enquanto só registrar e não agir — revisar quando for
+  retomar o projeto.*
 - ✅ **Escalada de privilégio em `profiles`** — qualquer usuário logado conseguia
   se auto-promover a `owner` / se auto-desbanir via UPDATE direto. Corrigido com
   trigger-guarda `guard_profile_privileged_cols` + RPC `admin_set_role`.
