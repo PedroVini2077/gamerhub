@@ -10,6 +10,50 @@
 
 ---
 
+## 📌 Próxima sessão — comece por aqui
+
+O dono pediu uma **varredura completa do projeto inteiro** (front, back e
+banco) atrás de falhas, pontas soltas e mais otimizações, cruzando com o que
+já está registrado aqui — e quer que os achados sejam **corrigidos**, não só
+listados. Isso é o plano de auditoria em 3 fases já descrito no `CLAUDE.md`
+("Auditoria periódica do projeto"), rodado nesta ordem — **frontend → backend
+→ banco, uma fase por vez, com relatório ao fim de cada fase e aprovação do
+dono antes de aplicar as correções daquela fase** (não pular essa etapa: é
+regra permanente do `CLAUDE.md`, não uma sugestão).
+
+**Antes de começar a Fase 1, leia:**
+- `CLAUDE.md` → seção "Auditoria periódica" (os 3 checklists de fase).
+- Este arquivo inteiro (`BACKLOG.md`) — vários itens abaixo já são exatamente
+  o tipo de coisa que a varredura vai encontrar de novo; não redescobrir do
+  zero, só confirmar se seguem valendo e resolver.
+- `README.md` → seções "Banco de dados", "Segurança" e "Custo de banda &
+  carga de banco" (contexto do que já foi endurecido/otimizado — a varredura
+  é pra achar o que **ainda** falta, não repetir o que já foi feito).
+
+**Itens já conhecidos e abertos que a varredura deve cobrir** (não é lista
+fechada — a varredura pode achar mais):
+- Segurança/Banco: mover `pg_net` pra schema dedicado; C3-b/c (enxugar a
+  publicação `supabase_realtime` tirando `post_media`/`admin_logs`, revisar
+  `REPLICA IDENTITY FULL` de `profiles`); canal `admin-realtime` assinando
+  `posts`/`admin_logs` com `event:'*'` global; `owner_get_metrics.total_xp`
+  nunca preenchido (bug antigo, não tocado ainda).
+- Backend/lógica: padronizar tratamento de erro nas queries (services que
+  ainda descartam `error` silenciosamente); RPC de engajamento agregado
+  (`attachEngagement`) quando o volume crescer; denúncia (`reports`) não gera
+  log de auditoria (avaliar se ainda faz sentido não gerar).
+- Frontend/arquitetura: `Admin.jsx` com ~900 linhas (quebrar em hooks por
+  aba); paginação/virtualização em listas longas; 2FA no login; presence
+  (`gamerhub-presence`) num canal global único (B1).
+- Geral: baseline de lint tinha warnings conhecidos — conferir se ainda
+  procedem; ver "Ainda em aberto" nas seções de auditoria mais recentes
+  (buscar "Ainda em aberto" e "próximos passos" neste arquivo).
+
+**Ao terminar cada fase**, marque os itens resolvidos aqui no `BACKLOG.md`
+(✅) e mova o que virou comportamento estável pro `README.md`, do jeito que já
+vem sendo feito nas entregas anteriores.
+
+---
+
 ## 🔴 Crítico
 
 - ⬜ **Projeto Supabase pausado e sob restrição de serviço — não despausa mais
@@ -491,7 +535,7 @@ local em transação com `ROLLBACK` antes de virar arquivo.
   - *Cuidado:* mudar o shape do retorno do feed exige ajustar `PostCard` junto
     — pede plano + validação (regra do CLAUDE.md). Fazer gradual.
 
-- 🟡 **C3 — Realtime `event:'*'` sem filtro em tabelas quentes + publicação inchada.**
+- 🟡 **C3 — Realtime `event:'*'` sem filtro em tabelas quentes + publicação inchada.** *(a) feito — feed/mural/lives já filtram por evento; falta (b) enxugar a publicação `supabase_realtime` e (c) revisar `REPLICA IDENTITY` de `profiles`.*
   - *Problema:* `useRealtime('posts', ...)` (Home) escuta **todas** as mudanças
     de `posts` (INSERT/UPDATE/DELETE) e transmite pra **todos** os clientes no
     feed — mas o handler só usa INSERT/DELETE. Toda edição de post, e (depois do
@@ -525,7 +569,7 @@ local em transação com `ROLLBACK` antes de virar arquivo.
     (`document.visibilityState`); ou disparar o revalidate só no `visibilitychange`.
     Mudança pequena e segura. (Já está no backlog como "afinar detecção de ban".)
 
-- 🟡 **A2 — Zero retenção em tabelas de log/efêmeras (sem pg_cron).**
+- ✅ **A2 — Zero retenção em tabelas de log/efêmeras (sem pg_cron).** *Aplicado em produção em 20/08/2026 — `cleanup_old_data()` agendada via pg_cron todo dia às 4h UTC.*
   - *Problema:* `admin_logs`, `login_attempts`, `notifications` e `live_chat`
     crescem **sem teto**. Chat de lives encerradas há meses continua no banco. Não
     há nenhum job pg_cron de limpeza.
