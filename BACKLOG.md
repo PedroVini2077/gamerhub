@@ -94,7 +94,9 @@
 - ℹ️ **`unused_index` (advisor)**: ~15 índices (quase todos de FK) aparecem como
   "não usados". **Mantidos de propósito** — são índices de chave estrangeira /
   colunas de join que passam a ser usados conforme o volume cresce. Removê-los
-  agora prejudicaria escalabilidade. Não é dívida; é precaução.
+  agora prejudicaria escalabilidade. Não é dívida; é precaução. *(Os 7 índices
+  de `db/2026-08-otimizacao.sql`, aplicados em 20/08, caem na mesma categoria
+  — recém-criados, ainda sem histórico de uso no advisor.)*
 - ✅ **`auth_rls_initplan`**: `auth.uid()` envolvido em `(select auth.uid())`
   em todas as políticas. Verificado em ROLLBACK (anon/user/admin). *(feito)*
 - ✅ **`multiple_permissive_policies`**: consolidadas em `posts`, `community_posts`,
@@ -409,12 +411,18 @@ local em transação com `ROLLBACK` antes de virar arquivo.
 | **Extra** — carrossel só monta perto da viewport | `LazyVisible` |
 | **Extra** — Sidebar e RightPanel dividem o cache de stats | `keyService.SITE_STATS_KEY` |
 | **Extra** — Landing e Home viram lazy | `App.jsx` |
-| A2 + índices + fix do "top posts" | **`db/2026-08-otimizacao.sql`** — ⚠️ escrito e testado, mas **ainda não aplicado** no Supabase |
+| A2 + índices + fix do "top posts" | `db/2026-08-otimizacao.sql` — ✅ aplicado em produção em 20/08/2026 |
+| Notificações/logs (ver seção de polimento abaixo) | `db/2026-08-logs-e-notificacoes.sql` — ✅ aplicado em produção em 20/08/2026 |
 
-> ⚠️ **Pendência de 1 passo:** rodar `db/2026-08-otimizacao.sql` no SQL Editor.
-> Enquanto não rodar, seguem valendo: falta de índice em `posts(created_at)`,
-> zero retenção nas tabelas de log e o ranking "top posts" do painel do
-> fundador ordenado por uma coluna zerada.
+> ✅ **Os dois arquivos SQL foram aplicados em produção** (20/08/2026), via MCP
+> do Supabase, função por função, com verificação depois de cada uma. A
+> limpeza (`cleanup_old_data`) já rodou uma vez manualmente (removeu 8
+> notificações lidas antigas + 3 tentativas de login expiradas — números
+> batendo exatamente com a dimensão prévia) e está **agendada via pg_cron**
+> para todo dia às 4h UTC (`gamerhub-cleanup`, confirmado `active: true` em
+> `cron.job`). Os 7 índices novos foram confirmados existentes em
+> `pg_indexes`. `get_advisors` (security + performance) rodado depois — ver
+> nota abaixo.
 
 #### O que ficou em aberto (próximos passos)
 
@@ -606,9 +614,9 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
   problema pelo lado do cliente — mídia **aninhada no select** e curtidas /
   comentários resolvidos em **2 queries em lote** por feed, sem tocar no
   caminho de escrita. `posts.likes` segue morta e nada no app a lê.
-- **🟡 Onda 3 — Retenção & realtime estrutural:** *SQL pronto, falta aplicar.*
-  A2 (retenção) e os índices estão escritos e testados em
-  `db/2026-08-otimizacao.sql` — falta só rodar no SQL Editor.
+- **🟡 Onda 3 — Retenção & realtime estrutural:** *A2 e os índices aplicados em
+  produção (20/08/2026); a limpeza já rodou uma vez e está agendada via
+  pg_cron todo dia às 4h UTC (`gamerhub-cleanup`).*
   Continua **em aberto** o C3-b/c (enxugar a publicação `supabase_realtime`
   tirando `post_media`/`admin_logs`, revisar o `REPLICA IDENTITY FULL` de
   `profiles`): mexem em detecção de ban e sincronização de mídia, então pedem
@@ -692,9 +700,17 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
 
 ### Ainda em aberto
 
-- ⬜ **Rodar `db/2026-08-logs-e-notificacoes.sql`** (e o `db/2026-08-otimizacao.sql`
-  antes dele, se ainda não rodou). Enquanto não rodar, as correções de
-  **banco** acima não valem — só as de frontend.
+- ✅ **`db/2026-08-otimizacao.sql` e `db/2026-08-logs-e-notificacoes.sql`
+  aplicados em produção em 20/08/2026**, função por função via MCP do
+  Supabase, com verificação depois de cada uma: os 7 índices confirmados em
+  `pg_indexes`, `cleanup_old_data()` rodada uma vez (removeu 8 notificações
+  lidas antigas + 3 tentativas de login expiradas — bateu com a dimensão
+  prévia) e agendada via pg_cron (`gamerhub-cleanup`, `active: true`, todo dia
+  às 4h UTC). `get_advisors` (security + performance) rodado depois: nenhum
+  achado novo de nível alto/crítico; os únicos avisos ligados às 7 funções
+  recriadas e aos 7 índices novos são do mesmo tipo já esperado/documentado
+  no projeto (RPC exposta a `authenticated` com checagem interna por
+  `auth.uid()`, e índice "não usado" por ter acabado de ser criado).
 - ⬜ **`Admin.jsx` com ~900 linhas.** Os painéis já foram extraídos; o que sobrou
   é orquestração (estado + fetchers de todas as abas). Quebrar em hooks por aba
   (`useAdminUsers`, `useAdminLogs`, …) é o próximo passo, mas é refactor de
