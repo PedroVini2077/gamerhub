@@ -10,6 +10,11 @@ export async function fetchGameKeys(limit = null) {
   };
 }
 
+// Chave única de cache pras estatísticas do site. Sidebar e RightPanel mostram
+// os MESMOS três números — com chaves diferentes o React Query fazia as 6
+// queries, duas vezes as mesmas contagens em toda página do app.
+export const SITE_STATS_KEY = ['site_stats'];
+
 export async function fetchSiteStats() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

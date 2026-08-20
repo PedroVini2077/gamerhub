@@ -379,19 +379,46 @@ RLS conferido. O que entrou:
 
 ## 🔬 Auditoria de Custos, Performance & Escalabilidade (jun/2026)
 
-> **Status:** auditoria **só de diagnóstico** — nada implementado, nenhum
-> arquivo de lógica alterado. Conduzida com o projeto **pausado**, sem tocar no
-> Supabase (pra não gerar egress), a partir do código-fonte +
-> `DATABASE_SCHEMA_BACKUP.sql`. Contexto: a org estourou o **Cached Egress**
-> (13,3 GB / 5 GB do plano Free) — a lente desta auditoria é **custo de
-> recurso**, não feature. Atacar na ordem das ondas (final da seção) ao retomar.
+> **Status (atualizado em ago/2026): a maior parte já foi implementada.**
+> A auditoria original (jun/2026) foi só diagnóstico, feita com o projeto
+> pausado, a partir do código-fonte + `DATABASE_SCHEMA_BACKUP.sql`. Contexto: a
+> org estourou o **Cached Egress** (13,3 GB / 5 GB do plano Free) — a lente
+> desta seção é **custo de recurso**, não feature.
 >
 > Origem: prompt "Auditoria Completa de Custos, Performance e Escalabilidade".
 > Cada item: **problema · impacto hoje · impacto futuro · motivo técnico · plano**.
 
+#### O que foi feito em ago/2026
+
+Onda 1 e Onda 2 estão **fechadas**; Onda 3 está parcial. Tudo validado com
+`npm run build` + `npm run lint` + `npm test`, e o SQL testado num Postgres
+local em transação com `ROLLBACK` antes de virar arquivo.
+
+| Item | Onde |
+| ---- | ---- |
+| C1 — compressão de imagem no upload | `lib/image.js`, usado em post/mural/avatar |
+| C2 — fim do N+1 (mídia aninhada + curtidas/comentários em lote) | `postService`, `communityService`, `PostCard`, `MuralCard`, `CommentSection` |
+| C3-a — realtime só nos eventos usados + filtro por live | `useRealtime`, `Home`, `Community`, `Lives` |
+| A1 — poll de ban 20s→60s, só com aba visível | `useAuth` |
+| A3 — `cacheControl` de 1 ano no avatar | `profileService` |
+| M1 — colunas explícitas no lugar de `SELECT *` | `postService`, `communityService` |
+| M2 — stats do perfil contando de `post_likes` | `profileService`, `UserProfile` |
+| M3 — 3D nem baixa em conexão lenta / saveData / device fraco | `Scene3D` |
+| B2 — retry de mídia só quando o lote vem vazio | `PostCard`, `MuralCard` |
+| **Extra** — vídeo só baixa no clique | `MediaCarousel` |
+| **Extra** — carrossel só monta perto da viewport | `LazyVisible` |
+| **Extra** — Sidebar e RightPanel dividem o cache de stats | `keyService.SITE_STATS_KEY` |
+| **Extra** — Landing e Home viram lazy | `App.jsx` |
+| A2 + índices + fix do "top posts" | **`db/2026-08-otimizacao.sql`** — ⚠️ escrito e testado, mas **ainda não aplicado** no Supabase |
+
+> ⚠️ **Pendência de 1 passo:** rodar `db/2026-08-otimizacao.sql` no SQL Editor.
+> Enquanto não rodar, seguem valendo: falta de índice em `posts(created_at)`,
+> zero retenção nas tabelas de log e o ranking "top posts" do painel do
+> fundador ordenado por uma coluna zerada.
+
 ### 🔴 Crítico (driver direto de egress / risco de estourar cota)
 
-- ⬜ **C1 — Imagens de post e mural sobem SEM compressão/resize.**
+- ✅ **C1 — Imagens de post e mural sobem SEM compressão/resize.**
   - *Problema:* o avatar é comprimido (`Profile.jsx` → canvas 400px, JPEG 0.85),
     mas imagens de post (`PostForm.jsx`) e de mural (`MuralForm.jsx`) vão **cruas**
     pro bucket, só com teto de tamanho (5MB). Uma foto de celular de 4MB é
@@ -407,7 +434,7 @@ RLS conferido. O que entrou:
     (resize p/ ~1280px no maior lado, JPEG/WebP qualidade ~0.8). Aditivo, baixo
     risco. **Maior ganho de egress por esforço.**
 
-- ⬜ **C2 — N+1 de queries no feed/mural + coluna `posts.likes` morta.**
+- ✅ **C2 — N+1 de queries no feed/mural + coluna `posts.likes` morta.**
   - *Problema:* cada `PostCard` dispara, ao montar, **3 queries** (contagem de
     likes + status de like + `post_media`). Feed de 30 posts = **~90 requests**.
     O mural tem o mesmo padrão (`MuralCard`, ~3/card). Pior: existe a coluna
@@ -431,7 +458,7 @@ RLS conferido. O que entrou:
   - *Cuidado:* mudar o shape do retorno do feed exige ajustar `PostCard` junto
     — pede plano + validação (regra do CLAUDE.md). Fazer gradual.
 
-- ⬜ **C3 — Realtime `event:'*'` sem filtro em tabelas quentes + publicação inchada.**
+- 🟡 **C3 — Realtime `event:'*'` sem filtro em tabelas quentes + publicação inchada.**
   - *Problema:* `useRealtime('posts', ...)` (Home) escuta **todas** as mudanças
     de `posts` (INSERT/UPDATE/DELETE) e transmite pra **todos** os clientes no
     feed — mas o handler só usa INSERT/DELETE. Toda edição de post, e (depois do
@@ -454,7 +481,7 @@ RLS conferido. O que entrou:
 
 ### 🟠 Alto impacto
 
-- ⬜ **A1 — Polling de ban a cada 20s, por usuário.**
+- ✅ **A1 — Polling de ban a cada 20s, por usuário.**
   - *Problema:* `useAuth` já tem subscription realtime no próprio `profile` pra
     detectar ban, **e ainda** roda `setInterval(fetchProfile, 20000)` como
     fallback — um `SELECT * FROM profiles` por usuário a cada 20s.
@@ -465,7 +492,7 @@ RLS conferido. O que entrou:
     (`document.visibilityState`); ou disparar o revalidate só no `visibilitychange`.
     Mudança pequena e segura. (Já está no backlog como "afinar detecção de ban".)
 
-- ⬜ **A2 — Zero retenção em tabelas de log/efêmeras (sem pg_cron).**
+- 🟡 **A2 — Zero retenção em tabelas de log/efêmeras (sem pg_cron).**
   - *Problema:* `admin_logs`, `login_attempts`, `notifications` e `live_chat`
     crescem **sem teto**. Chat de lives encerradas há meses continua no banco. Não
     há nenhum job pg_cron de limpeza.
@@ -477,7 +504,7 @@ RLS conferido. O que entrou:
     encerradas > 7 dias. Tudo reversível e parametrizável. Rodar primeiro como
     `SELECT count(*)` pra dimensionar antes de deletar.
 
-- ⬜ **A3 — Avatar sem `cacheControl` (re-download de hora em hora).**
+- ✅ **A3 — Avatar sem `cacheControl` (re-download de hora em hora).**
   - *Problema:* `uploadAvatar` (`profileService.js`) não passa `cacheControl` →
     usa o default do Supabase (~1h). Os uploads de `post-media` já usam 1 ano.
   - *Impacto:* o avatar de cada usuário é re-baixado do CDN ~1×/hora por viewer —
@@ -489,15 +516,15 @@ RLS conferido. O que entrou:
 
 ### 🟡 Médio impacto
 
-- ⬜ **M1 — `SELECT *` no feed e no perfil.** `POST_SELECT` e `fetchProfile`
+- ✅ **M1 — `SELECT *` no feed e no perfil.** `POST_SELECT` e `fetchProfile`
   trazem todas as colunas (inclusive `ban_details`, `ban_reason`, campos que a
   UI não usa no card). *Plano:* enumerar só as colunas necessárias por contexto —
   reduz payload/egress de cada request. Baixo risco, gradual.
-- ⬜ **M2 — `fetchUserLikesCount` redundante / stats inconsistentes.** Recalcula
+- ✅ **M2 — `fetchUserLikesCount` redundante / stats inconsistentes.** Recalcula
   likes a partir de `post_likes` quando deveria usar o contador desnormalizado
   (depende do C2). Some junto com o C2. *Plano:* unificar a fonte de verdade dos
   contadores após o trigger do C2.
-- ⬜ **M3 — Bundle 3D ~880KB (≈237KB gzip).** O chunk `LandingScene` (three +
+- ✅ **M3 — Bundle 3D ~880KB (≈237KB gzip).** O chunk `LandingScene` (three +
   fiber) é o maior asset. **Já é lazy** (`Scene3D` só carrega na landing e
   respeita `prefers-reduced-motion`) e é servido pela **Vercel, não pelo
   Supabase** — então **não** pesa no egress que estourou. Fica como melhoria de
@@ -510,7 +537,7 @@ RLS conferido. O que entrou:
   online entra no mesmo canal; cada `sync` recalcula o estado. Cresce com
   usuários simultâneos (tendência O(N) de tráfego de presença). Hoje irrelevante;
   revisitar se "online agora" passar de algumas centenas.
-- ⬜ **B2 — Retry de mídia** no `PostCard`/`MuralCard` (até 4×/3×) dispara queries
+- ✅ **B2 — Retry de mídia** no `PostCard`/`MuralCard` (até 4×/3×) dispara queries
   extras quando a mídia demora a subir. Aceitável; o C2 (media aninhada no feed)
   reduz a necessidade.
 - ℹ️ **B3 — Busca/filtro client-side** sobre os 30 posts carregados: não é custo,
@@ -543,18 +570,24 @@ RLS conferido. O que entrou:
 Cada onda é **aditiva, validável e reversível**; testar (build + ROLLBACK no
 Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
 
-- **Onda 1 — Egress rápido, baixo risco (aditivo puro):**
+- **✅ Onda 1 — Egress rápido, baixo risco (aditivo puro):** *feita em ago/2026.*
   C1 (compressão de imagem em post/mural) · A3 (cacheControl no avatar) ·
   C3-a (realtime do feed só `INSERT`) · A1 (poll 20s→60s + visibilidade).
-  *→ ataca direto o que estourou a cota, sem mudar contrato de dados.*
-- **Onda 2 — Carga de banco (precisa de migration + ajuste de UI casado):**
-  C2 (trigger de `posts.likes` + backfill → feed lê contador + `post_media`
-  aninhada + like-status em lote) · M2 (unificar stats) · M1 (`SELECT` enxuto).
-  *→ derruba o N+1; exige plano dedicado e validação (muda shape do feed).*
-- **Onda 3 — Retenção & realtime estrutural:**
-  A2 (jobs pg_cron de limpeza) · C3-b/c (enxugar publicação `supabase_realtime`,
-  revisar `REPLICA IDENTITY`).
-  *→ segura o crescimento de longo prazo do banco e do realtime.*
+- **✅ Onda 2 — Carga de banco:** *feita em ago/2026, **sem** precisar de
+  migration.* O plano original era criar trigger pra manter `posts.likes` e o
+  feed ler o contador. Na hora de implementar isso se mostrou pior: `posts` tem
+  triggers em `AFTER UPDATE` (`on_post_event`, `trg_notify_new_live`) e cada
+  curtida passaria a disparar essa cadeia. A solução adotada resolve o mesmo
+  problema pelo lado do cliente — mídia **aninhada no select** e curtidas /
+  comentários resolvidos em **2 queries em lote** por feed, sem tocar no
+  caminho de escrita. `posts.likes` segue morta e nada no app a lê.
+- **🟡 Onda 3 — Retenção & realtime estrutural:** *SQL pronto, falta aplicar.*
+  A2 (retenção) e os índices estão escritos e testados em
+  `db/2026-08-otimizacao.sql` — falta só rodar no SQL Editor.
+  Continua **em aberto** o C3-b/c (enxugar a publicação `supabase_realtime`
+  tirando `post_media`/`admin_logs`, revisar o `REPLICA IDENTITY FULL` de
+  `profiles`): mexem em detecção de ban e sincronização de mídia, então pedem
+  janela de teste dedicada.
 - **Onda 4 — Estrutural / futuro (decisão do dono):**
   Migração de mídia pro **Cloudflare R2** (10GB egress grátis/mês, egress
   ilimitado R2↔Cloudflare CDN) — solução definitiva se o site crescer ·
