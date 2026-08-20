@@ -1,4 +1,4 @@
-import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv, Flag, EyeOff } from 'lucide-react';
+import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv, Flag, EyeOff, Timer } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
@@ -10,6 +10,7 @@ import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
 import MediaCarousel from '../ui/MediaCarousel';
+import LazyVisible from '../ui/LazyVisible';
 import MediaPlayer from '../ui/MediaPlayer';
 import EmbedPlayer from '../ui/EmbedPlayer';
 import ConfirmModal from '../ui/ConfirmModal';
@@ -34,7 +35,7 @@ function EditCountdown({ createdAt }) {
   return (
     <p className="text-xs font-mono flex items-center gap-1"
       style={{ color: countdown <= '05:00' ? '#ff4444' : '#6b7280' }}>
-      ⏱ Tempo restante: <span className="font-bold ml-1">{countdown}</span>
+      <Timer size={11} /> Tempo restante: <span className="font-bold ml-1">{countdown}</span>
     </p>
   );
 }
@@ -50,10 +51,17 @@ const EDIT_LIMIT_MINUTES = 30;
 export default function PostCard({ post, onDelete, disablePopup = false }) {
   const { user, profile } = useAuth();
   const { isAdmin, role } = useRole();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  // O feed/perfil já trazem curtidas, "eu curti" e mídia em lote (ver
+  // `attachEngagement` no postService). Quando vêm, o card NÃO refaz query
+  // nenhuma — antes eram 3 por card, ~90 num feed de 30 posts. Onde o post
+  // chega solto (painel admin, moderação), o fallback abaixo ainda busca.
+  const batchedLikes = typeof post.like_count === 'number';
+  const batchedMedia = Array.isArray(post.post_media) ? post.post_media : null;
+
+  const [liked, setLiked] = useState(!!post.liked_by_me);
+  const [likeCount, setLikeCount] = useState(post.like_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
-  const [postMedia, setPostMedia] = useState([]);
+  const [postMedia, setPostMedia] = useState(batchedMedia ?? []);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content || '');
   const [editIsLive, setEditIsLive] = useState(post.is_live || false);
@@ -77,35 +85,50 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     // Guarda de cancelamento: impede setState após desmontar ou troca de post,
     // evitando que uma resposta antiga sobrescreva a atual.
     let cancelled = false;
-    fetchLikes(() => cancelled);
-    fetchMedia(() => cancelled);
+    const isCancelled = () => cancelled;
+
+    if (batchedLikes) {
+      setLikeCount(post.like_count);
+      setLiked(!!post.liked_by_me);
+    } else {
+      fetchLikes(isCancelled);
+    }
+
+    if (batchedMedia) {
+      setPostMedia(batchedMedia);
+      // Mídia sobe DEPOIS do post (upload assíncrono): se o lote veio vazio num
+      // post recém-criado, ainda vale tentar de novo.
+      if (batchedMedia.length === 0) scheduleMediaRetry(isCancelled);
+    } else {
+      fetchMedia(isCancelled);
+    }
+
     return () => { cancelled = true; clearTimeout(mediaIntervalRef.current); clearInterval(countdownRef.current); };
-  }, [post.id, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post.id, user, post.like_count, post.liked_by_me, post.post_media]);
+
+  // Repete a busca de mídia por alguns segundos enquanto o post é novo.
+  function scheduleMediaRetry(isCancelled) {
+    const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
+    if (age >= 60) return;
+    const delays = [1000, 2000, 4000, 8000];
+    let attempt = 0;
+    (function next() {
+      if (attempt >= delays.length) return;
+      mediaIntervalRef.current = setTimeout(async () => {
+        const retryData = await fetchPostMedia(post.id);
+        if (isCancelled()) return;
+        if (retryData.length > 0) setPostMedia(retryData);
+        else { attempt++; next(); }
+      }, delays[attempt]);
+    })();
+  }
 
   async function fetchMedia(isCancelled) {
     const data = await fetchPostMedia(post.id);
     if (isCancelled()) return;
     setPostMedia(data);
-
-    const age = (Date.now() - new Date(post.created_at).getTime()) / 1000;
-    if (data.length === 0 && age < 60) {
-      const delays = [1000, 2000, 4000, 8000];
-      let attempt = 0;
-      function scheduleRetry() {
-        if (attempt >= delays.length) return;
-        mediaIntervalRef.current = setTimeout(async () => {
-          const retryData = await fetchPostMedia(post.id);
-          if (isCancelled()) return;
-          if (retryData.length > 0) {
-            setPostMedia(retryData);
-          } else {
-            attempt++;
-            scheduleRetry();
-          }
-        }, delays[attempt]);
-      }
-      scheduleRetry();
-    }
+    if (data.length === 0) scheduleMediaRetry(isCancelled);
   }
 
   async function fetchLikes(isCancelled) {
@@ -290,8 +313,13 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
           : <EmbedPlayer url={post.embed_url} isLive={post.is_live} expiresAt={post.expires_at} />
       )}
 
-      {/* Carrossel */}
-      {postMedia.length > 0 && <MediaCarousel items={postMedia} postTitle={post.title} />}
+      {/* Carrossel — só monta perto da viewport: mídia de post que ninguém
+          rolou até não deve gastar banda. */}
+      {postMedia.length > 0 && (
+        <LazyVisible minHeight={220}>
+          <MediaCarousel items={postMedia} postTitle={post.title} />
+        </LazyVisible>
+      )}
 
       <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">
         <button onClick={handleLike} disabled={likeLoading}
@@ -312,7 +340,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
           </a>
         </div>
       ) : (
-        <CommentSection postId={post.id} postOwnerId={post.user_id} />
+        <CommentSection postId={post.id} postOwnerId={post.user_id} initialCount={post.comment_count} />
       )}
 
       {confirming && (

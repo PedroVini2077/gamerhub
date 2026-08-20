@@ -1,13 +1,45 @@
 import { supabase } from '../lib/supabase';
 import { removeFilesFromStorage } from '../lib/storage';
+import { compressMedias } from '../lib/image';
 
-const MURAL_SELECT = '*, profiles(id, username, avatar_url, role, bio, created_at)';
+// Colunas explícitas + mídia aninhada: evita `*` e mata a query de mídia por
+// card (20 posts = 20 requests a menos por página).
+const MURAL_SELECT =
+  'id, user_id, message, created_at, hidden_at, ' +
+  'profiles(id, username, avatar_url, role, bio, created_at), ' +
+  'community_post_media(id, url, type, position)';
 
 // ─── Posts ─────────────────────────────────────────────────────────────────
 
+// Curtidas do mural em lote — 1 query por página em vez de 2 por card.
+async function attachMuralEngagement(items, viewerId) {
+  const ids = items.map((i) => i.id);
+  if (!ids.length) return items;
+
+  const { data: likes } = await supabase
+    .from('community_post_likes')
+    .select('post_id, user_id')
+    .in('post_id', ids);
+
+  const count = new Map();
+  const liked = new Set();
+  for (const l of likes || []) {
+    count.set(l.post_id, (count.get(l.post_id) || 0) + 1);
+    if (viewerId && l.user_id === viewerId) liked.add(l.post_id);
+  }
+
+  return items.map((i) => ({
+    ...i,
+    community_post_media: [...(i.community_post_media || [])]
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+    like_count: count.get(i.id) || 0,
+    liked_by_me: liked.has(i.id),
+  }));
+}
+
 // Paginação por keyset (created_at < cursor) — escala melhor que offset em
 // listas grandes. `before` = created_at do último item da página anterior.
-export async function fetchMuralPage({ limit = 20, before = null }) {
+export async function fetchMuralPage({ limit = 20, before = null, viewerId = null }) {
   let q = supabase
     .from('community_posts')
     .select(MURAL_SELECT)
@@ -15,7 +47,7 @@ export async function fetchMuralPage({ limit = 20, before = null }) {
     .limit(limit);
   if (before) q = q.lt('created_at', before);
   const { data } = await q;
-  return data || [];
+  return attachMuralEngagement(data || [], viewerId);
 }
 
 export async function addMuralPost({ userId, message }) {
@@ -57,8 +89,10 @@ export async function fetchMuralMedia(postId) {
 export async function uploadMuralMediaFiles(userId, postId, medias) {
   const rows = [];
   const imageUrls = [];
-  for (let i = 0; i < medias.length; i++) {
-    const { file, type } = medias[i];
+  // Mesma regra do feed: comprime antes de gravar no bucket.
+  const prepared = await compressMedias(medias);
+  for (let i = 0; i < prepared.length; i++) {
+    const { file, type } = prepared[i];
     const ext = file.name.split('.').pop();
     const path = `${userId}/community-${postId}-${i}.${ext}`;
     await supabase.storage.from('post-media').upload(path, file, { contentType: file.type, cacheControl: '31536000' });
@@ -72,6 +106,7 @@ export async function uploadMuralMediaFiles(userId, postId, medias) {
 
 // ─── Reações (curtidas) ────────────────────────────────────────────────────────
 
+// Fallback por card — a listagem do mural já traz os contadores em lote.
 export async function fetchMuralLikeStatus(postId, userId) {
   const [{ count }, { data: liked }] = await Promise.all([
     supabase.from('community_post_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId),

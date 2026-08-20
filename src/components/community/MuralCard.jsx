@@ -15,6 +15,7 @@ import AvatarPopup from '../ui/AvatarPopup';
 import ConfirmModal from '../ui/ConfirmModal';
 import ReportModal from '../ui/ReportModal';
 import MediaCarousel from '../ui/MediaCarousel';
+import LazyVisible from '../ui/LazyVisible';
 
 export default function MuralCard({ item, onDelete }) {
   const { user, profile } = useAuth();
@@ -23,9 +24,14 @@ export default function MuralCard({ item, onDelete }) {
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
   const canReport = user && user.id !== item.user_id;
-  const [media, setMedia] = useState([]);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  // A listagem do mural já traz curtidas e mídia em lote — o card só busca
+  // sozinho quando o item chega solto (ex.: painel de moderação).
+  const batchedLikes = typeof item.like_count === 'number';
+  const batchedMedia = Array.isArray(item.community_post_media) ? item.community_post_media : null;
+
+  const [media, setMedia] = useState(batchedMedia ?? []);
+  const [liked, setLiked] = useState(!!item.liked_by_me);
+  const [likeCount, setLikeCount] = useState(item.like_count ?? 0);
   const [likeLoading, setLikeLoading] = useState(false);
   const retryRef = useRef(null);
 
@@ -34,39 +40,51 @@ export default function MuralCard({ item, onDelete }) {
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      const { count, liked: isLiked } = await fetchMuralLikeStatus(item.id, user?.id);
-      if (cancelled) return;
-      setLikeCount(count);
-      setLiked(isLiked);
-    })();
-
-    // Mídia pode chegar logo após o post (upload assíncrono) — busca com
-    // algumas tentativas espaçadas, igual ao feed.
-    async function loadMedia() {
-      const data = await fetchMuralMedia(item.id);
-      if (cancelled) return;
-      setMedia(data);
-      const age = (Date.now() - new Date(item.created_at).getTime()) / 1000;
-      if (data.length === 0 && age < 30) {
-        const delays = [1000, 2000, 4000];
-        let attempt = 0;
-        function retry() {
-          if (attempt >= delays.length) return;
-          retryRef.current = setTimeout(async () => {
-            const again = await fetchMuralMedia(item.id);
-            if (cancelled) return;
-            if (again.length > 0) setMedia(again);
-            else { attempt++; retry(); }
-          }, delays[attempt]);
-        }
-        retry();
-      }
+    if (batchedLikes) {
+      setLikeCount(item.like_count);
+      setLiked(!!item.liked_by_me);
+    } else {
+      (async () => {
+        const { count, liked: isLiked } = await fetchMuralLikeStatus(item.id, user?.id);
+        if (cancelled) return;
+        setLikeCount(count);
+        setLiked(isLiked);
+      })();
     }
-    loadMedia();
+
+    // Mídia pode chegar logo após o post (upload assíncrono) — tenta de novo
+    // por alguns segundos enquanto o item é novo.
+    function scheduleRetry() {
+      const age = (Date.now() - new Date(item.created_at).getTime()) / 1000;
+      if (age >= 30) return;
+      const delays = [1000, 2000, 4000];
+      let attempt = 0;
+      (function next() {
+        if (attempt >= delays.length) return;
+        retryRef.current = setTimeout(async () => {
+          const again = await fetchMuralMedia(item.id);
+          if (cancelled) return;
+          if (again.length > 0) setMedia(again);
+          else { attempt++; next(); }
+        }, delays[attempt]);
+      })();
+    }
+
+    if (batchedMedia) {
+      setMedia(batchedMedia);
+      if (batchedMedia.length === 0) scheduleRetry();
+    } else {
+      (async () => {
+        const data = await fetchMuralMedia(item.id);
+        if (cancelled) return;
+        setMedia(data);
+        if (data.length === 0) scheduleRetry();
+      })();
+    }
 
     return () => { cancelled = true; clearTimeout(retryRef.current); };
-  }, [item.id, item.created_at, user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id, item.created_at, user?.id, item.like_count, item.liked_by_me, item.community_post_media]);
 
   async function handleLike() {
     if (!user) { toast.error('Faça login para curtir!'); return; }
@@ -142,7 +160,9 @@ export default function MuralCard({ item, onDelete }) {
 
       {media.length > 0 && (
         <div className="pl-12">
-          <MediaCarousel items={media} postTitle={item.profiles?.username || 'Mural'} />
+          <LazyVisible minHeight={220}>
+            <MediaCarousel items={media} postTitle={item.profiles?.username || 'Mural'} />
+          </LazyVisible>
         </div>
       )}
 

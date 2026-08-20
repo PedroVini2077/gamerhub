@@ -11,13 +11,15 @@ import CommentCard from './CommentCard';
 import CommentComposer from './CommentComposer';
 import SuspendedNotice from '../ui/SuspendedNotice';
 
-const CommentSection = memo(function CommentSection({ postId, registerRefresh }) {
+// `initialCount` vem do feed (contagem em lote). Quando existe, o card não
+// dispara a própria query de contagem — era mais um request por post.
+const CommentSection = memo(function CommentSection({ postId, registerRefresh, initialCount }) {
   const { user, profile } = useAuth();
   const { checkContent } = useBlockedWords();
   const suspended = suspendedUntil(profile);
   const [comments, setComments] = useState([]);
   const [open, setOpen] = useState(false);
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(initialCount ?? 0);
 
   async function fetchCount() {
     const c = await fetchCommentCount(postId);
@@ -31,9 +33,11 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh })
   }
 
   useEffect(() => {
-    fetchCount();
+    if (typeof initialCount === 'number') setCount(initialCount);
+    else fetchCount();
     if (registerRefresh) registerRefresh(fetchCommentList);
-  }, [postId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId, initialCount]);
 
   useEffect(() => {
     if (open) fetchCommentList();
