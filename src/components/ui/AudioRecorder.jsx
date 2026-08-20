@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Play, Pause, Trash2, Check, MicOff } from 'lucide-react';
+import { Mic, Square, Play, Pause, Trash2, Check, MicOff, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AudioRecorder({ onRecorded, onCancel }) {
@@ -81,7 +81,8 @@ export default function AudioRecorder({ onRecorded, onCancel }) {
             <span className="text-xs font-mono">Microfone bloqueado</span>
           </div>
           <p className="text-xs font-mono text-gray-500 leading-relaxed">
-            Para liberar: toque no <span className="text-white">🔒 cadeado</span> na barra de endereço → Permissões do site → Microfone → Permitir.
+            Para liberar: toque no <Lock size={11} className="inline align-[-1px] text-white" /> cadeado
+            na barra de endereço, depois em Permissões do site, Microfone, Permitir.
           </p>
           <button
             onClick={() => { setPermissionDenied(false); startRecording(); }}
@@ -122,6 +123,7 @@ export default function AudioRecorder({ onRecorded, onCancel }) {
           <div className="flex items-center gap-3">
             <button
               onClick={togglePlay}
+              aria-label={playing ? 'Pausar prévia' : 'Ouvir prévia'}
               className="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green hover:bg-neon-green/20"
             >
               {playing ? <Pause size={14} /> : <Play size={14} />}

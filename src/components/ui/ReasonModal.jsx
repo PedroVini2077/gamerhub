@@ -55,7 +55,7 @@ export default function ReasonModal({
             {Icon && <Icon size={14} className={a.text} />}
             <h3 className={`font-display text-sm ${a.text} uppercase tracking-wider`}>{title}</h3>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+          <button aria-label="Fechar" onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <X size={15} />
           </button>
         </div>

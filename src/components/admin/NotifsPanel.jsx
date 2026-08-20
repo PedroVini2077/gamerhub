@@ -1,18 +1,13 @@
 import { useState } from 'react';
-import { Bell, RotateCcw, UserPlus, Radio, Tv, ShieldAlert, Ban, Shield } from 'lucide-react';
+import { Bell, RotateCcw } from 'lucide-react';
+import { notifMeta } from '../../lib/logMeta';
 
-function getNotifIcon(type) {
-  if (type === 'new_user')             return <UserPlus size={15} className="text-neon-cyan" />;
-  if (type === 'new_live')             return <Radio size={15} className="text-red-400" />;
-  if (type === 'live_ended')           return <Tv size={15} className="text-gray-500" />;
-  if (type === 'live_reactivated')     return <RotateCcw size={15} className="text-neon-green" />;
-  if (type === 'reactivation_request') return <RotateCcw size={15} className="text-yellow-400" />;
-  if (type === 'security_alert')       return <ShieldAlert size={15} className="text-red-400" />;
-  if (type === 'user_banned')          return <Ban size={15} className="text-red-400" />;
-  if (type === 'unban_request')        return <RotateCcw size={15} className="text-yellow-400" />;
-  if (type === 'unban_approved')       return <Shield size={15} className="text-neon-green" />;
-  if (type === 'banned_login_attempt') return <ShieldAlert size={15} className="text-red-400" />;
-  return <Bell size={15} className="text-gray-500" />;
+// Os ícones vêm de `lib/logMeta` — a lista local anterior tinha um branch morto
+// (`security_alert`, tipo que o banco nunca gera) e não cobria suspensão,
+// banimento automático nem alerta de staff.
+function NotifIcon({ type }) {
+  const { Icon, cls } = notifMeta(type);
+  return <Icon size={15} className={cls} />;
 }
 
 export default function NotifsPanel({ notifications, readIds, notifLoading, fetchNotifications }) {
@@ -52,7 +47,7 @@ export default function NotifsPanel({ notifications, readIds, notifLoading, fetc
           <div key={n.id} className={`card p-4 flex items-start gap-3 transition-all ${
             isRead ? 'opacity-60' : 'border-neon-cyan/20'
           }`}>
-            <span className="shrink-0 mt-0.5">{getNotifIcon(n.type)}</span>
+            <span className="shrink-0 mt-0.5"><NotifIcon type={n.type} /></span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="text-xs font-mono font-bold text-white">{n.title}</p>

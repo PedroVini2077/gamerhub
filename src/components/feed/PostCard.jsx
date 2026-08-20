@@ -5,6 +5,7 @@ import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
 import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia, softDeletePost, updatePost } from '../../services/postService';
 import { canDeleteContent } from '../../lib/roles';
+import { runLikeToggle } from '../../lib/like';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
@@ -142,13 +143,13 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     if (!user) { toast.error('Faça login para curtir!'); return; }
     if (likeLoading) return;
     setLikeLoading(true);
-    if (liked) {
-      await unlikePost(post.id, user.id);
-      setLiked(false); setLikeCount(c => c - 1);
-    } else {
-      await likePost(post.id, user.id);
-      setLiked(true); setLikeCount(c => c + 1);
-    }
+    await runLikeToggle({
+      liked,
+      like:   () => likePost(post.id, user.id),
+      unlike: () => unlikePost(post.id, user.id),
+      apply:  () => { setLiked(!liked); setLikeCount(c => (liked ? c - 1 : c + 1)); },
+      revert: () => { setLiked(liked);  setLikeCount(c => (liked ? c + 1 : c - 1)); },
+    });
     setLikeLoading(false);
   }
 
@@ -183,6 +184,11 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   async function handleSaveEdit() {
     setSaving(true);
+    // Mesma normalização que o updatePost aplica, pra saber se o texto mudou
+    // de fato.
+    const nextContent = editContent?.trim() || null;
+    const contentChanged = nextContent !== (post.content?.trim() || null);
+
     const { error } = await updatePost(
       post.id,
       { content: editContent, isLive: editIsLive, wasLive: post.was_live || editIsLive },
@@ -192,7 +198,15 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     if (error) toast.error('Erro ao salvar');
     else {
       toast.success('Post editado!');
-      logAudit('post_edited', `@${profile?.username} editou o post "${post.title}"`, { category: 'content' });
+      // O trigger `log_post_event` já grava `content_post_edited` quando
+      // título/conteúdo mudam — logar aqui também gerava DUAS linhas para a
+      // mesma edição. Só registramos o caso que o trigger ignora de propósito:
+      // edição que mexeu apenas no marcador de live.
+      if (!contentChanged) {
+        logAudit('post_edited',
+          `@${profile?.username} ${editIsLive ? 'marcou' : 'desmarcou'} o post "${post.title}" como live`,
+          { category: 'content' });
+      }
       setEditing(false);
     }
     setSaving(false);
@@ -323,6 +337,8 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
       <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">
         <button onClick={handleLike} disabled={likeLoading}
+          aria-label={`${liked ? 'Descurtir' : 'Curtir'} — ${likeCount} curtida(s)`}
+          aria-pressed={liked}
           className={`flex items-center gap-1.5 text-xs font-mono transition-all ${
             liked ? 'text-neon-green' : 'text-gray-500 hover:text-neon-green'
           }`}>

@@ -3,11 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchBlockedWords, addBlockedWord, removeBlockedWord } from '../../services/moderationService';
+import { logAudit } from '../../lib/auditLog';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const SEV_COLOR = { low: 'tag-cyan', medium: 'tag-purple', high: 'tag-green' };
 const SEV_LABEL = { low: 'Baixo', medium: 'Médio', high: 'Alto' };
 
 export default function WordlistManager() {
+  const { profile } = useAuth();
   const qc = useQueryClient();
   const { data: words = [], isLoading } = useQuery({
     queryKey: ['blocked_words'],
@@ -28,6 +31,11 @@ export default function WordlistManager() {
       else toast.error('Erro ao adicionar palavra');
     } else {
       toast.success('Palavra adicionada');
+      // Mexer no filtro de palavras muda o que a comunidade inteira pode
+      // publicar — precisa constar na auditoria.
+      logAudit('wordlist_added',
+        `@${profile?.username} adicionou "${newWord.trim()}" ao filtro (severidade: ${severity})`,
+        { category: 'admin', metadata: { word: newWord.trim(), severity } });
       setNewWord('');
       qc.invalidateQueries({ queryKey: ['blocked_words'] });
     }
@@ -39,6 +47,9 @@ export default function WordlistManager() {
     if (error) toast.error('Erro ao remover');
     else {
       toast.success(`"${word}" removida`);
+      logAudit('wordlist_removed',
+        `@${profile?.username} removeu "${word}" do filtro de palavras`,
+        { category: 'admin', metadata: { word } });
       qc.invalidateQueries({ queryKey: ['blocked_words'] });
     }
   }

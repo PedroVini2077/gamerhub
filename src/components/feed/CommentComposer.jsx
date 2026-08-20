@@ -33,7 +33,7 @@ export default function CommentComposer({ onSubmit, placeholder = 'Escreva um co
         maxLength={500}
         autoFocus={autoFocus}
       />
-      <button
+      <button aria-label="Enviar comentário"
         onClick={handleSubmit}
         disabled={loading || !text.trim()}
         className="btn-neon py-2 px-3 shrink-0 flex items-center gap-1"

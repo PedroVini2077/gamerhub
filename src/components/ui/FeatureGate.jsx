@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { Ban } from 'lucide-react';
 
 export default function FeatureGate({ flag, children }) {
   const [on, setOn] = useState(null);
@@ -18,7 +19,7 @@ export default function FeatureGate({ flag, children }) {
   if (!on) return (
     <div className="max-w-md mx-auto mt-10">
       <div className="card p-10 text-center space-y-3">
-        <p className="text-3xl">🚫</p>
+        <Ban size={34} className="text-gray-500 mx-auto" />
         <p className="font-display text-gray-200">Seção temporariamente desativada</p>
         <p className="text-xs font-mono text-gray-500">
           Esta área foi pausada pelo fundador. Volte em breve!

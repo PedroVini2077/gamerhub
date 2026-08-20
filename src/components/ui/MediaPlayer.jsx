@@ -6,6 +6,10 @@ export default function MediaPlayer({ src, title }) {
   const progressRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  // Tempo corrente em estado, não lido do ref durante o render: antes o
+  // contador só atualizava porque `progress` forçava re-render por tabela —
+  // funcionava por acidente e quebraria com renderização concorrente.
+  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -14,10 +18,11 @@ export default function MediaPlayer({ src, title }) {
     const audio = audioRef.current;
     if (!audio) return;
     const onTime = () => {
+      setCurrentTime(audio.currentTime || 0);
       if (!dragging) setProgress((audio.currentTime / audio.duration) * 100 || 0);
     };
     const onLoad = () => setDuration(audio.duration);
-    const onEnd = () => setPlaying(false);
+    const onEnd = () => { setPlaying(false); setProgress(0); setCurrentTime(0); };
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('loadedmetadata', onLoad);
     audio.addEventListener('ended', onEnd);
@@ -34,6 +39,7 @@ export default function MediaPlayer({ src, title }) {
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const newTime = pct * duration;
     audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
     setProgress(pct * 100);
   }
 
@@ -47,8 +53,6 @@ export default function MediaPlayer({ src, title }) {
     if (!s || isNaN(s)) return '0:00';
     return Math.floor(s / 60) + ':' + Math.floor(s % 60).toString().padStart(2, '0');
   }
-
-  const currentTime = audioRef.current ? audioRef.current.currentTime : 0;
 
   return (
     <div className="mt-3 rounded-lg border border-dark-400 bg-dark-800 overflow-hidden select-none">
@@ -80,6 +84,7 @@ export default function MediaPlayer({ src, title }) {
 
       <div className="flex items-center gap-3 px-4 py-3">
         <button
+          aria-label={playing ? 'Pausar' : 'Reproduzir'}
           onClick={togglePlay}
           className="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green hover:bg-neon-green/20 transition-colors shrink-0"
         >

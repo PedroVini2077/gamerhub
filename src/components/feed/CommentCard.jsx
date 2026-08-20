@@ -64,6 +64,8 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
             <button
               onClick={toggle}
               disabled={loading}
+              aria-label={`${liked ? 'Descurtir' : 'Curtir'} comentário${count ? ` — ${count} curtida(s)` : ''}`}
+              aria-pressed={liked}
               className={`flex items-center gap-1 text-xs font-mono transition-colors ${
                 liked ? 'text-red-400' : 'text-gray-600 hover:text-red-400'
               }`}

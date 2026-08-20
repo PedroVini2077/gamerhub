@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
-import { UserPlus, Clock, ShieldAlert, Check, X, RotateCcw, RefreshCw, ChevronDown } from 'lucide-react';
+import { UserPlus, Clock, ShieldAlert, Check, X, RotateCcw, RefreshCw, ChevronDown, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ReasonModal from '../ui/ReasonModal';
@@ -171,7 +171,7 @@ export default function CargosTab() {
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">
           Indicações, avaliações e rebaixamentos de cargo
         </p>
-        <button onClick={handleRefresh} disabled={refreshing}
+        <button aria-label="Atualizar" onClick={handleRefresh} disabled={refreshing}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
         </button>
@@ -200,7 +200,7 @@ export default function CargosTab() {
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-dark-700/40 transition-colors text-left">
                         <CandidateHeader profile={nom.candidate} extra={
                           <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-purple-400/15 text-purple-300 shrink-0">
-                            → {ROLE_LABEL[nom.target_role]}
+                            <ArrowRight size={11} className="inline align-[-1px]" /> {ROLE_LABEL[nom.target_role]}
                           </span>
                         } />
                         <span className="text-xs font-mono text-gray-600 ml-auto shrink-0 hidden sm:inline">
@@ -292,7 +292,7 @@ export default function CargosTab() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <CandidateHeader profile={req.target} extra={
                         <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-red-400/15 text-red-300 shrink-0">
-                          {ROLE_LABEL[req.previous_role]} → {ROLE_LABEL[req.proposed_role]}
+                          {ROLE_LABEL[req.previous_role]} <ArrowRight size={11} className="inline align-[-1px]" /> {ROLE_LABEL[req.proposed_role]}
                         </span>
                       } />
                       <span className="text-xs font-mono text-gray-600 ml-auto shrink-0">

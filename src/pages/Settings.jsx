@@ -4,7 +4,7 @@ import { updateProfile } from '../services/profileService';
 import { changePassword, changeEmail, deleteOwnAccount } from '../services/authService';
 import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
-import { Settings, Lock, Mail, Bell, Shield, ChevronRight, Trash2 } from 'lucide-react';
+import { Settings, Lock, Mail, Heart, MessageSquare, Shield, ChevronRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
@@ -231,21 +231,21 @@ export default function Settings_() {
         <h2 className="font-display text-xs text-gray-500 tracking-widest uppercase mb-2">Notificações</h2>
         <div className="flex items-center gap-4 py-4 border-b border-dark-500">
           <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
-            <Bell size={15} className="text-gray-400" />
+            <Heart size={15} className="text-gray-400" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-white">Likes nos posts</p>
-            <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando curtirem seu post</p>
+            <p className="text-sm font-semibold text-white">Curtidas</p>
+            <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando curtirem seu post ou comentário</p>
           </div>
           {notifLikes !== null && <Toggle value={notifLikes} onChange={v => handleToggleNotif('likes', v)} />}
         </div>
         <div className="flex items-center gap-4 py-4">
           <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
-            <Bell size={15} className="text-gray-400" />
+            <MessageSquare size={15} className="text-gray-400" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-white">Comentários</p>
-            <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando comentarem no seu post</p>
+            <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando comentarem no seu post ou responderem você</p>
           </div>
           {notifComments !== null && <Toggle value={notifComments} onChange={v => handleToggleNotif('comments', v)} />}
         </div>

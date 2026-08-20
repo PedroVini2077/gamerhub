@@ -94,7 +94,9 @@
 - ℹ️ **`unused_index` (advisor)**: ~15 índices (quase todos de FK) aparecem como
   "não usados". **Mantidos de propósito** — são índices de chave estrangeira /
   colunas de join que passam a ser usados conforme o volume cresce. Removê-los
-  agora prejudicaria escalabilidade. Não é dívida; é precaução.
+  agora prejudicaria escalabilidade. Não é dívida; é precaução. *(Os 7 índices
+  de `db/2026-08-otimizacao.sql`, aplicados em 20/08, caem na mesma categoria
+  — recém-criados, ainda sem histórico de uso no advisor.)*
 - ✅ **`auth_rls_initplan`**: `auth.uid()` envolvido em `(select auth.uid())`
   em todas as políticas. Verificado em ROLLBACK (anon/user/admin). *(feito)*
 - ✅ **`multiple_permissive_policies`**: consolidadas em `posts`, `community_posts`,
@@ -409,12 +411,18 @@ local em transação com `ROLLBACK` antes de virar arquivo.
 | **Extra** — carrossel só monta perto da viewport | `LazyVisible` |
 | **Extra** — Sidebar e RightPanel dividem o cache de stats | `keyService.SITE_STATS_KEY` |
 | **Extra** — Landing e Home viram lazy | `App.jsx` |
-| A2 + índices + fix do "top posts" | **`db/2026-08-otimizacao.sql`** — ⚠️ escrito e testado, mas **ainda não aplicado** no Supabase |
+| A2 + índices + fix do "top posts" | `db/2026-08-otimizacao.sql` — ✅ aplicado em produção em 20/08/2026 |
+| Notificações/logs (ver seção de polimento abaixo) | `db/2026-08-logs-e-notificacoes.sql` — ✅ aplicado em produção em 20/08/2026 |
 
-> ⚠️ **Pendência de 1 passo:** rodar `db/2026-08-otimizacao.sql` no SQL Editor.
-> Enquanto não rodar, seguem valendo: falta de índice em `posts(created_at)`,
-> zero retenção nas tabelas de log e o ranking "top posts" do painel do
-> fundador ordenado por uma coluna zerada.
+> ✅ **Os dois arquivos SQL foram aplicados em produção** (20/08/2026), via MCP
+> do Supabase, função por função, com verificação depois de cada uma. A
+> limpeza (`cleanup_old_data`) já rodou uma vez manualmente (removeu 8
+> notificações lidas antigas + 3 tentativas de login expiradas — números
+> batendo exatamente com a dimensão prévia) e está **agendada via pg_cron**
+> para todo dia às 4h UTC (`gamerhub-cleanup`, confirmado `active: true` em
+> `cron.job`). Os 7 índices novos foram confirmados existentes em
+> `pg_indexes`. `get_advisors` (security + performance) rodado depois — ver
+> nota abaixo.
 
 #### O que ficou em aberto (próximos passos)
 
@@ -606,9 +614,9 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
   problema pelo lado do cliente — mídia **aninhada no select** e curtidas /
   comentários resolvidos em **2 queries em lote** por feed, sem tocar no
   caminho de escrita. `posts.likes` segue morta e nada no app a lê.
-- **🟡 Onda 3 — Retenção & realtime estrutural:** *SQL pronto, falta aplicar.*
-  A2 (retenção) e os índices estão escritos e testados em
-  `db/2026-08-otimizacao.sql` — falta só rodar no SQL Editor.
+- **🟡 Onda 3 — Retenção & realtime estrutural:** *A2 e os índices aplicados em
+  produção (20/08/2026); a limpeza já rodou uma vez e está agendada via
+  pg_cron todo dia às 4h UTC (`gamerhub-cleanup`).*
   Continua **em aberto** o C3-b/c (enxugar a publicação `supabase_realtime`
   tirando `post_media`/`admin_logs`, revisar o `REPLICA IDENTITY FULL` de
   `profiles`): mexem em detecção de ban e sincronização de mídia, então pedem
@@ -617,6 +625,102 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
   Migração de mídia pro **Cloudflare R2** (10GB egress grátis/mês, egress
   ilimitado R2↔Cloudflare CDN) — solução definitiva se o site crescer ·
   M3 (aligeirar bundle 3D) · B1 (presence em escala).
+
+---
+
+## 🧹 Polimento geral — logs, notificações e robustez (ago/2026)
+
+> Varredura pedida pelo dono ("olha tudo oq dá pra melhorar"), focada em: os
+> logs registram mesmo o site inteiro? as notificações batem? Tudo abaixo já
+> foi **feito e validado** (build + lint + 50 testes; o SQL rodado num Postgres
+> 16 local em transação com ROLLBACK).
+
+### Furos encontrados e corrigidos
+
+**Trilha de auditoria — o que NÃO era registrado**
+- ✅ Mudança de configuração do site (`SiteTab`) não gerava log nenhum. Dava pra
+  ligar o modo manutenção ou desligar a Comunidade inteira sem deixar rastro.
+  Agora grava `site_config_changed` com valor antigo → novo (severidade
+  `warning` nas chaves de alto impacto).
+- ✅ Alterações no filtro de palavras (`WordlistManager`) não eram registradas.
+- ✅ Decisões da fila de moderação (ocultar/restaurar conteúdo) não eram
+  registradas — só o status ficava na própria fila.
+- ✅ Edição de post gerava log **duplicado** (o cliente e o trigger
+  `log_post_event` gravavam o mesmo evento). O cliente agora só registra o caso
+  que o trigger ignora de propósito (edição que só mexeu no marcador de live).
+- ✅ Categorias `live` e `profile` não existiam nos filtros dos dois painéis —
+  esses logs eram gravados mas **invisíveis** para quem filtrasse.
+- ✅ ~20 actions caíam no ícone genérico por deriva entre o código e os mapas
+  locais de cada painel. Unificado em `src/lib/logMeta.js`, com **teste que
+  varre o código-fonte e falha se alguma action ficar sem registro**.
+
+**Notificações — o que não batia**
+- ✅ O painel do fundador filtrava `admin_notifications` por uma whitelist de 5
+  tipos. Suspensão, banimento automático, suspensão automática, pedido de
+  desban, desban aprovado, live reativada, pedido de reativação e tentativa de
+  login de banido **nunca apareciam**. A whitelist saiu — tipo novo aparece
+  sozinho.
+- ✅ O mesmo painel filtrava logs pela action `set_role`, que só `owner_set_role`
+  grava. Troca de cargo feita por admin/super_admin grava `admin_role_changed`
+  — ou seja, a troca de cargo mais comum do site nunca aparecia.
+- ✅ `owner_set_role` gravava "Role alterada para admin pelo fundador", **sem
+  dizer para quem**. Agora nomeia o alvo e guarda o cargo anterior.
+- ✅ Usuário **suspenso** não era avisado: só os admins recebiam notificação. Ele
+  descobria ao tentar postar. Agora recebe notificação com o prazo.
+- ✅ Desban **negado** não notificava ninguém (a aprovação notificava). O admin
+  que pediu nunca sabia do resultado.
+- ✅ O sino não atualizava sozinho — `notifications` não está no realtime e a
+  query herdava `refetchOnWindowFocus: false`. Agora revalida ao voltar o foco
+  e ao abrir o painel.
+- ✅ `markAllRead` ignorava erro: o badge zerava na tela e voltava sozinho depois.
+- ✅ Audiência `owner` não entrava na lista do `/admin` — alertas enviados pela
+  equipe via `notify_owner` só apareciam no painel do fundador.
+- ✅ Rótulos de Configurações diziam "Likes nos posts" / "comentarem no seu
+  post", mas as preferências também cobrem curtida em comentário e resposta a
+  comentário.
+
+**Robustez**
+- ✅ Curtir falhava em silêncio nos três lugares (post, mural, comentário): o
+  coração acendia e o número subia mesmo quando o servidor recusava. Extraído
+  `lib/like.js` com rollback + aviso, coberto por testes.
+- ✅ Erro no upload de mídia era ignorado: a linha ia pro banco mesmo assim e o
+  post ficava com imagem quebrada **para sempre**, apontando pra um arquivo que
+  nunca existiu. Agora a mídia que falha não é registrada e o usuário é avisado.
+
+**Interface**
+- ✅ Zero emojis na UI (regra do `CLAUDE.md`): 🚫 📢 🔒 👑 ✦ ⚠️ ⚑ ✓ e as setas
+  de paginação viraram ícones Lucide. Removido também o campo `icon` morto de
+  `lib/embed.js`, que carregava emojis e não era usado em lugar nenhum.
+- ✅ Acessibilidade: 20 botões só-ícone ganharam nome acessível (fechar modais,
+  enviar, atualizar, play/pause, copiar key, menu) e os botões de curtir
+  ganharam `aria-label` + `aria-pressed` (antes o leitor de tela só ouvia o
+  número).
+- ✅ `index.html`: título real, `description` e tags Open Graph/Twitter — o link
+  do site era compartilhado sem título nem descrição.
+
+### Ainda em aberto
+
+- ✅ **`db/2026-08-otimizacao.sql` e `db/2026-08-logs-e-notificacoes.sql`
+  aplicados em produção em 20/08/2026**, função por função via MCP do
+  Supabase, com verificação depois de cada uma: os 7 índices confirmados em
+  `pg_indexes`, `cleanup_old_data()` rodada uma vez (removeu 8 notificações
+  lidas antigas + 3 tentativas de login expiradas — bateu com a dimensão
+  prévia) e agendada via pg_cron (`gamerhub-cleanup`, `active: true`, todo dia
+  às 4h UTC). `get_advisors` (security + performance) rodado depois: nenhum
+  achado novo de nível alto/crítico; os únicos avisos ligados às 7 funções
+  recriadas e aos 7 índices novos são do mesmo tipo já esperado/documentado
+  no projeto (RPC exposta a `authenticated` com checagem interna por
+  `auth.uid()`, e índice "não usado" por ter acabado de ser criado).
+- ⬜ **`Admin.jsx` com ~900 linhas.** Os painéis já foram extraídos; o que sobrou
+  é orquestração (estado + fetchers de todas as abas). Quebrar em hooks por aba
+  (`useAdminUsers`, `useAdminLogs`, …) é o próximo passo, mas é refactor de
+  verdade — pede janela dedicada, não entra junto com correção.
+- ⬜ **Denúncia criada (`reports`) não gera log de auditoria.** Fica só na
+  tabela `reports`. Não foi adicionado de propósito: qualquer usuário pode
+  denunciar, e logar isso em `admin_logs` inflaria a trilha. Reavaliar se a
+  moderação sentir falta.
+- ⬜ **Canal `admin-realtime` assina `posts` e `admin_logs` com `event:'*'`
+  global** — ver seção da auditoria de custos.
 
 ---
 

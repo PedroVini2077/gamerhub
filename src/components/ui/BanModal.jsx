@@ -47,7 +47,7 @@ export default function BanModal({ target, onClose, onBanned }) {
             <Ban size={14} className="text-red-400" />
             <h3 className="font-display text-sm text-red-400 uppercase tracking-wider">Banir Usuário</h3>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+          <button aria-label="Fechar" onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <X size={15} />
           </button>
         </div>

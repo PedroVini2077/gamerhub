@@ -1,31 +1,13 @@
 import { useState } from 'react';
-import { Activity, RotateCcw, ScrollText, FileText, LogIn, LogOut, AlertTriangle, UserPlus, Ban, Clock, ShieldOff, LockOpen, Trash2, Pencil, Tv, CheckCircle, XCircle, Crown, Shield } from 'lucide-react';
+import { Activity, RotateCcw, Archive } from 'lucide-react';
+import {
+  LOG_CATEGORIES, actionMeta, LOG_RETENTION_DAYS,
+} from '../../lib/logMeta';
 
-const iconMap = {
-  auth_login_success:   { Icon: LogIn,       cls: 'text-neon-green' },
-  auth_login_failed:    { Icon: AlertTriangle,cls: 'text-yellow-400' },
-  auth_logout:          { Icon: LogOut,       cls: 'text-gray-400' },
-  auth_register:        { Icon: UserPlus,     cls: 'text-neon-cyan' },
-  auth_banned_attempt:  { Icon: Ban,          cls: 'text-red-400' },
-  auth_rate_limited:    { Icon: Clock,        cls: 'text-yellow-400' },
-  auth_permanent_block: { Icon: ShieldOff,    cls: 'text-red-500' },
-  admin_unlock_login:   { Icon: LockOpen,     cls: 'text-neon-green' },
-  content_post_created: { Icon: FileText,     cls: 'text-neon-green' },
-  content_post_deleted: { Icon: Trash2,       cls: 'text-red-400' },
-  content_post_edited:  { Icon: Pencil,       cls: 'text-gray-400' },
-  live_ended:           { Icon: Tv,           cls: 'text-gray-500' },
-  live_reactivated:     { Icon: RotateCcw,    cls: 'text-neon-green' },
-  reactivation_requested:{ Icon: RotateCcw,  cls: 'text-yellow-400' },
-  reactivation_approved:{ Icon: CheckCircle,  cls: 'text-neon-green' },
-  reactivation_denied:  { Icon: XCircle,      cls: 'text-red-400' },
-  admin_ban:              { Icon: Ban,           cls: 'text-red-400' },
-  admin_unban:            { Icon: Shield,        cls: 'text-neon-green' },
-  admin_unban_requested:  { Icon: RotateCcw,    cls: 'text-yellow-400' },
-  admin_unban_approved:   { Icon: CheckCircle,   cls: 'text-neon-green' },
-  admin_unban_denied:     { Icon: XCircle,       cls: 'text-red-400' },
-  admin_role_changed:     { Icon: Crown,         cls: 'text-yellow-400' },
-  admin_delete_posts:     { Icon: Trash2,        cls: 'text-red-400' },
-};
+// Ícones e rótulos de categoria vêm de `lib/logMeta` — antes este arquivo tinha
+// o próprio mapa, que cobria menos da metade das actions que o site grava e não
+// oferecia as categorias `live`, `profile` e `system` no filtro.
+const FILTERS = [{ id: 'todos', label: 'Todos' }, ...LOG_CATEGORIES];
 
 export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchLogs }) {
   const [spinning, setSpinning] = useState(false);
@@ -50,13 +32,7 @@ export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchL
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {[
-          { id: 'todos',    label: 'Todos' },
-          { id: 'auth',     label: 'Auth' },
-          { id: 'security', label: 'Segurança' },
-          { id: 'content',  label: 'Conteúdo' },
-          { id: 'admin',    label: 'Admin' },
-        ].map(c => (
+        {FILTERS.map(c => (
           <button key={c.id} onClick={() => setLogCat(c.id)}
             className={`tag cursor-pointer transition-all ${
               logCat === c.id ? 'tag-purple' : 'opacity-40 hover:opacity-70 tag-cyan'
@@ -65,6 +41,11 @@ export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchL
           </button>
         ))}
       </div>
+
+      <p className="flex items-center gap-1.5 text-xs font-mono text-gray-600">
+        <Archive size={11} className="shrink-0" />
+        Registros com mais de {LOG_RETENTION_DAYS} dias são removidos automaticamente.
+      </p>
 
       {logsLoading ? (
         <div className="space-y-2">
@@ -81,7 +62,7 @@ export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchL
           <p className="text-xs font-mono text-gray-500">Nenhuma atividade registrada</p>
         </div>
       ) : logs.map(log => {
-        const { Icon = ScrollText, cls = 'text-gray-500' } = iconMap[log.action] || {};
+        const { Icon, cls } = actionMeta(log.action);
         const severityDot =
           log.severity === 'critical' ? 'bg-red-500 animate-pulse' :
           log.severity === 'warning'  ? 'bg-yellow-400' :

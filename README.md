@@ -168,6 +168,8 @@ src/
 │   ├── image.js           # Compressão/resize client-side antes do upload (economia de egress)
 │   ├── storage.js         # Remoção de arquivos do bucket ao deletar post/mural
 │   ├── auditLog.js        # logAudit() -> RPC log_audit_event
+│   ├── logMeta.js         # Fonte única de categorias/ícones/retenção dos logs
+│   ├── like.js            # Curtida otimista com rollback quando o servidor recusa
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
@@ -583,9 +585,50 @@ Tabela `site_config` (chave/valor), editável só pelo owner via
   painel do dono permite **exportar em CSV** (respeita os filtros de categoria/
   severidade; até 5000 linhas, com BOM UTF-8 pro Excel).
 - **`admin_notifications`** + **`admin_notification_reads`**: notificações para
-  admins (audiência `all_admins` ou `super_admin`), com controle de lidas por
-  admin. Geradas por triggers (`notify_admin_new_user`, `notify_admin_new_live`,
-  `notify_admin_reactivation_request`) e por funções de ban/segurança.
+  a equipe (audiência `all_admins`, `super_admin` ou `owner`), com controle de
+  lidas por admin. Geradas por triggers (`notify_admin_new_user`,
+  `notify_admin_new_live`, `notify_admin_reactivation_request`) e por funções de
+  ban/segurança.
+- **`notifications`**: notificações para o **usuário final** (sino do header).
+  Tipos: `like`, `comment` e `moderation`. Sempre geradas no banco, por trigger
+  `SECURITY DEFINER` (`notify_post_like`, `notify_post_comment`,
+  `notify_comment_like`) ou pela RPC `notify_user` — o cliente **não** insere
+  direto. Respeitam `profiles.notif_likes` / `profiles.notif_comments`.
+  - `notif_likes` cobre curtida em **post e em comentário**; `notif_comments`
+    cobre comentário no post **e resposta a comentário** — os rótulos de
+    Configurações dizem isso.
+  - O sino revalida quando a aba volta ao foco e ao ser aberto. `notifications`
+    **não** está na publicação de realtime de propósito (seria uma conexão
+    permanente por usuário logado para um evento raro).
+
+#### Cobertura da trilha de auditoria
+
+`src/lib/logMeta.js` é a **fonte única** de categorias, ícones e rótulos usada
+pelos dois painéis (admin e dono). Categorias: `auth`, `security`, `content`,
+`live`, `profile`, `admin`, `system`.
+
+> Ao criar um `logAudit()` novo — ou uma função no banco que escreva em
+> `admin_logs` — registre a action em `logMeta.js`. O teste
+> `src/lib/__tests__/logMeta.test.js` varre o código-fonte e **falha** se
+> alguma action ou categoria ficar sem entrada. Foi exatamente essa deriva que
+> deixou metade dos eventos com ícone genérico e escondeu as categorias `live`
+> e `profile` do filtro.
+
+Ações que passaram a ser auditadas (antes não deixavam rastro nenhum):
+mudança de configuração do site (`site_config_changed` — modo manutenção,
+ligar/desligar seções, banner), alterações no filtro de palavras
+(`wordlist_added` / `wordlist_removed`) e decisões da fila de moderação
+(`moderation_approved` / `moderation_rejected`).
+
+#### Retenção
+
+`cleanup_old_data()` (em `db/2026-08-otimizacao.sql`, agendada por
+`db/2026-08-logs-e-notificacoes.sql`) apaga diariamente: `admin_logs` com mais
+de **90 dias**, notificações **lidas** com mais de 30 dias, `login_attempts` já
+expirados com mais de 30 dias e chat de live **encerrada** com mais de 7 dias.
+Bloqueio permanente e live em andamento nunca são tocados. Os dois painéis de
+log avisam o prazo na tela (`LOG_RETENTION_DAYS`) — mantenha o valor em sincronia
+com o SQL; há teste cobrindo isso.
 
 ### Moderação de conteúdo
 

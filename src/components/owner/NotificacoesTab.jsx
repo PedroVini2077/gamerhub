@@ -2,28 +2,11 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
-import {
-  RefreshCw, UserX, UserCheck, Key, AlertTriangle, Trash2,
-  UserPlus, Tv, MonitorOff, Settings2, Bell, Siren, FileText,
-} from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { feedItemMeta } from '../../lib/logMeta';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 
-const KIND_CFG = {
-  ban:          { Icon: UserX,         color: '#ef4444' },
-  unban:        { Icon: UserCheck,     color: '#22c55e' },
-  role_change:  { Icon: Key,           color: '#f97316' },
-  alert:        { Icon: AlertTriangle, color: '#ef4444' },
-  delete:       { Icon: Trash2,        color: '#6b7280' },
-  new_user:     { Icon: UserPlus,      color: '#22d3ee' },
-  new_live:     { Icon: Tv,            color: '#39ff14' },
-  live_ended:   { Icon: MonitorOff,     color: '#6b7280' },
-  activity:     { Icon: Settings2,     color: '#6b7280' },
-  notification: { Icon: Bell,          color: '#a855f7' },
-  user_banned:  { Icon: UserX,         color: '#ef4444' },
-  staff_alert:  { Icon: Siren,         color: '#ef4444' },
-};
-const DEFAULT_KIND = { Icon: FileText, color: '#6b7280' };
 
 export default function NotificacoesTab() {
   const [refreshing, setRefreshing] = useState(false);
@@ -74,7 +57,10 @@ export default function NotificacoesTab() {
         <motion.div className="space-y-1"
           variants={listContainer} initial="initial" animate="animate">
           {notifs.map((n, i) => {
-            const cfg = KIND_CFG[n.kind] || DEFAULT_KIND;
+            // `kind` vem de admin_notifications; quando o item nasce de um
+            // admin_log, o `kind` é genérico ('activity'/'delete') e quem
+            // identifica de verdade é a `action`. `feedItemMeta` tenta os dois.
+            const cfg = feedItemMeta(n);
             const { Icon } = cfg;
             return (
               <motion.div key={n.id ?? i} variants={listItem}

@@ -5,7 +5,7 @@ export default function ForgotForm({ email, setEmail, loading, onSubmit, onBack 
   return (
     <>
       <div className="flex items-center gap-3 mb-6">
-        <button type="button" onClick={onBack}
+        <button aria-label="Voltar para o login" type="button" onClick={onBack}
           className="text-gray-500 hover:text-neon-green transition-colors">
           <ArrowLeft size={16} />
         </button>

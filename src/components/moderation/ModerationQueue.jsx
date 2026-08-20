@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Clock, ShieldAlert, UserX, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ShieldAlert, UserX, Loader2, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import {
@@ -7,6 +7,8 @@ import {
   updateReportStatus, addViolation, applySuspension, hideContent,
 } from '../../services/moderationService';
 import BanModal from '../ui/BanModal';
+import { logAudit } from '../../lib/auditLog';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const CONTENT_LABEL = { post: 'Post', comment: 'Comentário', mural: 'Mural', chat: 'Chat' };
 const TRIGGER_LABEL  = { report: 'Denúncias', wordlist: 'Palavrão', ai: 'IA', escalation: 'Escalação', links: 'Link perigoso' };
@@ -71,6 +73,7 @@ function ActionSelect({ value, onChange }) {
 }
 
 export default function ModerationQueue() {
+  const { profile } = useAuth();
   const [items, setItems] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
@@ -161,6 +164,25 @@ export default function ModerationQueue() {
         }
       }
 
+      // Decisão de moderação é ação de admin com consequência (conteúdo some ou
+      // volta, autor leva pontos de infração) e não constava em lugar nenhum da
+      // auditoria — só no status da própria fila.
+      logAudit(
+        decision === 'approved' ? 'moderation_approved' : 'moderation_rejected',
+        `@${profile?.username} ${decision === 'approved' ? 'confirmou a ocultação' : 'restaurou'} ` +
+        `${CONTENT_LABEL[item.content_type]?.toLowerCase() || 'conteúdo'} ` +
+        `(motivo da fila: ${TRIGGER_LABEL[item.trigger_type] || item.trigger_type || '—'})`,
+        {
+          category: 'admin',
+          severity: decision === 'approved' ? 'warning' : 'info',
+          metadata: {
+            content_type: item.content_type,
+            content_id: item.content_id,
+            decision,
+            action: actions[item.id] || null,
+          },
+        });
+
       toast.success(decision === 'approved' ? 'Ocultação confirmada' : 'Conteúdo restaurado');
       load(page);
     } finally {
@@ -220,7 +242,7 @@ export default function ModerationQueue() {
                 <p className="text-xs font-mono text-gray-500">{reps.length} denúncia(s):</p>
                 {reps.slice(0, 3).map(r => (
                   <div key={r.id} className="flex items-center gap-2 text-xs font-mono text-gray-400">
-                    <span className="text-orange-400">⚑</span>
+                    <Flag size={11} className="text-orange-400 shrink-0" />
                     {r.reason}
                     {r.details && <span className="text-gray-600">— {r.details}</span>}
                   </div>
@@ -263,12 +285,12 @@ export default function ModerationQueue() {
         <div className="flex items-center justify-between text-xs font-mono text-gray-500 pt-2">
           <button disabled={page === 0} onClick={() => setPage(p => p - 1)}
             className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
-            ← Anterior
+            <ChevronLeft size={13} /> Anterior
           </button>
           <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} de {totalCount}</span>
           <button disabled={(page + 1) * PAGE_SIZE >= totalCount} onClick={() => setPage(p => p + 1)}
             className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
-            Próxima →
+            Próxima <ChevronRight size={13} />
           </button>
         </div>
       )}

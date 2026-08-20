@@ -5,7 +5,7 @@ import { fetchProfileByUsername, fetchUserXP } from '../services/profileService'
 import { useAuth } from '../hooks/useAuth.jsx';
 import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
-import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords, Crown, Sparkles } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { getRankLabel, getSubRankProgress, getBorderForProfile } from '../lib/ranks';
 import { calcAge } from '../lib/date';
@@ -201,8 +201,8 @@ export default function UserProfile() {
         {rank && (
           <div className="mt-3 pt-3 border-t border-dark-500 space-y-1.5">
             {isOwner ? (
-              <p className="text-xs font-mono font-bold" style={{ color: rank.color }}>
-                ✦ Criador da plataforma
+              <p className="text-xs font-mono font-bold flex items-center gap-1.5" style={{ color: rank.color }}>
+                <Sparkles size={12} /> Criador da plataforma
               </p>
             ) : (
               <>
@@ -223,7 +223,9 @@ export default function UserProfile() {
                       style={{ width: `${progress.pct}%`, background: rank.color, boxShadow: `0 0 4px ${rank.glow}` }} />
                   </div>
                 ) : (
-                  <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo 👑</p>
+                  <p className="text-xs font-mono flex items-center gap-1" style={{ color: rank.color }}>
+                    <Crown size={11} /> Rank máximo
+                  </p>
                 )}
               </>
             )}

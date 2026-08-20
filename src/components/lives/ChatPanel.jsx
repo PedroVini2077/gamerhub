@@ -89,7 +89,7 @@ export default function ChatPanel({
               onChange={e => setMsg(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendMessage()}
               maxLength={200} />
-            <button onClick={sendMessage} disabled={sending} className="btn-solid py-1.5 px-3">
+            <button aria-label="Enviar mensagem" onClick={sendMessage} disabled={sending} className="btn-solid py-1.5 px-3">
               <Send size={13} />
             </button>
           </div>

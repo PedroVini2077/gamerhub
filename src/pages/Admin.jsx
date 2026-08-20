@@ -7,12 +7,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
-import {
-  Shield, X, Users, FileText, Key,
-  RotateCcw, CheckCircle, XCircle, Crown,
-  Bell, Activity, Trash2, Tv,
-  ShieldAlert, LockOpen, UserPlus, Siren, Send,
-} from 'lucide-react';
+import { Shield, X, Users, FileText, Key, RotateCcw, CheckCircle, XCircle, Crown, Bell, Activity, Trash2, Tv, ShieldAlert, LockOpen, UserPlus, Siren, Send, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BanModal from '../components/ui/BanModal';
 import ReasonModal from '../components/ui/ReasonModal';
@@ -38,6 +33,17 @@ const REACTIVATE_REASONS = [
 // UsersPanel dependem da lista completa, e a base de usuários cresce bem mais
 // devagar que posts.
 const PAGE_SIZE = 20;
+// Público das notificações de staff que este usuário deve enxergar.
+// O `owner` também é destinatário de `notify_owner` (audience 'owner'), que
+// antes só aparecia no painel do fundador — quem abrisse /admin como dono não
+// via os alertas enviados pela equipe.
+function notifAudience(isSuperAdmin, isOwner) {
+  const list = ['all_admins'];
+  if (isSuperAdmin) list.push('super_admin');
+  if (isOwner) list.push('owner');
+  return list;
+}
+
 const MAX_USERS = 1000;
 
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
@@ -207,7 +213,7 @@ function ReactivationModal({ live, isSuperAdmin, onSubmit, onClose }) {
 }
 
 export default function Admin() {
-  const { isAdmin, isSuperAdmin, role } = useRole();
+  const { isAdmin, isSuperAdmin, isOwner, role } = useRole();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('users');
@@ -293,7 +299,7 @@ export default function Admin() {
 
   async function fetchAll() {
     setLoading(true);
-    const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
+    const audience = notifAudience(isSuperAdmin, isOwner);
     const [
       { data: u }, { data: p }, { data: k },
       { count: postsCount }, { count: activePostsCount }, { count: keysCount },
@@ -372,7 +378,7 @@ export default function Admin() {
   }
 
   async function fetchNotificationsCount() {
-    const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
+    const audience = notifAudience(isSuperAdmin, isOwner);
     const { data: notifs } = await supabase.from('admin_notifications').select('id').in('audience', audience);
     const { data: reads } = await supabase.from('admin_notification_reads')
       .select('notification_id').eq('admin_id', user.id);
@@ -387,7 +393,7 @@ export default function Admin() {
 
   async function fetchNotifications() {
     setNotifLoading(true);
-    const audience = isSuperAdmin ? ['all_admins', 'super_admin'] : ['all_admins'];
+    const audience = notifAudience(isSuperAdmin, isOwner);
     const [{ data: notifs }, { data: reads }] = await Promise.all([
       supabase.from('admin_notifications').select('*').in('audience', audience)
         .order('created_at', { ascending: false }).limit(50),
@@ -760,8 +766,9 @@ export default function Admin() {
               </button>
             </div>
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-sm font-mono text-red-300 font-bold leading-relaxed">
-                ⚠️ CUIDADO: Você está prestes a desbloquear um possível invasor.
+              <p className="text-sm font-mono text-red-300 font-bold leading-relaxed flex items-start gap-2">
+                <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+                CUIDADO: Você está prestes a desbloquear um possível invasor.
               </p>
               <p className="text-xs font-mono text-gray-400 mt-2 leading-relaxed">
                 Esta conta excedeu o limite de tentativas consecutivas. Pode ser um ataque ou alguém com dificuldade de acesso. Se não reconhece este email, não desbloqueie — oriente a redefinir a senha.
