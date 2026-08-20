@@ -22,27 +22,48 @@ const POST_SELECT = `${POST_COLUMNS}, ${AUTHOR_SELECT}, post_media(id, url, type
 
 // ─── Feed ────────────────────────────────────────────────────────────────────
 
+// `.in(...)` vira querystring: cada uuid custa ~40 caracteres na URL, e uma
+// lista grande demais estoura o limite do gateway. O feed é limitado a 30, mas
+// o perfil de um usuário prolífico não é — daí o fatiamento.
+const IN_CHUNK = 50;
+
+async function fetchInChunks(ids, run) {
+  const rows = [];
+  for (let i = 0; i < ids.length; i += IN_CHUNK) {
+    const { data } = await run(ids.slice(i, i + IN_CHUNK));
+    if (data) rows.push(...data);
+  }
+  return rows;
+}
+
 // Engajamento em LOTE. Antes cada PostCard disparava 3 queries próprias
 // (contagem de likes, "eu curti?" e contagem de comentários) — um feed de 30
 // posts fazia ~90 requests. Aqui são 2, independentemente do tamanho do feed.
+//
+// Traz as linhas e conta no cliente em vez de pedir `count` por post: para o
+// volume atual isso é ordens de grandeza melhor. Se um dia um post passar da
+// casa dos milhares de curtidas, o caminho é trocar por uma RPC que agrega no
+// banco (anotado no BACKLOG) — o shape de retorno daqui não muda.
 async function attachEngagement(posts, viewerId) {
   const ids = posts.map((p) => p.id);
   if (!ids.length) return posts;
 
-  const [{ data: likes }, { data: comments }] = await Promise.all([
-    supabase.from('post_likes').select('post_id, user_id').in('post_id', ids),
-    supabase.from('comments').select('post_id').in('post_id', ids),
+  const [likes, comments] = await Promise.all([
+    fetchInChunks(ids, (chunk) =>
+      supabase.from('post_likes').select('post_id, user_id').in('post_id', chunk)),
+    fetchInChunks(ids, (chunk) =>
+      supabase.from('comments').select('post_id').in('post_id', chunk)),
   ]);
 
   const likeCount = new Map();
   const liked = new Set();
   const commentCount = new Map();
 
-  for (const l of likes || []) {
+  for (const l of likes) {
     likeCount.set(l.post_id, (likeCount.get(l.post_id) || 0) + 1);
     if (viewerId && l.user_id === viewerId) liked.add(l.post_id);
   }
-  for (const c of comments || []) {
+  for (const c of comments) {
     commentCount.set(c.post_id, (commentCount.get(c.post_id) || 0) + 1);
   }
 

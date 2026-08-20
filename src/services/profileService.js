@@ -12,13 +12,20 @@ export async function fetchUserXP(userId) {
 
 // Conta curtidas recebidas somando os likes de todos os posts do usuário.
 // `head: true` traz só o Content-Range (contagem) — zero linhas no payload.
+// Fatiado porque cada uuid custa ~40 caracteres na URL do `.in(...)`: um perfil
+// com centenas de posts estouraria o limite do gateway numa chamada só.
+const IN_CHUNK = 50;
+
 async function countLikesOnPosts(postIds) {
-  if (!postIds.length) return 0;
-  const { count } = await supabase
-    .from('post_likes')
-    .select('*', { count: 'exact', head: true })
-    .in('post_id', postIds);
-  return count || 0;
+  let total = 0;
+  for (let i = 0; i < postIds.length; i += IN_CHUNK) {
+    const { count } = await supabase
+      .from('post_likes')
+      .select('*', { count: 'exact', head: true })
+      .in('post_id', postIds.slice(i, i + IN_CHUNK));
+    total += count || 0;
+  }
+  return total;
 }
 
 export async function fetchProfileStats(userId) {

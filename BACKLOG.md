@@ -416,6 +416,31 @@ local em transação com `ROLLBACK` antes de virar arquivo.
 > zero retenção nas tabelas de log e o ranking "top posts" do painel do
 > fundador ordenado por uma coluna zerada.
 
+#### O que ficou em aberto (próximos passos)
+
+- ⬜ **RPC de engajamento agregado.** `attachEngagement` traz as *linhas* de
+  `post_likes`/`comments` do feed e conta no cliente. Para o volume de hoje
+  isso é ordens de grandeza melhor que as ~90 queries de antes, mas o payload
+  cresce com o total de curtidas/comentários da janela do feed. Quando um post
+  passar da casa dos milhares de curtidas, trocar por uma RPC que agrega no
+  banco e devolve `{post_id, likes, comments, liked_by_me}`. O shape que o
+  `PostCard` consome não muda — é troca só dentro do service.
+- ⬜ **C3-b/c — publicação `supabase_realtime` e `REPLICA IDENTITY`.** Tirar
+  `post_media` e `admin_logs` da publicação e revisar o `REPLICA IDENTITY FULL`
+  de `profiles`. Mexem em detecção de ban e sincronização de mídia — pedem
+  janela de teste dedicada, não entram junto com outra coisa.
+- ⬜ **Canal `admin-realtime` assina `posts` e `admin_logs` com `event:'*'`
+  global.** Todo admin com o painel aberto recebe mensagem de cada post e de
+  cada log do site, mesmo com a aba fechada — só é usado quando `tab` é
+  `lives`/`logs`. Público pequeno (só admins), então ficou de fora agora;
+  ideal é assinar sob demanda por aba.
+- ⬜ **B1 — presence num canal global único** (`gamerhub-presence`): segue
+  como estava. Irrelevante hoje; revisitar se "online agora" passar de algumas
+  centenas.
+- ℹ️ **`owner_get_metrics.total_xp` nunca é preenchido** (a variável é
+  declarada e devolvida sem nunca receber valor → vem `null`). Bug antigo,
+  independente desta auditoria; não foi mexido pra não misturar escopo.
+
 ### 🔴 Crítico (driver direto de egress / risco de estourar cota)
 
 - ✅ **C1 — Imagens de post e mural sobem SEM compressão/resize.**
