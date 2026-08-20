@@ -37,6 +37,12 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl]         = useState(null);
   const [showFull, setShowFull]           = useState(false);
   const fileRef = useRef(null);
+  // Data máxima aceita no campo de nascimento (idade mínima). Calculada uma vez
+  // na montagem — `Date.now()` no corpo do render é impuro e o valor não muda
+  // de forma relevante durante a sessão.
+  const [maxBirthDate] = useState(
+    () => new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  );
 
   // Só popula o form a partir do profile quando o USUÁRIO muda (login/logout) —
   // não a cada novo objeto `profile` (poll de 20s / realtime / refreshProfile()
@@ -114,7 +120,7 @@ export default function Profile() {
   }
 
   const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
-  const maxBirthDate = new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
 
   const isOwner  = profile?.role === 'owner';
   const rank     = getBorderForProfile(profile, xpData?.xp ?? null);

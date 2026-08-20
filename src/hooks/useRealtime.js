@@ -17,8 +17,13 @@ import { supabase } from '../lib/supabase';
  * de realtime jogado fora, multiplicado pelo número de usuários online.
  */
 export function useRealtime(table, callback, options = {}) {
+  // O ref é atualizado num efeito, não durante o render: escrever em ref no
+  // corpo do componente é inseguro com renderização concorrente (o React pode
+  // descartar um render). Como o ref só é LIDO dentro do handler da
+  // subscription — que nunca dispara antes da montagem — atualizar depois do
+  // commit é suficiente e correto.
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+  useEffect(() => { callbackRef.current = callback; });
 
   const { events = '*', filter } = options;
   // Serializa pra dep estável: o objeto de options muda de identidade a cada

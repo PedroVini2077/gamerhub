@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
@@ -17,9 +17,12 @@ export default function Home() {
   const [newPosts, setNewPosts] = useState(0);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('todos');
+  // O handler de realtime precisa do usuário ATUAL sem re-assinar o canal a
+  // cada render. O ref é atualizado num efeito (escrever em ref durante o
+  // render é inseguro com renderização concorrente).
   const userRef = useRef(user);
   const fetchDebounceRef = useRef(null);
-  userRef.current = user;
+  useEffect(() => { userRef.current = user; }, [user]);
 
   // O viewer entra na queryKey: "eu curti" faz parte do resultado em lote, então
   // o cache não pode ser compartilhado entre usuários diferentes.

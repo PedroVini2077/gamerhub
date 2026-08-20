@@ -75,7 +75,6 @@ export default function Lives() {
       .subscribe();
 
     return () => { clearTimeout(listDebounce); supabase.removeChannel(listChannel); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
