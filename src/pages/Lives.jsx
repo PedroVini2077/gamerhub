@@ -53,12 +53,29 @@ export default function Lives() {
 
   useEffect(() => {
     fetchLives();
+
+    // Debounce: um post virando live costuma disparar INSERT e UPDATE quase
+    // juntos, e antes cada um fazia um fetch completo da lista.
+    let listDebounce = null;
+    const reloadLives = () => {
+      clearTimeout(listDebounce);
+      listDebounce = setTimeout(fetchLives, 400);
+    };
+
     const listChannel = supabase.channel('lives-list')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, fetchLives)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' },
-        (payload) => { if (payload.new.is_live !== payload.old.is_live) fetchLives(); })
+      // INSERT filtrado: sem isso, QUALQUER post criado no site (a esmagadora
+      // maioria não é live) recarregava a lista de todo mundo em /lives.
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'posts', filter: 'is_live=eq.true',
+      }, reloadLives)
+      // UPDATE fica sem filtro: é assim que a live ENCERRADA (is_live → false)
+      // sai da lista — um filtro `is_live=eq.true` justamente não entregaria
+      // esse evento.
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, reloadLives)
       .subscribe();
-    return () => supabase.removeChannel(listChannel);
+
+    return () => { clearTimeout(listDebounce); supabase.removeChannel(listChannel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -101,14 +118,28 @@ export default function Lives() {
         }
       });
 
+    const refreshMessages = () => {
+      if (activeLiveRef.current?.id) fetchMessages(activeLiveRef.current.id);
+    };
+
     const channel = supabase.channel(`live-${activeLive.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat' },
-        (payload) => {
-          const postId = payload.new?.post_id || payload.old?.post_id;
-          if (postId === activeLiveRef.current?.id) {
-            fetchMessages(activeLiveRef.current.id);
-          }
-        })
+      // Filtro por post no servidor para INSERT/UPDATE — o volume real do chat.
+      // Antes o cliente assinava TODA a tabela `live_chat` e descartava no JS o
+      // que não era desta live: com N lives simultâneas, cada mensagem de
+      // qualquer uma acordava todo mundo.
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'live_chat',
+        filter: `post_id=eq.${activeLive.id}`,
+      }, refreshMessages)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'live_chat',
+        filter: `post_id=eq.${activeLive.id}`,
+      }, refreshMessages)
+      // DELETE fica SEM filtro de propósito: no payload de delete só vem a PK
+      // (replica identity default), então `post_id=eq.…` nunca casaria e
+      // mensagem apagada por mod não sumiria da tela dos outros. É evento raro.
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat' },
+        refreshMessages)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' },
         () => fetchTimeouts(activeLiveRef.current?.id))
       .on('postgres_changes', {

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { fetchUserPosts } from '../services/postService';
-import { fetchProfileByUsername, fetchUserXP, fetchUserLikesCount } from '../services/profileService';
+import { fetchProfileByUsername, fetchUserXP } from '../services/profileService';
+import { useAuth } from '../hooks/useAuth.jsx';
 import PostCard from '../components/feed/PostCard';
 import Avatar from '../components/ui/Avatar';
 import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords } from 'lucide-react';
@@ -15,6 +16,7 @@ const PLAYSTYLE_LABELS = { casual: 'Casual', competitivo: 'Competitivo', ambos: 
 
 export default function UserProfile() {
   const { username } = useParams();
+  const { user } = useAuth();
   const [profile, setProfile]   = useState(null);
   const [posts, setPosts]       = useState([]);
   const [stats, setStats]       = useState({ posts: 0, likes: 0 });
@@ -24,7 +26,8 @@ export default function UserProfile() {
   const [showPhoto, setShowPhoto] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { fetchProfile(); }, [username]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchProfile(); }, [username, user?.id]);
 
   async function fetchProfile() {
     setLoading(true);
@@ -33,14 +36,18 @@ export default function UserProfile() {
     if (!profileData) { setNotFound(true); setLoading(false); return; }
     setProfile(profileData);
 
-    const [postsData, likesCount, xp] = await Promise.all([
-      fetchUserPosts(profileData.id),
-      fetchUserLikesCount(profileData.id),
+    const [postsData, xp] = await Promise.all([
+      fetchUserPosts(profileData.id, user?.id ?? null),
       fetchUserXP(profileData.id),
     ]);
 
     setPosts(postsData);
-    setStats({ posts: postsData.length, likes: likesCount });
+    // As curtidas já vêm no lote do fetchUserPosts — não precisa de uma query
+    // separada só pra recontar o mesmo dado.
+    setStats({
+      posts: postsData.length,
+      likes: postsData.reduce((s, p) => s + (p.like_count || 0), 0),
+    });
     if (xp) setXpData(xp);
     setLoading(false);
   }

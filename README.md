@@ -165,6 +165,8 @@ src/
 ├── lib/
 │   ├── supabase.js        # Cliente Supabase
 │   ├── queryClient.js     # React Query client (staleTime 30s, retry 1)
+│   ├── image.js           # Compressão/resize client-side antes do upload (economia de egress)
+│   ├── storage.js         # Remoção de arquivos do bucket ao deletar post/mural
 │   ├── auditLog.js        # logAudit() -> RPC log_audit_event
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
@@ -219,8 +221,12 @@ src/
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
                            # AudioRecorder, GlobalBanner, FeatureGate,
-                           # PageTransition
+                           # LazyVisible, PageTransition
 ```
+
+> Fora de `src/`: **`db/`** guarda scripts SQL avulsos para rodar no SQL Editor
+> do Supabase (índices, retenção, correções de RPC). Não são migrations
+> automáticas — cada arquivo diz como rodar e o que conferir antes.
 
 ### Rotas
 
@@ -280,7 +286,11 @@ logados) ao acessar `/`. Decide-se em `HomeOrLanding` no `App.jsx` com base no
 estado de autenticação.
 
 **Cena 3D do Hero** (`Scene3D` + `scene3d/`):
-- Canvas React Three Fiber carregado sob demanda (lazy) com `Suspense`.
+- Canvas React Three Fiber carregado sob demanda (lazy) com `Suspense`. É o
+  maior asset do site (~236KB gzip) e é puramente decorativo, então `Scene3D`
+  nem baixa o chunk quando não vai ser aproveitado: `prefers-reduced-motion`,
+  `navigator.connection.saveData`, conexão 2g/3g ou `deviceMemory ≤ 1GB`. Todas
+  as APIs são opcionais — na dúvida, a cena é mantida.
 - **`LogoBolt`**: raio 3D sólido extrudado (silhueta do ícone Zap da marca),
   cresce de escala 0→1 com `easeOutCubic` ao aparecer; acompanhado por um
   `pointLight` (`flashRef`) que estoura no nascimento (intensidade 14→0) e
@@ -361,13 +371,21 @@ transições discretas das páginas internas.
   - Título + conteúdo; categorias `dica` / `curiosidade` / `news`.
   - Até **10 mídias** por post: imagens (≤5MB) e vídeos (≤10MB — reduzido de
     100MB→25MB→10MB para poupar cota de egress; clipes longos via embed são
-    recomendados).
+    recomendados). As imagens ainda são **comprimidas no browser** antes de
+    subir (`lib/image.js`) — o limite de 5MB é do arquivo escolhido, não do que
+    vai pro bucket.
   - **Áudio**: upload (≤20MB) ou **gravação pelo microfone** (`AudioRecorder`).
   - **Embeds**: YouTube, Twitch, TikTok (`EmbedPlayer` / `getEmbedInfo`).
     Suporta URLs de `youtube.com/live/` além dos formatos padrão.
   - Marcar embed como **live** (Twitch ou YouTube).
 - Exibição (`PostCard`): carrossel de mídias (`MediaCarousel` + lightbox),
   player de áudio (`MediaPlayer`), embeds, likes e comentários.
+  - O carrossel só monta quando o card chega **perto da viewport**
+    (`LazyVisible`) e o **vídeo só baixa no clique** ("toque para carregar") —
+    mídia de post que ninguém rolou até não gasta banda.
+  - Curtidas, "eu curti", nº de comentários e a mídia vêm **prontos do feed**
+    (busca em lote); o card só faz query própria quando recebe um post solto
+    (painel admin/moderação).
 - **Edição com janela de 30 minutos** (contador regressivo).
 - **Retry de mídia** com backoff caso a mídia ainda não tenha subido.
 - Feed (`Home`): busca por texto, filtro por categoria, aviso de "novos posts"
@@ -733,7 +751,9 @@ Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 ### Storage (buckets)
 
 - **`avatars`** (público): avatar do usuário; upload/update/delete restritos ao
-  dono pela pasta `auth.uid()/...`.
+  dono pela pasta `auth.uid()/...`. `cacheControl: 31536000` (1 ano) — a troca
+  de avatar continua aparecendo na hora porque a URL salva leva um
+  cache-buster `?t=<timestamp>`.
 - **`post-media`** (público): imagens/vídeos/áudios dos posts e do mural;
   upload por autenticados, delete pelo dono do arquivo (pasta = `auth.uid()`).
   `cacheControl: 31536000` (1 ano) — paths únicos por post/timestamp, nunca
@@ -745,6 +765,14 @@ Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
   arquivo — o bucket acumulou 330 MB de órfãos (zerados em 2026-06-12 via
   edge function `cleanup-orphans`, hoje um stub desativado).
 
+- **Compressão no upload** (`lib/image.js`): toda imagem de post, mural e avatar
+  é redimensionada e recomprimida no browser **antes** de subir (1600px /
+  WebP com fallback JPEG; avatar em 256px). O arquivo gravado no bucket é o que
+  o CDN serve a **cada** visualização, então cortar na origem é o maior ganho de
+  banda que existe: uma foto de celular de ~4 MB vira ~200 KB. GIF e SVG passam
+  intactos (canvas mataria a animação), e se a compressão falhar ou aumentar o
+  arquivo, o original é usado — upload nunca quebra por causa da otimização.
+
 > Os buckets são públicos para leitura via URL (CDN), mas **não** permitem
 > *listar* arquivos — o acesso por URL pública continua funcionando.
 
@@ -755,6 +783,45 @@ Publicação `supabase_realtime` inclui: `posts`, `post_media`, `profiles`,
 `admin_notifications`, `site_config`. Usada para feed, mural, chat de lives,
 detecção de ban, banner/manutenção e sincronização dos painéis.
 
+`useRealtime(table, cb, { events, filter })` aceita **quais** eventos assinar e
+um filtro do lado do servidor. Isso importa em custo: cada mudança na tabela
+vira uma mensagem para **cada** cliente conectado. Por isso:
+
+- feed e mural assinam só `INSERT`/`DELETE` (o handler ignora `UPDATE`);
+- o chat de live filtra por `post_id=eq.<live>` no `INSERT`/`UPDATE` — antes o
+  cliente recebia o chat de **todas** as lives e descartava no JS. O `DELETE`
+  fica sem filtro de propósito: no payload de delete só vem a PK, então um
+  filtro por `post_id` nunca casaria e mensagem apagada por mod não sumiria da
+  tela dos outros;
+- a lista de lives filtra o `INSERT` por `is_live=eq.true` (antes qualquer post
+  criado no site recarregava a lista de quem estava em `/lives`) e faz debounce.
+
+### Custo de banda & carga de banco
+
+O plano Free estourou a cota de **Cached Egress** em jun/2026, o que travou o
+projeto. As decisões abaixo existem por causa disso e devem ser preservadas:
+
+| Prática | Por quê |
+| ------- | ------- |
+| Compressão no upload (`lib/image.js`) | Tamanho no bucket = banda por visualização |
+| `cacheControl` de 1 ano nos dois buckets | Evita revalidação horária no CDN |
+| Vídeo com "toque para carregar" | `preload="metadata"` baixava pedaço de **todo** vídeo do feed |
+| `LazyVisible` no carrossel | Mídia fora da viewport não gasta banda |
+| Vídeo limitado a 10 MB (imagem 5 MB, áudio 20 MB) | Clipes longos vão por embed do YouTube/Twitch/TikTok |
+| Contadores em lote no feed/mural | Ver "N+1" abaixo |
+| Colunas explícitas no lugar de `SELECT *` | Payload menor em toda linha de todo feed |
+
+**Fim do N+1 no feed/mural:** cada `PostCard` disparava 3 queries próprias
+(contagem de likes, "eu curti?" e contagem de comentários) mais uma de mídia —
+um feed de 30 posts fazia ~120 requests. Hoje o feed traz `post_media`
+**aninhado no select** e resolve curtidas/comentários em **2 queries em lote**,
+independentemente do tamanho da lista (mesma ideia no mural). Os cards mantêm o
+fallback individual para onde o post chega solto (painel admin, moderação).
+
+> ⚠️ A coluna `posts.likes` existe no schema mas **nenhum trigger a mantém** —
+> está zerada. Nada no app a lê. Não volte a usá-la sem antes criar o trigger;
+> era ela que fazia as curtidas do perfil aparecerem sempre 0.
+
 ### React Query
 
 Cache client-side via `@tanstack/react-query` (`lib/queryClient.js`):
@@ -763,6 +830,15 @@ Cache client-side via `@tanstack/react-query` (`lib/queryClient.js`):
 Migrados: `Keys`, `Ranks`, `Home`, `Community`, abas do Owner (`PainelTab`,
 `MetricasTab`, `NotificacoesTab`, `LogsTab`, `UsuariosTab`), `Header`
 (notificações), `Sidebar` (stats), `RightPanel` (keys/promos + stats).
+
+Convenções:
+
+- Queries cujo resultado depende de **quem** está vendo (feed e mural trazem
+  "eu curti" no lote) levam o `user.id` na `queryKey` — senão o cache vazaria
+  entre usuários.
+- `Sidebar` e `RightPanel` mostram os mesmos três contadores do site e
+  compartilham a chave `SITE_STATS_KEY` (`staleTime` de 5 min). Antes eram duas
+  chaves diferentes = as mesmas 3 contagens feitas 2×.
 
 ---
 

@@ -6,19 +6,23 @@ import { fetchMuralPage } from '../services/communityService';
 import MuralCard from '../components/community/MuralCard';
 import MuralForm from '../components/community/MuralForm';
 import { useRealtime } from '../hooks/useRealtime';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { Users } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
 export default function Community() {
+  const { user } = useAuth();
   const fetchDebounceRef = useRef(null);
 
   const {
     data, isPending: loading, refetch,
     fetchNextPage, hasNextPage, isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['mural_posts'],
-    queryFn: ({ pageParam }) => fetchMuralPage({ limit: PAGE_SIZE, before: pageParam }),
+    // Viewer na key: "eu curti" vem no lote, não pode vazar entre usuários.
+    queryKey: ['mural_posts', user?.id ?? null],
+    queryFn: ({ pageParam }) =>
+      fetchMuralPage({ limit: PAGE_SIZE, before: pageParam, viewerId: user?.id ?? null }),
     initialPageParam: null,
     getNextPageParam: (lastPage) =>
       lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,
@@ -28,10 +32,12 @@ export default function Community() {
 
   const reload = useCallback(() => { refetch(); }, [refetch]);
 
+  // Mural só precisa reagir a post novo/removido — UPDATE (ex.: ocultar por
+  // moderação) não muda a lista o suficiente pra valer o tráfego.
   useRealtime('community_posts', () => {
     clearTimeout(fetchDebounceRef.current);
     fetchDebounceRef.current = setTimeout(reload, 300);
-  });
+  }, { events: ['INSERT', 'DELETE'] });
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">

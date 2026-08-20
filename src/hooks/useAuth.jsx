@@ -81,14 +81,30 @@ export function AuthProvider({ children }) {
       })
       .subscribe();
 
-    // Fallback confiável: revalida o profile a cada 20s. Se o realtime perder o
-    // evento (timing da subscription, reconexão), o ban ainda é capturado aqui.
-    const poll = setInterval(async () => {
-      const p = await fetchProfile(user.id);
-      applyBannedCheck(p);
-    }, 20000);
+    // Fallback confiável pra quando o realtime perder o evento (timing da
+    // subscription, reconexão). Antes rodava a cada 20s SEMPRE — um SELECT por
+    // usuário logado a cada 20s, inclusive com a aba em segundo plano e sem
+    // ninguém olhando. Agora: 60s e só com a aba visível, mais uma revalidação
+    // no momento em que a aba volta ao foco (que é justamente quando o usuário
+    // poderia agir sem saber que foi banido).
+    async function revalidate() {
+      applyBannedCheck(await fetchProfile(user.id));
+    }
 
-    return () => { supabase.removeChannel(channel); clearInterval(poll); };
+    const poll = setInterval(() => {
+      if (document.visibilityState === 'visible') revalidate();
+    }, 60000);
+
+    function onVisible() {
+      if (document.visibilityState === 'visible') revalidate();
+    }
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [user?.id]);
 
   const [onlineCount, setOnlineCount] = useState(0);

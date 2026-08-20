@@ -1,10 +1,34 @@
 import { useState, useRef } from 'react';
-import { Maximize2, Film, Music, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Maximize2, Film, Music, ChevronLeft, ChevronRight, Download, Play } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
 
+// Vídeo só baixa quando o usuário pede.
+//
+// Antes o `<video preload="metadata">` montava já buscando o cabeçalho (e, em
+// vários browsers, um pedaço do arquivo) de TODO vídeo do feed — banda gasta em
+// vídeo que ninguém assistiu. Agora o card mostra um cartaz e o download começa
+// no clique.
 function VideoPlayer({ src }) {
   const [failed, setFailed] = useState(false);
+  const [started, setStarted] = useState(false);
+
+  if (!started) {
+    return (
+      <button
+        onClick={() => setStarted(true)}
+        aria-label="Reproduzir vídeo"
+        className="w-full bg-dark-900 flex flex-col items-center justify-center gap-2 py-12 group"
+      >
+        <span className="w-14 h-14 rounded-full bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green group-hover:bg-neon-green/20 transition-colors">
+          <Play size={22} fill="currentColor" />
+        </span>
+        <span className="font-mono text-xs text-gray-400 flex items-center gap-1.5">
+          <Film size={12} /> Toque para carregar o vídeo
+        </span>
+      </button>
+    );
+  }
 
   return (
     <div className="relative bg-dark-900">
@@ -20,7 +44,7 @@ function VideoPlayer({ src }) {
         key={src}
         className="w-full"
         style={{ maxHeight: 400, display: 'block', background: '#060608', opacity: failed ? 0 : 1 }}
-        controls playsInline preload="metadata"
+        controls playsInline autoPlay preload="auto"
         onError={() => setFailed(true)}
       >
         <source src={src} type="video/mp4" />

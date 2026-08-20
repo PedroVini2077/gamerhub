@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { Wrench } from 'lucide-react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
 import { queryClient } from './lib/queryClient';
@@ -20,13 +21,15 @@ import GuestOnly from './components/auth/GuestOnly';
 import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
-import Landing from './pages/Landing';
-import Home from './pages/Home';
 import Login from './pages/Login';
 import AuthConfirm from './pages/AuthConfirm';
 import NotFound from './pages/NotFound';
 
-// Lazy loading — carregam só quando o usuário acessar
+// Lazy loading — carregam só quando o usuário acessar.
+// Landing e Home são exclusivas entre si (visitante × logado): deixar as duas
+// no bundle inicial fazia todo mundo baixar a que nunca ia ver.
+const Landing     = lazy(() => import('./pages/Landing'));
+const Home        = lazy(() => import('./pages/Home'));
 const Community   = lazy(() => import('./pages/Community'));
 const Keys        = lazy(() => import('./pages/Keys'));
 const Profile     = lazy(() => import('./pages/Profile'));
@@ -49,7 +52,7 @@ function MaintenancePage() {
   return (
     <div className="flex items-center justify-center min-h-64 py-20">
       <div className="card p-10 text-center max-w-sm space-y-3">
-        <p className="text-4xl">🔧</p>
+        <Wrench size={36} className="text-neon-green mx-auto" />
         <p className="font-display text-lg text-gray-200">Em Manutenção</p>
         <p className="text-xs font-mono text-gray-500 leading-relaxed">
           O GamerHub está temporariamente em manutenção. Voltamos em breve!
@@ -118,9 +121,15 @@ function Layout({ children }) {
 }
 
 // Decide entre Landing (guest) e o feed (logado) na rota raiz — sem mudar a URL.
+// A Landing fica fora do Layout, então precisa do próprio Suspense.
 function HomeOrLanding() {
   const { user } = useAuth();
-  return user ? <Layout><Home /></Layout> : <Landing />;
+  if (user) return <Layout><Home /></Layout>;
+  return (
+    <Suspense fallback={<SplashScreen />}>
+      <Landing />
+    </Suspense>
+  );
 }
 
 // Splash enquanto a sessão resolve — evita flash de Landing↔Home/guard.

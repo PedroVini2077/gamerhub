@@ -7,7 +7,6 @@ import { suspendedUntil } from '../../lib/roles';
 import SuspendedNotice from '../ui/SuspendedNotice';
 import toast from 'react-hot-toast';
 import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
-import { logAudit } from '../../lib/auditLog';
 import AudioRecorder from '../ui/AudioRecorder';
 import EmbedPlayer from '../ui/EmbedPlayer';
 import { getEmbedInfo } from '../../lib/embed';

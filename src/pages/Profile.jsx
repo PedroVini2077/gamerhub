@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { fetchProfileStats, updateProfile, uploadAvatar } from '../services/profileService';
 import { logAudit } from '../lib/auditLog';
+import { compressImage } from '../lib/image';
 import toast from 'react-hot-toast';
 import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
@@ -66,24 +67,6 @@ export default function Profile() {
     if (xp) setXpData(xp);
   }
 
-  async function compressImage(file) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX = 400;
-        let w = img.width, h = img.height;
-        if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
-        else       { if (h > MAX) { w = w * MAX / h; h = MAX; } }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        canvas.toBlob(blob => { URL.revokeObjectURL(url); resolve(new File([blob], file.name, { type: 'image/jpeg' })); }, 'image/jpeg', 0.85);
-      };
-      img.src = url;
-    });
-  }
-
   async function handleAvatarUpload(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -91,7 +74,9 @@ export default function Profile() {
     if (!allowed.includes(file.type)) { toast.error('Formato inválido. Use JPG, PNG, WEBP ou GIF.'); return; }
     setUploading(true);
     toast.loading('Processando imagem...', { id: 'upload' });
-    const compressed = await compressImage(file);
+    // 256px basta: o maior lugar onde o avatar aparece é o card de perfil.
+    // Menos bytes por avatar = menos egress em todo card do feed.
+    const compressed = await compressImage(file, { maxSize: 256, quality: 0.8 });
     const { url, error: uploadError } = await uploadAvatar(user.id, compressed);
     if (uploadError) { toast.error('Erro ao fazer upload', { id: 'upload' }); setUploading(false); return; }
     const { error: updateError } = await updateProfile(user.id, { avatar_url: url });

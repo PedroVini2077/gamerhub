@@ -8,7 +8,7 @@ import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
 import { useRealtime } from '../hooks/useRealtime';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { Zap, Search, X } from 'lucide-react';
+import { Zap, Search, X, ArrowUp } from 'lucide-react';
 
 const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
 
@@ -21,9 +21,11 @@ export default function Home() {
   const fetchDebounceRef = useRef(null);
   userRef.current = user;
 
+  // O viewer entra na queryKey: "eu curti" faz parte do resultado em lote, então
+  // o cache não pode ser compartilhado entre usuários diferentes.
   const { data: posts = [], isPending: loading, isSuccess, refetch } = useQuery({
-    queryKey: ['feed_posts'],
-    queryFn: () => fetchFeedPosts(30),
+    queryKey: ['feed_posts', user?.id ?? null],
+    queryFn: () => fetchFeedPosts(30, user?.id ?? null),
   });
 
   // Recarrega o feed e zera o contador de "novos posts" (mesmo efeito que o
@@ -33,6 +35,9 @@ export default function Home() {
     refetch();
   }, [refetch]);
 
+  // Só INSERT e DELETE: o handler não faz nada com UPDATE, e cada UPDATE de
+  // post (edição, contadores) viraria uma mensagem de realtime pra todo mundo
+  // que está com o feed aberto.
   useRealtime('posts', (payload) => {
     if (!isSuccess) return;
     if (payload.eventType === 'INSERT') {
@@ -44,7 +49,7 @@ export default function Home() {
       clearTimeout(fetchDebounceRef.current);
       fetchDebounceRef.current = setTimeout(() => reloadPosts(), 500);
     }
-  });
+  }, { events: ['INSERT', 'DELETE'] });
 
   // Filtragem memoizada — não recalcula se posts/search/filterCat não mudarem
   const filtered = useMemo(() => posts.filter(p => {
@@ -111,9 +116,10 @@ export default function Home() {
         {newPosts > 0 && (
           <button
             onClick={reloadPosts}
-            className="w-full card p-3 text-center text-xs font-mono text-neon-green border-neon-green/30 hover:bg-neon-green/5 transition-colors animate-fade-up"
+            className="w-full card p-3 flex items-center justify-center gap-1.5 text-xs font-mono text-neon-green border-neon-green/30 hover:bg-neon-green/5 transition-colors animate-fade-up"
           >
-            ↑ {newPosts} novo{newPosts > 1 ? 's' : ''} post{newPosts > 1 ? 's' : ''} — clique para ver
+            <ArrowUp size={13} />
+            {newPosts} novo{newPosts > 1 ? 's' : ''} post{newPosts > 1 ? 's' : ''} — clique para ver
           </button>
         )}
 

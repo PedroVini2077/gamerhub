@@ -8,25 +8,18 @@ import { getBorderForProfile } from '../../lib/ranks';
 import { useUserXP } from '../../hooks/useUserXP';
 import { useQuery } from '@tanstack/react-query';
 import { formatNumber } from '../../lib/format';
-import { supabase } from '../../lib/supabase';
+import { fetchSiteStats, SITE_STATS_KEY } from '../../services/keyService';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
   const { isAdmin, isOwner, role } = useRole();
   const xp = useUserXP(profile?.id);
 
-  const { data: stats = { users: 0, postsToday: 0, keys: 0 } } = useQuery({
-    queryKey: ['sidebar_stats'],
-    queryFn: async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const [{ count: users }, { count: postsToday }, { count: keys }] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
-        supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
-      ]);
-      return { users: users || 0, postsToday: postsToday || 0, keys: keys || 0 };
-    },
+  // Mesma query (e mesmo cache) do RightPanel — são os mesmos três números.
+  const { data: stats = { users: 0, postsToday: 0, keysCount: 0 } } = useQuery({
+    queryKey: SITE_STATS_KEY,
+    queryFn: fetchSiteStats,
+    staleTime: 5 * 60_000, // contadores do site não precisam ser ao vivo
   });
 
   const nav = [
@@ -98,7 +91,7 @@ export default function Sidebar({ open, onClose }) {
             {[
               { label: 'Membros', value: stats.users, color: 'text-neon-cyan' },
               { label: 'Posts/dia', value: stats.postsToday, color: 'text-neon-green' },
-              { label: 'Keys', value: stats.keys, color: 'text-neon-purple' },
+              { label: 'Keys', value: stats.keysCount, color: 'text-neon-purple' },
             ].map(s => (
               <div key={s.label} className="flex justify-between items-center px-2 py-1.5 bg-dark-700 rounded border border-dark-500">
                 <p className="text-xs text-gray-500 font-mono">{s.label}</p>
