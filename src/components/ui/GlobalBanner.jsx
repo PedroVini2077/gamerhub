@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { Megaphone } from 'lucide-react';
 
 const COLOR_HEX = {
   orange: '#f97316',
@@ -33,10 +34,11 @@ export default function GlobalBanner() {
 
   return (
     <div
-      className="w-full mb-4 px-4 py-2.5 rounded-lg text-xs font-mono text-center"
+      className="w-full mb-4 px-4 py-2.5 rounded-lg text-xs font-mono flex items-center justify-center gap-2"
       style={{ background: `${hex}18`, border: `1px solid ${hex}35`, color: hex }}
     >
-      📢 {cfg.banner_text}
+      <Megaphone size={13} className="shrink-0" />
+      <span>{cfg.banner_text}</span>
     </div>
   );
 }

@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../../lib/motion';
-import { RefreshCw, Download, Lock, Shield, FileText, Settings2, Wrench } from 'lucide-react';
+import { RefreshCw, Download, Archive, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  LOG_CATEGORIES, CATEGORY_META, DEFAULT_CATEGORY_META,
+  SEVERITY_COLOR, actionMeta, LOG_RETENTION_DAYS,
+} from '../../lib/logMeta';
 import { supabase } from '../../lib/supabase';
 import { toCSV, downloadCSV } from '../../lib/csv';
 import toast from 'react-hot-toast';
@@ -17,15 +21,6 @@ const CSV_COLUMNS = [
   { key: 'metadata', label: 'metadata' },
 ];
 
-const SEV_COLOR = { info: '#6b7280', warning: '#f59e0b', critical: '#ef4444' };
-const CAT_ICON = {
-  auth:     { Icon: Lock,      color: '#22c55e' },
-  security: { Icon: Shield,    color: '#ef4444' },
-  content:  { Icon: FileText,  color: '#60a5fa' },
-  admin:    { Icon: Settings2, color: '#f97316' },
-  system:   { Icon: Wrench,    color: '#6b7280' },
-};
-const DEFAULT_CAT = { Icon: FileText, color: '#6b7280' };
 
 export default function LogsTab() {
   const [category, setCategory] = useState('');
@@ -81,10 +76,9 @@ export default function LogsTab() {
         <select value={category} onChange={e => changeCategory(e.target.value)}
           className="px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 focus:outline-none">
           <option value="">Todas as categorias</option>
-          <option value="auth">Auth</option>
-          <option value="security">Security</option>
-          <option value="content">Content</option>
-          <option value="admin">Admin</option>
+          {LOG_CATEGORIES.map(c => (
+            <option key={c.id} value={c.id}>{c.label}</option>
+          ))}
         </select>
         <select value={severity} onChange={e => changeSeverity(e.target.value)}
           className="px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 focus:outline-none">
@@ -104,6 +98,12 @@ export default function LogsTab() {
         </button>
       </div>
 
+      <p className="flex items-center gap-1.5 text-xs font-mono text-gray-600">
+        <Archive size={11} className="shrink-0" />
+        Registros com mais de {LOG_RETENTION_DAYS} dias são removidos automaticamente —
+        use o export em CSV para guardar histórico mais longo.
+      </p>
+
       {loading ? (
         <div className="space-y-1.5">
           {[...Array(8)].map((_, i) => <div key={i} className="h-12 bg-dark-700 rounded-lg animate-pulse" />)}
@@ -114,7 +114,13 @@ export default function LogsTab() {
           {logs.map(log => (
             <motion.div key={log.id} variants={listItem}
               className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
-              {(() => { const { Icon, color } = CAT_ICON[log.category] || DEFAULT_CAT; return <Icon size={14} style={{ color }} className="shrink-0 mt-0.5" />; })()}
+              {(() => {
+                // Ícone pela action (mais específico) e cor pela categoria — antes
+                // toda linha de uma mesma categoria tinha o mesmo ícone genérico.
+                const { Icon } = actionMeta(log.action);
+                const { color } = CATEGORY_META[log.category] || DEFAULT_CATEGORY_META;
+                return <Icon size={14} style={{ color }} className="shrink-0 mt-0.5" />;
+              })()}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-mono font-bold text-gray-200">
@@ -123,8 +129,8 @@ export default function LogsTab() {
                   <span className="text-xs font-mono text-gray-400 break-all">{log.action}</span>
                   <span className="text-xs font-mono px-1.5 py-0.5 rounded shrink-0"
                     style={{
-                      color:      SEV_COLOR[log.severity] || '#6b7280',
-                      background: `${SEV_COLOR[log.severity] || '#6b7280'}18`,
+                      color:      SEVERITY_COLOR[log.severity] || '#6b7280',
+                      background: `${SEVERITY_COLOR[log.severity] || '#6b7280'}18`,
                     }}>
                     {log.severity}
                   </span>
@@ -151,12 +157,12 @@ export default function LogsTab() {
 
       <div className="flex gap-2 justify-center">
         <button disabled={offset === 0} onClick={prev}
-          className="px-4 py-2 text-xs font-mono border border-dark-400 rounded text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-          ← Anterior
+          className="px-4 py-2 text-xs font-mono inline-flex items-center gap-1 border border-dark-400 rounded text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          <ChevronLeft size={13} /> Anterior
         </button>
         <button disabled={logs.length < LIMIT} onClick={next}
-          className="px-4 py-2 text-xs font-mono border border-dark-400 rounded text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-          Próximo →
+          className="px-4 py-2 text-xs font-mono inline-flex items-center gap-1 border border-dark-400 rounded text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          Próximo <ChevronRight size={13} />
         </button>
       </div>
     </div>

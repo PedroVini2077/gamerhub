@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchViolations } from '../../services/moderationService';
 import { supabase } from '../../lib/supabase';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ACTION_LABEL = {
   warn:       { label: 'Aviso',        cls: 'tag-cyan' },
@@ -107,12 +107,12 @@ export default function ViolationsPanel() {
         <div className="flex items-center justify-between text-xs font-mono text-gray-500 pt-1">
           <button disabled={page === 0} onClick={() => { const p = page - 1; setPage(p); load(p, filter); }}
             className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
-            ← Anterior
+            <ChevronLeft size={13} /> Anterior
           </button>
           <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, count)} de {count}</span>
           <button disabled={(page + 1) * PAGE_SIZE >= count} onClick={() => { const p = page + 1; setPage(p); load(p, filter); }}
             className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
-            Próxima →
+            Próxima <ChevronRight size={13} />
           </button>
         </div>
       )}

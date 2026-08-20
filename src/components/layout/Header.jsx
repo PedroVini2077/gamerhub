@@ -12,25 +12,52 @@ export default function Header({ onMenuClick }) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: notifs = [] } = useQuery({
-    queryKey: ['header_notifications', user?.id],
+  const notifKey = ['header_notifications', user?.id];
+
+  // `notifications` não está na publicação de realtime, e a query herdava
+  // `refetchOnWindowFocus: false` do client — resultado: notificação nova só
+  // aparecia depois de trocar de rota. Revalidar quando a aba volta ao foco
+  // cobre o caso real (o usuário sai, alguém curte, ele volta) sem criar
+  // polling de fundo.
+  const { data: notifs = [], refetch: refetchNotifs } = useQuery({
+    queryKey: notifKey,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, type, message, read, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
+    refetchOnWindowFocus: true,
   });
 
+  // Abrir o sino também revalida — é o momento em que o usuário está olhando.
+  function togglePanel() {
+    setOpen(o => {
+      if (!o) refetchNotifs();
+      return !o;
+    });
+  }
+
   async function markAllRead() {
-    await supabase.from('notifications')
+    const previous = queryClient.getQueryData(notifKey);
+    queryClient.setQueryData(notifKey, (old = []) => old.map(x => ({ ...x, read: true })));
+
+    const { error } = await supabase.from('notifications')
       .update({ read: true })
-      .eq('user_id', user.id);
-    queryClient.setQueryData(['header_notifications', user?.id], (old = []) => old.map(x => ({ ...x, read: true })));
+      .eq('user_id', user.id)
+      .eq('read', false);
+
+    // Antes o erro era ignorado: o badge zerava na tela e voltava sozinho no
+    // próximo fetch, sem o usuário entender o que houve.
+    if (error) {
+      queryClient.setQueryData(notifKey, previous);
+      toast.error('Não foi possível marcar como lidas.');
+    }
   }
 
   async function handleSignOut() {
@@ -51,7 +78,8 @@ export default function Header({ onMenuClick }) {
       {user && (
         <div className="relative">
           <button
-            onClick={() => setOpen(o => !o)}
+            onClick={togglePanel}
+            aria-label={`Notificações${unread > 0 ? ` (${unread} não lidas)` : ''}`}
             className="text-gray-500 hover:text-neon-green transition-colors relative p-2"
           >
             <Bell size={18} />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Clock, ShieldAlert, UserX, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ShieldAlert, UserX, Loader2, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import {
@@ -220,7 +220,7 @@ export default function ModerationQueue() {
                 <p className="text-xs font-mono text-gray-500">{reps.length} denúncia(s):</p>
                 {reps.slice(0, 3).map(r => (
                   <div key={r.id} className="flex items-center gap-2 text-xs font-mono text-gray-400">
-                    <span className="text-orange-400">⚑</span>
+                    <Flag size={11} className="text-orange-400 shrink-0" />
                     {r.reason}
                     {r.details && <span className="text-gray-600">— {r.details}</span>}
                   </div>
@@ -263,12 +263,12 @@ export default function ModerationQueue() {
         <div className="flex items-center justify-between text-xs font-mono text-gray-500 pt-2">
           <button disabled={page === 0} onClick={() => setPage(p => p - 1)}
             className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
-            ← Anterior
+            <ChevronLeft size={13} /> Anterior
           </button>
           <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} de {totalCount}</span>
           <button disabled={(page + 1) * PAGE_SIZE >= totalCount} onClick={() => setPage(p => p + 1)}
             className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
-            Próxima →
+            Próxima <ChevronRight size={13} />
           </button>
         </div>
       )}

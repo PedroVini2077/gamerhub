@@ -183,6 +183,11 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   async function handleSaveEdit() {
     setSaving(true);
+    // Mesma normalização que o updatePost aplica, pra saber se o texto mudou
+    // de fato.
+    const nextContent = editContent?.trim() || null;
+    const contentChanged = nextContent !== (post.content?.trim() || null);
+
     const { error } = await updatePost(
       post.id,
       { content: editContent, isLive: editIsLive, wasLive: post.was_live || editIsLive },
@@ -192,7 +197,15 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     if (error) toast.error('Erro ao salvar');
     else {
       toast.success('Post editado!');
-      logAudit('post_edited', `@${profile?.username} editou o post "${post.title}"`, { category: 'content' });
+      // O trigger `log_post_event` já grava `content_post_edited` quando
+      // título/conteúdo mudam — logar aqui também gerava DUAS linhas para a
+      // mesma edição. Só registramos o caso que o trigger ignora de propósito:
+      // edição que mexeu apenas no marcador de live.
+      if (!contentChanged) {
+        logAudit('post_edited',
+          `@${profile?.username} ${editIsLive ? 'marcou' : 'desmarcou'} o post "${post.title}" como live`,
+          { category: 'content' });
+      }
       setEditing(false);
     }
     setSaving(false);

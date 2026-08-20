@@ -5,7 +5,7 @@ import { fetchProfileStats, updateProfile, uploadAvatar } from '../services/prof
 import { logAudit } from '../lib/auditLog';
 import { compressImage } from '../lib/image';
 import toast from 'react-hot-toast';
-import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy } from 'lucide-react';
+import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy, Crown, ArrowRight } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { getRankLabel, getSubRankProgress, RANK_TIERS, getBorderForProfile } from '../lib/ranks';
@@ -238,7 +238,7 @@ export default function Profile() {
               </div>
               {!isOwner && (
                 <Link to="/ranks" className="text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors">
-                  ver todos →
+                  ver todos <ArrowRight size={11} className="inline align-[-1px]" />
                 </Link>
               )}
             </div>
@@ -263,7 +263,9 @@ export default function Profile() {
                   </p>
                 </>
               ) : (
-                <p className="text-xs font-mono" style={{ color: rank.color }}>Rank máximo atingido! 👑</p>
+                <p className="text-xs font-mono flex items-center gap-1" style={{ color: rank.color }}>
+                  <Crown size={11} /> Rank máximo atingido!
+                </p>
               )
             )}
           </div>

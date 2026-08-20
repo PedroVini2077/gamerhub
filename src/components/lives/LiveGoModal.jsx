@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Radio, Gamepad2, Clapperboard, Sparkles } from 'lucide-react';
+import { X, Radio, Gamepad2, Clapperboard, Sparkles, Check } from 'lucide-react';
 import { createPost } from '../../services/postService';
 import { getEmbedInfo } from '../../lib/embed';
 import { logAudit } from '../../lib/auditLog';
@@ -88,7 +88,9 @@ export default function LiveGoModal({ profile, onClose, onCreated }) {
               <p className="text-xs font-mono text-red-400/80 mt-1.5">Use um link do Twitch ou do YouTube.</p>
             )}
             {validPlatform && (
-              <p className="text-xs font-mono text-neon-green/80 mt-1.5">{info.label} detectado ✓</p>
+              <p className="text-xs font-mono text-neon-green/80 mt-1.5 flex items-center gap-1">
+                <Check size={11} /> {info.label} detectado
+              </p>
             )}
           </div>
 

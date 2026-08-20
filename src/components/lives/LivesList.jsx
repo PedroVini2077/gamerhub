@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { ArrowRight } from 'lucide-react';
 import { listContainer, listItem } from '../../lib/motion';
 import AvatarPopup from '../ui/AvatarPopup';
 
@@ -103,7 +104,7 @@ export default function LivesList({ lives, enterLive }) {
                 </span>
               )}
             </div>
-            <span className="text-xs font-mono text-neon-green">Entrar na live →</span>
+            <span className="text-xs font-mono text-neon-green inline-flex items-center gap-1">Entrar na live <ArrowRight size={12} /></span>
           </div>
         </motion.div>
       ))}

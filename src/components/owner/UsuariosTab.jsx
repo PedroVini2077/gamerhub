@@ -1,7 +1,7 @@
 import { useState, useMemo, memo } from 'react';
 import { useDeferredValue } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, Mail, UserX, UserCheck, Search, RefreshCw, UserPlus, ShieldAlert, Siren } from 'lucide-react';
+import { ChevronDown, Mail, UserX, UserCheck, Search, RefreshCw, UserPlus, ShieldAlert, Siren, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -129,7 +129,7 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
                     {['user', 'admin', 'super_admin'].filter(r => r !== user.role).map(r => (
                       <button key={r} onClick={() => { onOverride(user, r); setShowOverride(false); }}
                         className="px-2.5 py-1 text-xs font-mono border border-yellow-500/30 rounded text-yellow-500/80 hover:bg-yellow-500/10 transition-colors">
-                        → {ROLE_LABEL[r]}
+                        <ArrowRight size={11} className="inline align-[-1px]" /> {ROLE_LABEL[r]}
                       </button>
                     ))}
                   </div>

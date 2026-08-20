@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Trophy } from 'lucide-react';
+import { Trophy, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -104,8 +104,8 @@ export default function Ranks() {
                   </div>
                 </div>
               ) : (
-                <p className="text-xs font-mono" style={{ color: myRank.color }}>
-                  Rank máximo atingido — você é lendário! 👑
+                <p className="text-xs font-mono flex items-center gap-1.5" style={{ color: myRank.color }}>
+                  <Crown size={12} /> Rank máximo atingido — você é lendário!
                 </p>
               )}
 
