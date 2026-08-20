@@ -9,6 +9,7 @@ import {
 } from '../../services/communityService';
 import { logAudit } from '../../lib/auditLog';
 import { canDeleteContent } from '../../lib/roles';
+import { runLikeToggle } from '../../lib/like';
 import { timeAgo } from '../../lib/date';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
@@ -90,13 +91,13 @@ export default function MuralCard({ item, onDelete }) {
     if (!user) { toast.error('Faça login para curtir!'); return; }
     if (likeLoading) return;
     setLikeLoading(true);
-    if (liked) {
-      await unlikeMuralPost(item.id, user.id);
-      setLiked(false); setLikeCount(c => Math.max(0, c - 1));
-    } else {
-      await likeMuralPost(item.id, user.id);
-      setLiked(true); setLikeCount(c => c + 1);
-    }
+    await runLikeToggle({
+      liked,
+      like:   () => likeMuralPost(item.id, user.id),
+      unlike: () => unlikeMuralPost(item.id, user.id),
+      apply:  () => { setLiked(!liked); setLikeCount(c => (liked ? Math.max(0, c - 1) : c + 1)); },
+      revert: () => { setLiked(liked);  setLikeCount(c => (liked ? c + 1 : Math.max(0, c - 1))); },
+    });
     setLikeLoading(false);
   }
 

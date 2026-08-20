@@ -5,6 +5,7 @@ import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
 import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia, softDeletePost, updatePost } from '../../services/postService';
 import { canDeleteContent } from '../../lib/roles';
+import { runLikeToggle } from '../../lib/like';
 import toast from 'react-hot-toast';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
@@ -142,13 +143,13 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     if (!user) { toast.error('Faça login para curtir!'); return; }
     if (likeLoading) return;
     setLikeLoading(true);
-    if (liked) {
-      await unlikePost(post.id, user.id);
-      setLiked(false); setLikeCount(c => c - 1);
-    } else {
-      await likePost(post.id, user.id);
-      setLiked(true); setLikeCount(c => c + 1);
-    }
+    await runLikeToggle({
+      liked,
+      like:   () => likePost(post.id, user.id),
+      unlike: () => unlikePost(post.id, user.id),
+      apply:  () => { setLiked(!liked); setLikeCount(c => (liked ? c - 1 : c + 1)); },
+      revert: () => { setLiked(liked);  setLikeCount(c => (liked ? c + 1 : c - 1)); },
+    });
     setLikeLoading(false);
   }
 

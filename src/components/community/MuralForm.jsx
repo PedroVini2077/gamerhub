@@ -63,9 +63,12 @@ const MuralForm = memo(function MuralForm({ onPost }) {
       return;
     }
     if (medias.length > 0) {
-      const { error: mediaErr, imageUrls } = await uploadMuralMediaFiles(user.id, post.id, medias);
+      const { error: mediaErr, imageUrls, failed } = await uploadMuralMediaFiles(user.id, post.id, medias);
       if (mediaErr) toast.error('Mensagem enviada, mas falhou o upload de imagem');
-      else moderateImages('mural', post.id, imageUrls);
+      else {
+        if (failed) toast.error(`${failed} imagem(ns) não puderam ser enviadas.`);
+        moderateImages('mural', post.id, imageUrls);
+      }
     }
     toast.success('Mensagem enviada!');
     moderateText('mural', post.id, message.trim());

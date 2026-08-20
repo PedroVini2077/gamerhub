@@ -91,17 +91,24 @@ export async function uploadMuralMediaFiles(userId, postId, medias) {
   const imageUrls = [];
   // Mesma regra do feed: comprime antes de gravar no bucket.
   const prepared = await compressMedias(medias);
+  let failed = 0;
   for (let i = 0; i < prepared.length; i++) {
     const { file, type } = prepared[i];
     const ext = file.name.split('.').pop();
     const path = `${userId}/community-${postId}-${i}.${ext}`;
-    await supabase.storage.from('post-media').upload(path, file, { contentType: file.type, cacheControl: '31536000' });
+    const { error: uploadError } = await supabase.storage
+      .from('post-media')
+      .upload(path, file, { contentType: file.type, cacheControl: '31536000' });
+    // Mesma correção do feed: sem checar o erro, a linha entrava no banco e a
+    // mensagem ficava com imagem quebrada apontando pra um arquivo inexistente.
+    if (uploadError) { failed++; continue; }
     const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
     imageUrls.push(publicUrl);
   }
+  if (!rows.length) return { error: failed ? { message: 'Falha ao enviar a imagem.' } : null, imageUrls, failed };
   const result = await supabase.from('community_post_media').insert(rows);
-  return { ...result, imageUrls };
+  return { ...result, imageUrls, failed };
 }
 
 // ─── Reações (curtidas) ────────────────────────────────────────────────────────

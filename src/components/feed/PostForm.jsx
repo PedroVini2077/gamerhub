@@ -129,7 +129,10 @@ const PostForm = memo(function PostForm({ onPost }) {
       if (postError) throw postError;
 
       if (medias.length > 0) {
-        const { imageUrls } = await uploadPostMediaFiles(user.id, post.id, medias);
+        const { imageUrls, failed } = await uploadPostMediaFiles(user.id, post.id, medias);
+        // O post já foi criado — avisar é melhor do que deixar o usuário achar
+        // que a mídia subiu e só descobrir olhando o card.
+        if (failed) toast.error(`${failed} mídia(s) não puderam ser enviadas.`);
         moderateImages('post', post.id, imageUrls);
       }
 

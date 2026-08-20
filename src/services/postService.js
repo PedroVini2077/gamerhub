@@ -220,17 +220,25 @@ export async function uploadPostMediaFiles(userId, postId, medias) {
   // Comprime ANTES de subir: o arquivo no bucket é o que o CDN serve a cada
   // view. Vídeo/áudio passam intactos.
   const prepared = await compressMedias(medias);
+  let failed = 0;
   for (let i = 0; i < prepared.length; i++) {
     const { file, type } = prepared[i];
     const ext = file.name.split('.').pop();
     const path = `${userId}/${postId}-${i}.${ext}`;
-    await supabase.storage.from('post-media').upload(path, file, { contentType: file.type, cacheControl: '31536000' });
+    const { error: uploadError } = await supabase.storage
+      .from('post-media')
+      .upload(path, file, { contentType: file.type, cacheControl: '31536000' });
+    // O erro do upload era ignorado: a linha ia pro banco mesmo assim e o post
+    // ficava com uma imagem quebrada pra sempre, apontando pra um arquivo que
+    // nunca existiu. Agora a mídia que falhou simplesmente não é registrada.
+    if (uploadError) { failed++; continue; }
     const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
     if (type === 'image') imageUrls.push(publicUrl);
   }
+  if (!rows.length) return { error: failed ? { message: 'Falha ao enviar a mídia.' } : null, imageUrls, failed };
   const result = await supabase.from('post_media').insert(rows);
-  return { ...result, imageUrls };
+  return { ...result, imageUrls, failed };
 }
 
 // ─── Comments ────────────────────────────────────────────────────────────────

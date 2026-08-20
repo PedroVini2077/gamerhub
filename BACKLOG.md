@@ -620,6 +620,94 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
 
 ---
 
+## 🧹 Polimento geral — logs, notificações e robustez (ago/2026)
+
+> Varredura pedida pelo dono ("olha tudo oq dá pra melhorar"), focada em: os
+> logs registram mesmo o site inteiro? as notificações batem? Tudo abaixo já
+> foi **feito e validado** (build + lint + 50 testes; o SQL rodado num Postgres
+> 16 local em transação com ROLLBACK).
+
+### Furos encontrados e corrigidos
+
+**Trilha de auditoria — o que NÃO era registrado**
+- ✅ Mudança de configuração do site (`SiteTab`) não gerava log nenhum. Dava pra
+  ligar o modo manutenção ou desligar a Comunidade inteira sem deixar rastro.
+  Agora grava `site_config_changed` com valor antigo → novo (severidade
+  `warning` nas chaves de alto impacto).
+- ✅ Alterações no filtro de palavras (`WordlistManager`) não eram registradas.
+- ✅ Decisões da fila de moderação (ocultar/restaurar conteúdo) não eram
+  registradas — só o status ficava na própria fila.
+- ✅ Edição de post gerava log **duplicado** (o cliente e o trigger
+  `log_post_event` gravavam o mesmo evento). O cliente agora só registra o caso
+  que o trigger ignora de propósito (edição que só mexeu no marcador de live).
+- ✅ Categorias `live` e `profile` não existiam nos filtros dos dois painéis —
+  esses logs eram gravados mas **invisíveis** para quem filtrasse.
+- ✅ ~20 actions caíam no ícone genérico por deriva entre o código e os mapas
+  locais de cada painel. Unificado em `src/lib/logMeta.js`, com **teste que
+  varre o código-fonte e falha se alguma action ficar sem registro**.
+
+**Notificações — o que não batia**
+- ✅ O painel do fundador filtrava `admin_notifications` por uma whitelist de 5
+  tipos. Suspensão, banimento automático, suspensão automática, pedido de
+  desban, desban aprovado, live reativada, pedido de reativação e tentativa de
+  login de banido **nunca apareciam**. A whitelist saiu — tipo novo aparece
+  sozinho.
+- ✅ O mesmo painel filtrava logs pela action `set_role`, que só `owner_set_role`
+  grava. Troca de cargo feita por admin/super_admin grava `admin_role_changed`
+  — ou seja, a troca de cargo mais comum do site nunca aparecia.
+- ✅ `owner_set_role` gravava "Role alterada para admin pelo fundador", **sem
+  dizer para quem**. Agora nomeia o alvo e guarda o cargo anterior.
+- ✅ Usuário **suspenso** não era avisado: só os admins recebiam notificação. Ele
+  descobria ao tentar postar. Agora recebe notificação com o prazo.
+- ✅ Desban **negado** não notificava ninguém (a aprovação notificava). O admin
+  que pediu nunca sabia do resultado.
+- ✅ O sino não atualizava sozinho — `notifications` não está no realtime e a
+  query herdava `refetchOnWindowFocus: false`. Agora revalida ao voltar o foco
+  e ao abrir o painel.
+- ✅ `markAllRead` ignorava erro: o badge zerava na tela e voltava sozinho depois.
+- ✅ Audiência `owner` não entrava na lista do `/admin` — alertas enviados pela
+  equipe via `notify_owner` só apareciam no painel do fundador.
+- ✅ Rótulos de Configurações diziam "Likes nos posts" / "comentarem no seu
+  post", mas as preferências também cobrem curtida em comentário e resposta a
+  comentário.
+
+**Robustez**
+- ✅ Curtir falhava em silêncio nos três lugares (post, mural, comentário): o
+  coração acendia e o número subia mesmo quando o servidor recusava. Extraído
+  `lib/like.js` com rollback + aviso, coberto por testes.
+- ✅ Erro no upload de mídia era ignorado: a linha ia pro banco mesmo assim e o
+  post ficava com imagem quebrada **para sempre**, apontando pra um arquivo que
+  nunca existiu. Agora a mídia que falha não é registrada e o usuário é avisado.
+
+**Interface**
+- ✅ Zero emojis na UI (regra do `CLAUDE.md`): 🚫 📢 🔒 👑 ✦ ⚠️ ⚑ ✓ e as setas
+  de paginação viraram ícones Lucide. Removido também o campo `icon` morto de
+  `lib/embed.js`, que carregava emojis e não era usado em lugar nenhum.
+- ✅ Acessibilidade: 20 botões só-ícone ganharam nome acessível (fechar modais,
+  enviar, atualizar, play/pause, copiar key, menu) e os botões de curtir
+  ganharam `aria-label` + `aria-pressed` (antes o leitor de tela só ouvia o
+  número).
+- ✅ `index.html`: título real, `description` e tags Open Graph/Twitter — o link
+  do site era compartilhado sem título nem descrição.
+
+### Ainda em aberto
+
+- ⬜ **Rodar `db/2026-08-logs-e-notificacoes.sql`** (e o `db/2026-08-otimizacao.sql`
+  antes dele, se ainda não rodou). Enquanto não rodar, as correções de
+  **banco** acima não valem — só as de frontend.
+- ⬜ **`Admin.jsx` com ~900 linhas.** Os painéis já foram extraídos; o que sobrou
+  é orquestração (estado + fetchers de todas as abas). Quebrar em hooks por aba
+  (`useAdminUsers`, `useAdminLogs`, …) é o próximo passo, mas é refactor de
+  verdade — pede janela dedicada, não entra junto com correção.
+- ⬜ **Denúncia criada (`reports`) não gera log de auditoria.** Fica só na
+  tabela `reports`. Não foi adicionado de propósito: qualquer usuário pode
+  denunciar, e logar isso em `admin_logs` inflaria a trilha. Reavaliar se a
+  moderação sentir falta.
+- ⬜ **Canal `admin-realtime` assina `posts` e `admin_logs` com `event:'*'`
+  global** — ver seção da auditoria de custos.
+
+---
+
 ## 💡 Ideias soltas (a avaliar)
 
 > Espaço pra jogar ideias de feature que surgirem, sem compromisso. Quando

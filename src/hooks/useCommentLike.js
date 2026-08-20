@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth.jsx';
 import { fetchCommentLikeStatus, likeComment, unlikeComment } from '../services/postService';
+import { runLikeToggle } from '../lib/like';
 import toast from 'react-hot-toast';
 
 export function useCommentLike(commentId) {
@@ -24,13 +25,13 @@ export function useCommentLike(commentId) {
     if (!user) { toast.error('Faça login para curtir!'); return; }
     if (loading) return;
     setLoading(true);
-    if (liked) {
-      await unlikeComment(commentId, user.id);
-      setLiked(false); setCount(c => c - 1);
-    } else {
-      await likeComment(commentId, user.id);
-      setLiked(true); setCount(c => c + 1);
-    }
+    await runLikeToggle({
+      liked,
+      like:   () => likeComment(commentId, user.id),
+      unlike: () => unlikeComment(commentId, user.id),
+      apply:  () => { setLiked(!liked); setCount(c => (liked ? Math.max(0, c - 1) : c + 1)); },
+      revert: () => { setLiked(liked);  setCount(c => (liked ? c + 1 : Math.max(0, c - 1))); },
+    });
     setLoading(false);
   }
 
