@@ -36,7 +36,7 @@ export default function ConfirmModal({
             {Icon && <Icon size={14} className={a.text} />}
             <h3 className={`font-display text-sm ${a.text} uppercase tracking-wider`}>{title}</h3>
           </div>
-          <button onClick={onClose} disabled={loading} className="text-gray-500 hover:text-white transition-colors disabled:opacity-40">
+          <button aria-label="Fechar" onClick={onClose} disabled={loading} className="text-gray-500 hover:text-white transition-colors disabled:opacity-40">
             <X size={15} />
           </button>
         </div>

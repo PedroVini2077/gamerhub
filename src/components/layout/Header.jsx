@@ -69,7 +69,7 @@ export default function Header({ onMenuClick }) {
 
   return (
     <header className="fixed top-0 left-0 right-0 md:left-60 h-14 bg-dark-800/95 backdrop-blur border-b border-dark-500 z-10 flex items-center px-4 gap-4">
-      <button onClick={onMenuClick} className="md:hidden text-gray-400 hover:text-white transition-colors">
+      <button aria-label="Abrir menu" onClick={onMenuClick} className="md:hidden text-gray-400 hover:text-white transition-colors">
         <Menu size={20} />
       </button>
 

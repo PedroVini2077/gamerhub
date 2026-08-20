@@ -171,7 +171,7 @@ export default function CargosTab() {
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">
           Indicações, avaliações e rebaixamentos de cargo
         </p>
-        <button onClick={handleRefresh} disabled={refreshing}
+        <button aria-label="Atualizar" onClick={handleRefresh} disabled={refreshing}
           className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
         </button>

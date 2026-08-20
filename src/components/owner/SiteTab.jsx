@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ToggleLeft, ToggleRight, AlertTriangle, ShieldAlert, Megaphone } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { logAudit } from '../../lib/auditLog';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
 
 const OC = '#f97316';
@@ -13,7 +15,29 @@ const BANNER_COLORS = [
   { label: 'Roxo',     value: 'purple', hex: '#a855f7' },
 ];
 
+// Rótulos legíveis pro log — 'feature_lives' não diz nada numa auditoria.
+const KEY_LABEL = {
+  banner_enabled: 'banner global',
+  banner_text: 'texto do banner',
+  banner_color: 'cor do banner',
+  maintenance_mode: 'modo manutenção',
+  feature_keys: 'seção Keys',
+  feature_lives: 'seção Lives',
+  feature_community: 'seção Comunidade',
+  mod_report_threshold: 'limite de denúncias p/ ocultar',
+  mod_suspend_threshold: 'limite de pontos p/ suspender',
+  mod_ban_threshold: 'limite de pontos p/ banir',
+  mod_ai_enabled: 'moderação por IA',
+  mod_ai_text_threshold: 'limiar de IA (texto)',
+  mod_ai_image_threshold: 'limiar de IA (imagem)',
+};
+
+// Desligar a Comunidade ou ligar a manutenção derruba o site inteiro pros
+// usuários — merece severidade maior no log do que ajustar a cor do banner.
+const HIGH_IMPACT = ['maintenance_mode', 'feature_keys', 'feature_lives', 'feature_community'];
+
 export default function SiteTab() {
+  const { profile } = useAuth();
   const [config, setConfig] = useState({
     banner_enabled: 'false', banner_text: '', banner_color: 'orange',
     maintenance_mode: 'false',
@@ -33,9 +57,20 @@ export default function SiteTab() {
 
   async function saveKey(key, value) {
     setSaving(true);
+    const previous = config[key];
     const { error } = await supabase.rpc('owner_set_site_config', { p_key: key, p_value: String(value) });
     setSaving(false);
-    if (error) toast.error('Erro ao salvar: ' + error.message);
+    if (error) { toast.error('Erro ao salvar: ' + error.message); return; }
+
+    // Antes NENHUMA mudança de configuração era registrada — dava pra colocar o
+    // site em manutenção ou desligar uma seção inteira sem deixar rastro.
+    logAudit('site_config_changed',
+      `@${profile?.username} alterou ${KEY_LABEL[key] || key}: "${previous}" para "${value}"`,
+      {
+        category: 'admin',
+        severity: HIGH_IMPACT.includes(key) ? 'warning' : 'info',
+        metadata: { key, from: previous, to: String(value) },
+      });
   }
 
   function toggle(key) {

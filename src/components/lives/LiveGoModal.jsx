@@ -68,7 +68,7 @@ export default function LiveGoModal({ profile, onClose, onCreated }) {
             <Radio size={14} className="text-neon-green" />
             <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">Ficar ao vivo</h3>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+          <button aria-label="Fechar" onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <X size={15} />
           </button>
         </div>

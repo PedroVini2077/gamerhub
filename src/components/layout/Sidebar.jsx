@@ -49,7 +49,7 @@ export default function Sidebar({ open, onClose }) {
             <span className="font-display font-bold text-lg text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-lg text-white tracking-wider">HUB</span>
           </div>
-          <button onClick={onClose} className="md:hidden text-gray-500 hover:text-white">
+          <button aria-label="Fechar menu" onClick={onClose} className="md:hidden text-gray-500 hover:text-white">
             <X size={18} />
           </button>
         </div>

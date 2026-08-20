@@ -123,6 +123,7 @@ export default function AudioRecorder({ onRecorded, onCancel }) {
           <div className="flex items-center gap-3">
             <button
               onClick={togglePlay}
+              aria-label={playing ? 'Pausar prévia' : 'Ouvir prévia'}
               className="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green hover:bg-neon-green/20"
             >
               {playing ? <Pause size={14} /> : <Play size={14} />}

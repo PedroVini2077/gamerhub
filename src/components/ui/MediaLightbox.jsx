@@ -15,7 +15,7 @@ export default function MediaLightbox({ src, type, title, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between mb-3 px-1">
           <p className="text-sm font-mono text-gray-400 truncate">{title}</p>
-          <button
+          <button aria-label="Fechar"
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-dark-600 border border-dark-400 flex items-center justify-center text-gray-400 hover:text-white shrink-0 ml-3"
           >

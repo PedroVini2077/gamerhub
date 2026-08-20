@@ -167,7 +167,7 @@ const PostForm = memo(function PostForm({ onPost }) {
           <input className="input-gamer mb-2 text-sm" placeholder="Nome do áudio / música..."
             value={audioName} onChange={e => setAudioName(e.target.value)} maxLength={80} />
           <MediaPlayer src={audio.preview} title={audioName || 'Áudio'} />
-          <button onClick={removeAudio}
+          <button aria-label="Remover áudio" onClick={removeAudio}
             className="absolute top-2 right-2 w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 hover:text-white">
             <X size={12} />
           </button>

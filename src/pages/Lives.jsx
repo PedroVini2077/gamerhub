@@ -256,7 +256,7 @@ export default function Lives() {
   if (activeLive) return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2 pr-1">
-        <button onClick={exitLive}
+        <button aria-label="Sair da live" onClick={exitLive}
           className="text-gray-500 hover:text-neon-green transition-colors shrink-0 p-1">
           <X size={18} />
         </button>

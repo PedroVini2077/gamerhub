@@ -12,7 +12,7 @@ import {
   FileText, Trash2, Pencil, MessageSquare, MessagesSquare,
   Tv, Radio, MicOff, Mic, RotateCcw, CheckCircle, XCircle,
   Crown, Shield, UserCog, Image, Mail, UserMinus, Clock, ScrollText,
-  Lock, Settings2, Wrench, Siren, Bell,
+  Lock, Settings2, Wrench, Siren, Bell, SlidersHorizontal, Filter, EyeOff, Eye,
 } from 'lucide-react';
 
 // ─── Categorias ──────────────────────────────────────────────────────────────
@@ -69,6 +69,11 @@ export const ACTION_META = {
   admin_role_changed:        A(Crown,        'text-yellow-400',  '#facc15'),
   set_role:                  A(Crown,        'text-yellow-400',  '#facc15'),
   admin_add_key:             A(KeyRound,     'text-neon-purple', '#bf00ff'),
+  site_config_changed:       A(SlidersHorizontal, 'text-orange-400', '#f97316'),
+  wordlist_added:            A(Filter,       'text-neon-purple', '#bf00ff'),
+  wordlist_removed:          A(Filter,       'text-gray-400',    '#9ca3af'),
+  moderation_approved:       A(EyeOff,       'text-orange-400',  '#f97316'),
+  moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
   // conteúdo — posts (o trigger `log_post_event` grava os `content_*`)
   content_post_created:      A(FileText,     'text-neon-green',  '#39ff14'),

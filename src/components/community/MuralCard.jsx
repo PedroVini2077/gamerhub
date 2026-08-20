@@ -170,6 +170,8 @@ export default function MuralCard({ item, onDelete }) {
         <button
           onClick={handleLike}
           disabled={likeLoading}
+          aria-label={`${liked ? 'Descurtir' : 'Curtir'} — ${likeCount} curtida(s)`}
+          aria-pressed={liked}
           className={`flex items-center gap-1.5 text-xs font-mono transition-all ${
             liked ? 'text-neon-purple' : 'text-gray-500 hover:text-neon-purple'
           }`}

@@ -336,6 +336,8 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
       <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">
         <button onClick={handleLike} disabled={likeLoading}
+          aria-label={`${liked ? 'Descurtir' : 'Curtir'} — ${likeCount} curtida(s)`}
+          aria-pressed={liked}
           className={`flex items-center gap-1.5 text-xs font-mono transition-all ${
             liked ? 'text-neon-green' : 'text-gray-500 hover:text-neon-green'
           }`}>

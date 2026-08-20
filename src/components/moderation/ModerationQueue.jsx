@@ -7,6 +7,8 @@ import {
   updateReportStatus, addViolation, applySuspension, hideContent,
 } from '../../services/moderationService';
 import BanModal from '../ui/BanModal';
+import { logAudit } from '../../lib/auditLog';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const CONTENT_LABEL = { post: 'Post', comment: 'Comentário', mural: 'Mural', chat: 'Chat' };
 const TRIGGER_LABEL  = { report: 'Denúncias', wordlist: 'Palavrão', ai: 'IA', escalation: 'Escalação', links: 'Link perigoso' };
@@ -71,6 +73,7 @@ function ActionSelect({ value, onChange }) {
 }
 
 export default function ModerationQueue() {
+  const { profile } = useAuth();
   const [items, setItems] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(0);
@@ -160,6 +163,25 @@ export default function ModerationQueue() {
           });
         }
       }
+
+      // Decisão de moderação é ação de admin com consequência (conteúdo some ou
+      // volta, autor leva pontos de infração) e não constava em lugar nenhum da
+      // auditoria — só no status da própria fila.
+      logAudit(
+        decision === 'approved' ? 'moderation_approved' : 'moderation_rejected',
+        `@${profile?.username} ${decision === 'approved' ? 'confirmou a ocultação' : 'restaurou'} ` +
+        `${CONTENT_LABEL[item.content_type]?.toLowerCase() || 'conteúdo'} ` +
+        `(motivo da fila: ${TRIGGER_LABEL[item.trigger_type] || item.trigger_type || '—'})`,
+        {
+          category: 'admin',
+          severity: decision === 'approved' ? 'warning' : 'info',
+          metadata: {
+            content_type: item.content_type,
+            content_id: item.content_id,
+            decision,
+            action: actions[item.id] || null,
+          },
+        });
 
       toast.success(decision === 'approved' ? 'Ocultação confirmada' : 'Conteúdo restaurado');
       load(page);

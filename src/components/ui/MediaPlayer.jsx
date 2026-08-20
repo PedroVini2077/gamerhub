@@ -80,6 +80,7 @@ export default function MediaPlayer({ src, title }) {
 
       <div className="flex items-center gap-3 px-4 py-3">
         <button
+          aria-label={playing ? 'Pausar' : 'Reproduzir'}
           onClick={togglePlay}
           className="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 flex items-center justify-center text-neon-green hover:bg-neon-green/20 transition-colors shrink-0"
         >
