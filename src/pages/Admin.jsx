@@ -6,10 +6,10 @@ import { useRole } from '../hooks/useRole';
 import { useAdminLogs } from '../hooks/useAdminLogs';
 import { useLiveModeration } from '../hooks/useLiveModeration';
 import { useAdminNotifications, notifAudience } from '../hooks/useAdminNotifications';
+import { useBlockedLogins } from '../hooks/useBlockedLogins';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { logAudit } from '../lib/auditLog';
 import { Shield, X, Users, FileText, Key, RotateCcw, XCircle, Crown, Bell, Activity, Trash2, Tv, ShieldAlert, UserPlus, Siren, Send, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BanModal from '../components/ui/BanModal';
@@ -66,15 +66,16 @@ export default function Admin() {
   const [demoteModal, setDemoteModal] = useState(null);
   const [alertOwnerModal, setAlertOwnerModal] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
-  const [blockedLogins, setBlockedLogins] = useState([]);
-  const [blockedLoading, setBlockedLoading] = useState(false);
-  const [unlockModal, setUnlockModal] = useState(null);
   const { logs, logCat, setLogCat, logsLoading, fetchLogs } = useAdminLogs();
   const { liveMod, refreshing, fetchLiveMod } = useLiveModeration();
   const {
     notifications, setNotifications, readIds, setReadIds,
     notifLoading, fetchNotifications, refreshUnread,
   } = useAdminNotifications({ userId: user?.id, isSuperAdmin, isOwner });
+  const {
+    blockedLogins, blockedLoading, fetchBlockedLogins,
+    unlockModal, setUnlockModal, confirmUnlock,
+  } = useBlockedLogins({ actorUsername: profile?.username });
 
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
@@ -177,13 +178,6 @@ export default function Admin() {
     setLoadingMoreKeys(false);
   }
 
-  async function fetchBlockedLogins() {
-    setBlockedLoading(true);
-    const { data } = await supabase.rpc('get_blocked_logins');
-    setBlockedLogins(data || []);
-    setBlockedLoading(false);
-  }
-
   async function fetchUnbanRequests() {
     setUnbanReqLoading(true);
     let q = supabase.from('unban_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
@@ -191,20 +185,6 @@ export default function Admin() {
     const { data } = await q;
     setUnbanRequests(data || []);
     setUnbanReqLoading(false);
-  }
-
-  async function confirmUnlock() {
-    const entry = unlockModal;
-    if (!entry) return;
-    const { error } = await supabase.rpc('admin_unlock_login', { p_email: entry.email });
-    if (error) { toast.error('Erro ao desbloquear'); return; }
-    logAudit('admin_unlock_login',
-      `Super admin @${profile?.username} desbloqueou o login de ${entry.email} (${entry.attempts} tentativas${entry.permanent ? ', bloqueio permanente' : ''})`,
-      { category: 'security', severity: 'warning' }
-    );
-    toast.success(`${entry.email} desbloqueado`);
-    setUnlockModal(null);
-    fetchBlockedLogins();
   }
 
   async function logAction(action, details, category = 'admin', severity = 'info') {
