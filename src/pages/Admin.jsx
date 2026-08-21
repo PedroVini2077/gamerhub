@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fadeTab, gridContainer, gridCard } from '../lib/motion';
+import { fadeTab, gridContainer } from '../lib/motion';
 import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
-import { Shield, X, Users, FileText, Key, RotateCcw, CheckCircle, XCircle, Crown, Bell, Activity, Trash2, Tv, ShieldAlert, LockOpen, UserPlus, Siren, Send, AlertTriangle } from 'lucide-react';
+import { Shield, X, Users, FileText, Key, RotateCcw, XCircle, Crown, Bell, Activity, Trash2, Tv, ShieldAlert, UserPlus, Siren, Send, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BanModal from '../components/ui/BanModal';
 import ReasonModal from '../components/ui/ReasonModal';
@@ -15,6 +15,7 @@ import ConfirmModal from '../components/ui/ConfirmModal';
 import StatCard from '../components/admin/StatCard';
 import UnlockCountdownBtn from '../components/admin/UnlockCountdownBtn';
 import UnbanRequestModal from '../components/admin/UnbanRequestModal';
+import ReactivationModal from '../components/admin/ReactivationModal';
 import UsersPanel from '../components/admin/UsersPanel';
 import PostsPanel from '../components/admin/PostsPanel';
 import LivesPanel from '../components/admin/LivesPanel';
@@ -25,10 +26,6 @@ import SuperAdminPanel from '../components/admin/SuperAdminPanel';
 import CargosTab from '../components/admin/CargosTab';
 import ModerationPanel from '../components/moderation/ModerationPanel';
 import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/roleNominationService';
-
-const REACTIVATE_REASONS = [
-  'Encerrada por engano', 'Problema técnico', 'Live continuou', 'Pedido do criador', 'Outro',
-];
 
 // Posts/keys crescem sem limite com o uso do site — pagina em blocos pra não
 // carregar tudo de uma vez (landmine de escalabilidade do `fetchAll` antigo).
@@ -50,71 +47,6 @@ function notifAudience(isSuperAdmin, isOwner) {
 const MAX_USERS = 1000;
 
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
-
-function ReactivationModal({ live, isSuperAdmin, onSubmit, onClose }) {
-  const [reason, setReason] = useState('');
-  const [details, setDetails] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit() {
-    if (!reason) return;
-    setSubmitting(true);
-    await onSubmit(live, reason, details);
-    setSubmitting(false);
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.9)' }} onClick={onClose}>
-      <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-dark-400 p-5 space-y-4 animate-fade-up"
-        onClick={e => e.stopPropagation()} style={{ boxShadow: '0 0 40px #39ff1415' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <RotateCcw size={14} className="text-neon-green" />
-            <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">
-              {isSuperAdmin ? 'Reativar Live' : 'Solicitar Reativação'}
-            </h3>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors"><X size={15} /></button>
-        </div>
-        <div className="bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
-          <p className="text-xs font-mono text-white font-bold">{live.title}</p>
-          <p className="text-xs font-mono text-gray-500">por {live.profiles?.username}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Motivo:</p>
-          <div className="space-y-1.5">
-            {REACTIVATE_REASONS.map(r => (
-              <button key={r} type="button" onClick={() => setReason(r)}
-                className={`w-full text-left text-xs font-mono px-3 py-2 rounded border transition-all ${
-                  reason === r
-                    ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
-                    : 'border-dark-500 text-gray-400 hover:border-dark-300 hover:text-gray-300'
-                }`}>
-                <span className={`w-2 h-2 rounded-full mr-2 border inline-block shrink-0 ${reason === r ? 'bg-neon-green border-neon-green' : 'border-gray-500'}`} />
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-        <textarea className="input-gamer resize-none w-full text-xs" rows={2}
-          placeholder="Detalhes adicionais (opcional)..."
-          value={details} onChange={e => setDetails(e.target.value)} maxLength={300} />
-        <div className="flex gap-2">
-          <button onClick={handleSubmit} disabled={!reason || submitting}
-            className="btn-solid flex-1 py-2 text-xs disabled:opacity-40 flex items-center justify-center gap-1.5">
-            {submitting
-              ? <span className="animate-pulse font-mono">...</span>
-              : isSuperAdmin ? <><RotateCcw size={12} /> Reativar Agora</> : <><CheckCircle size={12} /> Enviar Solicitação</>
-            }
-          </button>
-          <button onClick={onClose} className="btn-neon py-2 px-4 text-xs">Cancelar</button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
 
 export default function Admin() {
   const { isAdmin, isSuperAdmin, isOwner, role } = useRole();
