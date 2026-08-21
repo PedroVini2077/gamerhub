@@ -48,6 +48,32 @@
   README reflete o estado atual (estrutura de pastas, tabela de funcionalidades,
   banco de dados, convenções). O README é a documentação viva do projeto.
 
+## Segurança proativa (regra permanente)
+
+> IA que desenvolve sozinha tem fama de deixar brecha — o dono não quer que o
+> GamerHub seja mais um caso desses. Esta regra vale pra **todo** trabalho
+> daqui pra frente, não só quando for pedida auditoria.
+
+- **Nunca entregar só "funciona".** Antes de considerar qualquer código pronto
+  — feature nova, fix, refactor, mudança de banco — pensar ativamente em como
+  isso poderia ser abusado: dado forjado, RLS que não cobre um caminho, RPC
+  chamável por quem não devia, input sem validação, condição de corrida, race
+  entre client e trigger, edge case de permissão (owner vs admin vs dono da
+  própria conta), enumeração de dados sensíveis. Se existe um jeito de abusar,
+  **fechar antes de entregar** — não documentar como "risco conhecido" e
+  seguir em frente.
+- **Vale para brecha que ainda não é problema hoje, mas vira amanhã.** Base de
+  usuário pequena hoje não é desculpa pra deixar uma falha passar — se o
+  código vai continuar em produção, o buraco também vai. Achou algo que só
+  "não quebrou ainda" por sorte ou por baixo volume? Corrigir do mesmo jeito.
+- **Isso não substitui a auditoria em 3 fases** (abaixo) — é o padrão mínimo
+  pra qualquer entrega, mesmo fora de uma auditoria formal. A auditoria em 3
+  fases é o modo de varrer o projeto inteiro deliberadamente; esta regra é o
+  reflexo de desconfiar do próprio código o tempo todo.
+- Na dúvida se algo é uma brecha real ou paranoia, **tratar como brecha** e
+  registrar a decisão (corrigida, ou por que foi considerada segura) — nunca
+  deixar em silêncio.
+
 ## Stack
 
 - **Frontend:** React 19 + Vite + Tailwind CSS + Framer Motion.
