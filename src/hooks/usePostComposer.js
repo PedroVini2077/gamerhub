@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../services/postService';
 import { moderateText, moderateImages, moderateLinks } from '../services/moderationService';
 import { useAuth } from './useAuth.jsx';
 import { useBlockedWords } from './useBlockedWords';
 import { getEmbedInfo } from '../lib/embed';
+import { createUrlTracker } from '../lib/objectUrls';
 
 export const MAX_MEDIAS = 10;
 // Vídeo limitado a 10MB: egress (banda CDN) é a cota mais apertada do free
@@ -32,6 +33,14 @@ export function usePostComposer(onPost) {
   const fileRef = useRef(null);
   const audioFileRef = useRef(null);
 
+  // As prévias de mídia e áudio são blob URLs — ver lib/objectUrls.js para o
+  // vazamento que isto fecha. Lazy: um rastreador por instância do formulário.
+  const [urls] = useState(createUrlTracker);
+
+  // Desmontar o formulário com anexos pendentes (trocar de página, sair da
+  // conta) também precisa devolver a memória.
+  useEffect(() => () => urls.releaseAll(), [urls]);
+
   function handleMediaSelect(type) {
     if (medias.length >= MAX_MEDIAS) { toast.error(`Máximo ${MAX_MEDIAS} mídias por post`); return; }
     setActiveType(type);
@@ -50,7 +59,7 @@ export function usePostComposer(onPost) {
       e.target.value = '';
       return;
     }
-    setMedias(m => [...m, { file, preview: URL.createObjectURL(file), type: activeType }]);
+    setMedias(m => [...m, { file, preview: urls.track(file), type: activeType }]);
     e.target.value = '';
   }
 
@@ -61,23 +70,23 @@ export function usePostComposer(onPost) {
       toast.error(`Máximo ${MAX_AUDIO_MB}MB para áudio`);
       return;
     }
-    setAudio({ file, preview: URL.createObjectURL(file), type: 'file' });
+    setAudio({ file, preview: urls.track(file), type: 'file' });
     setAudioName(file.name.replace(/\.[^/.]+$/, ''));
     e.target.value = '';
   }
 
   function handleRecorded(file) {
-    setAudio({ file, preview: URL.createObjectURL(file), type: 'recorded' });
+    setAudio({ file, preview: urls.track(file), type: 'recorded' });
     setAudioName('Áudio gravado');
     setShowRecorder(false);
   }
 
   function removeMedia(i) {
-    setMedias(m => { URL.revokeObjectURL(m[i].preview); return m.filter((_, idx) => idx !== i); });
+    setMedias(m => { urls.release(m[i].preview); return m.filter((_, idx) => idx !== i); });
   }
 
   function removeAudio() {
-    if (audio?.preview) URL.revokeObjectURL(audio.preview);
+    urls.release(audio?.preview);
     setAudio(null);
     setAudioName('');
   }
@@ -140,10 +149,15 @@ export function usePostComposer(onPost) {
       if (embedUrl.trim()) moderateLinks('post', post.id, embedUrl.trim());
       // logAudit omitido: o trigger log_post_event no banco já gera
       // content_post_created.
+      // releaseAll e não um loop pelas mídias: aqui o formulário inteiro está
+      // sendo zerado, e `setMedias([])`/`setAudio(null)` só soltam a referência
+      // do React — os blobs continuariam vivos no navegador. Varrer tudo de uma
+      // vez também não deixa caminho novo passar despercebido.
+      urls.releaseAll();
       setTitle(''); setContent(''); setMedias([]);
-      setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
+      setAudio(null); setAudioName('');
+      setEmbedUrl(''); setShowEmbed(false);
       setIsLive(false);
-      removeAudio();
       onPost?.();
     } catch (err) {
       toast.error('Erro: ' + err.message, { id: toastId });
