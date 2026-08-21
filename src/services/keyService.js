@@ -20,7 +20,7 @@ export async function fetchSiteStats() {
   today.setHours(0, 0, 0, 0);
 
   const [{ count: users }, { count: postsToday }, { count: keysCount }] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('id', { count: 'exact', head: true }),
     supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
     supabase.from('game_keys').select('*', { count: 'exact', head: true }).eq('is_promo', false),
   ]);

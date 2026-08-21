@@ -1,7 +1,14 @@
 import { supabase } from '../lib/supabase';
 
+// Perfil público de OUTRA pessoa. Via RPC porque as colunas sensíveis foram
+// revogadas de `authenticated` — e porque a página mostra a IDADE, não a data
+// de nascimento: `get_public_profile` calcula a idade no banco, então o dado
+// pessoal nunca sai de lá.
 export async function fetchProfileByUsername(username) {
-  const { data } = await supabase.from('profiles').select('*').eq('username', username).single();
+  const { data, error } = await supabase
+    .rpc('get_public_profile', { p_username: username })
+    .maybeSingle();
+  if (error) return null;
   return data || null;
 }
 

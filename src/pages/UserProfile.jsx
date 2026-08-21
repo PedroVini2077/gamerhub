@@ -8,7 +8,6 @@ import Avatar from '../components/ui/Avatar';
 import { ArrowLeft, Calendar, MapPin, Gamepad2, Swords, Crown, Sparkles } from 'lucide-react';
 import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
 import { getRankLabel, getSubRankProgress, getBorderForProfile } from '../lib/ranks';
-import { calcAge } from '../lib/date';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
@@ -83,7 +82,7 @@ export default function UserProfile() {
     </div>
   );
 
-  const age = calcAge(profile.birth_date);
+  const age = profile.age; // já vem calculada do banco (birth_date não é exposta)
   const hasSocials = profile.discord || profile.twitch || profile.youtube;
   const isOwner  = profile?.role === 'owner';
   const rank     = getBorderForProfile(profile, xpData?.xp ?? null);

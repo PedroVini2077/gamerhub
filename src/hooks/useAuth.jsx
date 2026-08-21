@@ -14,12 +14,14 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [bannedScreen, setBannedScreen] = useState(null);
 
-  async function fetchProfile(userId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+  // Via RPC, não `select('*')`: as colunas sensíveis de `profiles`
+  // (birth_date, ban_reason, notif_*, …) foram revogadas de `authenticated`,
+  // porque privilégio de coluna é por PAPEL e não distingue "minha linha" da
+  // "linha alheia" — sem isso, qualquer usuário logado lia o histórico de
+  // moderação e a data de nascimento de todo mundo. `get_own_profile()` é
+  // SECURITY DEFINER e devolve só a linha de auth.uid().
+  async function fetchProfile() {
+    const { data, error } = await supabase.rpc('get_own_profile');
     // Só atualiza o profile em caso de sucesso — erros temporários (rede, refresh de token)
     // não devem apagar o profile existente e quebrar a UI
     if (!error) setProfile(data);
@@ -44,7 +46,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        const p = await fetchProfile(session.user.id);
+        const p = await fetchProfile();
         applyBannedCheck(p); // usuário que recarrega a página já banido cai na tela
       }
       setLoading(false);
@@ -53,7 +55,7 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       // Não checa ban aqui: o SIGNED_IN do login de uma conta banida é transitório.
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) fetchProfile();
       else setProfile(null);
     });
 
@@ -64,6 +66,10 @@ export function AuthProvider({ children }) {
   // Caminho instantâneo: subscription realtime no próprio profile.
   useEffect(() => {
     if (!user?.id) return;
+    async function revalidate() {
+      applyBannedCheck(await fetchProfile());
+    }
+
     const channel = supabase
       .channel(`profile-ban-watch-${user.id}`)
       .on('postgres_changes', {
@@ -72,12 +78,12 @@ export function AuthProvider({ children }) {
         table: 'profiles',
         filter: `id=eq.${user.id}`,
       }, (payload) => {
-        if (payload.new?.banned) {
-          setBannedScreen({
-            reason: payload.new.ban_reason || 'Violação dos termos de uso',
-            details: payload.new.ban_details || null,
-          });
-        }
+        // Usa o evento só como GATILHO e relê pela RPC, em vez de confiar nas
+        // colunas do payload: `ban_reason`/`ban_details` não são mais legíveis
+        // direto na tabela por `authenticated`, e o que o Realtime entrega do
+        // WAL sob privilégio de coluna é detalhe de implementação — não é algo
+        // em que valha a pena apostar a detecção de ban.
+        if (payload.new?.banned) revalidate();
       })
       .subscribe();
 
@@ -87,10 +93,6 @@ export function AuthProvider({ children }) {
     // ninguém olhando. Agora: 60s e só com a aba visível, mais uma revalidação
     // no momento em que a aba volta ao foco (que é justamente quando o usuário
     // poderia agir sem saber que foi banido).
-    async function revalidate() {
-      applyBannedCheck(await fetchProfile(user.id));
-    }
-
     const poll = setInterval(() => {
       if (document.visibilityState === 'visible') revalidate();
     }, 60000);
@@ -132,8 +134,10 @@ export function AuthProvider({ children }) {
     if (result.data?.user) {
       // Checagem de ban via query direta (sem setProfile) para não poluir o estado
       // global durante o handshake de uma conta banida que será deslogada em seguida.
-      const { data: p } = await supabase
-        .from('profiles').select('*').eq('id', result.data.user.id).single();
+      // Mesma RPC: a sessão já existe neste ponto (a senha foi aceita), então
+      // `get_own_profile()` devolve a linha certa — inclusive ban_reason, que
+      // não é mais legível direto na tabela.
+      const { data: p } = await supabase.rpc('get_own_profile');
       if (p?.banned) {
         // Registra a tentativa (log + notificação aos admins) enquanto ainda há sessão
         await supabase.rpc('record_banned_login_attempt', { p_email: email.trim() });
@@ -206,7 +210,7 @@ export function AuthProvider({ children }) {
   }
 
   async function refreshProfile() {
-    if (user) await fetchProfile(user.id);
+    if (user) await fetchProfile();
   }
 
   // Logout do usuário banido: encerra a sessão e força ida pro login com a página recarregada,

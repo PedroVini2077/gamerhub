@@ -305,7 +305,7 @@ export default function Admin() {
       { count: postsCount }, { count: activePostsCount }, { count: keysCount },
       { data: allNotifs }, { data: reads },
     ] = await Promise.all([
-      supabase.from('profiles').select('*').order('role').order('username').limit(MAX_USERS),
+      supabase.rpc('admin_list_users', { p_limit: MAX_USERS }),
       supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
       supabase.from('game_keys').select('*').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
       supabase.from('posts').select('id', { count: 'exact', head: true }),
