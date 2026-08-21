@@ -28,6 +28,41 @@ mesmo que não seja o que foi pedido — avisando o que encontrei e o que fiz.
 
 ---
 
+## 0.1 Economia de contexto (tokens)
+
+O projeto é grande e as sessões são longas. Token gasto à toa é sessão que
+acaba no meio do trabalho — então economizar faz parte de fazer bem feito.
+
+**Não repetir o que já foi feito:**
+- Não reler arquivo que já li nesta sessão. Se preciso conferir uma linha,
+  conferir **aquela** linha, não o arquivo inteiro.
+- Não re-verificar o que acabei de verificar. Rodei `build` e passou? Não rodar
+  de novo dois passos depois sem ter mexido em nada.
+- Não redescobrir o que já está escrito. `README.md`, `BACKLOG.md` e
+  `db/AAAA-MM-DD-*.md` são memória do projeto — ler de lá é mais barato do que
+  re-investigar o banco ou o código.
+
+**Trabalhar em lote:**
+- Comandos independentes vão numa chamada só (vários `Bash`/leituras de uma
+  vez), não um por vez.
+- Agrupar um bloco de trabalho num PR só, em vez de abrir PR por mudança
+  trivial.
+- Saída gigante (advisors, dumps): fatiar/resumir por script, nunca despejar
+  inteira no contexto.
+
+**Ler com pontaria:**
+- `grep` para *localizar*, leitura para *entender*. Ler o arquivo todo quando
+  preciso do todo; ler o trecho quando o alvo é conhecido.
+
+> **Exceção que manda mais alto:** durante **auditoria** (§6), a leitura
+> integral é o objetivo — ali não se economiza cortando cobertura. Se faltar
+> contexto no meio de uma auditoria, **registrar onde parei** no `BACKLOG.md` e
+> retomar depois; nunca declarar a fase concluída com leitura parcial pra
+> poupar token. Economia vale no trabalho do dia a dia, não em cima da
+> qualidade da varredura.
+
+---
+
 ## 1. Postura (as três regras que valem acima de tudo)
 
 ### 1.1 Sinceridade — sempre, em tudo
@@ -409,7 +444,13 @@ fix, fase de auditoria), eu fecho o ciclo inteiro:
 3. Mergear (`merge_pull_request`, `squash`).
 4. Sincronizar a branch local com a `main` já mergeada:
    `git checkout main && git pull --ff-only origin main && git checkout -B <branch>`
-5. Informar o número do PR ao dono.
+5. **Realinhar a branch remota** com `git push --force-with-lease`. Sem isso ela
+   fica apontando pros commits individuais que o squash substituiu, e o git
+   passa a ver divergência ("N à frente, M atrás") mesmo sem nada pendente —
+   o hook de fim de sessão acusa commit não empurrado que na verdade já está
+   na `main`. Antes de forçar, conferir com
+   `git diff --stat origin/main origin/<branch>` que o conteúdo é idêntico.
+6. Informar o número do PR ao dono.
 
 **Só mergear com a definição de pronto (§2) cumprida** — build, lint, testes e
 validação no banco. Se algo estiver falhando, o PR fica aberto e eu aviso; não

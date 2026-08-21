@@ -1,4 +1,4 @@
-import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv, Flag, EyeOff, Timer } from 'lucide-react';
+import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv, Flag, EyeOff } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
@@ -7,6 +7,7 @@ import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia, softDeletePost, 
 import { canDeleteContent } from '../../lib/roles';
 import { runLikeToggle } from '../../lib/like';
 import toast from 'react-hot-toast';
+import EditCountdown from './EditCountdown';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
@@ -16,30 +17,6 @@ import MediaPlayer from '../ui/MediaPlayer';
 import EmbedPlayer from '../ui/EmbedPlayer';
 import ConfirmModal from '../ui/ConfirmModal';
 import ReportModal from '../ui/ReportModal';
-
-function EditCountdown({ createdAt }) {
-  const [countdown, setCountdown] = useState('');
-  useEffect(() => {
-    function update() {
-      const elapsed = (Date.now() - new Date(createdAt).getTime()) / 1000;
-      const remaining = (EDIT_LIMIT_MINUTES * 60) - elapsed;
-      if (remaining <= 0) { setCountdown('00:00'); return; }
-      const m = Math.floor(remaining / 60).toString().padStart(2, '0');
-      const s = Math.floor(remaining % 60).toString().padStart(2, '0');
-      setCountdown(`${m}:${s}`);
-    }
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, [createdAt]);
-
-  return (
-    <p className="text-xs font-mono flex items-center gap-1"
-      style={{ color: countdown <= '05:00' ? '#ff4444' : '#6b7280' }}>
-      <Timer size={11} /> Tempo restante: <span className="font-bold ml-1">{countdown}</span>
-    </p>
-  );
-}
 
 const categoryConfig = {
   dica: { label: 'Dica', cls: 'tag-green' },
@@ -309,7 +286,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
               <X size={12} /> Cancelar
             </button>
           </div>
-          <EditCountdown createdAt={post.created_at} />
+          <EditCountdown createdAt={post.created_at} limitMinutes={EDIT_LIMIT_MINUTES} />
         </div>
       ) : (
         post.content && <p className="text-sm text-gray-400 leading-relaxed mb-2">{post.content}</p>
