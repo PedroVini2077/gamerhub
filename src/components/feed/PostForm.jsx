@@ -1,310 +1,86 @@
-import { useState, useRef, memo } from 'react';
-import { createPost, uploadAudio, uploadPostMediaFiles } from '../../services/postService';
-import { moderateText, moderateImages, moderateLinks } from '../../services/moderationService';
-import { useAuth } from '../../hooks/useAuth.jsx';
-import { useBlockedWords } from '../../hooks/useBlockedWords';
+import { memo } from 'react';
 import { suspendedUntil } from '../../lib/roles';
 import SuspendedNotice from '../ui/SuspendedNotice';
-import toast from 'react-hot-toast';
-import { Send, Image, X, Film, Music, Mic, Link, AlertTriangle } from 'lucide-react';
 import AudioRecorder from '../ui/AudioRecorder';
-import EmbedPlayer from '../ui/EmbedPlayer';
-import { getEmbedInfo } from '../../lib/embed';
-import MediaPlayer from '../ui/MediaPlayer';
+import { usePostComposer, MAX_MEDIAS } from '../../hooks/usePostComposer';
+import AudioAttachment from './composer/AudioAttachment';
+import EmbedComposer from './composer/EmbedComposer';
+import MediaPreviewGrid from './composer/MediaPreviewGrid';
+import ComposerToolbar from './composer/ComposerToolbar';
 
-const categories = ['dica', 'curiosidade', 'news'];
+function Shell({ children }) {
+  return (
+    <div className="card p-5">
+      <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
+      {children}
+    </div>
+  );
+}
 
 const PostForm = memo(function PostForm({ onPost }) {
-  const { user, profile } = useAuth();
-  const { checkContent } = useBlockedWords();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [audioName, setAudioName] = useState('');
-  const [category, setCategory] = useState('dica');
-  const [loading, setLoading] = useState(false);
-  const [medias, setMedias] = useState([]);
-  const [audio, setAudio] = useState(null);
-  const [embedUrl, setEmbedUrl] = useState('');
-  const [showEmbed, setShowEmbed] = useState(false);
-  const [isLive, setIsLive] = useState(false);
-  const [showRecorder, setShowRecorder] = useState(false);
-  const [activeType, setActiveType] = useState(null);
-  const fileRef = useRef(null);
-  const audioFileRef = useRef(null);
+  const {
+    user, profile, title, setTitle, content, setContent, category, setCategory,
+    medias, audio, audioName, setAudioName,
+    embedUrl, setEmbedUrl, showEmbed, setShowEmbed, closeEmbed,
+    isLive, setIsLive, showRecorder, setShowRecorder,
+    loading, fileRef, audioFileRef,
+    handleMediaSelect, handleFileChange, handleAudioFile, handleRecorded,
+    removeMedia, removeAudio, handleSubmit,
+  } = usePostComposer(onPost);
 
   if (!user) return null;
 
   const suspended = suspendedUntil(profile);
-  if (suspended) {
-    return (
-      <div className="card p-5">
-        <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
-        <SuspendedNotice until={suspended} />
-      </div>
-    );
-  }
-
-  function handleMediaSelect(type) {
-    if (medias.length >= 10) { toast.error('Máximo 10 mídias por post'); return; }
-    setActiveType(type);
-    fileRef.current.accept = type === 'image' ? 'image/*' : 'video/*';
-    fileRef.current.click();
-  }
-
-  function handleFileChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Vídeo limitado a 10MB: egress (banda CDN) é a cota mais apertada do
-    // free tier — clipes longos devem ir via embed YouTube/Twitch/TikTok.
-    const maxMB = activeType === 'image' ? 5 : 10;
-    if (file.size > maxMB * 1024 * 1024) {
-      toast.error(activeType === 'video'
-        ? `Máximo ${maxMB}MB — pra vídeos maiores, cole um link do YouTube/Twitch/TikTok`
-        : `Máximo ${maxMB}MB`);
-      e.target.value = '';
-      return;
-    }
-    setMedias(m => [...m, { file, preview: URL.createObjectURL(file), type: activeType }]);
-    e.target.value = '';
-  }
-
-  function handleAudioFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 20 * 1024 * 1024) { toast.error('Máximo 20MB para áudio'); return; }
-    const name = file.name.replace(/\.[^/.]+$/, '');
-    setAudio({ file, preview: URL.createObjectURL(file), type: 'file' });
-    setAudioName(name);
-    e.target.value = '';
-  }
-
-  function removeMedia(i) {
-    setMedias(m => { URL.revokeObjectURL(m[i].preview); return m.filter((_, idx) => idx !== i); });
-  }
-
-  function removeAudio() {
-    if (audio?.preview) URL.revokeObjectURL(audio.preview);
-    setAudio(null);
-    setAudioName('');
-  }
-
-  async function handleSubmit() {
-    if (!title.trim()) { toast.error('Preencha o título!'); return; }
-    if (embedUrl.trim() && !getEmbedInfo(embedUrl.trim())) {
-      toast.error('Link não suportado. Use YouTube, Twitch ou TikTok.');
-      return;
-    }
-    const check = checkContent(`${title} ${content}`);
-    if (check.blocked) {
-      toast.error(`Conteúdo não permitido: contém termo bloqueado.`);
-      return;
-    }
-
-    setLoading(true);
-    const toastId = toast.loading('Processando post...');
-
-    try {
-      let audio_url = null;
-      let audio_type = null;
-
-      if (audio?.file) {
-        const { url, error } = await uploadAudio(user.id, audio.file);
-        if (error) throw error;
-        audio_url = url;
-        audio_type = audio.type === 'recorded' ? 'recorded' : 'music';
-      }
-
-      const { data: post, error: postError } = await createPost({
-        userId: profile?.id,
-        title: title.trim(),
-        content: content.trim() || null,
-        category,
-        audioUrl: audio_url,
-        audioType: audio_type,
-        audioName: audioName.trim() || null,
-        embedUrl: embedUrl.trim() || null,
-        isLive,
-      });
-
-      if (postError) throw postError;
-
-      if (medias.length > 0) {
-        const { imageUrls, failed } = await uploadPostMediaFiles(user.id, post.id, medias);
-        // O post já foi criado — avisar é melhor do que deixar o usuário achar
-        // que a mídia subiu e só descobrir olhando o card.
-        if (failed) toast.error(`${failed} mídia(s) não puderam ser enviadas.`);
-        moderateImages('post', post.id, imageUrls);
-      }
-
-      toast.success('Post publicado!', { id: toastId });
-      moderateText('post', post.id, `${title.trim()} ${content.trim()}`);
-      if (embedUrl.trim()) moderateLinks('post', post.id, embedUrl.trim());
-      // logAudit omitido: o trigger log_post_event no banco já gera content_post_created
-      setTitle(''); setContent(''); setMedias([]);
-      setAudioName(''); setEmbedUrl(''); setShowEmbed(false);
-      setIsLive(false);
-      removeAudio();
-      onPost?.();
-    } catch (err) {
-      toast.error('Erro: ' + err.message, { id: toastId });
-    }
-    setLoading(false);
-  }
+  if (suspended) return <Shell><SuspendedNotice until={suspended} /></Shell>;
 
   return (
-    <div className="card p-5">
-      <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
-
-      <input id="post-title" aria-label="Título do post" className="input-gamer mb-3" placeholder="Título do post..."
+    <Shell>
+      <input id="post-title" aria-label="Título do post" className="input-gamer mb-3"
+        placeholder="Título do post..."
         value={title} onChange={e => setTitle(e.target.value)} maxLength={100} />
 
-      {!audio ? (
+      {audio ? (
+        <>
+          <AudioAttachment audio={audio} audioName={audioName}
+            setAudioName={setAudioName} onRemove={removeAudio} />
+          <textarea aria-label="Legenda do áudio" className="input-gamer mb-3 resize-none" rows={2}
+            placeholder="Legenda opcional..."
+            value={content} onChange={e => setContent(e.target.value)} maxLength={300} />
+        </>
+      ) : (
         <textarea id="post-content" aria-label="Conteúdo do post" className="input-gamer mb-3 resize-none" rows={3}
           placeholder="Escreva algo... (opcional se tiver áudio ou link)"
           value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
-      ) : (
-        <div className="mb-3 border border-neon-green/20 rounded-lg p-3 bg-dark-700 relative">
-          <p className="text-xs font-mono text-neon-green mb-2 uppercase tracking-wider flex items-center gap-1.5">
-            {audio.type === 'recorded' ? <><Mic size={12} />Áudio gravado</> : <><Music size={12} />Música</>}
-          </p>
-          <input className="input-gamer mb-2 text-sm" placeholder="Nome do áudio / música..."
-            value={audioName} onChange={e => setAudioName(e.target.value)} maxLength={80} />
-          <MediaPlayer src={audio.preview} title={audioName || 'Áudio'} />
-          <button aria-label="Remover áudio" onClick={removeAudio}
-            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-dark-600 flex items-center justify-center text-gray-400 hover:text-white">
-            <X size={12} />
-          </button>
-        </div>
       )}
 
-      {audio && (
-        <textarea className="input-gamer mb-3 resize-none" rows={2}
-          placeholder="Legenda opcional..."
-          value={content} onChange={e => setContent(e.target.value)} maxLength={300} />
+      {showEmbed && (
+        <EmbedComposer embedUrl={embedUrl} setEmbedUrl={setEmbedUrl}
+          isLive={isLive} setIsLive={setIsLive} onClose={closeEmbed} />
       )}
-
-     {showEmbed && (
-  <div className="mb-3 border border-dark-400 rounded-lg p-3 bg-dark-700">
-    <div className="flex gap-2 mb-2">
-      <input className="input-gamer flex-1 text-sm"
-        placeholder="Cole o link do YouTube, Twitch, TikTok..."
-        value={embedUrl} onChange={e => setEmbedUrl(e.target.value)} />
-      <button onClick={() => { setShowEmbed(false); setEmbedUrl(''); setIsLive(false); }}
-        className="text-gray-500 hover:text-red-400 transition-colors p-2">
-        <X size={16} />
-      </button>
-    </div>
-
-    {embedUrl && !embedUrl.match(/^https?:\/\//) && (
-      <p className="text-xs font-mono text-red-400/80 mb-2 flex items-center gap-1"><AlertTriangle size={11} />Cole um link válido começando com https://</p>
-    )}
-
-    {/* Opção de live — Twitch e YouTube transmitem ao vivo de verdade no embed */}
-    {embedUrl && embedUrl.match(/^https?:\/\//) && ['twitch', 'youtube'].includes(getEmbedInfo(embedUrl)?.type) && (
-      <div className="mt-2">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={isLive} onChange={e => setIsLive(e.target.checked)}
-            className="w-4 h-4 accent-neon-green" />
-          <span className="text-xs font-mono text-gray-400 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Marcar como Live
-          </span>
-        </label>
-      </div>
-    )}
-
-    {embedUrl && embedUrl.match(/^https?:\/\//) && <EmbedPlayer url={embedUrl} isLive={isLive} />}
-  </div>
-)}
 
       {showRecorder && (
-        <AudioRecorder
-          onRecorded={(file) => {
-            setAudio({ file, preview: URL.createObjectURL(file), type: 'recorded' });
-            setAudioName('Áudio gravado');
-            setShowRecorder(false);
-          }}
-          onCancel={() => setShowRecorder(false)}
-        />
+        <AudioRecorder onRecorded={handleRecorded} onCancel={() => setShowRecorder(false)} />
       )}
 
       {medias.length > 0 && (
-        <div className="mb-3 flex gap-2 flex-wrap">
-          {medias.map((m, i) => (
-            <div key={i} className="relative rounded-lg overflow-hidden border border-dark-400 bg-dark-700"
-              style={{ width: 72, height: 72 }}>
-              {m.type === 'image'
-                ? <img src={m.preview} alt={`Prévia da mídia ${i + 1}`} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                    <Film size={20} className="text-neon-green" />
-                    <span className="text-xs text-gray-500 font-mono">vídeo</span>
-                  </div>
-              }
-              <button onClick={() => removeMedia(i)}
-                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-dark-800/90 flex items-center justify-center text-gray-400 hover:text-white">
-                <X size={10} />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 bg-dark-800/80 text-center py-0.5">
-                <span className="text-xs font-mono text-gray-400">{i + 1}</span>
-              </div>
-            </div>
-          ))}
-          <span className="text-xs text-gray-600 font-mono self-end pb-1">{medias.length}/10</span>
-        </div>
+        <MediaPreviewGrid medias={medias} max={MAX_MEDIAS} onRemove={removeMedia} />
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {categories.map(c => (
-          <button key={c} type="button" onClick={() => setCategory(c)}
-            className={`tag cursor-pointer transition-all ${category === c ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'}`}>
-            {c}
-          </button>
-        ))}
+      <ComposerToolbar
+        category={category} setCategory={setCategory}
+        canAddMedia={medias.length < MAX_MEDIAS}
+        hasAudio={!!audio} showRecorder={showRecorder} showEmbed={showEmbed}
+        onPickImage={() => handleMediaSelect('image')}
+        onPickVideo={() => handleMediaSelect('video')}
+        onPickAudio={() => audioFileRef.current.click()}
+        onRecord={() => setShowRecorder(true)}
+        onAddEmbed={() => setShowEmbed(true)}
+        loading={loading} onSubmit={handleSubmit}
+      />
 
-        <div className="flex gap-1 ml-1">
-          {medias.length < 10 && (
-            <>
-              <button onClick={() => handleMediaSelect('image')} title="Imagem (máx 5MB)" aria-label="Adicionar imagem (máx 5MB)"
-                className="text-gray-500 hover:text-neon-green transition-colors p-1">
-                <Image size={16} />
-              </button>
-              <button onClick={() => handleMediaSelect('video')} title="Vídeo (máx 10MB) — prefira colar um link do YouTube/Twitch/TikTok pra clipes longos" aria-label="Adicionar vídeo (máx 10MB)"
-                className="text-gray-500 hover:text-neon-green transition-colors p-1">
-                <Film size={16} />
-              </button>
-            </>
-          )}
-          {!audio && (
-            <>
-              <button onClick={() => audioFileRef.current.click()} title="Música (máx 20MB)" aria-label="Adicionar música (máx 20MB)"
-                className="text-gray-500 hover:text-neon-green transition-colors p-1">
-                <Music size={16} />
-              </button>
-              {!showRecorder && (
-                <button onClick={() => setShowRecorder(true)} title="Gravar áudio" aria-label="Gravar áudio"
-                  className="text-gray-500 hover:text-neon-green transition-colors p-1">
-                  <Mic size={16} />
-                </button>
-              )}
-            </>
-          )}
-          {!showEmbed && (
-            <button onClick={() => setShowEmbed(true)} title="Link externo" aria-label="Adicionar link externo"
-              className="text-gray-500 hover:text-neon-green transition-colors p-1">
-              <Link size={16} />
-            </button>
-          )}
-        </div>
-
-        <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
-        <input ref={audioFileRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioFile} />
-
-        <button onClick={handleSubmit} disabled={loading}
-          className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto">
-          <Send size={13} />
-          {loading ? 'Aguarde...' : 'Publicar'}
-        </button>
-      </div>
-    </div>
+      <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />
+      <input ref={audioFileRef} type="file" accept="audio/*" className="hidden" onChange={handleAudioFile} />
+    </Shell>
   );
 });
 
