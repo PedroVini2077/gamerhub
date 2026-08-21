@@ -1,8 +1,15 @@
+import { isSafeExternalUrl } from './url';
+
 // Detecção de provedor de embed a partir da URL (YouTube, Twitch, TikTok, etc.).
 // Fica em lib/ (e não no componente EmbedPlayer) para poder ser usado também
 // por services sem acoplar acesso a dados a um componente de UI.
+//
+// Retorna `null` para qualquer coisa que não seja http(s) — o PostForm já
+// tratava `null` como "link não suportado", mas antes esta função NUNCA
+// devolvia null (caía sempre em `{type:'link'}`), o que tornava aquela
+// validação letra morta e deixava `javascript:` chegar até um href.
 export function getEmbedInfo(url) {
-  if (!url) return null;
+  if (!url || !isSafeExternalUrl(url)) return null;
 
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/);
   if (yt) return { type: 'youtube', id: yt[1], label: 'YouTube', color: '#ff0000' };

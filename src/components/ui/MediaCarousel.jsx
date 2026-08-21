@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Maximize2, Film, Music, ChevronLeft, ChevronRight, Download, Play } from 'lucide-react';
 import MediaPlayer from './MediaPlayer';
 import MediaLightbox from './MediaLightbox';
+import { safeExternalUrl } from '../../lib/url';
 
 // Vídeo só baixa quando o usuário pede.
 //
@@ -37,7 +38,7 @@ function VideoPlayer({ src }) {
           <Film size={28} className="text-neon-green/60" />
           <p className="text-neon-green font-mono text-sm">Vídeo não compatível</p>
           <p className="text-gray-500 font-mono text-xs">Seu navegador não conseguiu reproduzir este vídeo.</p>
-          <a href={src} download className="btn-neon py-2 px-4 text-xs inline-flex items-center gap-1.5"><Download size={13} />Baixar vídeo</a>
+          <a href={safeExternalUrl(src) || undefined} download className="btn-neon py-2 px-4 text-xs inline-flex items-center gap-1.5"><Download size={13} />Baixar vídeo</a>
         </div>
       )}
       <video

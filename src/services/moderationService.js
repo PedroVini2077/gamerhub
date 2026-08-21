@@ -46,11 +46,10 @@ export async function resolveQueueItem(queueId, decision, contentType, contentId
   if (decision === 'approved') {
     // confirm hide: already hidden by trigger, just mark reviewed
   } else if (decision === 'rejected') {
-    // restore content
-    const table = contentType === 'post' ? 'posts'
-      : contentType === 'comment' ? 'comments'
-      : 'community_posts';
-    await supabase.from(table).update({ hidden_at: null }).eq('id', contentId);
+    // Restaura o conteúdo — reaproveita o helper que checa 0 linhas, em vez de
+    // repetir o update cru (que ignorava falha de RLS).
+    const { error } = await restoreContent(contentType, contentId);
+    if (error) return { error };
   }
 
   return supabase.from('moderation_queue').update({
@@ -159,16 +158,27 @@ export async function moderateImages(contentType, contentId, imageUrls) {
 
 // ─── Hide / Restore (ação direta do admin) ───────────────────────────────────
 
-export async function hideContent(contentType, contentId) {
+// `count: 'exact'` + checagem de 0 linhas: sem isso o RLS negando a operação
+// virava "sucesso" silencioso. Foi exatamente o que escondeu, por muito tempo,
+// o fato de `comments` e `community_posts` não terem policy de UPDATE nenhuma —
+// o painel dizia "ocultado" e nada acontecia.
+async function setHiddenAt(contentType, contentId, value) {
   const table = contentType === 'post' ? 'posts'
     : contentType === 'comment' ? 'comments'
     : 'community_posts';
-  return supabase.from(table).update({ hidden_at: new Date().toISOString() }).eq('id', contentId);
+  const { error, count } = await supabase
+    .from(table)
+    .update({ hidden_at: value }, { count: 'exact' })
+    .eq('id', contentId);
+  if (error) return { error };
+  if (!count) return { error: { message: 'Você não tem permissão para moderar este conteúdo.' } };
+  return { error: null };
 }
 
-export async function restoreContent(contentType, contentId) {
-  const table = contentType === 'post' ? 'posts'
-    : contentType === 'comment' ? 'comments'
-    : 'community_posts';
-  return supabase.from(table).update({ hidden_at: null }).eq('id', contentId);
+export function hideContent(contentType, contentId) {
+  return setHiddenAt(contentType, contentId, new Date().toISOString());
+}
+
+export function restoreContent(contentType, contentId) {
+  return setHiddenAt(contentType, contentId, null);
 }

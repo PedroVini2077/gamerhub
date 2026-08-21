@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ExternalLink, Tv, Music, Camera } from 'lucide-react';
 import { getEmbedInfo } from '../../lib/embed';
+import { safeExternalUrl } from '../../lib/url';
 
 // Marca o player como encerrado quando passa de expires_at — compartilhado
 // entre Twitch e YouTube ao vivo (antes só a Twitch tinha esse tratamento).
@@ -44,7 +45,7 @@ function VideoPlayer({ isLive, expiresAt, accent, brand, channel, url, openLabel
             {isLive ? 'AO VIVO' : brand}{channel ? ` — ${channel}` : ''}
           </span>
         </div>
-        <a href={url} target="_blank" rel="noopener noreferrer"
+        <a href={safeExternalUrl(url) || undefined} target="_blank" rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors">
           {openLabel} <ExternalLink size={11} />
         </a>
@@ -100,7 +101,7 @@ export default function EmbedPlayer({ url, isLive, expiresAt }) {
     : <ExternalLink size={18} style={{ color: info.color }} />;
 
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer"
+    <a href={safeExternalUrl(url) || undefined} target="_blank" rel="noopener noreferrer"
       className="mt-3 flex items-center gap-3 p-4 rounded-lg border border-dark-400 bg-dark-700 hover:border-neon-green/40 transition-all group">
       <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
         style={{ background: info.color + '22', border: `1px solid ${info.color}44` }}>
