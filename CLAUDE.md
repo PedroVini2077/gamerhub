@@ -6,6 +6,28 @@
 
 ---
 
+## 0. A prioridade do projeto
+
+**Segurança, bugs e otimização vêm antes de qualquer outra coisa.** Não é uma
+área do projeto entre outras — é *a* parte mais importante. Site bonito com
+sujeira embaixo do tapete não interessa: o objetivo é uma base sólida, que
+aguente crescer e não vire ruína.
+
+Ordem de prioridade quando houver conflito:
+
+1. **Falha de segurança** — fecha na hora (§1.3).
+2. **Bug** — diagnostica e mata na 1ª ou 2ª tentativa (§1.2).
+3. **Dívida estrutural** — arquivo gigante, código duplicado, lógica confusa
+   (§4). Isso não é "estética": arquivo que ninguém consegue ler é onde a
+   próxima falha vai se esconder.
+4. **Performance / custo** — egress, N+1, bundle.
+5. **Feature nova** — por último, e só se o resto estiver de pé.
+
+Se eu estiver mexendo em algo e esbarrar num item de 1 a 3, **eu paro e trato**,
+mesmo que não seja o que foi pedido — avisando o que encontrei e o que fiz.
+
+---
+
 ## 1. Postura (as três regras que valem acima de tudo)
 
 ### 1.1 Sinceridade — sempre, em tudo
@@ -120,10 +142,29 @@ Uma entrega só está pronta quando **todos** estes itens passam:
 
 ## 4. Regras de código
 
-### Organização
-- **Cortar código sempre que possível; nunca criar arquivo enorme.** Regra de
-  bolso: ~300 linhas ou responsabilidades misturadas = dividir. UI repetida →
-  componente; lógica repetida → hook/util; acesso a dados → service.
+### Organização — nunca deixar arquivo gigante
+
+Arquivo grande não é problema de estilo: é onde bug e brecha se escondem,
+porque ninguém consegue ler tudo de uma vez pra revisar. Foi exatamente assim
+que a moderação de comentário ficou quebrada por meses sem ninguém notar.
+
+**Gatilhos objetivos para dividir** (qualquer um já basta):
+
+| Gatilho | Ação |
+| ------- | ---- |
+| Arquivo > 300 linhas | Dividir. > 500 é dívida que **precisa** entrar no backlog. |
+| Mistura responsabilidades (busca dados + estado + UI + regra de negócio) | Separar por responsabilidade, não por tamanho. |
+| Mesma UI repetida em 2+ lugares | Extrair componente. |
+| Mesma lógica repetida em 2+ lugares | Extrair hook ou util. |
+| Acesso ao Supabase dentro de componente | Mover pro service do domínio. |
+| Preciso rolar o arquivo pra entender uma função | Já passou do ponto. |
+
+**Como dividir sem quebrar** (a ordem importa):
+1. Extrair **sem mudar comportamento** — só mover código e ajustar imports.
+2. `npm run build` + `npm test` a cada extração, não só no fim.
+3. Uma extração por commit, pra ficar reversível.
+4. Só depois, se fizer sentido, melhorar a lógica extraída — nunca junto.
+
 - **Pensar em escalabilidade, não só em funcionar.** "Aguenta crescer e é fácil
   de manter" faz parte do requisito.
 - **Fonte única de verdade.** Se a mesma informação existe em dois lugares,
@@ -242,19 +283,61 @@ similar. **Uma fase por vez**, relatório ao fim de cada uma.
 > relatando junto o que foi feito. Refactor e mudança de comportamento sempre
 > esperam aprovação.
 
-### O que "cobertura" significa em cada fase
+### FASE 0 — Inventário (obrigatória, antes de qualquer fase)
 
-Ser honesto sobre o método, porque cada um tem alcance diferente:
+Auditoria sem inventário vira amostragem disfarçada. Antes de começar, gerar a
+**lista fechada de tudo que precisa ser olhado** e trabalhar em cima dela:
 
-- **Enumeração** (listar 100% de uma superfície via metadados do Postgres):
-  cobertura real e verificável.
-- **Varredura por padrão** (grep/regex atrás de padrões conhecidos): pega o que
-  eu sei procurar, **não** pega falha de lógica nova.
-- **Leitura integral**: cara; reservada para o que a enumeração apontou como
-  suspeito.
+```bash
+find src -name '*.jsx' -o -name '*.js' | xargs wc -l | sort -rn   # todo o código
+```
+```sql
+-- toda a superfície do banco
+select tablename from pg_tables where schemaname='public';
+select proname, prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname='public';
+select tablename, policyname, cmd from pg_policies where schemaname='public';
+```
 
-**Ao relatar, dizer qual método foi usado em cada parte** — nunca deixar
-parecer que "olhei tudo" quando foi varredura por padrão.
+Anotar os totais (ex.: "131 arquivos / 14.362 linhas · 27 tabelas · 52 funções
+`SECURITY DEFINER`"). **Esses números são a meta de cobertura** e vão no
+relatório final como `lidos X de Y`.
+
+### Cobertura: o padrão é LER TUDO
+
+Este projeto tem ~14 mil linhas. **Isso é lível por inteiro** — não é grande o
+bastante pra justificar amostragem. O padrão passa a ser:
+
+- **Ler 100% do código** de `src/`, arquivo por arquivo, percorrendo a lista da
+  Fase 0. Grep serve para *achar* rápido, **nunca** para substituir a leitura.
+- **Ler 100% do corpo** das funções `SECURITY DEFINER`. Metadados (quem
+  executa, tem `search_path`, checa role) provam **cobertura**, não
+  **corretude**: 6 falhas reais já passaram por eles com os guards "certos" e
+  erro no meio do código — `admin_unlock_login` que barrava o próprio fundador,
+  `soft_delete_post` sem hierarquia, `total_xp` nunca preenchido.
+- **Enumerar 100%** de tabelas, policies, FKs, índices e triggers.
+
+Se por algum motivo não der pra ler tudo numa sessão, **registrar onde parei**
+(no `BACKLOG.md`) e retomar dali — nunca declarar a fase concluída com leitura
+parcial.
+
+### Honestidade sobre o método
+
+**Ao relatar, dizer qual método foi usado e o número real de cobertura** —
+"li 131 de 131 arquivos" ou "li 40 de 131, parei em X". Nunca deixar parecer
+que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
+não concluída.
+
+### Ao achar algo, CORRIGIR — não só listar
+
+Auditoria que só produz lista não serve. Para cada achado:
+1. **Reproduzir** (§1.2) — provar que existe, com teste que falha.
+2. **Corrigir** de verdade, testando em `ROLLBACK` antes de produção.
+3. **Reverificar** que morreu **e** que os caminhos vizinhos não quebraram.
+4. Registrar no relatório: causa raiz, como provei, como validei.
+
+Achado que eu decidir **não** corrigir agora vai pro `BACKLOG.md` com o motivo
+explícito — nunca some em silêncio.
 
 ### FASE 1 — Frontend
 - `npm run build` limpo · lint (0 erros) · testes verdes.
@@ -307,11 +390,27 @@ parecer que "olhei tudo" quando foi varredura por padrão.
 
 ---
 
-## 8. Git
+## 8. Git — incluindo PR e merge
 
 - Trabalhar na branch combinada com o dono (hoje:
-  `claude/gamerhub-technical-summary-vhguK`; o padrão histórico é `main`).
-  Não criar branch nova sem permissão.
+  `claude/gamerhub-technical-summary-vhguK`). Não criar branch nova sem
+  permissão.
 - Commit explicando **o problema**, não só a mudança: o que estava errado, como
   foi comprovado, o que foi feito.
-- `git push -u origin <branch>`. Não abrir PR sem o dono pedir.
+
+### Fechar o ciclo: PR + merge são minha responsabilidade
+
+O dono **não** quer mergear na mão. Ao concluir um bloco de trabalho (feature,
+fix, fase de auditoria), eu fecho o ciclo inteiro:
+
+1. `git push -u origin <branch>`
+2. Abrir o PR (`create_pull_request`, base `main`) com corpo explicando **o
+   problema, a correção e como foi validado** — não só a lista de arquivos.
+3. Mergear (`merge_pull_request`, `squash`).
+4. Sincronizar a branch local com a `main` já mergeada:
+   `git checkout main && git pull --ff-only origin main && git checkout -B <branch>`
+5. Informar o número do PR ao dono.
+
+**Só mergear com a definição de pronto (§2) cumprida** — build, lint, testes e
+validação no banco. Se algo estiver falhando, o PR fica aberto e eu aviso; não
+mergear "pra não deixar pendente".
