@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { fetchActiveLives, endLivePost } from '../services/postService';
+import { endLivePost } from '../services/postService';
 import { fetchLiveMessages, fetchLiveTimeouts, sendChatMessage, deleteChatMessage, silenceUser, unsilenceUser } from '../services/liveService';
 import { Tv, X, Users, Shield, Radio } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { logAudit } from '../lib/auditLog';
 import { useRole } from '../hooks/useRole';
+import { useLivesList } from '../hooks/useLivesList';
 import { suspendedUntil } from '../lib/roles';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
 import ChatPanel from '../components/lives/ChatPanel';
@@ -26,10 +27,9 @@ const LIVE_TABS = [
 export default function Lives() {
   const { user, profile, loading: authLoading } = useAuth();
   const { isAdmin } = useRole();
+  const { lives, loading, reload: reloadLives } = useLivesList();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [lives, setLives] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [activeLive, setActiveLive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [msg, setMsg] = useState('');
@@ -50,32 +50,6 @@ export default function Lives() {
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
   }, [authLoading, user, navigate]);
-
-  useEffect(() => {
-    fetchLives();
-
-    // Debounce: um post virando live costuma disparar INSERT e UPDATE quase
-    // juntos, e antes cada um fazia um fetch completo da lista.
-    let listDebounce = null;
-    const reloadLives = () => {
-      clearTimeout(listDebounce);
-      listDebounce = setTimeout(fetchLives, 400);
-    };
-
-    const listChannel = supabase.channel('lives-list')
-      // INSERT filtrado: sem isso, QUALQUER post criado no site (a esmagadora
-      // maioria não é live) recarregava a lista de todo mundo em /lives.
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'posts', filter: 'is_live=eq.true',
-      }, reloadLives)
-      // UPDATE fica sem filtro: é assim que a live ENCERRADA (is_live → false)
-      // sai da lista — um filtro `is_live=eq.true` justamente não entregaria
-      // esse evento.
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, reloadLives)
-      .subscribe();
-
-    return () => { clearTimeout(listDebounce); supabase.removeChannel(listChannel); };
-  }, []);
 
   useEffect(() => {
     activeLiveRef.current = activeLive;
@@ -175,12 +149,6 @@ export default function Lives() {
     setLiveEnded(false);
     setViewerCount(0);
     navigate('/lives');
-  }
-
-  async function fetchLives() {
-    const data = await fetchActiveLives();
-    setLives(data);
-    setLoading(false);
   }
 
   async function fetchMessages(postId) {
@@ -368,7 +336,7 @@ export default function Lives() {
       <LivesList lives={visibleLives} enterLive={enterLive} />
 
       {showGoLive && (
-        <LiveGoModal profile={profile} onClose={() => setShowGoLive(false)} onCreated={fetchLives} />
+        <LiveGoModal profile={profile} onClose={() => setShowGoLive(false)} onCreated={reloadLives} />
       )}
     </div>
   );
