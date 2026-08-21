@@ -201,3 +201,63 @@ risco, com registro de quantas de quantas foram lidas.
   ponto mais sensível do app, então pede janela dedicada.
 - `pg_net` no schema `public` (já no backlog, adiado de propósito).
 - Proteção contra senha vazada (HIBP) — exige plano Pro.
+
+---
+
+## Adendo — 21/08/2026: trilha de auditoria forjável
+
+Achado **depois** do relatório principal, ao dividir o `Admin.jsx`. Não foi
+pego pelas 3 fases porque a policy "parecia certa" na Fase 3 (existe, restringe
+por role) — o furo estava no que ela **não** checa.
+
+### Policy antiga
+
+```sql
+WITH CHECK ( auth.uid() IN (select id from profiles
+                            where role = ANY(ARRAY['admin','super_admin'])) )
+```
+
+Checa se quem chama é admin. **Não checa** se as colunas de identidade da linha
+(`admin_id`, `actor_id`) são de quem está chamando.
+
+### Dois problemas, ambos reproduzidos em ROLLBACK
+
+| # | Problema | Evidência |
+|---|----------|-----------|
+| 1 | Qualquer admin forja log em nome de outra pessoa, inclusive do fundador | `2_admin_forja_como_owner -> "FALHOU: conseguiu forjar log em nome do fundador"` |
+| 2 | Ações do fundador não deixam rastro — `owner` fora da lista, RLS nega e o cliente descartava o erro | `1_owner_grava_log -> "BLOQUEADO -> acao do fundador NAO deixa rastro"` |
+
+O problema 2 é o mesmo padrão do `admin_unlock_login`, que já tinha barrado o
+próprio fundador: lista de papéis escrita sem lembrar que `owner` existe.
+
+### Correção
+
+Migration `fix_admin_logs_insert_forgery_and_owner_gap`:
+
+- policy exige `admin_id = auth.uid() AND actor_id = auth.uid()`, e inclui `owner`;
+- `REVOKE INSERT ON admin_logs FROM anon` (a RLS já barrava — mas o privilégio
+  não deveria existir);
+- cliente: `logAction` (INSERT direto) deletado; tudo passa por `logAudit` →
+  RPC `log_audit_event`, SECURITY DEFINER, que deriva a identidade de `auth.uid()`.
+
+Conferido antes de apertar: as 19 funções SECURITY DEFINER que gravam em
+`admin_logs` rodam como dona da tabela e `admin_logs` não tem
+`FORCE ROW LEVEL SECURITY` — continuam funcionando.
+
+### Verificação pós-correção
+
+```
+1_owner_proprio_log -> OK: agora registra
+2_admin_forja       -> OK: bloqueado
+3_admin_proprio_log -> OK: continua funcionando
+4_rpc_owner         -> OK
+```
+
+Reverificado contra produção depois da migration. `get_advisors` (security):
+só WARN, nenhum ERROR, nada novo.
+
+### Lição para a próxima auditoria
+
+Na Fase 3, não basta perguntar *"a tabela tem policy de INSERT?"*. Para tabela
+que grava **quem fez o quê**, perguntar também: *"a policy amarra a identidade
+gravada à identidade de quem chama?"* — e *"a lista de papéis inclui `owner`?"*.

@@ -1,62 +1,34 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { Shield, Users, FileText, Key, Crown, Bell, Activity, ShieldAlert, UserPlus, Siren } from 'lucide-react';
 import { fadeTab, gridContainer } from '../lib/motion';
-import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { useAdminLogs } from '../hooks/useAdminLogs';
 import { useLiveModeration } from '../hooks/useLiveModeration';
-import { useAdminNotifications, notifAudience } from '../hooks/useAdminNotifications';
+import { useAdminNotifications } from '../hooks/useAdminNotifications';
 import { useBlockedLogins } from '../hooks/useBlockedLogins';
 import { useUnbanRequests } from '../hooks/useUnbanRequests';
-import { useAuth } from '../hooks/useAuth.jsx';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { Shield, X, Users, FileText, Key, RotateCcw, XCircle, Crown, Bell, Activity, Trash2, Tv, ShieldAlert, UserPlus, Siren, Send, AlertTriangle } from 'lucide-react';
-import toast from 'react-hot-toast';
-import BanModal from '../components/ui/BanModal';
-import ReasonModal from '../components/ui/ReasonModal';
-import ConfirmModal from '../components/ui/ConfirmModal';
+import { useAdminData } from '../hooks/useAdminData';
+import { useAdminRealtime } from '../hooks/useAdminRealtime';
+import { useAdminContentActions } from '../hooks/useAdminContentActions';
+import { useAdminLiveActions } from '../hooks/useAdminLiveActions';
+import { useAdminStaffActions } from '../hooks/useAdminStaffActions';
 import StatCard from '../components/admin/StatCard';
-import UnlockCountdownBtn from '../components/admin/UnlockCountdownBtn';
-import UnbanRequestModal from '../components/admin/UnbanRequestModal';
-import ReactivationModal from '../components/admin/ReactivationModal';
-import UsersPanel from '../components/admin/UsersPanel';
-import PostsPanel from '../components/admin/PostsPanel';
-import LivesPanel from '../components/admin/LivesPanel';
-import KeysPanel from '../components/admin/KeysPanel';
-import NotifsPanel from '../components/admin/NotifsPanel';
-import LogsPanel from '../components/admin/LogsPanel';
-import SuperAdminPanel from '../components/admin/SuperAdminPanel';
-import CargosTab from '../components/admin/CargosTab';
-import ModerationPanel from '../components/moderation/ModerationPanel';
-import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/roleNominationService';
-import { roleLabel } from '../lib/roleLabels';
-
-// Posts/keys crescem sem limite com o uso do site — pagina em blocos pra não
-// carregar tudo de uma vez (landmine de escalabilidade do `fetchAll` antigo).
-// Usuários continuam carregados por inteiro: a busca/filtros/badges de role do
-// UsersPanel dependem da lista completa, e a base de usuários cresce bem mais
-// devagar que posts.
-const PAGE_SIZE = 20;
-const MAX_USERS = 1000;
-
+import AdminTabs from '../components/admin/AdminTabs';
+import AdminModals from '../components/admin/AdminModals';
+import AdminTabContent from '../components/admin/AdminTabContent';
 
 export default function Admin() {
   const { isAdmin, isSuperAdmin, isOwner, role } = useRole();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+
   const [tab, setTab] = useState('users');
-  const [users, setUsers] = useState([]);
-  const [posts, setPosts] = useState([]);
-  const [keys, setKeys] = useState([]);
-  const [postsHasMore, setPostsHasMore] = useState(false);
-  const [keysHasMore, setKeysHasMore] = useState(false);
-  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
-  const [loadingMoreKeys, setLoadingMoreKeys] = useState(false);
-  const [stats, setStats] = useState({ users: 0, posts: 0, keys: 0 });
-  const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('todos');
   const [userSearch, setUserSearch] = useState('');
+
   const [banModal, setBanModal] = useState(null);
   const [unbanReqModal, setUnbanReqModal] = useState(null);
   const [unbanDirectModal, setUnbanDirectModal] = useState(null);
@@ -65,6 +37,7 @@ export default function Admin() {
   const [demoteModal, setDemoteModal] = useState(null);
   const [alertOwnerModal, setAlertOwnerModal] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
+
   const { logs, logCat, setLogCat, logsLoading, fetchLogs } = useAdminLogs();
   const { liveMod, refreshing, fetchLiveMod } = useLiveModeration();
   const {
@@ -78,14 +51,33 @@ export default function Admin() {
   const { unbanRequests, unbanReqLoading, fetchUnbanRequests } =
     useUnbanRequests({ userId: user?.id, isSuperAdmin });
 
-  const tabRef = useRef(tab);
-  const logCatRef = useRef(logCat);
-  useEffect(() => { tabRef.current = tab; }, [tab]);
-  useEffect(() => { logCatRef.current = logCat; }, [logCat]);
+  const adminData = useAdminData({
+    userId: user?.id, isSuperAdmin, isOwner, setNotifications, setReadIds,
+  });
+  const { fetchAll } = adminData;
+
+  // `refresh` recarrega a base E as solicitações de desban — as duas coisas
+  // mudam juntas depois de banir/desbanir.
+  function refresh() { fetchAll(); fetchUnbanRequests(); }
+
+  const contentActions = useAdminContentActions({
+    setConfirmModal, username: profile?.username, posts: adminData.posts, refresh,
+  });
+  const liveActions = useAdminLiveActions({
+    setConfirmModal, setReactivateModal, user, username: profile?.username,
+    fetchLiveMod, fetchLogs,
+  });
+  const staffActions = useAdminStaffActions({
+    setConfirmModal, setDemoteModal, setUnbanDirectModal, setDenyUnbanModal,
+    setAlertOwnerModal, unbanDirectModal, denyUnbanModal, refresh, fetchUnbanRequests,
+  });
 
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
-    fetchAll();
+    refresh();
+    // Só `isAdmin`: `refresh` é recriada a cada render (não é useCallback), então
+    // incluí-la aqui recarregaria o painel inteiro em loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   useEffect(() => {
@@ -94,442 +86,58 @@ export default function Admin() {
     if (tab === 'logs') fetchLogs(logCat);
     if (tab === 'users') fetchUnbanRequests();
     if (tab === 'super' && isSuperAdmin) { fetchBlockedLogins(); fetchUnbanRequests(); }
+    // Só `tab`: a intenção é buscar QUANDO A ABA MUDA. As funções de fetch vêm
+    // dos hooks de domínio e mudam de identidade a cada render deles; incluí-las
+    // faria a aba recarregar sozinha em loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
   useEffect(() => {
     if (tab === 'logs') fetchLogs(logCat);
+    // Só `logCat`: trocar de categoria refaz a busca. `tab` de propósito fora —
+    // a troca de aba já é tratada no efeito acima, e incluir aqui buscaria duas
+    // vezes ao entrar na aba de logs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [logCat]);
 
-  useEffect(() => {
-    const channel = supabase.channel('admin-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' }, () => {
-        if (tabRef.current === 'lives' || tabRef.current === 'super') fetchLiveMod();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-        if (tabRef.current === 'lives' || tabRef.current === 'super') fetchLiveMod();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_reactivation_requests' }, () => {
-        if (tabRef.current === 'lives' || tabRef.current === 'super') fetchLiveMod();
-        if (isSuperAdmin) fetchLogs();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'unban_requests' }, () => {
-        if (isSuperAdmin && tabRef.current === 'super') fetchUnbanRequests();
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
-        refreshUnread();
-        if (tabRef.current === 'notifs') fetchNotifications();
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
-        if (tabRef.current === 'logs') fetchLogs(logCatRef.current);
-      })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [isSuperAdmin]);
-
-  async function fetchAll() {
-    setLoading(true);
-    const audience = notifAudience(isSuperAdmin, isOwner);
-    const [
-      { data: u }, { data: p }, { data: k },
-      { count: postsCount }, { count: activePostsCount }, { count: keysCount },
-      { data: allNotifs }, { data: reads },
-    ] = await Promise.all([
-      supabase.rpc('admin_list_users', { p_limit: MAX_USERS }),
-      supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
-      supabase.from('game_keys').select('*').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
-      supabase.from('posts').select('id', { count: 'exact', head: true }),
-      supabase.from('posts').select('id', { count: 'exact', head: true }).is('deleted_at', null),
-      supabase.from('game_keys').select('id', { count: 'exact', head: true }),
-      supabase.from('admin_notifications').select('id').in('audience', audience),
-      supabase.from('admin_notification_reads').select('notification_id').eq('admin_id', user.id),
-    ]);
-    setUsers(u || []);
-    setPosts(p || []);
-    setKeys(k || []);
-    setPostsHasMore((p?.length || 0) < (postsCount ?? 0));
-    setKeysHasMore((k?.length || 0) < (keysCount ?? 0));
-    setStats({ users: u?.length || 0, posts: activePostsCount ?? 0, keys: keysCount ?? k?.length ?? 0 });
-    setReadIds(new Set((reads || []).map(r => r.notification_id)));
-    setNotifications(allNotifs || []);
-    setLoading(false);
-    fetchUnbanRequests();
-  }
-
-  async function loadMorePosts() {
-    setLoadingMorePosts(true);
-    const { data, count } = await supabase
-      .from('posts').select('*, profiles(username)', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(posts.length, posts.length + PAGE_SIZE - 1);
-    const next = [...posts, ...(data || [])];
-    setPosts(next);
-    setPostsHasMore(next.length < (count ?? next.length));
-    setLoadingMorePosts(false);
-  }
-
-  async function loadMoreKeys() {
-    setLoadingMoreKeys(true);
-    const { data, count } = await supabase
-      .from('game_keys').select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(keys.length, keys.length + PAGE_SIZE - 1);
-    const next = [...keys, ...(data || [])];
-    setKeys(next);
-    setKeysHasMore(next.length < (count ?? next.length));
-    setLoadingMoreKeys(false);
-  }
-
-  async function logAction(action, details, category = 'admin', severity = 'info') {
-    await supabase.from('admin_logs').insert({
-      admin_id: user.id, admin_username: profile?.username || 'Admin',
-      actor_id: user.id, actor_username: profile?.username || 'Admin',
-      action, details, category, severity,
-    });
-  }
-
-  async function unsilenceUser(id) {
-    await supabase.from('live_chat_timeouts').delete().eq('id', id);
-    await logAction('admin_unsilence_chat', `Silêncio de chat removido por @${profile?.username}`, 'admin', 'info');
-    fetchLiveMod();
-  }
-
-  function handleEndLive(postId, title) {
-    setConfirmModal({
-      title: 'Encerrar Live', icon: Tv, accent: 'red',
-      message: `Encerrar a live "${title}"? O streamer não poderá retomá-la sem uma nova solicitação.`,
-      confirmLabel: 'Encerrar', confirmIcon: X,
-      onConfirm: async () => {
-        const { error } = await supabase.from('posts').update({ is_live: false }).eq('id', postId);
-        if (error) { toast.error('Erro ao encerrar live'); return; }
-        toast.success('Live encerrada');
-        await logAction('live_ended', `Live "${title}" encerrada pelo admin`);
-        setConfirmModal(null);
-        fetchLiveMod();
-      },
-    });
-  }
-
-  async function handleReactivateDirect(live, reason, details) {
-    const { error } = await supabase.from('posts').update({ is_live: true }).eq('id', live.id);
-    if (error) { toast.error('Erro ao reativar'); return; }
-    toast.success('Live reativada!');
-    await logAction('live_reactivated', `Live "${live.title}" reativada. Motivo: ${reason}${details ? ` — ${details}` : ''}`);
-    setReactivateModal(null);
-    fetchLiveMod();
-  }
-
-  async function handleSubmitRequest(live, reason, details) {
-    const { error } = await supabase.from('live_reactivation_requests').insert({
-      post_id: live.id, post_title: live.title,
-      admin_id: user.id, admin_username: profile?.username || 'Admin',
-      reason, details: details || null, status: 'pending',
-    });
-    if (error) { toast.error('Erro ao enviar solicitação'); return; }
-    toast.success('Solicitação enviada ao super admin!');
-    await logAction('reactivation_requested', `Admin solicitou reativação de "${live.title}". Motivo: ${reason}${details ? ` — ${details}` : ''}`);
-    setReactivateModal(null);
-    fetchLiveMod();
-  }
-
-  async function handleApproveRequest(req) {
-    const { error } = await supabase.from('posts').update({ is_live: true }).eq('id', req.post_id);
-    if (error) { toast.error('Erro ao reativar post'); return; }
-    await supabase.from('live_reactivation_requests').update({
-      status: 'approved', reviewed_by: user.id,
-      reviewer_username: profile?.username, reviewed_at: new Date().toISOString(),
-    }).eq('id', req.id);
-    toast.success('Aprovado — live reativada!');
-    await logAction('reactivation_approved', `Super admin aprovou reativação de "${req.post_title}" (solicitado por ${req.admin_username})`);
-    fetchLiveMod();
-    fetchLogs();
-  }
-
-  async function handleDenyRequest(req) {
-    await supabase.from('live_reactivation_requests').update({
-      status: 'denied', reviewed_by: user.id,
-      reviewer_username: profile?.username, reviewed_at: new Date().toISOString(),
-    }).eq('id', req.id);
-    toast.success('Solicitação negada');
-    await logAction('reactivation_denied', `Super admin negou reativação de "${req.post_title}" (solicitado por ${req.admin_username})`);
-    fetchLiveMod();
-    fetchLogs();
-  }
-
-  async function handleAlertOwner(message) {
-    try {
-      await notifyOwner(message);
-      setAlertOwnerModal(false);
-      toast.success('Alerta enviado ao fundador.');
-    } catch (e) { toast.error(e.message); }
-  }
-
-  function handleNominate(targetUser, targetRole) {
-    setConfirmModal({
-      title: `Indicar para ${roleLabel(targetRole)}`,
-      message: `Indicar "${targetUser.username}" para o cargo de ${roleLabel(targetRole)}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
-      accent: 'purple', confirmLabel: 'Indicar', icon: UserPlus,
-      onConfirm: async () => {
-        try {
-          await nominateForRole(targetUser.id, targetRole);
-          setConfirmModal(null);
-          toast.success(`Indicação de ${targetUser.username} enviada para análise.`);
-        } catch (e) { toast.error(e.message); setConfirmModal(null); }
-      },
-    });
-  }
-
-  function handleDemote(targetUser) {
-    setDemoteModal({
-      title: 'Solicitar Rebaixamento',
-      icon: ShieldAlert,
-      accent: 'red',
-      target: targetUser,
-      subtitle: `"${targetUser.username}" passaria de ${roleLabel(targetUser.role)} para Usuário. A solicitação é enviada para análise — só vira realidade após aprovação do fundador ou de um super admin, com motivo registrado.`,
-      label: 'Motivo do rebaixamento',
-      placeholder: 'Descreva o que motivou essa solicitação (mínimo 10 caracteres)...',
-      required: true,
-      confirmLabel: 'Enviar solicitação',
-      confirmIcon: ShieldAlert,
-      onConfirm: async (notes) => {
-        try {
-          await requestRoleDemotion(targetUser.id, 'user', notes);
-          setDemoteModal(null);
-          toast.success(`Solicitação de rebaixamento de ${targetUser.username} enviada para análise.`);
-        } catch (e) { toast.error(e.message); }
-      },
-    });
-  }
-
-  async function confirmUnbanDirect(note) {
-    const targetUser = unbanDirectModal;
-    if (!targetUser) return;
-    const { error } = await supabase.rpc('unban_user', { p_user_id: targetUser.id, p_note: note || null });
-    if (error) { toast.error('Erro ao desbanir'); return; }
-    toast.success(`@${targetUser.username} desbanido`);
-    setUnbanDirectModal(null);
-    fetchAll();
-  }
-
-  function handleDeletePosts(userId, username) {
-    setConfirmModal({
-      title: 'Deletar Todos os Posts', icon: Trash2, accent: 'red',
-      message: `Deletar todos os posts de @${username}? Esta ação é irreversível.`,
-      confirmLabel: 'Deletar Tudo', confirmIcon: Trash2,
-      onConfirm: async () => {
-        const { error, count } = await supabase.from('posts').delete({ count: 'exact' }).eq('user_id', userId);
-        if (error) { toast.error('Erro ao deletar posts'); return; }
-        // count 0 sem erro = RLS bloqueou (sem hierarquia) ou não havia posts.
-        if (!count) { toast.error('Nenhum post deletado (sem permissão ou nada a apagar)'); return; }
-        toast.success(`${count} post${count > 1 ? 's' : ''} deletado${count > 1 ? 's' : ''}`);
-        await logAction('admin_delete_posts', `Todos os posts de @${username} deletados por @${profile?.username}`, 'admin', 'warning');
-        setConfirmModal(null);
-        fetchAll();
-      },
-    });
-  }
-
-  function handleDeletePost(postId) {
-    setConfirmModal({
-      title: 'Excluir Post', icon: Trash2, accent: 'red',
-      message: 'Excluir este post? O post ficará oculto mas pode ser restaurado pelo admin.',
-      confirmLabel: 'Excluir', confirmIcon: Trash2,
-      onConfirm: async () => {
-        const { error } = await supabase.rpc('soft_delete_post', { p_post_id: postId });
-        if (error) { toast.error('Erro ao excluir post: ' + error.message); return; }
-        toast.success('Post excluído');
-        await logAction('admin_delete_post', `Post excluído (soft) pelo admin @${profile?.username}`, 'admin', 'warning');
-        setConfirmModal(null);
-        fetchAll();
-      },
-    });
-  }
-
-  function handleRestorePost(postId) {
-    setConfirmModal({
-      title: 'Restaurar Post', icon: RotateCcw, accent: 'green',
-      message: 'Restaurar este post? Ele voltará a aparecer no feed.',
-      confirmLabel: 'Restaurar', confirmIcon: RotateCcw,
-      onConfirm: async () => {
-        const { error } = await supabase.rpc('restore_post', { p_post_id: postId });
-        if (error) { toast.error('Erro ao restaurar post: ' + error.message); return; }
-        toast.success('Post restaurado');
-        await logAction('admin_restore_post', `Post restaurado pelo admin @${profile?.username}`, 'admin', 'info');
-        setConfirmModal(null);
-        fetchAll();
-      },
-    });
-  }
-
-  function handlePermanentDeletePost(postId, title) {
-    setConfirmModal({
-      title: 'Apagar Permanentemente', icon: Trash2, accent: 'red',
-      message: `Apagar o post "${title}" de forma permanente? Esta ação não pode ser desfeita.`,
-      confirmLabel: 'Apagar para sempre', confirmIcon: Trash2,
-      onConfirm: async () => {
-        const { error } = await supabase.from('posts').delete().eq('id', postId);
-        if (error) { toast.error('Erro ao apagar: ' + error.message); return; }
-        toast.success('Post apagado permanentemente');
-        await logAction('admin_permanent_delete_post', `Post "${title}" apagado permanentemente pelo admin @${profile?.username}`, 'admin', 'warning');
-        setConfirmModal(null);
-        fetchAll();
-      },
-    });
-  }
-
-  function handlePermanentDeleteAllDeleted() {
-    const count = posts.filter(p => p.deleted_at).length;
-    setConfirmModal({
-      title: 'Apagar Todos os Excluídos', icon: Trash2, accent: 'red',
-      message: `Apagar permanentemente ${count} post(s) na lixeira? Esta ação não pode ser desfeita.`,
-      confirmLabel: `Apagar ${count} post(s)`, confirmIcon: Trash2,
-      onConfirm: async () => {
-        const { error } = await supabase.from('posts').delete().not('deleted_at', 'is', null);
-        if (error) { toast.error('Erro ao apagar: ' + error.message); return; }
-        toast.success(`${count} post(s) apagados permanentemente`);
-        await logAction('admin_permanent_delete_all', `${count} posts da lixeira apagados permanentemente pelo admin @${profile?.username}`, 'admin', 'warning');
-        setConfirmModal(null);
-        fetchAll();
-      },
-    });
-  }
-
-  function handleDeleteKey(keyId) {
-    setConfirmModal({
-      title: 'Remover Key / Promo', icon: Key, accent: 'red',
-      message: 'Remover este item permanentemente?',
-      confirmLabel: 'Remover', confirmIcon: Trash2,
-      onConfirm: async () => {
-        const { error } = await supabase.from('game_keys').delete().eq('id', keyId);
-        if (error) { toast.error('Erro ao remover item'); return; }
-        toast.success('Removido');
-        await logAction('admin_delete_key', `Key removida pelo admin @${profile?.username}`, 'admin', 'info');
-        setConfirmModal(null);
-        fetchAll();
-      },
-    });
-  }
-
-  async function handleApproveUnban(req) {
-    const { error } = await supabase.rpc('approve_unban_request', { p_request_id: req.id });
-    if (error) { toast.error('Erro ao aprovar'); return; }
-    toast.success(`@${req.target_username} desbanido!`);
-    fetchUnbanRequests();
-    fetchAll();
-  }
-
-  async function confirmDenyUnban(note) {
-    const req = denyUnbanModal;
-    if (!req) return;
-    const { error } = await supabase.rpc('deny_unban_request', { p_request_id: req.id, p_note: note || null });
-    if (error) { toast.error('Erro ao negar'); return; }
-    toast.success('Solicitação negada');
-    setDenyUnbanModal(null);
-    fetchUnbanRequests();
-  }
+  useAdminRealtime({
+    tab, logCat, isSuperAdmin,
+    handlers: { fetchLiveMod, fetchLogs, fetchUnbanRequests, fetchNotifications, refreshUnread },
+  });
 
   if (!isAdmin) return null;
 
   const pendingUnbanCount = unbanRequests.length;
   const pendingCount = (liveMod.requests?.length || 0) + pendingUnbanCount;
-  const pendingUnbanIds = new Set(unbanRequests.map(r => r.target_user_id));
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
   const tabs = [
-    { id: 'users',      label: 'Usuários',     icon: Users       },
+    { id: 'users',      label: 'Usuários',      icon: Users       },
     { id: 'posts',      label: 'Posts',         icon: FileText    },
     { id: 'moderation', label: 'Moderação',     icon: ShieldAlert },
     { id: 'lives',      label: 'Mod de Lives',  icon: Shield      },
     { id: 'keys',       label: 'Keys & Promos', icon: Key         },
     { id: 'notifs',     label: 'Notificações',  icon: Bell, badge: unreadCount },
     { id: 'logs',       label: 'Logs',          icon: Activity    },
-    ...(isSuperAdmin ? [{ id: 'cargos', label: 'Cargos',       icon: UserPlus }] : []),
+    ...(isSuperAdmin ? [{ id: 'cargos', label: 'Cargos',      icon: UserPlus }] : []),
     ...(isSuperAdmin ? [{ id: 'super',  label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
+  const modals = {
+    reactivateModal, banModal, unbanReqModal, unbanDirectModal,
+    denyUnbanModal, confirmModal, demoteModal, alertOwnerModal, unlockModal,
+    setReactivateModal, setBanModal, setUnbanReqModal, setUnbanDirectModal,
+    setDenyUnbanModal, setConfirmModal, setDemoteModal, setAlertOwnerModal, setUnlockModal,
+  };
+
+  const actions = { ...contentActions, ...liveActions, ...staffActions };
+
   return (
     <div className="space-y-5">
-      {reactivateModal && (
-        <ReactivationModal live={reactivateModal} isSuperAdmin={isSuperAdmin}
-          onSubmit={isSuperAdmin ? handleReactivateDirect : handleSubmitRequest}
-          onClose={() => setReactivateModal(null)} />
-      )}
-      {banModal && (
-        <BanModal target={banModal} onClose={() => setBanModal(null)} onBanned={() => fetchAll()} />
-      )}
-      {unbanReqModal && (
-        <UnbanRequestModal target={unbanReqModal} onClose={() => setUnbanReqModal(null)} onSent={() => fetchAll()} />
-      )}
-      {unbanDirectModal && (
-        <ReasonModal title="Desbanir Usuário" icon={Shield} accent="green"
-          target={unbanDirectModal}
-          subtitle="O usuário voltará a ter acesso ao site. Registre o motivo do desbanimento."
-          label="Motivo do desbanimento" placeholder="Por que está desbanindo?"
-          confirmLabel="Desbanir" confirmIcon={Shield}
-          onConfirm={confirmUnbanDirect} onClose={() => setUnbanDirectModal(null)} />
-      )}
-      {denyUnbanModal && (
-        <ReasonModal title="Negar Solicitação" icon={XCircle} accent="red"
-          subtitle={`Negar o desbanimento de @${denyUnbanModal.target_username} solicitado por @${denyUnbanModal.requesting_admin_username}.`}
-          label="Nota para o admin" placeholder="Por que está negando? (visível nos logs)"
-          confirmLabel="Negar" confirmIcon={XCircle}
-          onConfirm={confirmDenyUnban} onClose={() => setDenyUnbanModal(null)} />
-      )}
-      {confirmModal && (
-        <ConfirmModal {...confirmModal} onClose={() => setConfirmModal(null)} />
-      )}
-      {demoteModal && (
-        <ReasonModal {...demoteModal} onClose={() => setDemoteModal(null)} />
-      )}
-      {alertOwnerModal && (
-        <ReasonModal title="Alertar o Fundador" icon={Siren} accent="red"
-          subtitle="Use isso pra avisar o fundador sobre instabilidades no site ou problemas no painel administrativo. A mensagem chega como notificação direta, com seu nome e cargo."
-          label="Descreva o problema" placeholder="O que está acontecendo? (mínimo 10 caracteres)"
-          required confirmLabel="Enviar alerta" confirmIcon={Send}
-          onConfirm={handleAlertOwner} onClose={() => setAlertOwnerModal(false)} />
-      )}
-      {unlockModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.92)' }} onClick={() => setUnlockModal(null)}>
-          <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-red-500/30 p-5 space-y-4 animate-fade-up"
-            onClick={e => e.stopPropagation()} style={{ boxShadow: '0 0 40px #ef444425' }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShieldAlert size={14} className="text-red-400" />
-                <h3 className="font-display text-sm text-red-400 uppercase tracking-wider">Atenção</h3>
-              </div>
-              <button onClick={() => setUnlockModal(null)} className="text-gray-500 hover:text-white transition-colors">
-                <X size={15} />
-              </button>
-            </div>
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-sm font-mono text-red-300 font-bold leading-relaxed flex items-start gap-2">
-                <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-                CUIDADO: Você está prestes a desbloquear um possível invasor.
-              </p>
-              <p className="text-xs font-mono text-gray-400 mt-2 leading-relaxed">
-                Esta conta excedeu o limite de tentativas consecutivas. Pode ser um ataque ou alguém com dificuldade de acesso. Se não reconhece este email, não desbloqueie — oriente a redefinir a senha.
-              </p>
-            </div>
-            <div className="bg-dark-700 rounded-lg px-3 py-2.5 border border-dark-500 space-y-1">
-              <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Email</p>
-              <p className="text-sm font-mono text-white break-all">{unlockModal.email}</p>
-              {unlockModal.username && <p className="text-xs text-gray-400 font-mono">@{unlockModal.username}</p>}
-              <p className="text-xs text-red-400 font-mono">
-                {unlockModal.attempts} tentativas de login registradas
-                {unlockModal.permanent && ' · bloqueio permanente'}
-              </p>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button onClick={() => setUnlockModal(null)}
-                className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
-                Cancelar
-              </button>
-              <UnlockCountdownBtn key={unlockModal?.email} onConfirm={confirmUnlock} />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <AdminModals
+        modals={modals} isSuperAdmin={isSuperAdmin}
+        actions={{ ...modals, ...actions, refresh, confirmUnlock }}
+      />
 
       <div className="card p-5 border-neon-purple/20">
         <div className="flex items-start justify-between gap-3">
@@ -551,94 +159,36 @@ export default function Admin() {
 
       <motion.div className="grid grid-cols-3 gap-3"
         variants={gridContainer} initial="initial" animate="animate">
-        <StatCard icon={Users} label="Usuários" value={stats.users} color="bg-neon-cyan/10 text-neon-cyan" />
-        <StatCard icon={FileText} label="Posts" value={stats.posts} color="bg-neon-green/10 text-neon-green" />
-        <StatCard icon={Key} label="Keys" value={stats.keys} color="bg-neon-purple/10 text-neon-purple" />
+        <StatCard icon={Users} label="Usuários" value={adminData.stats.users} color="bg-neon-cyan/10 text-neon-cyan" />
+        <StatCard icon={FileText} label="Posts" value={adminData.stats.posts} color="bg-neon-green/10 text-neon-green" />
+        <StatCard icon={Key} label="Keys" value={adminData.stats.keys} color="bg-neon-purple/10 text-neon-purple" />
       </motion.div>
 
-      <div className="flex gap-2 overflow-x-auto overflow-y-hidden pb-1 pt-2">
-        {tabs.map(({ id, label, icon: Icon, badge }) => (
-          <button key={id} type="button" onClick={() => setTab(id)}
-            className={`relative flex items-center gap-2 py-2 px-4 text-xs font-display tracking-wider uppercase rounded border transition-all shrink-0 ${
-              tab === id
-                ? id === 'super' ? 'border-yellow-400 bg-yellow-400/10 text-yellow-400' : 'border-neon-purple bg-neon-purple/10 text-neon-purple'
-                : 'border-dark-400 text-gray-500 hover:text-gray-300'
-            }`}>
-            <Icon size={13} /> {label}
-            {badge > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center font-mono font-bold"
-                style={{ fontSize: 9 }}>
-                {badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <AdminTabs tabs={tabs} tab={tab} setTab={setTab} />
 
-      {loading ? (
+      {adminData.loading ? (
         <div className="space-y-2">
           {[...Array(6)].map((_, i) => <div key={i} className="h-14 bg-dark-700 rounded-xl animate-pulse" />)}
         </div>
       ) : (
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={tab} variants={fadeTab} initial="initial" animate="animate" exit="exit">
-            {tab === 'users' && (
-              <UsersPanel
-                users={users} currentUserId={user?.id} isSuperAdmin={isSuperAdmin}
-                userSearch={userSearch} setUserSearch={setUserSearch}
-                filterRole={filterRole} setFilterRole={setFilterRole}
-                onNominate={handleNominate} onDemote={handleDemote}
-                setBanModal={setBanModal} setUnbanDirectModal={setUnbanDirectModal}
-                setUnbanReqModal={setUnbanReqModal} handleDeletePosts={handleDeletePosts}
-                pendingUnbanIds={pendingUnbanIds}
-              />
-            )}
-            {tab === 'posts' && (
-              <PostsPanel
-                posts={posts} handleDeletePost={handleDeletePost} handleRestorePost={handleRestorePost}
-                handlePermanentDeletePost={handlePermanentDeletePost}
-                handlePermanentDeleteAllDeleted={handlePermanentDeleteAllDeleted}
-                hasMore={postsHasMore} loadingMore={loadingMorePosts} onLoadMore={loadMorePosts}
-              />
-            )}
-            {tab === 'moderation' && <ModerationPanel />}
-            {tab === 'lives' && (
-              <LivesPanel
-                liveMod={liveMod} refreshing={refreshing} fetchLiveMod={fetchLiveMod}
-                unsilenceUser={unsilenceUser} handleEndLive={handleEndLive}
-                setReactivateModal={setReactivateModal} isSuperAdmin={isSuperAdmin}
-              />
-            )}
-            {tab === 'keys' && (
-              <KeysPanel
-                keys={keys} fetchAll={fetchAll} handleDeleteKey={handleDeleteKey}
-                hasMore={keysHasMore} loadingMore={loadingMoreKeys} onLoadMore={loadMoreKeys}
-              />
-            )}
-            {tab === 'notifs' && (
-              <NotifsPanel
-                notifications={notifications} readIds={readIds}
-                notifLoading={notifLoading} fetchNotifications={fetchNotifications}
-              />
-            )}
-            {tab === 'logs' && (
-              <LogsPanel
-                logs={logs} logCat={logCat} setLogCat={setLogCat}
-                logsLoading={logsLoading} fetchLogs={fetchLogs}
-              />
-            )}
-            {tab === 'cargos' && isSuperAdmin && <CargosTab />}
-            {tab === 'super' && isSuperAdmin && (
-              <SuperAdminPanel
-                blockedLogins={blockedLogins} blockedLoading={blockedLoading}
-                fetchBlockedLogins={fetchBlockedLogins} setUnlockModal={setUnlockModal}
-                unbanRequests={unbanRequests} unbanReqLoading={unbanReqLoading}
-                fetchUnbanRequests={fetchUnbanRequests} setDenyUnbanModal={setDenyUnbanModal}
-                handleApproveUnban={handleApproveUnban} pendingUnbanCount={pendingUnbanCount}
-                liveMod={liveMod} refreshing={refreshing} fetchLiveMod={fetchLiveMod}
-                handleApproveRequest={handleApproveRequest} handleDenyRequest={handleDenyRequest}
-              />
-            )}
+            <AdminTabContent
+              tab={tab} isSuperAdmin={isSuperAdmin}
+              filters={{ userSearch, setUserSearch, filterRole, setFilterRole }}
+              actions={actions}
+              modals={modals}
+              data={{
+                ...adminData,
+                currentUserId: user?.id,
+                pendingUnbanIds: new Set(unbanRequests.map(r => r.target_user_id)),
+                liveMod, refreshing, fetchLiveMod,
+                notifications, readIds, notifLoading, fetchNotifications,
+                logs, logCat, setLogCat, logsLoading, fetchLogs,
+                blockedLogins, blockedLoading, fetchBlockedLogins,
+                unbanRequests, unbanReqLoading, fetchUnbanRequests, pendingUnbanCount,
+              }}
+            />
           </motion.div>
         </AnimatePresence>
       )}
