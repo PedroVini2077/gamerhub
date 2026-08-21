@@ -13,6 +13,7 @@ import BanModal from '../components/ui/BanModal';
 import ReasonModal from '../components/ui/ReasonModal';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import StatCard from '../components/admin/StatCard';
+import UnlockCountdownBtn from '../components/admin/UnlockCountdownBtn';
 import UsersPanel from '../components/admin/UsersPanel';
 import PostsPanel from '../components/admin/PostsPanel';
 import LivesPanel from '../components/admin/LivesPanel';
@@ -48,26 +49,6 @@ function notifAudience(isSuperAdmin, isOwner) {
 const MAX_USERS = 1000;
 
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
-
-function UnlockCountdownBtn({ onConfirm }) {
-  const [countdown, setCountdown] = useState(10);
-  useEffect(() => {
-    if (countdown <= 0) return;
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [countdown]);
-  return (
-    <button
-      onClick={countdown > 0 ? undefined : onConfirm}
-      disabled={countdown > 0}
-      className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
-      style={countdown > 0
-        ? { background: '#111', color: '#555', border: '1px solid #333', cursor: 'not-allowed' }
-        : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>
-      {countdown > 0 ? `Aguarde ${countdown}s...` : <><LockOpen size={12} />Confirmar Desbloqueio</>}
-    </button>
-  );
-}
 
 function UnbanRequestModal({ target, onClose, onSent }) {
   const [reason, setReason] = useState('');
