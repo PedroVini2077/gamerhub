@@ -3,9 +3,9 @@ import { MessageCircle, Send, VolumeX, Trash2, Flag } from 'lucide-react';
 import AvatarPopup from '../ui/AvatarPopup';
 import ReportModal from '../ui/ReportModal';
 import SuspendedNotice from '../ui/SuspendedNotice';
+import { roleLabelCasual } from '../../lib/roleLabels';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
-const roleLabels = { user: 'Player', admin: 'Admin', super_admin: 'Super Admin' };
 
 export default function ChatPanel({
   messages, msg, setMsg, sendMessage, sending,
@@ -40,7 +40,7 @@ export default function ChatPanel({
                   {silenced && <VolumeX size={10} className="text-yellow-500" />}
                   {m.profiles?.role !== 'user' && (
                     <span className={`tag ${roleColors[m.profiles?.role]}`} style={{ fontSize: 9, padding: '1px 4px' }}>
-                      {roleLabels[m.profiles?.role]}
+                      {roleLabelCasual(m.profiles?.role)}
                     </span>
                   )}
                 </div>

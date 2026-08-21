@@ -10,8 +10,8 @@ import {
   fetchRoleNominations, fetchDemotionRequests,
   reviewRoleNomination, decideRoleTrial, decideRoleDemotion,
 } from '../../services/roleNominationService';
+import { roleLabel } from '../../lib/roleLabels';
 
-const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
 const CRITERIA = [
   { key: 'account_age_ok',  label: 'Conta com 60+ dias' },
@@ -51,7 +51,7 @@ function CandidateHeader({ profile, extra }) {
       <Link to={`/u/${profile?.username}`} className="text-sm font-mono text-white font-bold hover:text-orange-400 transition-colors truncate">
         @{profile?.username}
       </Link>
-      <span className="text-xs font-mono text-gray-600 shrink-0">{ROLE_LABEL[profile?.role] || profile?.role}</span>
+      <span className="text-xs font-mono text-gray-600 shrink-0">{roleLabel(profile?.role)}</span>
       {extra}
     </div>
   );
@@ -95,8 +95,8 @@ export default function CargosTab() {
       icon: isReject ? X : Check,
       accent: isReject ? 'red' : 'green',
       subtitle: isReject
-        ? `Rejeitar a indicação de @${nomination.candidate?.username} para ${ROLE_LABEL[nomination.target_role]}?`
-        : `Aprovar inicia um período de avaliação de 45 dias — @${nomination.candidate?.username} já recebe o cargo de ${ROLE_LABEL[nomination.target_role]}, mas fica "em avaliação" até a decisão final.`,
+        ? `Rejeitar a indicação de @${nomination.candidate?.username} para ${roleLabel(nomination.target_role)}?`
+        : `Aprovar inicia um período de avaliação de 45 dias — @${nomination.candidate?.username} já recebe o cargo de ${roleLabel(nomination.target_role)}, mas fica "em avaliação" até a decisão final.`,
       label: 'Observações',
       required: isReject,
       confirmLabel: isReject ? 'Rejeitar' : 'Aprovar e iniciar avaliação',
@@ -115,13 +115,13 @@ export default function CargosTab() {
   function openTrialDecision(nomination, decision) {
     const cfg = {
       confirm: { title: 'Confirmar Cargo', icon: Check, accent: 'green', required: false,
-        subtitle: `Efetivar @${nomination.candidate?.username} como ${ROLE_LABEL[nomination.target_role]} permanentemente?`,
+        subtitle: `Efetivar @${nomination.candidate?.username} como ${roleLabel(nomination.target_role)} permanentemente?`,
         confirmLabel: 'Confirmar cargo' },
       extend:  { title: 'Estender Avaliação', icon: Clock, accent: 'yellow', required: false,
         subtitle: `Estender o período de avaliação de @${nomination.candidate?.username} em mais 15 dias.`,
         confirmLabel: 'Estender +15 dias' },
       revert:  { title: 'Reverter Avaliação', icon: RotateCcw, accent: 'red', required: true,
-        subtitle: `@${nomination.candidate?.username} perde o cargo de ${ROLE_LABEL[nomination.target_role]} e volta a Usuário. Explique o motivo.`,
+        subtitle: `@${nomination.candidate?.username} perde o cargo de ${roleLabel(nomination.target_role)} e volta a Usuário. Explique o motivo.`,
         confirmLabel: 'Reverter cargo' },
     }[decision];
 
@@ -146,7 +146,7 @@ export default function CargosTab() {
       icon: isApprove ? ShieldAlert : X,
       accent: isApprove ? 'red' : 'green',
       subtitle: isApprove
-        ? `@${request.target?.username} passa de ${ROLE_LABEL[request.previous_role]} para ${ROLE_LABEL[request.proposed_role]}. Motivo da solicitação: "${request.reason}"`
+        ? `@${request.target?.username} passa de ${roleLabel(request.previous_role)} para ${roleLabel(request.proposed_role)}. Motivo da solicitação: "${request.reason}"`
         : `Rejeitar a solicitação de rebaixamento de @${request.target?.username}?`,
       label: 'Observações',
       required: false,
@@ -200,7 +200,7 @@ export default function CargosTab() {
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-dark-700/40 transition-colors text-left">
                         <CandidateHeader profile={nom.candidate} extra={
                           <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-purple-400/15 text-purple-300 shrink-0">
-                            <ArrowRight size={11} className="inline align-[-1px]" /> {ROLE_LABEL[nom.target_role]}
+                            <ArrowRight size={11} className="inline align-[-1px]" /> {roleLabel(nom.target_role)}
                           </span>
                         } />
                         <span className="text-xs font-mono text-gray-600 ml-auto shrink-0 hidden sm:inline">
@@ -249,7 +249,7 @@ export default function CargosTab() {
                       <div className="flex items-center gap-3 flex-wrap">
                         <CandidateHeader profile={nom.candidate} extra={
                           <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-purple-400/15 text-purple-300 shrink-0">
-                            {ROLE_LABEL[nom.target_role]}
+                            {roleLabel(nom.target_role)}
                           </span>
                         } />
                         <span className={`text-xs font-mono ml-auto ${remaining <= 5 ? 'text-yellow-400' : 'text-gray-500'}`}>
@@ -292,7 +292,7 @@ export default function CargosTab() {
                     <div className="flex items-center gap-3 flex-wrap">
                       <CandidateHeader profile={req.target} extra={
                         <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-red-400/15 text-red-300 shrink-0">
-                          {ROLE_LABEL[req.previous_role]} <ArrowRight size={11} className="inline align-[-1px]" /> {ROLE_LABEL[req.proposed_role]}
+                          {roleLabel(req.previous_role)} <ArrowRight size={11} className="inline align-[-1px]" /> {roleLabel(req.proposed_role)}
                         </span>
                       } />
                       <span className="text-xs font-mono text-gray-600 ml-auto shrink-0">

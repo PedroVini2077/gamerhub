@@ -30,6 +30,7 @@ import SuperAdminPanel from '../components/admin/SuperAdminPanel';
 import CargosTab from '../components/admin/CargosTab';
 import ModerationPanel from '../components/moderation/ModerationPanel';
 import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/roleNominationService';
+import { roleLabel } from '../lib/roleLabels';
 
 // Posts/keys crescem sem limite com o uso do site — pagina em blocos pra não
 // carregar tudo de uma vez (landmine de escalabilidade do `fetchAll` antigo).
@@ -39,7 +40,6 @@ import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/r
 const PAGE_SIZE = 20;
 const MAX_USERS = 1000;
 
-const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
 export default function Admin() {
   const { isAdmin, isSuperAdmin, isOwner, role } = useRole();
@@ -265,8 +265,8 @@ export default function Admin() {
 
   function handleNominate(targetUser, targetRole) {
     setConfirmModal({
-      title: `Indicar para ${ROLE_LABEL[targetRole]}`,
-      message: `Indicar "${targetUser.username}" para o cargo de ${ROLE_LABEL[targetRole]}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
+      title: `Indicar para ${roleLabel(targetRole)}`,
+      message: `Indicar "${targetUser.username}" para o cargo de ${roleLabel(targetRole)}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
       accent: 'purple', confirmLabel: 'Indicar', icon: UserPlus,
       onConfirm: async () => {
         try {
@@ -284,7 +284,7 @@ export default function Admin() {
       icon: ShieldAlert,
       accent: 'red',
       target: targetUser,
-      subtitle: `"${targetUser.username}" passaria de ${ROLE_LABEL[targetUser.role]} para Usuário. A solicitação é enviada para análise — só vira realidade após aprovação do fundador ou de um super admin, com motivo registrado.`,
+      subtitle: `"${targetUser.username}" passaria de ${roleLabel(targetUser.role)} para Usuário. A solicitação é enviada para análise — só vira realidade após aprovação do fundador ou de um super admin, com motivo registrado.`,
       label: 'Motivo do rebaixamento',
       placeholder: 'Descreva o que motivou essa solicitação (mínimo 10 caracteres)...',
       required: true,

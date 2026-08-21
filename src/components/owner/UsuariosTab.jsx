@@ -8,10 +8,10 @@ import toast from 'react-hot-toast';
 import ConfirmModal from '../ui/ConfirmModal';
 import ReasonModal from '../ui/ReasonModal';
 import { nominateForRole, requestRoleDemotion } from '../../services/roleNominationService';
+import { roleLabel } from '../../lib/roleLabels';
 
 const OC = '#f97316';
 const ROLE_COLOR = { owner: OC, super_admin: '#39ff14', admin: '#a855f7', user: '#6b7280' };
-const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
 
 const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOverride }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +40,7 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
             )}
           </div>
           <p className="text-xs font-mono text-gray-600 mt-0.5">
-            {ROLE_LABEL[user.role] || user.role} · {user.xp ?? 0} XP · {user.post_count ?? 0} posts
+            {roleLabel(user.role)} · {user.xp ?? 0} XP · {user.post_count ?? 0} posts
           </p>
         </div>
         <ChevronDown size={14}
@@ -129,7 +129,7 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
                     {['user', 'admin', 'super_admin'].filter(r => r !== user.role).map(r => (
                       <button key={r} onClick={() => { onOverride(user, r); setShowOverride(false); }}
                         className="px-2.5 py-1 text-xs font-mono border border-yellow-500/30 rounded text-yellow-500/80 hover:bg-yellow-500/10 transition-colors">
-                        <ArrowRight size={11} className="inline align-[-1px]" /> {ROLE_LABEL[r]}
+                        <ArrowRight size={11} className="inline align-[-1px]" /> {roleLabel(r)}
                       </button>
                     ))}
                   </div>
@@ -162,8 +162,8 @@ export default function UsuariosTab() {
 
   function handleNominate(user, targetRole) {
     setConfirm({
-      title: `Indicar para ${ROLE_LABEL[targetRole]}`,
-      message: `Indicar "${user.username}" para o cargo de ${ROLE_LABEL[targetRole]}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
+      title: `Indicar para ${roleLabel(targetRole)}`,
+      message: `Indicar "${user.username}" para o cargo de ${roleLabel(targetRole)}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
       accent: 'purple',
       confirmLabel: 'Indicar',
       icon: UserPlus,
@@ -183,7 +183,7 @@ export default function UsuariosTab() {
       icon: ShieldAlert,
       accent: 'red',
       target: user,
-      subtitle: `"${user.username}" passaria de ${ROLE_LABEL[user.role]} para Usuário. A solicitação é enviada para análise — só vira realidade após aprovação do fundador ou de um super admin, com motivo registrado.`,
+      subtitle: `"${user.username}" passaria de ${roleLabel(user.role)} para Usuário. A solicitação é enviada para análise — só vira realidade após aprovação do fundador ou de um super admin, com motivo registrado.`,
       label: 'Motivo do rebaixamento',
       placeholder: 'Descreva o que motivou essa solicitação (mínimo 10 caracteres)...',
       required: true,
@@ -202,7 +202,7 @@ export default function UsuariosTab() {
   function handleOverride(user, newRole) {
     setConfirm({
       title: 'Override de Emergência',
-      message: `Definir o cargo de "${user.username}" diretamente para ${ROLE_LABEL[newRole]}? Isso IGNORA todo o processo de indicação e avaliação — use apenas em situações excepcionais (bugs, comportamento inesperado do sistema, etc). A ação fica registrada nos logs de auditoria.`,
+      message: `Definir o cargo de "${user.username}" diretamente para ${roleLabel(newRole)}? Isso IGNORA todo o processo de indicação e avaliação — use apenas em situações excepcionais (bugs, comportamento inesperado do sistema, etc). A ação fica registrada nos logs de auditoria.`,
       accent: 'red',
       confirmLabel: 'Definir cargo',
       icon: Siren,
@@ -210,7 +210,7 @@ export default function UsuariosTab() {
         const { error } = await supabase.rpc('owner_set_role', { p_target_user_id: user.id, p_new_role: newRole });
         setConfirm(null);
         if (error) toast.error(error.message);
-        else { toast.success(`Cargo de ${user.username} definido para ${ROLE_LABEL[newRole]}.`); refetch(); }
+        else { toast.success(`Cargo de ${user.username} definido para ${roleLabel(newRole)}.`); refetch(); }
       },
     });
   }
