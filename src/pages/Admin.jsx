@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
 import { useAdminLogs } from '../hooks/useAdminLogs';
 import { useLiveModeration } from '../hooks/useLiveModeration';
+import { useAdminNotifications, notifAudience } from '../hooks/useAdminNotifications';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -35,17 +36,6 @@ import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/r
 // UsersPanel dependem da lista completa, e a base de usuários cresce bem mais
 // devagar que posts.
 const PAGE_SIZE = 20;
-// Público das notificações de staff que este usuário deve enxergar.
-// O `owner` também é destinatário de `notify_owner` (audience 'owner'), que
-// antes só aparecia no painel do fundador — quem abrisse /admin como dono não
-// via os alertas enviados pela equipe.
-function notifAudience(isSuperAdmin, isOwner) {
-  const list = ['all_admins'];
-  if (isSuperAdmin) list.push('super_admin');
-  if (isOwner) list.push('owner');
-  return list;
-}
-
 const MAX_USERS = 1000;
 
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
@@ -76,14 +66,15 @@ export default function Admin() {
   const [demoteModal, setDemoteModal] = useState(null);
   const [alertOwnerModal, setAlertOwnerModal] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
-  const [notifications, setNotifications] = useState([]);
-  const [readIds, setReadIds] = useState(new Set());
-  const [notifLoading, setNotifLoading] = useState(false);
   const [blockedLogins, setBlockedLogins] = useState([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unlockModal, setUnlockModal] = useState(null);
   const { logs, logCat, setLogCat, logsLoading, fetchLogs } = useAdminLogs();
   const { liveMod, refreshing, fetchLiveMod } = useLiveModeration();
+  const {
+    notifications, setNotifications, readIds, setReadIds,
+    notifLoading, fetchNotifications, refreshUnread,
+  } = useAdminNotifications({ userId: user?.id, isSuperAdmin, isOwner });
 
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
@@ -123,7 +114,7 @@ export default function Admin() {
         if (isSuperAdmin && tabRef.current === 'super') fetchUnbanRequests();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
-        fetchNotificationsCount();
+        refreshUnread();
         if (tabRef.current === 'notifs') fetchNotifications();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
@@ -184,42 +175,6 @@ export default function Admin() {
     setKeys(next);
     setKeysHasMore(next.length < (count ?? next.length));
     setLoadingMoreKeys(false);
-  }
-
-  async function fetchNotificationsCount() {
-    const audience = notifAudience(isSuperAdmin, isOwner);
-    const { data: notifs } = await supabase.from('admin_notifications').select('id').in('audience', audience);
-    const { data: reads } = await supabase.from('admin_notification_reads')
-      .select('notification_id').eq('admin_id', user.id);
-    const rIds = new Set((reads || []).map(r => r.notification_id));
-    setReadIds(rIds);
-    setNotifications(prev => {
-      const existingIds = new Set(prev.map(n => n.id));
-      const newIds = (notifs || []).filter(n => !existingIds.has(n.id));
-      return newIds.length > 0 ? prev : prev;
-    });
-  }
-
-  async function fetchNotifications() {
-    setNotifLoading(true);
-    const audience = notifAudience(isSuperAdmin, isOwner);
-    const [{ data: notifs }, { data: reads }] = await Promise.all([
-      supabase.from('admin_notifications').select('*').in('audience', audience)
-        .order('created_at', { ascending: false }).limit(50),
-      supabase.from('admin_notification_reads').select('notification_id').eq('admin_id', user.id),
-    ]);
-    const rIds = new Set((reads || []).map(r => r.notification_id));
-    setNotifications(notifs || []);
-    setReadIds(rIds);
-    const unread = (notifs || []).filter(n => !rIds.has(n.id));
-    if (unread.length > 0) {
-      await supabase.from('admin_notification_reads').upsert(
-        unread.map(n => ({ notification_id: n.id, admin_id: user.id })),
-        { onConflict: 'notification_id,admin_id' }
-      );
-      setReadIds(new Set((notifs || []).map(n => n.id)));
-    }
-    setNotifLoading(false);
   }
 
   async function fetchBlockedLogins() {
