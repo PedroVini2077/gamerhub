@@ -1,5 +1,5 @@
 import { Heart, Clock, Trash2, Pencil, Check, X, Mic, Music, Tv, Flag, EyeOff } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { logAudit } from '../../lib/auditLog';
 import { useRole } from '../../hooks/useRole';
@@ -8,6 +8,7 @@ import { canDeleteContent } from '../../lib/roles';
 import { usePostEngagement } from '../../hooks/usePostEngagement';
 import toast from 'react-hot-toast';
 import EditCountdown from './EditCountdown';
+import { useDeleteCountdown } from '../../hooks/useDeleteCountdown';
 import CommentSection from './CommentSection';
 import { Link } from 'react-router-dom';
 import AvatarPopup from '../ui/AvatarPopup';
@@ -25,6 +26,8 @@ const categoryConfig = {
 };
 
 const EDIT_LIMIT_MINUTES = 30;
+// Janela pra cancelar antes do post sumir de fato.
+const DELETE_COUNTDOWN_SECONDS = 5;
 
 export default function PostCard({ post, onDelete, disablePopup = false }) {
   const { user, profile } = useAuth();
@@ -38,10 +41,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteCountdown, setDeleteCountdown] = useState(null);
   const [reporting, setReporting] = useState(false);
-
-  const countdownRef = useRef(null);
 
   const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
@@ -55,38 +55,21 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
     () => !!isOwner && (Date.now() - new Date(post.created_at).getTime()) / 60000 <= EDIT_LIMIT_MINUTES,
   );
 
-  // Preserva o comportamento anterior: a contagem de exclusão era limpa junto
-  // com o effect de engajamento, que reagia a estas mesmas deps.
-  useEffect(() => () => clearInterval(countdownRef.current),
-    [post.id, user, post.like_count, post.liked_by_me, post.post_media]);
+  // A exclusão só acontece quando a contagem zera — dá janela pra cancelar.
+  const { remaining: deleteCountdown, start: startDelete, cancel: cancelDelete } =
+    useDeleteCountdown(DELETE_COUNTDOWN_SECONDS, () => {
+      setDeleting(true);
+      softDeletePost(post.id).then(({ error }) => {
+        if (error) { toast.error(error.message || 'Erro ao excluir'); setDeleting(false); return; }
+        logAudit('post_deleted', `@${profile?.username} excluiu o post "${post.title}"`, { category: 'content' });
+        setDeleting(false);
+        onDelete?.();
+      });
+    });
 
   function handleDelete() {
     setConfirming(false);
-    let count = 5;
-    setDeleteCountdown(count);
-    countdownRef.current = setInterval(() => {
-      count--;
-      setDeleteCountdown(count);
-      if (count <= 0) {
-        clearInterval(countdownRef.current);
-        countdownRef.current = null;
-        setDeleteCountdown(null);
-        // Só executa o delete ao final do countdown
-        setDeleting(true);
-        softDeletePost(post.id).then(({ error }) => {
-          if (error) { toast.error(error.message || 'Erro ao excluir'); setDeleting(false); return; }
-          logAudit('post_deleted', `@${profile?.username} excluiu o post "${post.title}"`, { category: 'content' });
-          setDeleting(false);
-          onDelete?.();
-        });
-      }
-    }, 1000);
-  }
-
-  function cancelDelete() {
-    clearInterval(countdownRef.current);
-    countdownRef.current = null;
-    setDeleteCountdown(null);
+    startDelete();
   }
 
   async function handleSaveEdit() {

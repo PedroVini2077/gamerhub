@@ -72,18 +72,21 @@ separado.
 - ✅ `UsuariosTab.jsx` 305 → 77. `useOwnerUserActions` + `UserRow`,
   `UserFilters` e `RoleOverride`.
 
-**Fila, em ordem de valor**
-- ⬜ `Admin.jsx` (647) **ainda acima do limite**. O que sobrou não é mais
-  mistura de responsabilidades — é orquestração real (abas, modais de
-  confirmação, ações de moderação). Cortar mais exige **decisão de
-  arquitetura**, não movimentação mecânica. Discutir antes de mexer.
+- ✅ `Admin.jsx` 647 → 197. `useAdminData`, `useAdminRealtime`,
+  `useAdminContentActions`, `useAdminLiveActions`, `useAdminStaffActions` +
+  `AdminModals`, `AdminTabContent`, `AdminTabs` e `UnlockLoginModal` (que
+  estava inline no meio do JSX). Achou de quebra a brecha da trilha de
+  auditoria (ver abaixo).
 
-**Anotado no caminho (não corrigido de propósito)**
-- ⬜ `PostCard`: a limpeza da contagem de exclusão reage às mesmas deps do
-  effect de engajamento — um refetch do feed no meio da contagem para o
-  `interval` sem resetar o estado, deixando o número congelado na tela.
-  Comportamento antigo, preservado durante a extração. Corrigir à parte,
-  com teste que comprove o caso.
+**Fila: vazia.** Nenhum arquivo de `src/` passa de 300 linhas.
+
+**Anotado no caminho**
+- ✅ `PostCard`: a limpeza da contagem de exclusão reagia às mesmas deps do
+  effect de engajamento — um refetch do feed no meio da contagem parava o
+  `interval` sem resetar o estado, congelando o aviso "Excluindo post em Ns..."
+  na tela e deixando o post NUNCA ser excluído. Corrigido extraindo
+  `hooks/useDeleteCountdown.js`, onde a limpeza roda só no desmonte. 6 testes,
+  incluindo o da regressão (re-render com props novas no meio da contagem).
 
 ---
 
