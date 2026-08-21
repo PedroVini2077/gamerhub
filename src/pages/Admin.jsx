@@ -7,6 +7,7 @@ import { useAdminLogs } from '../hooks/useAdminLogs';
 import { useLiveModeration } from '../hooks/useLiveModeration';
 import { useAdminNotifications, notifAudience } from '../hooks/useAdminNotifications';
 import { useBlockedLogins } from '../hooks/useBlockedLogins';
+import { useUnbanRequests } from '../hooks/useUnbanRequests';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -60,8 +61,6 @@ export default function Admin() {
   const [unbanReqModal, setUnbanReqModal] = useState(null);
   const [unbanDirectModal, setUnbanDirectModal] = useState(null);
   const [denyUnbanModal, setDenyUnbanModal] = useState(null);
-  const [unbanRequests, setUnbanRequests] = useState([]);
-  const [unbanReqLoading, setUnbanReqLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [demoteModal, setDemoteModal] = useState(null);
   const [alertOwnerModal, setAlertOwnerModal] = useState(false);
@@ -76,6 +75,8 @@ export default function Admin() {
     blockedLogins, blockedLoading, fetchBlockedLogins,
     unlockModal, setUnlockModal, confirmUnlock,
   } = useBlockedLogins({ actorUsername: profile?.username });
+  const { unbanRequests, unbanReqLoading, fetchUnbanRequests } =
+    useUnbanRequests({ userId: user?.id, isSuperAdmin });
 
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
@@ -176,15 +177,6 @@ export default function Admin() {
     setKeys(next);
     setKeysHasMore(next.length < (count ?? next.length));
     setLoadingMoreKeys(false);
-  }
-
-  async function fetchUnbanRequests() {
-    setUnbanReqLoading(true);
-    let q = supabase.from('unban_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-    if (!isSuperAdmin) q = q.eq('requesting_admin_id', user.id);
-    const { data } = await q;
-    setUnbanRequests(data || []);
-    setUnbanReqLoading(false);
   }
 
   async function logAction(action, details, category = 'admin', severity = 'info') {
