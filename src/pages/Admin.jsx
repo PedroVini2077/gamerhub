@@ -1,17 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fadeTab, gridContainer, gridCard } from '../lib/motion';
+import { fadeTab, gridContainer } from '../lib/motion';
 import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
+import { useAdminLogs } from '../hooks/useAdminLogs';
+import { useLiveModeration } from '../hooks/useLiveModeration';
+import { useAdminNotifications, notifAudience } from '../hooks/useAdminNotifications';
+import { useBlockedLogins } from '../hooks/useBlockedLogins';
+import { useUnbanRequests } from '../hooks/useUnbanRequests';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { logAudit } from '../lib/auditLog';
-import { Shield, X, Users, FileText, Key, RotateCcw, CheckCircle, XCircle, Crown, Bell, Activity, Trash2, Tv, ShieldAlert, LockOpen, UserPlus, Siren, Send, AlertTriangle } from 'lucide-react';
+import { Shield, X, Users, FileText, Key, RotateCcw, XCircle, Crown, Bell, Activity, Trash2, Tv, ShieldAlert, UserPlus, Siren, Send, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BanModal from '../components/ui/BanModal';
 import ReasonModal from '../components/ui/ReasonModal';
 import ConfirmModal from '../components/ui/ConfirmModal';
+import StatCard from '../components/admin/StatCard';
+import UnlockCountdownBtn from '../components/admin/UnlockCountdownBtn';
+import UnbanRequestModal from '../components/admin/UnbanRequestModal';
+import ReactivationModal from '../components/admin/ReactivationModal';
 import UsersPanel from '../components/admin/UsersPanel';
 import PostsPanel from '../components/admin/PostsPanel';
 import LivesPanel from '../components/admin/LivesPanel';
@@ -23,194 +31,15 @@ import CargosTab from '../components/admin/CargosTab';
 import ModerationPanel from '../components/moderation/ModerationPanel';
 import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/roleNominationService';
 
-const REACTIVATE_REASONS = [
-  'Encerrada por engano', 'Problema técnico', 'Live continuou', 'Pedido do criador', 'Outro',
-];
-
 // Posts/keys crescem sem limite com o uso do site — pagina em blocos pra não
 // carregar tudo de uma vez (landmine de escalabilidade do `fetchAll` antigo).
 // Usuários continuam carregados por inteiro: a busca/filtros/badges de role do
 // UsersPanel dependem da lista completa, e a base de usuários cresce bem mais
 // devagar que posts.
 const PAGE_SIZE = 20;
-// Público das notificações de staff que este usuário deve enxergar.
-// O `owner` também é destinatário de `notify_owner` (audience 'owner'), que
-// antes só aparecia no painel do fundador — quem abrisse /admin como dono não
-// via os alertas enviados pela equipe.
-function notifAudience(isSuperAdmin, isOwner) {
-  const list = ['all_admins'];
-  if (isSuperAdmin) list.push('super_admin');
-  if (isOwner) list.push('owner');
-  return list;
-}
-
 const MAX_USERS = 1000;
 
 const ROLE_LABEL = { owner: 'Fundador', super_admin: 'Super Admin', admin: 'Admin', user: 'Usuário' };
-
-function UnlockCountdownBtn({ onConfirm }) {
-  const [countdown, setCountdown] = useState(10);
-  useEffect(() => {
-    if (countdown <= 0) return;
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [countdown]);
-  return (
-    <button
-      onClick={countdown > 0 ? undefined : onConfirm}
-      disabled={countdown > 0}
-      className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
-      style={countdown > 0
-        ? { background: '#111', color: '#555', border: '1px solid #333', cursor: 'not-allowed' }
-        : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>
-      {countdown > 0 ? `Aguarde ${countdown}s...` : <><LockOpen size={12} />Confirmar Desbloqueio</>}
-    </button>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, color }) {
-  return (
-    <motion.div variants={gridCard} className="card p-5 flex items-center gap-4">
-      <div className={`w-10 h-10 rounded flex items-center justify-center ${color}`}>
-        <Icon size={18} />
-      </div>
-      <div>
-        <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">{label}</p>
-        <p className="text-2xl font-display font-bold text-white">{value}</p>
-      </div>
-    </motion.div>
-  );
-}
-
-function UnbanRequestModal({ target, onClose, onSent }) {
-  const [reason, setReason] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function handleSend() {
-    if (!reason.trim()) return;
-    setLoading(true);
-    const { error } = await supabase.rpc('request_unban', { p_user_id: target.id, p_reason: reason.trim() });
-    setLoading(false);
-    if (error) {
-      if (error.message?.includes('pending')) toast.error('Já existe uma solicitação pendente para este usuário');
-      else toast.error('Erro ao enviar solicitação');
-      return;
-    }
-    toast.success('Solicitação enviada ao super admin!');
-    onSent?.();
-    onClose();
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.92)' }} onClick={onClose}>
-      <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-yellow-400/30 p-5 space-y-4 animate-fade-up"
-        onClick={e => e.stopPropagation()} style={{ boxShadow: '0 0 40px #eab30815' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <RotateCcw size={14} className="text-yellow-400" />
-            <h3 className="font-display text-sm text-yellow-400 uppercase tracking-wider">Solicitar Desbanimento</h3>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors"><X size={15} /></button>
-        </div>
-        <div className="flex items-center gap-3 bg-dark-700 rounded-lg p-3 border border-dark-500">
-          <div className="min-w-0">
-            <p className="text-sm font-mono text-white font-bold">@{target.username}</p>
-            {target.ban_reason && <p className="text-xs text-red-400 font-mono">{target.ban_reason}</p>}
-          </div>
-        </div>
-        <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-lg p-3">
-          <p className="text-xs font-mono text-yellow-300 leading-relaxed">
-            Esta solicitação será enviada ao super admin. Descreva por que o ban deve ser removido.
-          </p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Justificativa *</p>
-          <textarea className="input-gamer resize-none w-full text-xs" rows={3}
-            placeholder="Por que este usuário deve ser desbanido?"
-            value={reason} onChange={e => setReason(e.target.value)} maxLength={500} />
-        </div>
-        <div className="flex gap-2">
-          <button onClick={onClose}
-            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
-            Cancelar
-          </button>
-          <button onClick={handleSend} disabled={!reason.trim() || loading}
-            className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
-            style={{ background: '#eab30815', color: '#fbbf24', border: '1px solid #eab30840' }}>
-            {loading ? <span className="animate-pulse">...</span> : <><CheckCircle size={12} />Enviar Solicitação</>}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
-
-function ReactivationModal({ live, isSuperAdmin, onSubmit, onClose }) {
-  const [reason, setReason] = useState('');
-  const [details, setDetails] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleSubmit() {
-    if (!reason) return;
-    setSubmitting(true);
-    await onSubmit(live, reason, details);
-    setSubmitting(false);
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.9)' }} onClick={onClose}>
-      <div className="w-full max-w-sm bg-dark-800 rounded-2xl border border-dark-400 p-5 space-y-4 animate-fade-up"
-        onClick={e => e.stopPropagation()} style={{ boxShadow: '0 0 40px #39ff1415' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <RotateCcw size={14} className="text-neon-green" />
-            <h3 className="font-display text-sm text-neon-green uppercase tracking-wider">
-              {isSuperAdmin ? 'Reativar Live' : 'Solicitar Reativação'}
-            </h3>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors"><X size={15} /></button>
-        </div>
-        <div className="bg-dark-700 rounded-lg px-3 py-2 border border-dark-500">
-          <p className="text-xs font-mono text-white font-bold">{live.title}</p>
-          <p className="text-xs font-mono text-gray-500">por {live.profiles?.username}</p>
-        </div>
-        <div>
-          <p className="text-xs text-gray-500 font-mono mb-2 uppercase tracking-wider">Motivo:</p>
-          <div className="space-y-1.5">
-            {REACTIVATE_REASONS.map(r => (
-              <button key={r} type="button" onClick={() => setReason(r)}
-                className={`w-full text-left text-xs font-mono px-3 py-2 rounded border transition-all ${
-                  reason === r
-                    ? 'bg-neon-green/10 border-neon-green/40 text-neon-green'
-                    : 'border-dark-500 text-gray-400 hover:border-dark-300 hover:text-gray-300'
-                }`}>
-                <span className={`w-2 h-2 rounded-full mr-2 border inline-block shrink-0 ${reason === r ? 'bg-neon-green border-neon-green' : 'border-gray-500'}`} />
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-        <textarea className="input-gamer resize-none w-full text-xs" rows={2}
-          placeholder="Detalhes adicionais (opcional)..."
-          value={details} onChange={e => setDetails(e.target.value)} maxLength={300} />
-        <div className="flex gap-2">
-          <button onClick={handleSubmit} disabled={!reason || submitting}
-            className="btn-solid flex-1 py-2 text-xs disabled:opacity-40 flex items-center justify-center gap-1.5">
-            {submitting
-              ? <span className="animate-pulse font-mono">...</span>
-              : isSuperAdmin ? <><RotateCcw size={12} /> Reativar Agora</> : <><CheckCircle size={12} /> Enviar Solicitação</>
-            }
-          </button>
-          <button onClick={onClose} className="btn-neon py-2 px-4 text-xs">Cancelar</button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
 
 export default function Admin() {
   const { isAdmin, isSuperAdmin, isOwner, role } = useRole();
@@ -232,23 +61,23 @@ export default function Admin() {
   const [unbanReqModal, setUnbanReqModal] = useState(null);
   const [unbanDirectModal, setUnbanDirectModal] = useState(null);
   const [denyUnbanModal, setDenyUnbanModal] = useState(null);
-  const [unbanRequests, setUnbanRequests] = useState([]);
-  const [unbanReqLoading, setUnbanReqLoading] = useState(false);
   const [confirmModal, setConfirmModal] = useState(null);
   const [demoteModal, setDemoteModal] = useState(null);
   const [alertOwnerModal, setAlertOwnerModal] = useState(false);
-  const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
-  const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
-  const [logs, setLogs] = useState([]);
-  const [logCat, setLogCat] = useState('todos');
-  const [logsLoading, setLogsLoading] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [readIds, setReadIds] = useState(new Set());
-  const [notifLoading, setNotifLoading] = useState(false);
-  const [blockedLogins, setBlockedLogins] = useState([]);
-  const [blockedLoading, setBlockedLoading] = useState(false);
-  const [unlockModal, setUnlockModal] = useState(null);
+  const { logs, logCat, setLogCat, logsLoading, fetchLogs } = useAdminLogs();
+  const { liveMod, refreshing, fetchLiveMod } = useLiveModeration();
+  const {
+    notifications, setNotifications, readIds, setReadIds,
+    notifLoading, fetchNotifications, refreshUnread,
+  } = useAdminNotifications({ userId: user?.id, isSuperAdmin, isOwner });
+  const {
+    blockedLogins, blockedLoading, fetchBlockedLogins,
+    unlockModal, setUnlockModal, confirmUnlock,
+  } = useBlockedLogins({ actorUsername: profile?.username });
+  const { unbanRequests, unbanReqLoading, fetchUnbanRequests } =
+    useUnbanRequests({ userId: user?.id, isSuperAdmin });
+
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
   useEffect(() => { tabRef.current = tab; }, [tab]);
@@ -287,7 +116,7 @@ export default function Admin() {
         if (isSuperAdmin && tabRef.current === 'super') fetchUnbanRequests();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
-        fetchNotificationsCount();
+        refreshUnread();
         if (tabRef.current === 'notifs') fetchNotifications();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
@@ -348,106 +177,6 @@ export default function Admin() {
     setKeys(next);
     setKeysHasMore(next.length < (count ?? next.length));
     setLoadingMoreKeys(false);
-  }
-
-  async function fetchLiveMod() {
-    setRefreshing(true);
-    const since7d = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
-    const [{ data: silenced }, { data: lives }, { data: endedLives }, { data: requests }] = await Promise.all([
-      supabase.from('live_chat_timeouts').select('id, post_id, user_id, expires_at, profiles(username)')
-        .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }),
-      supabase.from('posts').select('id, title, user_id, profiles(username)')
-        .eq('is_live', true).not('embed_url', 'is', null),
-      supabase.from('posts').select('id, title, user_id, created_at, profiles(username)')
-        .eq('was_live', true).eq('is_live', false).not('embed_url', 'is', null)
-        .gte('created_at', since7d).order('created_at', { ascending: false }).limit(20),
-      supabase.from('live_reactivation_requests').select('*')
-        .eq('status', 'pending').order('created_at', { ascending: false }),
-    ]);
-    setLiveMod({ silenced: silenced || [], lives: lives || [], endedLives: endedLives || [], requests: requests || [] });
-    setRefreshing(false);
-  }
-
-  // Contador de requisição: trocar de categoria rápido disparava vários fetches
-  // e o que chegasse por ÚLTIMO vencia — podendo pintar a tela com os logs de
-  // uma categoria que o admin já tinha abandonado.
-  const logsReqRef = useRef(0);
-
-  async function fetchLogs(cat = 'todos') {
-    const reqId = ++logsReqRef.current;
-    setLogsLoading(true);
-    let q = supabase.from('admin_logs').select('*').order('created_at', { ascending: false }).limit(100);
-    if (cat !== 'todos') q = q.eq('category', cat);
-    const { data } = await q;
-    if (reqId !== logsReqRef.current) return; // resposta obsoleta: descarta
-    setLogs(data || []);
-    setLogsLoading(false);
-  }
-
-  async function fetchNotificationsCount() {
-    const audience = notifAudience(isSuperAdmin, isOwner);
-    const { data: notifs } = await supabase.from('admin_notifications').select('id').in('audience', audience);
-    const { data: reads } = await supabase.from('admin_notification_reads')
-      .select('notification_id').eq('admin_id', user.id);
-    const rIds = new Set((reads || []).map(r => r.notification_id));
-    setReadIds(rIds);
-    setNotifications(prev => {
-      const existingIds = new Set(prev.map(n => n.id));
-      const newIds = (notifs || []).filter(n => !existingIds.has(n.id));
-      return newIds.length > 0 ? prev : prev;
-    });
-  }
-
-  async function fetchNotifications() {
-    setNotifLoading(true);
-    const audience = notifAudience(isSuperAdmin, isOwner);
-    const [{ data: notifs }, { data: reads }] = await Promise.all([
-      supabase.from('admin_notifications').select('*').in('audience', audience)
-        .order('created_at', { ascending: false }).limit(50),
-      supabase.from('admin_notification_reads').select('notification_id').eq('admin_id', user.id),
-    ]);
-    const rIds = new Set((reads || []).map(r => r.notification_id));
-    setNotifications(notifs || []);
-    setReadIds(rIds);
-    const unread = (notifs || []).filter(n => !rIds.has(n.id));
-    if (unread.length > 0) {
-      await supabase.from('admin_notification_reads').upsert(
-        unread.map(n => ({ notification_id: n.id, admin_id: user.id })),
-        { onConflict: 'notification_id,admin_id' }
-      );
-      setReadIds(new Set((notifs || []).map(n => n.id)));
-    }
-    setNotifLoading(false);
-  }
-
-  async function fetchBlockedLogins() {
-    setBlockedLoading(true);
-    const { data } = await supabase.rpc('get_blocked_logins');
-    setBlockedLogins(data || []);
-    setBlockedLoading(false);
-  }
-
-  async function fetchUnbanRequests() {
-    setUnbanReqLoading(true);
-    let q = supabase.from('unban_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-    if (!isSuperAdmin) q = q.eq('requesting_admin_id', user.id);
-    const { data } = await q;
-    setUnbanRequests(data || []);
-    setUnbanReqLoading(false);
-  }
-
-  async function confirmUnlock() {
-    const entry = unlockModal;
-    if (!entry) return;
-    const { error } = await supabase.rpc('admin_unlock_login', { p_email: entry.email });
-    if (error) { toast.error('Erro ao desbloquear'); return; }
-    logAudit('admin_unlock_login',
-      `Super admin @${profile?.username} desbloqueou o login de ${entry.email} (${entry.attempts} tentativas${entry.permanent ? ', bloqueio permanente' : ''})`,
-      { category: 'security', severity: 'warning' }
-    );
-    toast.success(`${entry.email} desbloqueado`);
-    setUnlockModal(null);
-    fetchBlockedLogins();
   }
 
   async function logAction(action, details, category = 'admin', severity = 'info') {
