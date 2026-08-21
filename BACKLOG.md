@@ -10,6 +10,119 @@
 
 ---
 
+## 🎯 Próxima sessão — fila engatilhada
+
+> Levantada em 21/08/2026 varrendo o backlog inteiro. **O estado de cada item
+> de banco foi CONFERIDO por consulta**, não assumido — os números abaixo são
+> reais nesta data. Ordem segue a prioridade do `CLAUDE.md` §0.
+>
+> Nada aqui é feature nova. É o resto da faxina.
+
+### 0. Começar por aqui — a validação que ficou devendo
+
+- ⬜ **Teste de fumaça das rotas.** O `react-router` subiu de 7.15.0 → 7.18.2
+  (correção de CSRF) e eu validei só com build + suíte — **não** cliquei
+  navegação real. A infra pra isso já está instalada (`jsdom` +
+  `@testing-library/react`, usados em `useDeleteCountdown.test.js`).
+  *Primeiro passo:* renderizar o `App` com `MemoryRouter` em algumas rotas-chave
+  (`/`, `/login`, `/u/:username`, `/lives/:id`, `/admin`) e afirmar que cada uma
+  monta sem erro. *Pronto quando:* existe teste que quebraria se um upgrade de
+  router derrubasse uma rota.
+
+### 1. Segurança
+
+- ⬜ **`pg_net` no schema `public`** *(confirmado: ainda está lá)*. É o único
+  achado de segurança que sobrou nos advisors além dos já documentados.
+  *Risco real:* `ALTER EXTENSION ... SET SCHEMA` pode quebrar webhooks/triggers
+  que chamam `net.*`. *Primeiro passo (barato e sem risco):* levantar quem
+  referencia `net.` antes de mover —
+  `select proname from pg_proc where prosrc ilike '%net.%'`.
+  Só mover depois de ver a lista e testar em `ROLLBACK`.
+- ⬜ **Reavaliar a proteção contra senha vazada (HIBP).** Estava travada por
+  estar no plano Free. O projeto **saiu da restrição de serviço** desde então —
+  vale reabrir Authentication → Sign In/Providers → Email e conferir se o toggle
+  liberou. Checagem de 1 minuto; se continuar travado, é limitação de plano e
+  não ação pendente.
+- ⬜ **Denúncia (`reports`) não gera log de auditoria.** Foi decisão consciente
+  (qualquer usuário denuncia; logar inflaria a trilha). Reavaliar agora que a
+  trilha foi endurecida — talvez logar só a denúncia que resulta em auto-hide.
+
+### 2. Performance / custo — realtime (o bloco de maior valor)
+
+Os três itens abaixo são a **Onda 3** que ficou pela metade. Mexem em detecção
+de ban e sincronização de mídia, então pedem janela dedicada — mas ficaram bem
+mais fáceis agora que o canal admin está isolado em `hooks/useAdminRealtime.js`.
+
+- ⬜ **C3-b — enxugar a publicação `supabase_realtime`.**
+  *Estado confirmado:* a publicação tem **10 tabelas** — `admin_logs`,
+  `admin_notifications`, `community_posts`, `live_chat`, `live_chat_timeouts`,
+  `moderation_queue`, `post_media`, `posts`, `profiles`, `site_config`.
+  Alvos de remoção: `post_media` (a UI já refaz por retry) e `admin_logs`
+  (tabela de auditoria de alto volume, publicada globalmente para interessar a
+  um punhado de admins). *Cuidado:* tirar `admin_logs` quebra o auto-refresh da
+  aba Logs — trocar por refetch/poll dedicado **antes** de remover.
+- ⬜ **C3-c — `profiles` está com `REPLICA IDENTITY FULL`** *(confirmado)*.
+  Manda a linha inteira a cada update, para todos os assinantes. O watch de ban
+  só precisa de `id` + `banned`. *Cuidado:* é o `useAuth`, o arquivo de maior
+  risco do projeto (§7) — quebrar derruba o site. Testar os dois lados.
+- ⬜ **Canal `admin-realtime` com `event:'*'` global** em `posts` e
+  `admin_logs`. Todo admin com o painel aberto recebe evento de cada post e de
+  cada log do site, mesmo com a aba fechada. O ideal é assinar sob demanda por
+  aba. *Agora é mais fácil:* toda a lógica está num arquivo só,
+  `hooks/useAdminRealtime.js` (53 linhas), com os handlers já despachando por
+  aba — falta só mover o despacho pra dentro da subscription.
+
+### 3. Dívida estrutural
+
+- 🟡 **Migrar `Admin.jsx` para React Query.** Era o último grande pendente da
+  migração gradual e estava marcado como "refatoração estrutural grande com
+  risco real". **Isso mudou:** os ~10 fetchers interdependentes agora estão
+  isolados em `useAdminData` (89 linhas) e nos hooks de domínio. Migrar virou
+  trocar o miolo de hooks pequenos, não mexer numa página de 900 linhas.
+  Resolve boa parte dos 16 warnings de lint restantes *de verdade* (o padrão
+  `useEffect`+`setState` deixa de existir), incluindo os 3 `exhaustive-deps`
+  que hoje estão suprimidos com comentário.
+- ⬜ **Padronizar `{ data, error }` nos services.** ~30 funções em 6 services
+  com formatos diferentes (só `data`, `{data,error}`, `{url,error}`, nada).
+  **Muda contrato** — qualquer `const { data } = await fetchX()` quebra em
+  silêncio se o consumidor não for ajustado junto. Pede plano + aprovação (§7),
+  não entra junto com outra coisa.
+- ⬜ **Migração para TypeScript.** Grande, futuro, decisão do dono.
+
+### 4. Testes
+
+- ⬜ **E2E dos fluxos críticos:** login, postar, banir. É o que falta pra
+  cobertura fazer sentido de ponta a ponta.
+- ⬜ **Testes de componente** aproveitando a infra recém-instalada. Hoje há 81
+  testes, quase todos de lógica pura + 2 hooks. Bons candidatos: `PostCard`
+  (moderação/permissão), `useAuth` (o mais arriscado do projeto, sem teste).
+
+### 5. Performance — só quando o volume crescer (registrado, não urgente)
+
+- ⬜ **RPC de engajamento agregado.** `attachEngagement` traz as linhas de
+  `post_likes`/`comments` e conta no cliente. Trocar por RPC que agrega no banco
+  quando um post passar da casa dos milhares de curtidas. O shape que o
+  `PostCard` consome não muda — é troca dentro do service.
+- ⬜ **B1 — presence em canal global único.** Revisitar se "online agora"
+  passar de algumas centenas.
+- ⬜ **Paginação / virtualização** em listas longas (usuários, logs, chat).
+  Posts e keys já paginam.
+- ⬜ **Bundle 3D (~880KB).** Já é lazy e é servido pela Vercel, não pelo
+  Supabase — é UX, não custo de cota.
+- 🔵 **Onda 4 — mídia no Cloudflare R2.** Solução definitiva de egress se o
+  site crescer. Decisão de custo, do dono.
+
+### 6. Features (fora da faxina — só pra não sumir)
+
+- ⬜ **2FA** no login.
+- ⬜ Afinar detecção de ban (hoje realtime + polling de 60s como fallback).
+- ⬜ **Fase 4 da moderação — vídeo.** Custoso (frame sampling via ffmpeg.wasm).
+  Alternativa mais leve: moderar só a thumbnail.
+
+---
+
+---
+
 ## ✅ Auditoria completa de 21/08/2026 — CONCLUÍDA
 
 As 3 fases (frontend → backend → banco) foram rodadas e **todas as correções
@@ -783,9 +896,9 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
   recriadas e aos 7 índices novos são do mesmo tipo já esperado/documentado
   no projeto (RPC exposta a `authenticated` com checagem interna por
   `auth.uid()`, e índice "não usado" por ter acabado de ser criado).
-- 🟡 **`Admin.jsx`** — era ~918 linhas, hoje **647**. Os painéis e 5 hooks de
-  domínio já saíram. O que resta é orquestração; ver a seção de splits no topo
-  deste arquivo.
+- ✅ **`Admin.jsx`** — era ~918 linhas, hoje **197**. Painéis, 5 hooks de
+  domínio, os modais, as abas e o despacho de conteúdo foram todos extraídos.
+  Nenhum arquivo de `src/` passa de 300 linhas.
 - ⬜ **Denúncia criada (`reports`) não gera log de auditoria.** Fica só na
   tabela `reports`. Não foi adicionado de propósito: qualquer usuário pode
   denunciar, e logar isso em `admin_logs` inflaria a trilha. Reavaliar se a
