@@ -4,8 +4,8 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import Avatar from '../ui/Avatar';
 import ConfirmModal from '../ui/ConfirmModal';
+import { roleTag } from '../../lib/roleLabels';
 
-const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
 
 // Contas criadas mas nunca confirmadas por email. O trigger que cria o profile
 // roda no INSERT de auth.users — antes de qualquer confirmação — então um
@@ -109,7 +109,7 @@ function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBa
             <p className="text-xs text-red-400/60 font-mono truncate mt-0.5">{user.ban_reason}</p>
           )}
         </div>
-        <span className={`tag ${roleColors[user.role] || 'tag-cyan'} shrink-0`}>{user.role}</span>
+        <span className={`tag ${roleTag(user.role)} shrink-0`}>{user.role}</span>
         {(canEdit || canBan) && (
           <button onClick={() => setExpanded(e => !e)}
             className="text-gray-500 hover:text-white transition-colors ml-1 shrink-0">

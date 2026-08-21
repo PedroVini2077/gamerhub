@@ -8,9 +8,8 @@ import Avatar from './Avatar';
 import BanModal from './BanModal';
 import { X, ExternalLink, Ban } from 'lucide-react';
 import { getRankLabel, getBorderForProfile } from '../../lib/ranks';
-import { roleLabelCasual } from '../../lib/roleLabels';
+import { roleLabelCasual, roleTag } from '../../lib/roleLabels';
 
-const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
 const ROLE_RANK  = { user: 1, admin: 2, super_admin: 3, owner: 4 };
 
 export default function AvatarPopup({ profile, size = 36, className = '', postsCount, disablePopup = false, onBanned }) {
@@ -92,7 +91,7 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
             <div className="px-5 py-4 text-center border-b border-dark-500">
               <h3 className="font-display text-xl font-bold text-white mb-2">{profile?.username}</h3>
               <div className="flex items-center justify-center gap-2 flex-wrap">
-                <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>
+                <span className={`tag ${roleTag(profile?.role)}`}>
                   {roleLabelCasual(profile?.role)}
                 </span>
                 {profile?.banned && <span className="tag tag-pink">banido</span>}

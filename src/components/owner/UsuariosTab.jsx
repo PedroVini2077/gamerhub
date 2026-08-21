@@ -8,10 +8,9 @@ import toast from 'react-hot-toast';
 import ConfirmModal from '../ui/ConfirmModal';
 import ReasonModal from '../ui/ReasonModal';
 import { nominateForRole, requestRoleDemotion } from '../../services/roleNominationService';
-import { roleLabel } from '../../lib/roleLabels';
+import { roleDotColor, roleLabel } from '../../lib/roleLabels';
 
 const OC = '#f97316';
-const ROLE_COLOR = { owner: OC, super_admin: '#39ff14', admin: '#a855f7', user: '#6b7280' };
 
 const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOverride }) {
   const [open, setOpen] = useState(false);
@@ -24,7 +23,7 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-dark-700/40 transition-colors text-left"
         onClick={() => setOpen(o => !o)}>
         <div className="w-2 h-2 rounded-full shrink-0"
-          style={{ background: ROLE_COLOR[user.role] || '#6b7280' }} />
+          style={{ background: roleDotColor(user.role) }} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-mono text-white">{user.username}</span>

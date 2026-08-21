@@ -1,8 +1,7 @@
 import { Shield, Clock, Users, VolumeX } from 'lucide-react';
 import AvatarPopup from '../ui/AvatarPopup';
-import { roleLabelCasual } from '../../lib/roleLabels';
+import { roleLabelCasual, roleTag } from '../../lib/roleLabels';
 
-const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
 
 export default function ModPanel({
   silencedList, messages, uniqueChatters,
@@ -63,7 +62,7 @@ export default function ModPanel({
                 <AvatarPopup profile={p} size={24} />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-mono font-bold text-white">{p.username}</p>
-                  <span className={`tag text-xs ${roleColors[p.role] || 'tag-cyan'}`}>
+                  <span className={`tag text-xs ${roleTag(p.role)}`}>
                     {roleLabelCasual(p.role)}
                   </span>
                 </div>
