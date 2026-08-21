@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchGameKeys, fetchSiteStats, SITE_STATS_KEY } from '../../services/keyService';
 import { Tag, ExternalLink, Gift, Users, FileText, Key } from 'lucide-react';
 import { formatNumber } from '../../lib/format';
+import { safeExternalUrl } from '../../lib/url';
 
 export default function RightPanel() {
   const { data: keysData } = useQuery({
@@ -65,8 +66,8 @@ export default function RightPanel() {
                   )}
                 </div>
                 <span className="tag tag-cyan mt-1">{p.platform}</span>
-                {p.promo_url && (
-                  <a href={p.promo_url} target="_blank" rel="noreferrer"
+                {safeExternalUrl(p.promo_url) && (
+                  <a href={safeExternalUrl(p.promo_url)} target="_blank" rel="noreferrer"
                     className="mt-2 flex items-center gap-1 text-xs text-neon-cyan hover:underline">
                     Ver oferta <ExternalLink size={11} />
                   </a>

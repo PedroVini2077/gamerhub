@@ -10,47 +10,30 @@
 
 ---
 
-## 📌 Próxima sessão — comece por aqui
+## ✅ Auditoria completa de 21/08/2026 — CONCLUÍDA
 
-O dono pediu uma **varredura completa do projeto inteiro** (front, back e
-banco) atrás de falhas, pontas soltas e mais otimizações, cruzando com o que
-já está registrado aqui — e quer que os achados sejam **corrigidos**, não só
-listados. Isso é o plano de auditoria em 3 fases já descrito no `CLAUDE.md`
-("Auditoria periódica do projeto"), rodado nesta ordem — **frontend → backend
-→ banco, uma fase por vez, com relatório ao fim de cada fase e aprovação do
-dono antes de aplicar as correções daquela fase** (não pular essa etapa: é
-regra permanente do `CLAUDE.md`, não uma sugestão).
+As 3 fases (frontend → backend → banco) foram rodadas e **todas as correções
+estão aplicadas em produção**. Relatório detalhado, com o que foi reproduzido
+e como foi verificado: **`db/2026-08-21-auditoria-seguranca.md`**.
 
-**Antes de começar a Fase 1, leia:**
-- `CLAUDE.md` → seção "Auditoria periódica" (os 3 checklists de fase).
-- Este arquivo inteiro (`BACKLOG.md`) — vários itens abaixo já são exatamente
-  o tipo de coisa que a varredura vai encontrar de novo; não redescobrir do
-  zero, só confirmar se seguem valendo e resolver.
-- `README.md` → seções "Banco de dados", "Segurança" e "Custo de banda &
-  carga de banco" (contexto do que já foi endurecido/otimizado — a varredura
-  é pra achar o que **ainda** falta, não repetir o que já foi feito).
+Resumo: 5 falhas críticas fechadas (XSS armazenado, injeção de mídia em post
+alheio, bloqueio de conta por anônimo, censura por qualquer usuário logado,
+vazamento de dados pessoais sem login), 3 bugs achados no caminho (moderação
+de comentário/mural que nunca funcionou, cadastro não confirmado virando
+usuário normal, FKs que travariam exclusão de conta) e 4 riscos latentes
+fechados. Advisors: 64 → 42 avisos, 0 erros.
 
-**Itens já conhecidos e abertos que a varredura deve cobrir** (não é lista
-fechada — a varredura pode achar mais):
-- Segurança/Banco: mover `pg_net` pra schema dedicado; C3-b/c (enxugar a
-  publicação `supabase_realtime` tirando `post_media`/`admin_logs`, revisar
-  `REPLICA IDENTITY FULL` de `profiles`); canal `admin-realtime` assinando
-  `posts`/`admin_logs` com `event:'*'` global; `owner_get_metrics.total_xp`
-  nunca preenchido (bug antigo, não tocado ainda).
-- Backend/lógica: padronizar tratamento de erro nas queries (services que
-  ainda descartam `error` silenciosamente); RPC de engajamento agregado
-  (`attachEngagement`) quando o volume crescer; denúncia (`reports`) não gera
-  log de auditoria (avaliar se ainda faz sentido não gerar).
-- Frontend/arquitetura: `Admin.jsx` com ~900 linhas (quebrar em hooks por
-  aba); paginação/virtualização em listas longas; 2FA no login; presence
-  (`gamerhub-presence`) num canal global único (B1).
-- Geral: baseline de lint tinha warnings conhecidos — conferir se ainda
-  procedem; ver "Ainda em aberto" nas seções de auditoria mais recentes
-  (buscar "Ainda em aberto" e "próximos passos" neste arquivo).
-
-**Ao terminar cada fase**, marque os itens resolvidos aqui no `BACKLOG.md`
-(✅) e mova o que virou comportamento estável pro `README.md`, do jeito que já
-vem sendo feito nas entregas anteriores.
+**Continua em aberto** (ver detalhes no relatório):
+- ⬜ `profiles`: usuário **logado** ainda lê `birth_date` e histórico de ban de
+  outros. O vazamento sem login foi fechado; este exige conta. Correção certa
+  é mover leituras privilegiadas para RPCs e restringir as colunas também para
+  `authenticated` — mexe em `useAuth.fetchProfile`, o ponto mais sensível do
+  app, então pede janela dedicada.
+- ⬜ `Admin.jsx` com ~900 linhas (quebrar em hooks por aba).
+- ⬜ C3-b/c: enxugar a publicação `supabase_realtime`, revisar
+  `REPLICA IDENTITY FULL` de `profiles`.
+- ⬜ `pg_net` no schema `public` (adiado de propósito, ver acima).
+- ⬜ RPC de engajamento agregado quando o volume crescer.
 
 ---
 

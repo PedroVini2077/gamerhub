@@ -1,8 +1,92 @@
-import { useState } from 'react';
-import { Users, Ban, Shield, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search, UserPlus, ShieldAlert } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Ban, Shield, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search, UserPlus, ShieldAlert, MailWarning } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
 import Avatar from '../ui/Avatar';
+import ConfirmModal from '../ui/ConfirmModal';
 
 const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green', owner: 'tag-orange' };
+
+// Contas criadas mas nunca confirmadas por email. O trigger que cria o profile
+// roda no INSERT de auth.users — antes de qualquer confirmação — então um
+// email digitado errado ou inexistente vira um "usuário" completo no admin,
+// prendendo o username pra sempre. São removidas automaticamente depois de
+// 7 dias (cron `gamerhub-cleanup-unconfirmed`); aqui dá pra remover na hora.
+function PendingSignups() {
+  const [items, setItems] = useState(null); // null = ainda carregando
+  const [refreshing, setRefreshing] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+
+  async function fetchList() {
+    const { data, error } = await supabase.rpc('admin_get_unconfirmed_users');
+    if (!error) setItems(data || []);
+  }
+
+  useEffect(() => { fetchList(); }, []);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    await Promise.all([fetchList(), new Promise(r => setTimeout(r, 500))]);
+    setRefreshing(false);
+  }
+
+  async function handleDelete() {
+    const target = confirmTarget;
+    const { error } = await supabase.rpc('admin_delete_unconfirmed_user', { p_user_id: target.id });
+    if (error) { toast.error(error.message); return; }
+    toast.success(`@${target.username} removido — username liberado`);
+    setItems(list => list.filter(u => u.id !== target.id));
+    setConfirmTarget(null);
+  }
+
+  if (!items?.length) return null; // nada pendente: painel fica limpo
+
+  return (
+    <div className="card p-4 border-yellow-500/20 bg-yellow-500/5 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MailWarning size={14} className="text-yellow-400" />
+          <h3 className="text-xs font-display text-yellow-400 uppercase tracking-wider">
+            Cadastros pendentes de confirmação ({items.length})
+          </h3>
+        </div>
+        <button onClick={handleRefresh} disabled={refreshing} aria-label="Atualizar"
+          className="text-gray-500 hover:text-yellow-400 transition-colors disabled:opacity-40">
+          <RotateCcw size={12} className={refreshing ? 'animate-spin' : ''} />
+        </button>
+      </div>
+      <p className="text-xs font-mono text-gray-500">
+        Nunca confirmaram o email — provável digitação errada ou email inexistente.
+        Removidos automaticamente em 7 dias; aqui dá pra remover na hora e liberar o username.
+      </p>
+      <div className="space-y-1.5">
+        {items.map(u => (
+          <div key={u.id} className="flex items-center gap-2 text-xs font-mono bg-dark-800 rounded px-3 py-2">
+            <span className="text-white truncate" style={{ flex: '0 1 auto', maxWidth: '35%' }}>@{u.username}</span>
+            <span className="text-gray-500 truncate flex-1">{u.email}</span>
+            <span className="text-gray-600 shrink-0">{u.days_pending}d</span>
+            <button onClick={() => setConfirmTarget(u)} aria-label={`Remover cadastro de @${u.username}`}
+              className="text-red-400/70 hover:text-red-400 transition-colors shrink-0">
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+      {confirmTarget && (
+        <ConfirmModal
+          title="Remover cadastro pendente"
+          icon={Trash2}
+          accent="red"
+          message={`Remover o cadastro nunca confirmado de @${confirmTarget.username} (${confirmTarget.email})? Isso libera o username pra outra pessoa usar.`}
+          confirmLabel="Remover"
+          confirmIcon={Trash2}
+          onConfirm={handleDelete}
+          onClose={() => setConfirmTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
 
 function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, pendingUnbanIds }) {
   const [expanded, setExpanded] = useState(false);
@@ -135,6 +219,7 @@ export default function UsersPanel({
 
   return (
     <div className="space-y-3">
+      <PendingSignups />
       <div className="relative">
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
         <input

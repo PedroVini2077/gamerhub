@@ -5,6 +5,7 @@ import { fadeTab, listContainer, listItem } from '../lib/motion';
 import { fetchGameKeys } from '../services/keyService';
 import { Key, Copy, Check, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { safeExternalUrl } from '../lib/url';
 
 function KeyCard({ item }) {
   const [copied, setCopied] = useState(false);
@@ -48,8 +49,8 @@ function PromoCard({ item }) {
           </span>
         )}
       </div>
-      {item.promo_url ? (
-        <a href={item.promo_url} target="_blank" rel="noreferrer" className="btn-purple flex items-center gap-2 w-fit text-xs py-2 px-3">
+      {safeExternalUrl(item.promo_url) ? (
+        <a href={safeExternalUrl(item.promo_url) || undefined} target="_blank" rel="noreferrer" className="btn-purple flex items-center gap-2 w-fit text-xs py-2 px-3">
           Ver oferta <ExternalLink size={12} />
         </a>
       ) : (

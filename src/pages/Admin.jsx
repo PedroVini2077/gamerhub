@@ -368,11 +368,18 @@ export default function Admin() {
     setRefreshing(false);
   }
 
+  // Contador de requisição: trocar de categoria rápido disparava vários fetches
+  // e o que chegasse por ÚLTIMO vencia — podendo pintar a tela com os logs de
+  // uma categoria que o admin já tinha abandonado.
+  const logsReqRef = useRef(0);
+
   async function fetchLogs(cat = 'todos') {
+    const reqId = ++logsReqRef.current;
     setLogsLoading(true);
     let q = supabase.from('admin_logs').select('*').order('created_at', { ascending: false }).limit(100);
     if (cat !== 'todos') q = q.eq('category', cat);
     const { data } = await q;
+    if (reqId !== logsReqRef.current) return; // resposta obsoleta: descarta
     setLogs(data || []);
     setLogsLoading(false);
   }

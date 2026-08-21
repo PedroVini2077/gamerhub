@@ -168,6 +168,7 @@ src/
 │   ├── image.js           # Compressão/resize client-side antes do upload (economia de egress)
 │   ├── storage.js         # Remoção de arquivos do bucket ao deletar post/mural
 │   ├── auditLog.js        # logAudit() -> RPC log_audit_event
+│   ├── url.js             # safeExternalUrl() — só http(s) vira href (anti-XSS)
 │   ├── logMeta.js         # Fonte única de categorias/ícones/retenção dos logs
 │   ├── like.js            # Curtida otimista com rollback quando o servidor recusa
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
@@ -365,7 +366,17 @@ transições discretas das páginas internas.
   preferências de notificação (likes/comentários) e **deletar a própria conta**
   (RPC `delete_own_account`, com dupla confirmação).
 - Trigger `handle_new_user` cria automaticamente a linha em `profiles` ao
-  registrar um usuário no `auth.users`.
+  registrar um usuário no `auth.users` — isso acontece **antes** de qualquer
+  confirmação de e-mail (é assim que o Supabase Auth funciona; não dá pra
+  verificar existência de e-mail de forma síncrona no cadastro).
+- **Cadastros nunca confirmados** (e-mail inválido/inexistente/digitado
+  errado): ficam visíveis pro admin em **Admin → Usuários** ("Cadastros
+  pendentes de confirmação"), com opção de remover na hora
+  (`admin_get_unconfirmed_users` / `admin_delete_unconfirmed_user`, admin+) —
+  sem isso o admin via um "usuário" normal mesmo quando o e-mail nunca existiu.
+  São removidos automaticamente depois de **7 dias** sem confirmar
+  (`cleanup_unconfirmed_signups`, pg_cron `gamerhub-cleanup-unconfirmed`,
+  4h30 UTC) — libera o username pra outra pessoa usar.
 
 ### Feed de posts
 
@@ -913,6 +924,26 @@ Convenções:
 - Headers de segurança na Vercel (`X-Frame-Options`, `X-Content-Type-Options`,
   `Referrer-Policy`, `Permissions-Policy`, etc.).
 - Trilha de auditoria de ações sensíveis.
+
+- **Auditoria completa de 21/08/2026** (3 fases, tudo aplicado em produção —
+  ver `db/2026-08-21-auditoria-seguranca.md`). Fechou 5 falhas críticas:
+  XSS armazenado via link de post (`javascript:` chegava a um `href`),
+  injeção de mídia em post alheio, bloqueio de conta por anônimo, censura de
+  conteúdo por qualquer usuário logado e leitura da tabela de usuários
+  (incluindo `birth_date` e histórico de ban) **sem login**. Advisors de
+  segurança: 64 → 42 avisos, 0 erros.
+- **URLs externas sempre saneadas** (`lib/url.js` → `safeExternalUrl`): só
+  `http`/`https` viram `href`. Vale no cliente **e** no banco (`CHECK`
+  constraints em `posts.embed_url`, `game_keys.promo_url`, `post_media.url`,
+  `community_post_media.url`) — a anon key permite chamar a REST API direto,
+  então validação só no frontend não vale nada.
+- **`anon` só enxerga `(id, username)` de `profiles`** — o suficiente para a
+  checagem de username duplicado no cadastro. RLS é por linha, não por coluna;
+  a restrição correta aqui é privilégio de coluna.
+- **Guards de coluna privilegiada** em `profiles`
+  (`guard_profile_privileged_cols`) e `posts` (`guard_post_privileged_cols`):
+  usuário comum não altera `role`/`banned` nem `hidden_at`/`deleted_at`/
+  `user_id`. Ambos com `search_path` fixo.
 
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.

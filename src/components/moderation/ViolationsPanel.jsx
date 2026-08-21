@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchViolations } from '../../services/moderationService';
 import { supabase } from '../../lib/supabase';
 import { ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -19,8 +19,13 @@ export default function ViolationsPanel() {
   const [page, setPage]       = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter]   = useState('');
+  // Descarta resposta obsoleta: a busca por username é debounced, mas duas
+  // buscas ainda podem se cruzar e a mais LENTA (antiga) pintar a tela por
+  // último, mostrando resultado de um filtro que o admin já trocou.
+  const reqRef = useRef(0);
 
   const load = useCallback(async (p = 0, username = '') => {
+    const reqId = ++reqRef.current;
     setLoading(true);
     let userId = null;
     if (username.trim()) {
@@ -30,6 +35,7 @@ export default function ViolationsPanel() {
         .ilike('username', `%${username.trim()}%`)
         .limit(50);
       if (!profiles?.length) {
+        if (reqId !== reqRef.current) return;
         setItems([]);
         setCount(0);
         setLoading(false);
@@ -39,6 +45,7 @@ export default function ViolationsPanel() {
       userId = profiles.length === 1 ? profiles[0].id : profiles.map(p => p.id);
     }
     const { items: data, count: total } = await fetchViolations(userId, p, PAGE_SIZE);
+    if (reqId !== reqRef.current) return; // busca mais nova já saiu na frente
     setItems(data);
     setCount(total);
     setLoading(false);

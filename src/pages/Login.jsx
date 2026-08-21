@@ -67,16 +67,21 @@ export default function Login() {
     }
 
     if (mode === 'login') {
-      const { data: status } = await supabase.rpc('check_login_status', { p_email: email.trim() });
-      if (status?.blocked) {
-        setBlock({ permanent: status.permanent, blocked_until: status.blocked_until });
-        toast.error(status.permanent
-          ? 'Conta bloqueada por excesso de tentativas. Contate o suporte ou redefina sua senha.'
-          : 'Muitas tentativas falhas. Aguarde para tentar novamente.');
-        setLoading(false);
-        return;
-      }
-
+      // A tentativa de login vem PRIMEIRO, de propósito.
+      //
+      // Antes o `check_login_status` barrava aqui, ANTES de validar a senha.
+      // Como `register_login_attempt` é chamável por qualquer um (a página de
+      // login precisa dela sem estar autenticado), bastava um script anônimo
+      // chamar a RPC com o email da vítima pra bloquear a conta dela — e,
+      // repetindo depois que o bloqueio de 15min expira, chegar ao bloqueio
+      // PERMANENTE. Ou seja: qualquer pessoa trancava a conta de qualquer
+      // outra, inclusive a do dono, sem nunca saber a senha.
+      //
+      // Esse portão nunca protegeu contra ataque real (quem faz força bruta
+      // vai direto no endpoint de auth do Supabase, que tem rate limit
+      // próprio) — ele só atrapalhava quem sabe a senha. Agora quem acerta a
+      // senha entra e o bloqueio é limpo; só quem ERRA é que acumula
+      // tentativa. O contador segue existindo para o alerta aos admins.
       const { error, banned } = await signInWithEmail(email, password);
       if (banned) {
         toast.error('Sua conta foi banida. Entre em contato com o suporte.');
