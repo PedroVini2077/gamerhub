@@ -50,13 +50,16 @@ separado.
   `useBlockedLogins`, `useUnbanRequests`).
 - ✅ `PostCard.jsx` 379 → 286 (PR #20). `EditCountdown` +
   `usePostEngagement` (curtidas, mídia, retry e guarda de cancelamento).
+- ✅ `Lives.jsx` 375 → 195. `useLivesList` (lista + realtime + debounce, com
+  `reload` imediato para quem acabou de criar a live) e `useLiveChat`
+  (mensagens, timeouts, presence, os 3 canais, encerramento).
+- ✅ `Profile.jsx` 387 → 72. Hooks `useProfileForm` (os 9 campos viraram um
+  objeto com `setField`), `useAvatarUpload` e `useProfileStats` (ganhou guarda
+  de cancelamento e passou a depender de `user?.id`, não do objeto `user`);
+  JSX quebrado em `AvatarModal`, `ProfileIdentityCard`, `PlayerStatsCard`,
+  `PersonalInfoCard`, `GamingCard` e `SocialLinksCard`.
 
 **Fila, em ordem de valor**
-- ⬜ `Lives.jsx` (375) — mesmo padrão do Admin: lógica de dados grudada na UI.
-  Seams claros: `useLivesList` (lista + realtime + debounce) e `useLiveChat`
-  (mensagens, timeouts, presence, os 3 canais).
-- ⬜ `Profile.jsx` (387) — form de perfil + upload de avatar + stats/XP
-  misturados. Extrair `useAvatarUpload` e o bloco de rank/XP.
 - ⬜ `CargosTab.jsx` (324), `PostForm.jsx` (311), `UsuariosTab.jsx` (305).
 - ⬜ `Admin.jsx` (647) **ainda acima do limite**. O que sobrou não é mais
   mistura de responsabilidades — é orquestração real (abas, modais de

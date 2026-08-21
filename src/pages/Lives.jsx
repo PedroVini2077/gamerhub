@@ -1,19 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { fetchActiveLives, endLivePost } from '../services/postService';
-import { fetchLiveMessages, fetchLiveTimeouts, sendChatMessage, deleteChatMessage, silenceUser, unsilenceUser } from '../services/liveService';
 import { Tv, X, Users, Shield, Radio } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { logAudit } from '../lib/auditLog';
 import { useRole } from '../hooks/useRole';
+import { useLivesList } from '../hooks/useLivesList';
+import { useLiveChat } from '../hooks/useLiveChat';
 import { suspendedUntil } from '../lib/roles';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
 import ChatPanel from '../components/lives/ChatPanel';
 import ModPanel from '../components/lives/ModPanel';
 import LivesList from '../components/lives/LivesList';
 import LiveGoModal from '../components/lives/LiveGoModal';
-import toast from 'react-hot-toast';
 
 // Sub-seções da aba Lives: lives comuns (de posts) vs lives de jogadores.
 const LIVE_TABS = [
@@ -26,60 +23,25 @@ const LIVE_TABS = [
 export default function Lives() {
   const { user, profile, loading: authLoading } = useAuth();
   const { isAdmin } = useRole();
+  const { lives, loading, reload: reloadLives } = useLivesList();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [lives, setLives] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [activeLive, setActiveLive] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [msg, setMsg] = useState('');
-  const [sending, setSending] = useState(false);
-  const [timeouts, setTimeouts] = useState({});
-  const [isSilenced, setIsSilenced] = useState(false);
   const [showModPanel, setShowModPanel] = useState(false);
-  const [silenceMenu, setSilenceMenu] = useState(null);
-  const [silencingUser, setSilencingUser] = useState(null);
-  const [liveEnded, setLiveEnded] = useState(false);
-  const [viewerCount, setViewerCount] = useState(0);
   const [liveTab, setLiveTab] = useState('comunidade');
   const [showGoLive, setShowGoLive] = useState(false);
-  const bottomRef = useRef(null);
-  const activeLiveRef = useRef(null);
-  const chatInputRef = useRef(null);
+
+  const {
+    messages, msg, setMsg, sending, isSilenced, liveEnded, viewerCount,
+    silenceMenu, setSilenceMenu, silencingUser,
+    bottomRef, chatInputRef,
+    sendMessage, deleteMessage, endLive, handleSilenceUser, handleUnsilenceUser,
+    isUserSilenced, silencedList, uniqueChatters,
+  } = useLiveChat({ activeLive, user, profile, isAdmin });
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/login');
   }, [authLoading, user, navigate]);
-
-  useEffect(() => {
-    fetchLives();
-
-    // Debounce: um post virando live costuma disparar INSERT e UPDATE quase
-    // juntos, e antes cada um fazia um fetch completo da lista.
-    let listDebounce = null;
-    const reloadLives = () => {
-      clearTimeout(listDebounce);
-      listDebounce = setTimeout(fetchLives, 400);
-    };
-
-    const listChannel = supabase.channel('lives-list')
-      // INSERT filtrado: sem isso, QUALQUER post criado no site (a esmagadora
-      // maioria não é live) recarregava a lista de todo mundo em /lives.
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'posts', filter: 'is_live=eq.true',
-      }, reloadLives)
-      // UPDATE fica sem filtro: é assim que a live ENCERRADA (is_live → false)
-      // sai da lista — um filtro `is_live=eq.true` justamente não entregaria
-      // esse evento.
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, reloadLives)
-      .subscribe();
-
-    return () => { clearTimeout(listDebounce); supabase.removeChannel(listChannel); };
-  }, []);
-
-  useEffect(() => {
-    activeLiveRef.current = activeLive;
-  }, [activeLive]);
 
   useEffect(() => {
     if (id && lives.length > 0 && !activeLive) {
@@ -88,163 +50,21 @@ export default function Lives() {
     }
   }, [id, lives]);
 
-  useEffect(() => {
-    if (!activeLive) return;
-    fetchMessages(activeLive.id);
-    fetchTimeouts(activeLive.id);
-
-    if (activeLive.expires_at && new Date() >= new Date(activeLive.expires_at)) {
-      setLiveEnded(true);
-    }
-
-    let expiryTimeout = null;
-    if (activeLive.expires_at) {
-      const remaining = new Date(activeLive.expires_at) - Date.now();
-      if (remaining <= 0) setLiveEnded(true);
-      else expiryTimeout = setTimeout(() => setLiveEnded(true), remaining);
-    }
-
-    const presenceChannel = supabase.channel(`presence-${activeLive.id}`, {
-      config: { presence: { key: user?.id || 'anon' } },
-    });
-    presenceChannel
-      .on('presence', { event: 'sync' }, () => {
-        setViewerCount(Object.keys(presenceChannel.presenceState()).length);
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({ user_id: user?.id, at: Date.now() });
-        }
-      });
-
-    const refreshMessages = () => {
-      if (activeLiveRef.current?.id) fetchMessages(activeLiveRef.current.id);
-    };
-
-    const channel = supabase.channel(`live-${activeLive.id}`)
-      // Filtro por post no servidor para INSERT/UPDATE — o volume real do chat.
-      // Antes o cliente assinava TODA a tabela `live_chat` e descartava no JS o
-      // que não era desta live: com N lives simultâneas, cada mensagem de
-      // qualquer uma acordava todo mundo.
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'live_chat',
-        filter: `post_id=eq.${activeLive.id}`,
-      }, refreshMessages)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'live_chat',
-        filter: `post_id=eq.${activeLive.id}`,
-      }, refreshMessages)
-      // DELETE fica SEM filtro de propósito: no payload de delete só vem a PK
-      // (replica identity default), então `post_id=eq.…` nunca casaria e
-      // mensagem apagada por mod não sumiria da tela dos outros. É evento raro.
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_chat' },
-        refreshMessages)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' },
-        () => fetchTimeouts(activeLiveRef.current?.id))
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'posts',
-        filter: `id=eq.${activeLive.id}`
-      }, (payload) => {
-        if (!payload.new?.is_live) setLiveEnded(true);
-      })
-      .subscribe();
-
-    return () => {
-      if (expiryTimeout) clearTimeout(expiryTimeout);
-      supabase.removeChannel(presenceChannel);
-      supabase.removeChannel(channel);
-    };
-  }, [activeLive]);
-
-  useEffect(() => {
-    if (document.activeElement === chatInputRef.current) return;
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
+  // Entrar/sair só troca a live e a rota: zerar chat, presença e estado de
+  // encerrada é responsabilidade do useLiveChat, que reage a `activeLive`.
   function enterLive(live) {
-    setLiveEnded(false);
-    setViewerCount(0);
     setActiveLive(live);
     navigate('/lives/' + live.id);
   }
 
   function exitLive() {
     setActiveLive(null);
-    setMessages([]);
     setShowModPanel(false);
-    setLiveEnded(false);
-    setViewerCount(0);
     navigate('/lives');
-  }
-
-  async function fetchLives() {
-    const data = await fetchActiveLives();
-    setLives(data);
-    setLoading(false);
-  }
-
-  async function fetchMessages(postId) {
-    if (!postId) return;
-    const data = await fetchLiveMessages(postId);
-    setMessages(data);
-  }
-
-  async function fetchTimeouts(postId) {
-    if (!postId) return;
-    const map = await fetchLiveTimeouts(postId);
-    setTimeouts(map);
-    setIsSilenced(!!(user && map[user.id] && new Date(map[user.id].expires_at) > new Date()));
-  }
-
-  async function sendMessage() {
-    if (!msg.trim() || !user || !activeLive || sending || isSilenced) return;
-    setSending(true);
-    await sendChatMessage({ postId: activeLive.id, userId: user.id, message: msg.trim() });
-    setMsg('');
-    setSending(false);
-  }
-
-  async function deleteMessage(msgId) {
-    const isMod = isAdmin || (activeLive && user && activeLive.user_id === user.id);
-    const { error } = await deleteChatMessage(msgId, isMod, user.id);
-    if (error) { toast.error(error.message || 'Erro ao deletar'); return; }
-    logAudit('live_chat_delete', `@${profile?.username} deletou uma mensagem no chat da live "${activeLive?.title}"`, { category: 'live' });
-  }
-
-  async function endLive() {
-    if (!activeLive) return;
-    await endLivePost(activeLive.id);
-    logAudit('live_ended', `@${profile?.username} encerrou a live "${activeLive.title}"`, { category: 'live' });
-    setLiveEnded(true);
-  }
-
-  async function handleSilenceUser(userId, minutes) {
-    if (!activeLive) return;
-    setSilencingUser(userId);
-    setSilenceMenu(null);
-    const { error } = await silenceUser({ postId: activeLive.id, userId, minutes, createdBy: user.id });
-    if (error) {
-      toast.error('Erro ao silenciar');
-    } else {
-      toast.success('Usuário silenciado por ' + minutes + ' min');
-      logAudit('live_silence', `@${profile?.username} silenciou um usuário por ${minutes}min na live "${activeLive.title}"`, { category: 'live' });
-    }
-    setSilencingUser(null);
-    await fetchTimeouts(activeLive.id);
-  }
-
-  async function handleUnsilenceUser(userId) {
-    if (!activeLive) return;
-    await unsilenceUser({ postId: activeLive.id, userId });
-    logAudit('live_unsilence', `@${profile?.username} removeu silêncio na live "${activeLive.title}"`, { category: 'live' });
-    await fetchTimeouts(activeLive.id);
   }
 
   const isLiveOwner = activeLive && user && activeLive.user_id === user.id;
   const canModerate = isAdmin || isLiveOwner;
-  const isUserSilenced = (uid) => timeouts[uid] && new Date(timeouts[uid].expires_at) > new Date();
-  const silencedList = Object.values(timeouts).filter(t => new Date(t.expires_at) > new Date());
-  const uniqueChatters = [...new Map(messages.map(m => [m.user_id, m.profiles])).values()];
 
   if (loading) return (
     <div className="space-y-2">
@@ -368,7 +188,7 @@ export default function Lives() {
       <LivesList lives={visibleLives} enterLive={enterLive} />
 
       {showGoLive && (
-        <LiveGoModal profile={profile} onClose={() => setShowGoLive(false)} onCreated={fetchLives} />
+        <LiveGoModal profile={profile} onClose={() => setShowGoLive(false)} onCreated={reloadLives} />
       )}
     </div>
   );

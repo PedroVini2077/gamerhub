@@ -1,131 +1,32 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { useAuth } from '../hooks/useAuth.jsx';
-import { fetchProfileStats, updateProfile, uploadAvatar } from '../services/profileService';
-import { logAudit } from '../lib/auditLog';
-import { compressImage } from '../lib/image';
-import toast from 'react-hot-toast';
-import { Save, Camera, X, MapPin, Gamepad2, MessageSquare, Swords, Trophy, Crown, ArrowRight } from 'lucide-react';
-import { FaTwitch, FaYoutube, FaDiscord } from 'react-icons/fa6';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getRankLabel, getSubRankProgress, RANK_TIERS, getBorderForProfile } from '../lib/ranks';
+import { Save } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth.jsx';
+import { useProfileForm } from '../hooks/useProfileForm';
+import { useProfileStats } from '../hooks/useProfileStats';
+import { useAvatarUpload } from '../hooks/useAvatarUpload';
+import { getSubRankProgress, RANK_TIERS, getBorderForProfile } from '../lib/ranks';
 import AdminApplicationCard from '../components/profile/AdminApplicationCard';
-
-const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-const PLATFORMS  = ['PC','PlayStation','Xbox','Mobile','Switch','Multi'];
-const PLAYSTYLES = [
-  { value: 'casual',      label: 'Casual',      desc: 'Jogo por diversão' },
-  { value: 'competitivo', label: 'Competitivo',  desc: 'Foco em ranking' },
-  { value: 'ambos',       label: 'Ambos',        desc: 'Depende do dia' },
-];
+import AvatarModal from '../components/profile/AvatarModal';
+import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
+import PlayerStatsCard from '../components/profile/PlayerStatsCard';
+import PersonalInfoCard from '../components/profile/PersonalInfoCard';
+import GamingCard from '../components/profile/GamingCard';
+import SocialLinksCard from '../components/profile/SocialLinksCard';
 
 export default function Profile() {
   const { user, profile, refreshProfile } = useAuth();
-  const [bio, setBio]                     = useState('');
-  const [birthDate, setBirthDate]         = useState('');
-  const [state, setState]                 = useState('');
-  const [platform, setPlatform]           = useState('');
-  const [playstyle, setPlaystyle]         = useState('');
-  const [favoriteGames, setFavoriteGames] = useState('');
-  const [discord, setDiscord]             = useState('');
-  const [twitch, setTwitch]            = useState('');
-  const [youtube, setYoutube]          = useState('');
-  const [saving, setSaving]               = useState(false);
-  const [stats, setStats]                 = useState({ posts: 0, likes: 0 });
-  const [xpData, setXpData]               = useState(null);
-  const [uploading, setUploading]         = useState(false);
-  const [avatarUrl, setAvatarUrl]         = useState(null);
-  const [showFull, setShowFull]           = useState(false);
-  const fileRef = useRef(null);
-  // Data máxima aceita no campo de nascimento (idade mínima). Calculada uma vez
-  // na montagem — `Date.now()` no corpo do render é impuro e o valor não muda
-  // de forma relevante durante a sessão.
-  const [maxBirthDate] = useState(
-    () => new Date(Date.now() - 13 * 365.25 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-  );
+  const [showFull, setShowFull] = useState(false);
 
-  // Só popula o form a partir do profile quando o USUÁRIO muda (login/logout) —
-  // não a cada novo objeto `profile` (poll de 20s / realtime / refreshProfile()
-  // após salvar). Caso contrário, qualquer refresh em segundo plano sobrescreve
-  // o que o usuário está digitando, "resetando" o formulário no meio da edição.
-  useEffect(() => {
-    if (profile) {
-      setBio(profile.bio || '');
-      setBirthDate(profile.birth_date || '');
-      setState(profile.state || '');
-      setPlatform(profile.platform || '');
-      setPlaystyle(profile.playstyle || '');
-      setFavoriteGames(profile.favorite_games || '');
-      setDiscord(profile.discord || '');
-      setTwitch(profile.twitch || '');
-      setYoutube(profile.youtube || '');
-      setAvatarUrl(profile.avatar_url);
-    }
-  }, [profile?.id]);
-
-  useEffect(() => {
-    if (user) fetchStats();
-  }, [user]);
-
-  async function fetchStats() {
-    const { posts, likes, xp } = await fetchProfileStats(user.id);
-    setStats({ posts, likes });
-    if (xp) setXpData(xp);
-  }
-
-  async function handleAvatarUpload(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!allowed.includes(file.type)) { toast.error('Formato inválido. Use JPG, PNG, WEBP ou GIF.'); return; }
-    setUploading(true);
-    toast.loading('Processando imagem...', { id: 'upload' });
-    // 256px basta: o maior lugar onde o avatar aparece é o card de perfil.
-    // Menos bytes por avatar = menos egress em todo card do feed.
-    const compressed = await compressImage(file, { maxSize: 256, quality: 0.8 });
-    const { url, error: uploadError } = await uploadAvatar(user.id, compressed);
-    if (uploadError) { toast.error('Erro ao fazer upload', { id: 'upload' }); setUploading(false); return; }
-    const { error: updateError } = await updateProfile(user.id, { avatar_url: url });
-    if (updateError) { toast.error('Erro ao salvar avatar', { id: 'upload' }); }
-    else {
-      setAvatarUrl(url);
-      await refreshProfile();
-      toast.success('Avatar atualizado!', { id: 'upload' });
-      logAudit('profile_avatar_updated', `@${profile?.username} atualizou o avatar`, { category: 'profile' });
-    }
-    setUploading(false);
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    const updates = {
-      bio:            bio,
-      birth_date:     birthDate || null,
-      state:          state || null,
-      platform:       platform || null,
-      playstyle:      playstyle || null,
-      favorite_games: favoriteGames.trim() || null,
-      discord:        discord.trim() || null,
-      twitch:         twitch.trim() || null,
-      youtube:        youtube.trim() || null,
-    };
-    const { error } = await updateProfile(user.id, updates);
-    if (error) toast.error('Erro ao salvar: ' + error.message);
-    else {
-      await refreshProfile();
-      toast.success('Perfil atualizado!');
-      logAudit('profile_updated', `@${profile?.username} atualizou o perfil`, { category: 'profile' });
-    }
-    setSaving(false);
-  }
-
-  const roleColors = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
-
+  const { form, setField, saving, save, maxBirthDate } =
+    useProfileForm({ user, profile, refreshProfile });
+  const { stats, xpData } = useProfileStats(user?.id);
+  const { avatarUrl, uploading, fileRef, handleAvatarUpload } =
+    useAvatarUpload({ user, profile, refreshProfile });
 
   const isOwner  = profile?.role === 'owner';
   const rank     = getBorderForProfile(profile, xpData?.xp ?? null);
   const progress = (!isOwner && xpData) ? getSubRankProgress(xpData.xp) : null;
-  const RankIcon = rank?.icon;
   const nextTier = (!isOwner && rank) ? RANK_TIERS.find(t => t.minXP > rank.minXP) : null;
 
   if (!user) return (
@@ -137,247 +38,31 @@ export default function Profile() {
 
   return (
     <div className="max-w-lg mx-auto space-y-4">
-      {/* Modal foto grande */}
       {showFull && avatarUrl && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setShowFull(false)}>
-          <div className="relative w-72 rounded-2xl overflow-hidden border border-neon-green/20 animate-fade-up"
-            style={{ boxShadow: "0 0 40px #39ff1420" }} onClick={e => e.stopPropagation()}>
-            <div className="relative">
-              <div className="absolute inset-0 grid-bg opacity-60" />
-              <img src={avatarUrl} alt="avatar" className="w-full h-64 object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark-800 via-transparent to-transparent" />
-            </div>
-            <div className="bg-dark-800 px-5 py-4">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-display text-lg font-bold text-white">{profile?.username}</h3>
-                <span className={`tag ${profile?.role === "super_admin" ? "tag-green" : profile?.role === "admin" ? "tag-purple" : "tag-cyan"}`}>{profile?.role || "user"}</span>
-              </div>
-              {profile?.bio && <p className="text-xs text-gray-400 font-mono">{profile.bio}</p>}
-            </div>
-            <button onClick={() => setShowFull(false)}
-              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-dark-800/80 flex items-center justify-center text-white hover:bg-dark-700 border border-dark-400">
-              <X size={13} />
-            </button>
-          </div>
-        </div>
+        <AvatarModal avatarUrl={avatarUrl} profile={profile} onClose={() => setShowFull(false)} />
       )}
 
-      {/* Card do perfil — avatar + bio */}
-      <div className="card p-6">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="relative shrink-0">
-            <div
-              className="w-16 h-16 rounded-full overflow-hidden bg-dark-400 flex items-center justify-center cursor-pointer"
-              style={{
-                border: rank ? `${rank.borderWidth ?? 2}px solid ${rank.color}` : '2px solid #39ff1440',
-                boxShadow: rank ? `0 0 18px ${rank.glow}` : '0 0 18px #39ff1420',
-              }}
-              onClick={() => avatarUrl && setShowFull(true)}
-            >
-              {avatarUrl
-                ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-                : <span className="font-display text-2xl font-bold" style={{ color: rank?.color || '#39ff14' }}>{profile?.username?.[0]?.toUpperCase() || '?'}</span>
-              }
-            </div>
-            <button onClick={() => fileRef.current?.click()} disabled={uploading} title="Trocar foto"
-              className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-dark-600 border border-neon-green/40 flex items-center justify-center hover:bg-neon-green/10 transition-colors">
-              {uploading
-                ? <span className="w-3 h-3 border border-neon-green border-t-transparent rounded-full animate-spin" />
-                : <Camera size={11} className="text-neon-green" />}
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-display text-lg font-bold text-white">{profile?.username || '...'}</h2>
-            <p className="text-xs text-gray-500 font-mono truncate">{user.email}</p>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <span className={`tag ${roleColors[profile?.role] || 'tag-cyan'}`}>{profile?.role || 'user'}</span>
-              {rank && (
-                <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
-                  style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
-                  {RankIcon && <RankIcon size={10} />}
-                  {isOwner ? 'Fundador' : getRankLabel(rank)}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+      <ProfileIdentityCard
+        user={user} profile={profile} rank={rank} isOwner={isOwner}
+        avatarUrl={avatarUrl} uploading={uploading} fileRef={fileRef}
+        onAvatarChange={handleAvatarUpload} onOpenAvatar={() => setShowFull(true)}
+        form={form} setField={setField}
+      />
 
-        <div>
-          <label className="block text-xs text-gray-400 font-mono mb-2 uppercase tracking-wider">Bio</label>
-          <textarea id="bio" aria-label="Bio do perfil" className="input-gamer resize-none w-full" rows={3}
-            placeholder="Fale um pouco sobre você..." value={bio}
-            onChange={e => setBio(e.target.value)} maxLength={200} />
-          <p className="text-xs text-gray-600 font-mono mt-1 text-right">{bio.length}/200</p>
-        </div>
-      </div>
-
-      {/* Stats + Rank */}
-      <div className="card p-4 space-y-3">
-        <h3 className="font-display text-xs text-gray-500 tracking-widest uppercase flex items-center gap-2">
-          <Trophy size={12} />Stats do Jogador
-        </h3>
-
-        <div className="grid grid-cols-3 gap-3 text-center">
-          {[
-            { label: 'Posts',  value: stats.posts, color: 'text-neon-green' },
-            { label: 'Likes',  value: stats.likes, color: 'text-neon-purple' },
-            { label: 'XP',     value: xpData?.xp ?? '—', color: 'text-yellow-400' },
-          ].map(s => (
-            <div key={s.label} className="bg-dark-700 rounded p-3 border border-dark-400">
-              <p className={`font-display text-lg font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-500 font-mono">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Rank / Fundador + barra de progresso */}
-        {rank && (
-          <div className="bg-dark-700 rounded-lg p-3 border border-dark-400 space-y-2"
-            style={isOwner ? { borderColor: `${rank.color}30`, boxShadow: `0 0 12px ${rank.glow}` } : {}}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                {RankIcon && <RankIcon size={13} style={{ color: rank.color }} />}
-                <span className="text-sm font-display font-bold" style={{ color: rank.color }}>
-                  {isOwner ? 'Fundador — Criador da plataforma' : getRankLabel(rank)}
-                </span>
-              </div>
-              {!isOwner && (
-                <Link to="/ranks" className="text-xs font-mono text-gray-500 hover:text-gray-300 transition-colors">
-                  ver todos <ArrowRight size={11} className="inline align-[-1px]" />
-                </Link>
-              )}
-            </div>
-
-            {!isOwner && progress && (
-              progress.needed != null ? (
-                <>
-                  <div className="w-full h-1.5 bg-dark-500 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress.pct}%` }}
-                      transition={{ duration: 0.8, ease: 'easeOut', delay: 0.15 }}
-                      style={{ background: rank.color, boxShadow: `0 0 6px ${rank.glow}` }}
-                    />
-                  </div>
-                  <p className="text-xs font-mono text-gray-500">
-                    {progress.current} / {progress.needed} XP
-                    {nextTier && rank.subRank === rank.subRanks && (
-                      <span className="text-gray-600"> · próximo: {nextTier.label}</span>
-                    )}
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs font-mono flex items-center gap-1" style={{ color: rank.color }}>
-                  <Crown size={11} /> Rank máximo atingido!
-                </p>
-              )
-            )}
-          </div>
-        )}
-      </div>
+      <PlayerStatsCard
+        stats={stats} xpData={xpData} rank={rank}
+        progress={progress} nextTier={nextTier} isOwner={isOwner}
+      />
 
       {/* Candidatura a admin — só faz sentido pra quem ainda é usuário comum */}
       {profile?.role === 'user' && <AdminApplicationCard userId={user.id} />}
 
-      {/* Informações pessoais */}
-      <div className="card p-5 space-y-4">
-        <h3 className="font-display text-xs text-gray-500 tracking-widest uppercase flex items-center gap-2">
-          <MapPin size={12} />Informações
-        </h3>
+      <PersonalInfoCard form={form} setField={setField} maxBirthDate={maxBirthDate} />
+      <GamingCard form={form} setField={setField} />
+      <SocialLinksCard form={form} setField={setField} />
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Nascimento</label>
-            <input aria-label="Data de nascimento" type="date"
-              className="input-gamer w-full text-sm" value={birthDate}
-              onChange={e => setBirthDate(e.target.value)} max={maxBirthDate} />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Estado</label>
-            <select aria-label="Estado" className="input-gamer w-full text-sm appearance-none"
-              value={state} onChange={e => setState(e.target.value)}>
-              <option value="" className="bg-dark-800">— UF —</option>
-              {BR_STATES.map(s => <option key={s} value={s} className="bg-dark-800">{s}</option>)}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Gaming */}
-      <div className="card p-5 space-y-4">
-        <h3 className="font-display text-xs text-gray-500 tracking-widest uppercase flex items-center gap-2">
-          <Gamepad2 size={12} />Gaming
-        </h3>
-
-        <div>
-          <label className="block text-xs text-gray-400 font-mono mb-2 uppercase tracking-wider">Plataforma Principal</label>
-          <div className="flex flex-wrap gap-2">
-            {PLATFORMS.map(p => (
-              <button key={p} type="button" onClick={() => setPlatform(platform === p ? '' : p)}
-                className={`tag cursor-pointer transition-all flex items-center gap-1 ${platform === p ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'}`}>
-                <Gamepad2 size={10} />{p}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs text-gray-400 font-mono mb-2 uppercase tracking-wider">Estilo de Jogo</label>
-          <div className="grid grid-cols-3 gap-2">
-            {PLAYSTYLES.map(ps => (
-              <button key={ps.value} type="button" onClick={() => setPlaystyle(playstyle === ps.value ? '' : ps.value)}
-                className={`p-2.5 rounded-lg border text-center transition-all ${
-                  playstyle === ps.value
-                    ? 'border-neon-green/50 bg-neon-green/10 text-neon-green'
-                    : 'border-dark-400 text-gray-500 hover:border-dark-300'
-                }`}>
-                <p className="text-xs font-display font-bold">{ps.label}</p>
-                <p className="text-xs font-mono text-gray-600 mt-0.5" style={{ fontSize: 10 }}>{ps.desc}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">
-            Jogos Favoritos
-          </label>
-          <div className="flex items-start bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-            <span className="pl-3 pr-2 pt-2.5 text-gray-500 shrink-0"><Swords size={14} /></span>
-            <textarea aria-label="Jogos favoritos" className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body resize-none"
-              rows={2} placeholder="Ex: CS2, Valorant, Minecraft..." value={favoriteGames}
-              onChange={e => setFavoriteGames(e.target.value)} maxLength={200} />
-          </div>
-        </div>
-      </div>
-
-      {/* Redes Sociais */}
-      <div className="card p-5 space-y-3">
-        <h3 className="font-display text-xs text-gray-500 tracking-widest uppercase flex items-center gap-2">
-          <MessageSquare size={12} />Redes Sociais
-        </h3>
-
-        {[
-          { icon: FaDiscord, label: 'Discord', placeholder: 'usuario#0000 ou usuario', value: discord, set: setDiscord },
-          { icon: FaTwitch,  label: 'Twitch',  placeholder: 'seu canal da Twitch',      value: twitch,   set: setTwitch },
-          { icon: FaYoutube, label: 'YouTube', placeholder: 'seu canal do YouTube',      value: youtube,  set: setYoutube },
-        ].map(({ icon: Icon, label, placeholder, value, set }) => (
-          <div key={label}>
-            <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">{label}</label>
-            <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-              <span className="pl-3 pr-2 text-gray-500 shrink-0"><Icon size={14} /></span>
-              <input aria-label={label} className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                placeholder={placeholder} value={value} onChange={e => set(e.target.value)} maxLength={100} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Botão salvar tudo */}
       <div className="pb-4">
-        <button onClick={handleSave} disabled={saving} className="btn-solid w-full flex items-center justify-center gap-2 py-3">
+        <button onClick={save} disabled={saving} className="btn-solid w-full flex items-center justify-center gap-2 py-3">
           <Save size={14} />
           {saving ? 'Salvando...' : 'Salvar Perfil'}
         </button>
