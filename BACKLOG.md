@@ -59,8 +59,16 @@ separado.
   JSX quebrado em `AvatarModal`, `ProfileIdentityCard`, `PlayerStatsCard`,
   `PersonalInfoCard`, `GamingCard` e `SocialLinksCard`.
 
+- ✅ `CargosTab.jsx` 324 → 92. `useCargoDecisions` + `CargoSection`,
+  `NominationCard`, `TrialCard`, `DemotionCard`, `EligibilityChecklist`,
+  `CandidateHeader` e `DecisionButton` (que estava copiado 7×).
+- ✅ `PostForm.jsx` 311 → 79. `usePostComposer` + `EmbedComposer`,
+  `ComposerToolbar`, `MediaPreviewGrid`, `AudioAttachment`. Fechou de quebra
+  um vazamento de memória real (ver abaixo).
+- ✅ `UsuariosTab.jsx` 305 → 77. `useOwnerUserActions` + `UserRow`,
+  `UserFilters` e `RoleOverride`.
+
 **Fila, em ordem de valor**
-- ⬜ `CargosTab.jsx` (324), `PostForm.jsx` (311), `UsuariosTab.jsx` (305).
 - ⬜ `Admin.jsx` (647) **ainda acima do limite**. O que sobrou não é mais
   mistura de responsabilidades — é orquestração real (abas, modais de
   confirmação, ações de moderação). Cortar mais exige **decisão de
