@@ -365,7 +365,17 @@ transições discretas das páginas internas.
   preferências de notificação (likes/comentários) e **deletar a própria conta**
   (RPC `delete_own_account`, com dupla confirmação).
 - Trigger `handle_new_user` cria automaticamente a linha em `profiles` ao
-  registrar um usuário no `auth.users`.
+  registrar um usuário no `auth.users` — isso acontece **antes** de qualquer
+  confirmação de e-mail (é assim que o Supabase Auth funciona; não dá pra
+  verificar existência de e-mail de forma síncrona no cadastro).
+- **Cadastros nunca confirmados** (e-mail inválido/inexistente/digitado
+  errado): ficam visíveis pro admin em **Admin → Usuários** ("Cadastros
+  pendentes de confirmação"), com opção de remover na hora
+  (`admin_get_unconfirmed_users` / `admin_delete_unconfirmed_user`, admin+) —
+  sem isso o admin via um "usuário" normal mesmo quando o e-mail nunca existiu.
+  São removidos automaticamente depois de **7 dias** sem confirmar
+  (`cleanup_unconfirmed_signups`, pg_cron `gamerhub-cleanup-unconfirmed`,
+  4h30 UTC) — libera o username pra outra pessoa usar.
 
 ### Feed de posts
 
