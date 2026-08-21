@@ -1,6 +1,5 @@
 import { X } from 'lucide-react';
-
-const ROLE_TAG = { super_admin: 'tag-green', admin: 'tag-purple' };
+import { roleTag } from '../../lib/roleLabels';
 
 /** Foto de perfil ampliada, com nome, cargo e bio. */
 export default function AvatarModal({ avatarUrl, profile, onClose }) {
@@ -16,7 +15,7 @@ export default function AvatarModal({ avatarUrl, profile, onClose }) {
         <div className="bg-dark-800 px-5 py-4">
           <div className="flex items-center justify-between mb-1">
             <h3 className="font-display text-lg font-bold text-white">{profile?.username}</h3>
-            <span className={`tag ${ROLE_TAG[profile?.role] || 'tag-cyan'}`}>{profile?.role || 'user'}</span>
+            <span className={`tag ${roleTag(profile?.role)}`}>{profile?.role || 'user'}</span>
           </div>
           {profile?.bio && <p className="text-xs text-gray-400 font-mono">{profile.bio}</p>}
         </div>

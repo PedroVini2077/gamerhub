@@ -1,7 +1,6 @@
 import { Camera } from 'lucide-react';
 import { getRankLabel } from '../../lib/ranks';
-
-const ROLE_TAG = { user: 'tag-cyan', admin: 'tag-purple', super_admin: 'tag-green' };
+import { roleTag } from '../../lib/roleLabels';
 
 /** Avatar (com troca de foto), nome, cargo, rank e o campo de bio. */
 export default function ProfileIdentityCard({
@@ -41,7 +40,7 @@ export default function ProfileIdentityCard({
           <h2 className="font-display text-lg font-bold text-white">{profile?.username || '...'}</h2>
           <p className="text-xs text-gray-500 font-mono truncate">{user.email}</p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <span className={`tag ${ROLE_TAG[profile?.role] || 'tag-cyan'}`}>{profile?.role || 'user'}</span>
+            <span className={`tag ${roleTag(profile?.role)}`}>{profile?.role || 'user'}</span>
             {rank && (
               <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
                 style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
