@@ -4,6 +4,7 @@ import { fadeTab, gridContainer } from '../lib/motion';
 import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
 import { useAdminLogs } from '../hooks/useAdminLogs';
+import { useLiveModeration } from '../hooks/useLiveModeration';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -74,8 +75,6 @@ export default function Admin() {
   const [confirmModal, setConfirmModal] = useState(null);
   const [demoteModal, setDemoteModal] = useState(null);
   const [alertOwnerModal, setAlertOwnerModal] = useState(false);
-  const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
-  const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
@@ -84,6 +83,7 @@ export default function Admin() {
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unlockModal, setUnlockModal] = useState(null);
   const { logs, logCat, setLogCat, logsLoading, fetchLogs } = useAdminLogs();
+  const { liveMod, refreshing, fetchLiveMod } = useLiveModeration();
 
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
@@ -184,24 +184,6 @@ export default function Admin() {
     setKeys(next);
     setKeysHasMore(next.length < (count ?? next.length));
     setLoadingMoreKeys(false);
-  }
-
-  async function fetchLiveMod() {
-    setRefreshing(true);
-    const since7d = new Date(Date.now() - 7 * 24 * 3600_000).toISOString();
-    const [{ data: silenced }, { data: lives }, { data: endedLives }, { data: requests }] = await Promise.all([
-      supabase.from('live_chat_timeouts').select('id, post_id, user_id, expires_at, profiles(username)')
-        .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }),
-      supabase.from('posts').select('id, title, user_id, profiles(username)')
-        .eq('is_live', true).not('embed_url', 'is', null),
-      supabase.from('posts').select('id, title, user_id, created_at, profiles(username)')
-        .eq('was_live', true).eq('is_live', false).not('embed_url', 'is', null)
-        .gte('created_at', since7d).order('created_at', { ascending: false }).limit(20),
-      supabase.from('live_reactivation_requests').select('*')
-        .eq('status', 'pending').order('created_at', { ascending: false }),
-    ]);
-    setLiveMod({ silenced: silenced || [], lives: lives || [], endedLives: endedLives || [], requests: requests || [] });
-    setRefreshing(false);
   }
 
   async function fetchNotificationsCount() {
