@@ -24,16 +24,20 @@ usuário normal, FKs que travariam exclusão de conta) e 4 riscos latentes
 fechados. Advisors: 64 → 42 avisos, 0 erros.
 
 **Continua em aberto** (ver detalhes no relatório):
-- ⬜ `profiles`: usuário **logado** ainda lê `birth_date` e histórico de ban de
-  outros. O vazamento sem login foi fechado; este exige conta. Correção certa
-  é mover leituras privilegiadas para RPCs e restringir as colunas também para
-  `authenticated` — mexe em `useAuth.fetchProfile`, o ponto mais sensível do
-  app, então pede janela dedicada.
-- ⬜ `Admin.jsx` com ~900 linhas (quebrar em hooks por aba).
 - ⬜ C3-b/c: enxugar a publicação `supabase_realtime`, revisar
   `REPLICA IDENTITY FULL` de `profiles`.
 - ⬜ `pg_net` no schema `public` (adiado de propósito, ver acima).
 - ⬜ RPC de engajamento agregado quando o volume crescer.
+
+**Fechado depois** (estava listado como aberto e já não está):
+- ✅ `profiles`: as colunas sensíveis (`birth_date`, `ban_reason`,
+  `ban_details`, `banned_at`, `ban_count`) foram revogadas de `authenticated` e
+  as leituras privilegiadas passaram para RPC (`get_own_profile`,
+  `admin_list_users`, `get_public_profile`). Conferido em 21/08/2026:
+  `information_schema.column_privileges` devolve **0** dessas colunas com
+  SELECT para `authenticated`.
+- ✅ `Admin.jsx` foi de 918 → 647 linhas (PR #19). Segue acima do limite e a
+  continuação está na seção de splits abaixo.
 
 ---
 
@@ -85,27 +89,15 @@ separado.
 
 ## 🔴 Crítico
 
-- ⬜ **Projeto Supabase pausado e sob restrição de serviço — não despausa mais
-  sozinho.** Ao tentar "Resume" no dashboard, erro: *"Failed to restore
-  project: This organization is currently under service restrictions. The
-  project can only be restored once restrictions are lifted or organization is
-  upgraded to paid plan."* Ou seja: não é mais a trava temporária de cota
-  (egress 267%) que resetaria no próximo ciclo — a organização entrou em
-  restrição de serviço e o "Resume" fica bloqueado até **upgrade pro plano
-  pago (Pro, ~R$129/mês)** ou a Supabase remover a restrição manualmente
-  (não acontece sozinho com o projeto pausado, já que pausado não gera uso).
-  Opções levantadas (decisão adiada por enquanto):
-  1. Pagar o Pro por 1 mês, destravar e tirar um backup real de **dados**
-     (não só schema — já temos o `DATABASE_SCHEMA_BACKUP.sql`), decidir depois
-     se mantém o plano.
-  2. Criar projeto novo gratuito e recriar o schema do
-     `DATABASE_SCHEMA_BACKUP.sql` — **perde os dados** que estavam no banco
-     pausado (fica inacessível enquanto a restrição existir).
-  3. Abrir chamado no suporte da Supabase explicando que é projeto
-     pessoal/hobby, antes de decidir entre pagar ou recriar (sem garantia de
-     resposta favorável).
-  *Owner decidiu por enquanto só registrar e não agir — revisar quando for
-  retomar o projeto.*
+- ✅ **Projeto Supabase despausado e saudável.** O dono resolveu a restrição de
+  serviço e reativou o projeto. Verificado em 21/08/2026 via MCP
+  (`get_project`): `status: ACTIVE_HEALTHY`, Postgres 17.6, região `sa-east-1`,
+  5 jobs pg_cron ativos (`gamerhub-cleanup`, `gamerhub-cleanup-unconfirmed`,
+  `cleanup-expired-posts`, `expire-lives`, `expire-lives-every-minute`).
+  *Histórico, caso volte a acontecer: a org tinha entrado em restrição de
+  serviço depois de estourar o egress (267%), e o "Resume" ficava bloqueado até
+  upgrade ou liberação manual da Supabase. As otimizações de egress das Ondas 1
+  e 2 atacaram justamente a causa.*
 - ✅ **Escalada de privilégio em `profiles`** — qualquer usuário logado conseguia
   se auto-promover a `owner` / se auto-desbanir via UPDATE direto. Corrigido com
   trigger-guarda `guard_profile_privileged_cols` + RPC `admin_set_role`.
@@ -156,7 +148,9 @@ separado.
 
 ## 🟢 Recomendado
 
-### Quebrar arquivos grandes (sem mudar comportamento/visual) — ✅ feito
+### Quebrar arquivos grandes (1ª rodada, 2026) — ✅ feita
+> A rodada atual, bem mais profunda, está na seção **🧩 Split de arquivos
+> grandes** no topo deste arquivo. Esta aqui é o histórico da primeira.
 - ✅ **`Admin.jsx`** → `components/admin/*` (UsersPanel, PostsPanel, LivesPanel,
   KeysPanel, NotifsPanel, LogsPanel, SuperAdminPanel).
 - ✅ **`Owner.jsx`** → `components/owner/*` (um arquivo por aba).
@@ -196,7 +190,8 @@ separado.
 - ✅ **Egress de mídia (alerta de cota do Supabase)** — vídeos brutos até 100MB
   sendo servidos sem compressão estouravam o "cached egress bandwidth" do plano
   free (16 arquivos `.mp4`, 260MB, até 49MB cada). Reduzido o teto de upload de
-  vídeo em `PostForm` de **100MB → 25MB** (com dica pro usuário preferir colar
+  vídeo em `PostForm` de **100MB → 10MB** (baixou de novo depois da medição;
+  o número real está em `MAX_MB` no `usePostComposer`) (com dica pro usuário preferir colar
   link do YouTube/Twitch/TikTok pra clipes longos — usa `EmbedPlayer`, sem
   consumir storage/egress do site) e adicionado `cacheControl: 31536000` (1
   ano) nos uploads de `post-media` — caminhos são únicos por post/timestamp
@@ -232,8 +227,8 @@ separado.
   Os "Carregando..." que sobraram são labels de botão (`Salvando...`,
   `Atualizar`, `Carregar mais`) — esses são textuais por natureza, não viram
   skeleton. *(feito)*
-- 🟡 **Baseline de lint** (`npm run lint`): **0 erros, 34 warnings** (era 45).
-  Os erros
+- 🟡 **Baseline de lint** (`npm run lint`): **0 erros, 20 warnings** (era 45 →
+  34 → 20). Os erros
   que sobravam eram regras de "React Compiler readiness" do preset
   (`set-state-in-effect`, `refs`, `purity`, `immutability`) + `react-refresh`,
   disparando em padrões idiomáticos/funcionando. Como o projeto **não usa o
@@ -282,7 +277,8 @@ separado.
   *(Admin já pagina posts/keys — ver seção Performance acima.)*
 - ⬜ **Migração para TypeScript** (introduz a pasta `types/`).
 - 🟡 **Testes** — Vitest configurado; **unitários da lógica pura prontos**
-  (`src/lib/__tests__/`: ranks/XP, password, date, embed, format — 30 testes).
+  (`src/lib/__tests__/`: ranks/XP, password, date, embed, format, url,
+  roleLabels, objectUrls — 69 testes).
   **Integração das RPCs/RLS validada** (manual, em transação `DO`/`ROLLBACK`,
   simulando `authenticated` + claims JWT — nada tocou produção). Cobertura:
   - `register_login_attempt`/`check_login_status`: bloqueio temp na 5ª, sem
@@ -518,9 +514,9 @@ local em transação com `ROLLBACK` antes de virar arquivo.
 - ⬜ **B1 — presence num canal global único** (`gamerhub-presence`): segue
   como estava. Irrelevante hoje; revisitar se "online agora" passar de algumas
   centenas.
-- ℹ️ **`owner_get_metrics.total_xp` nunca é preenchido** (a variável é
-  declarada e devolvida sem nunca receber valor → vem `null`). Bug antigo,
-  independente desta auditoria; não foi mexido pra não misturar escopo.
+- ✅ **`owner_get_metrics.total_xp`** era declarado e devolvido sem nunca
+  receber valor (vinha `null`). Corrigido na auditoria de 21/08/2026;
+  reconferido no corpo da função em 21/08/2026.
 
 ### 🔴 Crítico (driver direto de egress / risco de estourar cota)
 
@@ -784,10 +780,9 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
   recriadas e aos 7 índices novos são do mesmo tipo já esperado/documentado
   no projeto (RPC exposta a `authenticated` com checagem interna por
   `auth.uid()`, e índice "não usado" por ter acabado de ser criado).
-- ⬜ **`Admin.jsx` com ~900 linhas.** Os painéis já foram extraídos; o que sobrou
-  é orquestração (estado + fetchers de todas as abas). Quebrar em hooks por aba
-  (`useAdminUsers`, `useAdminLogs`, …) é o próximo passo, mas é refactor de
-  verdade — pede janela dedicada, não entra junto com correção.
+- 🟡 **`Admin.jsx`** — era ~918 linhas, hoje **647**. Os painéis e 5 hooks de
+  domínio já saíram. O que resta é orquestração; ver a seção de splits no topo
+  deste arquivo.
 - ⬜ **Denúncia criada (`reports`) não gera log de auditoria.** Fica só na
   tabela `reports`. Não foi adicionado de propósito: qualquer usuário pode
   denunciar, e logar isso em `admin_logs` inflaria a trilha. Reavaliar se a

@@ -19,7 +19,8 @@ Ordem de prioridade quando houver conflito:
 2. **Bug** — diagnostica e mata na 1ª ou 2ª tentativa (§1.2).
 3. **Dívida estrutural** — arquivo gigante, código duplicado, lógica confusa
    (§4). Isso não é "estética": arquivo que ninguém consegue ler é onde a
-   próxima falha vai se esconder.
+   próxima falha vai se esconder. **Dividir arquivo grande é obrigação minha,
+   não pedido do dono** — ver §4.
 4. **Performance / custo** — egress, N+1, bundle.
 5. **Feature nova** — por último, e só se o resto estiver de pé.
 
@@ -159,6 +160,8 @@ Uma entrega só está pronta quando **todos** estes itens passam:
       **antes** de aplicar em produção (ver §5)
 - [ ] Os caminhos que **não** podiam quebrar foram testados explicitamente
 - [ ] Pensei em como abusar disso (§1.3) e fechei o que achei
+- [ ] **Nenhum arquivo que eu toquei ficou acima de 300 linhas.** Se ficou,
+      dividi **antes** de entregar — não anotei pra depois (§4)
 - [ ] `README.md` atualizado se mudou comportamento/estrutura
 - [ ] `BACKLOG.md` atualizado se resolveu ou descobriu pendência
 - [ ] Script de teste avulso: rodou, passou, **apagou** (nunca commitar)
@@ -182,6 +185,36 @@ Uma entrega só está pronta quando **todos** estes itens passam:
 Arquivo grande não é problema de estilo: é onde bug e brecha se escondem,
 porque ninguém consegue ler tudo de uma vez pra revisar. Foi exatamente assim
 que a moderação de comentário ficou quebrada por meses sem ninguém notar.
+
+#### Split é automático — eu não espero pedido
+
+> Ordem direta do dono: *"assim como a regra da segurança que vc vai fazer sem
+> eu pedir, quero tbm que vc já identifique locais no código que precisam ou
+> vão precisar fazer um corte antes mesmo de me entregar"*.
+
+Isto tem o **mesmo peso da regra de segurança (§1.3)**. O motivo é o mesmo:
+código pequeno e limpo é o que permite achar brecha e bug. Arquivo inchado
+esconde os dois.
+
+Na prática:
+
+- **Antes de entregar qualquer coisa**, conferir o tamanho dos arquivos que
+  toquei. Passou de 300 linhas? Divido **agora**, no mesmo trabalho — não
+  pergunto, não anoto pra depois.
+- **Se eu vou fazer um arquivo crescer** e isso o levaria perto do limite,
+  já entrego dividido. Não crio dívida nova pra pagar depois.
+- **Se eu esbarrar num arquivo grande** enquanto faço outra coisa, aviso e
+  divido, mesmo que não seja o que foi pedido (regra de esbarrar, §0).
+- Varredura barata pra rodar sempre que fechar um bloco de trabalho:
+  ```bash
+  find src -name '*.jsx' -o -name '*.js' | xargs wc -l | sort -rn | head -15
+  ```
+- **O que continua exigindo aprovação** (§7): quando dividir deixa de ser
+  movimentação mecânica e vira **decisão de arquitetura** — trocar o padrão de
+  estado, mudar contrato de service, reorganizar pastas. Aí eu apresento o
+  plano antes. O corte mecânico (extrair componente, extrair hook, tirar
+  duplicação) **não** precisa de aprovação.
+- Ao relatar, dizer sempre o antes → depois em linhas.
 
 **Gatilhos objetivos para dividir** (qualquer um já basta):
 
