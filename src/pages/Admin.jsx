@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fadeTab, gridContainer } from '../lib/motion';
 import { createPortal } from 'react-dom';
 import { useRole } from '../hooks/useRole';
+import { useAdminLogs } from '../hooks/useAdminLogs';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -76,15 +77,14 @@ export default function Admin() {
   const [liveMod, setLiveMod] = useState({ silenced: [], lives: [], endedLives: [], requests: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [reactivateModal, setReactivateModal] = useState(null);
-  const [logs, setLogs] = useState([]);
-  const [logCat, setLogCat] = useState('todos');
-  const [logsLoading, setLogsLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
   const [notifLoading, setNotifLoading] = useState(false);
   const [blockedLogins, setBlockedLogins] = useState([]);
   const [blockedLoading, setBlockedLoading] = useState(false);
   const [unlockModal, setUnlockModal] = useState(null);
+  const { logs, logCat, setLogCat, logsLoading, fetchLogs } = useAdminLogs();
+
   const tabRef = useRef(tab);
   const logCatRef = useRef(logCat);
   useEffect(() => { tabRef.current = tab; }, [tab]);
@@ -202,22 +202,6 @@ export default function Admin() {
     ]);
     setLiveMod({ silenced: silenced || [], lives: lives || [], endedLives: endedLives || [], requests: requests || [] });
     setRefreshing(false);
-  }
-
-  // Contador de requisição: trocar de categoria rápido disparava vários fetches
-  // e o que chegasse por ÚLTIMO vencia — podendo pintar a tela com os logs de
-  // uma categoria que o admin já tinha abandonado.
-  const logsReqRef = useRef(0);
-
-  async function fetchLogs(cat = 'todos') {
-    const reqId = ++logsReqRef.current;
-    setLogsLoading(true);
-    let q = supabase.from('admin_logs').select('*').order('created_at', { ascending: false }).limit(100);
-    if (cat !== 'todos') q = q.eq('category', cat);
-    const { data } = await q;
-    if (reqId !== logsReqRef.current) return; // resposta obsoleta: descarta
-    setLogs(data || []);
-    setLogsLoading(false);
   }
 
   async function fetchNotificationsCount() {
