@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import BanModal from '../components/ui/BanModal';
 import ReasonModal from '../components/ui/ReasonModal';
 import ConfirmModal from '../components/ui/ConfirmModal';
+import StatCard from '../components/admin/StatCard';
 import UsersPanel from '../components/admin/UsersPanel';
 import PostsPanel from '../components/admin/PostsPanel';
 import LivesPanel from '../components/admin/LivesPanel';
@@ -65,20 +66,6 @@ function UnlockCountdownBtn({ onConfirm }) {
         : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>
       {countdown > 0 ? `Aguarde ${countdown}s...` : <><LockOpen size={12} />Confirmar Desbloqueio</>}
     </button>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, color }) {
-  return (
-    <motion.div variants={gridCard} className="card p-5 flex items-center gap-4">
-      <div className={`w-10 h-10 rounded flex items-center justify-center ${color}`}>
-        <Icon size={18} />
-      </div>
-      <div>
-        <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">{label}</p>
-        <p className="text-2xl font-display font-bold text-white">{value}</p>
-      </div>
-    </motion.div>
   );
 }
 
