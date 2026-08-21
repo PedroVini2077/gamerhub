@@ -167,6 +167,30 @@ esperado, são índices recém-criados sem histórico de uso.
 20260821122624  fix_rls_initplan_and_missing_fk_indexes
 ```
 
+## Adendo — leitura do corpo das funções (Fase 2 completa)
+
+Na primeira passada eu enumerei as 52 funções `SECURITY DEFINER` pelos
+**metadados** (quem executa, tem `search_path`, usa `auth.uid()`, checa role) e
+li o corpo de ~10 — as que a enumeração apontou como suspeitas. As outras 42
+foram julgadas pelos metadados. Isso ficou registrado como lacuna, e a leitura
+foi feita depois. **Achou mais 6 problemas que os metadados davam como
+seguros** — todos com os guards "certos" e erro no meio do código:
+
+| # | Função | Problema |
+| - | ------ | -------- |
+| 1 | `check_staff_eligibility` | **Não checava quem chama.** Qualquer usuário logado passava o uuid de outra pessoa e recebia `ban_count`, `currently_banned` e o motivo do bloqueio. Era um contorno parcial da restrição de colunas de `profiles` aplicada logo antes. |
+| 2 | `admin_unlock_login` | Exigia `role = 'super_admin'` **estrito** — o **fundador não conseguia desbloquear login nenhum**. Mesma classe de bug já corrigida em `approve/deny_unban_request`; esta passou batido. Agrava porque, se o dono ficar bloqueado e for o único a poder agir, não há recuperação pelo app. |
+| 3 | `soft_delete_post` | Só checava `rank >= 2`, sem hierarquia: **um admin apagava post do fundador**. O delete definitivo já respeitava `can_moderate_content` — o soft delete era o contorno. |
+| 4 | `restore_post` | Mesmo furo no sentido inverso: qualquer admin restaurava qualquer post, desfazendo moderação de alguém acima dele. |
+| 5 | `decide_staff_trial` | No `revert`, rebaixava para `'user'` **sempre**. Como só um admin pode ser indicado a super_admin, reverter a avaliação apagava também o cargo de admin que a pessoa já tinha. Agora volta ao cargo anterior real. |
+| 6 | `owner_get_metrics` | `total_xp` era declarado e devolvido **sem nunca receber valor** — o painel do fundador sempre mostrou XP total nulo. Comprovado depois do fix: dando 30 de XP a um usuário, o total saiu de 0 para 30. |
+
+**Lição registrada no `CLAUDE.md`:** enumeração por metadados prova *cobertura*,
+não *corretude*. A Fase 2 passou a exigir a leitura do corpo de toda função de
+risco, com registro de quantas de quantas foram lidas.
+
+---
+
 ## Continua em aberto
 
 - **`profiles`: usuário logado ainda lê `birth_date` e histórico de ban de
