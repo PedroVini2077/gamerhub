@@ -37,6 +37,41 @@ fechados. Advisors: 64 → 42 avisos, 0 erros.
 
 ---
 
+## 🧩 Split de arquivos grandes — em andamento
+
+Regra em `CLAUDE.md` §4: >300 linhas divide, >500 é dívida obrigatória.
+Procedimento: extrair **sem mudar comportamento** → `build`+`lint`+`test` a
+cada extração → **um commit por extração** → melhorar a lógica só depois e
+separado.
+
+**Feito**
+- ✅ `Admin.jsx` 918 → 647 (PR #19). 4 componentes + 5 hooks de domínio
+  (`useAdminLogs`, `useLiveModeration`, `useAdminNotifications`,
+  `useBlockedLogins`, `useUnbanRequests`).
+- ✅ `PostCard.jsx` 379 → 286 (PR #20). `EditCountdown` +
+  `usePostEngagement` (curtidas, mídia, retry e guarda de cancelamento).
+
+**Fila, em ordem de valor**
+- ⬜ `Lives.jsx` (375) — mesmo padrão do Admin: lógica de dados grudada na UI.
+  Seams claros: `useLivesList` (lista + realtime + debounce) e `useLiveChat`
+  (mensagens, timeouts, presence, os 3 canais).
+- ⬜ `Profile.jsx` (387) — form de perfil + upload de avatar + stats/XP
+  misturados. Extrair `useAvatarUpload` e o bloco de rank/XP.
+- ⬜ `CargosTab.jsx` (324), `PostForm.jsx` (311), `UsuariosTab.jsx` (305).
+- ⬜ `Admin.jsx` (647) **ainda acima do limite**. O que sobrou não é mais
+  mistura de responsabilidades — é orquestração real (abas, modais de
+  confirmação, ações de moderação). Cortar mais exige **decisão de
+  arquitetura**, não movimentação mecânica. Discutir antes de mexer.
+
+**Anotado no caminho (não corrigido de propósito)**
+- ⬜ `PostCard`: a limpeza da contagem de exclusão reage às mesmas deps do
+  effect de engajamento — um refetch do feed no meio da contagem para o
+  `interval` sem resetar o estado, deixando o número congelado na tela.
+  Comportamento antigo, preservado durante a extração. Corrigir à parte,
+  com teste que comprove o caso.
+
+---
+
 ## 🔴 Crítico
 
 - ⬜ **Projeto Supabase pausado e sob restrição de serviço — não despausa mais
