@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchBlockedWords } from '../services/moderationService';
-import { findBlockedWord } from '../lib/wordlist';
+import { checkText } from '../lib/wordlist';
 
 export function useBlockedWords() {
   const { data: words = [] } = useQuery({
@@ -9,9 +9,10 @@ export function useBlockedWords() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // `blocked` só é true em severidade `high` — ver o porquê em lib/wordlist.js.
+  // `word`/`severity` vêm junto para quem quiser avisar sem barrar.
   function checkContent(text) {
-    const found = findBlockedWord(text, words);
-    return { blocked: !!found, word: found || null };
+    return checkText(text, words);
   }
 
   return { words, checkContent };
