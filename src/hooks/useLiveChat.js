@@ -171,7 +171,10 @@ export function useLiveChat({ activeLive, user, profile, isAdmin }) {
 
   async function endLive() {
     if (!activeLive) return;
-    await endLivePost(activeLive.id);
+    // O erro era descartado: a tela mostrava "Live encerrada" mesmo quando o
+    // update não passava, e a live seguia no ar para todo mundo.
+    const { error } = await endLivePost(activeLive.id);
+    if (error) { toast.error(error.message || 'Não foi possível encerrar a live.'); return; }
     logAudit('live_ended', `@${profile?.username} encerrou a live "${activeLive.title}"`, { category: 'live' });
     setLiveEnded(true);
   }
@@ -193,7 +196,8 @@ export function useLiveChat({ activeLive, user, profile, isAdmin }) {
 
   async function handleUnsilenceUser(userId) {
     if (!activeLive) return;
-    await unsilenceUser({ postId: activeLive.id, userId });
+    const { error } = await unsilenceUser({ postId: activeLive.id, userId });
+    if (error) { toast.error('Não foi possível remover o silêncio.'); return; }
     logAudit('live_unsilence', `@${profile?.username} removeu silêncio na live "${activeLive.title}"`, { category: 'live' });
     await fetchTimeouts(activeLive.id);
   }
