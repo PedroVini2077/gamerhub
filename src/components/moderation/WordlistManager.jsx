@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { fetchBlockedWords, addBlockedWord, removeBlockedWord } from '../../services/moderationService';
 import { logAudit } from '../../lib/auditLog';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { apenasData } from '../../services/result';
 
 const SEV_COLOR = { low: 'tag-cyan', medium: 'tag-purple', high: 'tag-green' };
 const SEV_LABEL = { low: 'Baixo', medium: 'Médio', high: 'Alto' };
@@ -14,7 +15,7 @@ export default function WordlistManager() {
   const qc = useQueryClient();
   const { data: words = [], isLoading } = useQuery({
     queryKey: ['blocked_words'],
-    queryFn: fetchBlockedWords,
+    queryFn: () => apenasData(fetchBlockedWords()),
   });
 
   const [newWord, setNewWord]   = useState('');

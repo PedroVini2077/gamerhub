@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { UserPlus, Clock, ShieldAlert, RefreshCw } from 'lucide-react';
 import ReasonModal from '../ui/ReasonModal';
 import { fetchRoleNominations, fetchDemotionRequests } from '../../services/roleNominationService';
+import { unwrap } from '../../services/result';
 import { useCargoDecisions } from '../../hooks/useCargoDecisions';
 import CargoSection from './cargos/CargoSection';
 import NominationCard from './cargos/NominationCard';
@@ -17,12 +18,12 @@ export default function CargosTab() {
 
   const { data: nominations = [], isPending: loadingNom, refetch: refetchNom } = useQuery({
     queryKey: ['role_nominations', 'pending_trial'],
-    queryFn: () => fetchRoleNominations(['pending', 'trial_active']),
+    queryFn: () => unwrap(fetchRoleNominations(['pending', 'trial_active'])),
   });
 
   const { data: demotions = [], isPending: loadingDem, refetch: refetchDem } = useQuery({
     queryKey: ['role_change_requests', 'pending'],
-    queryFn: () => fetchDemotionRequests(['pending']),
+    queryFn: () => unwrap(fetchDemotionRequests(['pending'])),
   });
 
   function refetchAll() { refetchNom(); refetchDem(); }

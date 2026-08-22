@@ -30,7 +30,7 @@ export function useAvatarUpload({ user, profile, refreshProfile }) {
     // 256px basta: o maior lugar onde o avatar aparece é o card de perfil.
     // Menos bytes por avatar = menos egress em todo card do feed.
     const compressed = await compressImage(file, { maxSize: 256, quality: 0.8 });
-    const { url, error: uploadError } = await uploadAvatar(user.id, compressed);
+    const { data: url, error: uploadError } = await uploadAvatar(user.id, compressed);
     if (uploadError) {
       toast.error('Erro ao fazer upload', { id: 'upload' });
       setUploading(false);

@@ -86,13 +86,13 @@ export default function ModerationQueue() {
 
   const load = useCallback(async (p = 0) => {
     setLoading(true);
-    const { items: data, count } = await fetchModerationQueue('pending', p, PAGE_SIZE);
+    const { data: { items: data, count } = {} } = await fetchModerationQueue('pending', p, PAGE_SIZE);
     setItems(data);
     setTotalCount(count);
 
     const ids = data.map(i => i.content_id);
     if (ids.length > 0) {
-      const reps = await fetchReports({ status: 'pending' });
+      const { data: reps } = await fetchReports({ status: 'pending' });
       const grouped = {};
       ids.forEach(id => { grouped[id] = reps.filter(r => r.content_id === id); });
       setReports(grouped);

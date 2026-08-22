@@ -22,14 +22,14 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh, i
   const [count, setCount] = useState(initialCount ?? 0);
 
   async function fetchCount() {
-    const c = await fetchCommentCount(postId);
+    const { data: c } = await fetchCommentCount(postId);
     setCount(c);
   }
 
   // Estável por `postId`: entra nas deps dos efeitos abaixo sem provocar
   // busca em loop, e é a mesma referência entregue ao `registerRefresh`.
   const fetchCommentList = useCallback(async () => {
-    const data = await fetchComments(postId);
+    const { data } = await fetchComments(postId);
     setComments(data);
     setCount(data.length);
   }, [postId]);

@@ -42,13 +42,13 @@ export function useLiveChat({ activeLive, user, profile, isAdmin }) {
 
   async function fetchMessages(postId) {
     if (!postId) return;
-    const data = await fetchLiveMessages(postId);
+    const { data } = await fetchLiveMessages(postId);
     setMessages(data);
   }
 
   async function fetchTimeouts(postId) {
     if (!postId) return;
-    const map = await fetchLiveTimeouts(postId);
+    const { data: map } = await fetchLiveTimeouts(postId);
     setTimeouts(map);
     setIsSilenced(!!(user && isActive(map[user.id])));
   }
@@ -145,7 +145,7 @@ export function useLiveChat({ activeLive, user, profile, isAdmin }) {
     }
 
     setSending(true);
-    const { id, error } = await sendChatMessage({
+    const { data: id, error } = await sendChatMessage({
       postId: activeLive.id, userId: user.id, message: texto,
     });
     setSending(false);

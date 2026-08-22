@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import ConfirmModal from '../ui/ConfirmModal';
 import { checkRoleEligibility, nominateForRole } from '../../services/roleNominationService';
+import { unwrap } from '../../services/result';
 
 const CRITERIA = [
   { key: 'account_age_ok', label: 'Conta com 60+ dias' },
@@ -37,20 +38,16 @@ export default function AdminApplicationCard({ userId }) {
 
   const { data: eligibility, isPending: loadingElig } = useQuery({
     queryKey: ['my_role_eligibility', userId],
-    queryFn: () => checkRoleEligibility(userId, 'admin'),
+    queryFn: () => unwrap(checkRoleEligibility(userId, 'admin')),
     enabled: !!userId && !nomination,
   });
 
   async function handleApply() {
-    try {
-      await nominateForRole(userId, 'admin');
-      toast.success('Candidatura enviada! A equipe vai analisar em breve.');
-      setConfirming(false);
-      refetchNom();
-    } catch (e) {
-      toast.error(e.message);
-      setConfirming(false);
-    }
+    const { error } = await nominateForRole(userId, 'admin');
+    setConfirming(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Candidatura enviada! A equipe vai analisar em breve.');
+    refetchNom();
   }
 
   if (loadingNom) return null;

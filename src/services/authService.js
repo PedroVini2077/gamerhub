@@ -1,13 +1,14 @@
 import { supabase } from '../lib/supabase';
+import { from } from './result';
 
 export async function changePassword(newPassword) {
-  return supabase.auth.updateUser({ password: newPassword });
+  return from(await supabase.auth.updateUser({ password: newPassword }));
 }
 
 export async function changeEmail(newEmail) {
-  return supabase.auth.updateUser({ email: newEmail });
+  return from(await supabase.auth.updateUser({ email: newEmail }));
 }
 
 export async function deleteOwnAccount() {
-  return supabase.rpc('delete_own_account');
+  return from(await supabase.rpc('delete_own_account'));
 }

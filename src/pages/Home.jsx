@@ -9,6 +9,7 @@ import RightPanel from '../components/layout/RightPanel';
 import { useRealtime } from '../hooks/useRealtime';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { Zap, Search, X, ArrowUp } from 'lucide-react';
+import { apenasData } from '../services/result';
 
 const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
 
@@ -28,7 +29,7 @@ export default function Home() {
   // o cache não pode ser compartilhado entre usuários diferentes.
   const { data: posts = [], isPending: loading, isSuccess, refetch } = useQuery({
     queryKey: ['feed_posts', user?.id ?? null],
-    queryFn: () => fetchFeedPosts(30, user?.id ?? null),
+    queryFn: () => apenasData(fetchFeedPosts(30, user?.id ?? null)),
   });
 
   // Recarrega o feed e zera o contador de "novos posts" (mesmo efeito que o

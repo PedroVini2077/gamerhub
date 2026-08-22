@@ -8,6 +8,7 @@ import MuralForm from '../components/community/MuralForm';
 import { useRealtime } from '../hooks/useRealtime';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { Users } from 'lucide-react';
+import { apenasData } from '../services/result';
 
 const PAGE_SIZE = 20;
 
@@ -22,7 +23,7 @@ export default function Community() {
     // Viewer na key: "eu curti" vem no lote, não pode vazar entre usuários.
     queryKey: ['mural_posts', user?.id ?? null],
     queryFn: ({ pageParam }) =>
-      fetchMuralPage({ limit: PAGE_SIZE, before: pageParam, viewerId: user?.id ?? null }),
+      apenasData(fetchMuralPage({ limit: PAGE_SIZE, before: pageParam, viewerId: user?.id ?? null })),
     initialPageParam: null,
     getNextPageParam: (lastPage) =>
       lastPage.length === PAGE_SIZE ? lastPage[lastPage.length - 1].created_at : undefined,

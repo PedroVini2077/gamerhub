@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchGameKeys, fetchSiteStats, SITE_STATS_KEY } from '../../services/keyService';
+import { apenasData } from '../../services/result';
 import { Tag, ExternalLink, Gift, Users, FileText, Key } from 'lucide-react';
 import { formatNumber } from '../../lib/format';
 import { safeExternalUrl } from '../../lib/url';
@@ -7,7 +8,7 @@ import { safeExternalUrl } from '../../lib/url';
 export default function RightPanel() {
   const { data: keysData } = useQuery({
     queryKey: ['right_panel_keys'],
-    queryFn: () => fetchGameKeys(10),
+    queryFn: () => apenasData(fetchGameKeys(10)),
   });
   const keys = keysData?.keys ?? [];
   const promos = keysData?.promos ?? [];
@@ -15,7 +16,7 @@ export default function RightPanel() {
   // Cache compartilhado com a Sidebar (mesma chave) — não repete as contagens.
   const { data: stats = { users: 0, postsToday: 0, keysCount: 0 } } = useQuery({
     queryKey: SITE_STATS_KEY,
-    queryFn: fetchSiteStats,
+    queryFn: () => apenasData(fetchSiteStats()),
     staleTime: 5 * 60_000,
   });
 

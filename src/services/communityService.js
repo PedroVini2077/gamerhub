@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { removeFilesFromStorage } from '../lib/storage';
 import { compressMedias } from '../lib/image';
+import { ok, fail, from, fromCount } from './result';
 
 // Colunas explícitas + mídia aninhada: evita `*` e mata a query de mídia por
 // card (20 posts = 20 requests a menos por página).
@@ -46,16 +47,17 @@ export async function fetchMuralPage({ limit = 20, before = null, viewerId = nul
     .order('created_at', { ascending: false })
     .limit(limit);
   if (before) q = q.lt('created_at', before);
-  const { data } = await q;
-  return attachMuralEngagement(data || [], viewerId);
+  const { data, error } = await q;
+  if (error) return fail(error, []);
+  return ok(await attachMuralEngagement(data || [], viewerId));
 }
 
 export async function addMuralPost({ userId, message }) {
-  return supabase
+  return from(await supabase
     .from('community_posts')
     .insert({ user_id: userId, message })
     .select()
-    .single();
+    .single());
 }
 
 export async function deleteMuralPost(id, userId, isAdmin) {
@@ -64,24 +66,24 @@ export async function deleteMuralPost(id, userId, isAdmin) {
   const { data: media } = await supabase.from('community_post_media').select('url').eq('post_id', id);
   let q = supabase.from('community_posts').delete({ count: 'exact' }).eq('id', id);
   if (!isAdmin) q = q.eq('user_id', userId);
-  const { error, count } = await q;
-  if (error) return { error };
   // count 0 sem erro = RLS bloqueou (ex.: admin tentando moderar owner). Antes
   // virava "sucesso" falso.
-  if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
+  const res = fromCount(await q, 'Você não tem permissão para deletar isto.');
+  if (res.error) return res;
   await removeFilesFromStorage((media || []).map((m) => m.url));
-  return { error: null };
+  return res;
 }
 
 // ─── Mídia ───────────────────────────────────────────────────────────────────
 
 export async function fetchMuralMedia(postId) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('community_post_media')
     .select('*')
     .eq('post_id', postId)
     .order('position');
-  return data || [];
+  if (error) return fail(error, []);
+  return ok(data || []);
 }
 
 // Reaproveita o bucket público `post-media` (mesmo do feed), em path por
@@ -106,9 +108,12 @@ export async function uploadMuralMediaFiles(userId, postId, medias) {
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
     imageUrls.push(publicUrl);
   }
-  if (!rows.length) return { error: failed ? { message: 'Falha ao enviar a imagem.' } : null, imageUrls, failed };
-  const result = await supabase.from('community_post_media').insert(rows);
-  return { ...result, imageUrls, failed };
+  const carga = { imageUrls, failed };
+  if (!rows.length) {
+    return failed ? { data: carga, error: { message: 'Falha ao enviar a imagem.' } } : ok(carga);
+  }
+  const { error } = await supabase.from('community_post_media').insert(rows);
+  return error ? { data: carga, error } : ok(carga);
 }
 
 // ─── Reações (curtidas) ────────────────────────────────────────────────────────
@@ -121,13 +126,14 @@ export async function fetchMuralLikeStatus(postId, userId) {
       ? supabase.from('community_post_likes').select('id').eq('post_id', postId).eq('user_id', userId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
-  return { count: count || 0, liked: !!liked };
+  return ok({ count: count || 0, liked: !!liked });
 }
 
 export async function likeMuralPost(postId, userId) {
-  return supabase.from('community_post_likes').insert({ post_id: postId, user_id: userId });
+  return from(await supabase.from('community_post_likes').insert({ post_id: postId, user_id: userId }));
 }
 
 export async function unlikeMuralPost(postId, userId) {
-  return supabase.from('community_post_likes').delete().eq('post_id', postId).eq('user_id', userId);
+  return from(await supabase.from('community_post_likes')
+    .delete().eq('post_id', postId).eq('user_id', userId));
 }

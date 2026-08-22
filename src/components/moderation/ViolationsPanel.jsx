@@ -44,7 +44,7 @@ export default function ViolationsPanel() {
       // Se só um resultado, filtra direto; se vários, busca violations de todos
       userId = profiles.length === 1 ? profiles[0].id : profiles.map(p => p.id);
     }
-    const { items: data, count: total } = await fetchViolations(userId, p, PAGE_SIZE);
+    const { data: { items: data, count: total } = {} } = await fetchViolations(userId, p, PAGE_SIZE);
     if (reqId !== reqRef.current) return; // busca mais nova já saiu na frente
     setItems(data);
     setCount(total);

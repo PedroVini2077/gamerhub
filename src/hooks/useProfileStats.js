@@ -13,7 +13,7 @@ export function useProfileStats(userId) {
     // busca deixaria a resposta antiga sobrescrever a nova.
     let cancelled = false;
     (async () => {
-      const { posts, likes, xp } = await fetchProfileStats(userId);
+      const { data: { posts, likes, xp } = {} } = await fetchProfileStats(userId);
       if (cancelled) return;
       setStats({ posts, likes });
       if (xp) setXpData(xp);

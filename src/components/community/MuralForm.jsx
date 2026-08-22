@@ -63,7 +63,7 @@ const MuralForm = memo(function MuralForm({ onPost }) {
       return;
     }
     if (medias.length > 0) {
-      const { error: mediaErr, imageUrls, failed } = await uploadMuralMediaFiles(user.id, post.id, medias);
+      const { data: { imageUrls, failed } = {}, error: mediaErr } = await uploadMuralMediaFiles(user.id, post.id, medias);
       if (mediaErr) toast.error('Mensagem enviada, mas falhou o upload de imagem');
       else {
         if (failed) toast.error(`${failed} imagem(ns) não puderam ser enviadas.`);

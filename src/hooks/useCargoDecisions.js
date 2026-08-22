@@ -36,14 +36,11 @@ export function useCargoDecisions(refetchAll) {
   // Fecha o modal e recarrega só quando a RPC passou; erro fica no modal aberto
   // para a pessoa ver a mensagem e decidir o que fazer.
   const run = (fn, successMsg) => async (notes) => {
-    try {
-      await fn(notes);
-      toast.success(successMsg);
-      setModal(null);
-      refetchAll();
-    } catch (e) {
-      toast.error(e.message);
-    }
+    const { error } = await fn(notes);
+    if (error) { toast.error(error.message); return; }
+    toast.success(successMsg);
+    setModal(null);
+    refetchAll();
   };
 
   function openNominationDecision(nom, decision) {

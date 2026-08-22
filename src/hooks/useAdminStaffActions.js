@@ -16,11 +16,10 @@ export function useAdminStaffActions({
       message: `Indicar "${targetUser.username}" para o cargo de ${roleLabel(targetRole)}? A candidatura passa por análise da equipe e, se aprovada, inicia um período de avaliação.`,
       accent: 'purple', confirmLabel: 'Indicar', icon: UserPlus,
       onConfirm: async () => {
-        try {
-          await nominateForRole(targetUser.id, targetRole);
-          setConfirmModal(null);
-          toast.success(`Indicação de ${targetUser.username} enviada para análise.`);
-        } catch (e) { toast.error(e.message); setConfirmModal(null); }
+        const { error } = await nominateForRole(targetUser.id, targetRole);
+        setConfirmModal(null);
+        if (error) { toast.error(error.message); return; }
+        toast.success(`Indicação de ${targetUser.username} enviada para análise.`);
       },
     });
   }
@@ -38,11 +37,10 @@ export function useAdminStaffActions({
       confirmLabel: 'Enviar solicitação',
       confirmIcon: ShieldAlert,
       onConfirm: async (notes) => {
-        try {
-          await requestRoleDemotion(targetUser.id, 'user', notes);
-          setDemoteModal(null);
-          toast.success(`Solicitação de rebaixamento de ${targetUser.username} enviada para análise.`);
-        } catch (e) { toast.error(e.message); }
+        const { error } = await requestRoleDemotion(targetUser.id, 'user', notes);
+        if (error) { toast.error(error.message); return; }
+        setDemoteModal(null);
+        toast.success(`Solicitação de rebaixamento de ${targetUser.username} enviada para análise.`);
       },
     });
   }
@@ -76,11 +74,10 @@ export function useAdminStaffActions({
   }
 
   async function handleAlertOwner(message) {
-    try {
-      await notifyOwner(message);
-      setAlertOwnerModal(false);
-      toast.success('Alerta enviado ao fundador.');
-    } catch (e) { toast.error(e.message); }
+    const { error } = await notifyOwner(message);
+    if (error) { toast.error(error.message); return; }
+    setAlertOwnerModal(false);
+    toast.success('Alerta enviado ao fundador.');
   }
 
   return {

@@ -18,8 +18,8 @@ vi.mock('../useBlockedWords', () => ({
 }));
 vi.mock('../../services/postService', () => ({
   createPost: vi.fn(async () => ({ data: { id: 'post1' }, error: null })),
-  uploadAudio: vi.fn(async () => ({ url: 'audio-url', error: null })),
-  uploadPostMediaFiles: vi.fn(async () => ({ imageUrls: [], failed: 0 })),
+  uploadAudio: vi.fn(async () => ({ data: 'audio-url', error: null })),
+  uploadPostMediaFiles: vi.fn(async () => ({ data: { imageUrls: [], failed: 0 }, error: null })),
 }));
 vi.mock('../../services/moderationService', () => ({
   moderateText: vi.fn(), moderateImages: vi.fn(), moderateLinks: vi.fn(),

@@ -46,7 +46,7 @@ export default function MuralCard({ item, onDelete }) {
       setLiked(!!item.liked_by_me);
     } else {
       (async () => {
-        const { count, liked: isLiked } = await fetchMuralLikeStatus(item.id, user?.id);
+        const { data: { count, liked: isLiked } = {} } = await fetchMuralLikeStatus(item.id, user?.id);
         if (cancelled) return;
         setLikeCount(count);
         setLiked(isLiked);
@@ -63,7 +63,7 @@ export default function MuralCard({ item, onDelete }) {
       (function next() {
         if (attempt >= delays.length) return;
         retryRef.current = setTimeout(async () => {
-          const again = await fetchMuralMedia(item.id);
+          const { data: again } = await fetchMuralMedia(item.id);
           if (cancelled) return;
           if (again.length > 0) setMedia(again);
           else { attempt++; next(); }
@@ -76,7 +76,7 @@ export default function MuralCard({ item, onDelete }) {
       if (batchedMedia.length === 0) scheduleRetry();
     } else {
       (async () => {
-        const data = await fetchMuralMedia(item.id);
+        const { data } = await fetchMuralMedia(item.id);
         if (cancelled) return;
         setMedia(data);
         if (data.length === 0) scheduleRetry();
