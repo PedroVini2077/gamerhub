@@ -1,21 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ShieldOff, LogOut } from 'lucide-react';
 
 export default function BannedScreen({ reason, details, onSignOut }) {
   const [countdown, setCountdown] = useState(6);
   const firedRef = useRef(false);
 
-  function doSignOut() {
+  // Estável para poder entrar nas deps do efeito sem recriá-lo a cada tique da
+  // contagem. O ref garante que só dispara uma vez, mesmo se algo remontar.
+  const doSignOut = useCallback(() => {
     if (firedRef.current) return;
     firedRef.current = true;
     onSignOut();
-  }
+  }, [onSignOut]);
 
   useEffect(() => {
     if (countdown <= 0) { doSignOut(); return; }
     const t = setTimeout(() => setCountdown(c => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [countdown]);
+  }, [countdown, doSignOut]);
 
   return (
     <div

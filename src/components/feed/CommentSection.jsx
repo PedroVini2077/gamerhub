@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { fetchComments, fetchCommentCount, addComment } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
@@ -26,11 +26,13 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh, i
     setCount(c);
   }
 
-  async function fetchCommentList() {
+  // Estável por `postId`: entra nas deps dos efeitos abaixo sem provocar
+  // busca em loop, e é a mesma referência entregue ao `registerRefresh`.
+  const fetchCommentList = useCallback(async () => {
     const data = await fetchComments(postId);
     setComments(data);
     setCount(data.length);
-  }
+  }, [postId]);
 
   useEffect(() => {
     if (typeof initialCount === 'number') setCount(initialCount);
@@ -41,7 +43,7 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh, i
 
   useEffect(() => {
     if (open) fetchCommentList();
-  }, [open]);
+  }, [open, fetchCommentList]);
 
   // Agrupa em árvore de 1 nível: raízes + respostas achatadas sob o ancestral raiz.
   const { roots, repliesByRoot } = useMemo(() => {

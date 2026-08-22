@@ -106,8 +106,15 @@ export default function Admin() {
   }, [logCat]);
 
   useAdminRealtime({
-    tab, logCat, isSuperAdmin,
-    handlers: { fetchLiveMod, fetchLogs, fetchUnbanRequests, fetchNotifications, refreshUnread },
+    tab, isSuperAdmin,
+    handlers: {
+      fetchLiveMod,
+      refreshUnread,
+      // O canal persistente não sabe qual aba está aberta; quem decide se vale
+      // recarregar a lista é a página.
+      onNotification:  () => { if (tab === 'notifs') fetchNotifications(); },
+      onUnbanRequest:  () => { if (tab === 'super') fetchUnbanRequests(); },
+    },
   });
 
   // `admin_logs` saiu do realtime (custava uma mensagem por log do site para

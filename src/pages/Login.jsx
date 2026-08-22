@@ -9,6 +9,7 @@ import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
 import RegisterSuccess from '../components/auth/RegisterSuccess';
 import ForgotForm from '../components/auth/ForgotForm';
+import { isLoginBlocked } from '../lib/loginBlock';
 
 export default function Login() {
   const { signInWithEmail, signUpWithEmail } = useAuth();
@@ -25,7 +26,7 @@ export default function Login() {
   const [block, setBlock]                   = useState(null); // { permanent, blocked_until } | null
   const [registeredEmail, setRegisteredEmail] = useState(null); // email pendente de confirmação (mostra tela "verifique seu email")
 
-  const isBlocked = !!block && (block.permanent || (block.blocked_until && new Date(block.blocked_until).getTime() > Date.now()));
+  const isBlocked = isLoginBlocked(block);
 
   // Enquanto bloqueado, consulta o servidor periodicamente para refletir
   // desbloqueio feito pelo admin sem precisar recarregar a página.

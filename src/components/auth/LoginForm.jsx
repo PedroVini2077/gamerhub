@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Mail, Lock, AlertTriangle, ShieldOff } from 'lucide-react';
 import { InputWrap } from './InputWrap';
+import { isLoginBlocked } from '../../lib/loginBlock';
 
 function formatCountdown(ms) {
   const totalSec = Math.max(0, Math.ceil(ms / 1000));
@@ -24,7 +25,7 @@ function LiveCountdown({ until, onExpire }) {
 }
 
 export default function LoginForm({ email, setEmail, password, setPassword, loading, block, setBlock, onSubmit, onForgot, onSwitchToRegister }) {
-  const isBlocked = !!block && (block.permanent || (block.blocked_until && new Date(block.blocked_until).getTime() > Date.now()));
+  const isBlocked = isLoginBlocked(block);
 
   return (
     <>

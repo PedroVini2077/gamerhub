@@ -53,17 +53,22 @@
   *O que falta para fechar com segurança:* uma conta de teste descartável para
   rodar o fluxo ban → detecção → tela de banido ponta a ponta em navegador,
   antes e depois da troca. Com isso, é meia hora.
-- ⬜ **Canal `admin-realtime` ainda assina `posts` com `event:'*'`.** A parte
-  do `admin_logs` foi resolvida. Esta encosta na moderação de lives — janela
-  própria.
+- ✅ **Canal `admin-realtime` dividido por tempo de vida.** Era um canal só,
+  sempre ligado, assinando `posts` com `event:'*'` global. Agora são dois: um
+  PERSISTENTE (notificações + pedidos de desban, que precisam chegar em
+  qualquer aba) e um SOB DEMANDA (`posts`, timeouts de chat, reativações) que
+  só existe enquanto a aba de moderação de lives está aberta.
 - ⬜ **Proteção contra senha vazada (HIBP).** É configuração de painel, não dá
   para mexer por SQL/MCP: **Authentication → Sign In/Providers → Email →
   "Prevent use of leaked passwords"**. Era bloqueado no plano Free; vale
   reconferir agora que o projeto saiu da restrição. Checagem de 1 minuto.
-- ⬜ **Migrar `Admin.jsx` para React Query.** Ficou bem mais viável depois do
-  split (os fetchers estão em `useAdminData` e nos hooks de domínio). É o que
-  resolve *de verdade* boa parte dos 16 warnings restantes, incluindo os 3
-  `exhaustive-deps` hoje suprimidos com comentário.
+- ⬜ **Migrar `Admin.jsx` para React Query.** Ficou mais viável depois do split
+  (os fetchers estão em `useAdminData` e nos hooks de domínio) e resolveria de
+  verdade os 3 `exhaustive-deps` hoje suprimidos. *Por que não foi feito:* é
+  refatoração da camada de dados do painel administrativo — banimento,
+  moderação, notificações — e **o painel fica atrás de login, então o teste de
+  fumaça não o exercita**. Fazer sem conseguir abrir a tela seria exatamente o
+  risco que o backlog já apontava. Destrava junto com a conta de teste.
 - ⬜ **Padronizar `{ data, error }` nos services.** ~30 funções, 6 services.
   **Muda contrato** — pede plano + aprovação (§7), não entra de carona.
 - ⬜ **Migração para TypeScript.** Grande, decisão do dono.
@@ -73,6 +78,29 @@
   extrair frames no navegador com `<video>` + `canvas` (API nativa, sem
   ffmpeg.wasm) e mandar pela moderação de imagem que já existe — **custo zero**.
   A premissa "vídeo = gastar mais" não se sustenta.
+
+### 📉 Baseline de lint: 16 → 12 warnings (corrigindo, não suprimindo)
+
+Fechados de verdade, sem `disable`:
+
+- ✅ `Login.jsx` e `LoginForm.jsx` tinham a **mesma** expressão de bloqueio
+  escrita à mão nos dois. Viraram `lib/loginBlock.js` — de quebra saiu o
+  `Date.now()` do corpo do render.
+- ✅ `BannedScreen`: `doSignOut` virou `useCallback`.
+- ✅ `CommentSection`: `fetchCommentList` virou `useCallback` por `postId`.
+
+**Os 12 restantes ficam de pé, e isso é decisão consciente.** São quase todos
+`set-state-in-effect` do preset de "React Compiler readiness" — o projeto **não
+usa** o React Compiler, e a regra já foi rebaixada a `warn` de propósito.
+Inspecionei um a um os que ainda não tinha olhado (`UsersPanel`, `EmbedPlayer`,
+`ModerationQueue`): são o padrão legítimo de buscar dado assíncrono num efeito;
+a regra não enxerga através do `await`. Matá-los exigiria suprimir com
+`disable`, o que é maquiar o número, não melhorar o código.
+
+Um deles merece nota: `useAuth.jsx` tem um `react-refresh/only-export-components`
+porque exporta o hook `useAuth` ao lado do `AuthProvider`. A correção é mover o
+hook para outro arquivo — mas **28 arquivos importam dali**, e é o ponto mais
+crítico do projeto. Conforto de dev (hot reload) não paga esse churn.
 
 ### 🔵 Só quando o volume crescer (registrado, não urgente)
 
