@@ -261,3 +261,89 @@ só WARN, nenhum ERROR, nada novo.
 Na Fase 3, não basta perguntar *"a tabela tem policy de INSERT?"*. Para tabela
 que grava **quem fez o quê**, perguntar também: *"a policy amarra a identidade
 gravada à identidade de quem chama?"* — e *"a lista de papéis inclui `owner`?"*.
+
+---
+
+## Adendo 2 — 22/08/2026: dois endurecimentos que quebraram o site em silêncio
+
+Achados quando o dono testou os fluxos logados pela primeira vez desde a
+auditoria. **Nenhum dos dois veio das mudanças daquele dia; os dois vieram
+de correções de segurança legítimas desta mesma auditoria**, que derrubaram
+funcionalidade sem ninguém perceber.
+
+O motivo de terem passado é sempre o mesmo: **nenhum teste automatizado alcança
+caminho autenticado**. Build, lint, unitários e teste de rotas não exercitam
+postar, comentar nem enviar foto.
+
+### Bug 1 — ninguém conseguia criar conteúdo nenhum
+
+*Sintoma:* "criar post, qualquer tipo, dá erro na tabela profile".
+
+*Reproduzido* assumindo o papel do dono:
+
+```
+INSERT INTO posts ... -> ERRO: permission denied for table profiles
+```
+
+*Causa:* as policies de INSERT de `posts`, `comments`, `community_posts` e
+`live_chat` checavam suspensão lendo `profiles.suspended_until` numa subconsulta
+direta. Essa coluna foi **revogada de `authenticated`** junto com as outras
+sensíveis (LGPD). O Postgres reporta falta de privilégio de **coluna** como
+*"permission denied for table"*, o que despistou o diagnóstico.
+
+Post, comentário, mural e chat — a superfície inteira de criação — estavam
+mortos. A tabela `posts` estava vazia, o que confirma.
+
+*Correção:* helper `pode_publicar()` `SECURITY DEFINER` (mesmo padrão de
+`can_moderate_content`), e as 4 policies passam a chamá-lo. Quem chama não
+precisa mais enxergar `suspended_until`.
+
+*Verificado em ROLLBACK:* os 4 tipos de conteúdo voltam; postar em nome de
+outro continua bloqueado; banido continua bloqueado; suspenso continua
+bloqueado; suspensão expirada volta a poder; `anon` não executa a função.
+
+### Bug 2 — upload de foto de perfil falhava
+
+*Sintoma:* "dá erro ao fazer upload de foto".
+
+*Reproduzido* na API real, e isolado em duas etapas:
+
+| Teste | Resultado |
+|---|---|
+| `INSERT` direto em `storage.objects` como `authenticated` | OK — a policy do objeto está certa |
+| `SELECT` em `storage.buckets` como `authenticated` | **0 linhas** |
+| upload de avatar **sem** `x-upsert` | 200 OK |
+| upload de avatar **com** `x-upsert` | 400 RLS violation |
+
+*Causa (duas camadas):* a faxina de storage removeu as policies amplas de SELECT
+— correto, elas deixavam qualquer um listar arquivo de todo mundo — mas levou
+junto (a) a leitura da lista de **buckets**, que a API precisa para validar o
+upload, e (b) a leitura dos **próprios** arquivos, de que o caminho de `upsert`
+depende para decidir entre inserir e substituir. O site usa `upsert: true` no
+avatar de propósito, para não acumular lixo no bucket.
+
+*Correção:* duas policies mínimas — buckets **públicos** visíveis (o nome do
+bucket já aparece em toda URL de imagem), e cada usuário enxerga **apenas a
+própria pasta**.
+
+*Verificado na API real:* upsert de avatar 200 OK; listar a pasta de outro
+usuário devolve `[]`; listar a própria funciona. A proteção original está
+intacta.
+
+### Lição para a próxima auditoria
+
+Revogar privilégio de coluna e apagar policy de SELECT são correções certas,
+mas **quebram o que lê aquilo por baixo** — policy de RLS, trigger
+`SECURITY INVOKER`, e a própria API do Storage. Antes de revogar, procurar
+quem lê:
+
+```sql
+-- policies que leem a coluna que vai ser revogada
+select tablename, policyname from pg_policies
+ where coalesce(with_check, qual) ilike '%nome_da_coluna%';
+
+-- triggers SECURITY INVOKER que leem a tabela
+select t.tgname, p.proname, p.prosecdef from pg_trigger t
+  join pg_proc p on p.oid = t.tgfoid
+ where not t.tgisinternal and p.prosrc ilike '%nome_da_tabela%';
+```
