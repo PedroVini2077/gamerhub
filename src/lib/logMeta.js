@@ -94,6 +94,7 @@ export const ACTION_META = {
 
   // moderação automática — gravada pelo BANCO (`apply_ai_moderation`)
   ai_moderation_hidden:      A(ShieldAlert,  'text-orange-400',  '#fb923c'),
+  wordlist_flag:             A(Filter,       'text-orange-400',  '#fb923c'),
   moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
   // conteúdo — posts (o trigger `log_post_event` grava os `content_*`)
@@ -176,6 +177,7 @@ export const ACTIONS_DO_BANCO = [
   'content_post_edited',
   'content_post_deleted',
   'ai_moderation_hidden',
+  'wordlist_flag',
   'auto_ban',
   'auto_suspend',
 ];
