@@ -10,213 +10,74 @@
 
 ---
 
-## 🎯 Próxima sessão — fila engatilhada
+## 🎯 Fila da faxina — status em 22/08/2026
 
-> Levantada em 21/08/2026 varrendo o backlog inteiro. **O estado de cada item
-> de banco foi CONFERIDO por consulta**, não assumido — os números abaixo são
-> reais nesta data. Ordem segue a prioridade do `CLAUDE.md` §0.
->
-> Nada aqui é feature nova. É o resto da faxina.
+> Atualizada ao fim da rodada de faxina. O que foi feito está com o resultado
+> medido; o que sobrou tem o motivo explícito.
 
-### 0. Começar por aqui — a validação que ficou devendo
+### ✅ Fechados nesta rodada
 
-- ⬜ **Teste de fumaça das rotas.** O `react-router` subiu de 7.15.0 → 7.18.2
-  (correção de CSRF) e eu validei só com build + suíte — **não** cliquei
-  navegação real. A infra pra isso já está instalada (`jsdom` +
-  `@testing-library/react`, usados em `useDeleteCountdown.test.js`).
-  *Primeiro passo:* renderizar o `App` com `MemoryRouter` em algumas rotas-chave
-  (`/`, `/login`, `/u/:username`, `/lives/:id`, `/admin`) e afirmar que cada uma
-  monta sem erro. *Pronto quando:* existe teste que quebraria se um upgrade de
-  router derrubasse uma rota.
+- ✅ **Teste de fumaça das rotas.** `e2e/smoke.mjs` abre 12 rotas num Chromium
+  de verdade e exige: HTTP < 400, tela não-branca, conteúdo esperado, zero
+  exceção de JS e zero `console.error`. **12/12 OK.** Rode com
+  `npm run test:e2e` (precisa de `npm run build` + `vite preview` antes).
+  *Era a validação devida desde o upgrade do react-router (correção de CSRF).*
+- ✅ **Página em branco sem explicação** — achado pelo próprio teste acima. Sem
+  as variáveis de ambiente o `createClient` lançava na carga do módulo e o site
+  virava uma tela branca, com o motivo só no console. Agora mostra o que falta
+  e onde arrumar. Testados os dois lados (é arquivo de alto risco, §7).
+- ✅ **`pg_net` fora do `public`.** O plano registrado era impossível — a
+  extensão **não suporta `SET SCHEMA`**. E nada no banco usava `net.` (zero
+  funções, zero triggers, zero dependentes, sem schema de webhooks). Removida.
+  O advisor `extension_in_public` **sumiu**. Reversível com `CREATE EXTENSION`.
+- ✅ **C3-b — publicação `supabase_realtime` enxugada.** Saíram `post_media`
+  (ninguém assinava) e `admin_logs` (tabela de auditoria de alto volume
+  transmitida a todo admin conectado, mesmo com a aba de logs fechada).
+  Substituído por `hooks/useVisiblePoll.js`: poll de 30s **só com a aba
+  visível**, revalidando no `visibilitychange`.
+- ✅ **IA ocultava conteúdo sem deixar rastro.** `apply_ai_moderation` não
+  gravava em `admin_logs`. Agora grava `ai_moderation_hidden` com score.
+- ✅ **Categoria `moderation` invisível no filtro** — mesmo bug que `live` e
+  `profile` já tiveram. Registrada.
+- ✅ **14 actions sem ícone, e o teste não pegava.** Duas causas: as chamadas
+  viraram helpers locais (`log(`, `done(`) num refactor meu, saindo do alcance
+  da varredura; e actions geradas por função do Postgres nunca aparecem em
+  `src/`. Corrigido nos dois lados + `ACTIONS_DO_BANCO`.
 
-### 0.5 Moderação — TESTADA em 21/08/2026, NÃO está 100%
+### ⬜ Aberto — precisa de decisão ou janela própria
 
-> Pergunta do dono: *"a moderação por IA, conteúdo adulto, palavras proibidas,
-> palavrões, insultos — está funcionando 100%?"*. Testei invocando as três Edge
-> Functions em produção. Resposta: **as três funcionam, mas a cobertura tem 3
-> buracos** — um deles deixa o filtro de palavrão sem efeito nenhum.
+- ⬜ **C3-c — `profiles` com `REPLICA IDENTITY FULL`.** *Não mexi de propósito.*
+  O `useAuth` lê `payload.new?.banned` para detectar ban, e é o arquivo de
+  maior risco do projeto (§7): quebrar derruba o site. É ganho de performance
+  **teórico hoje** (2 usuários) contra risco real num controle de segurança.
+  *O que falta para fechar com segurança:* uma conta de teste descartável para
+  rodar o fluxo ban → detecção → tela de banido ponta a ponta em navegador,
+  antes e depois da troca. Com isso, é meia hora.
+- ⬜ **Canal `admin-realtime` ainda assina `posts` com `event:'*'`.** A parte
+  do `admin_logs` foi resolvida. Esta encosta na moderação de lives — janela
+  própria.
+- ⬜ **Proteção contra senha vazada (HIBP).** É configuração de painel, não dá
+  para mexer por SQL/MCP: **Authentication → Sign In/Providers → Email →
+  "Prevent use of leaked passwords"**. Era bloqueado no plano Free; vale
+  reconferir agora que o projeto saiu da restrição. Checagem de 1 minuto.
+- ⬜ **Migrar `Admin.jsx` para React Query.** Ficou bem mais viável depois do
+  split (os fetchers estão em `useAdminData` e nos hooks de domínio). É o que
+  resolve *de verdade* boa parte dos 16 warnings restantes, incluindo os 3
+  `exhaustive-deps` hoje suprimidos com comentário.
+- ⬜ **Padronizar `{ data, error }` nos services.** ~30 funções, 6 services.
+  **Muda contrato** — pede plano + aprovação (§7), não entra de carona.
+- ⬜ **Migração para TypeScript.** Grande, decisão do dono.
+- ⬜ **E2E dos fluxos** (login, postar, banir). A infra agora existe
+  (`playwright` + `e2e/`); falta uma conta de teste descartável.
+- ⬜ **Moderação de vídeo.** Adiada a pedido. Nota que muda a conta: dá para
+  extrair frames no navegador com `<video>` + `canvas` (API nativa, sem
+  ffmpeg.wasm) e mandar pela moderação de imagem que já existe — **custo zero**.
+  A premissa "vídeo = gastar mais" não se sustenta.
 
-**O que FUNCIONA (verificado por invocação real, não por leitura):**
+### 🔵 Só quando o volume crescer (registrado, não urgente)
 
-| Função | Teste | Resultado |
-|---|---|---|
-| `moderate-text` | "seu merda, vou te matar seu filho da puta" | `score 0.996, flagged` ✅ |
-| `moderate-text` | "qual o melhor build pro novo patch" | `score 0.001, ok` ✅ |
-| `moderate-links` | URL oficial de malware do Google | `MALWARE detectado` ✅ |
-| `moderate-image` | imagem segura | pipeline responde, `score 0` ✅ |
-
-As chaves `HUGGINGFACE_API_KEY` e `GOOGLE_SAFE_BROWSING_KEY` estão
-configuradas e válidas. `mod_ai_enabled=true`.
-
-#### 🔴 Buraco 1 — a lista de palavrões está VAZIA
-
-`select count(*) from blocked_words` → **0**.
-
-O filtro síncrono do `PostForm`/`CommentSection`/`MuralForm` roda, consulta a
-lista, e **não bloqueia nada porque não há nada pra bloquear**. A feature
-inteira (tabela, RLS, `useBlockedWords`, aba `WordlistManager` no admin) existe
-e está ligada — só nunca foi populada.
-
-*Correção:* popular via a aba Moderação → Wordlist do admin, ou direto:
-```sql
-insert into public.blocked_words (word, severity) values
-  ('palavra1','high'), ('palavra2','medium');   -- severity: low | medium | high
-```
-Decisão de conteúdo do dono — não inventei a lista.
-
-#### 🔴 Buraco 2 — o chat de live não tem filtro NENHUM
-
-Confirmado por varredura: `useLiveChat`, `ChatPanel` e `liveService` não
-chamam `checkContent` nem `moderateText`. Mensagem de chat vai direto pro
-banco. Há botão de denúncia manual, mas zero filtro automático.
-
-Foi decisão consciente à época ("chat é efêmero, sem auto-hide"), mas chat ao
-vivo é justamente onde insulto e aliciamento acontecem em tempo real.
-*Correção mínima e barata:* aplicar o `checkContent` (wordlist) no envio —
-mesma chamada de uma linha que o `PostForm` já faz.
-
-#### 🔴 Buraco 3 — o modelo atual é CEGO para conteúdo adulto em texto
-
-`unitary/multilingual-toxic-xlm-roberta` foi treinado para **toxicidade**
-(insulto, ódio, ameaça) — não para conteúdo sexual. Medido:
-
-| Texto | Score | Flag? | Deveria? |
-|---|---|---|---|
-| "quer trocar nudes comigo? mando foto pelada" | **0.136** | ❌ não | **sim** |
-| "vendo conteudo adulto +18, pack completo" | **0.010** | ❌ não | **sim** |
-| "voce e um lixo, ninguem gosta de voce, some daqui" | **0.630** | ❌ não | **sim** (passou raspando do threshold 0.7) |
-| "caralho que jogo foda demais mano" | **0.943** | ✅ sim | discutível — é elogio |
-
-Ou seja, hoje o comportamento está **invertido** para um site family friendly:
-aliciamento sexual e venda de conteúdo adulto passam batido, bullying real
-passa raspando, e gíria de gamer empolgado é ocultada.
-
-Imagem NSFW **está** coberta (`Falconsai/nsfw_image_detection`). O buraco é
-só em texto.
-
-#### 💡 Recomendação: trocar o modelo de texto pela OpenAI Moderation API
-
-O `BACKLOG` original já dizia que a escolha era OpenAI — foi implementado com
-HuggingFace só para não precisar de cartão. **É a tal ferramenta dos ~R$5 que
-o dono lembrava:** a OpenAI pede um crédito mínimo (US$5, ~R$27) para ativar a
-API, mas o *endpoint de moderação em si não consome crédito*.
-
-Por que é melhor para este caso, concretamente:
-
-- **`omni-moderation-latest` classifica 13 categorias separadas**, incluindo
-  `sexual`, `sexual/minors`, `harassment`, `harassment/threatening`, `hate`,
-  `violence`, `self-harm` e `illicit` — em vez de um único número de
-  "toxicidade". Dá pra ter threshold POR categoria: rígido em `sexual/minors`,
-  tolerante em palavrão sem alvo.
-- **Resolve os 3 casos que hoje passam**: sexual, aliciamento e bullying são
-  categorias próprias.
-- **Cobre texto E imagem no mesmo modelo**, o que permitiria aposentar a
-  segunda Edge Function.
-- Multilíngue, funciona bem em português.
-
-*Verificar antes de decidir:* preço e limites mudam — confirmar no site da
-OpenAI se o endpoint de moderação segue sem custo por token e qual o crédito
-mínimo atual. Não estou afirmando valores como fato imutável.
-
-*Esforço:* trocar o corpo da Edge Function `moderate-text` (a interface com o
-site não muda — continua `{score, flagged}` ou vira `{categories, flagged}`).
-Meia sessão, com teste dos mesmos casos da tabela acima como prova.
-
-*Alternativa sem custo nenhum:* manter HuggingFace e **baixar o threshold de
-0.7 para ~0.55** pega o bullying, mas continua cego a conteúdo sexual e piora
-o falso-positivo da gíria. É remendo, não solução.
-
-### 1. Segurança
-
-- ⬜ **`pg_net` no schema `public`** *(confirmado: ainda está lá)*. É o único
-  achado de segurança que sobrou nos advisors além dos já documentados.
-  *Risco real:* `ALTER EXTENSION ... SET SCHEMA` pode quebrar webhooks/triggers
-  que chamam `net.*`. *Primeiro passo (barato e sem risco):* levantar quem
-  referencia `net.` antes de mover —
-  `select proname from pg_proc where prosrc ilike '%net.%'`.
-  Só mover depois de ver a lista e testar em `ROLLBACK`.
-- ⬜ **Reavaliar a proteção contra senha vazada (HIBP).** Estava travada por
-  estar no plano Free. O projeto **saiu da restrição de serviço** desde então —
-  vale reabrir Authentication → Sign In/Providers → Email e conferir se o toggle
-  liberou. Checagem de 1 minuto; se continuar travado, é limitação de plano e
-  não ação pendente.
-- ⬜ **Denúncia (`reports`) não gera log de auditoria.** Foi decisão consciente
-  (qualquer usuário denuncia; logar inflaria a trilha). Reavaliar agora que a
-  trilha foi endurecida — talvez logar só a denúncia que resulta em auto-hide.
-
-### 2. Performance / custo — realtime (o bloco de maior valor)
-
-Os três itens abaixo são a **Onda 3** que ficou pela metade. Mexem em detecção
-de ban e sincronização de mídia, então pedem janela dedicada — mas ficaram bem
-mais fáceis agora que o canal admin está isolado em `hooks/useAdminRealtime.js`.
-
-- ⬜ **C3-b — enxugar a publicação `supabase_realtime`.**
-  *Estado confirmado:* a publicação tem **10 tabelas** — `admin_logs`,
-  `admin_notifications`, `community_posts`, `live_chat`, `live_chat_timeouts`,
-  `moderation_queue`, `post_media`, `posts`, `profiles`, `site_config`.
-  Alvos de remoção: `post_media` (a UI já refaz por retry) e `admin_logs`
-  (tabela de auditoria de alto volume, publicada globalmente para interessar a
-  um punhado de admins). *Cuidado:* tirar `admin_logs` quebra o auto-refresh da
-  aba Logs — trocar por refetch/poll dedicado **antes** de remover.
-- ⬜ **C3-c — `profiles` está com `REPLICA IDENTITY FULL`** *(confirmado)*.
-  Manda a linha inteira a cada update, para todos os assinantes. O watch de ban
-  só precisa de `id` + `banned`. *Cuidado:* é o `useAuth`, o arquivo de maior
-  risco do projeto (§7) — quebrar derruba o site. Testar os dois lados.
-- ⬜ **Canal `admin-realtime` com `event:'*'` global** em `posts` e
-  `admin_logs`. Todo admin com o painel aberto recebe evento de cada post e de
-  cada log do site, mesmo com a aba fechada. O ideal é assinar sob demanda por
-  aba. *Agora é mais fácil:* toda a lógica está num arquivo só,
-  `hooks/useAdminRealtime.js` (53 linhas), com os handlers já despachando por
-  aba — falta só mover o despacho pra dentro da subscription.
-
-### 3. Dívida estrutural
-
-- 🟡 **Migrar `Admin.jsx` para React Query.** Era o último grande pendente da
-  migração gradual e estava marcado como "refatoração estrutural grande com
-  risco real". **Isso mudou:** os ~10 fetchers interdependentes agora estão
-  isolados em `useAdminData` (89 linhas) e nos hooks de domínio. Migrar virou
-  trocar o miolo de hooks pequenos, não mexer numa página de 900 linhas.
-  Resolve boa parte dos 16 warnings de lint restantes *de verdade* (o padrão
-  `useEffect`+`setState` deixa de existir), incluindo os 3 `exhaustive-deps`
-  que hoje estão suprimidos com comentário.
-- ⬜ **Padronizar `{ data, error }` nos services.** ~30 funções em 6 services
-  com formatos diferentes (só `data`, `{data,error}`, `{url,error}`, nada).
-  **Muda contrato** — qualquer `const { data } = await fetchX()` quebra em
-  silêncio se o consumidor não for ajustado junto. Pede plano + aprovação (§7),
-  não entra junto com outra coisa.
-- ⬜ **Migração para TypeScript.** Grande, futuro, decisão do dono.
-
-### 4. Testes
-
-- ⬜ **E2E dos fluxos críticos:** login, postar, banir. É o que falta pra
-  cobertura fazer sentido de ponta a ponta.
-- ⬜ **Testes de componente** aproveitando a infra recém-instalada. Hoje há 81
-  testes, quase todos de lógica pura + 2 hooks. Bons candidatos: `PostCard`
-  (moderação/permissão), `useAuth` (o mais arriscado do projeto, sem teste).
-
-### 5. Performance — só quando o volume crescer (registrado, não urgente)
-
-- ⬜ **RPC de engajamento agregado.** `attachEngagement` traz as linhas de
-  `post_likes`/`comments` e conta no cliente. Trocar por RPC que agrega no banco
-  quando um post passar da casa dos milhares de curtidas. O shape que o
-  `PostCard` consome não muda — é troca dentro do service.
-- ⬜ **B1 — presence em canal global único.** Revisitar se "online agora"
-  passar de algumas centenas.
-- ⬜ **Paginação / virtualização** em listas longas (usuários, logs, chat).
-  Posts e keys já paginam.
-- ⬜ **Bundle 3D (~880KB).** Já é lazy e é servido pela Vercel, não pelo
-  Supabase — é UX, não custo de cota.
-- 🔵 **Onda 4 — mídia no Cloudflare R2.** Solução definitiva de egress se o
-  site crescer. Decisão de custo, do dono.
-
-### 6. Features (fora da faxina — só pra não sumir)
-
-- ⬜ **2FA** no login.
-- ⬜ Afinar detecção de ban (hoje realtime + polling de 60s como fallback).
-- ⬜ **Fase 4 da moderação — vídeo.** Custoso (frame sampling via ffmpeg.wasm).
-  Alternativa mais leve: moderar só a thumbnail.
-
----
+- ⬜ RPC de engajamento agregado · presence em canal único · paginação/
+  virtualização em listas longas · bundle 3D · mídia no Cloudflare R2.
 
 ---
 

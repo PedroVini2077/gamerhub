@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  ACTION_META, NOTIF_META, LOG_CATEGORIES, CATEGORY_META,
+  ACTION_META, NOTIF_META, LOG_CATEGORIES, CATEGORY_META, ACTIONS_DO_BANCO,
   actionMeta, notifMeta, feedItemMeta, LOG_RETENTION_DAYS,
 } from '../logMeta';
 
@@ -16,6 +16,9 @@ const ROOT = new URL('../../', import.meta.url).pathname;
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
+    // Os próprios testes contêm exemplos como `logAudit('x')` — varrê-los
+    // geraria falso positivo.
+    if (entry === '__tests__') continue;
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) walk(full, out);
     else if (/\.(jsx?|sql)$/.test(entry)) out.push(full);
@@ -34,6 +37,26 @@ describe('cobertura de actions de auditoria', () => {
     const used = matchAll(/logAudit\(\s*\n?\s*'([a-z_]+)'/g);
     expect(used.length).toBeGreaterThan(15); // sanity: o grep achou mesmo algo
     expect(used.filter(a => !ACTION_META[a])).toEqual([]);
+  });
+
+  // Esta rede tinha um furo: ela só enxergava `logAudit('x')` literal. Quando os
+  // hooks do Admin foram extraídos, as chamadas viraram helpers locais
+  // — `log('x', ...)` e `done(msg, 'x', ...)` — e OITO actions em uso sumiram
+  // da cobertura sem ninguém notar. O teste passava e o ícone era o genérico.
+  it('actions passadas pelos helpers locais também têm ícone', () => {
+    const used = [
+      ...matchAll(/\blog\(\s*\n?\s*'([a-z_]+)'/g),
+      ...matchAll(/\bdone\([^,]+,\s*\n?\s*'([a-z_]+)'/g),
+    ];
+    expect(used.length).toBeGreaterThan(5);
+    expect(used.filter(a => !ACTION_META[a])).toEqual([]);
+  });
+
+  // Action gravada por trigger/função do Postgres não existe como string em
+  // `src/`, então a varredura do código-fonte nunca a veria.
+  it('actions geradas pelo banco têm ícone registrado', () => {
+    expect(ACTIONS_DO_BANCO.length).toBeGreaterThan(3);
+    expect(ACTIONS_DO_BANCO.filter(a => !ACTION_META[a])).toEqual([]);
   });
 
   it('toda categoria usada em logAudit() aparece no filtro dos painéis', () => {

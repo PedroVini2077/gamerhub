@@ -12,6 +12,7 @@ import { useBlockedLogins } from '../hooks/useBlockedLogins';
 import { useUnbanRequests } from '../hooks/useUnbanRequests';
 import { useAdminData } from '../hooks/useAdminData';
 import { useAdminRealtime } from '../hooks/useAdminRealtime';
+import { useVisiblePoll } from '../hooks/useVisiblePoll';
 import { useAdminContentActions } from '../hooks/useAdminContentActions';
 import { useAdminLiveActions } from '../hooks/useAdminLiveActions';
 import { useAdminStaffActions } from '../hooks/useAdminStaffActions';
@@ -19,6 +20,10 @@ import StatCard from '../components/admin/StatCard';
 import AdminTabs from '../components/admin/AdminTabs';
 import AdminModals from '../components/admin/AdminModals';
 import AdminTabContent from '../components/admin/AdminTabContent';
+
+// Poll da aba de logs, no lugar da assinatura de realtime. 30s é folgado o
+// bastante para não pesar e curto o bastante para o admin não sentir atraso.
+const LOGS_POLL_MS = 30000;
 
 export default function Admin() {
   const { isAdmin, isSuperAdmin, isOwner, role } = useRole();
@@ -104,6 +109,10 @@ export default function Admin() {
     tab, logCat, isSuperAdmin,
     handlers: { fetchLiveMod, fetchLogs, fetchUnbanRequests, fetchNotifications, refreshUnread },
   });
+
+  // `admin_logs` saiu do realtime (custava uma mensagem por log do site para
+  // todo admin conectado). Só a aba de logs aberta e visível faz poll.
+  useVisiblePoll(() => fetchLogs(logCat), LOGS_POLL_MS, tab === 'logs');
 
   if (!isAdmin) return null;
 
