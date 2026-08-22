@@ -6,6 +6,10 @@
 //
 // Ao criar um `logAudit(...)` novo, ou uma função no banco que escreva em
 // `admin_logs`, registrar a action aqui.
+//
+// `ACTIONS_DO_BANCO` (no fim do arquivo) existe porque o teste de cobertura
+// varre o CÓDIGO-FONTE — action gravada por trigger/função do Postgres não
+// aparece em lugar nenhum de `src/` e escaparia da rede.
 
 import {
   LogIn, LogOut, UserPlus, Ban, ShieldOff, LockOpen, KeyRound, ShieldAlert,
@@ -23,6 +27,7 @@ export const LOG_CATEGORIES = [
   { id: 'content',  label: 'Conteúdo',  Icon: FileText,  color: '#60a5fa' },
   { id: 'live',     label: 'Lives',     Icon: Tv,        color: '#f43f5e' },
   { id: 'profile',  label: 'Perfil',    Icon: UserCog,   color: '#a855f7' },
+  { id: 'moderation', label: 'Moderação', Icon: ShieldAlert, color: '#fb923c' },
   { id: 'admin',    label: 'Admin',     Icon: Settings2, color: '#f97316' },
   { id: 'system',   label: 'Sistema',   Icon: Wrench,    color: '#6b7280' },
 ];
@@ -43,6 +48,9 @@ const A = (Icon, cls, color) => ({ Icon, cls, color });
 
 export const ACTION_META = {
   // auth — cliente
+  auth_login_failed:         A(XCircle,      'text-red-400',     '#f87171'),
+  auth_permanent_block:      A(Lock,         'text-red-500',     '#ef4444'),
+  post_created:              A(FileText,     'text-neon-green',  '#39ff14'),
   auth_login_success:        A(LogIn,        'text-neon-green',  '#39ff14'),
   auth_logout:               A(LogOut,       'text-gray-400',    '#9ca3af'),
   // auth — banco
@@ -73,6 +81,19 @@ export const ACTION_META = {
   wordlist_added:            A(Filter,       'text-neon-purple', '#bf00ff'),
   wordlist_removed:          A(Filter,       'text-gray-400',    '#9ca3af'),
   moderation_approved:       A(EyeOff,       'text-orange-400',  '#f97316'),
+  admin_delete_posts:        A(Trash2,       'text-red-400',     '#f87171'),
+  admin_delete_post:         A(Trash2,       'text-red-400',     '#f87171'),
+  admin_restore_post:        A(RotateCcw,    'text-neon-green',  '#39ff14'),
+  admin_permanent_delete_post: A(Trash2,     'text-red-500',     '#ef4444'),
+  admin_permanent_delete_all:  A(Trash2,     'text-red-500',     '#ef4444'),
+  admin_delete_key:          A(KeyRound,     'text-red-400',     '#f87171'),
+  admin_unsilence_chat:      A(Mic,          'text-neon-green',  '#39ff14'),
+  reactivation_requested:    A(RotateCcw,    'text-yellow-400',  '#facc15'),
+  reactivation_approved:     A(CheckCircle,  'text-neon-green',  '#39ff14'),
+  reactivation_denied:       A(XCircle,      'text-red-400',     '#f87171'),
+
+  // moderação automática — gravada pelo BANCO (`apply_ai_moderation`)
+  ai_moderation_hidden:      A(ShieldAlert,  'text-orange-400',  '#fb923c'),
   moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
   // conteúdo — posts (o trigger `log_post_event` grava os `content_*`)
@@ -145,3 +166,16 @@ export function feedItemMeta(item) {
 // Precisa bater com `cleanup_old_data()` em `db/2026-08-otimizacao.sql`.
 // Mostrado nos painéis pra ninguém achar que log sumido é bug.
 export const LOG_RETENTION_DAYS = 90;
+
+// ─── Actions geradas pelo BANCO ──────────────────────────────────────────────
+// Nenhuma delas aparece como string em `src/`, então o teste que varre o
+// código-fonte não as veria. Listadas aqui à mão para entrarem na cobertura.
+// Ao criar uma função/trigger nova que escreva em `admin_logs`, acrescentar.
+export const ACTIONS_DO_BANCO = [
+  'content_post_created',
+  'content_post_edited',
+  'content_post_deleted',
+  'ai_moderation_hidden',
+  'auto_ban',
+  'auto_suspend',
+];
