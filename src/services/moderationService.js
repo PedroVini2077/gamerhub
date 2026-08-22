@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { ok, fail, from, fromCount } from './result';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -6,13 +7,13 @@ const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // ─── Reports ──────────────────────────────────────────────────────────────────
 
 export async function createReport({ contentType, contentId, reason, details }) {
-  return supabase.from('reports').insert({
+  return from(await supabase.from('reports').insert({
     reporter_id: (await supabase.auth.getUser()).data.user?.id,
     content_type: contentType,
     content_id: contentId,
     reason,
     details: details?.trim() || null,
-  });
+  }));
 }
 
 export async function fetchReports({ status = null, contentType = null } = {}) {
@@ -20,24 +21,26 @@ export async function fetchReports({ status = null, contentType = null } = {}) {
     .order('created_at', { ascending: false });
   if (status)      q = q.eq('status', status);
   if (contentType) q = q.eq('content_type', contentType);
-  const { data } = await q;
-  return data || [];
+  const { data, error } = await q;
+  if (error) return fail(error, []);
+  return ok(data || []);
 }
 
 export async function updateReportStatus(reportId, status) {
-  return supabase.from('reports').update({ status }).eq('id', reportId);
+  return from(await supabase.from('reports').update({ status }).eq('id', reportId));
 }
 
 // ─── Moderation Queue ─────────────────────────────────────────────────────────
 
 export async function fetchModerationQueue(status = 'pending', page = 0, pageSize = 20) {
-  const { data, count } = await supabase
+  const { data, count, error } = await supabase
     .from('moderation_queue')
     .select('*, profiles!reviewed_by(username)', { count: 'exact' })
     .eq('status', status)
     .order('created_at', { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1);
-  return { items: data || [], count: count || 0 };
+  if (error) return fail(error, { items: [], count: 0 });
+  return ok({ items: data || [], count: count || 0 });
 }
 
 export async function resolveQueueItem(queueId, decision, contentType, contentId) {
@@ -48,36 +51,34 @@ export async function resolveQueueItem(queueId, decision, contentType, contentId
   } else if (decision === 'rejected') {
     // Restaura o conteúdo — reaproveita o helper que checa 0 linhas, em vez de
     // repetir o update cru (que ignorava falha de RLS).
-    const { error } = await restoreContent(contentType, contentId);
-    if (error) return { error };
+    const res = await restoreContent(contentType, contentId);
+    if (res.error) return res;
   }
 
-  return supabase.from('moderation_queue').update({
+  return from(await supabase.from('moderation_queue').update({
     status: decision,
     reviewed_by: userId,
     reviewed_at: new Date().toISOString(),
-  }).eq('id', queueId);
+  }).eq('id', queueId));
 }
 
 // Enfileira manualmente (ex: admin oculta via wordlist)
-export async function enqueueContent(contentType, contentId, triggerType = 'wordlist') {
-  return supabase.from('moderation_queue').insert({ content_type: contentType, content_id: contentId, trigger_type: triggerType });
-}
 
 // ─── Blocked Words ────────────────────────────────────────────────────────────
 
 export async function fetchBlockedWords() {
-  const { data } = await supabase.from('blocked_words').select('*').order('word');
-  return data || [];
+  const { data, error } = await supabase.from('blocked_words').select('*').order('word');
+  if (error) return fail(error, []);
+  return ok(data || []);
 }
 
 export async function addBlockedWord(word, severity = 'medium') {
   const userId = (await supabase.auth.getUser()).data.user?.id;
-  return supabase.from('blocked_words').insert({ word: word.trim().toLowerCase(), severity, created_by: userId });
+  return from(await supabase.from('blocked_words').insert({ word: word.trim().toLowerCase(), severity, created_by: userId }));
 }
 
 export async function removeBlockedWord(wordId) {
-  return supabase.from('blocked_words').delete().eq('id', wordId);
+  return from(await supabase.from('blocked_words').delete().eq('id', wordId));
 }
 
 // ─── Violations ───────────────────────────────────────────────────────────────
@@ -90,18 +91,19 @@ export async function fetchViolations(userId = null, page = 0, pageSize = 20) {
     .range(page * pageSize, (page + 1) * pageSize - 1);
   if (Array.isArray(userId)) q = q.in('user_id', userId);
   else if (userId) q = q.eq('user_id', userId);
-  const { data, count } = await q;
-  return { items: data || [], count: count || 0 };
+  const { data, count, error } = await q;
+  if (error) return fail(error, { items: [], count: 0 });
+  return ok({ items: data || [], count: count || 0 });
 }
 
 // Suspensão temporária (1 ou 7 dias). Bloqueia criar conteúdo via RLS.
 export async function applySuspension(userId, days) {
-  return supabase.rpc('apply_suspension', { p_user_id: userId, p_days: days });
+  return from(await supabase.rpc('apply_suspension', { p_user_id: userId, p_days: days }));
 }
 
 export async function addViolation({ userId, contentType, contentId, reason, actionTaken, points, notes }) {
   const reviewerId = (await supabase.auth.getUser()).data.user?.id;
-  return supabase.from('violations').insert({
+  return from(await supabase.from('violations').insert({
     user_id: userId,
     content_type: contentType || null,
     content_id: contentId || null,
@@ -110,7 +112,7 @@ export async function addViolation({ userId, contentType, contentId, reason, act
     points: points ?? 1,
     reviewed_by: reviewerId,
     notes: notes?.trim() || null,
-  });
+  }));
 }
 
 // ─── Moderação IA (Fases 2 e 3 — HuggingFace) ────────────────────────────────
@@ -170,9 +172,7 @@ async function setHiddenAt(contentType, contentId, value) {
     .from(table)
     .update({ hidden_at: value }, { count: 'exact' })
     .eq('id', contentId);
-  if (error) return { error };
-  if (!count) return { error: { message: 'Você não tem permissão para moderar este conteúdo.' } };
-  return { error: null };
+  return fromCount({ error, count }, 'Você não tem permissão para moderar este conteúdo.');
 }
 
 export function hideContent(contentType, contentId) {

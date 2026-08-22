@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { ok, fail, from } from './result';
 
 // Perfil público de OUTRA pessoa. Via RPC porque as colunas sensíveis foram
 // revogadas de `authenticated` — e porque a página mostra a IDADE, não a data
@@ -8,13 +9,14 @@ export async function fetchProfileByUsername(username) {
   const { data, error } = await supabase
     .rpc('get_public_profile', { p_username: username })
     .maybeSingle();
-  if (error) return null;
-  return data || null;
+  if (error) return fail(error);
+  return ok(data || null);
 }
 
 export async function fetchUserXP(userId) {
-  const { data } = await supabase.rpc('get_user_xp', { p_user_id: userId });
-  return data || null;
+  const { data, error } = await supabase.rpc('get_user_xp', { p_user_id: userId });
+  if (error) return fail(error);
+  return ok(data || null);
 }
 
 // Conta curtidas recebidas somando os likes de todos os posts do usuário.
@@ -44,11 +46,11 @@ export async function fetchProfileStats(userId) {
     supabase.rpc('get_user_xp', { p_user_id: userId }),
   ]);
   const ids = (posts || []).map(p => p.id);
-  return { posts: ids.length, likes: await countLikesOnPosts(ids), xp: xp || null };
+  return ok({ posts: ids.length, likes: await countLikesOnPosts(ids), xp: xp || null });
 }
 
 export async function updateProfile(userId, fields) {
-  return supabase.from('profiles').update(fields).eq('id', userId);
+  return from(await supabase.from('profiles').update(fields).eq('id', userId));
 }
 
 export async function uploadAvatar(userId, file) {
@@ -60,14 +62,14 @@ export async function uploadAvatar(userId, file) {
     // o CDN revalidava a cada ~1h por viewer. A troca de avatar continua
     // aparecendo na hora porque a URL carrega o cache-buster `?t=` abaixo.
     .upload(path, file, { upsert: true, contentType: file.type, cacheControl: '31536000' });
-  if (error) return { url: null, error };
+  if (error) return fail(error);
   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-  return { url: publicUrl + `?t=${Date.now()}`, error: null };
+  return ok(publicUrl + `?t=${Date.now()}`);
 }
 
-export async function updateNotifPrefs(userId, { notifLikes, notifComments }) {
-  return supabase.from('profiles').update({
-    notif_likes: notifLikes,
-    notif_comments: notifComments,
-  }).eq('id', userId);
+// Uma preferência de cada vez: a tela tem um toggle por linha, e mandar as
+// duas junto sobrescreveria a outra com o valor que estava em memória.
+export async function updateNotifPref(userId, campo, valor) {
+  const coluna = campo === 'likes' ? 'notif_likes' : 'notif_comments';
+  return from(await supabase.from('profiles').update({ [coluna]: valor }).eq('id', userId));
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { updateProfile } from '../services/profileService';
+import { updateNotifPref } from '../services/profileService';
 import { changePassword, changeEmail, deleteOwnAccount } from '../services/authService';
 import { logAudit } from '../lib/auditLog';
 import toast from 'react-hot-toast';
@@ -57,9 +57,9 @@ export default function Settings_() {
     if (field === 'likes') setNotifLikes(value);
     else setNotifComments(value);
 
-    const { error } = await updateProfile(user.id, {
-      [field === 'likes' ? 'notif_likes' : 'notif_comments']: value
-    });
+    // Antes esta tela montava o update na mão, furando a camada de services —
+    // o `updateNotifPref` existia e não era usado por ninguém.
+    const { error } = await updateNotifPref(user.id, field, value);
 
     if (error) toast.error('Erro ao salvar preferência');
     else toast.success('Preferência salva!');

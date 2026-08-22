@@ -30,12 +30,12 @@ export default function UserProfile() {
 
   async function fetchProfile() {
     setLoading(true);
-    const profileData = await fetchProfileByUsername(username);
+    const { data: profileData } = await fetchProfileByUsername(username);
 
     if (!profileData) { setNotFound(true); setLoading(false); return; }
     setProfile(profileData);
 
-    const [postsData, xp] = await Promise.all([
+    const [{ data: postsData }, { data: xp }] = await Promise.all([
       fetchUserPosts(profileData.id, user?.id ?? null),
       fetchUserXP(profileData.id),
     ]);

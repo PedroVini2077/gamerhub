@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Flag, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchReports, updateReportStatus } from '../../services/moderationService';
+import { apenasData } from '../../services/result';
 
 const STATUS_COLOR = { pending: 'tag-purple', reviewed: 'tag-cyan', dismissed: 'text-gray-600 border border-dark-500 bg-dark-700 px-2 py-0.5 rounded text-xs font-mono' };
 const REASON_LABEL = {
@@ -16,7 +17,7 @@ export default function ReportsList() {
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ['reports', statusFilter],
-    queryFn: () => fetchReports({ status: statusFilter || null }),
+    queryFn: () => apenasData(fetchReports({ status: statusFilter || null })),
   });
 
   async function handleDismiss(id) {

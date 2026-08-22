@@ -14,7 +14,7 @@ export function useLivesList() {
 
   // Serve tanto de carga inicial quanto do `reload` exposto.
   async function load() {
-    const data = await fetchActiveLives();
+    const { data } = await fetchActiveLives();
     setLives(data);
     setLoading(false);
   }

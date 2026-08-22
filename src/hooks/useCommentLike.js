@@ -13,7 +13,7 @@ export function useCommentLike(commentId) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { count: c, liked: isLiked } = await fetchCommentLikeStatus(commentId, user?.id);
+      const { data: { count: c, liked: isLiked } = {} } = await fetchCommentLikeStatus(commentId, user?.id);
       if (cancelled) return;
       setCount(c);
       setLiked(isLiked);

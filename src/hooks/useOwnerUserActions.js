@@ -32,11 +32,10 @@ export function useOwnerUserActions(refetch) {
       confirmLabel: 'Indicar',
       icon: UserPlus,
       onConfirm: async () => {
-        try {
-          await nominateForRole(user.id, targetRole);
-          setConfirm(null);
-          toast.success(`Indicação de ${user.username} enviada para análise.`);
-        } catch (e) { toast.error(e.message); setConfirm(null); }
+        const { error } = await nominateForRole(user.id, targetRole);
+        setConfirm(null);
+        if (error) { toast.error(error.message); return; }
+        toast.success(`Indicação de ${user.username} enviada para análise.`);
       },
     });
   }
@@ -54,11 +53,10 @@ export function useOwnerUserActions(refetch) {
       confirmLabel: 'Enviar solicitação',
       confirmIcon: ShieldAlert,
       onConfirm: async (notes) => {
-        try {
-          await requestRoleDemotion(user.id, 'user', notes);
-          setReason(null);
-          toast.success(`Solicitação de rebaixamento de ${user.username} enviada para análise.`);
-        } catch (e) { toast.error(e.message); }
+        const { error } = await requestRoleDemotion(user.id, 'user', notes);
+        if (error) { toast.error(error.message); return; }
+        setReason(null);
+        toast.success(`Solicitação de rebaixamento de ${user.username} enviada para análise.`);
       },
     });
   }

@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { getEmbedInfo } from '../lib/embed';
-import { removeFilesFromStorage } from '../lib/storage';
+
+import { ok, fail, from, fromCount } from './result';
 import { compressMedias } from '../lib/image';
 
 // Colunas explícitas em vez de `*`: cada coluna a mais viaja em TODA linha de
@@ -78,43 +79,46 @@ async function attachEngagement(posts, viewerId) {
 }
 
 export async function fetchFeedPosts(limit = 30, viewerId = null) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('posts')
     .select(POST_SELECT)
     .is('live_kind', null)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
-  return attachEngagement(data || [], viewerId);
+  if (error) return fail(error, []);
+  return ok(await attachEngagement(data || [], viewerId));
 }
 
 export async function fetchUserPosts(userId, viewerId = null) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('posts')
     .select(POST_SELECT)
     .eq('user_id', userId)
     .is('live_kind', null)
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
-  return attachEngagement(data || [], viewerId);
+  if (error) return fail(error, []);
+  return ok(await attachEngagement(data || [], viewerId));
 }
 
 export async function fetchActiveLives() {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('posts')
     .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
     .eq('is_live', true)
     .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
     .not('embed_url', 'is', null)
     .order('created_at', { ascending: false });
-  return data || [];
+  if (error) return fail(error, []);
+  return ok(data || []);
 }
 
 // ─── Post CRUD ───────────────────────────────────────────────────────────────
 
 export async function createPost({ userId, title, content, category, audioUrl, audioType, audioName, embedUrl, isLive, liveKind, liveKindLabel }) {
   const embedInfo = embedUrl ? getEmbedInfo(embedUrl) : null;
-  return supabase.from('posts').insert({
+  return from(await supabase.from('posts').insert({
     user_id: userId,
     title: title.trim(),
     content: content?.trim() || null,
@@ -131,7 +135,7 @@ export async function createPost({ userId, title, content, category, audioUrl, a
     // quando "outro".
     live_kind: liveKind || null,
     live_kind_label: liveKind === 'outro' ? (liveKindLabel?.trim() || null) : null,
-  }).select().single();
+  }).select().single());
 }
 
 export async function updatePost(postId, { content, isLive, wasLive }, userId, isAdmin) {
@@ -142,38 +146,17 @@ export async function updatePost(postId, { content, isLive, wasLive }, userId, i
     edited_at: new Date().toISOString(),
   }).eq('id', postId);
   if (!isAdmin) q = q.eq('user_id', userId);
-  return q;
+  return from(await q);
 }
 
 export async function softDeletePost(postId) {
-  return supabase.rpc('soft_delete_post', { p_post_id: postId });
+  return from(await supabase.rpc('soft_delete_post', { p_post_id: postId }));
 }
 
-export async function restorePost(postId) {
-  return supabase.rpc('restore_post', { p_post_id: postId });
-}
 
-export async function deletePost(postId, userId, isAdmin) {
-  // Coleta as URLs de mídia ANTES do delete — as linhas de post_media somem
-  // no cascade e os paths do Storage seriam perdidos (arquivo órfão eterno).
-  const [{ data: media }, { data: post }] = await Promise.all([
-    supabase.from('post_media').select('url').eq('post_id', postId),
-    supabase.from('posts').select('audio_url, media_url').eq('id', postId).maybeSingle(),
-  ]);
-  let q = supabase.from('posts').delete({ count: 'exact' }).eq('id', postId);
-  if (!isAdmin) q = q.eq('user_id', userId);
-  const { error, count } = await q;
-  if (error) return { error };
-  // count 0 sem erro = RLS bloqueou (ex.: sem hierarquia). Antes isso virava
-  // "sucesso" falso — o toast aparecia mas nada era deletado.
-  if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
-  const urls = [...(media || []).map((m) => m.url), post?.audio_url, post?.media_url];
-  await removeFilesFromStorage(urls);
-  return { error: null };
-}
 
 export async function endLivePost(postId) {
-  return supabase.from('posts').update({ is_live: false }).eq('id', postId);
+  return from(await supabase.from('posts').update({ is_live: false }).eq('id', postId));
 }
 
 // ─── Likes ───────────────────────────────────────────────────────────────────
@@ -187,31 +170,32 @@ export async function fetchLikeStatus(postId, userId) {
       ? supabase.from('post_likes').select('id').eq('post_id', postId).eq('user_id', userId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
-  return { count: count || 0, liked: !!liked };
+  return ok({ count: count || 0, liked: !!liked });
 }
 
 export async function likePost(postId, userId) {
-  return supabase.from('post_likes').insert({ post_id: postId, user_id: userId });
+  return from(await supabase.from('post_likes').insert({ post_id: postId, user_id: userId }));
 }
 
 export async function unlikePost(postId, userId) {
-  return supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId);
+  return from(await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId));
 }
 
 // ─── Media ───────────────────────────────────────────────────────────────────
 
 export async function fetchPostMedia(postId) {
-  const { data } = await supabase.from('post_media').select('*').eq('post_id', postId).order('position');
-  return data || [];
+  const { data, error } = await supabase.from('post_media').select('*').eq('post_id', postId).order('position');
+  if (error) return fail(error, []);
+  return ok(data || []);
 }
 
 export async function uploadAudio(userId, audioFile) {
   const ext = audioFile.name.split('.').pop();
   const path = `${userId}/audio-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from('post-media').upload(path, audioFile, { contentType: audioFile.type, cacheControl: '31536000' });
-  if (error) return { url: null, error };
+  if (error) return fail(error);
   const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
-  return { url: publicUrl, error: null };
+  return ok(publicUrl);
 }
 
 export async function uploadPostMediaFiles(userId, postId, medias) {
@@ -236,43 +220,45 @@ export async function uploadPostMediaFiles(userId, postId, medias) {
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
     if (type === 'image') imageUrls.push(publicUrl);
   }
-  if (!rows.length) return { error: failed ? { message: 'Falha ao enviar a mídia.' } : null, imageUrls, failed };
-  const result = await supabase.from('post_media').insert(rows);
-  return { ...result, imageUrls, failed };
+  const carga = { imageUrls, failed };
+  if (!rows.length) {
+    return failed ? { data: carga, error: { message: 'Falha ao enviar a mídia.' } } : ok(carga);
+  }
+  const { error } = await supabase.from('post_media').insert(rows);
+  return error ? { data: carga, error } : ok(carga);
 }
 
 // ─── Comments ────────────────────────────────────────────────────────────────
 
 export async function fetchComments(postId) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('comments')
     .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
-  return data || [];
+  if (error) return fail(error, []);
+  return ok(data || []);
 }
 
 export async function fetchCommentCount(postId) {
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from('comments')
     .select('*', { count: 'exact', head: true })
     .eq('post_id', postId);
-  return count || 0;
+  if (error) return fail(error, 0);
+  return ok(count || 0);
 }
 
 export async function addComment({ postId, userId, content, parentId = null }) {
-  return supabase.from('comments')
+  return from(await supabase.from('comments')
     .insert({ post_id: postId, user_id: userId, content, parent_id: parentId })
-    .select('id').single();
+    .select('id').single());
 }
 
 export async function deleteComment(commentId, userId, isAdmin) {
   let q = supabase.from('comments').delete({ count: 'exact' }).eq('id', commentId);
   if (!isAdmin) q = q.eq('user_id', userId);
-  const { error, count } = await q;
-  if (error) return { error };
-  if (!count) return { error: { message: 'Você não tem permissão para deletar isto.' } };
-  return { error: null };
+  return fromCount(await q, 'Você não tem permissão para deletar isto.');
 }
 
 // ─── Curtidas em comentários ───────────────────────────────────────────────────
@@ -284,13 +270,13 @@ export async function fetchCommentLikeStatus(commentId, userId) {
       ? supabase.from('comment_likes').select('id').eq('comment_id', commentId).eq('user_id', userId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
-  return { count: count || 0, liked: !!liked };
+  return ok({ count: count || 0, liked: !!liked });
 }
 
 export async function likeComment(commentId, userId) {
-  return supabase.from('comment_likes').insert({ comment_id: commentId, user_id: userId });
+  return from(await supabase.from('comment_likes').insert({ comment_id: commentId, user_id: userId }));
 }
 
 export async function unlikeComment(commentId, userId) {
-  return supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId);
+  return from(await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId));
 }

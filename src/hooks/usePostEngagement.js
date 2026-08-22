@@ -40,7 +40,7 @@ export function usePostEngagement({ post, userId }) {
       (function next() {
         if (attempt >= RETRY_DELAYS.length) return;
         retryRef.current = setTimeout(async () => {
-          const again = await fetchPostMedia(post.id);
+          const { data: again } = await fetchPostMedia(post.id);
           if (isCancelled()) return;
           if (again.length > 0) setPostMedia(again);
           else { attempt++; next(); }
@@ -53,7 +53,7 @@ export function usePostEngagement({ post, userId }) {
       setLiked(!!post.liked_by_me);
     } else {
       (async () => {
-        const { count, liked: isLiked } = await fetchLikeStatus(post.id, userId);
+        const { data: { count, liked: isLiked } = {} } = await fetchLikeStatus(post.id, userId);
         if (isCancelled()) return;
         setLikeCount(count);
         setLiked(isLiked);
@@ -65,7 +65,7 @@ export function usePostEngagement({ post, userId }) {
       if (batchedMedia.length === 0) scheduleMediaRetry();
     } else {
       (async () => {
-        const data = await fetchPostMedia(post.id);
+        const { data } = await fetchPostMedia(post.id);
         if (isCancelled()) return;
         setPostMedia(data);
         if (data.length === 0) scheduleMediaRetry();

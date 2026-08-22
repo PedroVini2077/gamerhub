@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchBlockedWords } from '../services/moderationService';
 import { checkText } from '../lib/wordlist';
+import { apenasData } from '../services/result';
 
 export function useBlockedWords() {
   const { data: words = [] } = useQuery({
     queryKey: ['blocked_words'],
-    queryFn: fetchBlockedWords,
+    queryFn: () => apenasData(fetchBlockedWords()),
     staleTime: 5 * 60 * 1000,
   });
 

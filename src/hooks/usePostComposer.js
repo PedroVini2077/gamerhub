@@ -116,7 +116,7 @@ export function usePostComposer(onPost) {
       let audio_type = null;
 
       if (audio?.file) {
-        const { url, error } = await uploadAudio(user.id, audio.file);
+        const { data: url, error } = await uploadAudio(user.id, audio.file);
         if (error) throw error;
         audio_url = url;
         audio_type = audio.type === 'recorded' ? 'recorded' : 'music';
@@ -137,7 +137,7 @@ export function usePostComposer(onPost) {
       if (postError) throw postError;
 
       if (medias.length > 0) {
-        const { imageUrls, failed } = await uploadPostMediaFiles(user.id, post.id, medias);
+        const { data: { imageUrls, failed } = {} } = await uploadPostMediaFiles(user.id, post.id, medias);
         // O post já foi criado — avisar é melhor do que deixar o usuário achar
         // que a mídia subiu e só descobrir olhando o card.
         if (failed) toast.error(`${failed} mídia(s) não puderam ser enviadas.`);
