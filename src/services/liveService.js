@@ -17,8 +17,18 @@ export async function fetchLiveTimeouts(postId) {
   return map;
 }
 
+// Devolve o `id` da mensagem criada porque a moderação de IA precisa dele para
+// enfileirar a mensagem para revisão. O `error` é devolvido junto de propósito:
+// antes esta função descartava a resposta inteira e uma recusa da RLS (usuário
+// suspenso, live encerrada) sumia em silêncio — o campo limpava e a pessoa
+// achava que tinha enviado.
 export async function sendChatMessage({ postId, userId, message }) {
-  return supabase.from('live_chat').insert({ post_id: postId, user_id: userId, message });
+  const { data, error } = await supabase
+    .from('live_chat')
+    .insert({ post_id: postId, user_id: userId, message })
+    .select('id')
+    .single();
+  return { id: data?.id ?? null, error };
 }
 
 export async function deleteChatMessage(messageId, isMod, userId) {
