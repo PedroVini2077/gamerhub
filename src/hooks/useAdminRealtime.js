@@ -7,10 +7,14 @@ import { supabase } from '../lib/supabase';
  * Os handlers despacham pela aba ATIVA, lida por ref: o canal é montado uma vez
  * só, então uma closure sobre `tab` congelaria o valor da primeira render.
  *
- * Conhecido e registrado no BACKLOG: este canal assina `posts` e `admin_logs`
- * com `event:'*'` global, então todo admin com o painel aberto recebe evento de
- * cada post e cada log do site. Público pequeno (só admins); o ideal é assinar
- * sob demanda por aba. Não foi mexido aqui pra não misturar escopo com o split.
+ * `admin_logs` NÃO é assinado aqui de propósito: era o pior custo/benefício do
+ * projeto — tabela de auditoria de alto volume transmitida para todo admin com
+ * o painel aberto, mesmo com a aba de logs fechada. Foi tirada da publicação
+ * `supabase_realtime` e trocada por `useVisiblePoll` na aba de logs.
+ *
+ * `posts` ainda é assinado com `event:'*'` global. Fica registrado no BACKLOG:
+ * o ideal é assinar sob demanda por aba, mas o público é pequeno (só admins) e
+ * a mudança mexe na moderação de lives, que pede janela própria.
  */
 export function useAdminRealtime({ tab, logCat, isSuperAdmin, handlers }) {
   const tabRef = useRef(tab);
@@ -42,9 +46,6 @@ export function useAdminRealtime({ tab, logCat, isSuperAdmin, handlers }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
         on('refreshUnread')();
         if (tabRef.current === 'notifs') on('fetchNotifications')();
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => {
-        if (tabRef.current === 'logs') on('fetchLogs')(logCatRef.current);
       })
       .subscribe();
 

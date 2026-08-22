@@ -6,6 +6,7 @@ import { RefreshCw } from 'lucide-react';
 import { feedItemMeta } from '../../lib/logMeta';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { useVisiblePoll } from '../../hooks/useVisiblePoll';
 
 
 export default function NotificacoesTab() {
@@ -20,13 +21,18 @@ export default function NotificacoesTab() {
     },
   });
 
+  // `admin_notifications` segue em realtime (volume baixo, é o que o painel
+  // mostra). `admin_logs` saiu da publicação por custo — este painel também
+  // lista logs, então eles chegam pelo poll abaixo.
   useEffect(() => {
     const ch = supabase.channel('owner-notif-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => refetch())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_logs' }, () => refetch())
       .subscribe();
     return () => supabase.removeChannel(ch);
   }, [refetch]);
+
+  // Os logs que este painel mostra nao chegam mais por realtime.
+  useVisiblePoll(refetch, 30000);
 
   async function handleRefresh() {
     setRefreshing(true);
