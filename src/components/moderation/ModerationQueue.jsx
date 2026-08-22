@@ -121,11 +121,22 @@ export default function ModerationQueue() {
       if (error) { toast.error('Erro ao resolver item'); return; }
 
       if (decision === 'approved' && item.content_type !== 'chat') {
-        await hideContent(item.content_type, item.content_id);
+        // O erro daqui era DESCARTADO. `hideContent` usa `count: 'exact'`
+        // justamente para detectar a RLS negando em silêncio — jogar a resposta
+        // fora anulava essa proteção: a fila marcava "resolvido" e o conteúdo
+        // continuava visível no site.
+        const { error: hideErr } = await hideContent(item.content_type, item.content_id);
+        if (hideErr) {
+          toast.error('Item resolvido, mas NÃO foi possível ocultar: ' + hideErr.message);
+        }
       }
 
       const reps = reports[item.content_id] || [];
-      await Promise.all(reps.map(r => updateReportStatus(r.id, decision === 'approved' ? 'reviewed' : 'dismissed')));
+      const resultados = await Promise.all(
+        reps.map(r => updateReportStatus(r.id, decision === 'approved' ? 'reviewed' : 'dismissed')),
+      );
+      const falhas = resultados.filter(r => r.error).length;
+      if (falhas) toast.error(`${falhas} denúncia(s) não puderam ser atualizadas.`);
 
       // Busca o author do conteúdo (usado pra violação e notificação)
       let authorId = null;
@@ -139,7 +150,10 @@ export default function ModerationQueue() {
       if (authorId) {
         const action = actions[item.id];
         if (decision === 'approved' && action) {
-          await addViolation({
+          // Sem checar o erro, a violação some e o usuário nunca acumula
+          // pontos rumo à escalação automática — a punição simplesmente não
+          // acontece, sem ninguém ficar sabendo.
+          const { error: violErr } = await addViolation({
             userId: authorId,
             contentType: item.content_type,
             contentId: item.content_id,
@@ -147,6 +161,7 @@ export default function ModerationQueue() {
             actionTaken: action,
             points: ACTION_POINTS[action] ?? 1,
           });
+          if (violErr) toast.error('Falha ao registrar a violação: ' + violErr.message);
           if (action === 'suspend_1d' || action === 'suspend_7d') {
             const { error: suspErr } = await applySuspension(authorId, action === 'suspend_7d' ? 7 : 1);
             if (suspErr) toast.error('Violação criada, mas falha ao suspender: ' + suspErr.message);
