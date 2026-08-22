@@ -3,6 +3,17 @@ import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
 
+// A RLS nega devolvendo ZERO LINHAS e nenhum erro. Checar so `error` fazia o
+// painel cantar "Live encerrada" enquanto a live seguia no ar — foi exatamente
+// o que o dono relatou. `count: 'exact'` transforma o silencio em resposta.
+async function mudarLive(postId, isLive) {
+  const { error, count } = await supabase
+    .from('posts').update({ is_live: isLive }, { count: 'exact' }).eq('id', postId);
+  if (error) return error;
+  if (!count) return { message: 'Sem permissão para alterar esta live.' };
+  return null;
+}
+
 /** Moderação de lives: encerrar, reativar, e o fluxo de solicitação/aprovação. */
 export function useAdminLiveActions({
   setConfirmModal, setReactivateModal, user, username, fetchLiveMod, fetchLogs,
@@ -22,8 +33,8 @@ export function useAdminLiveActions({
       message: `Encerrar a live "${title}"? O streamer não poderá retomá-la sem uma nova solicitação.`,
       confirmLabel: 'Encerrar', confirmIcon: X,
       onConfirm: async () => {
-        const { error } = await supabase.from('posts').update({ is_live: false }).eq('id', postId);
-        if (error) { toast.error('Erro ao encerrar live'); return; }
+        const err = await mudarLive(postId, false);
+        if (err) { toast.error('Erro ao encerrar live: ' + err.message); return; }
         toast.success('Live encerrada');
         await log('live_ended', `Live "${title}" encerrada pelo admin`);
         setConfirmModal(null);
@@ -35,8 +46,8 @@ export function useAdminLiveActions({
   const motivo = (reason, details) => `${reason}${details ? ` — ${details}` : ''}`;
 
   async function handleReactivateDirect(live, reason, details) {
-    const { error } = await supabase.from('posts').update({ is_live: true }).eq('id', live.id);
-    if (error) { toast.error('Erro ao reativar'); return; }
+    const err = await mudarLive(live.id, true);
+    if (err) { toast.error('Erro ao reativar: ' + err.message); return; }
     toast.success('Live reativada!');
     await log('live_reactivated', `Live "${live.title}" reativada. Motivo: ${motivo(reason, details)}`);
     setReactivateModal(null);
@@ -64,8 +75,8 @@ export function useAdminLiveActions({
   });
 
   async function handleApproveRequest(req) {
-    const { error } = await supabase.from('posts').update({ is_live: true }).eq('id', req.post_id);
-    if (error) { toast.error('Erro ao reativar post'); return; }
+    const err = await mudarLive(req.post_id, true);
+    if (err) { toast.error('Erro ao reativar post: ' + err.message); return; }
     await supabase.from('live_reactivation_requests')
       .update({ status: 'approved', ...reviewFields() }).eq('id', req.id);
     toast.success('Aprovado — live reativada!');

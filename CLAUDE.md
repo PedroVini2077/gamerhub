@@ -64,7 +64,7 @@ acaba no meio do trabalho — então economizar faz parte de fazer bem feito.
 
 ---
 
-## 1. Postura (as três regras que valem acima de tudo)
+## 1. Postura (as regras que valem acima de tudo)
 
 ### 1.1 Sinceridade — sempre, em tudo
 
@@ -147,6 +147,90 @@ ela, e como provei que morreu.
   decisão — corrigida, ou por que foi considerada segura. Nunca deixar em
   silêncio.
 
+#### Como achar ANTES — o que já custou caro aqui
+
+Três correções de segurança legítimas derrubaram o site em silêncio. Nenhuma
+foi descuido na hora de escrever: foi **não perguntar quem dependia daquilo**.
+
+| O que foi feito | O que quebrou junto |
+| --- | --- |
+| Revogar colunas de `profiles` (LGPD) | As policies de INSERT liam `suspended_until` → **postar, comentar, mural e chat pararam** |
+| Apagar policies amplas de SELECT no storage | A API perdeu a leitura de buckets e da própria pasta → **upload de foto parou** |
+| Escrever lista de papéis à mão | 14 policies esqueceram `owner` → **o fundador não encerrava live nem silenciava** |
+
+**Antes de revogar, apagar ou restringir qualquer coisa, procurar quem lê:**
+
+```sql
+-- quem depende da COLUNA que vou revogar
+select tablename, policyname from pg_policies
+ where coalesce(qual,'')||coalesce(with_check,'') ilike '%coluna%';
+select proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where n.nspname='public' and prosrc ilike '%coluna%';
+
+-- triggers SECURITY INVOKER (rodam com o privilégio de QUEM CHAMA)
+select t.tgname, p.proname, p.prosecdef from pg_trigger t
+  join pg_proc p on p.oid=t.tgfoid
+ where not t.tgisinternal and p.prosrc ilike '%tabela%';
+```
+
+**Varredura de classe, não de caso.** Ao achar um bug, perguntar sempre: *"onde
+mais esse mesmo padrão existe?"*. Achar `owner` faltando numa policy e corrigir
+só ela deixa 13 iguais no site. A consulta que achou as 14:
+
+```sql
+select tablename, policyname from pg_policies
+ where coalesce(qual,'')||coalesce(with_check,'') ilike '%super_admin%'
+   and coalesce(qual,'')||coalesce(with_check,'') not ilike '%owner%';
+```
+
+**Hierarquia nunca se escreve à mão.** Existe `role_rank()`, `is_staff()` e
+`is_super()`. Lista literal `ARRAY['admin','super_admin']` é bug esperando
+acontecer — foi assim três vezes.
+
+**Erro que a RLS engole.** `UPDATE`/`DELETE` negado pela RLS devolve **0 linhas
+e nenhum erro**. Toda escrita que pode ser negada usa `count: 'exact'` e trata
+0 como falha — no service E no chamador. Sem isso a tela mente ("Live
+encerrada" com a live no ar).
+
+---
+
+### 1.4 Não confiar só no que está escrito
+
+`CLAUDE.md` e `BACKLOG.md` são memória do projeto, não a verdade sobre ele. Já
+me enganaram: o backlog dizia "projeto pausado" (estava ativo), "~30 funções"
+(eram 73), "Admin.jsx com 900 linhas" (eram 647), "adiar `pg_net` por risco"
+(a operação nem era possível). **Documento envelhece; o sistema não mente.**
+
+Antes de afirmar qualquer coisa sobre o estado do projeto, olhar a fonte:
+
+| Pergunta | Onde está a verdade |
+| --- | --- |
+| O banco está assim mesmo? | consulta ao Supabase, não o backlog |
+| Essa função ainda existe/faz isso? | `pg_proc.prosrc`, não a documentação |
+| Quando isso quebrou? | `git log -S'trecho'` — acha o commit que introduziu |
+| O que essa mudança tocou? | `git show <sha>`, `git log --oneline -- <arquivo>` |
+| Isso é regressão minha ou antiga? | `git log` + reproduzir na versão anterior |
+
+**Testar também o que é antigo.** A tendência natural é testar só o que mexi
+nesta sessão — e foi justamente aí que os bugs escaparam: eles vieram de
+sessões *anteriores* e ninguém voltou. Ao investigar uma falha, subir na
+história:
+
+```bash
+git log --oneline -20                    # o que entrou recentemente
+git log --oneline -- src/caminho.jsx     # história daquele arquivo
+git log -S'texto_que_sumiu' --oneline    # quando esse trecho apareceu/saiu
+git show <sha> --stat                    # o que aquele commit tocou
+```
+
+**Nada de descartar mudança antiga por ser antiga.** Se a suspeita apontar para
+algo de três sessões atrás, ir lá. A idade do commit não o inocenta.
+
+**Usar todas as ferramentas, não só as duas.** MCP do Supabase (estado real),
+navegador (Playwright — o site de verdade), API HTTP (`curl` nas Edge Functions
+e no PostgREST), `git`, histórico de PRs no GitHub. Quando duas fontes
+discordam, vence a que **executa**.
+
 ---
 
 ## 2. Definição de pronto
@@ -164,6 +248,8 @@ Uma entrega só está pronta quando **todos** estes itens passam:
       dividi **antes** de entregar — não anotei pra depois (§4)
 - [ ] `README.md` atualizado se mudou comportamento/estrutura
 - [ ] `BACKLOG.md` atualizado se resolveu ou descobriu pendência
+- [ ] Passei a bateria de faxina (§6.1) no que toquei — código morto, egress,
+      cleanup, duplicação
 - [ ] Script de teste avulso: rodou, passou, **apagou** (nunca commitar)
 
 ---
@@ -440,6 +526,81 @@ explícito — nunca some em silêncio.
 - Integridade: FK e regra de `ON DELETE` (um `NO ACTION` esquecido trava
   exclusão de conta).
 - `get_advisors` security **e** performance.
+
+---
+
+## 6.1 FAXINA — bateria de otimização (obrigatória e automática)
+
+> Pedido do dono: *"essa faxina que estamos fazendo — otimizando, caçando bugs,
+> egress — é algo obrigatório, e tem que ser automático, como jogar fora lixo"*.
+
+**Faxina ≠ auditoria.** A auditoria (§6) procura **falha**: brecha, bug, regra
+que não cobre um caminho. A faxina procura **excesso e desperdício**: código
+morto, duplicação, consulta cara, byte trafegado à toa. As duas são
+obrigatórias e nenhuma substitui a outra.
+
+**Quando roda, sem o dono pedir:**
+- ao fechar um bloco de trabalho (antes do PR);
+- quando eu mesmo esbarrar num item da lista, mesmo fazendo outra coisa (§0);
+- por inteiro, quando o dono disser "faxina".
+
+### A bateria
+
+**1. Código morto e duplicado**
+```bash
+find src -name '*.jsx' -o -name '*.js' | xargs wc -l | sort -rn | head -15
+```
+- Arquivo > 300 linhas → dividir agora (§4).
+- Função exportada sem nenhum call site → apagar. *(Cuidado: referência passada
+  como valor — `queryFn: fn` — não é chamada; conferir antes de apagar.)*
+- Mesma lógica/UI em 2+ lugares → extrair. Cópias divergem: já aconteceu com
+  ícones de log, rótulos de cargo, cores de cargo e a regra de bloqueio de
+  login.
+
+**2. Egress — a cota mais apertada do plano**
+- Imagem sem compressão antes do upload (`lib/image.js`).
+- `cacheControl` longo em arquivo de path único.
+- `SELECT *` onde a tela usa 4 colunas.
+- N+1: uma consulta por card em vez de uma em lote.
+- Realtime assinando tabela de alto volume, ou `event:'*'` sem filtro. Custa
+  por (mudanças × conexões) e só dói quando escala.
+
+**3. Carregamento**
+- Rota/asset pesado sem `lazy`.
+- Componente caro montando fora da viewport (`LazyVisible`).
+- Vídeo/mídia baixando sem clique.
+
+**4. Memória e ciclo de vida**
+- `createObjectURL` sem `revokeObjectURL` — segura o arquivo inteiro na RAM.
+- `setInterval`/`setTimeout`/subscription sem cleanup.
+- Efeito com deps que remontam canal de realtime a cada render.
+
+**5. Banco**
+```sql
+select * from pg_stat_user_indexes where idx_scan = 0;  -- índice nunca usado
+```
+- FK sem índice de cobertura; coluna filtrada/ordenada sem índice.
+- Tabela append-only sem retenção (`admin_logs`, `login_attempts`, `live_chat`).
+- `get_advisors` (security **e** performance) depois de mexer em schema.
+
+**6. Saúde do projeto**
+```bash
+npm audit            # 0 vulnerabilidades
+npm run lint         # 0 erros; warnings não podem AUMENTAR
+npx vitest run       # tudo verde
+npm run build        # limpo
+node e2e/smoke.mjs   # rotas de pé num navegador real
+```
+
+### Regras da faxina
+
+- **Medir antes e depois.** "Otimizei" sem número é opinião. Dizer o antes → o
+  depois: 918 → 197 linhas, 16 → 12 warnings, 8 → 0 vulnerabilidades.
+- **Uma otimização por commit**, reversível.
+- **Não trocar correção por maquiagem.** Suprimir warning com `disable` não é
+  faxina — se for necessário, o motivo vai escrito ao lado no código e é dito
+  ao dono que foi supressão, não conserto.
+- **O que eu decidir NÃO otimizar vai pro `BACKLOG.md` com o motivo.**
 
 ---
 

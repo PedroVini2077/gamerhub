@@ -156,7 +156,12 @@ export async function softDeletePost(postId) {
 
 
 export async function endLivePost(postId) {
-  return from(await supabase.from('posts').update({ is_live: false }).eq('id', postId));
+  // count 0 sem erro = a RLS negou em silencio; sem isto a tela diz "encerrada"
+  // e a live continua no ar.
+  return fromCount(
+    await supabase.from('posts').update({ is_live: false }, { count: 'exact' }).eq('id', postId),
+    'Sem permissão para encerrar esta live.',
+  );
 }
 
 // ─── Likes ───────────────────────────────────────────────────────────────────
