@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { useRole } from '../hooks/useRole';
 import { useLivesList } from '../hooks/useLivesList';
 import { useLiveChat } from '../hooks/useLiveChat';
-import { suspendedUntil } from '../lib/roles';
+import { suspendedUntil, canModerateLive } from '../lib/roles';
 import EmbedPlayer from '../components/ui/EmbedPlayer';
 import ChatPanel from '../components/lives/ChatPanel';
 import ModPanel from '../components/lives/ModPanel';
@@ -63,8 +63,8 @@ export default function Lives() {
     navigate('/lives');
   }
 
-  const isLiveOwner = activeLive && user && activeLive.user_id === user.id;
-  const canModerate = isAdmin || isLiveOwner;
+  const isLiveOwner = !!(activeLive && user && activeLive.user_id === user.id);
+  const canModerate = canModerateLive(isAdmin, activeLive, user);
 
   if (loading) return (
     <div className="space-y-2">

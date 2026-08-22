@@ -21,6 +21,19 @@ export function canDeleteContent(viewerId, viewerRole, authorId, authorRole) {
   return canModerate(viewerRole, authorRole);
 }
 
+// Quem controla o chat de uma live: a equipe, ou o dono da própria live.
+//
+// Espelha exatamente as policies de `live_chat_timeouts` (INSERT/UPDATE/DELETE)
+// e a de DELETE em `live_chat`: `is_staff() OR auth.uid() = posts.user_id`. O
+// streamer silenciar quem atrapalha a PRÓPRIA transmissão é intencional — não é
+// privilégio de admin vazando pra usuário comum.
+//
+// Estava escrita à mão em dois lugares (`pages/Lives.jsx` e `hooks/useLiveChat`)
+// e as duas cópias precisavam concordar entre si E com o banco. Fonte única.
+export function canModerateLive(isAdmin, live, user) {
+  return !!(isAdmin || (live && user && live.user_id === user.id));
+}
+
 // Suspensão temporária ativa? Retorna a data de fim (Date) se ativa, senão null.
 // A segurança real está no RLS (suspenso não cria conteúdo); isto é só pra UI
 // explicar ao usuário em vez de deixá-lo tomar erro silencioso.
