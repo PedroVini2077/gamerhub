@@ -123,6 +123,12 @@ async function getAuthHeader() {
 }
 
 // Fire-and-forget: texto — não bloqueia o fluxo do usuário.
+//
+// O `text` NÃO vai mais no corpo: a Edge Function lê o texto direto da linha no
+// banco. Mandar o texto daqui era um buraco — bastava enviar o `content_id` de
+// um post alheio junto de uma frase ofensiva qualquer para derrubar o post de
+// outra pessoa. O parâmetro continua aqui só como guarda de "não tem o que
+// moderar" antes de gastar uma chamada.
 export async function moderateText(contentType, contentId, text) {
   if (!text?.trim()) return;
   const auth = await getAuthHeader();
@@ -130,7 +136,7 @@ export async function moderateText(contentType, contentId, text) {
   fetch(`${SUPABASE_URL}/functions/v1/moderate-text`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: SUPABASE_ANON },
-    body: JSON.stringify({ content_type: contentType, content_id: contentId, text }),
+    body: JSON.stringify({ content_type: contentType, content_id: contentId }),
   }).catch(() => {});
 }
 
@@ -164,10 +170,18 @@ export async function moderateImages(contentType, contentId, imageUrls) {
 // virava "sucesso" silencioso. Foi exatamente o que escondeu, por muito tempo,
 // o fato de `comments` e `community_posts` não terem policy de UPDATE nenhuma —
 // o painel dizia "ocultado" e nada acontecia.
+// Mapa explícito em vez de `else → community_posts`: a fila recebe itens de
+// `chat` (o trigger da lista de palavras enfileira mensagem de live), e o
+// fallback silencioso mandava esse item para `community_posts`, onde o id nunca
+// existe — o painel respondia "sem permissão" para um caso que é, na verdade,
+// "esta tabela não tem como ocultar".
+const TABELA_POR_TIPO = { post: 'posts', comment: 'comments', mural: 'community_posts' };
+
 async function setHiddenAt(contentType, contentId, value) {
-  const table = contentType === 'post' ? 'posts'
-    : contentType === 'comment' ? 'comments'
-    : 'community_posts';
+  const table = TABELA_POR_TIPO[contentType];
+  if (!table) {
+    return fail({ message: 'Mensagem de chat não pode ser ocultada — apague pela própria live.' });
+  }
   const { error, count } = await supabase
     .from(table)
     .update({ hidden_at: value }, { count: 'exact' })

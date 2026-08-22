@@ -7,6 +7,7 @@ import {
   deleteChatMessage, silenceUser, unsilenceUser,
 } from '../services/liveService';
 import { logAudit } from '../lib/auditLog';
+import { canModerateLive } from '../lib/roles';
 import { useBlockedWords } from './useBlockedWords';
 import { moderateText } from '../services/moderationService';
 
@@ -163,8 +164,7 @@ export function useLiveChat({ activeLive, user, profile, isAdmin }) {
   }
 
   async function deleteMessage(msgId) {
-    const isMod = isAdmin || (activeLive && user && activeLive.user_id === user.id);
-    const { error } = await deleteChatMessage(msgId, isMod, user.id);
+    const { error } = await deleteChatMessage(msgId, canModerateLive(isAdmin, activeLive, user), user.id);
     if (error) { toast.error(error.message || 'Erro ao deletar'); return; }
     logAudit('live_chat_delete', `@${profile?.username} deletou uma mensagem no chat da live "${activeLive?.title}"`, { category: 'live' });
   }
