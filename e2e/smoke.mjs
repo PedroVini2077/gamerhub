@@ -40,6 +40,17 @@ const IGNORAR = [
   /the server responded with a status of 4/i,
 ];
 
+// Sem isto, servidor fora do ar aparece como "12 rotas falharam" — o teste
+// mentiria sobre a causa. Aconteceu de verdade uma vez.
+try {
+  const r = await fetch(BASE, { signal: AbortSignal.timeout(5000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+} catch (e) {
+  console.error(`\n  Servidor nao respondeu em ${BASE} (${e.message}).`);
+  console.error('  Rode antes:  npm run build && npx vite preview --port 4173\n');
+  process.exit(2);
+}
+
 const browser = await chromium.launch({
   executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   args: ['--no-sandbox'],

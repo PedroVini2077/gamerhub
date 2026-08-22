@@ -2,53 +2,66 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 /**
- * Canal único do painel admin.
+ * Realtime do painel admin, dividido em DOIS canais por tempo de vida.
  *
- * Os handlers despacham pela aba ATIVA, lida por ref: o canal é montado uma vez
- * só, então uma closure sobre `tab` congelaria o valor da primeira render.
+ * Antes era um canal só, sempre ligado, assinando tudo — inclusive `posts` com
+ * `event:'*'` global. Isso significava que todo admin com o painel aberto
+ * recebia uma mensagem a cada post criado, editado ou curtido no site inteiro,
+ * mesmo parado na aba de Usuários, e o handler só descartava DEPOIS de receber.
  *
- * `admin_logs` NÃO é assinado aqui de propósito: era o pior custo/benefício do
- * projeto — tabela de auditoria de alto volume transmitida para todo admin com
- * o painel aberto, mesmo com a aba de logs fechada. Foi tirada da publicação
- * `supabase_realtime` e trocada por `useVisiblePoll` na aba de logs.
+ * Agora:
  *
- * `posts` ainda é assinado com `event:'*'` global. Fica registrado no BACKLOG:
- * o ideal é assinar sob demanda por aba, mas o público é pequeno (só admins) e
- * a mudança mexe na moderação de lives, que pede janela própria.
+ *   PERSISTENTE — o que precisa chegar em qualquer aba: notificações (o sino
+ *   tem badge) e, para super admin, pedidos de desban.
+ *
+ *   SOB DEMANDA — o volumoso (`posts`, timeouts de chat, pedidos de
+ *   reativação) só existe enquanto a aba de moderação de lives está aberta.
+ *   Fora dela o cliente nem assina, então o tráfego é zero em vez de ser
+ *   recebido e jogado fora.
+ *
+ * `admin_logs` não aparece aqui: saiu da publicação `supabase_realtime` e virou
+ * `useVisiblePoll` na aba de Logs.
  */
-export function useAdminRealtime({ tab, logCat, isSuperAdmin, handlers }) {
-  const tabRef = useRef(tab);
-  const logCatRef = useRef(logCat);
+export function useAdminRealtime({ tab, isSuperAdmin, handlers }) {
+  // Os handlers mudam de identidade a cada render dos hooks de domínio; o ref
+  // evita remontar canal por causa disso.
   const handlersRef = useRef(handlers);
-
-  useEffect(() => { tabRef.current = tab; }, [tab]);
-  useEffect(() => { logCatRef.current = logCat; }, [logCat]);
   useEffect(() => { handlersRef.current = handlers; });
 
-  useEffect(() => {
-    const on = name => (...args) => handlersRef.current[name]?.(...args);
-    const isLiveTab = () => tabRef.current === 'lives' || tabRef.current === 'super';
+  const on = name => (...args) => handlersRef.current[name]?.(...args);
 
-    const channel = supabase.channel('admin-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' }, () => {
-        if (isLiveTab()) on('fetchLiveMod')();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-        if (isLiveTab()) on('fetchLiveMod')();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_reactivation_requests' }, () => {
-        if (isLiveTab()) on('fetchLiveMod')();
-        if (isSuperAdmin) on('fetchLogs')();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'unban_requests' }, () => {
-        if (isSuperAdmin && tabRef.current === 'super') on('fetchUnbanRequests')();
-      })
+  // ─── Canal persistente ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const canal = supabase.channel('admin-persistente')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_notifications' }, () => {
         on('refreshUnread')();
-        if (tabRef.current === 'notifs') on('fetchNotifications')();
-      })
+        on('onNotification')();
+      });
+
+    if (isSuperAdmin) {
+      canal.on('postgres_changes', { event: '*', schema: 'public', table: 'unban_requests' }, () => {
+        on('onUnbanRequest')();
+      });
+    }
+
+    canal.subscribe();
+    return () => supabase.removeChannel(canal);
+  }, [isSuperAdmin]);
+
+  // ─── Canal de moderação de lives — só enquanto a aba está aberta ───────────
+  const abaDeLives = tab === 'lives' || tab === 'super';
+
+  useEffect(() => {
+    if (!abaDeLives) return undefined;
+
+    const recarregar = () => on('fetchLiveMod')();
+
+    const canal = supabase.channel('admin-lives')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_timeouts' }, recarregar)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, recarregar)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_reactivation_requests' }, recarregar)
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
-  }, [isSuperAdmin]);
+    return () => supabase.removeChannel(canal);
+  }, [abaDeLives]);
 }
