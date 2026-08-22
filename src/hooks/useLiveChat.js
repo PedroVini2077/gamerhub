@@ -7,6 +7,8 @@ import {
   deleteChatMessage, silenceUser, unsilenceUser,
 } from '../services/liveService';
 import { logAudit } from '../lib/auditLog';
+import { useBlockedWords } from './useBlockedWords';
+import { moderateText } from '../services/moderationService';
 
 const isActive = t => t && new Date(t.expires_at) > new Date();
 
@@ -18,6 +20,7 @@ const isActive = t => t && new Date(t.expires_at) > new Date();
  * zerado aqui dentro, então a página não precisa mexer em nada disso na mão.
  */
 export function useLiveChat({ activeLive, user, profile, isAdmin }) {
+  const { checkContent } = useBlockedWords();
   const [messages, setMessages] = useState([]);
   const [msg, setMsg] = useState('');
   const [sending, setSending] = useState(false);
@@ -132,10 +135,31 @@ export function useLiveChat({ activeLive, user, profile, isAdmin }) {
 
   async function sendMessage() {
     if (!msg.trim() || !user || !activeLive || sending || isSilenced) return;
+    const texto = msg.trim();
+
+    // O chat de live era o único lugar do site sem filtro nenhum — nem lista de
+    // palavras, nem IA. É justamente onde ofensa acontece em tempo real.
+    if (checkContent(texto).blocked) {
+      toast.error('Mensagem não enviada: contém termo bloqueado.');
+      return;
+    }
+
     setSending(true);
-    await sendChatMessage({ postId: activeLive.id, userId: user.id, message: msg.trim() });
-    setMsg('');
+    const { id, error } = await sendChatMessage({
+      postId: activeLive.id, userId: user.id, message: texto,
+    });
     setSending(false);
+
+    // Erro aqui era descartado: o campo limpava e a pessoa achava que enviou.
+    if (error) {
+      toast.error(error.message || 'Não foi possível enviar a mensagem.');
+      return;
+    }
+
+    setMsg('');
+    // Fire-and-forget, igual ao post e ao comentário: não segura o chat. Chat é
+    // efêmero, então a IA não oculta — enfileira para o admin revisar.
+    if (id) moderateText('chat', id, texto);
   }
 
   async function deleteMessage(msgId) {
