@@ -29,6 +29,103 @@
   monta sem erro. *Pronto quando:* existe teste que quebraria se um upgrade de
   router derrubasse uma rota.
 
+### 0.5 Moderação — TESTADA em 21/08/2026, NÃO está 100%
+
+> Pergunta do dono: *"a moderação por IA, conteúdo adulto, palavras proibidas,
+> palavrões, insultos — está funcionando 100%?"*. Testei invocando as três Edge
+> Functions em produção. Resposta: **as três funcionam, mas a cobertura tem 3
+> buracos** — um deles deixa o filtro de palavrão sem efeito nenhum.
+
+**O que FUNCIONA (verificado por invocação real, não por leitura):**
+
+| Função | Teste | Resultado |
+|---|---|---|
+| `moderate-text` | "seu merda, vou te matar seu filho da puta" | `score 0.996, flagged` ✅ |
+| `moderate-text` | "qual o melhor build pro novo patch" | `score 0.001, ok` ✅ |
+| `moderate-links` | URL oficial de malware do Google | `MALWARE detectado` ✅ |
+| `moderate-image` | imagem segura | pipeline responde, `score 0` ✅ |
+
+As chaves `HUGGINGFACE_API_KEY` e `GOOGLE_SAFE_BROWSING_KEY` estão
+configuradas e válidas. `mod_ai_enabled=true`.
+
+#### 🔴 Buraco 1 — a lista de palavrões está VAZIA
+
+`select count(*) from blocked_words` → **0**.
+
+O filtro síncrono do `PostForm`/`CommentSection`/`MuralForm` roda, consulta a
+lista, e **não bloqueia nada porque não há nada pra bloquear**. A feature
+inteira (tabela, RLS, `useBlockedWords`, aba `WordlistManager` no admin) existe
+e está ligada — só nunca foi populada.
+
+*Correção:* popular via a aba Moderação → Wordlist do admin, ou direto:
+```sql
+insert into public.blocked_words (word, severity) values
+  ('palavra1','high'), ('palavra2','medium');   -- severity: low | medium | high
+```
+Decisão de conteúdo do dono — não inventei a lista.
+
+#### 🔴 Buraco 2 — o chat de live não tem filtro NENHUM
+
+Confirmado por varredura: `useLiveChat`, `ChatPanel` e `liveService` não
+chamam `checkContent` nem `moderateText`. Mensagem de chat vai direto pro
+banco. Há botão de denúncia manual, mas zero filtro automático.
+
+Foi decisão consciente à época ("chat é efêmero, sem auto-hide"), mas chat ao
+vivo é justamente onde insulto e aliciamento acontecem em tempo real.
+*Correção mínima e barata:* aplicar o `checkContent` (wordlist) no envio —
+mesma chamada de uma linha que o `PostForm` já faz.
+
+#### 🔴 Buraco 3 — o modelo atual é CEGO para conteúdo adulto em texto
+
+`unitary/multilingual-toxic-xlm-roberta` foi treinado para **toxicidade**
+(insulto, ódio, ameaça) — não para conteúdo sexual. Medido:
+
+| Texto | Score | Flag? | Deveria? |
+|---|---|---|---|
+| "quer trocar nudes comigo? mando foto pelada" | **0.136** | ❌ não | **sim** |
+| "vendo conteudo adulto +18, pack completo" | **0.010** | ❌ não | **sim** |
+| "voce e um lixo, ninguem gosta de voce, some daqui" | **0.630** | ❌ não | **sim** (passou raspando do threshold 0.7) |
+| "caralho que jogo foda demais mano" | **0.943** | ✅ sim | discutível — é elogio |
+
+Ou seja, hoje o comportamento está **invertido** para um site family friendly:
+aliciamento sexual e venda de conteúdo adulto passam batido, bullying real
+passa raspando, e gíria de gamer empolgado é ocultada.
+
+Imagem NSFW **está** coberta (`Falconsai/nsfw_image_detection`). O buraco é
+só em texto.
+
+#### 💡 Recomendação: trocar o modelo de texto pela OpenAI Moderation API
+
+O `BACKLOG` original já dizia que a escolha era OpenAI — foi implementado com
+HuggingFace só para não precisar de cartão. **É a tal ferramenta dos ~R$5 que
+o dono lembrava:** a OpenAI pede um crédito mínimo (US$5, ~R$27) para ativar a
+API, mas o *endpoint de moderação em si não consome crédito*.
+
+Por que é melhor para este caso, concretamente:
+
+- **`omni-moderation-latest` classifica 13 categorias separadas**, incluindo
+  `sexual`, `sexual/minors`, `harassment`, `harassment/threatening`, `hate`,
+  `violence`, `self-harm` e `illicit` — em vez de um único número de
+  "toxicidade". Dá pra ter threshold POR categoria: rígido em `sexual/minors`,
+  tolerante em palavrão sem alvo.
+- **Resolve os 3 casos que hoje passam**: sexual, aliciamento e bullying são
+  categorias próprias.
+- **Cobre texto E imagem no mesmo modelo**, o que permitiria aposentar a
+  segunda Edge Function.
+- Multilíngue, funciona bem em português.
+
+*Verificar antes de decidir:* preço e limites mudam — confirmar no site da
+OpenAI se o endpoint de moderação segue sem custo por token e qual o crédito
+mínimo atual. Não estou afirmando valores como fato imutável.
+
+*Esforço:* trocar o corpo da Edge Function `moderate-text` (a interface com o
+site não muda — continua `{score, flagged}` ou vira `{categories, flagged}`).
+Meia sessão, com teste dos mesmos casos da tabela acima como prova.
+
+*Alternativa sem custo nenhum:* manter HuggingFace e **baixar o threshold de
+0.7 para ~0.55** pega o bullying, mas continua cego a conteúdo sexual e piora
+o falso-positivo da gíria. É remendo, não solução.
+
 ### 1. Segurança
 
 - ⬜ **`pg_net` no schema `public`** *(confirmado: ainda está lá)*. É o único
