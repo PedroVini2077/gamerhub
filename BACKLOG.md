@@ -44,8 +44,83 @@
   da varredura; e actions geradas por função do Postgres nunca aparecem em
   `src/`. Corrigido nos dois lados + `ACTIONS_DO_BANCO`.
 
+- ✅ **A moderação por IA detectava e nunca aplicava — 26 de 26 chamadas.**
+  `apply_ai_moderation` só tem `EXECUTE` para `service_role`, mas as Edge
+  Functions montavam o cliente com a anon key + o JWT do usuário, ou seja
+  chamavam como `authenticated`. Toda chamada morria em `permission denied`.
+  Ficou invisível porque o erro estava só num `console.error` dentro de uma
+  chamada *fire-and-forget*. **A IA acertava** (`harassment=0.888` no log) e o
+  ocultamento nunca acontecia. Corrigido em `moderate-text` v9 / `moderate-image`
+  v6, junto de 3 brechas que a correção teria aberto — ver
+  **`db/2026-08-22-moderacao-ia-nunca-aplicou.md`**. (PR #36)
+- ✅ **Texto de moderação vinha do cliente.** Bastava mandar o `content_id` de um
+  post alheio junto de uma frase ofensiva para derrubar o post de outra pessoa.
+  A função agora **lê o texto da própria linha** e só aceita pedido do autor ou
+  da equipe.
+- ✅ **Token nunca era validado.** As duas funções têm `verify_jwt` desligado e
+  só checavam a *presença* do header `Authorization` — qualquer string passava.
+  Agora validam com `auth.getUser()`.
+- ✅ **SSRF em `moderate-image`.** Baixava qualquer URL vinda do corpo da
+  requisição: quem chamava escolhia o destino do `fetch` que sai de dentro da
+  infra da Supabase. Restrito ao storage do próprio projeto.
+- ✅ **Cobertura da lista de palavras.** O seed de 161 termos não tinha `cu` nem
+  nada em volta, nem os xingamentos banais (`idiota`, `burro`, `cala a boca`),
+  nem abreviações (`vtmnc`, `fdc`, `krlh`). ~150 termos adicionados. Corrigida
+  também a incoerência de `vai se matar` ser `high` e `se mata` ser `medium`.
+  Dois falso-positivos meus removidos na revisão: `vai morrer` como `high` num
+  site de **jogos** é censura de fala normal de partida, e `privacy` é palavra
+  inglesa comum.
+- ✅ **Regra de quem modera a live estava duplicada** em `pages/Lives.jsx` e
+  `hooks/useLiveChat.js`, e as duas cópias precisavam concordar entre si **e**
+  com a policy de `live_chat_timeouts`. Virou `canModerateLive` em
+  `lib/roles.js` com teste travando as 5 combinações. *(O botão "Mod" aparecer
+  para usuário comum dono da própria live **não é bug** — espelha exatamente
+  `is_staff() OR auth.uid() = posts.user_id`.)*
+- ✅ **Item de `chat` na fila caía na tabela errada.** `setHiddenAt` usava
+  `else → community_posts`, e a fila **recebe** itens de chat. O painel dizia
+  "sem permissão" para um caso que é "esta tabela não tem como ocultar".
+
 ### ⬜ Aberto — precisa de decisão ou janela própria
 
+- ⬜ 🟠 **A IA oculta e não avisa o autor.** Quando `apply_ai_moderation` ou o
+  trigger da lista de palavras ocultam algo, o autor não recebe **nada**: o post
+  some da timeline dele sem aviso, sem ponto e sem explicação, e fica assim até
+  um admin abrir a fila. Do lado de quem postou é indistinguível de um bug — e a
+  reação natural é postar de novo. *A notificação só existe quando o admin
+  aprova o item na fila* (`notify_user` → sino). Correção é um `INSERT` numa
+  função que já existe. **É o buraco mais visível pro usuário final.**
+- ⬜ 🟠 **Aprovar na fila sem marcar ação dá zero ponto, em silêncio.** Em
+  `ModerationQueue.jsx` a violação só é criada `if (decision === 'approved' &&
+  action)`. Toda a escalação automática (8 pontos → suspensão de 7 dias, 15 →
+  ban) depende de lembrar de marcar. Se o hábito virar "aprovar e seguir",
+  ninguém nunca acumula nada e a punição automática **existe mas nunca dispara**.
+  O painel devia exigir a ação, ou no mínimo avisar que aquilo não gera ponto.
+- ⬜ 🟢 **Aviso genérico.** "Seu post foi ocultado por violar as regras" não diz
+  qual regra. Dizer "por linguagem ofensiva" / "por assédio" educa em vez de só
+  punir. Polimento, não falha.
+- ⬜ 🟠 **Moderação de imagem só cobre pornografia.** O
+  `Falconsai/nsfw_image_detection` é binário `nsfw`/`normal`, treinado em porn:
+  **não** pega sangue, gore, automutilação, símbolo de ódio nem droga. Plano:
+  trocar por `omni-moderation-latest` da OpenAI, que **também aceita imagem**,
+  usa a chave já configurada e o endpoint de moderação é gratuito — devolve
+  `violence/graphic`, `self-harm`, `sexual` e `sexual/minors` numa chamada só.
+  *A confirmar antes de implementar:* que o endpoint continua gratuito e quais
+  categorias valem **para imagem** (nem todas valem — não chutar).
+  **O jogo de cintura do gore é o ponto central:** nenhum modelo distingue gore
+  de Doom de gore real. A saída não é o modelo, é o destino da nota — duas
+  faixas, igual à lista de palavras:
+  | Categoria | Ação |
+  | --- | --- |
+  | `sexual/minors`, `sexual`, `self-harm*` | oculta na hora |
+  | **`violence/graphic`** | **só enfileira — nunca oculta** |
+  Obrigatório num site de jogos: **a maioria das imagens é print de jogo**. Auto-
+  ocultar `violence/graphic` derrubaria metade do conteúdo legítimo no primeiro
+  dia — seria o falso-positivo do `vai morrer` em escala.
+  *Falta no banco:* `apply_ai_moderation` só sabe "oculta e enfileira"; não
+  existe "enfileira sem ocultar". Precisa de um parâmetro a mais — aditivo, não
+  mexe no caminho que já funciona.
+  *Medir antes de escolher o limiar:* rodar prints reais de jogo pelo modelo e
+  olhar as notas. Limiar chutado é o que gera falso positivo.
 - ⬜ **C3-c — `profiles` com `REPLICA IDENTITY FULL`.** *Não mexi de propósito.*
   O `useAuth` lê `payload.new?.banned` para detectar ban, e é o arquivo de
   maior risco do projeto (§7): quebrar derruba o site. É ganho de performance
@@ -494,32 +569,80 @@ RLS conferido. O que entrou:
 
 ---
 
-### Fase 2 — Moderação IA de texto ✅ FEITA (HuggingFace)
+### Fase 2 — Moderação IA de texto ✅ FEITA (OpenAI, com HuggingFace de reserva)
 
-> **Status:** implementado com **HuggingFace free tier** (sem billing, sem cartão).
-> Modelo: `unitary/multilingual-toxic-xlm-roberta`. Edge Function `moderate-text`
-> (v4) no ar. Threshold configurável em `site_config` → `mod_ai_text_threshold` (0.7).
-> Fire-and-forget: não bloqueia o POST. Conteúdo flaggado → soft-hide + fila admin.
-> Secret necessária: `HUGGINGFACE_API_KEY` em Supabase → Edge Functions → Secrets.
+> **Status:** `moderate-text` **v9** no ar. Provedor principal: **OpenAI
+> `omni-moderation-latest`** — nota **por categoria**, não um número só de
+> "toxicidade". O HuggingFace (`unitary/multilingual-toxic-xlm-roberta`) ficou
+> como fallback caso a `OPENAI_API_KEY` suma.
+>
+> *Por que trocou:* o modelo antigo era cego pra conteúdo sexual. Medimos "quer
+> trocar nudes, mando foto pelada" em **0.136** (passava batido) enquanto
+> "caralho que jogo foda" dava **0.943** e era ocultado. Exatamente o inverso do
+> que este site quer ser.
+>
+> **Política em duas camadas:** pisos fixos por categoria (`sexual/minors` 0.10,
+> `sexual` 0.40, `harassment/threatening` 0.50, …) que o painel **não afrouxa**,
+> mais o dial `mod_ai_text_threshold` (0.7) para o resto.
+>
+> Cobre post, comentário, mural **e chat de live**. Fire-and-forget: não bloqueia
+> o envio. Chat não oculta (é efêmero) — só enfileira.
+>
+> **A RPC é chamada com `service_role` e o texto é lido do banco** — ver
+> `db/2026-08-22-moderacao-ia-nunca-aplicou.md` para o porquê de cada uma das
+> duas coisas. Secrets: `OPENAI_API_KEY` (+ `HUGGINGFACE_API_KEY` de reserva).
 
 ---
 
-### Fase 3 — Moderação IA de imagem ✅ FEITA (HuggingFace)
+### Fase 2b — Lista de palavras no banco ✅ FEITA
 
-> **Status:** implementado com **HuggingFace free tier**.
-> Modelo: `Falconsai/nsfw_image_detection`. Edge Function `moderate-image` (v3) no ar.
-> Threshold configurável em `site_config` → `mod_ai_image_threshold` (0.85).
-> Processa até 4 imagens por post. Fire-and-forget. NSFW flaggado → soft-hide + fila admin.
+> Antes o filtro existia **só no cliente** — e o site usa a anon key, então
+> bastava chamar a REST API direto pra pular tudo. Agora o trigger
+> `checar_palavras_bloqueadas` roda em `posts`, `comments`, `community_posts` e
+> `live_chat`:
+>
+> | Severidade | O que acontece |
+> | --- | --- |
+> | `high` | nasce **oculto** + vai pra fila (em `live_chat` só enfileira) |
+> | `medium` | publica normal, mas **vai pra fila** do admin |
+> | `low` | ignorado |
+>
+> Match de **palavra inteira** com bordas `[[:alpha:]]` (acento-aware) e escape
+> de metacaracteres de regex. ~310 termos, PT e EN, incluindo abreviações e leet.
 
 ---
 
-### Fase 4 — Moderação de vídeo (futuro — custoso) ⬜
+### Fase 3 — Moderação IA de imagem ✅ FEITA (só pornografia — ampliar)
 
-- Frame sampling: extrair 1 frame/segundo via ffmpeg.wasm (pesado) ou
-  via Edge Function com biblioteca de extração
-- Cada frame enviado para a Moderation API de imagem
-- Alternativa: só moderar thumbnail (mais leve, menos cobertura)
-- Depende de decisão sobre upgrade do plano Supabase para mais recursos
+> **Status:** `moderate-image` **v6** no ar. Modelo:
+> `Falconsai/nsfw_image_detection` (HuggingFace). Threshold em `site_config` →
+> `mod_ai_image_threshold` (0.85). Até 4 imagens por post. Fire-and-forget.
+> Só baixa URL do storage do próprio projeto (era SSRF).
+>
+> ⚠️ **Cobertura estreita:** o modelo é binário `nsfw`/`normal`, treinado em
+> pornografia. **Não** detecta sangue, gore, automutilação, símbolo de ódio nem
+> droga. A ampliação está registrada na seção **⬜ Aberto** do topo deste
+> arquivo (trocar por `omni-moderation-latest`, com `violence/graphic`
+> enfileirando em vez de ocultar).
+>
+> *Para testar sem postar conteúdo real:* baixar o campo "Limite — imagem" na
+> aba Site do Owner para ~0.05, postar uma foto de praia e devolver a 0.85
+> depois. Referência medida: imagem comum pontuou **0.001**.
+
+---
+
+### Fase 4 — Moderação de vídeo ⬜ (adiada — **e não é cara**)
+
+> **A premissa original desta seção estava errada** e ficou registrada aqui como
+> lembrete de não repetir o erro. Dizia "custoso, depende de upgrade do plano" e
+> apontava `ffmpeg.wasm`. Não precisa: dá para extrair frames **no navegador**
+> com `<video>` + `canvas` (API nativa, zero dependência, zero servidor) e
+> mandar pela moderação de imagem que já existe. **Custo zero.**
+
+- Amostrar N frames do vídeo no cliente antes do upload
+- Mandar os frames pela `moderate-image` já existente
+- Ganha de graça a ampliação da Fase 3 (gore/automutilação) quando ela for feita
+- Adiada a pedido do dono, não por custo
 
 ---
 
