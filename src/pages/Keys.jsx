@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeTab, listContainer, listItem } from '../lib/motion';
 import { fetchGameKeys } from '../services/keyService';
+import { apenasData } from '../services/result';
 import { Key, Copy, Check, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { safeExternalUrl } from '../lib/url';
@@ -65,7 +66,7 @@ export default function Keys() {
 
   const { data, isPending: loading } = useQuery({
     queryKey: ['game_keys'],
-    queryFn: fetchGameKeys,
+    queryFn: () => apenasData(fetchGameKeys()),
   });
   const keys = data?.keys ?? [];
   const promos = data?.promos ?? [];

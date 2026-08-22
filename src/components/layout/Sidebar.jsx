@@ -9,6 +9,7 @@ import { useUserXP } from '../../hooks/useUserXP';
 import { useQuery } from '@tanstack/react-query';
 import { formatNumber } from '../../lib/format';
 import { fetchSiteStats, SITE_STATS_KEY } from '../../services/keyService';
+import { apenasData } from '../../services/result';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
@@ -18,7 +19,7 @@ export default function Sidebar({ open, onClose }) {
   // Mesma query (e mesmo cache) do RightPanel — são os mesmos três números.
   const { data: stats = { users: 0, postsToday: 0, keysCount: 0 } } = useQuery({
     queryKey: SITE_STATS_KEY,
-    queryFn: fetchSiteStats,
+    queryFn: () => apenasData(fetchSiteStats()),
     staleTime: 5 * 60_000, // contadores do site não precisam ser ao vivo
   });
 
