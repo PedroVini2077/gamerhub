@@ -102,8 +102,20 @@ export async function fetchViolations(userId = null, page = 0, pageSize = 20) {
 }
 
 // Suspensão temporária (1 ou 7 dias). Bloqueia criar conteúdo via RLS.
+// O banco limita a 1–30 dias: sem teto, um admin suspendia até o ano 2126 e
+// virava banimento permanente pulando a hierarquia do ban.
 export async function applySuspension(userId, days) {
   return from(await supabase.rpc('apply_suspension', { p_user_id: userId, p_days: days }));
+}
+
+// A reversão que não existia. Sem ela a suspensão era irreversível: o
+// trigger-guarda de `profiles` reverte UPDATE direto em silêncio, então nem o
+// fundador conseguia desfazer um engano.
+export async function liftSuspension(userId, note) {
+  return from(await supabase.rpc('lift_suspension', {
+    p_user_id: userId,
+    p_note: note?.trim() || null,
+  }));
 }
 
 export async function addViolation({ userId, contentType, contentId, reason, actionTaken, points, notes }) {

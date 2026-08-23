@@ -76,6 +76,20 @@
   `lib/roles.js` com teste travando as 5 combinações. *(O botão "Mod" aparecer
   para usuário comum dono da própria live **não é bug** — espelha exatamente
   `is_staff() OR auth.uid() = posts.user_id`.)*
+- ✅ 🔴 **Suspensão era irreversível — admin silenciava para sempre e nem o
+  fundador desfazia.** Provado em ROLLBACK com papéis reais: (1) um `admin`
+  (rank 2) chamou `apply_suspension(alvo, 36500)` e foi **aceito** — suspenso
+  até **2126**, porque `p_days` não tinha teto; (2) o `owner` tentou desfazer
+  com UPDATE direto, o comando **passou sem erro** e o trigger
+  `guard_profile_privileged_cols` reverteu **em silêncio**; (3) **não existia
+  nenhuma função** para tirar suspensão. Somando: suspensão virava banimento
+  permanente pulando toda a hierarquia do ban (onde só super_admin/owner
+  desbanem). Corrigido com teto de 1–30 dias em `apply_suspension` (mais que
+  isso é caso de ban, que tem reversão) e a RPC `lift_suspension`, com a mesma
+  regra de hierarquia via `role_rank()`, log, notificação ao usuário e aviso aos
+  admins. No painel: badge "suspenso", filtro "Suspensos" e botão "Remover
+  suspensão" — antes o admin **nem via** quem estava suspenso, embora
+  `admin_list_users` já devolvesse o dado.
 - ✅ **Item ficava preso na fila para sempre depois do ban.** `ban_user` faz
   `DELETE FROM posts WHERE user_id = …` e nunca tocava em `moderation_queue`:
   os itens daquele usuário seguiam `pending` apontando para linhas que não
