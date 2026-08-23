@@ -85,9 +85,14 @@ try {
     await page.goto(BASE + rota.path, { waitUntil: 'domcontentloaded', timeout: 30000 });
     // Conferido dentro do <main>: a Sidebar repete o nome de quase toda rota
     // no menu, então procurar no body inteiro passaria com a página vazia.
-    await main.getByText(rota.esperado).first()
+    // Exceção: a tela de 404 fica fora do Layout e não tem `<main>`.
+    const escopo = rota.foraDoLayout ? page.locator('body') : main;
+    await escopo.getByText(rota.esperado).first()
       .waitFor({ state: 'visible', timeout: 30000 })
-      .catch(() => { throw new Error(`${rota.path} não mostrou ${rota.esperado} dentro do <main>`); });
+      .catch(() => {
+        throw new Error(`${rota.path} não mostrou ${rota.esperado} em `
+          + `${rota.foraDoLayout ? '<body>' : '<main>'}`);
+      });
     ok(`${rota.nome.padEnd(15)} ${rota.path}`);
   }
 

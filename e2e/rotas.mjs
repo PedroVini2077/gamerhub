@@ -56,7 +56,11 @@ export const ROTAS_LOGADO = [
   { path: '/lives',               nome: 'Lives',          esperado: /Lives/i },
   { path: '/ranks',               nome: 'Ranks',          esperado: /Todos os Ranks/i },
   { path: `/u/${PERFIL_PUBLICO}`, nome: 'Perfil público', esperado: /./ },
-  { path: '/rota-que-nao-existe', nome: '404',            esperado: /404|não encontrad/i },
+  // A tela de 404 é a única rota renderizada FORA do `Layout` (App.jsx): não
+  // tem Sidebar, Header nem `<main>`. Procurar dentro de `<main>` ali dá
+  // timeout com a tela correta na frente — foi o que aconteceu no primeiro CI.
+  { path: '/rota-que-nao-existe', nome: '404', esperado: /404|não encontrad/i,
+    foraDoLayout: true },
 ];
 
 /**
