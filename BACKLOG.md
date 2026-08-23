@@ -1022,4 +1022,12 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
 > Espaço pra jogar ideias de feature que surgirem, sem compromisso. Quando
 > decidir fazer, promover pra uma seção acima com prioridade.
 
-- _(adicionar aqui conforme surgirem)_
+- 💡 **Área própria de moderação de live, estilo YouTube Studio.** Ideia do dono
+  ao ver mensagem de chat caindo na mesma fila de post e comentário: *"por mais
+  que faça sentido, não faz mais sentido uma área à parte para moderador de
+  lives?"*. O incômodo é real e tem base — chat é **ao vivo e efêmero**, e a
+  fila de moderação é assíncrona por natureza: quando o admin abre o painel, a
+  live já acabou. As ferramentas que importam ali (silenciar, apagar na hora,
+  ver quem está falando) já existem no `ModPanel`, dentro da live.
+  *Não é para agora* — é feature nova, e o dono deixou claro que a prioridade é
+  polir o que existe. Registrado para não se perder.

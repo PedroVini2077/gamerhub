@@ -48,9 +48,14 @@ export async function resolveQueueItem(queueId, decision, contentType, contentId
 
   if (decision === 'approved') {
     // confirm hide: already hidden by trigger, just mark reviewed
-  } else if (decision === 'rejected') {
+  } else if (decision === 'rejected' && contentType !== 'chat') {
     // Restaura o conteúdo — reaproveita o helper que checa 0 linhas, em vez de
     // repetir o update cru (que ignorava falha de RLS).
+    //
+    // `chat` fica de fora porque `live_chat` não tem `hidden_at`: nada foi
+    // escondido, então não há o que restaurar. Sem esta guarda, `restoreContent`
+    // devolvia erro e a recusa do item falhava por inteiro — o item ficava
+    // preso na fila para sempre.
     const res = await restoreContent(contentType, contentId);
     if (res.error) return res;
   }
