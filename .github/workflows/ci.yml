@@ -80,6 +80,41 @@ jobs:
       - name: Auditoria de dependências
         run: npm audit --audit-level=high
 
+  documentacao:
+    name: documentação acompanhou o código
+    runs-on: ubuntu-latest
+    # Só em PR: um push direto na main não tem "antes e depois" para comparar.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Precisa do histórico para comparar com a base do PR.
+          fetch-depth: 0
+
+      # A regra do CLAUDE.md §2 ("README atualizado se mudou comportamento")
+      # existia e mesmo assim foi esquecida — o README ficou sem saber de
+      # Sentry, CI, detecção de banco fora do ar e metade da moderação. Regra
+      # escrita não bastou; isto é a trava.
+      - name: PR que muda o produto precisa tocar documentação
+        run: |
+          base="origin/${{ github.base_ref }}"
+          mudou=$(git diff --name-only "$base"...HEAD)
+          echo "Arquivos no PR:"; echo "$mudou" | sed 's/^/  /'
+
+          # `supabase/` cobre Edge Functions; `db/` cobre SQL versionado.
+          produto=$(echo "$mudou" | grep -E '^(src/|db/|supabase/)' | grep -v '__tests__' || true)
+          docs=$(echo "$mudou" | grep -E '^(README\.md|BACKLOG\.md|CLAUDE\.md|docs/)' || true)
+
+          if [ -n "$produto" ] && [ -z "$docs" ]; then
+            echo "::error::Este PR muda o produto e não toca em nenhuma documentação."
+            echo "::error::Atualize o que mudou de comportamento (docs/), o que falta (BACKLOG.md)"
+            echo "::error::ou o que foi decidido (docs/DECISOES.md) — no MESMO PR."
+            echo "::error::Se a mudança realmente não afeta nada disso, toque o arquivo"
+            echo "::error::relevante dizendo por que não afeta. Silêncio não é resposta."
+            exit 1
+          fi
+          echo "OK — documentação acompanhou (ou o PR não mexe no produto)."
+
   fumaca:
     name: rotas num navegador de verdade
     runs-on: ubuntu-latest

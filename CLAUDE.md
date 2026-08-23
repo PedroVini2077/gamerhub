@@ -867,6 +867,74 @@ node e2e/smoke.mjs   # rotas de pé num navegador real
 
 ---
 
+## 6.2 Documentação — onde cada coisa mora, e por que isso é obrigatório
+
+> Pedido direto do dono, depois de eu vacilar: *"o backlog precisa
+> obrigatoriamente estar sempre atualizado… o readme é obrigatório que esteja
+> sempre atualizado… separar em novas seções caso precise, e isso é obrigatório
+> pra não haver poluição"*.
+
+**Por que a regra existe, com número.** Em 23/08 o `BACKLOG.md` tinha 1.330
+linhas, das quais **129 eram a lista** — 90% do arquivo não era backlog. E ele
+listava **31 itens abertos, sendo que cinco já estavam feitos** e três
+apareciam duplicados 2–3 vezes. O `README.md` tinha 1.087 linhas, e só ~140
+respondiam "o que é isso e como rodo".
+
+Não foi falta de regra: a §2 já mandava atualizar os dois. Foi o arquivo virar
+um lugar onde as coisas **entram e nunca saem**.
+
+### Cada arquivo tem UM trabalho
+
+| Arquivo | O que é | O que NUNCA vai nele |
+| --- | --- | --- |
+| `README.md` | Porta de entrada: o que é, como rodar, mapa dos docs | Detalhe de implementação, tabela, RLS |
+| `docs/ARQUITETURA.md` | Pastas, rotas, camada de dados, convenções | O que cada tela faz |
+| `docs/FUNCIONALIDADES.md` | O que cada tela faz, do ponto de vista de quem usa | SQL, nome de função interna |
+| `docs/MODERACAO.md` | O subsistema de moderação inteiro | — |
+| `docs/BANCO.md` | Tabelas, RPCs, RLS, storage, realtime, custo | Como *usar* o site |
+| `docs/SEGURANCA.md` | O que protege o quê | — |
+| `docs/OPERACAO.md` | **Quando quebra.** Monitoramento, site fora do ar, CI | Feature |
+| `docs/DECISOES.md` | O que foi decidido e **descartado**, com data e motivo | Item a fazer |
+| `BACKLOG.md` | **Checklist.** Só o que falta | Decisão, histórico, item já feito |
+| `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado | — |
+
+### As cinco regras
+
+1. **Mudou comportamento ou estrutura? A documentação muda no MESMO PR.** Não
+   é "depois". Um PR que mexe em `src/`, `db/` ou nas Edge Functions e não toca
+   documentação está incompleto — e o CI recusa (ver abaixo).
+2. **Item concluído SAI do backlog.** Não vira ✅ e fica: sai. O PR, o `git log`
+   e o `db/*.md` guardam o histórico. Backlog que acumula concluído deixa de ser
+   legível, e legibilidade é a única função dele.
+3. **Toda linha do backlog leva data `[DD/MM]`.** Sem data não dá para saber o
+   que envelheceu, e foi assim que cinco itens mortos passaram despercebidos.
+4. **Decisão não é backlog.** Se a resposta é "não vamos fazer isso, porque…",
+   vai para `docs/DECISOES.md` com data. É o que impede a mesma discussão de
+   voltar em dois meses e alguém "consertar" uma decisão proposital.
+5. **Seção passou de ~150 linhas? Vira arquivo próprio.** Mesma lógica do
+   split de código (§4): documento gigante é onde a informação desatualizada se
+   esconde. Ao criar o arquivo, acrescentar na tabela do `README.md` — arquivo
+   que ninguém acha é arquivo que ninguém atualiza.
+
+### Antes de fechar qualquer bloco de trabalho
+
+Reler **A FILA** do backlog inteira e marcar o que mudou. Não confiar na
+memória do que estava lá: **conferir contra o sistema** (§1.4) — a extensão
+ainda existe? a função ainda tem esse problema? `git log -S` mostra que já foi
+feito? Foi essa conferência que achou os cinco itens mortos.
+
+Se a lista passar de ~25 itens, é sinal de que precisa de outra conferência.
+
+### A trava
+
+Regra escrita não bastou — eu tinha a §2 e não segui. Por isso existe um passo
+no CI que **falha o PR** quando ele mexe em `src/`, `db/` ou
+`supabase/functions` e não toca em nenhum arquivo de documentação. Mesma
+filosofia do piso de testes (§2): não depende da minha memória, depende do
+portão.
+
+---
+
 ## 7. Processo para mudanças estruturais
 
 - **Antes de alterar**, apresentar análise/plano e **aguardar aprovação**.
