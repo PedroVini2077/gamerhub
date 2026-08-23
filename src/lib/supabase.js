@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { fetchComSaude } from './dbHealth';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -38,4 +39,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(`[supabase] ${msg}`);
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// O `fetch` instrumentado observa o resultado de cada requisição para detectar
+// que o banco caiu (projeto pausado, egress estourado). Ele é transparente: não
+// muda argumento, resposta nem erro — toda a contabilidade dele é isolada em
+// `try/catch` justamente porque um defeito ali derrubaria o site inteiro.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: fetchComSaude },
+});
