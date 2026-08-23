@@ -1,37 +1,20 @@
 /**
- * Teste de fumaça das rotas — roda num navegador de verdade.
+ * Teste de fumaça das rotas COMO VISITANTE — roda num navegador de verdade.
  *
  * Existe por causa do upgrade do react-router (7.15 -> 7.18.2, correção de
  * CSRF), que na época foi validado só por build e suíte unitária. Build
  * passando não prova que uma rota renderiza: prova que compila.
  *
- * O que este teste garante: cada rota monta, sem erro de console e sem
- * exceção de JS. Não substitui teste de fluxo (postar, banir) — é a rede de
- * segurança contra "um upgrade derrubou uma página inteira".
+ * O que garante: cada rota monta sem exceção de JS, e o guard de visitante
+ * (`RequireAuth`) manda para onde deveria. O caminho autenticado é do
+ * `fluxos.mjs` — este aqui, sozinho, nunca passa da porta.
  *
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/smoke.mjs
  */
-import { existsSync } from 'node:fs';
-import { chromium } from 'playwright';
+import { abrirNavegador, exigirServidor } from './util.mjs';
+import { ROTAS_VISITANTE } from './rotas.mjs';
 
 const BASE = process.env.SMOKE_BASE ?? 'http://localhost:4173';
-
-// `esperado` é um trecho que precisa aparecer na tela para provar que a página
-// renderizou de verdade, e não só devolveu um HTML vazio de SPA.
-const ROTAS = [
-  { path: '/',                 nome: 'Landing',        esperado: /gamerhub/i },
-  { path: '/login',            nome: 'Login',          esperado: /entrar|login|senha/i },
-  { path: '/home',             nome: 'Feed',           esperado: /./ },
-  { path: '/lives',            nome: 'Lives',          esperado: /lives/i },
-  { path: '/comunidade',       nome: 'Comunidade',     esperado: /./ },
-  { path: '/keys',             nome: 'Keys',           esperado: /./ },
-  { path: '/ranks',            nome: 'Ranks',          esperado: /rank/i },
-  { path: '/perfil',           nome: 'Perfil',         esperado: /./ },
-  { path: '/configuracoes',    nome: 'Configuracoes',  esperado: /./ },
-  { path: '/admin',            nome: 'Admin',          esperado: /./ },
-  { path: '/u/opedrovini',     nome: 'Perfil publico', esperado: /./ },
-  { path: '/rota-que-nao-existe', nome: '404',         esperado: /./ },
-];
 
 // Ruído esperado que não indica quebra de rota.
 const IGNORAR = [
@@ -41,31 +24,14 @@ const IGNORAR = [
   /the server responded with a status of 4/i,
 ];
 
-// Sem isto, servidor fora do ar aparece como "12 rotas falharam" — o teste
-// mentiria sobre a causa. Aconteceu de verdade uma vez.
-try {
-  const r = await fetch(BASE, { signal: AbortSignal.timeout(5000) });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-} catch (e) {
-  console.error(`\n  Servidor nao respondeu em ${BASE} (${e.message}).`);
-  console.error('  Rode antes:  npm run build && npx vite preview --port 4173\n');
-  process.exit(2);
-}
-
-// O ambiente onde eu (Claude) rodo traz um Chromium pré-instalado num caminho
-// fixo. Cravar esse caminho aqui fez o teste funcionar SÓ ali: no CI e na
-// máquina de qualquer pessoa ele morria com "executable doesn't exist", erro
-// que não tem nada a ver com o site. Agora o caminho é uma dica opcional — se
-// não existir, o Playwright acha o navegador dele sozinho.
-const CHROMIUM_PRE_INSTALADO = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const browser = await chromium.launch({
-  ...(existsSync(CHROMIUM_PRE_INSTALADO) ? { executablePath: CHROMIUM_PRE_INSTALADO } : {}),
-  args: ['--no-sandbox'],
-});
+await exigirServidor(BASE);
+const browser = await abrirNavegador();
 
 let falhas = 0;
 
-for (const rota of ROTAS) {
+for (const rota of ROTAS_VISITANTE) {
+  // Contexto novo por rota: sem isso, um redirecionamento deixaria estado de
+  // sessão vazando para a rota seguinte.
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   const erros = [];
@@ -85,12 +51,23 @@ for (const rota of ROTAS) {
     });
     if (!resp || resp.status() >= 400) status = `HTTP ${resp?.status()}`;
 
-    // A app é SPA: dá um tempo pro React montar antes de olhar o conteúdo.
-    await page.waitForTimeout(700);
-    const texto = await page.locator('body').innerText();
+    // A app é SPA: dá um tempo pro React montar (e pro guard redirecionar)
+    // antes de olhar o conteúdo.
+    await page.waitForTimeout(900);
 
+    // Onde o guard deixou a pessoa. `destino: null` = a rota não redireciona.
+    if (rota.destino !== null) {
+      const atual = new URL(page.url()).pathname;
+      if (atual !== rota.destino) {
+        status = `guard levou para ${atual}, esperado ${rota.destino}`;
+      }
+    }
+
+    const texto = await page.locator('body').innerText();
     if (!texto.trim()) status = 'TELA BRANCA';
-    else if (!rota.esperado.test(texto)) status = `sem o conteúdo esperado (${rota.esperado})`;
+    else if (status === 'OK' && !rota.esperado.test(texto)) {
+      status = `sem o conteúdo esperado (${rota.esperado})`;
+    }
   } catch (e) {
     status = `falhou: ${e.message.split('\n')[0]}`;
   }
@@ -105,5 +82,5 @@ for (const rota of ROTAS) {
 }
 
 await browser.close();
-console.log(`\n  ${ROTAS.length - falhas}/${ROTAS.length} rotas OK`);
+console.log(`\n  ${ROTAS_VISITANTE.length - falhas}/${ROTAS_VISITANTE.length} rotas OK (como visitante)`);
 process.exit(falhas ? 1 : 0);
