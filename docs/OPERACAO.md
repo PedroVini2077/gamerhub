@@ -65,6 +65,23 @@ O motivo da pausa (`site_config.pause_reason`, editável na aba Site) é lido
 não pode vir de lá. Pausa planejada mostra o motivo real; queda inesperada, ou
 primeira visita, mostra texto genérico.
 
+## Faxina agendada (`pg_cron`)
+
+| Job | Quando | O que faz |
+| --- | --- | --- |
+| `cleanup-expired-posts` | de hora em hora | `cleanup_expired_posts()`: apaga lives com prazo vencido e **purga o que foi soft-deletado há mais de 30 dias** |
+| `expire-lives` | a cada 5 min | tira o `is_live` de quem passou do prazo; apaga live encerrada há mais de 15 min |
+| `expire-lives-every-minute` | a cada minuto | só o `is_live = false` do prazo vencido |
+| `gamerhub-cleanup` | 04:00 | `cleanup_old_data()`: `admin_logs` 90d, notificação lida 30d, `login_attempts` não-permanente 30d, `live_chat` de live encerrada 7d |
+| `gamerhub-cleanup-unconfirmed` | 04:30 | `cleanup_unconfirmed_signups()` |
+
+**Onde ver se um job falhou:** `select * from cron.job_run_details order by
+start_time desc limit 20;`. Não há alerta automático — o sintoma na tela vem
+antes: live encerrada que não some do feed é o job de hora em hora parado.
+
+> O `cleanup_expired_posts()` era uma Edge Function chamável por qualquer um da
+> internet. Virou SQL e saiu da rede — ver `docs/SEGURANCA.md`.
+
 ## Portão de qualidade automático
 
 `.github/workflows/ci.yml`, a cada PR e push na `main`:

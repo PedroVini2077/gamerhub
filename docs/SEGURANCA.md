@@ -93,6 +93,37 @@ O caso perigoso passou a gritar junto: link malicioso **detectado** e a RPC não
 ocultando devolve `status: "rpc_error"` e vai para `admin_logs`. Era a mesma
 forma de falha que manteve a moderação por IA quebrada em 26 de 26 chamadas.
 
+## `[23/08]` As outras duas Edge Functions abertas — resolvidas por remoção
+
+Achar duas com a porta aberta obrigou a olhar as oito (§1.3, *varredura de
+classe*). Sobraram duas com `verify_jwt: false` e nenhuma checagem no corpo:
+
+**`cleanup-expired-posts`** rodava com `service_role` e **apagava posts**. O
+estrago em dados era nulo (idempotente: só fazia o que o agendamento faria de
+qualquer jeito), mas cada chamada rodava duas varreduras de `DELETE` em `posts`
+— dava para martelar de fora e consumir invocação de Edge Function e carga de
+banco de graça, e a resposta ainda contava quantas linhas saíram.
+
+Guardar a porta exigiria um segredo compartilhado com o `pg_cron`, que hoje
+chama por `pg_net` **sem cabeçalho nenhum**. Mas o trabalho dela era SQL puro:
+virou `public.cleanup_expired_posts()`, com `EXECUTE` revogado de `anon` e
+`authenticated`, e o cron passou a chamar o banco direto. **A correção não foi
+trancar a porta — foi não ter porta.**
+
+**`debug-hf`** era sobra de um experimento com Hugging Face: baixava uma imagem
+de teste e gastava a `HUGGINGFACE_API_KEY` a cada chamada. Nada no site a
+chamava. Código morto não é só bagunça — é superfície de ataque que ninguém
+revisa, porque ninguém lembra que existe.
+
+As duas foram neutralizadas (corpo devolvendo `410`, `verify_jwt` ligado) e
+estão no backlog para o apagar definitivo pelo dashboard. Verificado:
+`POST` nas duas → **401** no gateway.
+
+De quebra, a varredura achou uma mentira na tela: o painel do owner mandava
+configurar `HUGGINGFACE_API_KEY` para a moderação por IA, que usa **OpenAI**
+desde a troca de provedor. Mensagem errada custa mais tempo do dono do que
+mensagem nenhuma (§1.5).
+
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.
 

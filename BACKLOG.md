@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **20 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **19 itens abertos**
 (+ 1 ideia sem compromisso)
 
 ---
@@ -38,9 +38,11 @@
   brecha da `send-email` (23/08) existe hoje em um lugar só. Trazer para
   `supabase/functions/` — e aí o portão de documentação do CI passa a cobri-las
   de verdade.
-- ⬜ `[23/08]` **Edge Function `debug-hf` parece ser sobra.** Nome de
-  experimento com Hugging Face, e a moderação usa OpenAI. Conferir se algo
-  ainda chama e apagar — MCP não apaga função, é pelo dashboard.
+- ⬜ `[23/08]` **Apagar `debug-hf` e `cleanup-expired-posts` pelo dashboard.**
+  As duas já estão **neutralizadas** (corpo devolvendo 410, `verify_jwt`
+  ligado, nada mais é chamado) e o trabalho da segunda virou
+  `public.cleanup_expired_posts()` no cron. Falta só o apagar de verdade —
+  o MCP não apaga Edge Function. *Supabase → Edge Functions → ⋯ → Delete.*
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
@@ -60,11 +62,6 @@
   vai no payload de cada update. Ganho **teórico** com 3 usuários contra risco
   real em `useAuth` (§7). O E2E autenticado já cobre login, sessão e perfil,
   então a rede de segurança existe.
-- ⬜ `[23/08]` **O E2E deixa um post soft-deletado por execução.** Um por PR,
-  com o título marcado `[e2e …]`. Some do feed, mas fica na tabela e no painel
-  de excluídos. Limpar de dentro do CI exigiria a `service_role` nos secrets do
-  GitHub — trocar um resíduo por uma chave de superusuário exposta é péssimo
-  negócio. Resolver junto da retenção de tabelas append-only.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
   `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
   conta comum de propósito (é assim que ele prova que `/admin` é negado), então
