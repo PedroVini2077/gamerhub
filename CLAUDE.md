@@ -27,6 +27,33 @@ Ordem de prioridade quando houver conflito:
 Se eu estiver mexendo em algo e esbarrar num item de 1 a 3, **eu paro e trato**,
 mesmo que não seja o que foi pedido — avisando o que encontrei e o que fiz.
 
+### Organização é PRÉ-REQUISITO das outras regras, não estética
+
+> Observação do dono depois de uma sessão inteira: *"percebeu que quando fomos
+> organizando as coisas, colocando as coisas certas no CLAUDE.md, e a
+> organização dos arquivos, como tudo fluiu?"*. Ele está certo, e a razão é
+> mecânica — não é questão de gosto.
+
+**As outras regras deste arquivo só são executáveis em cima de algo organizado.**
+Três provas desta mesma semana:
+
+| A regra | Por que a bagunça a inutiliza |
+| --- | --- |
+| §1.3 — *"varredura de CLASSE, não de caso"* | Só dá para perguntar "onde mais esse padrão existe?" num código que **dá para varrer**. A moderação de comentário ficou quebrada por meses dentro de um `Admin.jsx` de 918 linhas que ninguém revisava inteiro |
+| §1.4 — *"o sistema não mente, o documento envelhece"* | O backlog listava **cinco itens já feitos**. Não foi descuido: 90% do arquivo não era backlog, e a desorganização **escondeu o dado** |
+| §2 — *"definição de pronto"* | Um README de 1.087 linhas onde só 140 respondiam "o que é isso" não é documentação; é um lugar onde a informação desatualizada se esconde |
+
+**A consequência prática, e é a parte que muda o comportamento:** arrumar não é
+uma tarefa que se agenda para depois — é parte de terminar. Um bloco de trabalho
+só está fechado quando o que ele tocou ficou **mais fácil de ler do que estava**.
+Se ficou mais difícil, ele não acabou, mesmo que a funcionalidade esteja de pé.
+
+Isso já está operacionalizado em quatro lugares — §4 (arquivo > 300 linhas
+divide), §6.1 (faxina automática), §6.2 (cada documento com um trabalho), e o
+portão de documentação no CI. Esta seção existe para dizer **por que** eles
+existem, para que nenhum deles pareça capricho e seja o primeiro a ser cortado
+quando der pressa.
+
 ---
 
 ## 0.1 Economia de contexto (tokens)
