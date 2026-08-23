@@ -33,6 +33,10 @@ front e **Supabase (Postgres)** no back. Em produção, em uso contínuo.
   - [Bloqueio de login por tentativas](#bloqueio-de-login-por-tentativas)
   - [Configuração do site](#configuração-do-site)
   - [Logs de auditoria & notificações de admin](#logs-de-auditoria--notificações-de-admin)
+  - [Moderação de conteúdo](#moderação-de-conteúdo)
+  - [Observabilidade — a falha tem que gritar](#observabilidade--a-falha-tem-que-gritar)
+  - [Resiliência — quando o banco cai](#resiliência--quando-o-banco-cai)
+  - [Portão de qualidade automático](#portão-de-qualidade-automático)
 - [Banco de dados](#-banco-de-dados)
 - [Segurança](#-segurança)
 - [Convenções de código](#-convenções-de-código)
@@ -653,10 +657,17 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   adulto, assédio, desinformação, outro) + detalhe opcional. Cada usuário só
   denuncia o mesmo conteúdo uma vez (`UNIQUE (reporter_id, content_type,
   content_id)`).
-- **Filtro de palavras** (`blocked_words` + `useBlockedWords`): wordlist com
-  severidade, lida no cliente (cache React Query 5min) e checada **antes de
-  enviar** post/comentário (`checkContent` faz matching parcial). Bloqueio
-  síncrono, sem custo de API.
+- **Filtro de palavras** (`blocked_words`): ~310 termos em PT e EN, com
+  severidade. Existe nos **dois lados**, com a mesma regra de casamento —
+  palavra inteira, tolerando plural (`otário` casa `otários`; `es` só a partir
+  de 4 letras, para `cu` não casar `cues`). No cliente (`useBlockedWords`,
+  cache de 5min) o bloqueio é síncrono e sem custo de API; no banco, o trigger
+  `checar_palavras_bloqueadas` é quem vale, porque o site usa a `anon key` e
+  qualquer pessoa chama a REST API direto.
+  - `high` → conteúdo **nasce oculto** e vai pra fila. No **chat de live** é
+    **recusado no envio**: chat não tem `hidden_at` e a mensagem já foi lida
+    por quem estava na sala, então esconder depois não repara nada.
+  - `medium` → publica normalmente, mas **vai pra fila** do admin.
 - **Ocultação automática** (`hidden_at` + trigger `trigger_report_auto_hide`):
   ao atingir `mod_report_threshold` (3) denúncias, o conteúdo é ocultado
   (soft-hide) e entra na fila. As políticas RLS de SELECT escondem conteúdo
@@ -665,8 +676,39 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   do conteúdo + denúncias, escolhe uma ação (aviso / ocultar / suspender) e
   decide **confirmar a ocultação**, **restaurar** o conteúdo ou **banir** o
   autor direto.
+- **Moderação por IA** (`moderate-text` e `moderate-image`, Edge Functions):
+  provedor principal **OpenAI `omni-moderation-latest`**, que devolve nota **por
+  categoria** — o modelo antigo dava um número só de "toxicidade" e por isso era
+  cego para conteúdo sexual. HuggingFace fica de reserva.
+  - **Texto:** pisos fixos por categoria (`sexual/minors` 0.10, `sexual` 0.40,
+    `harassment/threatening` 0.50…) que o painel **não afrouxa**, mais o dial
+    `mod_ai_text_threshold` para o resto.
+  - **Imagem:** dois destinos, e esse é o **jogo de cintura do gore**. Nenhum
+    modelo distingue gore de Doom de gore real, e a maioria das imagens do site
+    é print de jogo — então `violence/graphic` **enfileira e nunca oculta**,
+    enquanto `sexual*` e `self-harm*` ocultam. Um limiar errado passa a gerar
+    fila maior, nunca censura.
+  - O texto **vem do banco**, não do corpo da requisição: aceitar o texto do
+    cliente permitiria mandar o `content_id` de um post alheio junto de uma
+    frase ofensiva e derrubar o post de outro. Só o autor (ou a equipe) pede a
+    moderação de uma linha.
+  - A RPC `apply_ai_moderation` só é executável por `service_role` — ela recebe
+    o score de quem chama, então liberá-la para `authenticated` daria a
+    qualquer pessoa logada o poder de ocultar qualquer coisa mandando score 1.
+- **O autor é avisado, e o aviso diz qual regra** (`avisar_autor_do_ocultamento`
+  + `motivo_legivel`): *"Seu post foi ocultado automaticamente por assédio a
+  outra pessoa."* Só sai quando algo foi **realmente** ocultado — `medium`, que
+  publica normal, não gera aviso. Categoria desconhecida cai num texto genérico
+  que continua sendo verdade, nunca num palpite.
+- **Falha da moderação vira registro** (`registrar_falha_de_moderacao`): as Edge
+  Functions são fire-and-forget e o cliente descarta a resposta, então erro de
+  RPC ou provedor fora do ar iam para um `console.error` que ninguém lê. Agora
+  viram `edge_function_error` em `admin_logs`, severidade `critical`.
 - **Infrações e escalação** (`violations` + trigger `trigger_violation_escalation`):
   cada ação confirmada vira pontos (warn 1, hide 2, suspend_1d 5, suspend_7d 10).
+  O painel **recusa confirmar sem ação escolhida**, e "Sem punição — só ocultar
+  (0 pt)" é uma opção explícita: antes, aprovar sem marcar nada dava zero ponto
+  em silêncio e a escalação nunca disparava.
   Ao somar `mod_ban_threshold` (15) pontos, `apply_mod_auto_ban` **bane o usuário
   automaticamente** (com cascade da atividade, log e notificação aos admins).
 - **Suspensão temporária** (`profiles.suspended_until` + `apply_suspension`): as
@@ -676,12 +718,87 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   navegando/lendo — diferente do ban, que tranca o site. A UI mostra um aviso
   (`SuspendedNotice`) no lugar do campo de criação. A coluna é protegida no
   `guard_profile_privileged_cols` (o suspenso não limpa sozinho).
+  **Limite de 1 a 30 dias** e **reversão por `lift_suspension`** (mesma
+  hierarquia do apply, com log e aviso ao usuário). Sem os dois, um `admin`
+  suspendia até o ano 2126 e nem o fundador desfazia — o trigger-guarda revertia
+  o `UPDATE` manual em silêncio, virando banimento permanente que pulava toda a
+  hierarquia do ban.
+- **Conteúdo apagado limpa a fila sozinho** (trigger `AFTER DELETE` nas quatro
+  tabelas de conteúdo): sem isso, banir alguém deixava os itens dele `pending`
+  apontando para linhas mortas, sem jeito de sair da tela. Fica na tabela e não
+  no `ban_user` porque o problema é de **qualquer** caminho que apague conteúdo.
 - **Painel** (`ModerationPanel`, aba Admin) com sub-abas: **Fila**, **Denúncias**
   (filtráveis por status), **Palavrões** (CRUD) e **Infrações** (histórico
   paginado, filtro por usuário).
 
 Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
 `mod_suspend_threshold`), editáveis pela aba **Site** do painel do Owner.
+
+### Observabilidade — a falha tem que gritar
+
+> Regra de origem: `CLAUDE.md` §1.5. De 11 achados numa única rodada de testes,
+> **quatro falhavam em silêncio absoluto** — nada estourava, nada aparecia na
+> tela, nenhum teste quebrava. O pior deles (a moderação por IA) esteve quebrado
+> em **26 de 26 chamadas por semanas**, detectando corretamente e nunca
+> aplicando nada. O sistema não tinha defeito de detecção; estava mudo.
+
+- **Sentry no frontend** (`lib/monitoring.js`) — só **erro**, sem tracing e sem
+  Session Replay, que são os que consomem cota. Ligado no `ErrorBoundary`, que
+  até então só fazia `console.error`: a tela "Algo deu errado" aparecia e
+  ninguém do outro lado ficava sabendo.
+  - `sendDefaultPii: false` e um `beforeSend` que **remove `access_token` e
+    `refresh_token` da URL**. O Supabase devolve esses tokens no fragmento na
+    confirmação de email e na recuperação de senha; sem a limpeza, um erro
+    nessas telas mandaria uma **sessão válida** para dentro do relatório.
+  - O DSN fica **no código**, não em variável de ambiente: ele é público por
+    natureza (vai no bundle), e depender da Vercel significaria que esquecer de
+    configurá-lo num deploy futuro apagaria o monitoramento sem ninguém notar —
+    construindo a falha silenciosa que ele existe para acabar.
+  - Custo medido: **+27,8 KB gzip** (507 → 535 KB de JS total).
+- **Falhas de servidor viram trilha** — `registrar_falha_de_moderacao` grava
+  `edge_function_error` em `admin_logs`, porque o corpo da resposta sozinho não
+  basta quando o chamador é fire-and-forget.
+
+### Resiliência — quando o banco cai
+
+O site detecta sozinho que perdeu o Supabase (projeto pausado por egress, por
+restrição de serviço, ou de propósito), avisa e leva todo mundo para a landing
+— a única página que **não depende do banco para nada**. Antes disso, pausar
+exigia editar o código e escrever "projeto pausado" na landing à mão.
+
+**O risco desta funcionalidade é o falso positivo**, não a detecção: derrubar o
+site porque o wi-fi de alguém piscou seria pior que o problema. Quatro defesas
+em `lib/dbHealth.js`, que instrumenta o `fetch` do cliente Supabase:
+
+| Defesa | Por quê |
+| --- | --- |
+| Só falha de **infraestrutura** conta (`fetch` estourou, ou 5xx) | 4xx significa que o banco respondeu — é RLS ou erro de aplicação, e negar é normal aqui |
+| **3 falhas seguidas**, e qualquer resposta boa zera | uma falha isolada não é queda |
+| **Sondagem independente** antes de declarar | se alguém atender, foi instabilidade |
+| Requisição **abortada** não conta | troca de tela cancela requisição o tempo todo |
+
+Volta sozinho: já fora do ar, sonda a cada 20s.
+
+O motivo da pausa (`site_config.pause_reason`, editável na aba Site) é lido
+**enquanto há banco** e guardado no navegador — porque se o banco caiu, o motivo
+não pode vir de lá. Pausa planejada mostra o motivo real; queda inesperada, ou
+primeira visita, mostra texto genérico.
+
+### Portão de qualidade automático
+
+`.github/workflows/ci.yml`, a cada PR e push na `main`:
+
+- `lint` (0 erros) · `npm test` · `build` · `npm audit --audit-level=high`
+- **piso de 125 testes** — o CI quebrando é o caso fácil, fica vermelho e
+  alguém olha; o perigoso é ele **passar sem testar nada** (arquivo renomeado,
+  `describe.skip` esquecido). Ao adicionar testes, subir o piso junto.
+- job de **fumaça** — 12 rotas num Chromium real, alcançando o Supabase. Só
+  roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` nas *Variables* do
+  repositório; sem elas seria "0/12 rotas", falha que não diz nada.
+
+`.github/dependabot.yml`: PR semanal agrupado por patch/minor, teto de 3.
+**Major fica de fora de propósito** — já quebrou o site uma vez (o upgrade do
+react-router que motivou o teste de fumaça existir).
 
 ---
 

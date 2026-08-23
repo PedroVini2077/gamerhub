@@ -94,7 +94,7 @@
   *Mexe em quem pode chamar a RPC — pede aprovação antes.*
 - ⬜ **Proteção contra senha vazada (HIBP).** Só no plano Pro (~US$25/mês).
   Decisão de custo.
-- ➡️ *(ver A FILA no topo)* **Migração para TypeScript.**
+- ⬜ **Migração para TypeScript.** Grande, decisão do dono.
 
 ### 🟢 Recomendado
 
@@ -104,7 +104,7 @@
 - ⬜ **`REPLICA IDENTITY FULL` em `profiles`.** Hoje a linha inteira vai no
   payload de cada update. Ganho de performance **teórico** com 3 usuários,
   contra risco real em `useAuth` (§7). Destrava com a conta de teste.
-- ➡️ *(ver A FILA no topo)* **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
+- ⬜ **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
   `exhaustive-deps` suprimidos. Travado pela conta de teste: o painel fica atrás
   de login e o teste de fumaça não o exercita.
 - ⬜ **E2E dos fluxos** (login, postar, banir). Infra pronta; falta a conta.
