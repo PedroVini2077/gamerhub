@@ -38,9 +38,32 @@
   mesmo lugar. Categoria desconhecida **não vira palpite**: cai num texto
   genérico que continua sendo verdade (§4). Esse fallback é a própria trava —
   uma categoria nova não consegue produzir mensagem errada, só genérica.
-- ⬜ **Sentry nas Edge Functions.** O frontend já está coberto. As três funções
-  devolvem `status` no corpo, o que resolve para quem testa, mas não avisa
-  ninguém sozinho.
+- ✅ **A falha da moderação grita — resolvido, mas NÃO com Sentry.**
+  As funções já devolviam `status: "rpc_error"` no corpo. Isso resolve para
+  quem testa, mas o cliente dispara e **descarta** a resposta
+  (fire-and-forget, de propósito, para não travar o usuário) — então a falha
+  seguia sem ninguém para ouvi-la. Foi assim que a IA ficou quebrada em 26 de
+  26 chamadas por semanas: ela gritava num `console.error` que ninguém abre.
+  *Escolhi `admin_logs` em vez do SDK do Sentry para Deno, por três razões:*
+  (1) sem dependência nova em função que está no caminho crítico da moderação;
+  (2) cai no painel que o dono **já olha**, em português, junto do resto da
+  trilha; (3) o Sentry do frontend já cobre o outro lado — a chamada que nem
+  chega a sair.
+  Hoje o bug que levou semanas apareceria como
+  `Falha na moderação (moderate-text): permission denied… [critical]`.
+  Cobre também o caso novo de **provedor fora do ar**: texto ou imagem que
+  passou sem análise nenhuma agora deixa rastro.
+  *Falta:* `moderate-links` ainda não grita — é a menos crítica (falha do Safe
+  Browsing já degrada de forma graciosa), mas fica anotada.
+- ✅ **Funções de trigger deixaram de ser chamáveis como RPC.** Achado do
+  `get_advisors` que eu tinha registrado e não fechado:
+  `checar_palavras_bloqueadas` e `resolver_moderacao_de_conteudo_apagado`
+  estavam executáveis por `anon` via `/rest/v1/rpc/`. Chamar direto quebraria
+  (as variáveis `TG_` vêm nulas), então o risco prático era baixo — mas é
+  superfície de API que não devia existir, e superfície que não devia existir é
+  onde a próxima falha se esconde. Conferido que os triggers seguem
+  disparando: revogar `EXECUTE` não os afeta, porque o Postgres checa esse
+  privilégio na criação do trigger, não a cada disparo.
 - ✅ **Moderação de imagem cobre violência e automutilação.** Trocado
   `Falconsai/nsfw_image_detection` (binário nsfw/normal, cego para sangue e
   gore) por `omni-moderation-latest`, que aceita imagem, usa a chave já
