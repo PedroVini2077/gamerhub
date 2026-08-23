@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { ok, fail, from, fromCount } from './result';
+import { ok, fail, from } from './result';
 
 export async function fetchLiveMessages(postId) {
   const { data, error } = await supabase
@@ -38,8 +38,20 @@ export async function sendChatMessage({ postId, userId, message }) {
 export async function deleteChatMessage(messageId, isMod, userId) {
   let q = supabase.from('live_chat').delete({ count: 'exact' }).eq('id', messageId);
   if (!isMod) q = q.eq('user_id', userId);
-  // count 0 sem erro = a RLS negou em silêncio.
-  return fromCount(await q, 'Você não tem permissão para deletar isto.');
+  const { error, count } = await q;
+  if (error) return fail(error);
+  if (count) return ok(count);
+
+  // 0 linhas sem erro pode ser DUAS coisas muito diferentes: a RLS negou, ou a
+  // mensagem já não existe — outro moderador apagou, ou a lista da tela está
+  // velha. Dizer "sem permissão" nos dois casos é mentira metade das vezes, e
+  // foi exatamente o que apareceu ao apagar pelo painel uma mensagem que já
+  // tinha sido apagada: parecia falta de permissão do próprio autor.
+  //
+  // O SELECT de `live_chat` é público, então esta checagem é confiável.
+  const { data } = await supabase.from('live_chat').select('id').eq('id', messageId).maybeSingle();
+  if (!data) return ok(0); // já não existe: o objetivo do moderador foi atingido
+  return fail({ message: 'Você não tem permissão para deletar esta mensagem.' });
 }
 
 export async function silenceUser({ postId, userId, minutes, createdBy }) {

@@ -164,8 +164,11 @@ export function useLiveChat({ activeLive, user, profile, isAdmin }) {
   }
 
   async function deleteMessage(msgId) {
-    const { error } = await deleteChatMessage(msgId, canModerateLive(isAdmin, activeLive, user), user.id);
+    const { data: apagadas, error } = await deleteChatMessage(msgId, canModerateLive(isAdmin, activeLive, user), user.id);
     if (error) { toast.error(error.message || 'Erro ao deletar'); return; }
+    // `apagadas === 0` = a mensagem já não existia (a lista da tela estava
+    // velha). Não é erro, mas também não houve ação para registrar na trilha.
+    if (!apagadas) { fetchMessages(activeLive?.id); return; }
     logAudit('live_chat_delete', `@${profile?.username} deletou uma mensagem no chat da live "${activeLive?.title}"`, { category: 'live' });
   }
 
