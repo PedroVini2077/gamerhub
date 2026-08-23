@@ -115,6 +115,10 @@ de teste e gastava a `HUGGINGFACE_API_KEY` a cada chamada. Nada no site a
 chamava. Código morto não é só bagunça — é superfície de ataque que ninguém
 revisa, porque ninguém lembra que existe.
 
+> **Não confundir:** a `HUGGINGFACE_API_KEY` continua em uso pelo fallback de
+> texto dentro da `moderate-text`. Apagar a `debug-hf` é seguro; apagar o
+> **secret** tiraria a reserva do texto (ver [MODERACAO.md](MODERACAO.md)).
+
 As duas foram neutralizadas (corpo devolvendo `410`, `verify_jwt` ligado) e
 estão no backlog para o apagar definitivo pelo dashboard. Verificado:
 `POST` nas duas → **401** no gateway.
