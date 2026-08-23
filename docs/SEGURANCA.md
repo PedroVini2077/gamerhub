@@ -53,6 +53,28 @@
   usuário comum não altera `role`/`banned` nem `hidden_at`/`deleted_at`/
   `user_id`. Ambos com `search_path` fixo.
 
+## `[23/08]` Auth Hook de email exige assinatura
+
+A `send-email` é o *Auth Hook* do Supabase e, por construção, precisa rodar com
+`verify_jwt: false` — o gateway não exige JWT de um webhook. O corpo dela não
+conferia nada, e **qualquer pessoa na internet** disparava email com a marca do
+GamerHub para qualquer endereço. O pior caminho não é o spam: é queimar a cota
+de ~500/dia do Gmail ou fazer o Google travar a conta, e aí **ninguém mais se
+cadastra nem recupera senha**.
+
+Agora ela valida a assinatura **Standard Webhooks** que o Supabase manda
+(HMAC-SHA256 sobre `${id}.${timestamp}.${corpo}`, janela de 5 minutos contra
+replay, comparação em tempo constante). Sem `SEND_EMAIL_HOOK_SECRET` ela recusa
+tudo — cadastro parado e barulhento é melhor que hook aberto e silencioso. Toda
+recusa devolve o mesmo `401`: dizer de fora *qual* foi o motivo entregaria o
+estado da configuração a quem sonda. O motivo real vai para `admin_logs`.
+
+O `token_hash` saiu do log da função junto: ele é a credencial de uso único que
+confirma a conta ou troca a senha, e estava sendo gravado em texto puro.
+
+Relatório completo, com a prova e os três testes de verificação:
+[`db/2026-08-23-send-email-aberta-para-a-internet.md`](../db/2026-08-23-send-email-aberta-para-a-internet.md).
+
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.
 

@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **20 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **21 itens abertos**
 (+ 1 ideia sem compromisso)
 
 ---
@@ -33,12 +33,14 @@
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[23/08]` **`send-email` falha em silêncio.** Se o Google travar a conta,
-  a senha de app expirar ou o secret ficar errado, ninguém consegue se
-  cadastrar nem recuperar senha — e o erro vai para um `console.error` que
-  ninguém abre. É mais grave que a moderação: trava a **porta de entrada** do
-  site. Mesmo tratamento das outras Edge Functions (`registrar_falha_*` →
-  `admin_logs`).
+- ⬜ `[23/08]` **As Edge Functions não estão versionadas no git.** As oito vivem
+  só no Supabase: sem histórico, sem revisão, sem rollback. A correção da
+  brecha da `send-email` (23/08) existe hoje em um lugar só. Trazer para
+  `supabase/functions/` — e aí o portão de documentação do CI passa a cobri-las
+  de verdade.
+- ⬜ `[23/08]` **Edge Function `debug-hf` parece ser sobra.** Nome de
+  experimento com Hugging Face, e a moderação usa OpenAI. Conferir se algo
+  ainda chama e apagar — MCP não apaga função, é pelo dashboard.
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a

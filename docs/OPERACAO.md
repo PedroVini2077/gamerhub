@@ -24,9 +24,21 @@
     configurá-lo num deploy futuro apagaria o monitoramento sem ninguém notar —
     construindo a falha silenciosa que ele existe para acabar.
   - Custo medido: **+27,8 KB gzip** (507 → 535 KB de JS total).
-- **Falhas de servidor viram trilha** — `registrar_falha_de_moderacao` grava
-  `edge_function_error` em `admin_logs`, porque o corpo da resposta sozinho não
-  basta quando o chamador é fire-and-forget.
+- **Falhas de servidor viram trilha** — `registrar_falha_de_edge_function`
+  grava `edge_function_error` em `admin_logs`, porque o corpo da resposta
+  sozinho não basta quando o chamador é fire-and-forget. `EXECUTE` só para
+  `service_role`: o texto vai direto para o painel, então não pode ser escrito
+  por cliente. (`registrar_falha_de_moderacao` continua existindo e delega para
+  ela — os chamadores antigos não mudaram.)
+- **`send-email` grita.** Era a mais grave das mudas: se o Google travar a
+  conta, a senha de app expirar ou o secret ficar errado, **ninguém se cadastra
+  nem recupera senha**. Agora vão para `admin_logs` as três causas — chamada
+  recusada, credenciais SMTP ausentes, e SMTP recusando o envio.
+
+  > **Se você vir `Falha em send-email` no painel, a porta de entrada do site
+  > está fechada.** Confira, nesta ordem: a senha de app do Google ainda é
+  > válida? a conta não foi travada por envio automatizado? passou dos ~500
+  > envios do dia?
 
 ## Resiliência — quando o banco cai
 
