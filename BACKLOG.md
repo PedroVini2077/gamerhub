@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **18 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **17 itens abertos**
 (+ 1 ideia sem compromisso)
 
 ---
@@ -33,11 +33,6 @@
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[23/08]` **As Edge Functions não estão versionadas no git.** As oito vivem
-  só no Supabase: sem histórico, sem revisão, sem rollback. A correção da
-  brecha da `send-email` (23/08) existe hoje em um lugar só. Trazer para
-  `supabase/functions/` — e aí o portão de documentação do CI passa a cobri-las
-  de verdade.
 - ⬜ `[23/08]` **Apagar `debug-hf` e `cleanup-expired-posts` pelo dashboard.**
   As duas já estão **neutralizadas** (corpo devolvendo 410, `verify_jwt`
   ligado, nada mais é chamado) e o trabalho da segunda virou
