@@ -75,6 +75,24 @@ confirma a conta ou troca a senha, e estava sendo gravado em texto puro.
 Relatório completo, com a prova e os três testes de verificação:
 [`db/2026-08-23-send-email-aberta-para-a-internet.md`](../db/2026-08-23-send-email-aberta-para-a-internet.md).
 
+## `[23/08]` A porta da `moderate-links` era decorativa
+
+Ela fazia `if (!authHeader) 401` e seguia em frente — **sem nunca validar o
+token**. Qualquer string em `Authorization` passava, incluindo `Bearer
+lixo-qualquer`. Não dava escalada de privilégio (a RPC do fim confere de novo),
+mas dava para qualquer pessoa da internet **queimar a cota do Safe Browsing**
+do projeto, que é de 10 mil consultas/dia. Estourada, a checagem de link para
+de funcionar para todo mundo — e em silêncio, porque a falha da API degrada de
+forma graciosa por design.
+
+Agora valida com `auth.getUser()`, como `moderate-text` e `moderate-image`.
+Verificado: token inventado → 401; **a própria anon key crua → 401** (mais
+estrito que o `verify_jwt` do gateway, que a aceitaria); sessão real → 200.
+
+O caso perigoso passou a gritar junto: link malicioso **detectado** e a RPC não
+ocultando devolve `status: "rpc_error"` e vai para `admin_logs`. Era a mesma
+forma de falha que manteve a moderação por IA quebrada em 26 de 26 chamadas.
+
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.
 

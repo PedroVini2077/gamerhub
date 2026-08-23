@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **21 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **20 itens abertos**
 (+ 1 ideia sem compromisso)
 
 ---
@@ -47,9 +47,6 @@
   falta de painel de entrega continuam. Com domínio próprio (~R$40/ano) +
   Resend vira `nao-responda@…`; sem domínio, o Brevo é a opção. *Não é urgente
   com 3 usuários.*
-- ⬜ `[23/08]` **`moderate-links` ainda não grita.** As outras duas Edge
-  Functions já registram falha em `admin_logs`; esta ficou de fora por ser a
-  menos crítica (falha do Safe Browsing degrada de forma graciosa).
 
 ## 🟢 Recomendado
 
