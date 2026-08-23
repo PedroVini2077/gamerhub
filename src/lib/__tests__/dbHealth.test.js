@@ -12,8 +12,16 @@ function sondaResponde(ok) {
   )));
 }
 
-beforeEach(() => { _resetarParaTeste(); sondaResponde(false); });
-afterEach(() => { vi.restoreAllMocks(); });
+beforeEach(() => {
+  _resetarParaTeste();
+  sondaResponde(false);
+  // A sondagem desiste cedo se as variáveis do Supabase não existirem. Sem
+  // fixá-las aqui, o teste passava na minha máquina (que tem `.env.local`) e
+  // falhava no CI, que não tem — foi o CI que pegou isso.
+  vi.stubEnv('VITE_SUPABASE_URL', 'https://exemplo.supabase.co');
+  vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'chave-de-teste');
+});
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 // O risco desta funcionalidade não é deixar de detectar a queda — é detectar
 // queda que não houve. Derrubar o site inteiro para a tela de "fora do ar"
