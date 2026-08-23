@@ -175,6 +175,45 @@ admin conectado mesmo com a aba fechada. Trocada por poll só com a aba visível
 A lista viva está em `src/lib/realtimeTables.js`, com teste que falha se alguém
 assinar tabela não publicada.
 
+### `[23/08]` `profiles` fica com `REPLICA IDENTITY FULL` — medido, não suposto
+
+Estava no backlog trocar para `DEFAULT` e reduzir o payload de cada update. Foi
+**medido e descartado.**
+
+A pergunta que tornava isso interessante não era o byte: era se o WAL, sob
+`REPLICA IDENTITY FULL`, entregava ao navegador as colunas de `profiles` que
+foram revogadas de `authenticated` por LGPD. O próprio comentário no
+`useAuth.jsx` dizia que ninguém sabia.
+
+**Sabe-se agora.** Assinando o canal com a conta de teste e disparando updates
+reais pelo SQL, o payload chegou assim:
+
+```
+id, username, avatar_url, bio, created_at, role, banned,
+state, platform, favorite_games, discord, twitch, youtube,
+playstyle, role_changed_at
+```
+
+Sem `birth_date`, sem `suspended_until`, sem `ban_reason`, sem `email`. **O
+Realtime respeita privilégio de coluna.** E o conjunto entregue é um
+*subconjunto* do que a RPC `get_public_profile` já expõe publicamente — que
+ainda acrescenta `age`. Só `role_changed_at` está fora dela, e é um carimbo de
+tempo.
+
+Sem o problema de privacidade, o que sobra é economia de bytes com **3
+usuários**, contra mexer no caminho de dados do arquivo mais crítico do projeto
+(§7). Não compensa. Reavaliar se a base crescer a ponto de o tráfego de
+realtime aparecer na conta.
+
+**De quebra, dois fatos que valem para quem for mexer nisso:**
+
+1. Um usuário logado, assinando `profiles` **sem filtro**, recebe as mudanças
+   de perfil de *todo mundo*. Avaliado e aceito: são exatamente as colunas que
+   `get_public_profile` já entrega a qualquer um.
+2. Update que não muda valor nenhum (`set bio = bio`) **não gera evento**. Isso
+   custou uma rodada de teste: a primeira medição deu "0 eventos" e pareceu que
+   a detecção de ban estava morta. Não estava — o update é que era no-op.
+
 ### `[21/08]` Índices "não usados" são mantidos de propósito
 
 O advisor aponta ~15. Quase todos são de chave estrangeira e passam a ser
