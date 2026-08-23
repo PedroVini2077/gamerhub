@@ -12,6 +12,7 @@ import { useRole } from './hooks/useRole';
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import ErrorBoundary from './components/ErrorBoundary';
+import { identificarUsuario } from './lib/monitoring';
 import GlobalBanner from './components/ui/GlobalBanner';
 import FeatureGate from './components/ui/FeatureGate';
 import PageTransition from './components/ui/PageTransition';
@@ -86,6 +87,12 @@ function Layout({ children }) {
 
     return () => supabase.removeChannel(ch);
   }, []);
+
+  // Carimba quem está usando nos relatórios de erro. Só `id` e `username` — as
+  // mesmas coisas que qualquer visitante já vê num perfil público. Fica aqui, e
+  // não dentro do `useAuth`, porque aquele é o arquivo de maior risco do
+  // projeto (§7) e isto é conveniência de diagnóstico, não funcionalidade.
+  useEffect(() => { identificarUsuario(profile); }, [profile]);
 
   // Só bloqueia quando: config carregada + manutenção ativa + perfil resolvido + não é owner
   // profileSettled evita flash de manutenção enquanto o perfil do owner carrega

@@ -122,6 +122,25 @@
 - ✅ **Dependabot** (`.github/dependabot.yml`) — PR semanal agrupado por
   patch/minor. **Major fica de fora de propósito**: já quebrou o site uma vez
   (o upgrade do react-router que motivou o teste de fumaça).
+- ✅ **Guarda contra suíte que encolhe em silêncio.** O CI quebrando é o caso
+  fácil — fica vermelho e alguém olha. O perigoso é o CI **passar sem testar
+  nada**: arquivo renomeado para fora do padrão, `describe.skip` esquecido,
+  glob de config alterado. O `vitest` sairia com 0 e o PR ficaria verde — a
+  mesma falha silenciosa da §1.5, dentro da ferramenta que deveria pegá-la.
+  Piso de 125 testes no `ci.yml`, provado nos dois sentidos (dispara com 12,
+  passa com 134). **Ao adicionar testes, subir o piso junto.**
+- ✅ **Sentry ligado** (`lib/monitoring.js`) — só erro, sem tracing e sem
+  Session Replay, que são os que comem cota. `sendDefaultPii: false` e um
+  `beforeSend` que **remove `access_token`/`refresh_token` da URL** antes de
+  qualquer coisa sair: o Supabase devolve esses tokens no fragmento em
+  confirmação de email e recuperação de senha, e sem a limpeza um erro nessas
+  telas mandaria uma sessão válida para dentro do relatório.
+  Ligado no `ErrorBoundary`, que até então só fazia `console.error` — a tela
+  "Algo deu errado" aparecia e ninguém do outro lado ficava sabendo.
+  **Custo medido: +27,8 KB gzip** (507 → 535 KB de JS total).
+  O DSN fica no código de propósito: é público por natureza, e depender de uma
+  variável na Vercel significaria que esquecer de configurá-la num deploy
+  futuro apagaria o monitoramento sem ninguém perceber.
 
 **⬜ Falta — depende de uma ação do dono, e cada um destrava algo**
 
@@ -132,13 +151,14 @@
   secrets — a anon key é pública por natureza.
   **Por que importa:** o runner do GitHub alcança o `supabase.co`, e o meu
   ambiente não. É o CI que consegue rodar o que eu não consigo.
-- ⬜ 🟠 **Sentry (plano gratuito: 5.000 erros/mês, 1 usuário).**
-  É a implementação prática da §1.5 — hoje, quando algo quebra pra um usuário
-  às 3 da manhã, **ninguém fica sabendo**. Foi assim que a moderação por IA
-  ficou quebrada em 26 de 26 chamadas por semanas.
-  *Passos:* criar conta em sentry.io → projeto React → copiar o DSN → me
-  passar. Eu instalo o SDK, ligo no `main.jsx` e nas Edge Functions.
-  *Volume atual (3 usuários) não chega perto do teto.*
+- ⬜ 🟢 **Sentry nas Edge Functions.** O frontend já está coberto. As três
+  funções (`moderate-text`, `moderate-image`, `moderate-links`) hoje devolvem
+  `status` no corpo — o que resolve para quem testa, mas ainda não avisa
+  ninguém sozinho. Precisa do SDK Deno do Sentry, é escopo próprio.
+- ⬜ 🟢 **Conferir a cota do Sentry depois do primeiro mês.** Free são 5.000
+  eventos/mês. Se estourar, o Sentry **descarta em silêncio** — a mesma classe
+  de falha que ele existe para acabar. Com 3 usuários não chega perto, mas
+  quando a base crescer isto precisa de um olhar.
 - ⬜ 🟠 **Conta de teste descartável.** A peça que mais destrava: E2E
   autenticado, a migração do `Admin.jsx` pra React Query e o
   `REPLICA IDENTITY` de `profiles` estão todos parados pela mesma falta.

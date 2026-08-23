@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@react-three/fiber": "^9.6.1",
+    "@sentry/react": "^10.70.0",
     "@supabase/supabase-js": "^2.105.3",
     "@tanstack/react-query": "^5.101.0",
     "@vercel/analytics": "^2.0.1",

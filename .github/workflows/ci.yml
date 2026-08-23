@@ -34,9 +34,9 @@ jobs:
     name: build · lint · testes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
@@ -51,7 +51,28 @@ jobs:
         run: npm run lint
 
       - name: Testes unitários
-        run: npm test
+        run: npm test -- --reporter=default --reporter=json --outputFile=vitest-report.json
+
+      # O CI quebrando é o caso FÁCIL: fica vermelho e alguém olha.
+      # O caso perigoso é o contrário — o CI passar sem testar nada. Um arquivo
+      # de teste renomeado para fora do padrão, um `describe.skip` esquecido, um
+      # glob de config alterado: o `vitest` sai com 0 e o PR fica verde.
+      # Seria a mesma falha silenciosa que a §1.5 combate, só que na ferramenta
+      # que deveria pegá-la. O piso abaixo torna isso impossível.
+      #
+      # Ao ADICIONAR testes, suba o piso junto. Ao remover, é para doer mesmo:
+      # perder cobertura tem que ser decisão consciente, não acidente.
+      - name: Guarda — a suíte não pode encolher em silêncio
+        run: |
+          total=$(node -p "require('./vitest-report.json').numTotalTests")
+          piso=125
+          echo "testes executados: $total (piso: $piso)"
+          if [ "$total" -lt "$piso" ]; then
+            echo "::error::A suite caiu para $total testes, abaixo do piso de $piso."
+            echo "::error::Ou algum arquivo de teste parou de ser encontrado, ou houve remocao."
+            echo "::error::Se a remocao foi proposital, abaixe o piso em .github/workflows/ci.yml no mesmo PR."
+            exit 1
+          fi
 
       - name: Build
         run: npm run build
@@ -68,9 +89,9 @@ jobs:
     # rodar mentindo.
     if: vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm

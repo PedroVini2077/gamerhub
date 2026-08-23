@@ -11,6 +11,7 @@
  *
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/smoke.mjs
  */
+import { existsSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 const BASE = process.env.SMOKE_BASE ?? 'http://localhost:4173';
@@ -51,8 +52,14 @@ try {
   process.exit(2);
 }
 
+// O ambiente onde eu (Claude) rodo traz um Chromium pré-instalado num caminho
+// fixo. Cravar esse caminho aqui fez o teste funcionar SÓ ali: no CI e na
+// máquina de qualquer pessoa ele morria com "executable doesn't exist", erro
+// que não tem nada a ver com o site. Agora o caminho é uma dica opcional — se
+// não existir, o Playwright acha o navegador dele sozinho.
+const CHROMIUM_PRE_INSTALADO = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const browser = await chromium.launch({
-  executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  ...(existsSync(CHROMIUM_PRE_INSTALADO) ? { executablePath: CHROMIUM_PRE_INSTALADO } : {}),
   args: ['--no-sandbox'],
 });
 
