@@ -28,6 +28,25 @@ function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Tolerância de plural — precisa ser IDÊNTICA à do trigger
+// `checar_palavras_bloqueadas` no banco. Se as duas divergirem, o cliente deixa
+// passar algo que o servidor recusa (e o usuário toma erro sem entender) ou o
+// contrário.
+//
+// Motivo: a regra é de palavra inteira, então `otário` não casava `otários` e o
+// mural aceitou "Se matem otários" inteiro. Exigir uma entrada por flexão é
+// insustentável — sempre sobra buraco.
+//
+// `es` só a partir de 4 letras para evitar `cu` → `cues` (palavra inglesa que
+// aparece em texto sobre jogo). `cu` → `cus` continua pegando.
+function comPlural(term) {
+  return `${escapeRegex(term)}${term.length >= 4 ? '(?:es|s)?' : 's?'}`;
+}
+
+function casa(term, text) {
+  return new RegExp(`(?<!\\p{L})${comPlural(term)}(?!\\p{L})`, 'iu').test(text);
+}
+
 /**
  * Primeira palavra da lista encontrada no texto.
  * Devolve `{ word, severity }` ou `null`.
@@ -37,8 +56,7 @@ export function findBlockedWord(text, words) {
   for (const w of words) {
     const term = w?.word?.trim();
     if (!term) continue;
-    const re = new RegExp(`(?<!\\p{L})${escapeRegex(term)}(?!\\p{L})`, 'iu');
-    if (re.test(text)) return { word: w.word, severity: w.severity || 'medium' };
+    if (casa(term, text)) return { word: w.word, severity: w.severity || 'medium' };
   }
   return null;
 }
@@ -54,8 +72,7 @@ export function checkText(text, words) {
   for (const w of words) {
     const term = w?.word?.trim();
     if (!term) continue;
-    const re = new RegExp(`(?<!\\p{L})${escapeRegex(term)}(?!\\p{L})`, 'iu');
-    if (!re.test(text)) continue;
+    if (!casa(term, text)) continue;
 
     const severity = w.severity || 'medium';
     if (severity === SEVERIDADE_BLOQUEIA) {
