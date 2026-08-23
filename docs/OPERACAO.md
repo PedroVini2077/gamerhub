@@ -103,6 +103,22 @@ antes: live encerrada que não some do feed é o job de hora em hora parado.
   de produção. Quando falha, sobe `e2e-evidencia/` como artefato — screenshot,
   texto da tela e URL, senão o log diria só "timeout".
 
+### A trava das Edge Functions bate na produção, e é de propósito
+
+`e2e/portas-fechadas.mjs` (dentro do job de fumaça) manda cinco requisições de
+abuso reais contra as Edge Functions e exige `401`/`410` em todas. São as
+brechas fechadas em 23/08 — ver [`SEGURANCA.md`](SEGURANCA.md).
+
+Por que produção e não uma varredura do código: **as Edge Functions não estão
+no git**. Um teste que lê `src/` não protege nada delas — basta um deploy pelo
+dashboard, ou uma versão antiga restaurada, e a porta reabre sem que uma linha
+do repositório mude. Nenhuma das requisições tem efeito colateral: todas devem
+ser recusadas.
+
+A trava foi provada reimplantando a *forma* do bug (corpo inofensivo,
+`verify_jwt` desligado, devolvendo 200) e conferindo que o teste acusou
+`ABERTA` nomeando a função e o estrago que ela voltaria a permitir.
+
 ### As rotas dos testes ficam num arquivo só, com trava
 
 `e2e/rotas.mjs` é a fonte única, e `src/lib/__tests__/rotasE2E.test.js` a

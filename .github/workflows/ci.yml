@@ -155,6 +155,19 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # Trava das brechas de 23/08. Não precisa de navegador nem de build — só
+      # de rede — mas mora aqui porque depende da mesma variável, e porque este
+      # job já é o que "fala com o Supabase de verdade".
+      #
+      # Por que bate na produção em vez de ler o código: as Edge Functions não
+      # estão no git. Um teste que varre `src/` não protege nada delas — basta
+      # um deploy pelo dashboard e a porta reabre sem que o repositório mude.
+      # Nenhuma das requisições tem efeito colateral: todas devem ser recusadas.
+      - name: As portas das Edge Functions continuam fechadas
+        run: npm run test:portas
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+
   fluxos:
     name: fluxos autenticados
     runs-on: ubuntu-latest
