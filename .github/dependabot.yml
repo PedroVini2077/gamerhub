@@ -1,0 +1,46 @@
+# Atualização automática de dependências.
+#
+# Por que existe: hoje `npm audit` só roda quando alguém lembra. Uma falha
+# publicada numa dependência fica em produção até a próxima faxina — e o
+# projeto usa a `anon key` no cliente, então biblioteca comprometida no bundle
+# é problema de segurança real, não de higiene.
+#
+# O Dependabot é gratuito em qualquer repositório, público ou privado.
+#
+# Estratégia: agrupar as atualizações num PR só por semana. PR por pacote
+# viraria ruído e a gente pararia de olhar — que é exatamente o efeito que a
+# gente evita na fila de moderação também.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Teto baixo de propósito: se abrir mais que isso, é sinal de que a gente
+    # parou de acompanhar, e o certo é uma faxina de dependências, não 10 PRs.
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps"
+    groups:
+      # Correção de segurança e patch entram juntos — são as de menor risco e
+      # as que mais interessa aplicar rápido.
+      patches:
+        update-types: [patch]
+      # Minor separado: mudança de comportamento é rara mas possível, então
+      # vale olhar com mais atenção do que um patch.
+      minors:
+        update-types: [minor]
+    # Major fica de FORA de propósito: já quebrou o site uma vez (o upgrade do
+    # react-router que motivou o teste de fumaça). Major entra na mão, com
+    # leitura do changelog e teste explícito.
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  # O próprio CI também envelhece: `actions/checkout@v4` vira v5 um dia.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

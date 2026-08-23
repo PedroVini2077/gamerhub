@@ -1,0 +1,100 @@
+# Portão de qualidade automático.
+#
+# Por que existe: até agora `build`, `lint` e `test` rodavam porque EU lembrava
+# de rodar antes de abrir o PR. Funcionou até hoje. CI não esquece nunca — e a
+# definição de pronto do CLAUDE.md §2 passa a ser verificada por máquina, não
+# por disciplina.
+#
+# O job `qualidade` NÃO precisa de segredo nenhum: o build do Vite compila sem
+# as variáveis do Supabase (elas só fazem falta em runtime, e o guard de
+# `lib/supabase.js` já mostra uma tela explicando quando faltam).
+#
+# O job `fumaca` precisa alcançar o Supabase de verdade, então só roda quando
+# as duas variáveis existirem no repositório. Para ligá-lo:
+#   Settings -> Secrets and variables -> Actions -> Variables -> New variable
+#     VITE_SUPABASE_URL       = https://<projeto>.supabase.co
+#     VITE_SUPABASE_ANON_KEY  = <a anon key>
+# São *variables*, não *secrets*: a anon key é pública por natureza — é a mesma
+# que o site entrega a qualquer visitante.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# PR novo cancela a execução anterior do mesmo PR — economiza minuto de runner.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: build · lint · testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # `npm ci` e não `npm install`: instala exatamente o que está no
+      # package-lock, sem atualizar nada por conta própria.
+      - run: npm ci
+
+      # A ordem importa: lint e teste primeiro porque falham rápido e apontam
+      # o problema com precisão; o build é o mais lento e o menos específico.
+      - name: Lint (0 erros; warnings não podem aumentar)
+        run: npm run lint
+
+      - name: Testes unitários
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Auditoria de dependências
+        run: npm audit --audit-level=high
+
+  fumaca:
+    name: rotas num navegador de verdade
+    runs-on: ubuntu-latest
+    needs: qualidade
+    # Sem as variáveis o site não alcança o Supabase e o teste acusaria "0/12
+    # rotas" — falha que não diz nada sobre o código. Melhor não rodar do que
+    # rodar mentindo.
+    if: vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Build com as variáveis do site
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      # `--host 127.0.0.1` fixa o endereço que o smoke test procura, e o
+      # `curl --retry` espera o servidor subir em vez de dormir um tempo fixo.
+      - name: Subir o preview e esperar responder
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          curl --retry 20 --retry-delay 1 --retry-all-errors --fail --silent \
+               --output /dev/null http://127.0.0.1:4173
+
+      - name: Teste de fumaça das rotas
+        run: npm run test:e2e
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173

@@ -104,6 +104,65 @@
   `else → community_posts`, e a fila **recebe** itens de chat. O painel dizia
   "sem permissão" para um caso que é "esta tabela não tem como ocultar".
 
+### 🛠️ Ferramental — o que já está armado e o que falta
+
+> Levantamento de 23/08 sobre "que braços externos existem pra ajudar".
+> Conclusão: o gargalo do projeto nunca foi qualidade de modelo — foi
+> **observabilidade** (ninguém sabia que estava quebrado) e **cobertura de
+> teste em caminho autenticado**. O ferramental abaixo ataca exatamente isso, e
+> os quatro itens somados custam **R$ 0**.
+
+**✅ Já armado**
+
+- ✅ **CI no GitHub Actions** (`.github/workflows/ci.yml`) — `lint`, `test`,
+  `build` e `npm audit` a cada PR e a cada push na `main`. Até então isso
+  rodava porque eu lembrava; agora a definição de pronto (§2) é verificada por
+  máquina. Público é ilimitado; privado são 2.000 min/mês e o nosso gasto é
+  ~3 min por PR.
+- ✅ **Dependabot** (`.github/dependabot.yml`) — PR semanal agrupado por
+  patch/minor. **Major fica de fora de propósito**: já quebrou o site uma vez
+  (o upgrade do react-router que motivou o teste de fumaça).
+
+**⬜ Falta — depende de uma ação do dono, e cada um destrava algo**
+
+- ⬜ 🟠 **Variáveis do repositório, pra ligar o teste de fumaça no CI.**
+  O job `fumaca` já está escrito e fica pulado enquanto elas não existirem.
+  *Settings → Secrets and variables → Actions → **Variables** → New variable:*
+  `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. São **variables**, não
+  secrets — a anon key é pública por natureza.
+  **Por que importa:** o runner do GitHub alcança o `supabase.co`, e o meu
+  ambiente não. É o CI que consegue rodar o que eu não consigo.
+- ⬜ 🟠 **Sentry (plano gratuito: 5.000 erros/mês, 1 usuário).**
+  É a implementação prática da §1.5 — hoje, quando algo quebra pra um usuário
+  às 3 da manhã, **ninguém fica sabendo**. Foi assim que a moderação por IA
+  ficou quebrada em 26 de 26 chamadas por semanas.
+  *Passos:* criar conta em sentry.io → projeto React → copiar o DSN → me
+  passar. Eu instalo o SDK, ligo no `main.jsx` e nas Edge Functions.
+  *Volume atual (3 usuários) não chega perto do teto.*
+- ⬜ 🟠 **Conta de teste descartável.** A peça que mais destrava: E2E
+  autenticado, a migração do `Admin.jsx` pra React Query e o
+  `REPLICA IDENTITY` de `profiles` estão todos parados pela mesma falta.
+
+**❌ Avaliado e descartado, com o motivo**
+
+- ❌ **CodeQL** — US$ 30 por committer/mês, e entrega pouco além do `npm audit`
+  para o tamanho deste projeto.
+- ❌ **Agregadores de IA** (TypingMind, Monica, MagAI, Team-GPT) — são
+  interfaces de **conversa**: não rodam migration, não leem `pg_policies`, não
+  abrem PR. Seriam um passo atrás do MCP do Supabase e do GitHub, que já estão
+  conectados.
+- ❌ **Plugins de terceiros do Claude Code** — o marketplace passou de 200,
+  mas plugins executam código arbitrário com o privilégio do usuário e a
+  Anthropic não audita servidores MCP. Os dois que importariam aqui (Supabase e
+  GitHub) já estão conectados.
+- ❌ **PC dedicado** — o CI resolve as mesmas duas limitações do meu ambiente
+  (navegador que não alcança o Supabase, realtime que não observo) de graça e
+  sem máquina ligada.
+- ✅ **Segunda opinião manual em mudança de risco** — não é ferramenta, é
+  hábito: antes de aplicar migration que mexe em RLS, hierarquia ou
+  `SECURITY DEFINER`, colar o SQL em outro modelo e perguntar "o que pode dar
+  errado aqui?". Custo zero, dois minutos, pega ponto cego.
+
 ### ⬜ Aberto — precisa de decisão ou janela própria
 
 - ⬜ 🟠 **A IA oculta e não avisa o autor.** Quando `apply_ai_moderation` ou o
