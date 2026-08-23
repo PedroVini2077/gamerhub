@@ -233,6 +233,73 @@ discordam, vence a que **executa**.
 
 ---
 
+### 1.5 Falha tem que GRITAR
+
+> Regra irmã de "nunca engolir erro" (§4), mas mais forte e mais ampla. Aquela
+> diz *não descarte o erro*. Esta diz: **se algo quebrar, alguém tem que ficar
+> sabendo — sem depender de o dono clicar e reparar.**
+
+**Por que esta regra existe.** Na rodada de 22–23/08 foram 11 achados. Quatro
+falhavam em **silêncio absoluto**: nada estourava, nada aparecia na tela, nada
+ia pro log que alguém lê, nenhum teste quebrava. Só foram encontrados porque o
+dono estava clicando no site. O pior deles — a moderação por IA — estava
+quebrado em **26 de 26 chamadas**, por semanas, detectando corretamente e nunca
+aplicando nada.
+
+**O sistema não estava com defeito de detecção. Estava mudo.**
+
+#### As sete fontes de silêncio deste projeto
+
+Cada uma já causou bug real aqui. Ao escrever ou revisar código, procurar as sete:
+
+| # | Fonte de silêncio | O caso real |
+| --- | --- | --- |
+| 1 | **Fire-and-forget** — resposta descartada por design | `moderateText` disparava e ignorava; a RPC devolvia `permission denied` num `console.error` que ninguém lê |
+| 2 | **0 linhas afetadas** sem erro | RLS negando `UPDATE`/`DELETE`; e o inverso — 0 linhas porque a linha *já não existe*, reportado como "sem permissão" |
+| 3 | **Trigger-guarda que reverte** | o `owner` deu `UPDATE` pra tirar suspensão, o comando **passou sem erro**, e o guarda reverteu por baixo |
+| 4 | **Assinatura de realtime em tabela não publicada** | canal conecta, `subscribe()` responde `SUBSCRIBED`, e **nenhum evento chega, para sempre** |
+| 5 | **Fallback silencioso** (§4) | `else → community_posts` mandava item de `chat` pra tabela errada; erro descartado; tela em "Carregando..." eterno |
+| 6 | **Cobertura que não cobre** | a lista de palavras casava só a flexão exata; `otário` não pegava `otários` e nada acusava |
+| 7 | **Erro só no `console.error`** | serve pra depurar, **não é tratamento**. Ninguém abre o console do servidor de produção por diversão |
+
+#### O que fazer — regras concretas
+
+- **Fire-and-forget devolve estado no corpo da resposta.** Se a função não pode
+  bloquear o usuário, tudo bem — mas o resultado tem que ser inspecionável por
+  quem for testar. `status: "ok"` × `status: "rpc_error"` com a mensagem junto.
+  Foi essa mudança que tornaria o bug da IA visível em 1 minuto em vez de semanas.
+- **0 linhas é AMBÍGUO — desambiguar sempre.** São dois casos com tratamentos
+  opostos: *negado pela RLS* (erro real, avisar) e *a linha já não existe*
+  (objetivo atingido, seguir). Quando a diferença importa, fazer o `SELECT` de
+  conferência antes de dar a mensagem. Mensagem errada gasta mais tempo do dono
+  do que mensagem nenhuma.
+- **Escrita que "passa" mas não muda nada é falha.** Se existe trigger-guarda
+  sobre a coluna, conferir o valor **depois** — ou usar a RPC própria. `UPDATE`
+  sem erro **não** prova que mudou.
+- **Configuração que pode silenciosamente nunca funcionar precisa de teste de
+  contrato.** Assinatura de realtime, mapa de tipos, lista de actions, papéis.
+  Ver §6 FASE 4 e a §2.
+- **`console.error` sozinho nunca conta como tratamento.** Ou vai pra tela do
+  usuário, ou vai pro corpo da resposta, ou dispara um teste. De preferência dois.
+- **Toda mensagem de erro tem que ser verdadeira.** "Você não tem permissão"
+  quando o motivo é outro é pior do que "erro desconhecido" — manda o dono
+  investigar permissão por horas.
+
+#### O teste dos três canais
+
+Antes de dar qualquer coisa por pronta, responder:
+
+> **Se isto quebrar amanhã de madrugada, sem ninguém olhando —
+> (a) o que aparece pra quem está usando?
+> (b) o que fica gravado onde alguém vai ver?
+> (c) qual teste falha?**
+
+Se as três respostas forem "nada", **não está pronto** — está apenas escrito.
+Pelo menos uma tem que ser concreta, e em caminho crítico (auth, moderação,
+pagamento, permissão) o certo é ter as três.
+
+---
+
 ## 2. Definição de pronto
 
 Uma entrega só está pronta quando **todos** estes itens passam:
@@ -250,7 +317,46 @@ Uma entrega só está pronta quando **todos** estes itens passam:
 - [ ] `BACKLOG.md` atualizado se resolveu ou descobriu pendência
 - [ ] Passei a bateria de faxina (§6.1) no que toquei — código morto, egress,
       cleanup, duplicação
+- [ ] Passei o **teste dos três canais** (§1.5) no que toquei
+- [ ] **Todo bug que corrigi virou uma trava** (ver abaixo) — sem exceção
 - [ ] Script de teste avulso: rodou, passou, **apagou** (nunca commitar)
+
+### Todo bug corrigido vira uma TRAVA — não é opcional
+
+> Consertar sem travar é convite pro bug voltar. E ele volta: neste projeto já
+> voltou três vezes o mesmo padrão de `owner` esquecido em lista de papéis.
+
+**A regra:** nenhum bug é considerado resolvido só porque o sintoma sumiu.
+Junto do conserto entra **um mecanismo que impede o retorno** e que roda sozinho.
+
+**Como escolher a trava** — na ordem, do mais forte pro mais fraco. Sempre
+preferir o mais alto que couber:
+
+| Força | Mecanismo | Quando cabe |
+| --- | --- | --- |
+| 1º | **Constraint / CHECK / FK no banco** | o dado errado passa a ser **impossível** de existir |
+| 2º | **Teste que reproduz o bug** | comportamento errado passa a quebrar o `npm test` |
+| 3º | **Teste de contrato** que varre o código-fonte | a deriva entre dois lugares passa a falhar sozinha |
+| 4º | **Tipo / mapa explícito** que não aceita valor desconhecido | o caso novo estoura em vez de cair num `else` |
+| 5º | Comentário explicando o porquê | **só quando nenhum dos quatro couber** |
+
+**A trava tem que ser provada.** Não basta escrever o teste: é preciso
+**injetar o bug de volta** e ver o teste falhar, nomeando o problema. Se ele
+passa com o bug presente, ele não é trava, é decoração. Exemplo real: ao
+travar as assinaturas de realtime, removi `unban_requests` da lista e conferi
+que o teste falhou apontando `hooks/useAdminRealtime.js` e o comando SQL que
+faltava.
+
+**A mensagem da falha tem que ensinar.** Quem esbarrar nela daqui a seis meses
+precisa entender o que fazer sem ler o histórico. "esperado [] mas recebeu [x]"
+não ensina nada; "assinatura que nunca vai receber evento — rode `ALTER
+PUBLICATION ...`" ensina.
+
+**Travas que já existem** (imitar o padrão, não reinventar):
+`lib/logMeta.js` (toda action precisa de ícone) · `lib/realtimeTables.js` (toda
+assinatura precisa da tabela publicada) · `components/moderation/queueLabels.js`
+(todo tipo da fila precisa existir nos três mapas) · `lib/roles.js`
+(`canModerateLive` com as 5 combinações travadas).
 
 ---
 
@@ -336,6 +442,42 @@ Na prática:
 - Atualização otimista precisa de **rollback + aviso** quando o servidor recusa
   (ver `lib/like.js`).
 
+### Fallback silencioso é PROIBIDO
+
+> O bug mais barato de escrever e o mais caro de achar. Você economiza uma linha
+> hoje e paga com uma tela em "Carregando..." para sempre depois.
+
+O caso real: a prévia da fila de moderação mapeava `post` e `comment`, e tudo o
+mais caía num `else → community_posts`. Quando o tipo `chat` passou a existir,
+ele foi buscar numa tabela onde a linha **nunca** existe, o erro foi descartado,
+e o card ficou girando eternamente. Ninguém escreveu esse bug — ele **nasceu
+sozinho** no dia em que um valor novo apareceu.
+
+**Os quatro disfarces do fallback silencioso:**
+
+```js
+const t = tipo === 'post' ? 'posts' : tipo === 'comment' ? 'comments' : 'community_posts';
+const sev = w.severity || 'medium';        // e se vier 'critical'?
+switch (x) { case 'a': …; default: faz();} // default que ENGOLE
+const v = obj[k] ?? PADRAO;                // padrão escondendo chave inexistente
+```
+
+**O que fazer no lugar:**
+
+- **Mapa explícito**, um objeto com todas as chaves conhecidas — e o
+  desconhecido devolve `undefined`, não um palpite.
+- **Tratar o desconhecido de forma visível**: retornar erro, mostrar
+  "tipo desconhecido: X" na tela, ou lançar. Nunca escolher um valor por ele.
+- **Travar com teste** (§2): a lista de valores que o sistema pode produzir
+  precisa bater com as chaves do mapa. Foi o que impediu o caso do `chat` de
+  voltar.
+- **Valor padrão só quando o padrão é a regra**, não quando é chute. `?? true`
+  numa preferência de notificação é regra ("na dúvida, notifica"); `?? 'medium'`
+  numa severidade vinda do banco é chute.
+
+**Sinal de alerta:** se você escreveu `else`, `default:` ou `??` e não consegue
+dizer em voz alta **quais valores caem ali**, é fallback silencioso.
+
 ### UI
 - **Sem emojis na UI.** Só `lucide-react`, ou `react-icons/fa6` para marcas
   (Discord, Twitch, YouTube). Emoji dá cara de chatbot. Isso inclui setas
@@ -413,6 +555,67 @@ ROLLBACK;
 - Rodar `get_advisors` (security + performance) depois de mudar schema.
 - Documentar auditoria/mudança grande em `db/AAAA-MM-DD-*.md`.
 
+### Toda ação de estado precisa da INVERSA e da LIMPEZA
+
+> Duas falhas da mesma família apareceram no mesmo dia: suspensão que não tinha
+> como ser removida, e fila de moderação que ficava presa para sempre depois do
+> ban. Nos dois casos alguém escreveu o caminho de ida e parou ali.
+
+**Ao criar qualquer ação que muda estado, responder as três antes de entregar:**
+
+1. **Qual é a inversa, e quem pode executá-la?**
+   Suspender pede tirar. Ocultar pede restaurar. Banir pede desbanir. Promover
+   pede rebaixar. Se a inversa não existe, o estado é **permanente** — e aí a
+   ação inteira precisa de autorização à altura disso.
+   *O caso real:* `apply_suspension` existia sem `lift_suspension`, e o
+   trigger-guarda impedia até o `UPDATE` manual. Um `admin` (rank 2) conseguia
+   silenciar alguém **para sempre**, e nem o `owner` desfazia — a suspensão
+   virava um banimento permanente pulando toda a hierarquia do ban.
+
+2. **Quem passa a apontar para o nada?**
+   Ao apagar conteúdo, o que referenciava aquilo? Fila de moderação, denúncias,
+   notificações, logs, mídia no storage. **Onde não dá pra ter FK, tem que ter
+   trigger** — e `moderation_queue.content_id` aponta pra quatro tabelas
+   diferentes, então FK ali é impossível por construção.
+   *O caso real:* `ban_user` apagava os posts e deixava os itens da fila
+   `pending` apontando para linhas mortas, sem jeito de sair da tela.
+
+3. **Quem precisa ficar sabendo?**
+   O alvo da ação, a equipe, e a trilha de auditoria. Ação de moderação que o
+   alvo descobre sozinho (porque o post sumiu) é indistinguível de bug, do lado
+   dele.
+
+**Corrigir sempre pela CLASSE, não pelo caso.** A limpeza da fila não pertence
+ao `ban_user` — pertence a *qualquer* caminho que apague conteúdo: o próprio
+autor apagando, o admin apagando, exclusão de conta, cascade de FK, e os
+caminhos que ainda não existem. Trigger `AFTER DELETE` na tabela cobre todos de
+uma vez; consertar dentro do `ban_user` cobriria um.
+
+### Toda entrada de RPC precisa de FAIXA, não só de tipo
+
+`p_days integer` aceita `36500`. Foi assim que uma suspensão de "alguns dias"
+virou suspensão até o ano **2126** — e como não havia inversa (acima), virou
+banimento permanente.
+
+**O tipo diz o formato; a faixa diz o que faz sentido.** Antes de qualquer
+`UPDATE` dentro de uma RPC:
+
+- **Número:** mínimo e máximo explícitos, com `RAISE EXCEPTION` claro e em
+  português — a mensagem chega no toast do usuário.
+  `IF p_days < 1 OR p_days > 30 THEN RAISE EXCEPTION 'Suspensao deve ser de 1 a 30 dias…'`
+- **Texto:** tamanho máximo, e lista fechada quando for enum de fato.
+- **UUID de alvo:** existe? é o próprio? tem cargo igual ou superior?
+- **Nulo:** `p_days IS NULL` passa por `< 1`? Em SQL, **não** — `NULL < 1` é
+  `NULL`, e o `IF` não dispara. Checar `IS NULL` explicitamente.
+
+**O limite superior é decisão de produto, e tem que estar escrita.** "Mais que
+30 dias é caso de banimento, que tem hierarquia própria e caminho de reversão"
+— isso vai no comentário do SQL, não só na cabeça de quem escreveu.
+
+**Validação no cliente não substitui isto** (§1.3): o site usa a `anon key`, e
+o dropdown que só oferece 1 e 7 dias não impede ninguém de chamar a REST API
+com 36500.
+
 ### Coisas específicas deste banco
 - RLS por **linha**; privilégio por **coluna** é por **papel**. "Dono vê tudo do
   próprio, nada do alheio" não se expressa com nenhum dos dois sozinho — precisa
@@ -427,10 +630,13 @@ ROLLBACK;
 
 ---
 
-## 6. Auditoria periódica (plano em 3 fases)
+## 6. Auditoria periódica (plano em 4 fases)
 
 Quando o dono pedir "auditoria", "testes do site", "caçar bugs/brechas" ou
 similar. **Uma fase por vez**, relatório ao fim de cada uma.
+
+> Fases 1–3 olham cada camada por dentro. A **Fase 4** olha se elas concordam
+> entre si — é a fase que pega o bug que não estoura em lugar nenhum.
 
 > **Sobre aprovação:** o padrão é relatar e esperar antes de aplicar correções
 > amplas. **Exceção:** falha de segurança explorável se fecha na hora (§1.3) —
@@ -526,6 +732,63 @@ explícito — nunca some em silêncio.
 - Integridade: FK e regra de `ON DELETE` (um `NO ACTION` esquecido trava
   exclusão de conta).
 - `get_advisors` security **e** performance.
+
+### FASE 4 — Deriva entre o código e o banco
+
+> A fase que faltava. As Fases 1, 2 e 3 olham cada lado **por dentro** e o
+> encontram saudável. Esta olha se os dois **concordam entre si** — e foi de
+> onde saíram três bugs em um único dia, todos invisíveis em runtime.
+
+**Por que existe uma fase só pra isso.** O frontend estava correto. O banco
+estava correto. O que estava errado era a *combinação*: o código assinava uma
+tabela que a publicação não continha, mapeava tipos que o banco não produzia
+mais sozinho, e casava palavras por uma regra diferente da do trigger. Ler
+qualquer um dos dois lados isoladamente não revela nada.
+
+**O sintoma característico:** nada estoura, nada loga, e a funcionalidade
+simplesmente **não acontece**. Ver §1.5.
+
+#### A varredura — confrontar código × banco, item a item
+
+| O que confrontar | Como achar a deriva | O caso real |
+| --- | --- | --- |
+| **Assinaturas de realtime** × publicação `supabase_realtime` | listar `table: 'x'` e `useRealtime('x')` no código, cruzar com `pg_publication_tables` | `unban_requests` e `live_reactivation_requests` assinadas e nunca publicadas |
+| **Mapas de tipo no JS** × valores que o banco realmente grava | ver o que os triggers/RPCs inserem em colunas de tipo (`content_type`, `trigger_type`, `action`) | `chat` chegou na fila e não existia em nenhum mapa |
+| **Regras de casamento/validação duplicadas** | mesma decisão implementada nos dois lados (wordlist, bloqueio de login, hierarquia) | cliente casava palavra exata, banco passou a casar plural |
+| **Listas de papéis escritas à mão** × `role_rank()`/`is_staff()`/`is_super()` | `grep` por `'admin'`, `'super_admin'`, `'owner'` literais | 14 policies sem `owner`, três vezes |
+| **Privilégio de COLUNA** × o que a tela lê | `information_schema.column_privileges` vs os `select()` do código | colunas de `profiles` revogadas derrubaram post, comentário, mural e chat |
+| **Actions gravadas pelo banco** × mapa de ícones do painel | `grep` em `prosrc` por `INSERT INTO admin_logs` | 14 actions sem ícone, invisíveis pro teste que só varria `src/` |
+| **Funções de trigger expostas como RPC** | `get_advisors` → `anon_security_definer_function_executable` | `checar_palavras_bloqueadas` chamável via `/rest/v1/rpc/` |
+| **Tabelas sem policy de UPDATE** × telas que fazem update | `pg_policies` sem `cmd IN ('UPDATE','ALL')` | moderação de comentário e mural quebrada por meses, em silêncio |
+
+Consultas de apoio:
+
+```sql
+-- tabelas assinadas no código que NÃO estão publicadas
+select tablename from pg_publication_tables
+ where pubname='supabase_realtime' and schemaname='public';
+
+-- tabela sem policy de UPDATE nega em silêncio
+select t.tablename from pg_tables t where t.schemaname='public'
+ and not exists (select 1 from pg_policies p where p.schemaname='public'
+                  and p.tablename=t.tablename and p.cmd in ('UPDATE','ALL'));
+
+-- coluna revogada que alguma policy/função ainda lê
+select tablename, policyname from pg_policies
+ where coalesce(qual,'')||coalesce(with_check,'') ilike '%coluna%';
+```
+
+```bash
+# toda assinatura de realtime do código
+grep -rn "table: '\|useRealtime('" src/ --include=*.js --include=*.jsx
+```
+
+#### A regra que fecha a fase
+
+**Toda deriva encontrada vira teste de contrato (§2), não só correção.** Deriva
+não é um bug pontual: é um par de lugares que precisa concordar para sempre, e
+que vai divergir de novo na próxima mudança. Corrigir sem travar aqui é
+garantir que a Fase 4 da próxima auditoria vai achar exatamente a mesma coisa.
 
 ---
 
