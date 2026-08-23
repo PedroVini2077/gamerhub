@@ -94,6 +94,10 @@ export const ACTION_META = {
 
   // moderação automática — gravada pelo BANCO (`apply_ai_moderation`)
   ai_moderation_hidden:      A(ShieldAlert,  'text-orange-400',  '#fb923c'),
+  // Gravada pelas Edge Functions quando a própria moderação falha. Antes esse
+  // erro só existia num `console.error` que ninguém abre — foi como a IA ficou
+  // quebrada em 26 de 26 chamadas por semanas (§1.5).
+  edge_function_error:       A(Siren,         'text-red-400',     '#ef4444'),
   wordlist_flag:             A(Filter,       'text-orange-400',  '#fb923c'),
   moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
@@ -177,6 +181,7 @@ export const ACTIONS_DO_BANCO = [
   'content_post_edited',
   'content_post_deleted',
   'ai_moderation_hidden',
+  'edge_function_error',
   'wordlist_flag',
   'auto_ban',
   'auto_suspend',
