@@ -80,9 +80,17 @@ export function AuthProvider({ children }) {
       }, (payload) => {
         // Usa o evento só como GATILHO e relê pela RPC, em vez de confiar nas
         // colunas do payload: `ban_reason`/`ban_details` não são mais legíveis
-        // direto na tabela por `authenticated`, e o que o Realtime entrega do
-        // WAL sob privilégio de coluna é detalhe de implementação — não é algo
-        // em que valha a pena apostar a detecção de ban.
+        // direto na tabela por `authenticated`.
+        //
+        // Medido em 23/08 (o comentário anterior dizia que isto era
+        // desconhecido): o Realtime **respeita privilégio de coluna**. O
+        // payload chega só com o que `authenticated` pode ler — sem
+        // `birth_date`, `suspended_until`, `ban_reason` nem `email`. Ou seja,
+        // `payload.new.banned` é confiável.
+        //
+        // Ainda assim relemos pela RPC, agora por outro motivo: o ban precisa
+        // de `ban_reason` para a tela do banido, e isso o payload não traz.
+        // Reler é o caminho que já funciona nos dois casos.
         if (payload.new?.banned) revalidate();
       })
       .subscribe();

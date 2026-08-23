@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **19 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **18 itens abertos**
 (+ 1 ideia sem compromisso)
 
 ---
@@ -58,10 +58,6 @@
 - ⬜ `[23/08]` **Conferir a cota do Sentry depois do primeiro mês.** Free são
   5.000 eventos/mês; estourando, ele **descarta em silêncio** — a mesma classe
   de falha que ele existe para acabar. Com 3 usuários não chega perto.
-- ⬜ `[22/08]` **`REPLICA IDENTITY FULL` em `profiles`.** Hoje a linha inteira
-  vai no payload de cada update. Ganho **teórico** com 3 usuários contra risco
-  real em `useAuth` (§7). O E2E autenticado já cobre login, sessão e perfil,
-  então a rede de segurança existe.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
   `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
   conta comum de propósito (é assim que ele prova que `/admin` é negado), então
