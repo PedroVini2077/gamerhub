@@ -10,6 +10,112 @@
 
 ---
 
+## 🎯 A FILA — lista fechada, conferida em 23/08/2026
+
+> **Esta seção é a fonte de verdade.** Tudo abaixo dela é histórico e contexto.
+>
+> Ela nasceu de uma limpeza: o backlog listava 31 itens abertos, mas cinco já
+> estavam feitos e três apareciam duplicados 2–3 vezes. Conferido **contra o
+> sistema**, não contra o documento (§1.4 do CLAUDE.md):
+>
+> | Listado como aberto | Realidade em 23/08 |
+> | --- | --- |
+> | `pg_net` no schema `public` | extensão **removida** do banco |
+> | `admin_logs`/`post_media` no realtime | **fora** da publicação |
+> | Padronizar `{data,error}` nos services | **8 de 8** services, 78 funções |
+> | Canal `admin-realtime` global | já dividido em persistente + sob demanda |
+> | Variáveis do repositório para o CI | ligadas, job de fumaça rodando verde |
+> | Suspeita: realtime de `profiles` quebrado pelas colunas revogadas | **descartada** — o dono confirmou o realtime funcionando |
+
+### 🟠 Importante — dá para fazer
+
+- ✅ **Aviso de moderação diz QUAL regra foi violada.** Era "por violar as
+  regras da comunidade", que não ensina nada — quem recebe não sabe o que
+  evitar e acha que foi perseguição. Agora: *"Seu post foi ocultado
+  automaticamente por **assédio a outra pessoa**."*
+  O mapa categoria → português vive no banco (`motivo_legivel`), não no
+  TypeScript, para que todo texto que o usuário lê sobre moderação venha do
+  mesmo lugar. Categoria desconhecida **não vira palpite**: cai num texto
+  genérico que continua sendo verdade (§4). Esse fallback é a própria trava —
+  uma categoria nova não consegue produzir mensagem errada, só genérica.
+- ⬜ **Sentry nas Edge Functions.** O frontend já está coberto. As três funções
+  devolvem `status` no corpo, o que resolve para quem testa, mas não avisa
+  ninguém sozinho.
+- ✅ **Moderação de imagem cobre violência e automutilação.** Trocado
+  `Falconsai/nsfw_image_detection` (binário nsfw/normal, cego para sangue e
+  gore) por `omni-moderation-latest`, que aceita imagem, usa a chave já
+  configurada e cobre `violence/graphic`, `self-harm` e `sexual/minors` numa
+  chamada só. O HF fica de reserva se a chave da OpenAI sumir.
+  **O jogo de cintura do gore, que era o ponto central:** nenhum modelo
+  distingue gore de Doom de gore real, e a maioria das imagens do site é print
+  de jogo. Por isso `violence/graphic` **enfileira e nunca oculta** — um limiar
+  errado passa a gerar fila maior, nunca censura. `sexual/minors`, `sexual` e
+  `self-harm` ocultam.
+  `apply_ai_moderation` ganhou `p_ocultar` para isso, e a trilha passou a
+  distinguir "ocultou" de "enviou para revisão" — o log mentiria, se não.
+  *Medição que motivou:* foto de rapaz sem camisa na praia com limiar em 0.05
+  deu `nsfw_score=0.000`. O pipeline funcionava; era o modelo que era estreito.
+  *Ainda por medir na prática:* as notas reais de prints de jogo, para ajustar
+  o piso de 0.80 em `violence/graphic`. Como esse caminho só enfileira, medir
+  agora deixou de ser pré-requisito — o erro é reversível.
+
+### 🟠 Importante — precisa de decisão ou ação do dono
+
+- ⬜ **Conta de teste descartável.** A peça que mais destrava: E2E autenticado,
+  React Query no `Admin.jsx` e `REPLICA IDENTITY` de `profiles` estão os três
+  parados pela mesma falta.
+- ⬜ **Usuário banido não tem canal para pedir revisão.** A `BannedScreen`
+  mostra o motivo e desloga em 6s: sem botão, sem formulário, sem contato. O
+  `request_unban` exige `role = 'admin'` — só um admin abre o pedido em nome de
+  outra pessoa. Coerente com a hierarquia, mas deixa o banido sem saída.
+  *Mexe em quem pode chamar a RPC — pede aprovação antes.*
+- ⬜ **Proteção contra senha vazada (HIBP).** Só no plano Pro (~US$25/mês).
+  Decisão de custo.
+- ➡️ *(ver A FILA no topo)* **Migração para TypeScript.**
+
+### 🟢 Recomendado
+
+- ⬜ **Conferir a cota do Sentry depois do primeiro mês.** Free são 5.000
+  eventos/mês; estourando, ele **descarta em silêncio** — a mesma classe de
+  falha que ele existe para acabar. Com 3 usuários não chega perto.
+- ⬜ **`REPLICA IDENTITY FULL` em `profiles`.** Hoje a linha inteira vai no
+  payload de cada update. Ganho de performance **teórico** com 3 usuários,
+  contra risco real em `useAuth` (§7). Destrava com a conta de teste.
+- ➡️ *(ver A FILA no topo)* **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
+  `exhaustive-deps` suprimidos. Travado pela conta de teste: o painel fica atrás
+  de login e o teste de fumaça não o exercita.
+- ⬜ **E2E dos fluxos** (login, postar, banir). Infra pronta; falta a conta.
+- ⬜ **Denúncia criada não gera log de auditoria.** Decisão consciente —
+  qualquer um denuncia, e logar isso inflaria a trilha. Reavaliar se a moderação
+  sentir falta.
+- ⬜ **Moderação de vídeo.** Adiada a pedido, **e não é cara**: dá para extrair
+  frames com `<video>` + `canvas` no navegador e mandar pela moderação de imagem
+  que já existe. Custo zero. Ganha de graça a ampliação da imagem acima.
+
+### 🔵 Só quando o volume crescer
+
+> Nenhum destes é dívida. São decisões corretas para 3 usuários que deixam de
+> ser corretas em outra escala. Registrados para não serem redescobertos.
+
+- ⬜ **RPC de engajamento agregado.** `attachEngagement` traz as linhas de
+  `post_likes`/`comments` e conta no cliente. Trocar por agregação no banco
+  quando um post passar dos milhares de curtidas.
+- ⬜ **Presence num canal global único** (`gamerhub-presence`). Revisitar se
+  "online agora" passar de algumas centenas.
+- ⬜ **Paginação / virtualização** em listas longas (usuários, logs, chat).
+- ⬜ **Mídia no Cloudflare R2** — solução definitiva de egress se o site crescer.
+- ⬜ **2FA no login.**
+- ⬜ **Afinar detecção de ban** (hoje realtime + poll de 60s como reserva).
+
+### 💡 Ideias registradas, sem compromisso
+
+- 💡 **Área própria de moderação de live, estilo YouTube Studio.** O incômodo é
+  real: chat é ao vivo e efêmero, e a fila de moderação é assíncrona — quando o
+  admin abre o painel, a live já acabou. As ferramentas que importam ali já
+  existem no `ModPanel`, dentro da live. É feature nova; não é prioridade.
+
+---
+
 ## 🎯 Fila da faxina — status em 22/08/2026
 
 > Atualizada ao fim da rodada de faxina. O que foi feito está com o resultado
@@ -162,22 +268,25 @@
 
 **⬜ Falta — depende de uma ação do dono, e cada um destrava algo**
 
-- ⬜ 🟠 **Variáveis do repositório, pra ligar o teste de fumaça no CI.**
+- ✅ 🟠 **Variáveis do repositório ligadas** — o job `fumaca` rodou verde em
+  23/08, com as 12 rotas num Chromium real alcançando o Supabase.
+  *(texto original abaixo, para quem precisar refazer)*
+  **Variáveis do repositório, pra ligar o teste de fumaça no CI.**
   O job `fumaca` já está escrito e fica pulado enquanto elas não existirem.
   *Settings → Secrets and variables → Actions → **Variables** → New variable:*
   `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. São **variables**, não
   secrets — a anon key é pública por natureza.
   **Por que importa:** o runner do GitHub alcança o `supabase.co`, e o meu
   ambiente não. É o CI que consegue rodar o que eu não consigo.
-- ⬜ 🟢 **Sentry nas Edge Functions.** O frontend já está coberto. As três
+- ➡️ *(ver A FILA no topo)* **Sentry nas Edge Functions.** O frontend já está coberto. As três
   funções (`moderate-text`, `moderate-image`, `moderate-links`) hoje devolvem
   `status` no corpo — o que resolve para quem testa, mas ainda não avisa
   ninguém sozinho. Precisa do SDK Deno do Sentry, é escopo próprio.
-- ⬜ 🟢 **Conferir a cota do Sentry depois do primeiro mês.** Free são 5.000
+- ➡️ *(ver A FILA no topo)* **Conferir a cota do Sentry depois do primeiro mês.** Free são 5.000
   eventos/mês. Se estourar, o Sentry **descarta em silêncio** — a mesma classe
   de falha que ele existe para acabar. Com 3 usuários não chega perto, mas
   quando a base crescer isto precisa de um olhar.
-- ⬜ 🟠 **Conta de teste descartável.** A peça que mais destrava: E2E
+- ➡️ *(ver A FILA no topo)* **Conta de teste descartável.** A peça que mais destrava: E2E
   autenticado, a migração do `Admin.jsx` pra React Query e o
   `REPLICA IDENTITY` de `profiles` estão todos parados pela mesma falta.
 
@@ -228,10 +337,15 @@
   a ser uma decisão que se marca, não o que acontece quando alguém esquece.
   Travado por teste: toda ação oferecida precisa ter pontuação definida, e ação
   desconhecida não cai em padrão nenhum.
-- ⬜ 🟢 **Aviso genérico.** "Seu post foi ocultado por violar as regras" não diz
+- ➡️ *(ver A FILA no topo)* **Aviso genérico.** "Seu post foi ocultado por violar as regras" não diz
   qual regra. Dizer "por linguagem ofensiva" / "por assédio" educa em vez de só
   punir. Polimento, não falha.
-- ⬜ 🟠 **`profiles` no realtime × colunas revogadas — suspeita, não fato.**
+- ✅ 🟠 **`profiles` no realtime × colunas revogadas — SUSPEITA DESCARTADA.**
+  O dono testou em 23/08 e confirmou o realtime funcionando. Ou seja: o
+  Realtime da Supabase **não** descarta a mensagem por causa de privilégio de
+  coluna. Fica registrado como resposta à dúvida que o `CLAUDE.md` §1.1 usava
+  de exemplo de limite de conhecimento.
+  *(diagnóstico original abaixo)*
   `profiles` está publicada com `REPLICA IDENTITY FULL` (a linha INTEIRA vai no
   payload), mas **10 colunas** foram revogadas de `authenticated` na correção de
   LGPD: `ban_count`, `ban_details`, `ban_reason`, `banned_at`, `banned_by`,
@@ -246,14 +360,14 @@
   banir por outra, e cronometrar. Sumiu na hora = realtime vivo; demorou até
   1 min = só o poll. **Não mexer antes de medir** — `useAuth` é o arquivo de
   maior risco do projeto (§7).
-- ⬜ 🟠 **Usuário banido não tem como pedir revisão.** A `BannedScreen` mostra o
+- ➡️ *(ver A FILA no topo)* **Usuário banido não tem como pedir revisão.** A `BannedScreen` mostra o
   motivo e desloga em 6s: sem botão, sem formulário, sem contato. O
   `request_unban` exige `role = 'admin'` — ou seja, **só um admin abre o pedido
   em nome de outra pessoa**. Isso é coerente com a hierarquia (admin bane mas
   não desbane; super_admin/owner desbanem direto), mas deixa o banido sem
   nenhum canal: o recurso depende de um admin lembrar de abrir sozinho.
   *Mexe em quem pode chamar a RPC — pede aprovação do dono antes.*
-- ⬜ 🟠 **Moderação de imagem só cobre pornografia.** O
+- ➡️ *(ver A FILA no topo)* **Moderação de imagem só cobre pornografia.** O
   `Falconsai/nsfw_image_detection` é binário `nsfw`/`normal`, treinado em porn:
   **não** pega sangue, gore, automutilação, símbolo de ódio nem droga. Plano:
   trocar por `omni-moderation-latest` da OpenAI, que **também aceita imagem**,
@@ -283,7 +397,7 @@
   A via de ocultar por imagem foi provada em `ROLLBACK` separadamente
   (`apply_ai_moderation` com `mod_ai_image_threshold` oculta e enfileira), então
   o que falta é só cobertura de modelo — exatamente o que a troca resolve.
-- ⬜ **C3-c — `profiles` com `REPLICA IDENTITY FULL`.** *Não mexi de propósito.*
+- ➡️ *(ver A FILA no topo)* **C3-c — `profiles` com `REPLICA IDENTITY FULL`.** *Não mexi de propósito.*
   O `useAuth` lê `payload.new?.banned` para detectar ban, e é o arquivo de
   maior risco do projeto (§7): quebrar derruba o site. É ganho de performance
   **teórico hoje** (2 usuários) contra risco real num controle de segurança.
@@ -295,23 +409,24 @@
   PERSISTENTE (notificações + pedidos de desban, que precisam chegar em
   qualquer aba) e um SOB DEMANDA (`posts`, timeouts de chat, reativações) que
   só existe enquanto a aba de moderação de lives está aberta.
-- ⬜ **Proteção contra senha vazada (HIBP).** É configuração de painel, não dá
+- ➡️ *(ver A FILA no topo)* **Proteção contra senha vazada (HIBP).** É configuração de painel, não dá
   para mexer por SQL/MCP: **Authentication → Sign In/Providers → Email →
   "Prevent use of leaked passwords"**. Era bloqueado no plano Free; vale
   reconferir agora que o projeto saiu da restrição. Checagem de 1 minuto.
-- ⬜ **Migrar `Admin.jsx` para React Query.** Ficou mais viável depois do split
+- ➡️ *(ver A FILA no topo)* **Migrar `Admin.jsx` para React Query.** Ficou mais viável depois do split
   (os fetchers estão em `useAdminData` e nos hooks de domínio) e resolveria de
   verdade os 3 `exhaustive-deps` hoje suprimidos. *Por que não foi feito:* é
   refatoração da camada de dados do painel administrativo — banimento,
   moderação, notificações — e **o painel fica atrás de login, então o teste de
   fumaça não o exercita**. Fazer sem conseguir abrir a tela seria exatamente o
   risco que o backlog já apontava. Destrava junto com a conta de teste.
-- ⬜ **Padronizar `{ data, error }` nos services.** ~30 funções, 6 services.
-  **Muda contrato** — pede plano + aprovação (§7), não entra de carona.
-- ⬜ **Migração para TypeScript.** Grande, decisão do dono.
-- ⬜ **E2E dos fluxos** (login, postar, banir). A infra agora existe
+- ✅ **Padronizar `{ data, error }` nos services** — FEITO. Conferido em
+  23/08: **8 de 8** services importam de `services/result.js`, 78 funções
+  exportadas. (O backlog dizia "~30 funções, 6 services"; eram 78 em 8.)
+- ➡️ *(ver A FILA no topo)* **Migração para TypeScript.** Decisão do dono.
+- ➡️ *(ver A FILA no topo)* **E2E dos fluxos** (login, postar, banir). A infra agora existe
   (`playwright` + `e2e/`); falta uma conta de teste descartável.
-- ⬜ **Moderação de vídeo.** Adiada a pedido. Nota que muda a conta: dá para
+- ➡️ *(ver A FILA no topo)* **Moderação de vídeo.** Adiada a pedido. Nota que muda a conta: dá para
   extrair frames no navegador com `<video>` + `canvas` (API nativa, sem
   ffmpeg.wasm) e mandar pela moderação de imagem que já existe — **custo zero**.
   A premissa "vídeo = gastar mais" não se sustenta.
@@ -341,8 +456,7 @@ crítico do projeto. Conforto de dev (hot reload) não paga esse churn.
 
 ### 🔵 Só quando o volume crescer (registrado, não urgente)
 
-- ⬜ RPC de engajamento agregado · presence em canal único · paginação/
-  virtualização em listas longas · bundle 3D · mídia no Cloudflare R2.
+- ➡️ *(ver A FILA no topo, seção 🔵)*
 
 ---
 
@@ -360,10 +474,10 @@ usuário normal, FKs que travariam exclusão de conta) e 4 riscos latentes
 fechados. Advisors: 64 → 42 avisos, 0 erros.
 
 **Continua em aberto** (ver detalhes no relatório):
-- ⬜ C3-b/c: enxugar a publicação `supabase_realtime`, revisar
-  `REPLICA IDENTITY FULL` de `profiles`.
-- ⬜ `pg_net` no schema `public` (adiado de propósito, ver acima).
-- ⬜ RPC de engajamento agregado quando o volume crescer.
+- ✅ C3-b **FEITO** (publicação enxugada: `admin_logs` e `post_media` fora,
+  conferido em 23/08). C3-c ➡️ *(ver A FILA no topo)*.
+- ✅ `pg_net` **REMOVIDA** do banco — conferido em 23/08, a extensão não existe mais.
+- ➡️ *(ver A FILA no topo, seção 🔵)*
 
 **Fechado depois** (estava listado como aberto e já não está):
 - ✅ `profiles`: as colunas sensíveis (`birth_date`, `ban_reason`,
@@ -460,7 +574,7 @@ separado.
   above*". A organização (`PedroVini2077's Org`) está no **plano Free**, então
   não é "ação pendente do dono" — é limitação de plano mesmo. Reavaliar se/quando
   decidirem fazer upgrade pro Pro (~US$25/mês).
-- ⬜ **Mover extensão `pg_net`** do schema `public` para um schema dedicado.
+- ✅ **`pg_net` REMOVIDA** — a extensão não suporta `SET SCHEMA` e nada no banco a usava. Conferido em 23/08: não existe mais.
   *Adiado de propósito: `ALTER EXTENSION ... SET SCHEMA` pode quebrar
   webhooks/triggers que referenciam `net.*`. Baixo benefício × risco real —
   fazer só com janela de teste dedicada.*
@@ -612,9 +726,9 @@ separado.
     grande com risco real de quebrar banimento/moderação/notificações — pede
     plano dedicado e aprovação antes, não cabe nesta leva gradual.
   *Resta (com plano à parte, não cabe nesta leva):* `Admin.jsx`.
-- ⬜ **Paginação / virtualização** em listas longas (usuários, logs, posts, chat).
+- ➡️ *(ver A FILA no topo, seção 🔵)* Paginação / virtualização em listas longas.
   *(Admin já pagina posts/keys — ver seção Performance acima.)*
-- ⬜ **Migração para TypeScript** (introduz a pasta `types/`).
+- ➡️ *(ver A FILA no topo)* Migração para TypeScript.
 - 🟡 **Testes** — Vitest configurado; **unitários da lógica pura prontos**
   (`src/lib/__tests__/`: ranks/XP, password, date, embed, format, url,
   roleLabels, objectUrls — 69 testes).
@@ -632,8 +746,8 @@ separado.
   *(scripts não commitados — regra do CLAUDE.md de script de teste avulso.)*
   *Falta:* E2E dos fluxos críticos (login, postar, banir). Crescer gradualmente.
 - ✅ **Soft delete** de posts (campo `deleted_at` em vez de delete físico — RPCs `soft_delete_post`/`restore_post`, banner vermelho para admins, botão restaurar no PostsPanel).
-- ⬜ **2FA** no login.
-- ⬜ Afinar detecção de ban (hoje realtime + polling de 20s como fallback).
+- ➡️ *(ver A FILA no topo, seção 🔵)* 2FA no login.
+- ➡️ *(ver A FILA no topo, seção 🔵)* Afinar detecção de ban (o poll já subiu para 60s).
 - ✅ Exportar logs de auditoria (CSV) no painel do dono — botão "Exportar CSV" na
   aba Logs (`LogsTab`), respeita os filtros ativos, busca até 5000 linhas via
   `owner_get_audit_logs`, gera CSV no cliente (`lib/csv.js`, RFC 4180 + BOM
@@ -882,24 +996,22 @@ local em transação com `ROLLBACK` antes de virar arquivo.
 
 #### O que ficou em aberto (próximos passos)
 
-- ⬜ **RPC de engajamento agregado.** `attachEngagement` traz as *linhas* de
+- ➡️ *(ver A FILA no topo, seção 🔵)* **RPC de engajamento agregado.** `attachEngagement` traz as *linhas* de
   `post_likes`/`comments` do feed e conta no cliente. Para o volume de hoje
   isso é ordens de grandeza melhor que as ~90 queries de antes, mas o payload
   cresce com o total de curtidas/comentários da janela do feed. Quando um post
   passar da casa dos milhares de curtidas, trocar por uma RPC que agrega no
   banco e devolve `{post_id, likes, comments, liked_by_me}`. O shape que o
   `PostCard` consome não muda — é troca só dentro do service.
-- ⬜ **C3-b/c — publicação `supabase_realtime` e `REPLICA IDENTITY`.** Tirar
+- ✅ C3-b **FEITO**; C3-c ➡️ *(ver A FILA no topo)*. O plano original era: tirar
   `post_media` e `admin_logs` da publicação e revisar o `REPLICA IDENTITY FULL`
   de `profiles`. Mexem em detecção de ban e sincronização de mídia — pedem
   janela de teste dedicada, não entram junto com outra coisa.
-- ⬜ **Canal `admin-realtime` assina `posts` e `admin_logs` com `event:'*'`
-  global.** Todo admin com o painel aberto recebe mensagem de cada post e de
-  cada log do site, mesmo com a aba fechada — só é usado quando `tab` é
-  `lives`/`logs`. Público pequeno (só admins), então ficou de fora agora;
-  ideal é assinar sob demanda por aba.
-- ⬜ **B1 — presence num canal global único** (`gamerhub-presence`): segue
-  como estava. Irrelevante hoje; revisitar se "online agora" passar de algumas
+- ✅ **Canal `admin-realtime` dividido** — conferido em 23/08: são dois canais,
+  um persistente (notificações, pedidos de desban) e um sob demanda
+  (`admin-lives`), e `admin_logs` saiu da publicação. Era exatamente o "ideal"
+  descrito aqui.
+- ➡️ *(ver A FILA no topo, seção 🔵)* B1 — presence num canal global único: segue como estava. Irrelevante hoje; revisitar se "online agora" passar de algumas
   centenas.
 - ✅ **`owner_get_metrics.total_xp`** era declarado e devolvido sem nunca
   receber valor (vinha `null`). Corrigido na auditoria de 21/08/2026;
@@ -1022,7 +1134,7 @@ local em transação com `ROLLBACK` antes de virar arquivo.
 
 ### 🔵 Baixo impacto
 
-- ⬜ **B1 — Presence global num canal único** (`gamerhub-presence`): todo usuário
+- ➡️ *(ver A FILA no topo, seção 🔵)* **B1 — Presence global num canal único:** todo usuário
   online entra no mesmo canal; cada `sync` recalcula o estado. Cresce com
   usuários simultâneos (tendência O(N) de tráfego de presença). Hoje irrelevante;
   revisitar se "online agora" passar de algumas centenas.
@@ -1170,12 +1282,11 @@ Supabase quando mexer em banco) ao fim de cada uma antes da próxima.
 - ✅ **`Admin.jsx`** — era ~918 linhas, hoje **197**. Painéis, 5 hooks de
   domínio, os modais, as abas e o despacho de conteúdo foram todos extraídos.
   Nenhum arquivo de `src/` passa de 300 linhas.
-- ⬜ **Denúncia criada (`reports`) não gera log de auditoria.** Fica só na
+- ➡️ *(ver A FILA no topo)* **Denúncia criada (`reports`) não gera log de auditoria.** Fica só na
   tabela `reports`. Não foi adicionado de propósito: qualquer usuário pode
   denunciar, e logar isso em `admin_logs` inflaria a trilha. Reavaliar se a
   moderação sentir falta.
-- ⬜ **Canal `admin-realtime` assina `posts` e `admin_logs` com `event:'*'`
-  global** — ver seção da auditoria de custos.
+- ✅ **Canal `admin-realtime` dividido** — conferido em 23/08 (ver acima).
 
 ---
 
