@@ -92,3 +92,49 @@ describe('findBlockedWord — compatibilidade', () => {
     expect(findBlockedWord('texto limpo', lista)).toBeNull();
   });
 });
+
+// ── Tolerância de plural ─────────────────────────────────────────────────────
+//
+// Regressão real: o mural aceitou "Se matem otários" inteiro — nem oculto, nem
+// na fila. Os dois termos estavam na lista (`se mata` high, `otário` medium),
+// mas o casamento é de palavra inteira e `otário` não casa `otários`.
+//
+// Estas regras precisam ser IDÊNTICAS às do trigger `checar_palavras_bloqueadas`
+// no banco. Se divergirem, o cliente deixa passar o que o servidor recusa.
+describe('tolerância de plural', () => {
+  const lista = [
+    { word: 'otário', severity: 'medium' },
+    { word: 'idiota', severity: 'medium' },
+    { word: 'cu',     severity: 'medium' },
+    { word: 'mongol', severity: 'high' },
+  ];
+
+  it.each([
+    ['bando de otários', 'otário'],
+    ['seus idiotas',     'idiota'],
+    ['vai tomar no cus', 'cu'],
+    ['seus mongoles',    'mongol'],
+  ])('casa o plural em "%s"', (texto, esperado) => {
+    expect(checkText(texto, lista).word).toBe(esperado);
+  });
+
+  it.each(['otário', 'idiota', 'cu', 'mongol'])('continua casando o singular "%s"', termo => {
+    expect(checkText(`isso é ${termo} demais`, lista).word).toBe(termo);
+  });
+
+  // O sufixo `es` só vale a partir de 4 letras, senão `cu` casaria "cues" —
+  // palavra inglesa que aparece em texto sobre jogo ("os cues sonoros").
+  it('não casa "cues" com o termo "cu"', () => {
+    expect(checkText('os cues sonoros do jogo', lista).word).toBeNull();
+  });
+
+  it('não passa a casar substring por causa do sufixo', () => {
+    for (const texto of ['classe alta', 'que jogo massa', 'passar de fase', 'o curso começou']) {
+      expect(checkText(texto, lista).word).toBeNull();
+    }
+  });
+
+  it('plural de termo high continua bloqueando o envio', () => {
+    expect(checkText('seus mongoles', lista).blocked).toBe(true);
+  });
+});
