@@ -185,19 +185,31 @@
 
 ### ⬜ Aberto — precisa de decisão ou janela própria
 
-- ⬜ 🟠 **A IA oculta e não avisa o autor.** Quando `apply_ai_moderation` ou o
+- ✅ 🟠 **A IA oculta e agora AVISA o autor.** Quando `apply_ai_moderation` ou o
   trigger da lista de palavras ocultam algo, o autor não recebe **nada**: o post
   some da timeline dele sem aviso, sem ponto e sem explicação, e fica assim até
   um admin abrir a fila. Do lado de quem postou é indistinguível de um bug — e a
   reação natural é postar de novo. *A notificação só existe quando o admin
-  aprova o item na fila* (`notify_user` → sino). Correção é um `INSERT` numa
-  função que já existe. **É o buraco mais visível pro usuário final.**
-- ⬜ 🟠 **Aprovar na fila sem marcar ação dá zero ponto, em silêncio.** Em
+  aprova o item na fila* (`notify_user` → sino). **Era o buraco mais visível
+  pro usuário final.**
+  *Feito:* helper `avisar_autor_do_ocultamento`, chamado por
+  `apply_ai_moderation` e pelo trigger da lista de palavras — **só quando o
+  conteúdo foi de fato ocultado**. `medium` publica normalmente e continua
+  calado: avisar ali assustaria alguém cujo post está no ar. A mensagem diz o
+  que aconteceu, por quê, e que a equipe vai revisar — aviso genérico não
+  ensina nada e só gera revolta. 8 verificações em ROLLBACK, incluindo não
+  duplicar o aviso quando a RPC é chamada duas vezes.
+- ✅ 🟠 **Aprovar na fila sem marcar ação NÃO passa mais.** Em
   `ModerationQueue.jsx` a violação só é criada `if (decision === 'approved' &&
   action)`. Toda a escalação automática (8 pontos → suspensão de 7 dias, 15 →
-  ban) depende de lembrar de marcar. Se o hábito virar "aprovar e seguir",
-  ninguém nunca acumula nada e a punição automática **existe mas nunca dispara**.
-  O painel devia exigir a ação, ou no mínimo avisar que aquilo não gera ponto.
+  ban) dependia de lembrar de marcar. Com o hábito de "aprovar e seguir",
+  ninguém acumulava nada e a punição automática existia no papel sem nunca
+  disparar.
+  *Feito:* o painel recusa confirmar sem escolha, e ganhou a opção explícita
+  **"Sem punição — só ocultar (0 pt)"**. Não punir continua possível, mas passa
+  a ser uma decisão que se marca, não o que acontece quando alguém esquece.
+  Travado por teste: toda ação oferecida precisa ter pontuação definida, e ação
+  desconhecida não cai em padrão nenhum.
 - ⬜ 🟢 **Aviso genérico.** "Seu post foi ocultado por violar as regras" não diz
   qual regra. Dizer "por linguagem ofensiva" / "por assédio" educa em vez de só
   punir. Polimento, não falha.
