@@ -76,6 +76,24 @@
   `lib/roles.js` com teste travando as 5 combinações. *(O botão "Mod" aparecer
   para usuário comum dono da própria live **não é bug** — espelha exatamente
   `is_staff() OR auth.uid() = posts.user_id`.)*
+- ✅ 🟠 **O site percebe sozinho que perdeu o banco.** Antes, pausar o projeto
+  (egress, restrição de serviço, pausa proposital) exigia editar o código e
+  escrever "projeto pausado" na landing à mão — e depois outro commit para
+  tirar. Agora um `fetch` instrumentado no cliente Supabase observa o resultado
+  de cada requisição; ao detectar queda, o site mostra um aviso e leva todo
+  mundo para a landing, que é a única página que **não depende do banco para
+  nada**.
+  **O risco aqui é o falso positivo**, não a detecção — derrubar o site porque
+  o wi-fi de alguém piscou seria pior que o problema. Três camadas contra isso:
+  só falha de infraestrutura conta (4xx significa que o banco respondeu),
+  precisa de 3 seguidas, e antes de declarar há uma **sondagem independente** —
+  se alguém atender, foi instabilidade. Requisição abortada pelo próprio app
+  também não conta. Volta sozinho quando o banco responde. 26 testes travam
+  exatamente isso.
+  *Limitação honesta, registrada em `lib/pauseReason.js`:* o motivo da pausa não
+  pode vir do banco, porque o banco caiu. O app guarda a chave `pause_reason`
+  enquanto está online e usa a cópia depois. Pausa planejada mostra o motivo
+  real; queda inesperada, ou primeira visita, mostra texto genérico.
 - ✅ 🔴 **Suspensão era irreversível — admin silenciava para sempre e nem o
   fundador desfazia.** Provado em ROLLBACK com papéis reais: (1) um `admin`
   (rank 2) chamou `apply_suspension(alvo, 36500)` e foi **aceito** — suspenso

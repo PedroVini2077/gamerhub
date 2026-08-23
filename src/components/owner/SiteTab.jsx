@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, AlertTriangle, ShieldAlert, Megaphone } from 'lucide-react';
+import { ToggleLeft, ToggleRight, AlertTriangle, Megaphone } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { logAudit } from '../../lib/auditLog';
+import SiteModerationCards from './SiteModerationCards';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import toast from 'react-hot-toast';
 
@@ -40,7 +41,7 @@ export default function SiteTab() {
   const { profile } = useAuth();
   const [config, setConfig] = useState({
     banner_enabled: 'false', banner_text: '', banner_color: 'orange',
-    maintenance_mode: 'false',
+    maintenance_mode: 'false', pause_reason: '',
     feature_keys: 'true', feature_lives: 'true', feature_community: 'true',
     mod_report_threshold: '3', mod_suspend_threshold: '8', mod_ban_threshold: '15',
     mod_ai_enabled: 'false', mod_ai_text_threshold: '0.7', mod_ai_image_threshold: '0.85',
@@ -168,6 +169,28 @@ export default function SiteTab() {
         )}
       </div>
 
+      {/* Motivo da pausa */}
+      <div className="card p-5 space-y-3">
+        <div>
+          <p className="text-sm font-mono text-gray-200">Motivo da pausa</p>
+          <p className="text-xs font-mono text-gray-600 mt-0.5 leading-relaxed">
+            Aparece na página inicial quando o site perde acesso ao banco.
+            <strong className="text-gray-500"> Escreva ANTES de pausar</strong> — com o
+            banco fora, este texto não pode mais ser lido de lá, então o site usa
+            a cópia que ficou guardada no navegador de quem já tinha entrado.
+            Em branco, mostra uma mensagem genérica.
+          </p>
+        </div>
+        <textarea
+          rows={2} maxLength={200}
+          value={config.pause_reason}
+          onChange={e => setConfig(c => ({ ...c, pause_reason: e.target.value }))}
+          onBlur={e => saveKey('pause_reason', e.target.value.trim())}
+          placeholder="Ex.: Pausado até dia 5 — limite de banda do plano gratuito atingido."
+          className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-200 focus:border-neon-green/50 focus:outline-none resize-none"
+        />
+      </div>
+
       {/* Feature Flags */}
       <div className="card p-5">
         <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Feature Flags</p>
@@ -202,81 +225,7 @@ export default function SiteTab() {
         </div>
       </div>
 
-      {/* Moderação */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <ShieldAlert size={14} className="text-orange-400" />
-          <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Limites de Moderação</p>
-        </div>
-        <p className="text-xs font-mono text-gray-600 -mt-2">
-          Ajuste os gatilhos automáticos do sistema de moderação.
-        </p>
-        {[
-          { key: 'mod_report_threshold',  label: 'Denúncias para ocultar',  desc: 'Quantas denúncias ocultam um conteúdo automaticamente' },
-          { key: 'mod_suspend_threshold', label: 'Pontos para suspensão',   desc: 'Pontos de infração que sinalizam suspensão' },
-          { key: 'mod_ban_threshold',     label: 'Pontos para ban',         desc: 'Pontos de infração que banem o usuário automaticamente' },
-        ].map(f => (
-          <div key={f.key} className="flex items-center justify-between gap-4 py-2 border-b border-dark-600 last:border-0">
-            <div className="min-w-0">
-              <p className="text-xs font-mono text-gray-300">{f.label}</p>
-              <p className="text-xs font-mono text-gray-600">{f.desc}</p>
-            </div>
-            <input
-              type="number" min="1" max="999"
-              value={config[f.key]}
-              onChange={e => setConfig(c => ({ ...c, [f.key]: e.target.value }))}
-              onBlur={e => {
-                const v = Math.max(1, Math.min(999, parseInt(e.target.value, 10) || 1));
-                setConfig(c => ({ ...c, [f.key]: String(v) }));
-                saveKey(f.key, v);
-              }}
-              className="w-16 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-orange-400/50 focus:outline-none shrink-0"
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Moderação IA */}
-      <div className="card p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldAlert size={14} className="text-purple-400" />
-            <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Moderação IA (HuggingFace)</p>
-          </div>
-          <button onClick={() => toggle('mod_ai_enabled')}
-            className="flex items-center gap-1.5 text-xs font-mono transition-colors shrink-0"
-            style={{ color: config.mod_ai_enabled === 'true' ? '#a855f7' : '#6b7280' }}>
-            {config.mod_ai_enabled === 'true' ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-            {config.mod_ai_enabled === 'true' ? 'Ativa' : 'Desligada'}
-          </button>
-        </div>
-        <p className="text-xs font-mono text-gray-600 -mt-2">
-          Analisa texto de posts, comentários e mural com IA e oculta automaticamente se o score de toxicidade ultrapassar o limite. Requer secret <code className="text-purple-400">HUGGINGFACE_API_KEY</code> configurado.
-        </p>
-        {[
-          { key: 'mod_ai_text_threshold',  label: 'Limite — texto',   desc: 'Score mínimo para ocultar texto (0.0–1.0). Padrão: 0.70', def: 0.7  },
-          { key: 'mod_ai_image_threshold', label: 'Limite — imagem',  desc: 'Score NSFW mínimo para ocultar imagens (0.0–1.0). Padrão: 0.85', def: 0.85 },
-        ].map(f => (
-          <div key={f.key} className="flex items-center justify-between gap-4 py-2 border-t border-dark-600">
-            <div>
-              <p className="text-xs font-mono text-gray-300">{f.label}</p>
-              <p className="text-xs font-mono text-gray-600">{f.desc}</p>
-            </div>
-            <input
-              type="number" min="0.1" max="1.0" step="0.05"
-              value={config[f.key]}
-              onChange={e => setConfig(c => ({ ...c, [f.key]: e.target.value }))}
-              onBlur={e => {
-                const v = Math.max(0.1, Math.min(1.0, parseFloat(e.target.value) || f.def));
-                const rounded = Math.round(v * 100) / 100;
-                setConfig(c => ({ ...c, [f.key]: String(rounded) }));
-                saveKey(f.key, rounded);
-              }}
-              className="w-20 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-purple-400/50 focus:outline-none shrink-0"
-            />
-          </div>
-        ))}
-      </div>
+      <SiteModerationCards config={config} setConfig={setConfig} saveKey={saveKey} toggle={toggle} />
 
       {saving && (
         <p className="text-xs font-mono text-center animate-pulse" style={{ color: OC }}>Salvando...</p>

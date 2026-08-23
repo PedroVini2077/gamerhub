@@ -13,6 +13,9 @@ import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import ErrorBoundary from './components/ErrorBoundary';
 import { identificarUsuario } from './lib/monitoring';
+import { useDbOffline } from './hooks/useDbOffline';
+import { guardarMotivoDaPausa } from './lib/pauseReason';
+import OfflineGate from './components/ui/OfflineGate';
 import GlobalBanner from './components/ui/GlobalBanner';
 import FeatureGate from './components/ui/FeatureGate';
 import PageTransition from './components/ui/PageTransition';
@@ -72,9 +75,14 @@ function Layout({ children }) {
   const { isOwner } = useRole();
 
   useEffect(() => {
-    supabase.from('site_config').select('value').eq('key', 'maintenance_mode').maybeSingle()
+    // As duas chaves na MESMA consulta: `pause_reason` precisa ser guardada
+    // enquanto ainda há banco, porque quando ele cair não dá pra lê-la mais
+    // (ver `lib/pauseReason.js`). Ler junto não custa requisição extra.
+    supabase.from('site_config').select('key, value').in('key', ['maintenance_mode', 'pause_reason'])
       .then(({ data }) => {
-        setMaintenance(data?.value === 'true');
+        const porChave = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+        setMaintenance(porChave.maintenance_mode === 'true');
+        guardarMotivoDaPausa(porChave.pause_reason);
         setConfigLoaded(true);
       });
 
@@ -142,6 +150,13 @@ function HomeOrLanding() {
 // Splash enquanto a sessão resolve — evita flash de Landing↔Home/guard.
 function AppRoutes() {
   const { loading } = useAuth();
+  const semBanco = useDbOffline();
+
+  // Sem banco, qualquer rota interna vira uma sucessão de erros sem explicação.
+  // Vem ANTES do `loading` de propósito: se o banco caiu durante a resolução da
+  // sessão, o `loading` nunca termina e a pessoa fica no splash para sempre.
+  if (semBanco) return <OfflineGate />;
+
   if (loading) return <SplashScreen />;
 
   return (

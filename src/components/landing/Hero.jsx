@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Zap, ChevronDown, PauseCircle } from 'lucide-react';
+import { useDbOffline } from '../../hooks/useDbOffline';
+import { motivoDaPausa } from '../../lib/pauseReason';
 import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
 import IntroLightning from './IntroLightning';
 
 export default function Hero() {
+  const foraDoAr = useDbOffline();
   // O raio de abertura cobre o Hero, estoura, some e então libera o conteúdo.
   const [introDone, setIntroDone] = useState(false);
   const show = introDone ? 'animate' : 'initial';
@@ -57,12 +60,19 @@ export default function Hero() {
           <Link to="/login" className="btn-solid py-3.5 px-9 text-sm">Entrar / Criar conta</Link>
         </motion.div>
 
-        <motion.div variants={heroFade(0.65)} initial="initial" animate={show}>
-          <div className="mt-5 flex items-center gap-2 px-4 py-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 text-yellow-400/60 font-mono text-xs">
-            <PauseCircle size={13} className="shrink-0" />
-            <span>Projeto pausado · Limite de banda da infraestrutura gratuita atingido · Em breve de volta</span>
-          </div>
-        </motion.div>
+        {/* O aviso de pausa era um texto FIXO no código: para tirar ou trocar,
+            precisava de commit e deploy. Agora ele aparece sozinho quando o
+            site perde o banco, e some sozinho quando volta. O motivo vem da
+            chave `pause_reason`, guardada no navegador enquanto havia conexão
+            (ver `lib/pauseReason.js` para o porquê de não vir do banco). */}
+        {foraDoAr && (
+          <motion.div variants={heroFade(0.65)} initial="initial" animate={show}>
+            <div className="mt-5 flex items-start gap-2 px-4 py-2.5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 text-yellow-400/70 font-mono text-xs text-left">
+              <PauseCircle size={13} className="shrink-0 mt-0.5" />
+              <span>{motivoDaPausa()}</span>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       <motion.div
