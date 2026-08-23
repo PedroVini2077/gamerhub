@@ -67,6 +67,33 @@ Toda recusa devolve o mesmo `401`, sem dizer o motivo. Distinguir "assinatura
 inválida" de "segredo não configurado" na resposta seria contar de graça o
 estado da configuração a quem está sondando. O motivo vai para `admin_logs`.
 
+### `[23/08]` As Edge Functions entram no git como **espelho**, sem sincronia automática
+
+Elas viviam só no Supabase. Isso não é hipótese de risco: em 23/08, ao abrir a
+`send-email` pela primeira vez em semanas, achamos que qualquer pessoa da
+internet disparava email pelo site, e que a `moderate-links` aceitava
+`Bearer lixo-qualquer`. **Um PR teria mostrado as duas linhas.**
+
+Agora estão em `supabase/functions/`, capturadas do que estava implantado.
+Três coisas ficam explícitas, porque um espelho silencioso é pior que nenhum:
+
+1. **Nada aqui é implantado automaticamente.** Um deploy pelo dashboard faz o
+   repositório mentir sem que uma linha mude. A regra de processo é: mudança
+   começa no arquivo, o PR revisa, e só então implanta.
+2. **Não existe teste comparando espelho e produção.** Compará-los exigiria um
+   token de gestão do Supabase guardado no CI — trocar uma divergência de
+   documentação por uma chave de administração exposta é péssimo negócio.
+3. **O que existe é `e2e/portas-fechadas.mjs`**, que bate na produção a cada PR
+   e exige que as portas continuem fechadas. Ele não garante que os códigos
+   sejam iguais; garante que a parte que mais dói não regrediu.
+
+A `send-email` foi dividida em `index.ts` + `email-template.ts` no mesmo
+movimento (§4: 314 linhas, e a verificação de assinatura ficava enterrada
+embaixo de tabela de email). **Dividida também em produção** — deixar o
+repositório dividido e o Supabase inteiro seria criar a divergência no primeiro
+dia. Reimplantada e reverificada: ataque sem assinatura → 401; recuperação de
+senha real pelo GoTrue → `enviado com sucesso`.
+
 ### `[23/08]` Sem limite de taxa próprio na `send-email`
 
 Com a assinatura exigida, quem chama é o GoTrue — que já tem limite por email e
