@@ -76,6 +76,16 @@
   `lib/roles.js` com teste travando as 5 combinações. *(O botão "Mod" aparecer
   para usuário comum dono da própria live **não é bug** — espelha exatamente
   `is_staff() OR auth.uid() = posts.user_id`.)*
+- ✅ **Item ficava preso na fila para sempre depois do ban.** `ban_user` faz
+  `DELETE FROM posts WHERE user_id = …` e nunca tocava em `moderation_queue`:
+  os itens daquele usuário seguiam `pending` apontando para linhas que não
+  existem mais, mostrando "Conteúdo não existe mais" sem jeito de sair.
+  Corrigido pela classe, não pelo caso — o problema não era do `ban_user`, era
+  de **qualquer** caminho que apague conteúdo (autor apagando, admin apagando,
+  exclusão de conta, cascade). Trigger `AFTER DELETE` nas 4 tabelas de conteúdo
+  resolve a fila e as denúncias juntas. `moderation_queue` e `reports` não têm
+  FK para o conteúdo (o `content_id` aponta para 4 tabelas diferentes), por isso
+  nada limpava sozinho. Os 2 itens presos foram limpos no mesmo migration.
 - ✅ **Item de `chat` na fila caía na tabela errada.** `setHiddenAt` usava
   `else → community_posts`, e a fila **recebe** itens de chat. O painel dizia
   "sem permissão" para um caso que é "esta tabela não tem como ocultar".
@@ -98,6 +108,28 @@
 - ⬜ 🟢 **Aviso genérico.** "Seu post foi ocultado por violar as regras" não diz
   qual regra. Dizer "por linguagem ofensiva" / "por assédio" educa em vez de só
   punir. Polimento, não falha.
+- ⬜ 🟠 **`profiles` no realtime × colunas revogadas — suspeita, não fato.**
+  `profiles` está publicada com `REPLICA IDENTITY FULL` (a linha INTEIRA vai no
+  payload), mas **10 colunas** foram revogadas de `authenticated` na correção de
+  LGPD: `ban_count`, `ban_details`, `ban_reason`, `banned_at`, `banned_by`,
+  `banned_by_username`, `birth_date`, `notif_comments`, `notif_likes`,
+  `suspended_until`. Nas outras 9 tabelas publicadas, `authenticated` tem SELECT
+  em 100% das colunas — `profiles` é a única exceção.
+  **Eu não sei** como o Realtime da Supabase trata privilégio de COLUNA (o
+  `CLAUDE.md` §1.1 já usava exatamente este caso como exemplo de limite de
+  conhecimento). Se ele descartar a mensagem inteira, a detecção de ban por
+  realtime está morta e só o poll de 60s segura — o que degrada em silêncio.
+  *Como confirmar, e não dá pra fazer daqui:* abrir o site com uma conta,
+  banir por outra, e cronometrar. Sumiu na hora = realtime vivo; demorou até
+  1 min = só o poll. **Não mexer antes de medir** — `useAuth` é o arquivo de
+  maior risco do projeto (§7).
+- ⬜ 🟠 **Usuário banido não tem como pedir revisão.** A `BannedScreen` mostra o
+  motivo e desloga em 6s: sem botão, sem formulário, sem contato. O
+  `request_unban` exige `role = 'admin'` — ou seja, **só um admin abre o pedido
+  em nome de outra pessoa**. Isso é coerente com a hierarquia (admin bane mas
+  não desbane; super_admin/owner desbanem direto), mas deixa o banido sem
+  nenhum canal: o recurso depende de um admin lembrar de abrir sozinho.
+  *Mexe em quem pode chamar a RPC — pede aprovação do dono antes.*
 - ⬜ 🟠 **Moderação de imagem só cobre pornografia.** O
   `Falconsai/nsfw_image_detection` é binário `nsfw`/`normal`, treinado em porn:
   **não** pega sangue, gore, automutilação, símbolo de ódio nem droga. Plano:
@@ -121,6 +153,13 @@
   mexe no caminho que já funciona.
   *Medir antes de escolher o limiar:* rodar prints reais de jogo pelo modelo e
   olhar as notas. Limiar chutado é o que gera falso positivo.
+  **Medição real (23/08):** o dono postou foto de um rapaz sem camisa na praia
+  com o limiar em 0.05. O log mostra o pipeline inteiro funcionando —
+  `POST 200`, imagem baixada, `nsfw_score=0.000`. **Não é bug: é o modelo.**
+  Para ele, "sem camisa" é `normal`, e nenhum limiar acima de zero pega 0.000.
+  A via de ocultar por imagem foi provada em `ROLLBACK` separadamente
+  (`apply_ai_moderation` com `mod_ai_image_threshold` oculta e enfileira), então
+  o que falta é só cobertura de modelo — exatamente o que a troca resolve.
 - ⬜ **C3-c — `profiles` com `REPLICA IDENTITY FULL`.** *Não mexi de propósito.*
   O `useAuth` lê `payload.new?.banned` para detectar ban, e é o arquivo de
   maior risco do projeto (§7): quebrar derruba o site. É ganho de performance
