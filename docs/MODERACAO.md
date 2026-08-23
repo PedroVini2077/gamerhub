@@ -40,7 +40,17 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
 - **Moderação por IA** (`moderate-text` e `moderate-image`, Edge Functions):
   provedor principal **OpenAI `omni-moderation-latest`**, que devolve nota **por
   categoria** — o modelo antigo dava um número só de "toxicidade" e por isso era
-  cego para conteúdo sexual. HuggingFace fica de reserva.
+  cego para conteúdo sexual.
+
+  **O HuggingFace é reserva só do texto.** `moderate-text` tem um
+  `viaHuggingFace()` que entra se a `OPENAI_API_KEY` sumir — e ele volta a ser o
+  modelo de um número só, ou seja, volta a ser cego para conteúdo sexual. É rede
+  de segurança contra indisponibilidade, não equivalente. A moderação de
+  **imagem** não tem reserva nenhuma.
+
+  Cuidado ao mexer nisso: a Edge Function `debug-hf` (neutralizada em 23/08 por
+  estar aberta na internet) **não** era essa reserva — era sobra de experimento.
+  Apagar a `HUGGINGFACE_API_KEY` junto com ela tira o fallback do texto.
   - **Texto:** pisos fixos por categoria (`sexual/minors` 0.10, `sexual` 0.40,
     `harassment/threatening` 0.50…) que o painel **não afrouxa**, mais o dial
     `mod_ai_text_threshold` para o resto.

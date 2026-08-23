@@ -132,7 +132,7 @@ export async function addViolation({ userId, contentType, contentId, reason, act
   }));
 }
 
-// ─── Moderação IA (Fases 2 e 3 — HuggingFace) ────────────────────────────────
+// ─── Moderação IA (Fases 2 e 3 — OpenAI omni-moderation) ────────────────────
 
 async function getAuthHeader() {
   const { data: { session } } = await supabase.auth.getSession();

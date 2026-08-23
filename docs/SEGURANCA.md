@@ -53,6 +53,81 @@
   usuário comum não altera `role`/`banned` nem `hidden_at`/`deleted_at`/
   `user_id`. Ambos com `search_path` fixo.
 
+## `[23/08]` Auth Hook de email exige assinatura
+
+A `send-email` é o *Auth Hook* do Supabase e, por construção, precisa rodar com
+`verify_jwt: false` — o gateway não exige JWT de um webhook. O corpo dela não
+conferia nada, e **qualquer pessoa na internet** disparava email com a marca do
+GamerHub para qualquer endereço. O pior caminho não é o spam: é queimar a cota
+de ~500/dia do Gmail ou fazer o Google travar a conta, e aí **ninguém mais se
+cadastra nem recupera senha**.
+
+Agora ela valida a assinatura **Standard Webhooks** que o Supabase manda
+(HMAC-SHA256 sobre `${id}.${timestamp}.${corpo}`, janela de 5 minutos contra
+replay, comparação em tempo constante). Sem `SEND_EMAIL_HOOK_SECRET` ela recusa
+tudo — cadastro parado e barulhento é melhor que hook aberto e silencioso. Toda
+recusa devolve o mesmo `401`: dizer de fora *qual* foi o motivo entregaria o
+estado da configuração a quem sonda. O motivo real vai para `admin_logs`.
+
+O `token_hash` saiu do log da função junto: ele é a credencial de uso único que
+confirma a conta ou troca a senha, e estava sendo gravado em texto puro.
+
+Relatório completo, com a prova e os três testes de verificação:
+[`db/2026-08-23-send-email-aberta-para-a-internet.md`](../db/2026-08-23-send-email-aberta-para-a-internet.md).
+
+## `[23/08]` A porta da `moderate-links` era decorativa
+
+Ela fazia `if (!authHeader) 401` e seguia em frente — **sem nunca validar o
+token**. Qualquer string em `Authorization` passava, incluindo `Bearer
+lixo-qualquer`. Não dava escalada de privilégio (a RPC do fim confere de novo),
+mas dava para qualquer pessoa da internet **queimar a cota do Safe Browsing**
+do projeto, que é de 10 mil consultas/dia. Estourada, a checagem de link para
+de funcionar para todo mundo — e em silêncio, porque a falha da API degrada de
+forma graciosa por design.
+
+Agora valida com `auth.getUser()`, como `moderate-text` e `moderate-image`.
+Verificado: token inventado → 401; **a própria anon key crua → 401** (mais
+estrito que o `verify_jwt` do gateway, que a aceitaria); sessão real → 200.
+
+O caso perigoso passou a gritar junto: link malicioso **detectado** e a RPC não
+ocultando devolve `status: "rpc_error"` e vai para `admin_logs`. Era a mesma
+forma de falha que manteve a moderação por IA quebrada em 26 de 26 chamadas.
+
+## `[23/08]` As outras duas Edge Functions abertas — resolvidas por remoção
+
+Achar duas com a porta aberta obrigou a olhar as oito (§1.3, *varredura de
+classe*). Sobraram duas com `verify_jwt: false` e nenhuma checagem no corpo:
+
+**`cleanup-expired-posts`** rodava com `service_role` e **apagava posts**. O
+estrago em dados era nulo (idempotente: só fazia o que o agendamento faria de
+qualquer jeito), mas cada chamada rodava duas varreduras de `DELETE` em `posts`
+— dava para martelar de fora e consumir invocação de Edge Function e carga de
+banco de graça, e a resposta ainda contava quantas linhas saíram.
+
+Guardar a porta exigiria um segredo compartilhado com o `pg_cron`, que hoje
+chama por `pg_net` **sem cabeçalho nenhum**. Mas o trabalho dela era SQL puro:
+virou `public.cleanup_expired_posts()`, com `EXECUTE` revogado de `anon` e
+`authenticated`, e o cron passou a chamar o banco direto. **A correção não foi
+trancar a porta — foi não ter porta.**
+
+**`debug-hf`** era sobra de um experimento com Hugging Face: baixava uma imagem
+de teste e gastava a `HUGGINGFACE_API_KEY` a cada chamada. Nada no site a
+chamava. Código morto não é só bagunça — é superfície de ataque que ninguém
+revisa, porque ninguém lembra que existe.
+
+> **Não confundir:** a `HUGGINGFACE_API_KEY` continua em uso pelo fallback de
+> texto dentro da `moderate-text`. Apagar a `debug-hf` é seguro; apagar o
+> **secret** tiraria a reserva do texto (ver [MODERACAO.md](MODERACAO.md)).
+
+As duas foram neutralizadas (corpo devolvendo `410`, `verify_jwt` ligado) e
+estão no backlog para o apagar definitivo pelo dashboard. Verificado:
+`POST` nas duas → **401** no gateway.
+
+De quebra, a varredura achou uma mentira na tela: o painel do owner mandava
+configurar `HUGGINGFACE_API_KEY` para a moderação por IA, que usa **OpenAI**
+desde a troca de provedor. Mensagem errada custa mais tempo do dono do que
+mensagem nenhuma (§1.5).
+
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.
 

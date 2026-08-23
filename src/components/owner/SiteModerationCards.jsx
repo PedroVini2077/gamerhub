@@ -48,7 +48,7 @@ export default function SiteModerationCards({ config, setConfig, saveKey, toggle
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <ShieldAlert size={14} className="text-purple-400" />
-            <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Moderação IA (HuggingFace)</p>
+            <p className="text-xs font-mono text-gray-500 uppercase tracking-wider">Moderação IA (OpenAI)</p>
           </div>
           <button onClick={() => toggle('mod_ai_enabled')}
             className="flex items-center gap-1.5 text-xs font-mono transition-colors shrink-0"
@@ -58,7 +58,7 @@ export default function SiteModerationCards({ config, setConfig, saveKey, toggle
           </button>
         </div>
         <p className="text-xs font-mono text-gray-600 -mt-2">
-          Analisa texto de posts, comentários e mural com IA e oculta automaticamente se o score de toxicidade ultrapassar o limite. Requer secret <code className="text-purple-400">HUGGINGFACE_API_KEY</code> configurado.
+          Analisa texto de posts, comentários e mural com IA e oculta automaticamente se o score de toxicidade ultrapassar o limite. Requer secret <code className="text-purple-400">OPENAI_API_KEY</code> configurado.
         </p>
         {[
           { key: 'mod_ai_text_threshold',  label: 'Limite — texto',   desc: 'Score mínimo para ocultar texto (0.0–1.0). Padrão: 0.70', def: 0.7  },

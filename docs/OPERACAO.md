@@ -24,9 +24,21 @@
     configurá-lo num deploy futuro apagaria o monitoramento sem ninguém notar —
     construindo a falha silenciosa que ele existe para acabar.
   - Custo medido: **+27,8 KB gzip** (507 → 535 KB de JS total).
-- **Falhas de servidor viram trilha** — `registrar_falha_de_moderacao` grava
-  `edge_function_error` em `admin_logs`, porque o corpo da resposta sozinho não
-  basta quando o chamador é fire-and-forget.
+- **Falhas de servidor viram trilha** — `registrar_falha_de_edge_function`
+  grava `edge_function_error` em `admin_logs`, porque o corpo da resposta
+  sozinho não basta quando o chamador é fire-and-forget. `EXECUTE` só para
+  `service_role`: o texto vai direto para o painel, então não pode ser escrito
+  por cliente. (`registrar_falha_de_moderacao` continua existindo e delega para
+  ela — os chamadores antigos não mudaram.)
+- **`send-email` grita.** Era a mais grave das mudas: se o Google travar a
+  conta, a senha de app expirar ou o secret ficar errado, **ninguém se cadastra
+  nem recupera senha**. Agora vão para `admin_logs` as três causas — chamada
+  recusada, credenciais SMTP ausentes, e SMTP recusando o envio.
+
+  > **Se você vir `Falha em send-email` no painel, a porta de entrada do site
+  > está fechada.** Confira, nesta ordem: a senha de app do Google ainda é
+  > válida? a conta não foi travada por envio automatizado? passou dos ~500
+  > envios do dia?
 
 ## Resiliência — quando o banco cai
 
@@ -53,6 +65,23 @@ O motivo da pausa (`site_config.pause_reason`, editável na aba Site) é lido
 não pode vir de lá. Pausa planejada mostra o motivo real; queda inesperada, ou
 primeira visita, mostra texto genérico.
 
+## Faxina agendada (`pg_cron`)
+
+| Job | Quando | O que faz |
+| --- | --- | --- |
+| `cleanup-expired-posts` | de hora em hora | `cleanup_expired_posts()`: apaga lives com prazo vencido e **purga o que foi soft-deletado há mais de 30 dias** |
+| `expire-lives` | a cada 5 min | tira o `is_live` de quem passou do prazo; apaga live encerrada há mais de 15 min |
+| `expire-lives-every-minute` | a cada minuto | só o `is_live = false` do prazo vencido |
+| `gamerhub-cleanup` | 04:00 | `cleanup_old_data()`: `admin_logs` 90d, notificação lida 30d, `login_attempts` não-permanente 30d, `live_chat` de live encerrada 7d |
+| `gamerhub-cleanup-unconfirmed` | 04:30 | `cleanup_unconfirmed_signups()` |
+
+**Onde ver se um job falhou:** `select * from cron.job_run_details order by
+start_time desc limit 20;`. Não há alerta automático — o sintoma na tela vem
+antes: live encerrada que não some do feed é o job de hora em hora parado.
+
+> O `cleanup_expired_posts()` era uma Edge Function chamável por qualquer um da
+> internet. Virou SQL e saiu da rede — ver `docs/SEGURANCA.md`.
+
 ## Portão de qualidade automático
 
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
@@ -73,6 +102,22 @@ primeira visita, mostra texto genérico.
   (senha é segredo, ao contrário da anon key). Só em PR: ele escreve no banco
   de produção. Quando falha, sobe `e2e-evidencia/` como artefato — screenshot,
   texto da tela e URL, senão o log diria só "timeout".
+
+### A trava das Edge Functions bate na produção, e é de propósito
+
+`e2e/portas-fechadas.mjs` (dentro do job de fumaça) manda cinco requisições de
+abuso reais contra as Edge Functions e exige `401`/`410` em todas. São as
+brechas fechadas em 23/08 — ver [`SEGURANCA.md`](SEGURANCA.md).
+
+Por que produção e não uma varredura do código: **as Edge Functions não estão
+no git**. Um teste que lê `src/` não protege nada delas — basta um deploy pelo
+dashboard, ou uma versão antiga restaurada, e a porta reabre sem que uma linha
+do repositório mude. Nenhuma das requisições tem efeito colateral: todas devem
+ser recusadas.
+
+A trava foi provada reimplantando a *forma* do bug (corpo inofensivo,
+`verify_jwt` desligado, devolvendo 200) e conferindo que o teste acusou
+`ABERTA` nomeando a função e o estrago que ela voltaria a permitir.
 
 ### As rotas dos testes ficam num arquivo só, com trava
 

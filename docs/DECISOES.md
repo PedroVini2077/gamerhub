@@ -56,6 +56,23 @@ esquecer de configurá-lo num deploy futuro para o monitoramento sumir **sem
 ninguém perceber** — construindo exatamente a falha silenciosa que ele existe
 para acabar.
 
+### `[23/08]` `send-email` recusa tudo se o segredo do hook sumir
+
+A alternativa era continuar enviando e só avisar. Foi descartada: deixaria o
+hook aberto para a internet por tempo indeterminado, que é exatamente a brecha
+que acabou de ser fechada. **Cadastro parado e barulhento é melhor que hook
+aberto e silencioso** — o parado alguém conserta hoje; o aberto ninguém vê.
+
+Toda recusa devolve o mesmo `401`, sem dizer o motivo. Distinguir "assinatura
+inválida" de "segredo não configurado" na resposta seria contar de graça o
+estado da configuração a quem está sondando. O motivo vai para `admin_logs`.
+
+### `[23/08]` Sem limite de taxa próprio na `send-email`
+
+Com a assinatura exigida, quem chama é o GoTrue — que já tem limite por email e
+por IP. Um teto adicional aqui só protegeria contra um GoTrue comprometido,
+cenário em que a conta de email é o menor dos problemas.
+
 ### `[23/08]` Falha das Edge Functions vai para `admin_logs`, **não** para o Sentry
 
 O backlog pedia "Sentry nas Edge Functions". Foi feito diferente:
