@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CONTENT_LABEL, ACTION_POINTS, podeSerOcultado, FONTE_DO_CONTEUDO as FONTE, TABELA_DO_AUTOR } from '../queueLabels';
+import { CONTENT_LABEL, ACTION_POINTS, podeSerOcultado, FONTE_DO_CONTEUDO as FONTE, TABELA_DO_AUTOR, SEM_PUNICAO } from '../queueLabels';
 
 // Os tipos que o banco realmente coloca em `moderation_queue.content_type`.
 // Saem de `checar_palavras_bloqueadas` (posts/comments/community_posts/
@@ -45,11 +45,33 @@ describe('podeSerOcultado', () => {
   });
 });
 
-describe('ACTION_POINTS', () => {
-  // Os limiares de escalação vivem em `site_config`: 8 suspende, 15 bane.
-  // Se alguém mexer nos pontos sem olhar os limiares, a punição automática
-  // muda de comportamento sem ninguém perceber.
+
+// ── Escolha de punição ───────────────────────────────────────────────────────
+//
+// Regressão de desenho: aprovar um item sem marcar ação gerava ZERO ponto, em
+// silêncio. Como a escalação automática (8 pontos suspende, 15 bane) só é
+// alimentada por esses cliques, o hábito de "aprovar e seguir" fazia a punição
+// existir no papel e nunca disparar. "Não punir" passou a ser uma opção que se
+// MARCA — o painel recusa confirmar sem escolha.
+describe('ações e pontos', () => {
+  it('"sem punição" existe e vale 0', () => {
+    expect(ACTION_POINTS[SEM_PUNICAO]).toBe(0);
+  });
+
+  it('toda ação oferecida no painel tem pontuação definida', () => {
+    for (const acao of ['none', 'warn', 'hide', 'suspend_1d', 'suspend_7d']) {
+      expect(ACTION_POINTS[acao]).toBeTypeOf('number');
+    }
+  });
+
+  it('ação desconhecida não tem pontuação — não cai num padrão', () => {
+    expect(ACTION_POINTS.acao_inventada).toBeUndefined();
+  });
+
+  // Os limiares vivem em `site_config` (mod_suspend_threshold=8,
+  // mod_ban_threshold=15). Mexer nos pontos sem olhar os limiares muda o
+  // comportamento da punição automática sem ninguém perceber.
   it('mantém a escala combinada com os limiares do banco', () => {
-    expect(ACTION_POINTS).toEqual({ warn: 1, hide: 2, suspend_1d: 5, suspend_7d: 10 });
+    expect(ACTION_POINTS).toEqual({ none: 0, warn: 1, hide: 2, suspend_1d: 5, suspend_7d: 10 });
   });
 });

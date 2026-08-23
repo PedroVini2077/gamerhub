@@ -31,7 +31,12 @@ export const TRIGGER_COLOR = {
 
 // Pontos por ação escolhida pelo moderador. Alimentam a escalação automática
 // (`trigger_violation_escalation`): 8 pontos suspendem, 15 banem.
-export const ACTION_POINTS = { warn: 1, hide: 2, suspend_1d: 5, suspend_7d: 10 };
+export const ACTION_POINTS = { none: 0, warn: 1, hide: 2, suspend_1d: 5, suspend_7d: 10 };
+
+// Ação que NÃO gera registro de infração. Existe para que "não punir" seja uma
+// escolha explícita do moderador, e não o que acontece quando ele esquece de
+// marcar alguma coisa.
+export const SEM_PUNICAO = 'none';
 
 // Chat não tem coluna `hidden_at` — ocultar não existe lá. Confirmar um item de
 // chat significa APAGAR a mensagem, então o botão precisa dizer isso.

@@ -8,6 +8,10 @@ function ActionSelect({ value, onChange }) {
       aria-label="Ação de moderação"
       className="bg-dark-700 border border-dark-500 text-xs font-mono text-gray-300 rounded px-2 py-1.5 w-full">
       <option value="">Selecionar ação...</option>
+      {/* "Sem punição" é uma escolha EXPLÍCITA, não o padrão. Antes, aprovar
+          sem marcar nada gerava zero ponto em silêncio — e a escalação
+          automática (8 pontos suspende, 15 bane) nunca disparava. */}
+      <option value="none">Sem punição — só ocultar (0 pt)</option>
       <option value="warn">Aviso (+1pt)</option>
       <option value="hide">Ocultar conteúdo (+2pt)</option>
       <option value="suspend_1d">Suspender 1 dia (+5pt)</option>

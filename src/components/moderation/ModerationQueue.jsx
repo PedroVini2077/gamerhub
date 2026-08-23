@@ -9,7 +9,7 @@ import {
 import { deleteChatMessage } from '../../services/liveService';
 import BanModal from '../ui/BanModal';
 import QueueItemCard from './QueueItemCard';
-import { CONTENT_LABEL, TRIGGER_LABEL, ACTION_POINTS, podeSerOcultado, TABELA_DO_AUTOR } from './queueLabels';
+import { CONTENT_LABEL, TRIGGER_LABEL, ACTION_POINTS, podeSerOcultado, TABELA_DO_AUTOR, SEM_PUNICAO } from './queueLabels';
 import { logAudit } from '../../lib/auditLog';
 import { useAuth } from '../../hooks/useAuth.jsx';
 
@@ -79,6 +79,16 @@ export default function ModerationQueue() {
 
   async function handleResolve(item, decision) {
     if (resolving.has(item.id)) return;
+
+    // Confirmar sem escolher ação gerava ZERO ponto, calado. Como a escalação
+    // automática (8 pontos suspende, 15 bane) só é alimentada por estes
+    // cliques, o hábito de "aprovar e seguir" fazia a punição existir no papel
+    // e nunca disparar. Agora não punir é uma opção que se MARCA.
+    if (decision === 'approved' && !actions[item.id]) {
+      toast.error('Escolha uma ação antes de confirmar — inclusive "sem punição", se for o caso.');
+      return;
+    }
+
     setResolving(s => new Set([...s, item.id]));
     try {
       // O autor é lido ANTES de resolver: se a decisão apaga a mensagem de
@@ -111,7 +121,7 @@ export default function ModerationQueue() {
 
       if (authorId) {
         const action = actions[item.id];
-        if (decision === 'approved' && action) {
+        if (decision === 'approved' && action && action !== SEM_PUNICAO) {
           // Sem checar o erro, a violação some e o usuário nunca acumula
           // pontos rumo à escalação automática — a punição simplesmente não
           // acontece, sem ninguém ficar sabendo.
