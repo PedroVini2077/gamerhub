@@ -3,3 +3,6 @@ dist
 .env.local
 .env
 .vercel
+
+# Relatório do vitest gerado pelo CI (--reporter=json)
+vitest-report.json

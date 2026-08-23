@@ -2,6 +2,11 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
+import { iniciarMonitoramento } from './lib/monitoring';
+
+// Liga o monitoramento ANTES de qualquer coisa: erro que acontece durante a
+// montagem do app é justamente o mais grave, e o que ninguém vê acontecer.
+iniciarMonitoramento();
 
 // Após um novo deploy, os hashes dos chunks lazy (rotas em `lazy(() => import(...))`)
 // mudam — uma aba aberta com o bundle antigo tenta buscar um arquivo que não existe

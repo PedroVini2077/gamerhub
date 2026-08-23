@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { registrarErro } from '../lib/monitoring';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -13,6 +14,10 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[GamerHub] Erro não capturado:', error, info?.componentStack);
+    // O `console.error` acima serve pra depurar com o DevTools aberto — não é
+    // tratamento (§1.5). Sem esta linha, a tela "Algo deu errado" aparecia pro
+    // usuário e ninguém do outro lado ficava sabendo que ela apareceu.
+    registrarErro(error, { componentStack: info?.componentStack });
   }
 
   render() {
