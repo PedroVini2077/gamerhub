@@ -23,6 +23,25 @@ vermelho e alguém olha. O perigoso é ele **passar sem testar nada**: arquivo d
 teste renomeado, `describe.skip` esquecido, glob de config alterado. Ao
 adicionar testes, subir o piso junto.
 
+### `[23/08]` O E2E autenticado roda com conta comum, nunca de staff
+
+Parece limitação e é o contrário: com `role = 'user'` o teste pode **exigir**
+que `/admin` e `/owner` não mostrem nada, o que é uma checagem de permissão num
+navegador de verdade — a única camada que faltava (RLS e RPC já são validadas
+em transação com ROLLBACK). Com conta de admin, além de perder isso, o post
+soft-deletado continuaria visível com o aviso "Post excluído" e o passo de
+exclusão não teria como se provar.
+
+**O que ele não cobre, de propósito:** banimento e moderação. Precisariam de
+uma segunda conta como vítima e são destrutivos.
+
+### `[23/08]` Só em PR, porque escreve no banco de produção
+
+O teste publica e apaga um post de verdade. Repetir no push da `main` depois do
+merge duplicaria a escrita sem cobrir nada novo. Não existe ambiente de staging
+— criar um segundo projeto Supabase custaria mais atenção do que protege com
+3 usuários.
+
 ### `[23/08]` Dependabot ignora atualizações **major** de propósito
 
 Patch e minor entram agrupados, semanalmente, teto de 3 PRs. Major fica de fora

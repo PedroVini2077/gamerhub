@@ -11,19 +11,17 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **16 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **20 itens abertos**
+(+ 1 ideia sem compromisso)
 
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[23/08]` **Ligar o E2E autenticado com a conta de teste.** A conta já
-  existe (`pedrovinicorrea+teste@gmail.com`). Falta pôr as credenciais nos
-  **Secrets** do repositório (não Variables — senha é segredo) e escrever o
-  fluxo. **Destrava outros três itens** desta lista.
 - ⬜ `[23/08]` **Trocar a senha da conta de teste.** Ela foi combinada por chat
   e ficou no histórico da conversa. Conta descartável e sem privilégio, então
-  não é urgente — mas é higiene.
+  não é urgente — mas é higiene. **Ao trocar, atualizar o secret
+  `E2E_PASSWORD`** no repositório, senão o job de fluxos passa a falhar.
 - ⬜ `[23/08]` **Usuário banido não tem canal para pedir revisão.** A
   `BannedScreen` mostra o motivo e desloga em 6s: sem botão, sem formulário,
   sem contato. `request_unban` exige `role = 'admin'`, ou seja, só um admin
@@ -61,10 +59,19 @@
   de falha que ele existe para acabar. Com 3 usuários não chega perto.
 - ⬜ `[22/08]` **`REPLICA IDENTITY FULL` em `profiles`.** Hoje a linha inteira
   vai no payload de cada update. Ganho **teórico** com 3 usuários contra risco
-  real em `useAuth` (§7). Destrava com o E2E autenticado.
+  real em `useAuth` (§7). O E2E autenticado já cobre login, sessão e perfil,
+  então a rede de segurança existe.
+- ⬜ `[23/08]` **O E2E deixa um post soft-deletado por execução.** Um por PR,
+  com o título marcado `[e2e …]`. Some do feed, mas fica na tabela e no painel
+  de excluídos. Limpar de dentro do CI exigiria a `service_role` nos secrets do
+  GitHub — trocar um resíduo por uma chave de superusuário exposta é péssimo
+  negócio. Resolver junto da retenção de tabelas append-only.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
-  `exhaustive-deps` suprimidos. Travado pelo mesmo motivo: o painel fica atrás
-  de login e o teste de fumaça não o exercita.
+  `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
+  conta comum de propósito (é assim que ele prova que `/admin` é negado), então
+  o painel segue sem cobertura de navegador. Destravaria com uma segunda conta
+  de teste, com cargo de admin — decisão pendente, porque uma conta de staff
+  automatizada é superfície de ataque nova.
 - ⬜ `[20/08]` **Denúncia criada não gera log de auditoria.** Decisão consciente
   (qualquer um denuncia, e logar inflaria a trilha) — reavaliar se a moderação
   sentir falta. Ver [DECISOES.md](docs/DECISOES.md).

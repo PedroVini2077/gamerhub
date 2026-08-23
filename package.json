@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "node e2e/smoke.mjs"
+    "test:e2e": "node e2e/smoke.mjs",
+    "test:e2e:fluxos": "node e2e/fluxos.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.6.1",

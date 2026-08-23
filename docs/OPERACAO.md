@@ -58,12 +58,31 @@ primeira visita, mostra texto genérico.
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
 
 - `lint` (0 erros) · `npm test` · `build` · `npm audit --audit-level=high`
-- **piso de 125 testes** — o CI quebrando é o caso fácil, fica vermelho e
+- **piso de 168 testes** — o CI quebrando é o caso fácil, fica vermelho e
   alguém olha; o perigoso é ele **passar sem testar nada** (arquivo renomeado,
   `describe.skip` esquecido). Ao adicionar testes, subir o piso junto.
-- job de **fumaça** — 12 rotas num Chromium real, alcançando o Supabase. Só
-  roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` nas *Variables* do
-  repositório; sem elas seria "0/12 rotas", falha que não diz nada.
+- job de **fumaça** (`e2e/smoke.mjs`) — as rotas num Chromium real, **como
+  visitante**: cada uma monta sem exceção de JS e o `RequireAuth` redireciona
+  para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
+  nas *Variables* do repositório; sem elas seria "0 rotas", falha que não diz
+  nada sobre o código.
+- job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
+  descartável e percorre: todas as telas internas com conteúdo de verdade,
+  `/admin` e `/owner` **negados** para `role = 'user'`, publicar → conferir no
+  feed → apagar, e logout. Exige `E2E_EMAIL` e `E2E_PASSWORD` nos **Secrets**
+  (senha é segredo, ao contrário da anon key). Só em PR: ele escreve no banco
+  de produção. Quando falha, sobe `e2e-evidencia/` como artefato — screenshot,
+  texto da tela e URL, senão o log diria só "timeout".
+
+### As rotas dos testes ficam num arquivo só, com trava
+
+`e2e/rotas.mjs` é a fonte única, e `src/lib/__tests__/rotasE2E.test.js` a
+confronta com os `path=` do `App.jsx`. Existe porque a lista antiga tinha
+**quatro caminhos que não existem** (`/home`, `/comunidade`, `/perfil`,
+`/configuracoes`): as quatro caíam na tela de 404, o conteúdo esperado era
+`/./`, e o teste imprimia "12/12 rotas OK" sem nunca ter aberto quatro delas.
+Nenhum teste de runtime pega isso — do ponto de vista do navegador, a rota `*`
+renderizou.
 
 `.github/dependabot.yml`: PR semanal agrupado por patch/minor, teto de 3.
 **Major fica de fora de propósito** — já quebrou o site uma vez (o upgrade do

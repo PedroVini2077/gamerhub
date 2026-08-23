@@ -65,7 +65,7 @@ jobs:
       - name: Guarda — a suíte não pode encolher em silêncio
         run: |
           total=$(node -p "require('./vitest-report.json').numTotalTests")
-          piso=125
+          piso=168
           echo "testes executados: $total (piso: $piso)"
           if [ "$total" -lt "$piso" ]; then
             echo "::error::A suite caiu para $total testes, abaixo do piso de $piso."
@@ -154,3 +154,65 @@ jobs:
         run: npm run test:e2e
         env:
           SMOKE_BASE: http://127.0.0.1:4173
+
+  fluxos:
+    name: fluxos autenticados
+    runs-on: ubuntu-latest
+    needs: qualidade
+    # Precisa das variáveis do site E das credenciais da conta de teste.
+    # As credenciais são *secrets* (senha é segredo, ao contrário da anon key):
+    #   Settings -> Secrets and variables -> Actions -> Secrets -> New secret
+    #     E2E_EMAIL     = a conta descartável
+    #     E2E_PASSWORD  = a senha dela
+    # A conta tem que ser `role = 'user'`: o teste confere justamente que ela
+    # NÃO enxerga /admin nem /owner.
+    if: >-
+      vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
+      && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Instalar o Chromium do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Build com as variáveis do site
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Subir o preview e esperar responder
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          curl --retry 20 --retry-delay 1 --retry-all-errors --fail --silent \
+               --output /dev/null http://127.0.0.1:4173
+
+      # Sem credencial o script sai com 2 e este passo falha de propósito: um
+      # secret que sumiu tem que APARECER, não virar "job pulado em silêncio"
+      # (§1.5). Só em PR porque o teste escreve no banco de produção (publica e
+      # apaga um post) — rodar de novo no push da main duplicaria isso sem
+      # cobrir nada novo.
+      - name: Login, rotas internas, publicar e apagar
+        run: npm run test:e2e:fluxos
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+
+      # Sem isto, uma falha no CI só diz "timeout" e não dá para diagnosticar
+      # sem reproduzir na mão.
+      - name: Guardar a evidência da falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidencia
+          path: e2e-evidencia/
+          if-no-files-found: ignore
+          retention-days: 7

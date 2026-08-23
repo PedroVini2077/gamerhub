@@ -6,3 +6,6 @@ dist
 
 # Relatório do vitest gerado pelo CI (--reporter=json)
 vitest-report.json
+
+# Screenshot e texto da tela salvos quando um E2E falha (vira artefato do CI)
+e2e-evidencia/
