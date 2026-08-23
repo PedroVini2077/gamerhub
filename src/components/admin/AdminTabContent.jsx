@@ -20,6 +20,7 @@ export default function AdminTabContent({ tab, isSuperAdmin, data, filters, acti
           onNominate={actions.handleNominate} onDemote={actions.handleDemote}
           setBanModal={modals.setBanModal} setUnbanDirectModal={modals.setUnbanDirectModal}
           setUnbanReqModal={modals.setUnbanReqModal} handleDeletePosts={actions.handleDeletePosts}
+          onLiftSuspension={actions.handleLiftSuspension}
           pendingUnbanIds={data.pendingUnbanIds}
         />
       );

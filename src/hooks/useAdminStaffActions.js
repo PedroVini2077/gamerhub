@@ -1,7 +1,8 @@
-import { ShieldAlert, UserPlus } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { nominateForRole, requestRoleDemotion, notifyOwner } from '../services/roleNominationService';
+import { liftSuspension } from '../services/moderationService';
 import { roleLabel } from '../lib/roleLabels';
 
 /** Ações do admin sobre pessoas: indicar, rebaixar, desbanir e alertar o dono. */
@@ -73,6 +74,21 @@ export function useAdminStaffActions({
     fetchUnbanRequests();
   }
 
+  function handleLiftSuspension(targetUser) {
+    setConfirmModal({
+      title: 'Remover suspensão',
+      message: `"${targetUser.username}" volta a poder publicar imediatamente. A pessoa é notificada e a ação fica registrada na trilha de auditoria.`,
+      accent: 'green', confirmLabel: 'Remover suspensão', icon: ShieldCheck,
+      onConfirm: async () => {
+        const { error } = await liftSuspension(targetUser.id);
+        setConfirmModal(null);
+        if (error) { toast.error(error.message || 'Não foi possível remover a suspensão.'); return; }
+        toast.success(`Suspensão de @${targetUser.username} removida.`);
+        refresh();
+      },
+    });
+  }
+
   async function handleAlertOwner(message) {
     const { error } = await notifyOwner(message);
     if (error) { toast.error(error.message); return; }
@@ -83,5 +99,6 @@ export function useAdminStaffActions({
   return {
     handleNominate, handleDemote, confirmUnbanDirect,
     handleApproveUnban, confirmDenyUnban, handleAlertOwner,
+    handleLiftSuspension,
   };
 }

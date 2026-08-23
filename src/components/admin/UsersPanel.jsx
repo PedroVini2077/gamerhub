@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Users, Ban, Shield, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search, UserPlus, ShieldAlert, MailWarning } from 'lucide-react';
+import { Users, Ban, Shield, ShieldCheck, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search, UserPlus, ShieldAlert, MailWarning } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import Avatar from '../ui/Avatar';
 import ConfirmModal from '../ui/ConfirmModal';
+import { suspendedUntil } from '../../lib/roles';
 import { roleTag } from '../../lib/roleLabels';
 
 
@@ -88,9 +89,13 @@ function PendingSignups() {
   );
 }
 
-function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, pendingUnbanIds }) {
+function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, onLiftSuspension, pendingUnbanIds }) {
   const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
+  // `admin_list_users` devolve SETOF profiles, então o dado da suspensão já
+  // chegava aqui — só não era mostrado em lugar nenhum. Quem suspende não via
+  // quem está suspenso.
+  const suspensoAte = suspendedUntil(user);
   const canEdit = !isMe && user.role !== 'owner' && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const canBan  = !isMe && user.role !== 'owner' && (isSuperAdmin ? user.role !== 'super_admin' : user.role === 'user');
   const hasUnbanPending = pendingUnbanIds?.has(user.id);
@@ -104,6 +109,7 @@ function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBa
             <p className="text-sm font-semibold text-white truncate">{user.username}</p>
             {isMe && <span className="text-xs text-gray-500 font-mono shrink-0">(você)</span>}
             {user.banned && <span className="tag tag-pink shrink-0">banido</span>}
+            {!user.banned && suspensoAte && <span className="tag tag-orange shrink-0">suspenso</span>}
           </div>
           {user.banned && user.ban_reason && (
             <p className="text-xs text-red-400/60 font-mono truncate mt-0.5">{user.ban_reason}</p>
@@ -134,6 +140,20 @@ function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBa
                 banido por @{user.banned_by_username || '?'}
                 {user.banned_at && ` · ${new Date(user.banned_at).toLocaleDateString('pt-BR')}`}
               </p>
+            </div>
+          )}
+          {!user.banned && suspensoAte && (
+            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 space-y-2">
+              <p className="text-xs font-mono text-orange-300">
+                Suspenso até {suspensoAte.toLocaleString('pt-BR')} — não consegue publicar,
+                comentar nem falar no chat.
+              </p>
+              {canBan && (
+                <button onClick={() => { onLiftSuspension(user); setExpanded(false); }}
+                  className="flex items-center gap-1.5 text-xs font-mono text-neon-green hover:underline">
+                  <ShieldCheck size={12} />Remover suspensão
+                </button>
+              )}
             </div>
           )}
           {canEdit && !user.banned && (
@@ -206,13 +226,14 @@ export default function UsersPanel({
   users, currentUserId, isSuperAdmin,
   userSearch, setUserSearch, filterRole, setFilterRole,
   onNominate, onDemote, setBanModal, setUnbanDirectModal, setUnbanReqModal,
-  handleDeletePosts, pendingUnbanIds,
+  handleDeletePosts, onLiftSuspension, pendingUnbanIds,
 }) {
   const searchLower = userSearch.toLowerCase();
   const filteredUsers = users.filter(u => {
     const matchSearch = !searchLower || u.username.toLowerCase().includes(searchLower);
     const matchRole = filterRole === 'todos' ? true
       : filterRole === 'banidos' ? u.banned
+      : filterRole === 'suspensos' ? !u.banned && !!suspendedUntil(u)
       : u.role === filterRole;
     return matchSearch && matchRole;
   });
@@ -237,6 +258,7 @@ export default function UsersPanel({
           { id: 'admin',       label: `Admin (${users.filter(u => u.role === 'admin').length})`,     active: 'tag-purple' },
           { id: 'super_admin', label: `Super Admin (${users.filter(u => u.role === 'super_admin').length})`, active: 'tag-green' },
           { id: 'banidos',     label: `Banidos (${users.filter(u => u.banned).length})`,             active: 'tag-pink' },
+          { id: 'suspensos',   label: `Suspensos (${users.filter(u => !u.banned && suspendedUntil(u)).length})`, active: 'tag-orange' },
         ].map(({ id, label, active }) => (
           <button key={id} onClick={() => setFilterRole(id)}
             className={`tag cursor-pointer transition-all ${
@@ -258,6 +280,7 @@ export default function UsersPanel({
           onUnbanDirect={u => setUnbanDirectModal(u)}
           onRequestUnban={u => setUnbanReqModal(u)}
           onDeletePosts={handleDeletePosts}
+          onLiftSuspension={onLiftSuspension}
           pendingUnbanIds={pendingUnbanIds} />
       ))}
     </div>
