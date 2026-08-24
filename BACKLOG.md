@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **18 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **20 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Por onde retomar** (pausa de 23/08, volta na quinta): os dois primeiros
@@ -36,6 +36,21 @@
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
 - ⬜ `[21/08]` **Migração para TypeScript.** Grande, decisão do dono.
+
+- ⬜ `[24/08]` **Um push na `main` está gerando 3–4 deploys de produção do
+  MESMO commit.** Visto no painel logo após o merge do #62: quatro deploys de
+  `dcbf663`, três criados pela integração do Git e um pelo dono. Do meu lado
+  houve **um** push. Não é normal — um push deve gerar um deploy — e refaz a
+  conta do §0.2: se cada merge valia 3–4, os ~12 merges do dia foram ~48
+  deploys sozinhos, não 12. **Onde olhar:** GitHub → Settings → Webhooks
+  (quantos webhooks da Vercel existem? mais de um explica tudo) e Vercel →
+  Project → Settings → Git (Deploy Hooks, e se o repo está conectado mais de
+  uma vez). Webhook duplicado é a causa clássica de N deploys idênticos.
+- ⬜ `[24/08]` **Decidir se eu ganho contas de teste com cargo.** Hoje só
+  tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
+  para provar que `/admin` e `/owner` são **negados**. Promover essa conta
+  quebraria essa prova. O que falta decidir é criar contas **separadas** —
+  ver o motivo e o risco em [DECISOES.md](docs/DECISOES.md).
 
 ## 🟠 Importante — dá para fazer
 
