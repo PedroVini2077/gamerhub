@@ -13,6 +13,34 @@
 
 ## Ferramental
 
+### `[23/08]` Abrir mão dos previews da Vercel
+
+Batemos no teto de 100 deploys/dia do plano Free com 3 usuários no site. A
+branch de trabalho deixou de deployar.
+
+**O que se perde:** uma URL clicável por PR. **Por que sai barato:** ninguém
+clicava. Quem revisa branch aqui é o CI — build, lint, 168 testes, as rotas num
+Chromium de verdade, o E2E autenticado com login/publicação/exclusão, e as
+portas das Edge Functions. O preview era uma segunda opinião mais fraca que a
+primeira, e custava 3 a 5 deploys por PR.
+
+**Duas ideias descartadas, porque atacam o alvo errado** — as duas vieram de
+fora e vão voltar:
+
+| Ideia | Por que não resolve |
+| --- | --- |
+| "Mergear menos vezes na main" | Os deploys de produção eram ~12 no dia. O teto é 100. O grosso era preview de branch |
+| "Usar branch de teste e só mandar pra main o que estiver sólido" | Já é o que se faz — a `claude/*` **é** a branch de teste. O problema era ela deployar também |
+
+**Por que duas camadas** (`deploymentEnabled` **e** `ignoreCommand`): não está
+confirmado se um build *pulado* ainda conta na cota diária de deploys. A
+primeira impede o deploy de nascer; a segunda economiza build quando ele
+nasce. Na dúvida entre duas camadas e uma incerteza, ficam as duas.
+
+**O script erra para o lado de construir.** Se não conseguir comparar com o
+commit anterior, ele constrói. Pular por engano deixaria o site velho no ar em
+silêncio, que é pior do que gastar um deploy.
+
 ### `[23/08]` CI no GitHub Actions em vez de disciplina
 
 `build`, `lint` e `test` rodavam porque alguém lembrava. Agora rodam a cada PR.
