@@ -723,6 +723,41 @@ banimento permanente.
 o dropdown que só oferece 1 e 7 dias não impede ninguém de chamar a REST API
 com 36500.
 
+### Eu passo por cima de toda proteção, e por isso preciso de disciplina própria
+
+O guard `guard_profile_privileged_cols` reverte `role`, `banned` e
+`suspended_until` **só quando `current_user` é `authenticated` ou `anon`**.
+Pelo MCP eu rodo como `postgres`: o guard não me alcança, e um `UPDATE` direto
+passa. O mesmo vale para RLS, para os pisos de moderação e para a hierarquia
+de cargos.
+
+**Isso não é brecha do site.** É a diferença entre o que um navegador consegue
+fazer (onde a segurança mora, e onde ela segurou) e o que a credencial mestra
+do banco consegue fazer (que é o que aquela credencial *é*). O acesso é do
+dono, delegado a mim.
+
+**Mas cria um buraco de rastreabilidade que é meu para fechar.** Mudança de
+schema fica no histórico (`apply_migration`) e mudança de código fica no PR.
+**Mudança de dado por `execute_sql` não deixa nada** — nem no `admin_logs`,
+nem no git. Some junto com a conversa.
+
+As três regras:
+
+1. **Mexer em cargo, ban ou suspensão vai pela RPC, nunca por `UPDATE` cru.**
+   `owner_set_role`, `ban_user`, `unban_user`, `apply_suspension`,
+   `lift_suspension` existem e gravam em `admin_logs`. Um `UPDATE` direto
+   chega no mesmo lugar sem deixar rastro — e a trilha de auditoria do dono
+   passa a mentir por omissão.
+2. **Mudança de dado que não seja de teste é anunciada, com número.** Quantas
+   linhas, quais, e por quê — antes de rodar (§5, dimensionar).
+3. **Dado de teste que eu crio, eu apago na mesma sessão**, e digo que apaguei.
+   Post, perfil, linha de fila. O que não dá para apagar (log já gravado) eu
+   aponto.
+
+Se algum dia isso precisar de trava de verdade e não de disciplina, o caminho
+é conectar o MCP com um papel restrito em vez do dono. Hoje não dá: auditoria
+e migration exigem esse nível. Registrado para quando deixar de exigir.
+
 ### Coisas específicas deste banco
 - RLS por **linha**; privilégio por **coluna** é por **papel**. "Dono vê tudo do
   próprio, nada do alheio" não se expressa com nenhum dos dois sozinho — precisa

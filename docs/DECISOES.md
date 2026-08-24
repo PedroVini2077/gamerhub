@@ -13,6 +13,36 @@
 
 ## Ferramental
 
+### `[24/08]` Contas de teste com cargo: o que decidir antes de criar
+
+**Eu consigo mudar cargo sozinho.** O guard `guard_profile_privileged_cols` só
+reverte `role`/`banned`/`suspended_until` quando `current_user` é
+`authenticated` ou `anon`; pelo MCP eu rodo como `postgres`, então o guard não
+me alcança e um `UPDATE` direto passa. Também consigo criar usuário no
+`auth.users`. Ou seja, a pergunta não é "dá?", é "deve?".
+
+**Não promover a `claudetester`.** Ela é `user` de propósito: o passo 3 do
+`e2e/fluxos.mjs` usa exatamente ela para provar que `/admin` e `/owner` são
+**negados**. Promovê-la apagaria a única checagem de permissão que roda num
+navegador de verdade.
+
+**O que o cargo destravaria**, e é real: o `Admin.jsx` e o `Owner.jsx` são as
+duas telas maiores do projeto e **nenhum teste de navegador as abre** — é o
+motivo de o item do React Query estar travado. Fila de moderação, banimento,
+suspensão e logs só são exercitados por SQL em transação.
+
+**O que ele custa, e é o que precisa de decisão sua:** a senha de uma conta
+de staff passaria a viver nos Secrets do GitHub. Quem obtiver esse secret
+modera, oculta e bane. Hoje o pior caso de um vazamento é uma conta comum
+descartável; com staff, o raio de explosão muda de categoria.
+
+**Recomendação:** uma conta `admin`, nunca `owner`. `admin` já abre o painel e
+a fila; `owner` acumula encerrar live, mexer em cargo e configuração do site —
+poder demais para uma senha que mora em CI. As ações de `owner` continuam
+sendo validadas em `ROLLBACK`, que é onde já são hoje.
+
+**Pendente:** o dono decide se cria. Registrado no backlog.
+
 ### `[23/08]` Abrir mão dos previews da Vercel
 
 Batemos no teto de 100 deploys/dia do plano Free com 3 usuários no site. A
