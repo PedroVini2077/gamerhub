@@ -11,8 +11,14 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **17 itens abertos**
+**Última conferência contra o sistema:** 23/08/2026 · **18 itens abertos**
 (+ 1 ideia sem compromisso)
+
+> **Por onde retomar** (pausa de 23/08, volta na quinta): os dois primeiros
+> itens de "precisa de ação do dono" são de 30 segundos no dashboard e não
+> dependem de mim. Do que é meu, o mais alto é a **cota do Sentry**: ele é uma
+> das duas coisas no projeto que estouram **em silêncio** (`CLAUDE.md` §0.2), e
+> é justamente a ferramenta que existe para acabar com silêncio.
 
 ---
 
@@ -50,9 +56,17 @@
 - ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
-- ⬜ `[23/08]` **Conferir a cota do Sentry depois do primeiro mês.** Free são
-  5.000 eventos/mês; estourando, ele **descarta em silêncio** — a mesma classe
-  de falha que ele existe para acabar. Com 3 usuários não chega perto.
+- ⬜ `[23/08]` **O Sentry estoura em silêncio, e isso não pode ficar assim.**
+  Free são 5.000 eventos/mês; passando disso ele **descarta sem avisar** — a
+  ferramenta que existe para acabar com falha silenciosa falha em silêncio.
+  Com 3 usuários não chega perto do teto, mas o mecanismo é o problema, não o
+  número. Ver `CLAUDE.md` §0.2: é uma das **duas** cotas do projeto que ainda
+  não gritam. Opções: alerta de cota no próprio Sentry (ele manda email em
+  80%), ou um contador local de eventos enviados.
+- ⬜ `[23/08]` **A outra cota muda: `admin_logs` e a retenção.** Não é cota de
+  fornecedor, é a tabela crescendo — hoje 90 dias de retenção resolvem, mas
+  ninguém é avisado se a trilha inchar antes disso. Mesmo raciocínio da linha
+  acima.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
   `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
   conta comum de propósito (é assim que ele prova que `/admin` é negado), então

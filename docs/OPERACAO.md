@@ -65,6 +65,50 @@ O motivo da pausa (`site_config.pause_reason`, editável na aba Site) é lido
 não pode vir de lá. Pausa planejada mostra o motivo real; queda inesperada, ou
 primeira visita, mostra texto genérico.
 
+## Quando a Vercel recusa o deploy
+
+> `Resource is limited - try again in 24 hours (more than 100, code:
+> "api-deployments-free-per-day")`
+
+**A primeira coisa a saber: o site NÃO caiu.** Deploy recusado não derruba
+nada — a Vercel continua servindo a última versão que subiu. O que fica para
+trás é só o commit novo.
+
+**Como conferir o que está de fato no ar**, sem depender do painel (que mostra
+o *commit*, e dois commits diferentes podem gerar um site idêntico):
+
+```bash
+npm run build
+ls dist/assets/index-*.js                                   # hash local
+curl -s https://gamerhub-nine.vercel.app/ | grep -oE 'assets/index-[^"]+\.js'
+```
+
+Hash igual = o que está no ar é o que a `main` produz, mesmo que o painel
+mostre um commit antigo. Foi exatamente o caso em 23/08: três deploys
+recusados, e o site correto, porque os commits recusados mexiam só em
+documentação e Edge Function.
+
+**Por que estourou, e o que impede de repetir:** `CLAUDE.md` §0.2. Em resumo,
+a Vercel construía a cada push em qualquer branch. Agora:
+
+| Camada | Onde | O que faz |
+| --- | --- | --- |
+| `git.deploymentEnabled` | `vercel.json` | a branch de trabalho não cria deploy nenhum |
+| `ignoreCommand` | `scripts/vercel-ignore.sh` | na `main`, pula o build quando o commit não toca em `src/`, `public/`, `index.html`, config de build ou o próprio `vercel.json` |
+| portão no CI | job `deploys` | reprova o PR se a branch não estiver desligada, ou se o script sumir |
+
+São duas camadas de propósito: não está confirmado se um build **pulado** ainda
+conta como deploy na cota diária, então a primeira camada impede o deploy de
+ser criado e a segunda economiza build quando ele é.
+
+**Ao criar uma branch nova**, acrescentar em `vercel.json`:
+
+```json
+"git": { "deploymentEnabled": { "nome-da-branch": false } }
+```
+
+O CI reprova o PR com essa instrução se esquecerem.
+
 ## Faxina agendada (`pg_cron`)
 
 | Job | Quando | O que faz |

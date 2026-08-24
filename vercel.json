@@ -1,4 +1,10 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "claude/gamerhub-technical-summary-vhguK": false
+    }
+  },
+  "ignoreCommand": "bash scripts/vercel-ignore.sh",
   "rewrites": [{ "source": "/(.*)", "destination": "/" }],
   "headers": [
     {

@@ -115,6 +115,51 @@ jobs:
           fi
           echo "OK — documentação acompanhou (ou o PR não mexe no produto)."
 
+  deploys:
+    name: a branch não gasta deploy da Vercel
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v5
+
+      # Em 23/08/2026 batemos no teto do plano Free (100 deploys/dia) com 3
+      # usuários no site. A causa não foi mergear demais: a Vercel constrói a
+      # cada push em QUALQUER branch, e o ciclo de trabalho aqui empurra a
+      # branch 3-5 vezes por PR — incluindo o `--force-with-lease` que realinha
+      # a branch com um conteúdo IDÊNTICO ao que acabou de ir pra main.
+      #
+      # `vercel.json` desliga isso por nome de branch, e nome de branch muda.
+      # Esta trava existe porque a regra escrita já falhou antes (§2): sem
+      # portão, a próxima branch nasce gastando deploy e ninguém percebe até o
+      # dia em que o site não sobe.
+      - name: A branch deste PR está desligada na Vercel
+        run: |
+          node -e '
+            const fs = require("fs");
+            const ref = process.env.HEAD_REF;
+            const cfg = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
+            const mapa = cfg.git?.deploymentEnabled ?? {};
+
+            if (mapa[ref] !== false) {
+              console.log(`::error::A branch "${ref}" nao esta desligada em vercel.json.`);
+              console.log("::error::Cada push nela cria um deploy de preview que ninguem olha —");
+              console.log("::error::quem revisa branch aqui e o CI, nao o preview.");
+              console.log("::error::Acrescente em vercel.json, dentro de git.deploymentEnabled:");
+              console.log(`::error::    "${ref}": false`);
+              process.exit(1);
+            }
+
+            if (!fs.existsSync("scripts/vercel-ignore.sh")) {
+              console.log("::error::vercel.json aponta ignoreCommand para scripts/vercel-ignore.sh,");
+              console.log("::error::que nao existe. A Vercel trata erro como \"construa\" — ou seja,");
+              console.log("::error::voltaria a construir TUDO, e em silencio.");
+              process.exit(1);
+            }
+            console.log(`OK — "${ref}" desligada, e o ignoreCommand aponta para um script que existe.`);
+          '
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+
   fumaca:
     name: rotas num navegador de verdade
     runs-on: ubuntu-latest
