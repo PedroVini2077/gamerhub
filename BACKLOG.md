@@ -42,10 +42,22 @@
   `dcbf663`, três criados pela integração do Git e um pelo dono. Do meu lado
   houve **um** push. Não é normal — um push deve gerar um deploy — e refaz a
   conta do §0.2: se cada merge valia 3–4, os ~12 merges do dia foram ~48
-  deploys sozinhos, não 12. **Onde olhar:** GitHub → Settings → Webhooks
-  (quantos webhooks da Vercel existem? mais de um explica tudo) e Vercel →
-  Project → Settings → Git (Deploy Hooks, e se o repo está conectado mais de
-  uma vez). Webhook duplicado é a causa clássica de N deploys idênticos.
+  deploys sozinhos, não 12.
+
+  **Webhook duplicado foi descartado** — existe só um de cada lado. A pista
+  boa é outra: a Vercel tem um **Deploy Hook chamado `github`, branch `main`**,
+  e o webhook do GitHub aponta para `api.vercel.com/v1/integrati…`. Deploy Hook
+  tem URL `api.vercel.com/v1/integrations/**deploy**/prj_…` — mesmo prefixo.
+  Se esse webhook for o Deploy Hook, ele está **em cima** da integração nativa
+  da Vercel, e cada push dispara os dois caminhos.
+
+  Isso também explica a foto do dono aparecendo em alguns deploys: deploy
+  criado por Deploy Hook é atribuído a quem criou o hook; o da integração
+  nativa aparece com o triângulo. Era a mistura exata do painel.
+
+  **Como confirmar:** abrir o webhook no GitHub e ver a URL inteira. Se tiver
+  `/deploy/prj_`, apagar **um** dos dois (o webhook do GitHub *ou* o Deploy
+  Hook) — a integração nativa sozinha já faz o trabalho.
 - ⬜ `[24/08]` **Decidir se eu ganho contas de teste com cargo.** Hoje só
   tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
   para provar que `/admin` e `/owner` são **negados**. Promover essa conta
