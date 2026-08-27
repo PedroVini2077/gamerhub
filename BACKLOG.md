@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 27/08/2026 · **20 itens abertos**
+**Última conferência contra o sistema:** 27/08/2026 · **21 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** As duas cotas que estouravam em silêncio (`CLAUDE.md`
@@ -116,6 +116,16 @@
   semana, o que é consistente com a hipótese. Se um dia aparecer lá, trocar
   `networkidle` por `domcontentloaded` + espera por seletor. Teste que falha
   sem motivo ensina a ignorar vermelho — por isso está anotado e não esquecido.
+- ⬜ `[27/08]` **Mudança só de teste ainda gasta um deploy da Vercel.** O
+  `scripts/vercel-ignore.sh` lista `src` inteiro em `CAMINHOS_QUE_IMPORTAM`, e
+  `src/lib/__tests__/` está dentro de `src`. Foi o que aconteceu no merge do
+  PR #68: ele mexeu só em `tiposDeConteudo.test.js` dentro de `src/`, e mesmo
+  assim construiu. **Não corrigi na hora de propósito:** o próprio script diz
+  que, na dúvida, o certo é construir — errar para o lado do *skip* deixa o
+  site velho no ar em silêncio (`CLAUDE.md` §1.5). Excluir os testes é seguro
+  (`git diff --quiet ... -- src ':(exclude)src/**/__tests__/**'`), mas mexer na
+  regra que decide se o site atualiza pede teste do script antes, não um
+  chute. Ganho: ~1 deploy por PR que só mexe em teste.
 - ⬜ `[20/08]` **Denúncia criada não gera log de auditoria.** Decisão consciente
   (qualquer um denuncia, e logar inflaria a trilha) — reavaliar se a moderação
   sentir falta. Ver [DECISOES.md](docs/DECISOES.md).
