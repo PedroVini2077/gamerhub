@@ -180,6 +180,31 @@ manda **email**. Está no backlog como ação do dono.
 > Vale distinguir da regra 3 abaixo: "está no painel do fornecedor não conta"
 > critica **painel que ninguém abre**. Email chega.
 
+### A quarta regra: alarme que grita à toa é o mesmo problema, do outro lado
+
+Aprendida em 27/08, e custou caro porque **eu mesmo criei**. Ao fazer as Edge
+Functions gritarem em `admin_logs` (§1.5), `edge_function_error` virou a **2ª
+ação mais frequente de toda a trilha** — e 68 de 68 eram "chamada recusada",
+zero eram falha de verdade. A `send-email` é pública por construção, então
+qualquer POST da internet gravava uma linha; e a minha própria trava gravava 3
+por execução do CI.
+
+**Consertar o silêncio pode produzir fadiga de alarme, e as duas cegam igual.**
+Uma esconde o sinal em nada; a outra esconde em ruído.
+
+Duas perguntas, agora, ao criar qualquer alarme:
+
+1. **Quem pode disparar isto?** Se a resposta inclui "qualquer um da internet",
+   ele precisa de limite antes de existir.
+2. **A severidade é verdade?** Recusar um estranho é a função **funcionando**.
+   Marcar isso como `critical` é mentira, e mentira repetida ensina a ignorar o
+   canal onde a falha real vai aparecer.
+
+> No mesmo dia, meu próprio vigia de CI em segundo plano mandava um alarme falso
+> por PR, porque lia a API do GitHub com um token que não existe. Eu estava
+> escrevendo esta regra enquanto a violava. Alarme que sempre grita errado é
+> pior do que alarme nenhum — ele foi desligado.
+
 ### As três regras
 
 **1. `git push` não é de graça.** Foi a lição de 23/08 e é a menos intuitiva.

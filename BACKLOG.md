@@ -68,10 +68,13 @@
 - ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
-- ⬜ `[23/08]` **A outra cota muda: `admin_logs` e a retenção.** Não é cota de
-  fornecedor, é a tabela crescendo — hoje 90 dias de retenção resolvem, mas
-  ninguém é avisado se a trilha inchar antes disso. Mesmo raciocínio da linha
-  acima.
+- ⬜ `[27/08]` 🟡 **Recusa de chamada ainda entra como `critical`.** A RPC
+  `registrar_falha_de_edge_function` já aceita `p_severidade` (padrão
+  `critical`, para não mudar chamador nenhum). Falta a `send-email` e a
+  `moderate-links` passarem `'warning'` nas **recusas** — a função funcionou, ela
+  recusou um estranho; `critical` ali não é verdade (§1.5). Mexe em duas Edge
+  Functions, então é §7 🟡: **pede aprovação**. Falha real (SMTP recusando,
+  secret ausente) continua `critical`.
 - ⬜ `[24/08]` **O ritual de publicar conteúdo não é imposto em lugar nenhum.**
   Analisado a pedido do dono (a sugestão externa era separar a moderação num
   subsistema próprio). **A separação não faz sentido** — ela já tem pasta,

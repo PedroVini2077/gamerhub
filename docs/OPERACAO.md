@@ -38,6 +38,17 @@
   > é quase certo que existe erro em laço.** O `ultimo_erro` no `extra` diz
   > qual. Uma rajada de 1.000 erros custa 21 eventos de cota, não 1.000.
 
+- **Uma linha por hora, por tipo de falha.** `registrar_falha_de_edge_function`
+  suprime repetição dentro de uma janela de 1 hora, por
+  `(função, tipo de falha)`. Sem isso a trilha enche de ruído: a `send-email` é
+  pública por construção (auth hook), então qualquer POST da internet gravava
+  uma linha, **sem limite** — e a própria trava `portas-fechadas.mjs` gravava 3
+  por execução do CI.
+
+  > A linha diz **que** aconteceu, não **quantas vezes** — a trilha é
+  > append-only e contar exigiria alterar a linha existente. Para "algo está
+  > errado?", uma por hora responde.
+
 - **Falhas de servidor viram trilha** — `registrar_falha_de_edge_function`
   grava `edge_function_error` em `admin_logs`, porque o corpo da resposta
   sozinho não basta quando o chamador é fire-and-forget. `EXECUTE` só para

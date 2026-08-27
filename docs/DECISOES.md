@@ -144,6 +144,49 @@ motivou o teste de fumaça existir. Major entra na mão, com changelog lido.
 > silenciosa dessa falha, que é o oposto do major de npm, onde o site quebra
 > para o usuário e o CI pode continuar verde.
 
+### `[27/08]` A trilha de falha limita uma linha por hora — eu criei o problema
+
+Em 23/08 fiz as Edge Functions gritarem em `admin_logs` para acabar com falha
+silenciosa. Funcionou, e **criou fadiga de alarme** — que é a mesma doença pelo
+outro lado.
+
+**Os números que expuseram:** `edge_function_error` virou a **2ª ação mais
+frequente de toda a trilha** (68 linhas), e as 68 são "chamada recusada".
+**Zero são falha de verdade.** Vinham de dois lugares: a própria trava
+`portas-fechadas.mjs`, que manda 3 requisições recusadas por execução do CI, e
+a `send-email`, que é pública por construção — qualquer POST da internet
+gravava uma linha, sem limite.
+
+**O espaço em disco nunca foi o problema.** 376 kB numa base de 23 MB de 500 MB,
+e com 90 dias de retenção o regime permanente é ~1,8 MB. O item do backlog, como
+estava escrito ("a tabela pode inchar"), descrevia um não-problema.
+
+**O problema era a verdade da mensagem.** Essas linhas entravam como
+`critical` — e a função **funcionou**: ela recusou um estranho, que é o trabalho
+dela. Uma falha real da `send-email` (Google travou a conta, cadastro parado)
+chegaria num canal já cheio de ruído. Fere diretamente a regra "toda mensagem de
+erro tem que ser verdadeira" (§1.5).
+
+**A correção:** uma linha por hora, por `(função, tipo de falha)`. Preserva o
+sinal — hook mal configurado produz recusa contínua e a linha aparece de hora em
+hora — e mata o ruído: scanner vira uma linha por hora em vez de mil.
+
+**Consequência aceita:** a linha diz *que* aconteceu, não *quantas vezes*.
+Contar exigiria alterar a linha existente, e a trilha é append-only. Para
+responder "algo está errado?", uma por hora basta.
+
+**As 68 linhas antigas não foram apagadas.** Apagar registro de auditoria para o
+número ficar bonito é o instinto errado, e elas envelhecem sozinhas pela
+retenção de 90 dias.
+
+**O que ficou faltando, de propósito:** recusa ainda entra como `critical`. A
+RPC já aceita `p_severidade`, mas passar `warning` exige alterar duas Edge
+Functions — §7 🟡, então espera aprovação em vez de ir junto.
+
+**Gotcha registrado:** `CREATE OR REPLACE` com parâmetro novo **não** substitui a
+função — cria uma segunda com outra assinatura, e a chamada antiga vira
+ambígua (`function is not unique`). Precisa de `DROP` explícito antes.
+
 ### `[27/08]` Teto por sessão no Sentry, e o que ele **não** resolve
 
 O backlog dizia "o Sentry estoura em silêncio". Ao enunciar o problema direito,
