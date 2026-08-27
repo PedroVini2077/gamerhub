@@ -11,14 +11,17 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 27/08/2026 · **21 itens abertos**
+**Última conferência contra o sistema:** 27/08/2026 · **20 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** Do dono: apagar o **Deploy Hook** da Vercel (é uma
-> URL-senha, e ela foi colada num chat). Do que é meu, o mais alto é a **cota
-> do Sentry**: é uma das duas coisas no projeto que estouram **em silêncio**
-> (`CLAUDE.md` §0.2), e é justamente a ferramenta que existe para acabar com
-> silêncio.
+> **Próximo da fila.** As duas cotas que estouravam em silêncio (`CLAUDE.md`
+> §0.2) foram fechadas em 27/08. **Do dono** sobraram três ações de painel:
+> apagar o Deploy Hook da Vercel (é uma URL-senha colada num chat), ligar o
+> alerta de cota do Sentry, e trocar a senha da conta de teste.
+>
+> **Do que é meu e não depende de decisão sua**, o mais alto é a mentira do
+> `register_login_attempt` (abaixo): o contador de login não protege contra
+> força bruta e deixa qualquer um gerar alerta falso de segurança.
 
 ---
 
@@ -56,6 +59,36 @@
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[27/08]` 🟡 **O contador de login promete o que não entrega, e é abusável.**
+  Achado ao responder "onde está o rate limit?". **Medido, não deduzido:**
+
+  | Teste | Resultado |
+  | --- | --- |
+  | 3 logins com senha errada direto no GoTrue | contador continua **zero** |
+  | 5 chamadas anônimas a `register_login_attempt` | conta marcada como **bloqueada** |
+
+  A RPC é chamável por `anon` (precisa ser — a página de login não está
+  autenticada) e **incrementa sem verificar se o login falhou de verdade**. Ou
+  seja: **não protege contra força bruta** (quem ataca vai direto no
+  `/auth/v1/token`, que tem rate limit próprio do Supabase) e **deixa qualquer
+  um gerar alerta falso** de "conta bloqueada" para qualquer email.
+
+  **O que NÃO é:** não tranca ninguém fora. Uma sessão anterior já mitigou isso
+  colocando o login *antes* da checagem de bloqueio — **verificado**: conta
+  marcada como `blocked` e o dono entrou com a senha certa (HTTP 200).
+
+  **O que sobra:** poluição de `admin_logs` e `admin_notifications` com alertas
+  de segurança fabricados. Mesma classe do `edge_function_error` — fadiga de
+  alarme (`CLAUDE.md` §0.2).
+
+  **Duas saídas, e a segunda é a certa:**
+  1. limitar o alerta a um por hora por email, como fizemos na trilha (rápido);
+  2. **Password Verification Hook** do Supabase — o GoTrue avisa o banco a cada
+     verificação de senha, e aí o contador passa a ser verdade. É a arquitetura
+     correta e faz o mecanismo cumprir o que promete.
+
+  *Mexe em auth: §7 🟡, pede aprovação.*
+
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
@@ -68,28 +101,6 @@
 - ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
-- ⬜ `[23/08]` **A outra cota muda: `admin_logs` e a retenção.** Não é cota de
-  fornecedor, é a tabela crescendo — hoje 90 dias de retenção resolvem, mas
-  ninguém é avisado se a trilha inchar antes disso. Mesmo raciocínio da linha
-  acima.
-- ⬜ `[24/08]` **O ritual de publicar conteúdo não é imposto em lugar nenhum.**
-  Analisado a pedido do dono (a sugestão externa era separar a moderação num
-  subsistema próprio). **A separação não faz sentido** — ela já tem pasta,
-  service e hooks próprios, 1.295 linhas em arquivos dedicados; mais camadas
-  resolveriam um problema de organização que não temos.
-
-  **O problema real é outro, e é de contrato.** Quatro pontos de criação de
-  conteúdo (`usePostComposer`, `MuralForm`, `useLiveChat`, `CommentSection`)
-  repetem o mesmo ritual **na mão**: `useBlockedWords` → `checkContent` →
-  `suspendedUntil`/`SuspendedNotice` → `moderateText`/`moderateImages`. Nada
-  garante que um 5º tipo de conteúdo lembre dos quatro passos. Já temos
-  precedente: foi assim que o tipo `chat` chegou na fila sem existir em
-  nenhum mapa.
-
-  **Menor mudança que resolve:** extrair o ritual num lugar só + uma trava que
-  falha se um tipo existir na Edge Function (`FONTES`) e não estiver ligado no
-  ponto de criação. *Não é urgente:* os 4 tipos atuais estão corretos, e o
-  risco só aparece ao criar o 5º. Fica **abaixo** do Sentry.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
   `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
   conta comum de propósito (é assim que ele prova que `/admin` é negado), então

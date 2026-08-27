@@ -144,6 +144,67 @@ motivou o teste de fumaça existir. Major entra na mão, com changelog lido.
 > silenciosa dessa falha, que é o oposto do major de npm, onde o site quebra
 > para o usuário e o CI pode continuar verde.
 
+### `[27/08]` A trilha de falha limita uma linha por hora — eu criei o problema
+
+Em 23/08 fiz as Edge Functions gritarem em `admin_logs` para acabar com falha
+silenciosa. Funcionou, e **criou fadiga de alarme** — que é a mesma doença pelo
+outro lado.
+
+**Os números que expuseram:** `edge_function_error` virou a **2ª ação mais
+frequente de toda a trilha** (68 linhas), e as 68 são "chamada recusada".
+**Zero são falha de verdade.** Vinham de dois lugares: a própria trava
+`portas-fechadas.mjs`, que manda 3 requisições recusadas por execução do CI, e
+a `send-email`, que é pública por construção — qualquer POST da internet
+gravava uma linha, sem limite.
+
+**O espaço em disco nunca foi o problema.** 376 kB numa base de 23 MB de 500 MB,
+e com 90 dias de retenção o regime permanente é ~1,8 MB. O item do backlog, como
+estava escrito ("a tabela pode inchar"), descrevia um não-problema.
+
+**O problema era a verdade da mensagem.** Essas linhas entravam como
+`critical` — e a função **funcionou**: ela recusou um estranho, que é o trabalho
+dela. Uma falha real da `send-email` (Google travou a conta, cadastro parado)
+chegaria num canal já cheio de ruído. Fere diretamente a regra "toda mensagem de
+erro tem que ser verdadeira" (§1.5).
+
+**A correção:** uma linha por hora, por `(função, tipo de falha)`. Preserva o
+sinal — hook mal configurado produz recusa contínua e a linha aparece de hora em
+hora — e mata o ruído: scanner vira uma linha por hora em vez de mil.
+
+**Consequência aceita:** a linha diz *que* aconteceu, não *quantas vezes*.
+Contar exigiria alterar a linha existente, e a trilha é append-only. Para
+responder "algo está errado?", uma por hora basta.
+
+**As 68 linhas antigas não foram apagadas.** Apagar registro de auditoria para o
+número ficar bonito é o instinto errado, e elas envelhecem sozinhas pela
+retenção de 90 dias.
+
+**`[27/08]` A severidade veio logo depois, com aprovação.** E medir antes
+**reduziu o escopo pela metade**: as 68 linhas eram *todas* da `send-email`. A
+`moderate-links` devolve 401 sem logar — nunca foi fonte de ruído. Uma Edge
+Function, não duas.
+
+O critério de quem vira `warning` é **fato, não palpite**: o GoTrue **sempre**
+assina e **sempre** manda carimbo de tempo válido. Sem cabeçalho, ou com carimbo
+fora da janela, não era ele.
+
+| Recusa | Severidade | Por quê |
+| --- | --- | --- |
+| sem cabeçalhos de assinatura | `warning` | não pode ser o GoTrue. É estranho |
+| carimbo inválido / fora da janela | `warning` | idem |
+| **assinatura inválida** | **`critical`** | **ambíguo** — atacante, *ou* o secret errado. Se for o secret, o cadastro quebrou em silêncio |
+| secret não configurado / malformado | `critical` | nossa config quebrada |
+
+A lista é um `Set` explícito no código, e **o que não está nela continua
+`critical`** — desconhecido grita, nunca cai num palpite (§4).
+
+Isso troca metade do ruído (35 de 68 eram "sem cabeçalhos") sem calar nenhum
+caso ambíguo.
+
+**Gotcha registrado:** `CREATE OR REPLACE` com parâmetro novo **não** substitui a
+função — cria uma segunda com outra assinatura, e a chamada antiga vira
+ambígua (`function is not unique`). Precisa de `DROP` explícito antes.
+
 ### `[27/08]` Teto por sessão no Sentry, e o que ele **não** resolve
 
 O backlog dizia "o Sentry estoura em silêncio". Ao enunciar o problema direito,
@@ -253,6 +314,36 @@ minutos, pega ponto cego. Não vale automatizar.
 ---
 
 ## Moderação
+
+### `[27/08]` O ritual de publicar conteúdo: trava sim, refatoração não
+
+Fechando o item de 24/08. Ao implementar, **metade dele foi descartada** — e a
+razão veio de olhar o código, não de preferência.
+
+O backlog cogitava extrair o ritual (`useBlockedWords` → `checkContent` →
+`suspendedUntil` → `moderateText`) num hook só. Olhando os quatro pontos, eles
+**não são iguais**:
+
+| Ponto | Modera | Onde avisa o suspenso |
+| --- | --- | --- |
+| `usePostComposer` | texto + imagem + link | `PostForm` |
+| `MuralForm` | texto + imagem | o próprio form |
+| `useLiveChat` | só texto | `ChatPanel` |
+| `CommentSection` | só texto | o próprio componente |
+
+Forçar os quatro num molde exigiria tanta parametrização que a abstração
+custaria mais que o problema — e **os quatro funcionam hoje** (conferido, não
+suposto: os quatro chamam `checkContent` e os quatro avisam o suspenso).
+
+**O que faltava não era organização: era o contrato ser conferido.** Ficou só a
+trava, que é a metade que pega o 5º tipo.
+
+Ela confronta três lugares em lados opostos do sistema — o mapa `FONTES` da
+Edge Function, os três mapas de `queueLabels.js`, e os `moderateText('tipo')`
+do `src/`. **Só foi possível porque as Edge Functions entraram no git em
+27/08.** Provada reproduzindo as duas formas do bug: um 5º tipo produzido sem
+existir na Edge Function, e o `chat` sumindo de um mapa — que é o bug histórico
+literal.
 
 ### `[24/08]` A moderação **não** vira subsistema separado
 
