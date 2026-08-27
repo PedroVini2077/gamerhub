@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 27/08/2026 · **21 itens abertos**
+**Última conferência contra o sistema:** 27/08/2026 · **20 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** Do dono: apagar o **Deploy Hook** da Vercel (é uma
@@ -68,13 +68,6 @@
 - ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
-- ⬜ `[27/08]` 🟡 **Recusa de chamada ainda entra como `critical`.** A RPC
-  `registrar_falha_de_edge_function` já aceita `p_severidade` (padrão
-  `critical`, para não mudar chamador nenhum). Falta a `send-email` e a
-  `moderate-links` passarem `'warning'` nas **recusas** — a função funcionou, ela
-  recusou um estranho; `critical` ali não é verdade (§1.5). Mexe em duas Edge
-  Functions, então é §7 🟡: **pede aprovação**. Falha real (SMTP recusando,
-  secret ausente) continua `critical`.
 - ⬜ `[24/08]` **O ritual de publicar conteúdo não é imposto em lugar nenhum.**
   Analisado a pedido do dono (a sugestão externa era separar a moderação num
   subsistema próprio). **A separação não faz sentido** — ela já tem pasta,

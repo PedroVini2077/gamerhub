@@ -58,21 +58,52 @@ const APP_URL = "https://gamerhub-nine.vercel.app";
 // capturada hoje poderia ser repetida para sempre (replay).
 const TOLERANCIA_SEGUNDOS = 5 * 60;
 
+// ---------------------------------------------------------------------------
+// SEVERIDADE — recusar estranho é a função FUNCIONANDO
+//
+// Em 27/08 os números mostraram que `edge_function_error` tinha virado a 2ª
+// ação mais frequente da trilha inteira, com 68 de 68 sendo "chamada recusada"
+// e nenhuma sendo falha de verdade. Todas daqui. E entravam como `critical` —
+// mentira: a função recusou um estranho, que é o trabalho dela. Uma falha real
+// (Google travou a conta, cadastro parado) chegaria num canal já cheio de ruído.
+//
+// O critério abaixo é FATO, não palpite: **o GoTrue sempre assina, e sempre
+// manda carimbo de tempo válido.** Se não veio cabeçalho, ou o carimbo está
+// fora da janela, não era ele — foi um estranho batendo na porta.
+//
+// Tudo que NÃO está nesta lista continua `critical`, de propósito. Inclusive
+// "assinatura invalida", que é ambígua: pode ser um atacante mandando lixo, ou
+// pode ser o secret ERRADO — e nesse caso o cadastro está quebrado em silêncio.
+// Na dúvida, grita.
+const RECUSAS_DE_ESTRANHO = new Set([
+  "requisicao sem cabecalhos de assinatura",
+  "carimbo de tempo invalido",
+  "carimbo de tempo fora da janela",
+]);
+
 /**
  * Registra a falha em `admin_logs`, que é o painel que o dono abre.
  * Nunca deixa a própria falha do log derrubar a função — se o banco também
  * estiver fora, ainda resta o `console.error`.
+ *
+ * A RPC limita a UMA linha por hora por (função, tipo de falha), então repetir
+ * a chamada não enche a trilha.
  */
-async function gritar(detalhe: string, metadata: Record<string, unknown> = {}) {
+async function gritar(
+  detalhe: string,
+  metadata: Record<string, unknown> = {},
+  severidade: "critical" | "warning" = "critical",
+) {
   console.error("[send-email]", detalhe, JSON.stringify(metadata));
   if (!SUPABASE_URL || !SERVICE_ROLE) return;
   try {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { error } = await admin.rpc("registrar_falha_de_edge_function", {
-      p_funcao:    "send-email",
-      p_detalhe:   detalhe,
-      p_categoria: "system",
-      p_metadata:  metadata,
+      p_funcao:     "send-email",
+      p_detalhe:    detalhe,
+      p_categoria:  "system",
+      p_metadata:   metadata,
+      p_severidade: severidade,
     });
     if (error) console.error("[send-email] nao consegui registrar a falha:", error.message);
   } catch (e) {
@@ -151,11 +182,15 @@ Deno.serve(async (req: Request) => {
 
   const recusa = await motivoParaRecusar(req, rawBody);
   if (recusa) {
-    await gritar(`chamada recusada: ${recusa}`, {
-      motivo: recusa,
-      // Ajuda a distinguir varredura da internet de hook mal configurado.
-      tem_cabecalho_de_assinatura: !!req.headers.get("webhook-signature"),
-    });
+    await gritar(
+      `chamada recusada: ${recusa}`,
+      {
+        motivo: recusa,
+        // Ajuda a distinguir varredura da internet de hook mal configurado.
+        tem_cabecalho_de_assinatura: !!req.headers.get("webhook-signature"),
+      },
+      RECUSAS_DE_ESTRANHO.has(recusa) ? "warning" : "critical",
+    );
     return RECUSADO();
   }
 

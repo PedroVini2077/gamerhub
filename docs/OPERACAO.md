@@ -49,6 +49,19 @@
   > append-only e contar exigiria alterar a linha existente. Para "algo está
   > errado?", uma por hora responde.
 
+- **Recusa de estranho é `warning`; o resto continua `critical`.** O critério é
+  fato, não palpite: **o GoTrue sempre assina e sempre manda carimbo válido.**
+
+  | Na trilha você vê | Significa |
+  | --- | --- |
+  | `warning` — sem cabeçalhos / carimbo fora da janela | estranho bateu na porta. A função **funcionou** ao recusar |
+  | `critical` — assinatura inválida | **ambíguo**: atacante, *ou* o secret errado. Se for o secret, o cadastro está quebrado em silêncio |
+  | `critical` — secret não configurado/malformado | nossa config quebrada, cadastro parado |
+  | `critical` — SMTP recusou | conta do Google travada, senha de app revogada ou cota estourada |
+
+  > Só a `send-email` registra recusa. A `moderate-links` devolve 401 sem
+  > logar — conferido: das 68 linhas de ruído, **68 eram da `send-email`**.
+
 - **Falhas de servidor viram trilha** — `registrar_falha_de_edge_function`
   grava `edge_function_error` em `admin_logs`, porque o corpo da resposta
   sozinho não basta quando o chamador é fire-and-forget. `EXECUTE` só para

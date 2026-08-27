@@ -179,9 +179,27 @@ responder "algo está errado?", uma por hora basta.
 número ficar bonito é o instinto errado, e elas envelhecem sozinhas pela
 retenção de 90 dias.
 
-**O que ficou faltando, de propósito:** recusa ainda entra como `critical`. A
-RPC já aceita `p_severidade`, mas passar `warning` exige alterar duas Edge
-Functions — §7 🟡, então espera aprovação em vez de ir junto.
+**`[27/08]` A severidade veio logo depois, com aprovação.** E medir antes
+**reduziu o escopo pela metade**: as 68 linhas eram *todas* da `send-email`. A
+`moderate-links` devolve 401 sem logar — nunca foi fonte de ruído. Uma Edge
+Function, não duas.
+
+O critério de quem vira `warning` é **fato, não palpite**: o GoTrue **sempre**
+assina e **sempre** manda carimbo de tempo válido. Sem cabeçalho, ou com carimbo
+fora da janela, não era ele.
+
+| Recusa | Severidade | Por quê |
+| --- | --- | --- |
+| sem cabeçalhos de assinatura | `warning` | não pode ser o GoTrue. É estranho |
+| carimbo inválido / fora da janela | `warning` | idem |
+| **assinatura inválida** | **`critical`** | **ambíguo** — atacante, *ou* o secret errado. Se for o secret, o cadastro quebrou em silêncio |
+| secret não configurado / malformado | `critical` | nossa config quebrada |
+
+A lista é um `Set` explícito no código, e **o que não está nela continua
+`critical`** — desconhecido grita, nunca cai num palpite (§4).
+
+Isso troca metade do ruído (35 de 68 eram "sem cabeçalhos") sem calar nenhum
+caso ambíguo.
 
 **Gotcha registrado:** `CREATE OR REPLACE` com parâmetro novo **não** substitui a
 função — cria uma segunda com outra assinatura, e a chamada antiga vira
