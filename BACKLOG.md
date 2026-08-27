@@ -19,9 +19,9 @@
 > apagar o Deploy Hook da Vercel (é uma URL-senha colada num chat), ligar o
 > alerta de cota do Sentry, e trocar a senha da conta de teste.
 >
-> **Do que é meu e não depende de decisão sua**, o mais alto é o *ritual de
-> publicar conteúdo* — não é urgente (os 4 tipos atuais estão corretos), mas é
-> o único com precedente de já ter quebrado.
+> **Do que é meu e não depende de decisão sua**, o mais alto é trazer as
+> **migrations para o repositório** — o backup de schema está 48 migrations
+> atrás, e o caminho de recuperação documentado não funciona mais.
 
 ---
 
@@ -59,6 +59,28 @@
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[27/08]` 🟡 **As migrations não estão no repositório, e o backup de schema
+  mente.** Achado ao conferir o projeto contra a lista de camadas de um vídeo
+  ("Backups & Replication"). Medido:
+
+  | | |
+  | --- | --- |
+  | `DATABASE_SCHEMA_BACKUP.sql` | gerado em **11/06**, conhece **52 funções** |
+  | Banco hoje | **71 funções**, **136 migrations** |
+  | Migrations aplicadas depois do backup | **48** |
+
+  O README mandava usar esse arquivo para recriar o banco — **instrução falsa**,
+  já corrigida com o aviso. Quem seguisse ficaria sem `lift_suspension`,
+  `registrar_falha_de_edge_function` e boa parte do endurecimento de agosto.
+
+  **É o mesmo problema que as Edge Functions tinham antes de 23/08:** a verdade
+  vive só no Supabase, sem histórico revisável no git. O conserto certo é
+  exportar `supabase_migrations.schema_migrations` para `supabase/migrations/`
+  — não regerar o dump, que envelheceria de novo.
+
+  *Não é urgente:* o Supabase tem backup diário próprio (7 dias no Free), então
+  o banco não está em risco. O que está quebrado é o **caminho de recuperação
+  documentado**.
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
@@ -71,24 +93,6 @@
 - ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
-- ⬜ `[24/08]` **O ritual de publicar conteúdo não é imposto em lugar nenhum.**
-  Analisado a pedido do dono (a sugestão externa era separar a moderação num
-  subsistema próprio). **A separação não faz sentido** — ela já tem pasta,
-  service e hooks próprios, 1.295 linhas em arquivos dedicados; mais camadas
-  resolveriam um problema de organização que não temos.
-
-  **O problema real é outro, e é de contrato.** Quatro pontos de criação de
-  conteúdo (`usePostComposer`, `MuralForm`, `useLiveChat`, `CommentSection`)
-  repetem o mesmo ritual **na mão**: `useBlockedWords` → `checkContent` →
-  `suspendedUntil`/`SuspendedNotice` → `moderateText`/`moderateImages`. Nada
-  garante que um 5º tipo de conteúdo lembre dos quatro passos. Já temos
-  precedente: foi assim que o tipo `chat` chegou na fila sem existir em
-  nenhum mapa.
-
-  **Menor mudança que resolve:** extrair o ritual num lugar só + uma trava que
-  falha se um tipo existir na Edge Function (`FONTES`) e não estiver ligado no
-  ponto de criação. *Não é urgente:* os 4 tipos atuais estão corretos, e o
-  risco só aparece ao criar o 5º. Fica **abaixo** do Sentry.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
   `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
   conta comum de propósito (é assim que ele prova que `/admin` é negado), então

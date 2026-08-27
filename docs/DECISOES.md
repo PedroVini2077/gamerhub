@@ -315,6 +315,36 @@ minutos, pega ponto cego. Não vale automatizar.
 
 ## Moderação
 
+### `[27/08]` O ritual de publicar conteúdo: trava sim, refatoração não
+
+Fechando o item de 24/08. Ao implementar, **metade dele foi descartada** — e a
+razão veio de olhar o código, não de preferência.
+
+O backlog cogitava extrair o ritual (`useBlockedWords` → `checkContent` →
+`suspendedUntil` → `moderateText`) num hook só. Olhando os quatro pontos, eles
+**não são iguais**:
+
+| Ponto | Modera | Onde avisa o suspenso |
+| --- | --- | --- |
+| `usePostComposer` | texto + imagem + link | `PostForm` |
+| `MuralForm` | texto + imagem | o próprio form |
+| `useLiveChat` | só texto | `ChatPanel` |
+| `CommentSection` | só texto | o próprio componente |
+
+Forçar os quatro num molde exigiria tanta parametrização que a abstração
+custaria mais que o problema — e **os quatro funcionam hoje** (conferido, não
+suposto: os quatro chamam `checkContent` e os quatro avisam o suspenso).
+
+**O que faltava não era organização: era o contrato ser conferido.** Ficou só a
+trava, que é a metade que pega o 5º tipo.
+
+Ela confronta três lugares em lados opostos do sistema — o mapa `FONTES` da
+Edge Function, os três mapas de `queueLabels.js`, e os `moderateText('tipo')`
+do `src/`. **Só foi possível porque as Edge Functions entraram no git em
+27/08.** Provada reproduzindo as duas formas do bug: um 5º tipo produzido sem
+existir na Edge Function, e o `chat` sumindo de um mapa — que é o bug histórico
+literal.
+
 ### `[24/08]` A moderação **não** vira subsistema separado
 
 Veio de fora a sugestão de tratar a moderação como subsistema próprio, porque

@@ -98,6 +98,32 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   tabelas de conteúdo): sem isso, banir alguém deixava os itens dele `pending`
   apontando para linhas mortas, sem jeito de sair da tela. Fica na tabela e não
   no `ban_user` porque o problema é de **qualquer** caminho que apague conteúdo.
+- **O contrato dos tipos de conteúdo é travado por teste**
+  (`src/lib/__tests__/tiposDeConteudo.test.js`). Criar conteúdo aqui é um
+  **ritual repetido à mão** em quatro lugares — `usePostComposer`, `MuralForm`,
+  `useLiveChat`, `CommentSection`:
+
+  ```
+  useBlockedWords → checkContent → suspendedUntil → moderateText(TIPO, …)
+  ```
+
+  Nada garantia que um 5º tipo lembrasse de todos os passos, nem que existisse
+  nos mapas que a fila consulta. **Já quebrou assim:** o `chat` chegou na fila
+  sem mapa, caiu num `else → community_posts`, e o card ficou em
+  "Carregando..." para sempre.
+
+  O teste confronta três lugares em lados opostos do sistema: o mapa `FONTES`
+  da Edge Function `moderate-text`, os três mapas de `queueLabels.js`, e todo
+  `moderateText('tipo', …)` do `src/`. **Só é possível porque as Edge Functions
+  foram versionadas em 27/08** — antes, o lado do servidor não existia no
+  repositório para ser comparado.
+
+  > **Não houve refatoração, e é decisão registrada.** Os quatro pontos não são
+  > iguais (post modera texto + imagem + link; mural, texto e imagem; chat e
+  > comentário só texto) e o aviso de suspensão mora em camadas diferentes.
+  > Forçá-los num molde só custaria mais que o problema. Ver
+  > [DECISOES.md](DECISOES.md).
+
 - **Painel** (`ModerationPanel`, aba Admin) com sub-abas: **Fila**, **Denúncias**
   (filtráveis por status), **Palavrões** (CRUD) e **Infrações** (histórico
   paginado, filtro por usuário).

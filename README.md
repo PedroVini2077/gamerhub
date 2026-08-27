@@ -109,6 +109,18 @@ criar o `.env` na raiz com a URL e a anon key do seu projeto Supabase.
 RLS, funções, triggers e índices. Buckets de storage e publicação realtime
 estão documentados no fim do arquivo (criar pelo dashboard).
 
+> ⚠️ **O backup está desatualizado, e isto é medido, não suposto.** Ele foi
+> gerado em **11/06/2026** e conhece **52 funções**; o banco de hoje tem **71**,
+> com **48 migrations aplicadas depois** dele. Faltam, entre outras,
+> `lift_suspension`, `registrar_falha_de_edge_function` e
+> `registrar_falha_de_moderacao` — ou seja, boa parte do endurecimento de
+> segurança de agosto.
+>
+> **A verdade sobre o schema está nas migrations**, no histórico do Supabase
+> (`supabase_migrations.schema_migrations`, 136 delas), não neste arquivo.
+> Trazê-las para o repositório está no [`BACKLOG.md`](BACKLOG.md) — é o mesmo
+> problema que as Edge Functions tinham antes de 23/08.
+
 **5. Rodar**
 
 ```bash
