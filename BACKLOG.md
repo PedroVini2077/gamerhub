@@ -11,14 +11,14 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 23/08/2026 · **20 itens abertos**
+**Última conferência contra o sistema:** 24/08/2026 · **21 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Por onde retomar** (pausa de 23/08, volta na quinta): os dois primeiros
-> itens de "precisa de ação do dono" são de 30 segundos no dashboard e não
-> dependem de mim. Do que é meu, o mais alto é a **cota do Sentry**: ele é uma
-> das duas coisas no projeto que estouram **em silêncio** (`CLAUDE.md` §0.2), e
-> é justamente a ferramenta que existe para acabar com silêncio.
+> **Próximo da fila.** Do que depende do dono: apagar as duas Edge Functions
+> neutralizadas e conferir a URL do webhook da Vercel — os dois são de 30
+> segundos no dashboard. Do que é meu, o mais alto é a **cota do Sentry**: é
+> uma das duas coisas no projeto que estouram **em silêncio** (`CLAUDE.md`
+> §0.2), e é justamente a ferramenta que existe para acabar com silêncio.
 
 ---
 
@@ -36,7 +36,6 @@
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
 - ⬜ `[21/08]` **Migração para TypeScript.** Grande, decisão do dono.
-
 - ⬜ `[24/08]` **Um push na `main` está gerando 3–4 deploys de produção do
   MESMO commit.** Visto no painel logo após o merge do #62: quatro deploys de
   `dcbf663`, três criados pela integração do Git e um pelo dono. Do meu lado
@@ -94,6 +93,24 @@
   fornecedor, é a tabela crescendo — hoje 90 dias de retenção resolvem, mas
   ninguém é avisado se a trilha inchar antes disso. Mesmo raciocínio da linha
   acima.
+- ⬜ `[24/08]` **O ritual de publicar conteúdo não é imposto em lugar nenhum.**
+  Analisado a pedido do dono (a sugestão externa era separar a moderação num
+  subsistema próprio). **A separação não faz sentido** — ela já tem pasta,
+  service e hooks próprios, 1.295 linhas em arquivos dedicados; mais camadas
+  resolveriam um problema de organização que não temos.
+
+  **O problema real é outro, e é de contrato.** Quatro pontos de criação de
+  conteúdo (`usePostComposer`, `MuralForm`, `useLiveChat`, `CommentSection`)
+  repetem o mesmo ritual **na mão**: `useBlockedWords` → `checkContent` →
+  `suspendedUntil`/`SuspendedNotice` → `moderateText`/`moderateImages`. Nada
+  garante que um 5º tipo de conteúdo lembre dos quatro passos. Já temos
+  precedente: foi assim que o tipo `chat` chegou na fila sem existir em
+  nenhum mapa.
+
+  **Menor mudança que resolve:** extrair o ritual num lugar só + uma trava que
+  falha se um tipo existir na Edge Function (`FONTES`) e não estiver ligado no
+  ponto de criação. *Não é urgente:* os 4 tipos atuais estão corretos, e o
+  risco só aparece ao criar o 5º. Fica **abaixo** do Sentry.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
   `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
   conta comum de propósito (é assim que ele prova que `/admin` é negado), então
