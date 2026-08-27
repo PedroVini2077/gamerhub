@@ -14,11 +14,14 @@
 **Última conferência contra o sistema:** 27/08/2026 · **20 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** Do dono: apagar o **Deploy Hook** da Vercel (é uma
-> URL-senha, e ela foi colada num chat). Do que é meu, o mais alto é a **cota
-> do Sentry**: é uma das duas coisas no projeto que estouram **em silêncio**
-> (`CLAUDE.md` §0.2), e é justamente a ferramenta que existe para acabar com
-> silêncio.
+> **Próximo da fila.** As duas cotas que estouravam em silêncio (`CLAUDE.md`
+> §0.2) foram fechadas em 27/08. **Do dono** sobraram três ações de painel:
+> apagar o Deploy Hook da Vercel (é uma URL-senha colada num chat), ligar o
+> alerta de cota do Sentry, e trocar a senha da conta de teste.
+>
+> **Do que é meu e não depende de decisão sua**, o mais alto é o *ritual de
+> publicar conteúdo* — não é urgente (os 4 tipos atuais estão corretos), mas é
+> o único com precedente de já ter quebrado.
 
 ---
 
