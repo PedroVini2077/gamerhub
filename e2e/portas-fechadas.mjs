@@ -22,6 +22,11 @@
  *   debug-hf               sobra de experimento, gastava a chave do Hugging
  *                          Face a cada chamada
  *
+ * As duas últimas foram APAGADAS de vez em 27/08, e o esperado delas virou
+ * 404. Função que não existe é a porta mais fechada que existe — mas a
+ * verificação continua valendo, porque "apagada" é um estado que alguém pode
+ * desfazer sem querer.
+ *
  * Nenhuma destas requisições tem efeito colateral: todas devem ser RECUSADAS.
  * Se alguma passar, o teste falha — que é o ponto.
  *
@@ -81,19 +86,26 @@ const CASOS = [
     esperado: [401],
     estrago: 'queimar a cota de 10 mil consultas/dia do Safe Browsing',
   },
+  // As duas abaixo foram APAGADAS de vez em 27/08. Para elas o esperado é 404:
+  // função que não existe é a porta mais fechada que existe. Qualquer outra
+  // resposta significa que alguém recriou a função — inclusive um 401, que
+  // pareceria seguro e não é: seria a função de volta, só que com o gateway
+  // ligado. O que a gente quer é que ela continue não existindo.
   {
-    nome: 'cleanup-expired-posts sem credencial',
+    nome: 'cleanup-expired-posts segue apagada',
     caminho: '/cleanup-expired-posts',
     corpo: {},
-    esperado: [401, 410],
+    esperado: [404],
     estrago: 'rodar dois DELETE em posts com service_role, de graca, quantas vezes quiser',
+    apagada: true,
   },
   {
-    nome: 'debug-hf sem credencial',
+    nome: 'debug-hf segue apagada',
     caminho: '/debug-hf',
     corpo: {},
-    esperado: [401, 410],
+    esperado: [404],
     estrago: 'gastar a chave do Hugging Face a cada chamada',
+    apagada: true,
   },
 ];
 
@@ -120,9 +132,15 @@ for (const caso of CASOS) {
 
   const ok = caso.esperado.includes(status);
   if (!ok) falhas++;
-  console.log(`  ${ok ? 'OK   ' : 'ABERTA'}  ${caso.nome.padEnd(38)} HTTP ${status}`
+  const rotulo = ok ? 'OK    ' : (caso.apagada ? 'VOLTOU' : 'ABERTA');
+  console.log(`  ${rotulo}  ${caso.nome.padEnd(38)} HTTP ${status}`
     + (ok ? '' : `  (esperado ${caso.esperado.join(' ou ')})`));
-  if (!ok) console.log(`          => volta a permitir: ${caso.estrago}`);
+  if (!ok) {
+    console.log(caso.apagada
+      ? `          => esta funcao foi apagada de proposito e reapareceu.`
+        + ` Se voltou mesmo, ela permite: ${caso.estrago}`
+      : `          => volta a permitir: ${caso.estrago}`);
+  }
 }
 
 if (falhas) {

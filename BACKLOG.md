@@ -11,14 +11,14 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 24/08/2026 · **21 itens abertos**
+**Última conferência contra o sistema:** 27/08/2026 · **21 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** Do que depende do dono: apagar as duas Edge Functions
-> neutralizadas e conferir a URL do webhook da Vercel — os dois são de 30
-> segundos no dashboard. Do que é meu, o mais alto é a **cota do Sentry**: é
-> uma das duas coisas no projeto que estouram **em silêncio** (`CLAUDE.md`
-> §0.2), e é justamente a ferramenta que existe para acabar com silêncio.
+> **Próximo da fila.** Do dono: apagar o **Deploy Hook** da Vercel (é uma
+> URL-senha, e ela foi colada num chat). Do que é meu, o mais alto é a **cota
+> do Sentry**: é uma das duas coisas no projeto que estouram **em silêncio**
+> (`CLAUDE.md` §0.2), e é justamente a ferramenta que existe para acabar com
+> silêncio.
 
 ---
 
@@ -36,27 +36,12 @@
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
 - ⬜ `[21/08]` **Migração para TypeScript.** Grande, decisão do dono.
-- ⬜ `[24/08]` **Um push na `main` está gerando 3–4 deploys de produção do
-  MESMO commit.** Visto no painel logo após o merge do #62: quatro deploys de
-  `dcbf663`, três criados pela integração do Git e um pelo dono. Do meu lado
-  houve **um** push. Não é normal — um push deve gerar um deploy — e refaz a
-  conta do §0.2: se cada merge valia 3–4, os ~12 merges do dia foram ~48
-  deploys sozinhos, não 12.
-
-  **Webhook duplicado foi descartado** — existe só um de cada lado. A pista
-  boa é outra: a Vercel tem um **Deploy Hook chamado `github`, branch `main`**,
-  e o webhook do GitHub aponta para `api.vercel.com/v1/integrati…`. Deploy Hook
-  tem URL `api.vercel.com/v1/integrations/**deploy**/prj_…` — mesmo prefixo.
-  Se esse webhook for o Deploy Hook, ele está **em cima** da integração nativa
-  da Vercel, e cada push dispara os dois caminhos.
-
-  Isso também explica a foto do dono aparecendo em alguns deploys: deploy
-  criado por Deploy Hook é atribuído a quem criou o hook; o da integração
-  nativa aparece com o triângulo. Era a mistura exata do painel.
-
-  **Como confirmar:** abrir o webhook no GitHub e ver a URL inteira. Se tiver
-  `/deploy/prj_`, apagar **um** dos dois (o webhook do GitHub *ou* o Deploy
-  Hook) — a integração nativa sozinha já faz o trabalho.
+- ⬜ `[27/08]` 🟡 **Apagar o Deploy Hook da Vercel.** *Settings → Git → Deploy
+  Hooks → apagar o `github`.* Ele é uma **URL-senha**: quem tiver o link
+  dispara deploy sem login nenhum, e queima os 100/dia. O link foi colado no
+  chat em 27/08, então está num histórico de conversa. É redundante — a
+  integração nativa (`Connected May 16`) já faz o trabalho — e era ele o
+  causador dos deploys duplicados. Apagar resolve as duas coisas.
 - ⬜ `[24/08]` **Decidir se eu ganho contas de teste com cargo.** Hoje só
   tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
   para provar que `/admin` e `/owner` são **negados**. Promover essa conta
@@ -65,11 +50,6 @@
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[23/08]` **Apagar `debug-hf` e `cleanup-expired-posts` pelo dashboard.**
-  As duas já estão **neutralizadas** (corpo devolvendo 410, `verify_jwt`
-  ligado, nada mais é chamado) e o trabalho da segunda virou
-  `public.cleanup_expired_posts()` no cron. Falta só o apagar de verdade —
-  o MCP não apaga Edge Function. *Supabase → Edge Functions → ⋯ → Delete.*
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
@@ -117,6 +97,15 @@
   o painel segue sem cobertura de navegador. Destravaria com uma segunda conta
   de teste, com cargo de admin — decisão pendente, porque uma conta de staff
   automatizada é superfície de ataque nova.
+- ⬜ `[27/08]` **O smoke test é instável no `networkidle`.** Numa rodada local,
+  `/community` deu timeout de `page.goto`; na repetição, 13/13. **Não é
+  regressão** — a falha não foi exceção de JS, e outras 10 rotas que
+  renderizam a mesma landing passaram na mesma rodada. *Hipótese:* neste
+  sandbox o Google Fonts é bloqueado, o navegador retenta, e o `networkidle`
+  nunca acha a rede parada. **No CI não apareceu** em nenhuma execução desta
+  semana, o que é consistente com a hipótese. Se um dia aparecer lá, trocar
+  `networkidle` por `domcontentloaded` + espera por seletor. Teste que falha
+  sem motivo ensina a ignorar vermelho — por isso está anotado e não esquecido.
 - ⬜ `[20/08]` **Denúncia criada não gera log de auditoria.** Decisão consciente
   (qualquer um denuncia, e logar inflaria a trilha) — reavaliar se a moderação
   sentir falta. Ver [DECISOES.md](docs/DECISOES.md).

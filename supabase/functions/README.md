@@ -5,7 +5,7 @@
 
 ## Por que esta pasta existe
 
-Até 23/08/2026 as oito Edge Functions viviam **só no Supabase**. Sem histórico,
+Até 23/08/2026 as Edge Functions viviam **só no Supabase**. Sem histórico,
 sem revisão, sem rollback: o código que decide quem recebe email do site e o que
 a moderação por IA oculta nunca passou por um diff.
 
@@ -25,8 +25,16 @@ tempo. Um PR teria mostrado as duas linhas.
 | `moderate-links/` | não* | Checa link contra o Google Safe Browsing |
 | `delete-user/` | sim | Exclusão da própria conta |
 | `cleanup-orphans/` | sim | Aposentada — limpeza de órfãos do storage, já executada em 06/2026 |
-| `cleanup-expired-posts/` | sim | Aposentada — virou `public.cleanup_expired_posts()` no cron |
-| `debug-hf/` | sim | Neutralizada — sobra de experimento com Hugging Face |
+
+**Apagadas em 27/08/2026** e removidas deste espelho: `cleanup-expired-posts`
+(o trabalho dela virou `public.cleanup_expired_posts()` no cron, jobid 1, que
+segue rodando de hora em hora) e `debug-hf` (sobra de experimento).
+`e2e/portas-fechadas.mjs` continua batendo nas duas e **exige 404** — apagada é
+o estado mais fechado possível, mas é um estado que alguém pode desfazer sem
+querer.
+
+> O secret `HUGGINGFACE_API_KEY` **não** foi apagado junto, e não deve ser: ele
+> ainda é o fallback de texto dentro da `moderate-text`.
 
 \* `verify_jwt` desligado nas quatro de cima **de propósito**: o gateway
 rejeitaria o preflight `OPTIONS` e quebraria o CORS (e, no caso do auth hook,

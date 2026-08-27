@@ -43,6 +43,32 @@ sendo validadas em `ROLLBACK`, que é onde já são hoje.
 
 **Pendente:** o dono decide se cria. Registrado no backlog.
 
+### `[27/08]` Os deploys duplicados eram um Deploy Hook por cima da integração
+
+Fechando a investigação de 23–24/08 com **fato**, não mais hipótese. A URL do
+webhook do GitHub era:
+
+```
+https://api.vercel.com/v1/integrations/deploy/prj_…/…
+```
+
+O `/deploy/prj_` confirma: era um **Deploy Hook**, montado como webhook do
+GitHub **em cima** da integração nativa da Vercel (`Connected May 16`). Cada
+push disparava os dois caminhos.
+
+Isso também explica a foto do dono aparecendo em alguns deploys e não em
+outros: deploy criado por Deploy Hook é atribuído a quem criou o hook; o da
+integração nativa vem com o triângulo da Vercel. Era a mistura exata do painel.
+
+**Correção da minha própria conta:** eu tinha escrito no `CLAUDE.md` §0.2 que
+os deploys de produção do dia foram "~12 contra ~88 de preview". Se cada merge
+valia 2 ou mais, os ~12 merges renderam bem mais que 12. A conclusão (o preview
+era desperdício) continua de pé; a proporção estava errada.
+
+O webhook do GitHub já foi apagado. Falta apagar o **Deploy Hook** do lado da
+Vercel — está no backlog, e não é só limpeza: a URL é uma senha, e ela foi
+colada num chat.
+
 ### `[23/08]` Abrir mão dos previews da Vercel
 
 Batemos no teto de 100 deploys/dia do plano Free com 3 usuários no site. A
@@ -105,6 +131,18 @@ merge duplicaria a escrita sem cobrir nada novo. Não existe ambiente de staging
 Patch e minor entram agrupados, semanalmente, teto de 3 PRs. Major fica de fora
 porque **já quebrou o site uma vez** — foi o upgrade do react-router que
 motivou o teste de fumaça existir. Major entra na mão, com changelog lido.
+
+> **`[27/08]` A regra vale para npm, não para GitHub Actions.** O `ignore` do
+> `dependabot.yml` está dentro do bloco `package-ecosystem: npm`; o bloco de
+> `github-actions` não tem nenhum. Foi assim que o `actions/checkout` v5→**v7**
+> e o `setup-node` v5→**v7** chegaram como PR — e foram aceitos.
+>
+> **Não é descuido, e não vamos "corrigir".** Ecossistema diferente, risco
+> diferente: major de Action mexe quase sempre no runtime de Node em que ela
+> roda, não no contrato de entrada. E o detector é instantâneo — se `checkout`
+> quebrar, **todos** os jobs ficam vermelhos no primeiro PR. Não existe versão
+> silenciosa dessa falha, que é o oposto do major de npm, onde o site quebra
+> para o usuário e o CI pode continuar verde.
 
 ### `[23/08]` DSN do Sentry fica no código, não em variável de ambiente
 
