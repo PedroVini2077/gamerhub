@@ -11,26 +11,28 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 27/08/2026 · **21 itens abertos**
+**Última conferência contra o sistema:** 27/08/2026 · **19 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** As duas cotas que estouravam em silêncio (`CLAUDE.md`
-> §0.2) foram fechadas em 27/08. **Do dono** sobraram três ações de painel:
-> apagar o Deploy Hook da Vercel (é uma URL-senha colada num chat), ligar o
-> alerta de cota do Sentry, e trocar a senha da conta de teste.
+> **Próximo da fila.** As três ações de painel do dono saíram em 27/08: Deploy
+> Hook da Vercel apagado, alerta de cota do Sentry confirmado ligado (100% e
+> 80%, com `Errors: On`), e senha da conta de teste trocada — resta só
+> confirmar que o secret `E2E_PASSWORD` foi junto, e o próximo CI responde.
 >
-> **Do que é meu e não depende de decisão sua**, o mais alto é a mentira do
-> `register_login_attempt` (abaixo): o contador de login não protege contra
-> força bruta e deixa qualquer um gerar alerta falso de segurança.
+> **O próximo trabalho é o Password Verification Hook** (abaixo): aprovado pelo
+> dono em 27/08. Eu escrevo a função e a migration; ligar o hook é passo de
+> dashboard, como foi com o de email.
 
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[23/08]` **Trocar a senha da conta de teste.** Ela foi combinada por chat
-  e ficou no histórico da conversa. Conta descartável e sem privilégio, então
-  não é urgente — mas é higiene. **Ao trocar, atualizar o secret
-  `E2E_PASSWORD`** no repositório, senão o job de fluxos passa a falhar.
+- ⬜ `[27/08]` **Confirmar que o secret `E2E_PASSWORD` acompanhou a troca de
+  senha.** O dono trocou a senha da conta de teste em 27/08 (ela tinha sido
+  combinada por chat e ficou no histórico). Se o secret do repositório não foi
+  atualizado junto, o job **"fluxos autenticados"** passa a falhar no login.
+  **Não dá para eu verificar** — não leio secrets. O próximo PR responde: se o
+  job passar, está sincronizado e este item sai; se falhar no login, é isto.
 - ⬜ `[23/08]` **Usuário banido não tem canal para pedir revisão.** A
   `BannedScreen` mostra o motivo e desloga em 6s: sem botão, sem formulário,
   sem contato. `request_unban` exige `role = 'admin'`, ou seja, só um admin
@@ -45,17 +47,31 @@
   chat em 27/08, então está num histórico de conversa. É redundante — a
   integração nativa (`Connected May 16`) já faz o trabalho — e era ele o
   causador dos deploys duplicados. Apagar resolve as duas coisas.
-- ⬜ `[27/08]` **Ligar o alerta de cota do Sentry.** *Settings → Subscription →
-  notificações de uso, ou Alerts → quota.* Ele manda email ao se aproximar dos
-  5.000 eventos/mês. O teto por sessão (`lib/tetoDeEventos.js`) já impede o
-  caminho realista de estourar — a rajada — mas **esgotamento gradual não tem
-  solução em código**: saber que a cota acabou exige perguntar ao Sentry, e isso
-  exigiria um token de API no CI. Ver [DECISOES.md](docs/DECISOES.md).
-- ⬜ `[24/08]` **Decidir se eu ganho contas de teste com cargo.** Hoje só
+- ⬜ `[24/08]` **Decidir se eu ganho uma conta de teste com cargo.** Hoje só
   tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
   para provar que `/admin` e `/owner` são **negados**. Promover essa conta
-  quebraria essa prova. O que falta decidir é criar contas **separadas** —
-  ver o motivo e o risco em [DECISOES.md](docs/DECISOES.md).
+  quebraria essa prova, então a discussão é sobre uma conta **separada**.
+
+  **Minha recomendação `[27/08]`, se você quiser decidir:**
+
+  | | |
+  | --- | --- |
+  | Cargo | **`admin`**, não `super_admin` — é o menor cargo que abre o painel, e o que abre menos portas |
+  | `owner` | **Nunca.** Ele troca cargos e pausa o site: comprometer é comprometer tudo, sem volta |
+  | Conta | nova (`claudestaff`), com a `claudetester` intacta em `user` |
+  | Quando criar | **no mesmo PR que traz os testes que precisam dela** — conta de staff sem teste é só superfície de ataque nova |
+
+  **O que ganha:** o `/admin` passa a ter cobertura de navegador (hoje tem
+  zero), o que destrava a migração para React Query, e os fluxos de moderação
+  passam a ser testados de ponta a ponta.
+
+  **O risco, honesto:** a senha vive num secret do GitHub, e o repositório é
+  público. O que protege é que PR de fork não recebe secret. O estrago máximo
+  de um `admin` é ocultar/apagar conteúdo de usuário comum e suspender —
+  reversível, registrado em `admin_logs`, e ele **não** mexe em cargo nem
+  toca em conteúdo de `super_admin`/`owner` (a hierarquia já barra).
+
+  Ver também [DECISOES.md](docs/DECISOES.md).
 
 ## 🟠 Importante — dá para fazer
 
@@ -87,7 +103,10 @@
      verificação de senha, e aí o contador passa a ser verdade. É a arquitetura
      correta e faz o mecanismo cumprir o que promete.
 
-  *Mexe em auth: §7 🟡, pede aprovação.*
+  **Aprovado pelo dono em 27/08.** O caminho é o (2). Divisão de trabalho: eu
+  escrevo a função do hook + migration + teste em `ROLLBACK`; **ligar o hook é
+  passo de dashboard** (*Authentication → Hooks*), igual ao de email — eu não
+  consigo fazer essa parte.
 
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
