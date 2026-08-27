@@ -186,6 +186,34 @@ minutos, pega ponto cego. Não vale automatizar.
 
 ## Moderação
 
+### `[24/08]` A moderação **não** vira subsistema separado
+
+Veio de fora a sugestão de tratar a moderação como subsistema próprio, porque
+ela cresceu a ponto de parecer "um sistema dentro do sistema". Analisado, e
+**descartado** — com o problema real identificado no caminho.
+
+**O que a análise mediu:** 1.295 linhas em arquivos **dedicados** (pasta
+`components/moderation/`, `moderationService.js`, `lib/wordlist.js`,
+`useBlockedWords`, `useLiveModeration`). A separação lógica que a sugestão pede
+**já existe**: pasta própria, service próprio, hooks próprios.
+
+**Por que não separar mais:** criar camada, módulo ou infraestrutura resolveria
+um problema de organização que não temos. Arquitetura melhor não é a que tem
+mais abstrações — é a que resolve o problema real com complexidade
+proporcional.
+
+**O problema real é outro, e é de contrato.** Ao abrir os arquivos que
+"mencionam moderação sem serem dela", não há lógica duplicada: há um **ritual
+de quatro passos repetido na mão** em cada ponto de criação de conteúdo
+(`usePostComposer`, `MuralForm`, `useLiveChat`, `CommentSection`) —
+`useBlockedWords` → `checkContent` → `suspendedUntil` → `moderateText`. Nada
+garante que um 5º tipo de conteúdo lembre dos quatro. Precedente: foi assim que
+o tipo `chat` chegou na fila sem existir em nenhum mapa.
+
+A correção proporcional é extrair o ritual + travar por teste de contrato, não
+reorganizar o subsistema. Está no `BACKLOG.md`, abaixo do Sentry, porque os 4
+tipos atuais estão corretos e o risco só aparece ao criar o 5º.
+
 ### `[23/08]` `violence/graphic` enfileira e **nunca** oculta
 
 É a decisão mais importante do subsistema. Nenhum modelo distingue gore de Doom
