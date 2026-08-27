@@ -42,6 +42,12 @@
   chat em 27/08, então está num histórico de conversa. É redundante — a
   integração nativa (`Connected May 16`) já faz o trabalho — e era ele o
   causador dos deploys duplicados. Apagar resolve as duas coisas.
+- ⬜ `[27/08]` **Ligar o alerta de cota do Sentry.** *Settings → Subscription →
+  notificações de uso, ou Alerts → quota.* Ele manda email ao se aproximar dos
+  5.000 eventos/mês. O teto por sessão (`lib/tetoDeEventos.js`) já impede o
+  caminho realista de estourar — a rajada — mas **esgotamento gradual não tem
+  solução em código**: saber que a cota acabou exige perguntar ao Sentry, e isso
+  exigiria um token de API no CI. Ver [DECISOES.md](docs/DECISOES.md).
 - ⬜ `[24/08]` **Decidir se eu ganho contas de teste com cargo.** Hoje só
   tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
   para provar que `/admin` e `/owner` são **negados**. Promover essa conta
@@ -62,13 +68,6 @@
 - ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
-- ⬜ `[23/08]` **O Sentry estoura em silêncio, e isso não pode ficar assim.**
-  Free são 5.000 eventos/mês; passando disso ele **descarta sem avisar** — a
-  ferramenta que existe para acabar com falha silenciosa falha em silêncio.
-  Com 3 usuários não chega perto do teto, mas o mecanismo é o problema, não o
-  número. Ver `CLAUDE.md` §0.2: é uma das **duas** cotas do projeto que ainda
-  não gritam. Opções: alerta de cota no próprio Sentry (ele manda email em
-  80%), ou um contador local de eventos enviados.
 - ⬜ `[23/08]` **A outra cota muda: `admin_logs` e a retenção.** Não é cota de
   fornecedor, é a tabela crescendo — hoje 90 dias de retenção resolvem, mas
   ninguém é avisado se a trilha inchar antes disso. Mesmo raciocínio da linha

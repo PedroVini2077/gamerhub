@@ -24,6 +24,20 @@
     configurá-lo num deploy futuro apagaria o monitoramento sem ninguém notar —
     construindo a falha silenciosa que ele existe para acabar.
   - Custo medido: **+27,8 KB gzip** (507 → 535 KB de JS total).
+- **Teto de 20 eventos por sessão** (`lib/tetoDeEventos.js`). O plano Free são
+  5.000 eventos/mês e, estourando, o Sentry **descarta em silêncio** pelo resto
+  do mês. Com 3 usuários, 166/dia não se esgotam por uso normal — o jeito
+  realista de estourar é **rajada**, um bug em laço de render disparando
+  centenas de eventos em minutos.
+
+  Passado o teto, em vez das duas saídas ruins (mandar tudo e queimar a cota, ou
+  ficar mudo), sai **um evento que conta a história**, carregando o último erro
+  real junto e com `fingerprint` fixo — todos os avisos caem num issue só.
+
+  > **Se você vir no Sentry o issue "Teto de 20 eventos por sessão atingido",
+  > é quase certo que existe erro em laço.** O `ultimo_erro` no `extra` diz
+  > qual. Uma rajada de 1.000 erros custa 21 eventos de cota, não 1.000.
+
 - **Falhas de servidor viram trilha** — `registrar_falha_de_edge_function`
   grava `edge_function_error` em `admin_logs`, porque o corpo da resposta
   sozinho não basta quando o chamador é fire-and-forget. `EXECUTE` só para
