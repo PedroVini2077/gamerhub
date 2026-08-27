@@ -95,7 +95,7 @@ forma de falha que manteve a moderação por IA quebrada em 26 de 26 chamadas.
 
 ## `[23/08]` As outras duas Edge Functions abertas — resolvidas por remoção
 
-Achar duas com a porta aberta obrigou a olhar as oito (§1.3, *varredura de
+Achar duas com a porta aberta obrigou a olhar as oito que existiam então (§1.3, *varredura de
 classe*). Sobraram duas com `verify_jwt: false` e nenhuma checagem no corpo:
 
 **`cleanup-expired-posts`** rodava com `service_role` e **apagava posts**. O
@@ -119,9 +119,15 @@ revisa, porque ninguém lembra que existe.
 > texto dentro da `moderate-text`. Apagar a `debug-hf` é seguro; apagar o
 > **secret** tiraria a reserva do texto (ver [MODERACAO.md](MODERACAO.md)).
 
-As duas foram neutralizadas (corpo devolvendo `410`, `verify_jwt` ligado) e
-estão no backlog para o apagar definitivo pelo dashboard. Verificado:
-`POST` nas duas → **401** no gateway.
+As duas foram neutralizadas em 23/08 (corpo devolvendo `410`, `verify_jwt`
+ligado) e **apagadas de vez em 27/08** pelo dono. Verificado depois de apagar:
+`POST` nas duas → **404**, e a faxina do cron seguiu rodando normalmente
+(jobid 1, `succeeded`) — porque o trabalho dela já tinha virado SQL.
+
+`e2e/portas-fechadas.mjs` continua batendo nas duas, agora exigindo **404**:
+apagada é o estado mais fechado que existe, mas é um estado que alguém pode
+desfazer sem querer. Um `401` ali passaria a ser **regressão**, não segurança —
+significaria a função de volta, só que com o gateway ligado.
 
 De quebra, a varredura achou uma mentira na tela: o painel do owner mandava
 configurar `HUGGINGFACE_API_KEY` para a moderação por IA, que usa **OpenAI**

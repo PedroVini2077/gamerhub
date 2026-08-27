@@ -43,6 +43,32 @@ sendo validadas em `ROLLBACK`, que é onde já são hoje.
 
 **Pendente:** o dono decide se cria. Registrado no backlog.
 
+### `[27/08]` Os deploys duplicados eram um Deploy Hook por cima da integração
+
+Fechando a investigação de 23–24/08 com **fato**, não mais hipótese. A URL do
+webhook do GitHub era:
+
+```
+https://api.vercel.com/v1/integrations/deploy/prj_…/…
+```
+
+O `/deploy/prj_` confirma: era um **Deploy Hook**, montado como webhook do
+GitHub **em cima** da integração nativa da Vercel (`Connected May 16`). Cada
+push disparava os dois caminhos.
+
+Isso também explica a foto do dono aparecendo em alguns deploys e não em
+outros: deploy criado por Deploy Hook é atribuído a quem criou o hook; o da
+integração nativa vem com o triângulo da Vercel. Era a mistura exata do painel.
+
+**Correção da minha própria conta:** eu tinha escrito no `CLAUDE.md` §0.2 que
+os deploys de produção do dia foram "~12 contra ~88 de preview". Se cada merge
+valia 2 ou mais, os ~12 merges renderam bem mais que 12. A conclusão (o preview
+era desperdício) continua de pé; a proporção estava errada.
+
+O webhook do GitHub já foi apagado. Falta apagar o **Deploy Hook** do lado da
+Vercel — está no backlog, e não é só limpeza: a URL é uma senha, e ela foi
+colada num chat.
+
 ### `[23/08]` Abrir mão dos previews da Vercel
 
 Batemos no teto de 100 deploys/dia do plano Free com 3 usuários no site. A

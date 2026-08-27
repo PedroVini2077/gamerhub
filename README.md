@@ -24,7 +24,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`BACKLOG.md`](BACKLOG.md) | O que falta fazer — só isso, é um checklist |
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |
 | [`docs/MANIFESTO.md`](docs/MANIFESTO.md) | Como o dono e o Claude trabalham **juntos** — papéis, quando explicar mais, continuidade |
-| [`supabase/functions/`](supabase/functions/README.md) | As oito Edge Functions, e por que este espelho pode mentir |
+| [`supabase/functions/`](supabase/functions/README.md) | As Edge Functions em produção, e por que este espelho pode mentir |
 | `db/AAAA-MM-DD-*.md` | Relatórios de auditoria, com o que foi achado e como foi provado |
 
 ---
