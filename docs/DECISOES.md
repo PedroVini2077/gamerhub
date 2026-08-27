@@ -144,6 +144,36 @@ motivou o teste de fumaça existir. Major entra na mão, com changelog lido.
 > silenciosa dessa falha, que é o oposto do major de npm, onde o site quebra
 > para o usuário e o CI pode continuar verde.
 
+### `[27/08]` Teto por sessão no Sentry, e o que ele **não** resolve
+
+O backlog dizia "o Sentry estoura em silêncio". Ao enunciar o problema direito,
+ele se partiu em dois — e só um deles é resolvível em código:
+
+**A. A rajada.** Um bug em laço de render manda centenas de eventos em minutos.
+É o caminho realista: com 3 usuários, 166 eventos/dia não se esgotam por uso
+normal. Resolvido por `lib/tetoDeEventos.js` — teto de 20 por sessão, e o
+estouro vira **um** aviso que carrega o último erro. Rajada de 1.000 erros passa
+a custar 21 eventos, e o teste trava isso.
+
+**B. O esgotamento gradual.** Se a cota acabar por outro caminho, o Sentry passa
+a descartar e nada no código percebe. **Isso não tem solução em código:** saber
+que a cota acabou exige perguntar ao Sentry, o que exige token de API guardado
+no CI — trocar uma incerteza de monitoramento por uma credencial exposta é
+péssimo negócio, e é a mesma conta que já fizemos no `portas-fechadas.mjs`.
+
+A resposta para B é o **alerta de cota do próprio Sentry**, que manda email ao
+se aproximar do teto. É ação de painel, do dono, e está no backlog. Sim, §0.2
+regra 3 diz que "está no painel do fornecedor não conta" — mas ali a crítica é
+a painel que ninguém abre. **Email chega.**
+
+**Alternativas descartadas:**
+
+| Ideia | Por que não |
+| --- | --- |
+| Contador no `localStorage` | É por navegador. A cota é global — contar local não diz nada sobre ela |
+| Canário periódico batendo na API do Sentry | Precisa de token no CI, e um agendamento novo, para 3 usuários |
+| Espelhar erro em `admin_logs` | O cliente não pode escrever na trilha de auditoria (é `service_role`), e abrir isso seria vetor de spam |
+
 ### `[23/08]` DSN do Sentry fica no código, não em variável de ambiente
 
 Ele é público por natureza (vai no bundle que qualquer visitante baixa), então

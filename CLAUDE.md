@@ -156,14 +156,29 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | --- | --- | --- | --- | --- |
 | **Vercel** | deploys criados por dia | 100 | o deploy é recusado; **o site continua no ar com a versão anterior** | Sim — email + comentário no PR |
 | **Supabase** | egress | 5 GB/mês | projeto pausado; o site cai | Sim — hoje o `dbHealth` detecta e leva pra landing |
-| **Sentry** | eventos por mês | 5.000 | **descarta em silêncio** | **Não** |
+| **Sentry** | eventos por mês | 5.000 | **descarta em silêncio** | Parcial, desde 27/08 |
 | **Gmail** (send-email) | envios por dia | ~500 | cadastro e recuperação de senha param | Sim, desde 23/08 (`admin_logs`) |
 | **Safe Browsing** | consultas por dia | 10.000 | link deixa de ser checado | Sim, desde 23/08 (`admin_logs`) |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
-As duas linhas sem "sim" na última coluna são as perigosas, e o Sentry é
-irônico: **a ferramenta que existe pra acabar com falha silenciosa falha em
-silêncio quando estoura.** Está no backlog.
+As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
+irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em
+silêncio quando estourava.**
+
+**O que mudou em 27/08, e o que não mudou.** O caminho realista de estourar era
+a **rajada** — bug em laço mandando centenas de eventos em minutos. Isso o
+`lib/tetoDeEventos.js` fechou: teto de 20 por sessão, e o estouro vira **um**
+evento que conta a história em vez de mil ou de nenhum. Uma rajada de 1.000
+erros passou a custar 21.
+
+O que **não** dá para fechar em código é o esgotamento gradual: saber que a cota
+acabou exige perguntar ao Sentry, e isso exigiria token de API no CI — trocar
+incerteza de monitoramento por credencial exposta é a mesma conta ruim de
+sempre. Para esse resto, a resposta é o alerta de cota do próprio Sentry, que
+manda **email**. Está no backlog como ação do dono.
+
+> Vale distinguir da regra 3 abaixo: "está no painel do fornecedor não conta"
+> critica **painel que ninguém abre**. Email chega.
 
 ### As três regras
 

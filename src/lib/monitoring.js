@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react';
+import { criarLimitador } from './tetoDeEventos';
 
 // ---------------------------------------------------------------------------
 // Observabilidade — a implementação prática da §1.5 do CLAUDE.md
@@ -49,6 +50,11 @@ function limparUrl(url) {
     /access_token|refresh_token|token=|code=|apikey/i.test(m) ? '#[removido]' : m);
 }
 
+// Teto por sessão. Sem ele, um bug em laço de render manda centenas de eventos
+// em minutos, queima a cota de 5.000/mês e o Sentry passa a descartar TUDO em
+// silêncio pelo resto do mês — ver `tetoDeEventos.js`.
+const limitador = criarLimitador();
+
 /** Liga o monitoramento. Chamado uma vez, no `main.jsx`. */
 export function iniciarMonitoramento() {
   // Em desenvolvimento o erro já aparece no console e no overlay do Vite.
@@ -78,7 +84,9 @@ export function iniciarMonitoramento() {
           b?.data?.url ? { ...b, data: { ...b.data, url: limparUrl(b.data.url) } } : b
         ));
       }
-      return evento;
+      // A limpeza vem ANTES do teto: mesmo o evento que vira aviso já sai sem
+      // token, e mesmo o que for descartado nunca chega a existir com token.
+      return limitador.filtrar(evento);
     },
   });
 }
