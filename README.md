@@ -25,6 +25,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |
 | [`docs/MANIFESTO.md`](docs/MANIFESTO.md) | Como o dono e o Claude trabalham **juntos** — papéis, quando explicar mais, continuidade |
 | [`supabase/functions/`](supabase/functions/README.md) | As Edge Functions em produção, e por que este espelho pode mentir |
+| [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — 136 migrations que recriam o banco |
 | `db/AAAA-MM-DD-*.md` | Relatórios de auditoria, com o que foi achado e como foi provado |
 
 ---
@@ -104,22 +105,14 @@ npm install
 **3. Configurar as variáveis de ambiente** (ver [seção abaixo](#variáveis-de-ambiente)) —
 criar o `.env` na raiz com a URL e a anon key do seu projeto Supabase.
 
-**4. Recriar o banco** (se for um projeto Supabase novo): aplicar o
-`DATABASE_SCHEMA_BACKUP.sql` no SQL Editor do Supabase — ele recria tabelas,
-RLS, funções, triggers e índices. Buckets de storage e publicação realtime
-estão documentados no fim do arquivo (criar pelo dashboard).
+**4. Recriar o banco** (se for um projeto Supabase novo): aplicar as
+**[migrations](supabase/migrations/)** em ordem — são 136, e elas reconstroem o
+schema inteiro. O passo a passo e o que elas *não* cobrem (buckets, secrets,
+Auth Hook) estão no [README daquela pasta](supabase/migrations/README.md).
 
-> ⚠️ **O backup está desatualizado, e isto é medido, não suposto.** Ele foi
-> gerado em **11/06/2026** e conhece **52 funções**; o banco de hoje tem **71**,
-> com **48 migrations aplicadas depois** dele. Faltam, entre outras,
-> `lift_suspension`, `registrar_falha_de_edge_function` e
-> `registrar_falha_de_moderacao` — ou seja, boa parte do endurecimento de
-> segurança de agosto.
->
-> **A verdade sobre o schema está nas migrations**, no histórico do Supabase
-> (`supabase_migrations.schema_migrations`, 136 delas), não neste arquivo.
-> Trazê-las para o repositório está no [`BACKLOG.md`](BACKLOG.md) — é o mesmo
-> problema que as Edge Functions tinham antes de 23/08.
+> O `DATABASE_SCHEMA_BACKUP.sql` na raiz é de **11/06/2026** e ficou **48
+> migrations atrás** — conhece 52 funções contra as 71 de hoje. Está mantido só
+> como referência histórica; **não use para recriar o banco.**
 
 **5. Rodar**
 

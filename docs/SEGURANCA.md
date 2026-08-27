@@ -134,6 +134,46 @@ configurar `HUGGINGFACE_API_KEY` para a moderação por IA, que usa **OpenAI**
 desde a troca de provedor. Mensagem errada custa mais tempo do dono do que
 mensagem nenhuma (§1.5).
 
+## `[27/08]` Onde está o rate limit — e onde ele não está
+
+Levantado ao conferir o projeto contra uma lista de camadas de engenharia.
+**Medido, não deduzido.**
+
+| Superfície | Protegida? |
+| --- | --- |
+| `/auth/v1/token` (login, cadastro, recuperação) | **Sim** — rate limit próprio do Supabase/GoTrue, server-side |
+| `send-email` | **Sim** — exige assinatura Standard Webhooks |
+| `moderate-links` / `moderate-text` / `moderate-image` | **Sim** — exigem sessão válida (`auth.getUser()`) |
+| Trilha de auditoria | **Sim**, desde 27/08 — uma linha por hora por tipo |
+| Sentry | **Sim**, desde 27/08 — 20 eventos por sessão |
+| **Criar conteúdo** (post, comentário, mural, chat) | **Não.** Nada limita o ritmo. Conferido: nenhuma constraint em `posts` |
+| **`register_login_attempt`** | **Não**, e é pior que isso — ver abaixo |
+
+### O contador de login promete o que não entrega
+
+Duas medições, e as duas contrariam o que o mecanismo aparenta fazer:
+
+- **3 logins com senha errada direto no GoTrue → o contador não saiu de zero.**
+  Ele só se move quando o *nosso frontend* educadamente reporta a falha. Um
+  atacante de verdade não reporta. **Logo, não protege contra força bruta.**
+- **5 chamadas anônimas a `register_login_attempt` → conta marcada como
+  bloqueada**, sem senha e sem sessão.
+
+A RPC precisa ser chamável por `anon` (a página de login não está autenticada) e
+**incrementa sem verificar se o login falhou**.
+
+**O que isso NÃO é:** não tranca ninguém fora. Uma sessão anterior já mitigou
+colocando a tentativa de login *antes* da checagem de bloqueio — **verificado**:
+conta marcada como `blocked`, dono entrou com a senha certa, HTTP 200.
+
+**O que sobra** é poluição de `admin_logs` e `admin_notifications` com alertas
+de segurança fabricados: qualquer um gera "conta bloqueada" para qualquer email.
+Mesma classe do `edge_function_error` — fadiga de alarme.
+
+A correção certa é o **Password Verification Hook** do Supabase, que faria o
+GoTrue avisar o banco a cada verificação de senha. Aí o contador passa a ser
+verdade. Está no `BACKLOG.md` como 🟡 (mexe em auth).
+
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.
 

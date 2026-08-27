@@ -19,9 +19,9 @@
 > apagar o Deploy Hook da Vercel (é uma URL-senha colada num chat), ligar o
 > alerta de cota do Sentry, e trocar a senha da conta de teste.
 >
-> **Do que é meu e não depende de decisão sua**, o mais alto é trazer as
-> **migrations para o repositório** — o backup de schema está 48 migrations
-> atrás, e o caminho de recuperação documentado não funciona mais.
+> **Do que é meu e não depende de decisão sua**, o mais alto é a mentira do
+> `register_login_attempt` (abaixo): o contador de login não protege contra
+> força bruta e deixa qualquer um gerar alerta falso de segurança.
 
 ---
 
@@ -59,28 +59,36 @@
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[27/08]` 🟡 **As migrations não estão no repositório, e o backup de schema
-  mente.** Achado ao conferir o projeto contra a lista de camadas de um vídeo
-  ("Backups & Replication"). Medido:
+- ⬜ `[27/08]` 🟡 **O contador de login promete o que não entrega, e é abusável.**
+  Achado ao responder "onde está o rate limit?". **Medido, não deduzido:**
 
-  | | |
+  | Teste | Resultado |
   | --- | --- |
-  | `DATABASE_SCHEMA_BACKUP.sql` | gerado em **11/06**, conhece **52 funções** |
-  | Banco hoje | **71 funções**, **136 migrations** |
-  | Migrations aplicadas depois do backup | **48** |
+  | 3 logins com senha errada direto no GoTrue | contador continua **zero** |
+  | 5 chamadas anônimas a `register_login_attempt` | conta marcada como **bloqueada** |
 
-  O README mandava usar esse arquivo para recriar o banco — **instrução falsa**,
-  já corrigida com o aviso. Quem seguisse ficaria sem `lift_suspension`,
-  `registrar_falha_de_edge_function` e boa parte do endurecimento de agosto.
+  A RPC é chamável por `anon` (precisa ser — a página de login não está
+  autenticada) e **incrementa sem verificar se o login falhou de verdade**. Ou
+  seja: **não protege contra força bruta** (quem ataca vai direto no
+  `/auth/v1/token`, que tem rate limit próprio do Supabase) e **deixa qualquer
+  um gerar alerta falso** de "conta bloqueada" para qualquer email.
 
-  **É o mesmo problema que as Edge Functions tinham antes de 23/08:** a verdade
-  vive só no Supabase, sem histórico revisável no git. O conserto certo é
-  exportar `supabase_migrations.schema_migrations` para `supabase/migrations/`
-  — não regerar o dump, que envelheceria de novo.
+  **O que NÃO é:** não tranca ninguém fora. Uma sessão anterior já mitigou isso
+  colocando o login *antes* da checagem de bloqueio — **verificado**: conta
+  marcada como `blocked` e o dono entrou com a senha certa (HTTP 200).
 
-  *Não é urgente:* o Supabase tem backup diário próprio (7 dias no Free), então
-  o banco não está em risco. O que está quebrado é o **caminho de recuperação
-  documentado**.
+  **O que sobra:** poluição de `admin_logs` e `admin_notifications` com alertas
+  de segurança fabricados. Mesma classe do `edge_function_error` — fadiga de
+  alarme (`CLAUDE.md` §0.2).
+
+  **Duas saídas, e a segunda é a certa:**
+  1. limitar o alerta a um por hora por email, como fizemos na trilha (rápido);
+  2. **Password Verification Hook** do Supabase — o GoTrue avisa o banco a cada
+     verificação de senha, e aí o contador passa a ser verdade. É a arquitetura
+     correta e faz o mecanismo cumprir o que promete.
+
+  *Mexe em auth: §7 🟡, pede aprovação.*
+
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
