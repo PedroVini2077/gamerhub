@@ -132,6 +132,18 @@ Patch e minor entram agrupados, semanalmente, teto de 3 PRs. Major fica de fora
 porque **já quebrou o site uma vez** — foi o upgrade do react-router que
 motivou o teste de fumaça existir. Major entra na mão, com changelog lido.
 
+> **`[27/08]` A regra vale para npm, não para GitHub Actions.** O `ignore` do
+> `dependabot.yml` está dentro do bloco `package-ecosystem: npm`; o bloco de
+> `github-actions` não tem nenhum. Foi assim que o `actions/checkout` v5→**v7**
+> e o `setup-node` v5→**v7** chegaram como PR — e foram aceitos.
+>
+> **Não é descuido, e não vamos "corrigir".** Ecossistema diferente, risco
+> diferente: major de Action mexe quase sempre no runtime de Node em que ela
+> roda, não no contrato de entrada. E o detector é instantâneo — se `checkout`
+> quebrar, **todos** os jobs ficam vermelhos no primeiro PR. Não existe versão
+> silenciosa dessa falha, que é o oposto do major de npm, onde o site quebra
+> para o usuário e o CI pode continuar verde.
+
 ### `[23/08]` DSN do Sentry fica no código, não em variável de ambiente
 
 Ele é público por natureza (vai no bundle que qualquer visitante baixa), então

@@ -11,14 +11,14 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 27/08/2026 · **20 itens abertos**
+**Última conferência contra o sistema:** 27/08/2026 · **21 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** Do que depende do dono: apagar as duas Edge Functions
-> neutralizadas e conferir a URL do webhook da Vercel — os dois são de 30
-> segundos no dashboard. Do que é meu, o mais alto é a **cota do Sentry**: é
-> uma das duas coisas no projeto que estouram **em silêncio** (`CLAUDE.md`
-> §0.2), e é justamente a ferramenta que existe para acabar com silêncio.
+> **Próximo da fila.** Do dono: apagar o **Deploy Hook** da Vercel (é uma
+> URL-senha, e ela foi colada num chat). Do que é meu, o mais alto é a **cota
+> do Sentry**: é uma das duas coisas no projeto que estouram **em silêncio**
+> (`CLAUDE.md` §0.2), e é justamente a ferramenta que existe para acabar com
+> silêncio.
 
 ---
 
@@ -97,6 +97,15 @@
   o painel segue sem cobertura de navegador. Destravaria com uma segunda conta
   de teste, com cargo de admin — decisão pendente, porque uma conta de staff
   automatizada é superfície de ataque nova.
+- ⬜ `[27/08]` **O smoke test é instável no `networkidle`.** Numa rodada local,
+  `/community` deu timeout de `page.goto`; na repetição, 13/13. **Não é
+  regressão** — a falha não foi exceção de JS, e outras 10 rotas que
+  renderizam a mesma landing passaram na mesma rodada. *Hipótese:* neste
+  sandbox o Google Fonts é bloqueado, o navegador retenta, e o `networkidle`
+  nunca acha a rede parada. **No CI não apareceu** em nenhuma execução desta
+  semana, o que é consistente com a hipótese. Se um dia aparecer lá, trocar
+  `networkidle` por `domcontentloaded` + espera por seletor. Teste que falha
+  sem motivo ensina a ignorar vermelho — por isso está anotado e não esquecido.
 - ⬜ `[20/08]` **Denúncia criada não gera log de auditoria.** Decisão consciente
   (qualquer um denuncia, e logar inflaria a trilha) — reavaliar se a moderação
   sentir falta. Ver [DECISOES.md](docs/DECISOES.md).
