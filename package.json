@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "node e2e/smoke.mjs",
     "test:e2e:fluxos": "node e2e/fluxos.mjs",
-    "test:portas": "node e2e/portas-fechadas.mjs"
+    "test:portas": "node e2e/portas-fechadas.mjs",
+    "test:e2e:painel": "node e2e/painel-admin.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

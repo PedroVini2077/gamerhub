@@ -1,0 +1,135 @@
+/**
+ * E2E do painel de administração — o único caminho do site sem cobertura de
+ * navegador até 28/08/2026.
+ *
+ * ── Por que ele faltava ─────────────────────────────────────────────────────
+ *
+ * O `fluxos.mjs` loga com uma conta comum **de propósito**: é assim que ele
+ * prova que `/admin` e `/owner` são NEGADOS. Promover aquela conta destruiria
+ * a prova. Consequência: o painel inteiro — moderação, logs, usuários — nunca
+ * era aberto por um navegador de verdade, e era justamente ali que estava a
+ * moderação de comentário quebrada por meses sem ninguém notar.
+ *
+ * Este arquivo fecha esse buraco com uma SEGUNDA conta, de cargo `admin`.
+ *
+ * ── Por que ele é somente leitura, e isso não é preguiça ────────────────────
+ *
+ * Uma conta `admin` automatizada rodando em todo PR pode ocultar post,
+ * suspender gente e resolver fila. Um teste com esse poder, se der errado no
+ * meio, deixa estrago em dados reais — e rodando a cada push, "se der errado"
+ * é questão de tempo.
+ *
+ * Então aqui ele só ABRE e LÊ. Cada aba tem que renderizar de verdade. As ações
+ * destrutivas continuam validadas onde é seguro validá-las: em transação com
+ * `ROLLBACK` (ver `db/*.md`), onde nada sobrevive ao teste.
+ *
+ * ── O que ele prova ─────────────────────────────────────────────────────────
+ *
+ *   1. `admin` ENTRA no `/admin` — o portão deixa passar quem deve;
+ *   2. as sete abas do painel renderizam conteúdo, não só montam;
+ *   3. `admin` é NEGADO no `/owner` — a hierarquia é real num navegador, e não
+ *      só em teoria. É a metade que faltava: o `fluxos.mjs` prova que `user`
+ *      não entra; este prova que `admin` também não sobe além do dele.
+ *
+ * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/painel-admin.mjs
+ * Exige E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD (conta de cargo `admin`).
+ */
+import { abrirNavegador, exigirServidor, salvarEvidencia } from './util.mjs';
+
+const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
+const EMAIL = process.env.E2E_STAFF_EMAIL;
+const SENHA = process.env.E2E_STAFF_PASSWORD;
+
+// As abas que um `admin` (rank 1) enxerga. `Cargos` e `Super Admin` ficam de
+// fora de propósito: elas só existem para `super_admin` e `owner`, e esperá-las
+// aqui transformaria a hierarquia correta em falha de teste.
+const ABAS = ['Usuários', 'Posts', 'Moderação', 'Mod de Lives', 'Keys & Promos', 'Notificações', 'Logs'];
+
+if (!EMAIL || !SENHA) {
+  console.error('\n  E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD nao definidos.');
+  console.error('  Este teste precisa de uma conta com cargo admin.\n');
+  process.exit(2);
+}
+
+await exigirServidor(BASE);
+const browser = await abrirNavegador();
+const page = await (await browser.newContext()).newPage();
+
+const erros = [];
+page.on('pageerror', e => erros.push(`excecao: ${e.message}`));
+
+let passo = 0;
+const ok = (msg) => console.log(`  ${String(++passo).padStart(2)}. OK   ${msg}`);
+
+async function morrer(etapa, erro) {
+  console.error(`\n  FALHOU em: ${etapa}`);
+  console.error(`  ${erro?.message ?? erro}\n`);
+  if (erros.length) console.error('  excecoes de JS:', erros.join(' | '), '\n');
+  await salvarEvidencia(page, { erros });
+  await browser.close();
+  process.exit(1);
+}
+
+try {
+  // ── 1. Login ──────────────────────────────────────────────────────────────
+  await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
+  await page.getByPlaceholder(/email/i).first().fill(EMAIL);
+  await page.getByPlaceholder(/senha/i).first().fill(SENHA);
+  await page.getByRole('button', { name: '// ENTRAR', exact: true }).click();
+  await page.waitForURL(u => !u.pathname.startsWith('/login'), { timeout: 20000 });
+  ok('login com a conta de staff');
+
+  // ── 2. O painel abre ──────────────────────────────────────────────────────
+  await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('domcontentloaded');
+
+  // Negado seria a falha mais provável e a mais silenciosa: a tela renderiza,
+  // nada estoura, e o teste passaria se ele só conferisse que a rota respondeu.
+  const negado = await page.getByText(/área restrita|acesso negado|sem permissão/i).count();
+  if (negado > 0) {
+    throw new Error(
+      'o painel respondeu com tela de acesso negado. A conta de staff perdeu o cargo '
+      + '`admin`, ou o portão do /admin passou a exigir cargo maior.');
+  }
+  ok('/admin acessivel para cargo admin');
+
+  // ── 3. As abas renderizam ─────────────────────────────────────────────────
+  for (const aba of ABAS) {
+    try {
+      await page.getByRole('button', { name: new RegExp(`^${aba}`, 'i') }).first().click({ timeout: 15000 });
+      // Espera algo além do esqueleto: a aba tem que produzir conteúdo.
+      await page.waitForFunction(
+        () => document.querySelector('main')?.innerText.trim().length > 80,
+        { timeout: 15000 });
+      ok(`aba "${aba}" renderizou`);
+    } catch (e) {
+      await morrer(`abrir a aba "${aba}"`, e);
+    }
+  }
+
+  // ── 4. A hierarquia segura para cima ──────────────────────────────────────
+  // O `fluxos.mjs` prova que `user` não entra no /admin. Falta a outra metade:
+  // `admin` também não pode subir até o /owner. Sem isto, uma regressão que
+  // desse poder de owner a qualquer staff passaria despercebida.
+  await page.goto(`${BASE}/owner`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  const chegouNoOwner = /painel do fundador|owner/i.test(await page.title())
+    || (await page.getByRole('heading', { name: /fundador|owner/i }).count()) > 0;
+  const foiBarrado = (await page.getByText(/área restrita|acesso negado|sem permissão/i).count()) > 0
+    || !page.url().includes('/owner');
+  if (chegouNoOwner && !foiBarrado) {
+    throw new Error(
+      'uma conta `admin` abriu o /owner. A hierarquia quebrou: admin (rank 1) '
+      + 'nao pode alcancar a area do owner (rank 3).');
+  }
+  ok('/owner negado para cargo admin');
+
+  // ── 5. Sem exceção de JavaScript em nenhuma tela ──────────────────────────
+  if (erros.length) throw new Error(`excecoes de JS no painel: ${erros.join(' | ')}`);
+  ok('nenhuma excecao de JavaScript no painel');
+
+  console.log(`\n  ${passo}/${passo} passos do painel de admin\n`);
+  await browser.close();
+} catch (e) {
+  await morrer('painel de admin', e);
+}

@@ -11,71 +11,118 @@
 # Regra que depende de alguém lembrar é regra que uma hora não roda. Este robô
 # tira a lembrança da cabeça dele e coloca num lugar que não esquece.
 #
+# ── Por que DOIS gatilhos, e não só uma data ────────────────────────────────
+#
+# A primeira versão disparava só por tempo, em 90 dias. Estava errado, e o dono
+# desconfiou antes de mim. A conta que mostra: em 5 dias desde a última
+# auditoria entraram **31 commits** e **51 arquivos de `src/` tocados** — em 90
+# dias isso viraria centenas de mudanças sem ninguém revisar o conjunto.
+#
+# O que envelhece uma auditoria não é o calendário, é a MUDANÇA. Por isso agora
+# dispara no que vier primeiro:
+#
+#   * 60 dias desde o último relatório, ou
+#   * 120 commits na main desde a data dele.
+#
+# Os dois números foram calibrados no ritmo real do projeto: 71 commits nos
+# últimos 30 dias, ou seja ~120 commits ≈ 7 a 8 semanas de trabalho normal. Os
+# dois gatilhos concordam no ritmo comum, e o de commits chega antes quando o
+# projeto entra numa semana intensa — que é exatamente quando a auditoria fica
+# mais necessária.
+#
 # ── Por que issue, e não email ou comentário em PR ──────────────────────────
 #
 # Issue FICA. Email some na caixa de entrada, comentário some no histórico do
 # PR. E como ele confere se já existe uma aberta antes de criar, não vira
-# enxurrada mensal — alarme repetido ensina a ignorar o canal (§0.2).
+# enxurrada semanal — alarme repetido ensina a ignorar o canal (§0.2).
 #
 # ── O que ele NÃO faz ───────────────────────────────────────────────────────
 #
-# Não roda auditoria, não reprova nada, não cobra. Só avisa que passou do prazo.
+# Não roda auditoria, não reprova nada, não cobra. Só avisa que passou do ponto.
 # A decisão de rodar continua inteira com o dono.
 
 name: Lembrete de auditoria
 
 on:
   schedule:
-    # Todo dia 1º, 12:00 UTC (09:00 em Brasília). O horário não importa muito:
-    # o que importa é a issue existir quando ele abrir o repositório.
-    - cron: '0 12 1 * *'
-  workflow_dispatch:   # para testar sem esperar um mês
+    # Toda segunda, 12:00 UTC (09:00 em Brasília). Semanal, e não mensal, para
+    # o gatilho de commits ser responsivo — a dedupe abaixo impede que isso
+    # vire uma issue por semana.
+    - cron: '0 12 * * 1'
+  workflow_dispatch:   # para testar sem esperar a segunda
 
 permissions:
   issues: write
   contents: read
 
+env:
+  DIAS_LIMITE: 60
+  COMMITS_LIMITE: 120
+
 jobs:
   lembrar:
-    name: passou do prazo de auditoria?
+    name: passou do ponto de auditoria?
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # precisa do histórico inteiro para contar commits
 
       # A verdade sobre a última auditoria não é uma data escrita à mão em lugar
       # nenhum: é o relatório mais recente em db/AAAA-MM-DD-*.md, que a §6 manda
       # criar ao fim de uma. Ler dali significa que o lembrete não tem como
       # divergir do que de fato aconteceu (§1.4).
-      - name: Achar a data da última auditoria
-        id: ultima
+      - name: Medir o que passou desde a última auditoria
+        id: medir
         run: |
-          arquivo=$(ls db/*.md 2>/dev/null | grep -E 'db/[0-9]{4}-[0-9]{2}-[0-9]{2}-' | sort | tail -1)
+          set -euo pipefail
+
+          arquivo=$(ls db/*.md 2>/dev/null | grep -E 'db/[0-9]{4}-[0-9]{2}-[0-9]{2}-' | sort | tail -1 || true)
+
           if [ -z "$arquivo" ]; then
-            echo "nenhum relatório de auditoria em db/ — tratando como muito atrasado"
-            echo "dias=999" >> "$GITHUB_OUTPUT"
-            echo "data=nenhuma" >> "$GITHUB_OUTPUT"
+            echo "::warning::Nenhum relatório de auditoria em db/. Tratando como muito atrasado."
+            {
+              echo "disparar=sim"; echo "data=nenhuma"; echo "dias=?"; echo "commits=?"
+              echo "motivo=não existe nenhum relatório de auditoria em \`db/\`"
+            } >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
           data=$(basename "$arquivo" | grep -oE '^[0-9]{4}-[0-9]{2}-[0-9]{2}')
           dias=$(( ( $(date +%s) - $(date -d "$data" +%s) ) / 86400 ))
-          echo "última auditoria: $data ($dias dias atrás, por $arquivo)"
-          echo "dias=$dias" >> "$GITHUB_OUTPUT"
-          echo "data=$data" >> "$GITHUB_OUTPUT"
+          commits=$(git rev-list --count --since="$data" origin/main)
 
-      # 90 dias é folgado de propósito. Lembrete que chega antes da hora é
-      # ruído, e ruído ensina a ignorar o canal — a mesma lição do
-      # `edge_function_error` que virou 68 alarmes falsos.
-      - name: Abrir issue se passou de 90 dias
-        if: steps.ultima.outputs.dias > 90
+          echo "última auditoria: $data ($arquivo)"
+          echo "  $dias dias atrás (limite: ${DIAS_LIMITE})"
+          echo "  $commits commits na main desde então (limite: ${COMMITS_LIMITE})"
+
+          motivo=""
+          [ "$dias"    -gt "$DIAS_LIMITE" ]    && motivo="passaram **$dias dias** (o limite é ${DIAS_LIMITE})"
+          if [ "$commits" -gt "$COMMITS_LIMITE" ]; then
+            [ -n "$motivo" ] && motivo="$motivo, e entraram **$commits commits** (o limite é ${COMMITS_LIMITE})" \
+                             || motivo="entraram **$commits commits** na main (o limite é ${COMMITS_LIMITE})"
+          fi
+
+          {
+            echo "disparar=$([ -n "$motivo" ] && echo sim || echo nao)"
+            echo "data=$data"; echo "dias=$dias"; echo "commits=$commits"
+            echo "motivo=$motivo"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Abrir issue
+        if: steps.medir.outputs.disparar == 'sim'
         uses: actions/github-script@v7
+        env:
+          DATA: ${{ steps.medir.outputs.data }}
+          DIAS: ${{ steps.medir.outputs.dias }}
+          COMMITS: ${{ steps.medir.outputs.commits }}
+          MOTIVO: ${{ steps.medir.outputs.motivo }}
         with:
           script: |
-            const dias = '${{ steps.ultima.outputs.dias }}';
-            const data = '${{ steps.ultima.outputs.data }}';
             const TITULO = 'Está na hora de uma auditoria completa do projeto';
 
             // Já existe uma aberta? Então o lembrete já foi dado. Abrir outra
-            // todo mês transformaria o aviso em ruído.
+            // toda semana transformaria o aviso em ruído.
             const abertas = await github.rest.issues.listForRepo({
               owner: context.repo.owner, repo: context.repo.repo,
               state: 'open', labels: 'auditoria',
@@ -85,8 +132,15 @@ jobs:
               return;
             }
 
+            const { DATA, DIAS, COMMITS, MOTIVO } = process.env;
             const corpo = [
-              `A última auditoria completa foi em **${data}** — ${dias} dias atrás.`,
+              `Desde a última auditoria (**${DATA}**), ${MOTIVO}.`,
+              '',
+              `| | |`,
+              `| --- | --- |`,
+              `| Último relatório | ${DATA} |`,
+              `| Dias desde então | ${DIAS} |`,
+              `| Commits na main desde então | ${COMMITS} |`,
               '',
               'Isto é um lembrete, não uma cobrança. A auditoria consome uma sessão',
               'inteira, então a hora de rodar continua sendo decisão sua.',
@@ -109,8 +163,8 @@ jobs:
               '---',
               '',
               '*Aberta automaticamente por `.github/workflows/lembrete-de-auditoria.yml`.',
-              'Fechar esta issue silencia o lembrete até a próxima auditoria ser registrada',
-              'em `db/AAAA-MM-DD-*.md`.*',
+              'Fechar esta issue silencia o lembrete até o próximo relatório entrar em',
+              '`db/AAAA-MM-DD-*.md`.*',
             ].join('\n');
 
             await github.rest.issues.create({

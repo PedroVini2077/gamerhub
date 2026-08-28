@@ -92,6 +92,25 @@ jobs:
       - name: Auditoria de dependências
         run: npm audit --audit-level=high
 
+      # Job que se pula sozinho e verde que nao testou nada (§1.5). Enquanto a
+      # conta de staff nao existir, o painel de admin segue SEM cobertura de
+      # navegador — e isso tem que aparecer em algum lugar, nem que seja como
+      # aviso amarelo no resumo do PR.
+      - name: Avisar se o painel de admin está sem cobertura
+        env:
+          # O contexto `secrets` NAO funciona em `if:` — so em `env`, `with` e
+          # `run`. Por isso o secret entra como variavel e o teste e feito no
+          # shell. Escrever `if: secrets.X == ''` daria um portao que nunca
+          # dispara, que e pior que portao nenhum.
+          TEM_EMAIL: ${{ secrets.E2E_STAFF_EMAIL }}
+          TEM_SENHA: ${{ secrets.E2E_STAFF_PASSWORD }}
+        run: |
+          if [ -z "$TEM_EMAIL" ] || [ -z "$TEM_SENHA" ]; then
+            echo "::warning::O painel /admin nao tem cobertura de navegador: os secrets E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD nao estao configurados. Ver o job 'painel de admin num navegador'."
+          else
+            echo "Secrets da conta de staff presentes — o painel tem cobertura."
+          fi
+
   documentacao:
     name: documentação acompanhou o código
     runs-on: ubuntu-latest
@@ -283,6 +302,95 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-evidencia
+          path: e2e-evidencia/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  painel:
+    name: painel de admin num navegador
+    runs-on: ubuntu-latest
+    needs: qualidade
+    # Segunda conta de teste, com cargo `admin`. Ela existe porque a do
+    # `fluxos` é `role = 'user'` DE PROPÓSITO — é assim que aquele job prova
+    # que /admin e /owner sao negados. Promover aquela conta destruiria a prova,
+    # entao o painel so ganha cobertura de navegador com uma conta separada.
+    #   Settings -> Secrets and variables -> Actions -> Secrets:
+    #     E2E_STAFF_EMAIL     = a conta de staff
+    #     E2E_STAFF_PASSWORD  = a senha dela
+    #
+    # O `secrets.E2E_STAFF_EMAIL != ''` no `if` e deliberado e tem prazo: ate a
+    # conta existir, este job nao roda em vez de falhar em todo PR. Assim que os
+    # secrets forem criados, ele passa a rodar sozinho. NAO deixar assim para
+    # sempre — job que se pula sozinho e verde que nao testou nada (§1.5); o
+    # aviso abaixo existe justamente para isso nao passar despercebido.
+    if: >-
+      vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
+      && github.event_name == 'pull_request'
+    steps:
+      # `secrets` nao existe em `if:`, entao a checagem vive num passo. Enquanto
+      # a conta nao existir, o job termina verde com AVISO em vez de reprovar
+      # todo PR — mas o aviso do job `qualidade` garante que isso nao passe
+      # despercebido (§1.5).
+      - name: A conta de staff já existe?
+        id: conta
+        env:
+          EMAIL: ${{ secrets.E2E_STAFF_EMAIL }}
+          SENHA: ${{ secrets.E2E_STAFF_PASSWORD }}
+        run: |
+          if [ -z "$EMAIL" ] || [ -z "$SENHA" ]; then
+            echo "::warning::Sem E2E_STAFF_EMAIL/E2E_STAFF_PASSWORD — o painel de admin nao sera testado."
+            echo "rodar=nao" >> "$GITHUB_OUTPUT"
+          else
+            echo "rodar=sim" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.conta.outputs.rodar == 'sim'
+
+      - uses: actions/setup-node@v7
+        if: steps.conta.outputs.rodar == 'sim'
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+        if: steps.conta.outputs.rodar == 'sim'
+
+      - name: Instalar o Chromium do Playwright
+        if: steps.conta.outputs.rodar == 'sim'
+        run: npx playwright install --with-deps chromium
+
+      - name: Build com as variáveis do site
+        if: steps.conta.outputs.rodar == 'sim'
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Subir o preview e esperar responder
+        if: steps.conta.outputs.rodar == 'sim'
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          curl --retry 20 --retry-delay 1 --retry-all-errors --fail --silent \
+               --output /dev/null http://127.0.0.1:4173
+
+      # Somente leitura: abre o painel e cada aba, e confere que `admin` NAO
+      # alcanca o /owner. Nenhuma acao destrutiva — uma conta de staff
+      # automatizada ocultando post ou suspendendo gente em todo PR deixaria
+      # estrago em dado real. Isso continua validado em ROLLBACK (db/*.md).
+      - name: Abrir o painel, as abas, e conferir a hierarquia
+        if: steps.conta.outputs.rodar == 'sim'
+        run: npm run test:e2e:painel
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+          E2E_STAFF_EMAIL: ${{ secrets.E2E_STAFF_EMAIL }}
+          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
+
+      - name: Guardar a evidência da falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: painel-evidencia
           path: e2e-evidencia/
           if-no-files-found: ignore
           retention-days: 7

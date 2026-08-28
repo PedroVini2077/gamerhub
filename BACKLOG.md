@@ -11,15 +11,17 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **21 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **20 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** Nenhuma ação de painel pendente. As de 27/08 saíram
-> todas, e a que sobrava — ligar o Password Verification Hook — **não existe no
-> plano Free**: virou decisão de custo, junto do HIBP.
+> **Próximo da fila.** O uso do Supabase foi conferido em 28/08 e está folgado
+> em tudo: egress **0,005 de 5 GB**, MAU 2/50.000, realtime 36/2.000.000, Edge
+> Functions 131/500.000. O maior é o banco, com 8%. O banner de "grace period"
+> é aviso genérico do plano, não é sobre este projeto.
 >
-> **O que depende de você agora é decisão, não execução:** a conta de teste com
-> cargo, o TypeScript, e os dois itens de plano pago. O resto anda sozinho.
+> **A única coisa esperando você são os três passos da conta `claudestaff`**
+> (abaixo). O código do teste e o job do CI já estão prontos e esperando os
+> secrets.
 
 ---
 
@@ -41,43 +43,30 @@
   segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
-- ⬜ `[21/08]` **Migração para TypeScript.** Grande, decisão do dono.
-- ⬜ `[24/08]` **Decidir se eu ganho uma conta de teste com cargo.** Hoje só
-  tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
-  para provar que `/admin` e `/owner` são **negados**. Promover essa conta
-  quebraria essa prova, então a discussão é sobre uma conta **separada**.
+- ⬜ `[28/08]` 🟠 **Criar a conta de staff `claudestaff`.** *Aprovada pelo dono
+  em 28/08.* O código já está pronto e esperando: `e2e/painel-admin.mjs` e o job
+  `painel de admin num navegador` no CI, que hoje se pula com aviso amarelo.
 
-  **Minha recomendação `[27/08]`, se você quiser decidir:**
+  **Os três passos, e a ordem importa:**
 
-  | | |
-  | --- | --- |
-  | Cargo | **`admin`**, não `super_admin` — é o menor cargo que abre o painel, e o que abre menos portas |
-  | `owner` | **Nunca.** Ele troca cargos e pausa o site: comprometer é comprometer tudo, sem volta |
-  | Conta | nova (`claudestaff`), com a `claudetester` intacta em `user` |
-  | Quando criar | **no mesmo PR que traz os testes que precisam dela** — conta de staff sem teste é só superfície de ataque nova |
+  1. **Cadastre pelo site** (não me peça para criar por SQL). Sugestão de email:
+     `pedrovinicorrea+staff@gmail.com`, username `claudestaff`. **A senha tem
+     que ser escolhida por você e nunca passar pelo chat** — foi exatamente
+     esse o defeito da `claudetester`, cuja senha ficou no histórico da conversa.
+  2. **Guarde nos secrets do repositório:** *Settings → Secrets and variables →
+     Actions* → `E2E_STAFF_EMAIL` e `E2E_STAFF_PASSWORD`.
+  3. **Me avise.** Eu promovo para `admin` via `owner_set_role` (que grava em
+     `admin_logs`, ao contrário de um `UPDATE` cru) e confirmo que o job passou
+     a rodar.
 
-  **O que ganha:** o `/admin` passa a ter cobertura de navegador (hoje tem
-  zero), o que destrava a migração para React Query, e os fluxos de moderação
-  passam a ser testados de ponta a ponta.
-
-  **O risco, honesto:** a senha vive num secret do GitHub, e o repositório é
-  público. O que protege é que PR de fork não recebe secret. O estrago máximo
-  de um `admin` é ocultar/apagar conteúdo de usuário comum e suspender —
-  reversível, registrado em `admin_logs`, e ele **não** mexe em cargo nem
-  toca em conteúdo de `super_admin`/`owner` (a hierarquia já barra).
-
-  Ver também [DECISOES.md](docs/DECISOES.md).
+  **Cargo `admin`, nunca `owner`:** é o menor cargo que abre o painel. O estrago
+  máximo de um `admin` comprometido é ocultar conteúdo de usuário comum e
+  suspender — reversível, registrado, e a hierarquia já o impede de tocar em
+  `super_admin`/`owner`. O E2E é **somente leitura** por isso mesmo: conta de
+  staff automatizada agindo em todo PR deixaria estrago em dado real.
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[28/08]` 🟠 **Conferir o uso do Supabase — "grace period is over".** O
-  painel avisa que, ao esgotar a cota, o projeto **para de servir requisições**.
-  *Verificado por mim agora:* projeto `ACTIVE_HEALTHY`, banco em **23 MB** (teto
-  500 MB), storage em **6,5 MB** (teto 1 GB), 4 usuários — nenhum desses está
-  perto do limite. **O que eu NÃO consigo ver daqui é o egress** (5 GB/mês), que
-  é justamente a cota apertada do plano (`CLAUDE.md` §0.2). *Onde olhar:
-  Organization → Usage.* Se o egress estiver alto com 4 usuários, é sinal de
-  algo consumindo à toa e vira trabalho meu — me mande o número.
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
@@ -152,6 +141,13 @@
   Revisitar se "online agora" passar de algumas centenas.
 - ⬜ `[jun]` **Paginação / virtualização** em listas longas (usuários, logs, chat).
 - ⬜ `[jun]` **Mídia no Cloudflare R2** — solução definitiva de egress se crescer.
+- ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
+  dono — fica por último.* Não descartada: quando a hora chegar, a análise de
+  28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
+  fatias (`src/lib/`, 44 arq · 2.899 linhas; `src/services/`, 9 arq · 994
+  linhas) são 22% do código e concentram quase todo o benefício — é onde mora
+  toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
+  sugerido: a próxima migration que renomeie ou remova coluna.
 - ⬜ `[21/08]` **2FA no login.**
 - ⬜ `[21/08]` **Afinar detecção de ban** (hoje realtime + poll de 60s de reserva).
 

@@ -180,6 +180,27 @@ antes: live encerrada que não some do feed é o job de hora em hora parado.
 > O `cleanup_expired_posts()` era uma Edge Function chamável por qualquer um da
 > internet. Virou SQL e saiu da rede — ver `docs/SEGURANCA.md`.
 
+## O painel de admin no navegador
+
+`e2e/painel-admin.mjs` abre o `/admin` com uma conta de cargo `admin`, percorre
+as sete abas e confere que a mesma conta é **negada** no `/owner`.
+
+**Por que precisou de uma segunda conta:** o `fluxos.mjs` loga com `role='user'`
+de propósito — é assim que ele prova que `/admin` e `/owner` são negados.
+Promover aquela conta destruiria a prova. Sem uma conta separada, o painel
+inteiro ficava sem cobertura de navegador — e foi ali que a moderação de
+comentário ficou quebrada por meses.
+
+**Somente leitura, e isso é decisão de segurança.** Uma conta `admin`
+automatizada rodando em todo PR poderia ocultar post e suspender gente; num
+teste que roda a cada push, "se der errado" é questão de tempo. As ações
+destrutivas continuam validadas em transação com `ROLLBACK`, onde nada
+sobrevive.
+
+**Enquanto os secrets `E2E_STAFF_EMAIL`/`E2E_STAFF_PASSWORD` não existirem**, o
+job se pula — mas o job `qualidade` emite `::warning::` dizendo que o painel
+está sem cobertura. Job que se pula em silêncio é verde que não testou nada.
+
 ## Orçamento de bytes — o portão de desempenho
 
 `scripts/orcamento-de-bytes.mjs` roda no CI e **reprova o PR** quando o site
