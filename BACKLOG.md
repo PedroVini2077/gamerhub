@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 28/08/2026, ao fechar a sessão ·
-**21 itens abertos** (+ 1 ideia sem compromisso)
+**17 itens abertos** (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** O ciclo da moderação de imagem fechou em 28/08:
 > `too_many_images` corrigido (v12), pisos ajustados com dado (v13) e

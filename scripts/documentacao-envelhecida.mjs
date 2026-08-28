@@ -46,9 +46,14 @@ const TERRITORIO = {
   'docs/BANCO.md': ['supabase/migrations'],
   'docs/SEGURANCA.md': ['supabase/functions', 'src/hooks/useAuth.jsx', 'src/lib/roles.js'],
   'docs/ARQUITETURA.md': ['src/App.jsx', 'src/services', 'src/hooks'],
-  'docs/FUNCIONALIDADES.md': ['src/pages', 'src/components'],
+  'docs/FUNCIONALIDADES.md': ['src/pages', 'src/components/landing', 'src/components/feed'],
+  // O que a equipe opera. O território dele são os painéis e o caminho de ban.
+  'docs/PAINEIS.md': ['src/pages/Admin.jsx', 'src/pages/Owner.jsx', 'src/components/admin'],
   'docs/OPERACAO.md': ['.github/workflows', 'scripts'],
-  'docs/DECISOES.md': [], // decisão não envelhece por commit; envelhece por reversão
+  // Decisão não envelhece por commit; envelhece por reversão — e reversão é
+  // coisa que uma pessoa registra, não que um script detecta.
+  'docs/DECISOES.md': [],
+  'docs/DECISOES-FERRAMENTAL.md': [],
   'docs/MANIFESTO.md': [],
   'README.md': [],
   'BACKLOG.md': [],

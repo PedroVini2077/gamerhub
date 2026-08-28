@@ -15,13 +15,15 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | Arquivo | Para quê |
 | --- | --- |
 | [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Estrutura de pastas, rotas, camada de services, convenções de código |
-| [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md) | O que cada tela faz, hierarquia de cargos, XP, lives, painéis |
+| [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md) | O que **quem usa** vê: landing, login, feed, mural, lives, keys, XP e perfis |
+| [`docs/PAINEIS.md`](docs/PAINEIS.md) | O que **a equipe** opera: painéis de admin/super admin/dono, banimento, bloqueio de login, config e trilha de auditoria |
 | [`docs/MODERACAO.md`](docs/MODERACAO.md) | Denúncias, lista de palavras, fila, infrações, suspensão, banimento e recurso |
 | [`docs/MODERACAO-IA.md`](docs/MODERACAO-IA.md) | A moderação por IA de **mídia**: política por categoria, limiares, as medições que os produziram e o caminho de vídeo |
 | [`docs/BANCO.md`](docs/BANCO.md) | Tabelas, RPCs, RLS, storage, realtime, custo de banda |
 | [`docs/SEGURANCA.md`](docs/SEGURANCA.md) | O que protege o quê, e por quê |
 | [`docs/OPERACAO.md`](docs/OPERACAO.md) | **Quando algo quebra.** Monitoramento, site fora do ar, CI |
-| [`docs/DECISOES.md`](docs/DECISOES.md) | O que foi decidido e o que foi **descartado**, com o motivo |
+| [`docs/DECISOES.md`](docs/DECISOES.md) | Por que **o site** se comporta assim — decisões de produto, com o que foi **descartado** |
+| [`docs/DECISOES-FERRAMENTAL.md`](docs/DECISOES-FERRAMENTAL.md) | Por que **a esteira** é assim — CI, Vercel, Sentry, Dependabot, Edge Functions, email |
 | [`BACKLOG.md`](BACKLOG.md) | O que falta fazer — só isso, é um checklist |
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |
 | [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
