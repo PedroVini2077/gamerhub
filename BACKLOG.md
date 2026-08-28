@@ -82,10 +82,24 @@
 - ⬜ `[20/08]` **Denúncia criada não gera log de auditoria.** Decisão consciente
   (qualquer um denuncia, e logar inflaria a trilha) — reavaliar se a moderação
   sentir falta. Ver [DECISOES.md](docs/DECISOES.md).
-- ⬜ `[22/08]` **Moderação de vídeo.** Adiada a pedido, **e não é cara**: dá
-  para extrair frames com `<video>` + `canvas` no navegador e mandar pela
-  moderação de imagem que já existe. Custo zero, e herda de graça a cobertura
-  de gore e automutilação.
+- ⬜ `[22/08]` **Moderação de vídeo.** Vídeo é o único tipo de mídia que sobe
+  **sem nenhuma checagem**: em `postService.js:226`, só `type === 'image'`
+  entra em `imageUrls`, e é `imageUrls` que a `moderateImages` manda para a IA.
+
+  **Levantamento de 28/08 — a parte difícil não é extrair o frame.** Extrair é
+  fácil (`<video>` + `canvas`, custo zero, no navegador). O problema é o
+  transporte: a `moderate-image` aceita **só URLs** e busca cada uma
+  (`supabase/functions/moderate-image/index.ts:139`). Frame extraído no
+  navegador não é URL. Daí a bifurcação, e ela precisa de decisão:
+
+  | Caminho | Custo | Risco |
+  | --- | --- | --- |
+  | Subir os frames para o storage antes de moderar | storage + egress por frame, em mídia descartável | nenhum no contrato; mas suja o bucket e precisa de limpeza (§5, "quem aponta para o nada") |
+  | `moderate-image` passar a aceitar imagem inline (base64) | zero de storage | muda o contrato de uma Edge Function, e o corpo do POST cresce muito |
+
+  **Minha recomendação:** o segundo, com teto de tamanho e no máximo 2-3 frames
+  (início, meio, fim). Mas é mudança em Edge Function de moderação — §7 🟡,
+  pede aprovação antes.
 
 ## 🔵 Só quando o volume crescer
 
