@@ -197,9 +197,14 @@ teste que roda a cada push, "se der errado" é questão de tempo. As ações
 destrutivas continuam validadas em transação com `ROLLBACK`, onde nada
 sobrevive.
 
-**Enquanto os secrets `E2E_STAFF_EMAIL`/`E2E_STAFF_PASSWORD` não existirem**, o
-job se pula — mas o job `qualidade` emite `::warning::` dizendo que o painel
-está sem cobertura. Job que se pula em silêncio é verde que não testou nada.
+**A conta `[28/08]`:** `claudestaff`, cargo `admin`, promovida pela RPC
+`owner_set_role` — e não por `UPDATE` cru, porque só a RPC grava em
+`admin_logs`. Um update direto chegaria no mesmo lugar sem deixar rastro, e a
+trilha passaria a mentir por omissão (`CLAUDE.md` §5).
+
+**Se os secrets `E2E_STAFF_EMAIL`/`E2E_STAFF_PASSWORD` sumirem**, o job se pula
+— mas o job `qualidade` emite `::warning::` dizendo que o painel está sem
+cobertura. Job que se pula em silêncio é verde que não testou nada.
 
 ## Orçamento de bytes — o portão de desempenho
 
