@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>banco de prova — extração de quadros</title>
+<!--
+  Página de teste, NÃO faz parte do site.
+
+  Existe porque `extrairQuadros` só falha num navegador de verdade: ela depende
+  de decodificação de vídeo, `<canvas>` e políticas de mídia que não existem no
+  ambiente do Vitest. Servida pelo vite em modo DEV, que entrega o módulo de
+  `src/` direto — em produção nada disto vai junto, porque o build só empacota
+  o que sai do `index.html`.
+-->
+<body>
+<script type="module">
+  import { extrairQuadros, QUANTIDADE_DE_QUADROS } from '/src/lib/framesDeVideo.js';
+  window.extrairQuadros = extrairQuadros;
+  window.QUANTIDADE_DE_QUADROS = QUANTIDADE_DE_QUADROS;
+  window.pronto = true;
+</script>
+</body>

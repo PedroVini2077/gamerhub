@@ -460,8 +460,16 @@ Deno.serve(async (req: Request) => {
                   analisadas, enviadas: urls.length, status: "ok" });
   }
 
-  // Score 1 porque a decisao ja foi tomada aqui pela politica por categoria; o
-  // limiar do painel nao deve desfazer o que os pisos fixos decidiram.
+  // Duas notas, e elas fazem trabalhos diferentes.
+  //
+  // `p_score: 1` DECIDE: a politica por categoria acima ja bateu o martelo, e o
+  // dial do painel nao deve desfazer o que os pisos fixos decidiram.
+  //
+  // `p_score_real` REGISTRA. Ate 28/08 este parametro nao existia, entao todo
+  // item de imagem chegava na fila com "score 1" — quem revisa nao conseguia
+  // distinguir um 0.96 raspando o piso de um 0.99 gritante, e sao casos com
+  // decisoes diferentes. A nota verdadeira so vivia no log desta funcao, que
+  // serve para ajustar limiar e nao para quem esta olhando a fila agora.
   const { error: rpcError } = await admin.rpc("apply_ai_moderation", {
     p_content_type:  content_type,
     p_content_id:    content_id,
@@ -469,6 +477,7 @@ Deno.serve(async (req: Request) => {
     p_threshold_key: "mod_ai_image_threshold",
     p_categoria:     veredito.categoria,
     p_ocultar:       veredito.ocultar,
+    p_score_real:    Math.round(veredito.score * 1000) / 1000,
   });
   if (rpcError) {
     console.error("[moderate-image] RPC error:", rpcError.message);

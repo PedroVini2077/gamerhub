@@ -215,12 +215,17 @@ export async function moderateVideos(contentType, contentId, videoFiles) {
   const { extrairQuadros } = await import('../lib/framesDeVideo');
 
   for (const arquivo of videoFiles) {
-    const quadros = await extrairQuadros(arquivo);
+    const { quadros, motivo } = await extrairQuadros(arquivo);
     if (!quadros.length) {
       resumo.semQuadros++;
-      registrarErro(new Error('nao consegui extrair quadros de um video'), {
+      // O motivo entra no texto do erro, e não só nos metadados: o Sentry
+      // agrupa por mensagem, então "não consegui extrair quadros" jogava
+      // causas diferentes na mesma pilha. Separadas, dá para ver qual delas
+      // acontece de verdade — que é a pergunta que ficou aberta em 28/08.
+      resumo.motivos = [...(resumo.motivos ?? []), motivo];
+      registrarErro(new Error(`nao consegui extrair quadros de um video: ${motivo}`), {
         content_type: contentType, content_id: contentId,
-        tipo_do_arquivo: arquivo?.type, tamanho: arquivo?.size,
+        tipo_do_arquivo: arquivo?.type, tamanho: arquivo?.size, motivo,
       });
       continue;
     }

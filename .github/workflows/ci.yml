@@ -261,6 +261,25 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # A extração de quadros só falha num navegador de verdade — ela depende
+      # de decodificação de vídeo e de `<canvas>`, que não existem no Vitest.
+      # Em 28/08 ela devolveu lista vazia para um vídeo real e o conteúdo subiu
+      # sem análise nenhuma; do lado de quem publica, isso é indistinguível de
+      # "analisado e limpo" (§1.5).
+      #
+      # Precisa do vite em modo DEV porque a página de teste importa
+      # `src/lib/framesDeVideo.js` direto. O `preview` serve só o bundle.
+      - name: Subir o vite em modo dev para o teste de extração
+        run: |
+          npx vite --port 5174 --host 127.0.0.1 &
+          curl --retry 20 --retry-delay 1 --retry-all-errors --fail --silent \
+               --output /dev/null http://127.0.0.1:5174/e2e/fixtures/quadros.html
+
+      - name: Vídeo comum rende os quadros que a moderação precisa
+        run: npm run test:e2e:quadros
+        env:
+          QUADROS_BASE: http://127.0.0.1:5174
+
       # Trava das brechas de 23/08. Não precisa de navegador nem de build — só
       # de rede — mas mora aqui porque depende da mesma variável, e porque este
       # job já é o que "fala com o Supabase de verdade".
