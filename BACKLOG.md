@@ -11,18 +11,19 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **16 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **17 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** O teste do dono em 28/08 achou o bug mais caro do dia:
-> a moderação de imagem mandava as imagens todas numa requisição só e a OpenAI
-> aceita **uma por vez** (`400 too_many_images`). Post com 2+ imagens não era
-> analisado, e a moderação de vídeo nunca funcionou. Corrigido, implantado
-> (v12) e travado por teste — **falta o dono repostar as imagens** para termos
-> as notas de verdade.
+> **Próximo da fila.** A moderação de imagem voltou a funcionar (v12) e o dono
+> confirmou em produção: 1 imagem e 4 imagens, as duas levas analisadas e
+> enfileiradas. Com isso apareceu o **próximo problema, que é de produto e não
+> de código**: 2 de 2 prints de jogo comuns foram para a fila. Os pisos de
+> violência foram escolhidos sem dado e não cabem num site de jogos. A decisão
+> está logo abaixo, com os números.
 >
-> **Esperando você:** repostar os prints de jogo (agora medem), confirmar o
-> desempenho em produção, e decidir sobre os 887 KB da cena 3D.
+> **Esperando você:** decidir os pisos de violência (e postar mais 3–4 imagens
+> variadas para o número não ser outro chute), confirmar o desempenho em
+> produção, e decidir sobre os 887 KB da cena 3D.
 
 ---
 
@@ -43,21 +44,75 @@
   em 20 minutos**. O `recusarSeBanido()` faz o CI nomear a causa, mas não impede
   o vermelho — o que impede é banir outra conta.
 
-- ⬜ `[28/08]` 🟠 **Repostar as imagens de jogo para medir o
-  `violence/graphic`.** Elas foram postadas em 28/08 e não deram em nada — não
-  era o limiar, era o bug do `too_many_images` (corrigido e implantado na v12).
-  Agora a medição é possível pela primeira vez. **Ação do dono:** publicar de
-  novo, uma leva com 1 imagem e outra com 3–4, para exercitar os dois caminhos.
-  As notas saem no log da função:
+- ⬜ `[28/08]` 🟠 **Os pisos de violência estão baixos demais para um site de
+  jogos — decisão de produto, com dado pela primeira vez.**
+
+  A medição finalmente aconteceu (v12 da `moderate-image`, 17:55). Os dois
+  posts de print de jogo do dono:
+
+  | Post | Analisadas | Categoria | Nota | Piso | Ação |
+  | --- | --- | --- | --- | --- | --- |
+  | 1 imagem | 1/1 | `violence/graphic` | **0.854** | 0.80 | enfileirou |
+  | 4 imagens | 4/4 | `violence` | **0.943** | 0.90 | enfileirou |
+
+  **2 de 2 prints de jogo comuns foram para a fila.** Não é erro da IA: as
+  imagens *são* violentas. É o piso que foi escolhido sem dado e não cabe num
+  site cujo conteúdo normal é print de jogo de tiro e de luta.
+
+  Ninguém foi censurado — este caminho **só enfileira, nunca oculta**, e essa
+  parte funcionou exatamente como projetada. O custo é fila cheia de falso
+  positivo, e fila que é 100% ruído ensina a ignorar a fila (§0.2, 4ª regra).
+
+  **A recomendação, e por que ela não foi executada:** mexer em piso de
+  moderação é 🟡 no §7 — proponho e espero. Além disso **5 imagens não são uma
+  distribuição**: dá para dizer que o piso está baixo, não onde ele deveria
+  estar.
+
+  1. **Aposentar `violence` (0.90).** Num site de jogos, "violência" é o estado
+     normal do conteúdo. A categoria não separa nada — só produz fila.
+  2. **Subir `violence/graphic`** de 0.80 para algo entre 0.95 e 0.97. É a
+     categoria que de fato distingue gore de ação comum, e mesmo ela deu 0.854
+     num print corriqueiro.
+
+  **O que falta para escolher o número:** mais 3–4 posts variados, para ver a
+  distribuição em vez de dois pontos. Um jogo *sem* violência (corrida, puzzle,
+  Minecraft) para achar o piso, e um print de gore pesado de verdade para achar
+  o teto. Sem isso qualquer número novo seria outro chute, só que mais alto.
+
+  Onde ler as notas de cada post:
 
   ```sql
-  select created_at, details, metadata from admin_logs
-   where action='edge_function_error' and metadata->>'funcao'='moderate-image'
+  -- o veredito de cada chamada fica no log da Edge Function, não no admin_logs:
+  -- painel da Supabase > Edge Functions > moderate-image > Logs
+  -- procurar as linhas "[moderate-image] openai post/<id> analisadas=N/M ..."
+
+  -- e o resultado na fila:
+  select content_id, trigger_type, status, metadata, created_at
+    from moderation_queue where trigger_type = 'ai'
    order by created_at desc limit 10;
   ```
 
-  O piso está em 0.80, escolhido sem dado. Como esse caminho **só enfileira e
-  nunca oculta**, errar gera fila maior — não censura.
+- ⬜ `[28/08]` 🟢 **Aviso do banimento FORA do site, na landing.** *Pedido do
+  dono, adiado por ele mesmo: "depois a gente implementa isso".*
+
+  Eu entendi errado da primeira vez e entreguei outra coisa. O que ele pediu em
+  28/08 foi: *"seria legal o site também identificar o usuário banido, e
+  aparecer uma nova aba ou botão na landing page só pra ele… pode ser um sino"*.
+  O que eu fiz foi notificação **dentro** do site (o sino do `Header`, que só
+  existe depois do login). As duas são úteis e não se substituem: a de dentro
+  serve para quem voltou; esta serve para quem **não consegue entrar**.
+
+  **O obstáculo real, e é por onde a implementação tem que começar:** a landing
+  é vista por visitante anônimo, sem sessão. Identificar "esta pessoa está
+  banida" sem login exige guardar algo no navegador dela — e aí vêm as
+  perguntas que decidem o desenho: o que exatamente fica guardado (um `id`? um
+  `token`?), por quanto tempo, e o que acontece se outra pessoa usar o mesmo
+  computador. Vazar "esta máquina pertence a alguém banido" para quem
+  compartilha o PC é o tipo de coisa que este projeto passou o mês endurecendo
+  contra (§1.3).
+
+  Sem responder isso primeiro, qualquer implementação vira brecha nova ou
+  aviso que aparece para a pessoa errada.
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
