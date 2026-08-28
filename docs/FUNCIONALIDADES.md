@@ -303,21 +303,47 @@ evitar closures velhas nos callbacks).
   detalhes / quem baniu / quando, incrementa `ban_count` (reincidência) e
   **apaga toda a atividade** do usuário (posts, comments, community_posts,
   live_chat). Gera log + notificação de admin.
-- **Tela de banido** (`BannedScreen`): mostrada em tempo real ao usuário banido
-  (realtime na coluna `profiles.banned` + polling de fallback no `useAuth`).
+- **Tela de banido** (`BannedScreen`): aparece em tempo real numa sessão aberta
+  (realtime em `profiles.banned` + polling de reserva no `useAuth`) **e no
+  próprio login**. Ela **substitui** o site, não fica por cima: a sessão
+  continua viva — é o que torna o recurso possível — mas o feed nunca chega a
+  montar. Ao sair, o destino é a landing.
+- **Recurso do próprio banido** (`solicitar_revisao_do_proprio_ban`): formulário
+  na `BannedScreen`, **um pedido por banimento**, texto de 20 a 1000 caracteres,
+  regras todas no banco. A tela também mostra o andamento
+  (`meu_pedido_de_revisao`): *Em análise* / *Aprovado* / *Negado*, com a
+  resposta da equipe.
 - **Fluxo de desbanimento**: `admin` solicita (`request_unban`) → `super_admin`
   ou `owner` aprova (`approve_unban_request`) ou nega (`deny_unban_request`).
   `super_admin`/`owner` também desbanem direto (`unban_user`).
+- **Ser desbanido avisa**: os dois caminhos de desbanimento gravam uma
+  notificação (`type = 'unban'`) que aparece no sino. Sem ela, "meu recurso foi
+  aceito" e "o site parou de me bloquear por algum bug" eram indistinguíveis do
+  lado de quem foi desbanido.
 
 ### Bloqueio de login por tentativas
 
-Servidor é a **única fonte de verdade** (`register_login_attempt` /
-`check_login_status` / `admin_unlock_login`):
+Servidor é a **única fonte de verdade** (`check_login_status` /
+`admin_unlock_login` / `reset_login_attempts`):
 
 - 5 falhas consecutivas → bloqueio temporário de **15 min**.
 - 10+ falhas → bloqueio **permanente** (precisa de super admin para liberar).
 - O contador só zera em **login bem-sucedido** (`reset_login_attempts`) — sem
   reversão por tempo (punição intencional).
+
+> **`[28/08]` A contagem está desligada, e isto é honestidade, não falta.** Esta
+> seção citava `register_login_attempt`, que **não existe mais** — conferido no
+> banco. Ela era chamada pelo *frontend* para reportar a própria falha: força
+> bruta real nunca era contada (quem ataca não usa o nosso site), e qualquer um
+> podia chamá-la com o email de outra pessoa para **fabricar bloqueio sem saber
+> a senha**. Foi removida.
+>
+> Contar de verdade exige o *Password Verification Hook* do Supabase, que é
+> exclusivo do plano Team (a função já está no banco, testada, esperando o
+> plano). Enquanto isso, quem barra força bruta é o **rate limit do próprio
+> GoTrue**, que é server-side e não depende desta tela. Os limites de 5 e 10
+> acima continuam escritos porque a mecânica de bloqueio existe — o que não
+> existe hoje é algo que incremente o contador. Ver [BACKLOG.md](../BACKLOG.md).
 - Ao atingir bloqueio, gera log de segurança detalhado + notificação geral aos
   admins. Super admin desbloqueia pela aba Super Admin.
 

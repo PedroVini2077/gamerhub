@@ -146,6 +146,21 @@ jobs:
           fi
           echo "OK — documentação acompanhou (ou o PR não mexe no produto)."
 
+      # Segunda camada, e ela responde outra pergunta. A de cima garante que
+      # ALGUM documento foi tocado; esta garante que o que os documentos citam
+      # ainda existe. Um arquivo renomeado sem a documentação acompanhar passa
+      # ileso pela primeira e é pego aqui.
+      #
+      # Determinística de propósito: o arquivo existe ou não existe. A parte de
+      # julgamento ("este texto ainda é verdade?") não bloqueia nada — vive no
+      # lembrete mensal, em lembrete-de-documentacao.yml.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Nenhum documento cita arquivo que não existe
+        run: node scripts/documentacao-quebrada.mjs
+
   deploys:
     name: a branch não gasta deploy da Vercel
     runs-on: ubuntu-latest

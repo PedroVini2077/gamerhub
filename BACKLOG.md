@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 28/08/2026, ao fechar a sessão ·
-**22 itens abertos** (+ 1 ideia sem compromisso)
+**21 itens abertos** (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** O ciclo da moderação de imagem fechou em 28/08:
 > `too_many_images` corrigido (v12), pisos ajustados com dado (v13) e
@@ -24,6 +24,13 @@
 > banco ao fechar): a moderação de imagem roda e registra as notas; o
 > banimento, o recurso e o **aviso de desbanimento** funcionam ponta a ponta —
 > `ogamerpedro` recebeu e leu o aviso às 17:53; a fila está zerada.
+>
+> **A documentação ganhou três camadas** (§6.2): um portão no CI que reprova
+> documento citando arquivo inexistente, um lembrete semanal que abre issue com
+> os documentos que o código deixou para trás, e a regra de reler a seção antes
+> de editá-la. Os dois scripts já se pagaram — acharam
+> `register_login_attempt` documentada como existente quando ela **não existe
+> mais no banco**.
 >
 > **O único caminho de 28/08 que ninguém exerceu é a moderação de VÍDEO** (item
 > logo abaixo). Ela nasceu quebrada e foi consertada junto com a de imagem, mas
@@ -53,7 +60,7 @@
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
   `violence` foi aposentada e `violence/graphic` subiu de 0.80 para 0.95. O
-  raciocínio inteiro está em [MODERACAO.md](docs/MODERACAO.md).
+  raciocínio inteiro está em [MODERACAO-IA.md](docs/MODERACAO-IA.md).
 
   **A amostra até agora** (toda a medição que existe, 5 posts):
 
@@ -119,7 +126,7 @@
   **Não é brecha aberta:** quem cobre essa classe em imagem é `sexual` em 0.55,
   que roda e **oculta na hora** — e o caminho de texto continua com
   `sexual/minors` ativo. Já está documentado no código, em
-  [MODERACAO.md](docs/MODERACAO.md) e travado por teste, e o log passou a
+  [MODERACAO-IA.md](docs/MODERACAO-IA.md) e travado por teste, e o log passou a
   distinguir "não veio e não deveria" de "não veio e deveria".
 
   **O que fica em aberto é decisão de produto, não código:** se `sexual` em 0.55
@@ -179,37 +186,31 @@
   **Conserto pequeno:** mandar a nota real num parâmetro novo e gravá-la em
   `moderation_queue.metadata`, sem tocar no `p_score` que decide.
 
-- ⬜ `[28/08]` 🟠 **Propor uma regra de "ler antes de escrever" no `CLAUDE.md`.**
-  *Cobrança do dono ao fechar a sessão: "tô vendo que vc tá vacilando muito nas
-  documentações, vou começar a te obrigar a ler sempre".* Ele tem razão, e há
-  três casos concretos só nesta sessão:
+- ⬜ `[28/08]` 🟢 **Duas seções ainda estouram o limite do §6.2 — e são maiores
+  que a que eu tinha achado.** A varredura de fechamento mediu **todas** as
+  seções de todos os documentos, em vez de olhar só o tamanho do arquivo. O
+  resultado desmentiu minha própria priorização:
 
-  | O que estava escrito | O que era verdade |
-  | --- | --- |
-  | `BACKLOG.md`: "reescrever **ou aposentar** a cena 3D" | ele já tinha recusado o descarte, duas vezes |
-  | `DECISOES.md`: `effectiveType` listado como portão ativo | removido horas antes, no PR #84 |
-  | `BannedScreen`: "esta tela reaparece a cada login" | era falso quando foi escrito (corrigido no #84) |
+  | Documento | Maior seção | Situação |
+  | --- | --- | --- |
+  | `docs/FUNCIONALIDADES.md` | `✨ Funcionalidades` — **365 linhas** | 🔴 o pior, e eu não tinha visto |
+  | `docs/DECISOES.md` | `Ferramental` — **302 linhas** | 🔴 idem |
+  | ~~`docs/MODERACAO.md`~~ | ~~política de imagem — 150+~~ | ✅ resolvido em 28/08 → `MODERACAO-IA.md` |
 
-  O padrão é sempre o mesmo: **eu escrevo por memória do que o projeto era, em
-  vez de ler o arquivo antes de alterá-lo.** É o §1.4 aplicado à documentação —
-  documento envelhece, e quem envelhece o documento sou eu quando não releio.
+  Ou seja: o único que eu tinha anotado era o **menos** grave dos três. Foi
+  medindo que apareceram os outros dois — mais uma vez, o sistema não mente e a
+  minha lista mentia.
 
-  Os três casos acima já foram corrigidos. O que falta é a **trava**, e ela
-  precisa de proposta (§6.2, Contrato de Evolução) porque mexe numa regra:
-  provavelmente um passo obrigatório de reler a seção alvo antes de editar
-  documento estrutural, e não confiar no que eu "lembro" que está lá.
+  **Não executei os dois, e o motivo é o Contrato de Evolução (§6.2):** o corte
+  do `MODERACAO.md` era óbvio (um bloco autocontido de política de mídia); estes
+  dois não são. `FUNCIONALIDADES.md` teria que ser cortado por área de produto,
+  e `DECISOES.md` por tema — e cortar mal um arquivo de decisões espalha a
+  memória do projeto em vez de organizá-la. Pede proposta antes.
 
-- ⬜ `[28/08]` 🟢 **`docs/MODERACAO.md` passou de 400 linhas.** A regra do §6.2
-  (seção acima de ~150 linhas vira arquivo próprio) foi estourada pela política
-  de imagem, que cresceu muito em 28/08 — pisos, medições, o caso do
-  `sexual/minors` e o do `too_many_images`.
-
-  **Precisa de proposta antes** (Contrato de Evolução, §6.2): é mudança de
-  estrutura de documento, não conserto. O corte natural seria
-  `docs/MODERACAO-IA.md` com a política por categoria, os limiares e as
-  medições, deixando no `MODERACAO.md` a fila, o ban e o recurso. Ao criar,
-  acrescentar na tabela do `README.md` — arquivo que ninguém acha é arquivo que
-  ninguém atualiza.
+  **Ao criar qualquer arquivo novo, acrescentar em três lugares**, senão ele
+  nasce órfão: a tabela do `README.md`, o mapa `TERRITORIO` em
+  `scripts/documentacao-envelhecida.mjs`, e o próprio documento de origem com o
+  ponteiro para onde o conteúdo foi.
 
 
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
@@ -293,15 +294,42 @@
   Hoje os 887 KB **não pesam no carregamento** — chegam depois do ocioso e só no
   desktop —, mas quem recebe ainda paga 236 KB de download e o parse.
 
-  **O único caminho que sobrou:** trocar `@react-three/fiber` + `three` por
-  WebGL cru com os cinco símbolos de fato usados (`Shape`, `ExtrudeGeometry`,
-  `MathUtils`, `Vector3`, `AdditiveBlending`). O `three` entra inteiro, com o
-  renderer completo, porque tree-shaking não alcança tudo (§0.3 regra 1).
+  **A causa raiz está medida** (28/08, lendo o fonte da dependência):
+  `@react-three/fiber` v9.7.0 executa `extend(THREE)` **dentro do próprio
+  `<Canvas>`**, com este comentário no código dele: *"This will include the
+  entire THREE namespace by default, users can extend their own elements by
+  using the createRoot API instead"*. O namespace inteiro do `three` entra no
+  bundle independentemente do que a nossa cena importa — e ela usa **cinco**
+  símbolos. Nenhum tree-shaking alcança isso enquanto o `<Canvas>` for usado.
 
-  **Antes de começar, medir**: quanto do chunk é `three` e quanto é `fiber`. Se
-  a maior parte for `three`, reescrever o `fiber` não resolve. Ninguém mediu
-  isso ainda — e sem o número o trabalho pode não valer o risco de reescrever
-  uma cena que hoje funciona.
+  **O ganho do conserto óbvio também está medido, com um experimento
+  descartável** (trocar `<Canvas>` por `createRoot` + `extend()` só dos 14
+  elementos que a cena usa, build, e reverter):
+
+  | | Bruto | Gzip |
+  | --- | --- | --- |
+  | Hoje, com `<Canvas>` | 887,18 kB | 235,86 kB |
+  | Com `createRoot` + `extend` seletivo | **707,15 kB** | **188,75 kB** |
+  | Ganho | −180 kB (−20%) | −47 kB |
+
+  **E é por isso que o item continua aberto em vez de já estar feito: 20% não
+  resolve o problema.** O que sobra são os 707 kB do renderer WebGL do `three`,
+  que a `fiber` referencia direto e é irredutível enquanto ela for a camada de
+  render. Cortar 20% de bytes não transforma um Speed Index de 6,8 s.
+
+  **Os caminhos que sobram, e nenhum é trivial:**
+
+  | Caminho | O que custa |
+  | --- | --- |
+  | `createRoot` + `extend` seletivo | −20% de bytes; **precisa de tratamento de resize próprio**, que hoje o `<Canvas>` faz sozinho |
+  | Baixar `dpr` e desligar `antialias` no desktop | não mexe em byte nenhum, mas pode ser onde mora o custo real de GPU/CPU |
+  | WebGL cru com os 5 símbolos | o maior ganho possível e o maior risco — reescreve uma cena que hoje funciona |
+
+  **O próximo passo não é escolher: é medir onde o tempo vai.** Byte não é a
+  mesma conta que CPU (§0.3), e a suspeita agora é que o custo esteja na
+  inicialização do renderer e na compilação de shader, não no parse. Um perfil
+  de CPU no DevTools do desktop responde isso em minutos e evita reescrever a
+  cena por palpite.
 ## 🔵 Só quando o volume crescer
 
 > Nenhum destes é dívida. São decisões **corretas para 3 usuários** que deixam

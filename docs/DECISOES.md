@@ -383,7 +383,22 @@ Com o destino sendo a fila, um limiar errado gera **fila maior** — nunca
 censura. Isso também tirou a medição prévia do caminho crítico: o erro virou
 reversível.
 
-`sexual`, `sexual/minors` e `self-harm*` continuam ocultando.
+`sexual` e `self-harm*` continuam ocultando.
+
+> **Atualização `[28/08]` — a decisão se confirmou, os números não.** Esta era
+> uma aposta sem medição; a primeira medição real deu razão a ela e reprovou os
+> limiares. Dois prints de jogo **comuns** foram para a fila
+> (`violence/graphic` 0.854 contra piso 0.80; `violence` 0.943 contra 0.90).
+> Ninguém foi ocultado — a parte que importa funcionou.
+>
+> Em resposta: `violence` foi **aposentada** (num site de jogos ela dispara no
+> caso comum e o veredito é sempre "aprovar", então é ruído, não sinal) e
+> `violence/graphic` subiu para **0.95**. Ver [MODERACAO.md](MODERACAO.md).
+>
+> **Correção junto:** este parágrafo dizia que `sexual/minors` também oculta em
+> imagem. **Não oculta** — a API da OpenAI aplica essa categoria só a texto, e
+> o piso de 0.10 no caminho de imagem nunca disparou. Quem cobre essa classe em
+> imagem é `sexual` em 0.55.
 
 ### `[23/08]` O texto moderado vem do banco, não do cliente
 
@@ -415,11 +430,27 @@ trigger-guarda revertia o `UPDATE` manual em silêncio) — virava banimento
 permanente pulando toda a hierarquia do ban. Mais que 30 dias é caso de
 banimento, que tem reversão própria.
 
-### `[20/08]` Denúncia criada **não** gera log de auditoria
+### ~~`[20/08]` Denúncia criada **não** gera log de auditoria~~ — REVERTIDA em 28/08
 
-Qualquer usuário pode denunciar; logar isso em `admin_logs` inflaria a trilha
-até ninguém mais ler. Reavaliar se a moderação sentir falta de rastrear quem
-denuncia demais.
+**A decisão original:** qualquer usuário pode denunciar; logar isso em
+`admin_logs` inflaria a trilha até ninguém mais ler. Reavaliar se a moderação
+sentir falta de rastrear quem denuncia demais.
+
+**O dono reavaliou em 28/08 e pediu o log — e o receio se inverteu no caminho.**
+Denúncia era a **única** ação de moderação sem rastro. Ocultar, suspender,
+banir, aprovar na fila: tudo registra. A denúncia, que é o gatilho de boa parte
+disso, sumia — quando um conteúdo aparecia na fila, a trilha não sabia dizer se
+veio da IA, da wordlist ou de alguém denunciando.
+
+Hoje existe o trigger `log_report_created` e a action `content_report_created`.
+É **trigger, não chamada do frontend**: o site entrega a `anon key`, então
+qualquer um insere em `reports` direto pela REST API, e log que depende do
+cliente chamar é log que o cliente escolhe não gerar.
+
+> Fica registrada como revertida, e não apagada, porque o raciocínio original
+> continua válido como alerta: se a trilha inflar a ponto de ninguém ler, o
+> problema volta — só que agora com a retenção do `cleanup_old_data()` como
+> resposta, em vez de não registrar.
 
 ### `[22/08]` Ação automática é sempre **reversível**
 

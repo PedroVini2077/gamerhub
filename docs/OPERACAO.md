@@ -289,6 +289,59 @@ número em qualquer máquina.
 para afirmar sem margem de erro. Para saber se está rápido, o Lighthouse no
 mesmo aparelho e o Vercel Speed Insights (campo).
 
+### `[28/08]` A medição de campo, e o que ela desmentiu
+
+PageSpeed Insights, 28/08 às 19:19, Lighthouse 13.4.1:
+
+| | Celular (Moto G Power emulado) | Computador |
+| --- | --- | --- |
+| **Desempenho** | **87** | **57** |
+| First Contentful Paint | 2,9 s | 0,6 s |
+| Largest Contentful Paint | 3,3 s | 1,2 s |
+| **Total Blocking Time** | **0 ms** | **14.830 ms** |
+| Cumulative Layout Shift | 0,012 | 0,003 |
+| Speed Index | 2,9 s | 6,8 s |
+
+Acessibilidade 98, Práticas 100, SEO 92 nos dois.
+
+**No celular a rodada de otimização funcionou, e o número que prova é o TBT
+zerado.** Em 27/08 ele estava em 3.690 ms (Termux) e 15.310 ms (PageSpeed); a
+nota saiu de 36 para 87. O celular recebe a `Scene2D` e simplesmente não paga
+os 887 KB.
+
+**No desktop o resultado é ruim, e ele desmente uma frase que eu havia
+escrito.** A documentação dizia que a cena 3D "não pesa no carregamento, porque
+chega depois do ocioso". O TBT diz o contrário: chegar depois do ocioso adia o
+trabalho, **não o elimina** — e a thread principal travada aparece no Speed
+Index (6,8 s contra 1,2 s de LCP) e derruba a nota para 57.
+
+> **Ressalva sobre o número, para ele não ser citado como exato depois.** A
+> corrida de desktop rodou com **"Limitação personalizada"**, e não com o
+> preset padrão (a de celular usou "Limitação lenta de 4G", esse sim padrão).
+> Ou seja: os 14.830 ms **não são comparáveis** a uma corrida de desktop comum,
+> e a magnitude está inflada por uma configuração que não sabemos qual é.
+>
+> O que a medição sustenta com segurança: no desktop a cena 3D custa **muito**
+> trabalho de CPU depois da primeira pintura, e a diferença entre FCP/LCP
+> ótimos e Speed Index de 6,8 s tem uma causa só. O que ela **não** sustenta é
+> o valor absoluto. Repetir no preset padrão antes de usar esse número para
+> decidir qualquer coisa (§0.3, regra 5: mesma ferramenta, mesmo aparelho,
+> mesma configuração).
+
+> A lição que fica: *"fora do caminho crítico"* e *"de graça"* não são a mesma
+> coisa. O byte adiado continua sendo parseado e executado, e o orçamento de
+> bytes — que mede o **carregamento inicial** — nunca ia enxergar isso. Ele
+> continua certo no que mede; só não mede esta parte.
+
+**A causa raiz está medida, não suposta.** `@react-three/fiber` v9.7.0 executa
+`extend(THREE)` dentro do próprio `<Canvas>`, com o comentário no fonte dele:
+*"This will include the entire THREE namespace by default"*. Ou seja, o
+namespace inteiro do `three` entra no bundle independentemente do que a nossa
+cena importa — e ela usa **cinco** símbolos (`MathUtils`, `Vector3`, `Shape`,
+`ExtrudeGeometry`, `AdditiveBlending`). Nenhum tree-shaking alcança isso
+enquanto o `<Canvas>` for usado. A saída oficial está na mesma frase: *"users
+can extend their own elements by using the createRoot API instead"*.
+
 > **Se ele reprovar seu PR:** a saída lista cada chunk com tamanho e diz o
 > suspeito mais provável. Se o crescimento for intencional, suba o teto **no
 > próprio script** e explique no commit por que o site precisou engordar — o
