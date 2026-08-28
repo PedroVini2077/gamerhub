@@ -11,17 +11,17 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **20 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **19 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** O uso do Supabase foi conferido em 28/08 e está folgado
-> em tudo: egress **0,005 de 5 GB**, MAU 2/50.000, realtime 36/2.000.000, Edge
-> Functions 131/500.000. O maior é o banco, com 8%. O banner de "grace period"
-> é aviso genérico do plano, não é sobre este projeto.
+> **Próximo da fila.** Nada esperando você. A conta `claudestaff` foi criada
+> em 28/08 e promovida a `admin` pela RPC `owner_set_role` (que grava na
+> trilha), então o `/admin` deixou de ser o único caminho do site sem cobertura
+> de navegador.
 >
-> **A única coisa esperando você são os três passos da conta `claudestaff`**
-> (abaixo). O código do teste e o job do CI já estão prontos e esperando os
-> secrets.
+> **O que sobra é trabalho meu:** moderação de vídeo, `Admin.jsx` para React
+> Query (agora destravado), o smoke test instável, os prints de jogo no
+> `violence/graphic` e a limpeza do `vercel-ignore.sh`.
 
 ---
 
@@ -43,27 +43,6 @@
   segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
-- ⬜ `[28/08]` 🟠 **Criar a conta de staff `claudestaff`.** *Aprovada pelo dono
-  em 28/08.* O código já está pronto e esperando: `e2e/painel-admin.mjs` e o job
-  `painel de admin num navegador` no CI, que hoje se pula com aviso amarelo.
-
-  **Os três passos, e a ordem importa:**
-
-  1. **Cadastre pelo site** (não me peça para criar por SQL). Sugestão de email:
-     `pedrovinicorrea+staff@gmail.com`, username `claudestaff`. **A senha tem
-     que ser escolhida por você e nunca passar pelo chat** — foi exatamente
-     esse o defeito da `claudetester`, cuja senha ficou no histórico da conversa.
-  2. **Guarde nos secrets do repositório:** *Settings → Secrets and variables →
-     Actions* → `E2E_STAFF_EMAIL` e `E2E_STAFF_PASSWORD`.
-  3. **Me avise.** Eu promovo para `admin` via `owner_set_role` (que grava em
-     `admin_logs`, ao contrário de um `UPDATE` cru) e confirmo que o job passou
-     a rodar.
-
-  **Cargo `admin`, nunca `owner`:** é o menor cargo que abre o painel. O estrago
-  máximo de um `admin` comprometido é ocultar conteúdo de usuário comum e
-  suspender — reversível, registrado, e a hierarquia já o impede de tocar em
-  `super_admin`/`owner`. O E2E é **somente leitura** por isso mesmo: conta de
-  staff automatizada agindo em todo PR deixaria estrago em dado real.
 
 ## 🟠 Importante — dá para fazer
 
@@ -80,11 +59,10 @@
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
-  `exhaustive-deps` suprimidos. **Continua travado:** o E2E autenticado usa
-  conta comum de propósito (é assim que ele prova que `/admin` é negado), então
-  o painel segue sem cobertura de navegador. Destravaria com uma segunda conta
-  de teste, com cargo de admin — decisão pendente, porque uma conta de staff
-  automatizada é superfície de ataque nova.
+  `exhaustive-deps` suprimidos. **Destravado em 28/08:** a conta `claudestaff`
+  existe, e `e2e/painel-admin.mjs` abre o painel e as sete abas num navegador de
+  verdade em todo PR. A rede que faltava para mexer ali com segurança agora
+  existe.
 - ⬜ `[27/08]` **O smoke test é instável no `networkidle`.** Numa rodada local,
   `/community` deu timeout de `page.goto`; na repetição, 13/13. **Não é
   regressão** — a falha não foi exceção de JS, e outras 10 rotas que

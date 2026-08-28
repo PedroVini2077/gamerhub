@@ -36,6 +36,8 @@
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia } from './util.mjs';
 
+import { MARCAS_DE_PAINEL } from './rotas.mjs';
+
 const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
 const EMAIL = process.env.E2E_STAFF_EMAIL;
 const SENHA = process.env.E2E_STAFF_PASSWORD;
@@ -72,24 +74,41 @@ async function morrer(etapa, erro) {
 
 try {
   // ── 1. Login ──────────────────────────────────────────────────────────────
-  await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
-  await page.getByPlaceholder(/email/i).first().fill(EMAIL);
-  await page.getByPlaceholder(/senha/i).first().fill(SENHA);
-  await page.getByRole('button', { name: '// ENTRAR', exact: true }).click();
-  await page.waitForURL(u => !u.pathname.startsWith('/login'), { timeout: 20000 });
-  ok('login com a conta de staff');
+  // Seletores idênticos aos do `fluxos.mjs` de propósito: aquele já roda verde
+  // no CI há semanas, então copiar dali é copiar o que está provado. Inventar
+  // seletor novo aqui só criaria uma segunda forma de quebrar.
+  await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.locator('#email').waitFor({ state: 'visible', timeout: 20000 });
+  await page.locator('#email').fill(EMAIL);
+  await page.locator('#password').fill(SENHA);
+  // `// ENTRAR` exato: a aba "Entrar" do topo do card também casaria com
+  // /entrar/i, e o Playwright recusa seletor ambíguo.
+  await page.getByRole('button', { name: '// ENTRAR' }).click();
+  // O composer só monta depois de a sessão resolver e o perfil carregar.
+  await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
+  ok('login com a conta de staff (sessão + perfil)');
 
   // ── 2. O painel abre ──────────────────────────────────────────────────────
-  await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded' });
-  await page.waitForLoadState('domcontentloaded');
+  //
+  // Atenção ao mecanismo, porque ele não é intuitivo: **não existe tela de
+  // "acesso negado"**. O guard simplesmente não renderiza o conteúdo, e o
+  // `<main>` fica vazio. Por isso a asserção é pela PRESENÇA das marcas de
+  // painel (as mesmas de `rotas.mjs`, que o `fluxos.mjs` usa ao contrário para
+  // provar que `user` não as vê).
+  //
+  // A primeira versão deste arquivo procurava o texto "Área restrita" como
+  // sinal de negação — e "Área restrita. Acesso controlado por hierarquia." é
+  // o SUBTÍTULO do painel funcionando. O teste teria reprovado o sucesso.
+  await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForTimeout(2500); // sessão + perfil + chunk do painel
 
-  // Negado seria a falha mais provável e a mais silenciosa: a tela renderiza,
-  // nada estoura, e o teste passaria se ele só conferisse que a rota respondeu.
-  const negado = await page.getByText(/área restrita|acesso negado|sem permissão/i).count();
-  if (negado > 0) {
+  const textoAdmin = await page.locator('main').innerText();
+  const marca = MARCAS_DE_PAINEL.find(re => re.test(textoAdmin));
+  if (!marca) {
     throw new Error(
-      'o painel respondeu com tela de acesso negado. A conta de staff perdeu o cargo '
-      + '`admin`, ou o portão do /admin passou a exigir cargo maior.');
+      'o /admin nao mostrou nenhuma marca de painel para uma conta `admin`. '
+      + 'Ou a conta perdeu o cargo, ou o portao passou a exigir cargo maior. '
+      + `Texto visto: ${JSON.stringify(textoAdmin.slice(0, 200))}`);
   }
   ok('/admin acessivel para cargo admin');
 
@@ -111,16 +130,13 @@ try {
   // O `fluxos.mjs` prova que `user` não entra no /admin. Falta a outra metade:
   // `admin` também não pode subir até o /owner. Sem isto, uma regressão que
   // desse poder de owner a qualquer staff passaria despercebida.
-  await page.goto(`${BASE}/owner`, { waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(1500);
-  const chegouNoOwner = /painel do fundador|owner/i.test(await page.title())
-    || (await page.getByRole('heading', { name: /fundador|owner/i }).count()) > 0;
-  const foiBarrado = (await page.getByText(/área restrita|acesso negado|sem permissão/i).count()) > 0
-    || !page.url().includes('/owner');
-  if (chegouNoOwner && !foiBarrado) {
+  await page.goto(`${BASE}/owner`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForTimeout(2500); // dá tempo do guard esvaziar a tela
+  const textoOwner = await page.locator('main').innerText();
+  if (/painel do fundador/i.test(textoOwner)) {
     throw new Error(
-      'uma conta `admin` abriu o /owner. A hierarquia quebrou: admin (rank 1) '
-      + 'nao pode alcancar a area do owner (rank 3).');
+      'uma conta `admin` abriu o Painel do Fundador. A hierarquia quebrou: '
+      + 'admin (rank 1) nao pode alcancar a area do owner (rank 3).');
   }
   ok('/owner negado para cargo admin');
 
