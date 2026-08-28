@@ -20,10 +20,45 @@
     <meta name="twitter:title" content="GamerHub — a comunidade gamer brasileira" />
     <meta name="twitter:description" content="Feed, mural, lives com chat ao vivo, keys grátis e ranks por XP. Entra no Hub." />
 
-    <!-- A landing usa Google Fonts; pré-conectar corta um round-trip no
-         primeiro carregamento. -->
+    <!-- Fontes: pré-conectar corta o round-trip de handshake. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- O CSS das fontes fica AQUI, e não num `@import` dentro do index.css.
+         Duas razões, as duas medidas pelo Lighthouse em 27/08:
+
+         1. Dentro do CSS, o navegador só descobre que precisa das fontes
+            depois de baixar e parsear o bundle de estilo inteiro — cadeia
+            serial de 1.126 ms. Aqui a busca começa junto com todo o resto.
+         2. Folha de estilo é render-blocking por padrão: eram ~819 ms de tela
+            branca esperando um recurso de terceiro. O par
+            `media="print"` + `onload="this.media='all'"` é o padrão
+            consagrado para carregar sem bloquear a primeira pintura.
+
+         O custo dessa escolha é honesto: o texto aparece por um instante na
+         fonte de sistema antes de trocar para Orbitron/Rajdhani. A URL já
+         usa `display=swap`, então esse comportamento já existia para os
+         arquivos de fonte — agora vale para o CSS também.
+
+         O `<noscript>` garante a fonte para quem desliga JavaScript, já que
+         o `onload` não roda nesse caso. -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

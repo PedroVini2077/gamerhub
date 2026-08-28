@@ -118,6 +118,46 @@ exceto o owner, reagindo em tempo real à `site_config`.
 
 ---
 
+## ⚡ O caminho crítico de carregamento
+
+> Levantado por um Lighthouse em produção em 27/08/2026 e corrigido em 28/08.
+> O diagnóstico era específico: **o servidor respondia em 30 ms**, o HTML
+> chegava rápido, e todo o custo estava no que o navegador fazia depois.
+
+**A conta que engana.** A página inteira transferia 387 KiB, mas o Lighthouse
+media 13,9 s de main thread. Os dois números só batem quando se percebe que o
+custo de CPU é proporcional ao JavaScript **descompactado**: o chunk da cena 3D
+tem 236 KB comprimidos e **887 KB** depois de descompactar. Peso de rede e
+trabalho de CPU são contas diferentes.
+
+**As quatro regras que saíram disso:**
+
+| Regra | Onde vive | Por quê |
+| --- | --- | --- |
+| `lazy()` separa o chunk, **não adia o download** | `landing/Scene3D.jsx` | O componente montava com o Hero, então o pedido saía no primeiro instante. Era caminho crítico com outro nome |
+| Decoração cara é **opcional por aparelho** | `Scene3D.decidirModo()` | Tela < 1024px, `saveData`, 2g/3g, ≤ 2 núcleos ou `reduce-motion` recebem a `Scene2D` (SVG + CSS, custo de JS zero) |
+| `@import` de CSS externo cria **cadeia serial** | `index.html` | `preconnect` economiza handshake, não descoberta. O CSS de fonte agora é `<link>` com `media="print"`/`onload` |
+| `manualChunks` **vence** `import()` dinâmico | `vite.config.js` | Os caminhos casam `/node_modules/<pacote>/` inteiro. A regra antiga (`/react/`) arrastava `@sentry/react` para o `vendor-react` |
+
+**Toda espera precisa de teto absoluto.** As duas esperas introduzidas aqui —
+a cena 3D e o Sentry — liberam sozinhas se o gatilho não vier. A primeira
+versão da cena esperava o evento `load`, que só dispara quando todo recurso
+inicial termina: com o Google Fonts inalcançável, `readyState` ficou em
+`interactive` por 9 s e a cena nunca montou. Enfeite que some não gera erro,
+não gera log e não quebra teste — é a falha silenciosa do `CLAUDE.md` §1.5.
+
+**Resultado medido no build** (o antes/depois de campo depende de rodar o
+Lighthouse no mesmo aparelho):
+
+| | Antes | Depois |
+| --- | --- | --- |
+| JS inicial (`index` + `vendor-react`) | 541,7 kB | **458,3 kB** |
+| Cena 3D no caminho crítico | 887 kB | **0** (depois do ocioso, e só no desktop) |
+| Prints da landing | 227 KB | **94 KB** |
+| Sentry | dentro do chunk inicial | 85 kB, sob demanda |
+
+---
+
 ## 🎨 Convenções de código
 
 Detalhadas no `CLAUDE.md`. Resumo:

@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+/* As fontes NÃO são carregadas aqui de propósito — ver `index.html`.
+ *
+ * Um `@import` dentro do CSS cria uma cadeia serial: o navegador precisa
+ * baixar e parsear ESTE arquivo antes de descobrir que existe um CSS de fonte
+ * para buscar. O `preconnect` do `index.html` não salva disso — ele abre a
+ * conexão cedo, mas ninguém a usa até a descoberta acontecer. O Lighthouse
+ * mediu 1.126 ms de cadeia por causa disto. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

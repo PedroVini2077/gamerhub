@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 27/08/2026 · **19 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **21 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** As três ações de painel do dono saíram em 27/08: Deploy
@@ -145,6 +145,21 @@
   (`git diff --quiet ... -- src ':(exclude)src/**/__tests__/**'`), mas mexer na
   regra que decide se o site atualiza pede teste do script antes, não um
   chute. Ganho: ~1 deploy por PR que só mexe em teste.
+- ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
+  A rodada de otimização de 28/08 foi medida **no build** (JS inicial 541,7 →
+  458,3 kB; prints 227 → 94 KB; cena 3D fora do caminho crítico). Falta o
+  antes/depois de campo, e ele só vale **no mesmo aparelho e na mesma
+  ferramenta** — as duas medições de 27/08 discordaram 4× no TBT (3.690 ms no
+  Termux, 15.310 ms no PageSpeed). Duas fontes: repetir o Lighthouse no mesmo
+  celular, e o **Vercel Speed Insights**, que já está instalado no projeto e
+  coleta de usuário real. *Ação do dono; sem isso "otimizei" é opinião (§6.1).*
+- ⬜ `[28/08]` **Os 887 KB da cena 3D continuam existindo.** Hoje eles não
+  pesam no carregamento (chegam depois do ocioso, e só no desktop), mas quem
+  recebe ainda paga 236 KB de download e o parse. Só há dois caminhos reais, e
+  nenhum é urgente: trocar `@react-three/fiber` por WebGL cru com os cinco
+  símbolos usados (`Shape`, `ExtrudeGeometry`, `MathUtils`, `Vector3`,
+  `AdditiveBlending`), ou aposentar a cena 3D e ficar com a `Scene2D` em todo
+  lugar. *Decisão de produto, não de código.*
 - ⬜ `[20/08]` **Denúncia criada não gera log de auditoria.** Decisão consciente
   (qualquer um denuncia, e logar inflaria a trilha) — reavaliar se a moderação
   sentir falta. Ver [DECISOES.md](docs/DECISOES.md).

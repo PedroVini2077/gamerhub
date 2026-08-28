@@ -6,6 +6,7 @@ import LandingShot from '../components/landing/LandingShot';
 import HighlightsStrip from '../components/landing/HighlightsStrip';
 import FinalCTA from '../components/landing/FinalCTA';
 import LandingFooter from '../components/landing/LandingFooter';
+import { DIMENSOES_DOS_PRINTS } from '../components/landing/dimensoesDosPrints';
 import feedShot from '../assets/landing/feed.jpg';
 import muralShot from '../assets/landing/mural.jpg';
 import livesShot from '../assets/landing/lives.jpg';
@@ -33,7 +34,7 @@ export default function Landing() {
           description="Acompanhe um feed colaborativo onde a galera posta dicas, descobertas e novidades — curta, comente e participe das discussões."
           details="Posts com categorias (dica, curiosidade, news), curtidas, comentários com respostas em thread, busca e filtros — tudo em tempo real."
           accent="green"
-          mockup={<LandingShot src={feedShot} alt="Feed do GamerHub com keys grátis e promoções na lateral" />}
+          mockup={<LandingShot src={feedShot} alt="Feed do GamerHub com keys grátis e promoções na lateral" width={DIMENSOES_DOS_PRINTS.feed.largura} height={DIMENSOES_DOS_PRINTS.feed.altura} />}
         />
 
         <FeatureSection
@@ -44,7 +45,7 @@ export default function Landing() {
           details="Mural com posts livres, imagens, reações e conversas em tempo real — o ponto de encontro informal da comunidade."
           accent="purple"
           reverse
-          mockup={<LandingShot src={muralShot} alt="Mural da comunidade do GamerHub" />}
+          mockup={<LandingShot src={muralShot} alt="Mural da comunidade do GamerHub" width={DIMENSOES_DOS_PRINTS.mural.largura} height={DIMENSOES_DOS_PRINTS.mural.altura} />}
         />
 
         <FeatureSection
@@ -54,7 +55,7 @@ export default function Landing() {
           description="Traga sua transmissão do Twitch ou do YouTube e assista as dos outros membros direto no Hub — com chat em tempo real e contador de espectadores ao vivo."
           details="Embeds de Twitch e YouTube com chat próprio do Hub, moderação, presença online e contador de espectadores em tempo real — sem sair da plataforma."
           accent="cyan"
-          mockup={<LandingShot src={livesShot} alt="Aba de Lives do GamerHub com gameplays, reacts e lives da comunidade" />}
+          mockup={<LandingShot src={livesShot} alt="Aba de Lives do GamerHub com gameplays, reacts e lives da comunidade" width={DIMENSOES_DOS_PRINTS.lives.largura} height={DIMENSOES_DOS_PRINTS.lives.altura} />}
         />
 
         <FeatureSection
@@ -65,7 +66,7 @@ export default function Landing() {
           details="Seção de keys grátis e promoções com a plataforma (Steam, Epic, GOG), código copiável e atualização constante pela equipe."
           accent="purple"
           reverse
-          mockup={<LandingShot src={keysShot} alt="Página de Keys e Promoções do GamerHub" />}
+          mockup={<LandingShot src={keysShot} alt="Página de Keys e Promoções do GamerHub" width={DIMENSOES_DOS_PRINTS.keys.largura} height={DIMENSOES_DOS_PRINTS.keys.altura} />}
         />
 
         <FeatureSection
@@ -75,7 +76,7 @@ export default function Landing() {
           description="Ganhe XP postando, recebendo curtidas, comentando e completando seu perfil — evolua de rank e mostre quem é o melhor pra toda a comunidade."
           details="Sistema de XP automático com ranks visuais, sub-ranks e progressão — quanto mais ativo, mais alto você sobe."
           accent="green"
-          mockup={<LandingShot src={ranksShot} alt="Sistema de ranks e XP do GamerHub" />}
+          mockup={<LandingShot src={ranksShot} alt="Sistema de ranks e XP do GamerHub" width={DIMENSOES_DOS_PRINTS.ranks.largura} height={DIMENSOES_DOS_PRINTS.ranks.altura} />}
         />
 
         <FinalCTA />
