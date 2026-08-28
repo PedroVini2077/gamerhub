@@ -103,6 +103,53 @@ describe('portão de documentação quebrada', () => {
 describe('BACKLOG.md — o contador bate com a lista', () => {
   const RAIZ_BL = join(import.meta.dirname, '../..');
 
+  /**
+   * `[28/08]` As quatro seções de prioridade têm que continuar existindo.
+   *
+   * Esta trava nasceu de um erro meu, e o erro foi feio: ao reescrever um item
+   * com um recorte por INTERVALO ("do item X até o cabeçalho Y"), engoli tudo
+   * que estava no meio — **quatro itens e a seção `🟢 Recomendado` inteira**.
+   * Nada acusou: o build passou, o CI ficou verde, e a lista simplesmente
+   * encolheu. Só apareceu porque estranhei a ausência de dois itens que eu
+   * lembrava de ter escrito.
+   *
+   * O contador de itens acima não pega este caso — quem apaga também atualiza
+   * o número. O que pega é a ESTRUTURA: se uma seção de prioridade sumiu, algo
+   * grande foi removido junto.
+   */
+  it('as quatro seções de prioridade continuam no arquivo', () => {
+    const texto = readFileSync(join(RAIZ_BL, 'BACKLOG.md'), 'utf8');
+    const esperadas = [
+      '## 🟠 Importante — precisa de ação ou decisão do dono',
+      '## 🟠 Importante — dá para fazer',
+      '## 🟢 Recomendado',
+      '## 🔵 Só quando o volume crescer',
+    ];
+    const sumiram = esperadas.filter(t => !texto.includes(t));
+    expect(sumiram, sumiram.length
+      ? 'Seção de prioridade sumiu do BACKLOG.md: ' + sumiram.join(', ') + '\n'
+        + 'Em 28/08 um recorte por intervalo apagou a `🟢 Recomendado` inteira e\n'
+        + 'quatro itens junto, sem nada acusar. Ao remover um item, recorte o\n'
+        + 'BLOCO dele (até o próximo `- ⬜` ou `## `), nunca um intervalo entre\n'
+        + 'duas marcas distantes.'
+      : undefined).toEqual([]);
+  });
+
+  it('nenhuma seção de prioridade fica vazia', () => {
+    const texto = readFileSync(join(RAIZ_BL, 'BACKLOG.md'), 'utf8');
+    const secoes = texto.split(/^## /m).slice(1);
+    const vazias = secoes
+      .filter(bloco => /^(🟠|🟢|🔵) /.test(bloco))
+      .filter(bloco => !bloco.includes('- ⬜'))
+      .map(bloco => bloco.split('\n')[0]);
+
+    expect(vazias, vazias.length
+      ? 'Estas seções ficaram sem item nenhum: ' + vazias.join(', ') + '\n'
+        + 'Ou o último item foi concluído (e aí a seção sai junto), ou uma\n'
+        + 'remoção levou mais do que devia.'
+      : undefined).toEqual([]);
+  });
+
   it('o número anunciado é o número de itens', () => {
     const texto = readFileSync(join(RAIZ_BL, 'BACKLOG.md'), 'utf8');
     const declarado = texto.match(/\*\*(\d+) itens abertos\*\*/);

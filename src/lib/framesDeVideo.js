@@ -41,52 +41,116 @@ const QUALIDADE_JPEG = 0.7;
 const TEMPO_MAXIMO_MS = 15000;
 
 /**
+ * Um vídeo cuja duração o navegador só descobre depois de procurar o fim.
+ *
+ * `video.duration === Infinity` é um caso REAL e comum — acontece com arquivos
+ * gravados em streaming (o cabeçalho sai antes de a duração ser conhecida) e
+ * com boa parte do que sai de câmera de celular. A versão anterior desistia
+ * calada nesse caso, e era um dos cinco caminhos que devolviam lista vazia sem
+ * dizer por quê.
+ *
+ * A saída conhecida é procurar um instante absurdamente distante: o navegador
+ * é obrigado a varrer até o fim para atender o pedido, e aí a duração vira um
+ * número. Depois disso a amostragem normal funciona.
+ */
+const INSTANTE_ABSURDO = 1e6;
+
+/**
  * @param {File|Blob} arquivo vídeo escolhido pelo usuário
- * @returns {Promise<string[]>} data URLs JPEG. Lista VAZIA quando não deu para
- *   extrair — quem chama precisa tratar isso como "não analisado", nunca como
- *   "analisado e limpo".
+ * @returns {Promise<{quadros: string[], motivo: string|null}>} `quadros` são
+ *   data URLs JPEG; `motivo` diz por que a lista veio vazia (ou `null` quando
+ *   deu certo). Lista vazia é **"não analisado"**, nunca "analisado e limpo".
+ *
+ * ── Por que devolve MOTIVO, e não só a lista ────────────────────────────────
+ *
+ * Porque em 28/08 um vídeo real falhou e ninguém conseguiu dizer por quê. A
+ * versão anterior tinha **cinco** caminhos diferentes terminando no mesmo
+ * `resolve([])`: `createObjectURL` estourando, formato que o navegador não
+ * decodifica, duração não finita, o teto de 15 s, e todo `drawImage` falhando.
+ * Cinco causas, um sintoma, nenhuma pista — e as correções de cada uma são
+ * completamente diferentes.
  */
 export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
   return new Promise((resolve) => {
     let url;
     let encerrado = false;
+    let duracaoResolvida = false;
 
     const video = document.createElement('video');
     const quadros = [];
 
     // Uma saída só, e ela sempre solta o object URL. Sem isso o arquivo de
     // vídeo inteiro fica preso na memória do navegador (§6.1, item 4).
-    const encerrar = () => {
+    const encerrar = (motivo = null) => {
       if (encerrado) return;
       encerrado = true;
       clearTimeout(cronometro);
       video.removeAttribute('src');
       video.load();
+      video.remove();
       if (url) URL.revokeObjectURL(url);
-      resolve(quadros);
+      resolve({ quadros, motivo: quadros.length ? null : (motivo ?? 'motivo_desconhecido') });
     };
 
-    const cronometro = setTimeout(encerrar, TEMPO_MAXIMO_MS);
+    const cronometro = setTimeout(
+      () => encerrar(`estourou o teto de ${TEMPO_MAXIMO_MS} ms`),
+      TEMPO_MAXIMO_MS,
+    );
 
     try {
       url = URL.createObjectURL(arquivo);
     } catch {
-      encerrar();
+      encerrar('o navegador recusou criar a URL do arquivo');
       return;
     }
 
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    // Necessário para o canvas não ficar "tainted" quando a origem difere.
-    video.crossOrigin = 'anonymous';
+    // `crossOrigin` SAIU. Ele foi escrito para evitar canvas "tainted", mas a
+    // origem aqui é sempre `blob:` do próprio documento — mesma origem por
+    // construção, então não havia o que proteger. E declarar CORS numa URL
+    // `blob:` faz o navegador tratar a carga como requisição de outra origem,
+    // que é justamente o tipo de recusa silenciosa que estamos caçando.
     video.src = url;
 
-    video.onerror = encerrar;
+    // Fora da tela, mas DENTRO do documento. Navegador de celular costuma
+    // recusar decodificar vídeo de elemento solto na memória — e o sintoma é
+    // exatamente o desta falha: nada acontece, sem erro nenhum.
+    video.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
+    document.body.appendChild(video);
+
+    video.onerror = () => encerrar(
+      `o navegador não decodificou o arquivo (tipo: ${arquivo?.type || 'desconhecido'})`,
+    );
 
     video.onloadedmetadata = () => {
+      // Duração desconhecida: força o navegador a varrer até o fim.
+      if (!Number.isFinite(video.duration) && !duracaoResolvida) {
+        duracaoResolvida = true;
+        video.currentTime = INSTANTE_ABSURDO;
+        return;
+      }
+      comecarAmostragem();
+    };
+
+    // Depois do salto para o instante absurdo, a duração vira um número e o
+    // navegador dispara `durationchange`.
+    video.ondurationchange = () => {
+      if (encerrado || !duracaoResolvida) return;
+      if (Number.isFinite(video.duration) && video.duration > 0) {
+        duracaoResolvida = false;   // não repetir o truque
+        video.ondurationchange = null;
+        comecarAmostragem();
+      }
+    };
+
+    function comecarAmostragem() {
       const duracao = video.duration;
-      if (!Number.isFinite(duracao) || duracao <= 0) { encerrar(); return; }
+      if (!Number.isFinite(duracao) || duracao <= 0) {
+        encerrar(`o navegador não soube dizer a duração (${duracao})`);
+        return;
+      }
 
       // Frações em vez de segundos fixos: funciona igual num vídeo de 5 s e num
       // de 5 min. Evita 0 e 1 exatos porque o primeiro e o último quadro
@@ -103,9 +167,15 @@ export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
       const ctx = canvas.getContext('2d');
 
       let indice = 0;
+      let falhasAoDesenhar = 0;
       const proximo = () => {
         if (encerrado) return;
-        if (indice >= marcas.length) { encerrar(); return; }
+        if (indice >= marcas.length) {
+          encerrar(falhasAoDesenhar
+            ? `o canvas recusou desenhar os ${falhasAoDesenhar} quadros`
+            : 'nenhum quadro foi produzido');
+          return;
+        }
         video.currentTime = marcas[indice++];
       };
 
@@ -117,11 +187,12 @@ export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
         } catch {
           // Um quadro que falhou não invalida os outros: três quadros com dois
           // aproveitados ainda é infinitamente melhor que nenhuma checagem.
+          falhasAoDesenhar++;
         }
         proximo();
       };
 
       proximo();
-    };
+    }
   });
 }

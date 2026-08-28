@@ -248,7 +248,34 @@ export function AuthProvider({ children }) {
   // de login é um passo a mais sem motivo, e para o banido é pior ainda:
   // sugere tentar de novo o que acabou de ser recusado.
   async function signOutBanned() {
-    try { await signOut(); } catch { /* ignora — o redirect abaixo garante o estado limpo */ }
+    // `[28/08]` NÃO espera a ida ao servidor, e o motivo está medido.
+    //
+    // O dono relatou demora ao clicar em "Sair agora". A causa era esta função
+    // chamar `signOut()`, que faz `await supabase.auth.signOut()` com o escopo
+    // **global** — uma ida ao servidor para revogar os refresh tokens — e só
+    // então trocar de página.
+    //
+    // Medido contra o projeto de produção, 5 chamadas: **0,30 s a 1,08 s** só
+    // de ida e volta, e isso a partir de um datacenter com conexão quente. No
+    // 4G de um celular é bem pior. A tela ficava parada nesse tempo todo.
+    //
+    // O escopo **local** limpa a sessão do navegador sem falar com o servidor,
+    // então a troca de página é imediata.
+    //
+    // ── Por que abrir mão da revogação global AQUI é seguro ────────────────
+    //
+    // O refresh token continua válido até expirar — e não serve para nada. A
+    // conta está BANIDA: a RLS nega tudo no banco, e qualquer sessão que
+    // reapareça cai na `BannedScreen` de novo pelo `applyBannedCheck`. Além
+    // disso é o token da própria pessoa, no aparelho dela: ela poderia
+    // simplesmente não clicar em sair e mantê-lo do mesmo jeito.
+    //
+    // O `signOut()` comum (o botão "Sair" do `Header`) **continua global**, que
+    // é o certo para quem não está banido — inclusive em aparelho compartilhado.
+    if (profile?.username) {
+      logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
+    }
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* o redirect abaixo garante o estado limpo */ }
     window.location.replace('/');
   }
 

@@ -16,6 +16,25 @@
 
 ## Ferramental
 
+### `[28/08]` Testar moderação com `ogamerpedro`, nunca com `claudetester`
+
+**A decisão do dono:** *"não precisa de uma terceira conta, existe uma minha:
+ogamerpedro, dá pra usar ela"*.
+
+**O problema que ela resolve.** Testar moderação em produção significa **banir
+alguém**. A `claudetester` é a conta que o E2E usa para logar, e enquanto ela
+está banida a `BannedScreen` cobre a tela — o job "fluxos autenticados" falha
+apontando para o site quando o problema é o estado da conta. Aconteceu **duas
+vezes em 20 minutos** em 28/08.
+
+**Por que não uma terceira conta**, que foi a primeira sugestão: seria a
+terceira conta de teste a manter, com senha, email e ciclo de vida próprios — e
+o dono já tem uma conta pessoal que serve. Menos superfície é melhor.
+
+**O que já está mitigado, e o que não está.** O `recusarSeBanido()` faz o CI
+**nomear a causa** em vez de dar timeout de 30 s. Mas mitigar o diagnóstico não
+impede o vermelho: o que impede é banir outra conta.
+
 ### `[24/08]` Contas de teste com cargo: o que decidir antes de criar
 
 **Eu consigo mudar cargo sozinho.** O guard `guard_profile_privileged_cols` só

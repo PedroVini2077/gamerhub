@@ -109,6 +109,28 @@ reversível.
 > o piso de 0.10 no caminho de imagem nunca disparou. Quem cobre essa classe em
 > imagem é `sexual` em 0.55.
 
+### `[28/08]` `sexual` em 0.55 é a única defesa dessa classe em imagem
+
+**O fato, conferido na documentação da OpenAI:** a `omni-moderation-latest`
+aplica a **imagem** só seis categorias. `sexual/minors` é *text only*, então o
+piso de 0.10 que está no mapa de imagem **nunca disparou e nunca vai disparar**.
+Foi a instrumentação de notas, criada no dia anterior, que revelou isso.
+
+**A decisão:** deixar como está. Quem cobre a classe em imagem é `sexual` em
+0.55, que roda e **oculta na hora** — piso deliberadamente mais folgado que o do
+texto justamente para pegar o caso duvidoso. O caminho de texto continua com
+`sexual/minors` ativo e funcionando.
+
+**Por que não baixar o 0.55 "por segurança":** este caminho **oculta**, não
+enfileira. Errar para baixo aqui censura de verdade — foto de praia e biquíni
+pontuam nessa categoria sem serem pornografia. Sem uma denúncia ou um caso real
+que mostre passagem indevida, mexer no número seria chute, e chute que censura
+é o pior tipo.
+
+**O que reabre esta decisão:** um caso concreto de conteúdo dessa classe
+passando, ou a OpenAI estender `sexual/minors` a imagem — nesse dia o piso de
+0.10 que já está no mapa volta a valer sozinho, sem precisar de código novo.
+
 ### `[23/08]` O texto moderado vem do banco, não do cliente
 
 Aceitar o texto do corpo da requisição permitia mandar o `content_id` de um

@@ -11,51 +11,32 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026, ao fechar a sessão ·
-**17 itens abertos** (+ 1 ideia sem compromisso)
+**Última conferência contra o sistema:** 28/08/2026, madrugada ·
+**16 itens abertos** (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** O ciclo da moderação de imagem fechou em 28/08:
-> `too_many_images` corrigido (v12), pisos ajustados com dado (v13) e
-> **confirmado em execução** — o dono postou 3 imagens e as notas de todas as
-> categorias apareceram no log. A instrumentação nova já se pagou: em menos de
-> 24 h ela revelou que `sexual/minors` não roda em imagem (v14).
+> **Conferência item a item, e ela achou um erro meu.** Ao reescrever um item no
+> PR #92 usei um recorte por INTERVALO e engoli o que estava no meio: **quatro
+> itens e a seção `🟢 Recomendado` inteira** — Gmail, React Query, confirmar
+> desempenho e emagrecer o chunk 3D. Nada acusou; o CI ficou verde e a lista só
+> encolheu. Recuperados do `git show`, conferidos um a um contra a versão
+> íntegra, e agora há teste exigindo que as quatro seções de prioridade existam.
 >
-> **Verificado em produção nesta sessão** (não é inferência — conferido no
-> banco ao fechar): a moderação de imagem roda e registra as notas; o
-> banimento, o recurso e o **aviso de desbanimento** funcionam ponta a ponta —
-> `ogamerpedro` recebeu e leu o aviso às 17:53; a fila está zerada.
+> **Fechados nesta madrugada:** o atraso da `BannedScreen` (medido: 0,30 a
+> 1,08 s de ida ao servidor — agora usa escopo local e sai na hora), a nota real
+> da IA chegando ao painel, e a extração de quadros de vídeo, que ganhou motivo
+> de falha e trava em navegador de verdade.
 >
-> **A documentação ganhou três camadas** (§6.2): um portão no CI que reprova
-> documento citando arquivo inexistente, um lembrete semanal que abre issue com
-> os documentos que o código deixou para trás, e a regra de reler a seção antes
-> de editá-la. Os dois scripts já se pagaram — acharam
-> `register_login_attempt` documentada como existente quando ela **não existe
-> mais no banco**.
+> **Viraram decisão** (§6.2 regra 4, decisão não é backlog): testar moderação
+> com `ogamerpedro` → [DECISOES-FERRAMENTAL.md](docs/DECISOES-FERRAMENTAL.md);
+> `sexual` em 0.55 ser a única defesa dessa classe em imagem →
+> [DECISOES.md](docs/DECISOES.md).
 >
-> **O único caminho de 28/08 que ninguém exerceu é a moderação de VÍDEO** (item
-> logo abaixo). Ela nasceu quebrada e foi consertada junto com a de imagem, mas
-> nunca rodou com sucesso uma vez sequer.
->
-> **Esperando você:** postar um vídeo (fecha o último buraco), e o PageSpeed.
+> **Esperando você:** três decisões de custo (HIBP, plano Team, sair do Gmail),
+> a escolha do React Query, e o desenho do aviso na landing.
 
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[28/08]` 🟢 **Atraso ao fechar a `BannedScreen`.** Dois, com tamanhos
-  diferentes: um pequeno quando o contador de 20 s zera sozinho, e **um maior ao
-  clicar em "Sair agora"**. *Hipótese, não medida:* o `signOut` do
-  `useAuth.jsx:212` faz `supabase.auth.signOut()` e a tela só some quando a
-  promessa volta — ou seja, o tempo é ida ao servidor, não render. Se for isso,
-  o certo é a tela sair na hora e o `signOut` correr atrás. **Medir antes de
-  mexer** (§1.2): abrir a aba Network e ver quanto demora o `POST /auth/v1/logout`.
-
-- ⬜ `[28/08]` 🟢 **Ao testar moderação, use `ogamerpedro`, não `claudetester`.**
-  *Decidido pelo dono em 28/08: não vamos criar uma terceira conta — a conta
-  pessoal dele serve.* A `claudetester` é a que o E2E usa para logar: enquanto
-  ela está banida, o job "fluxos autenticados" falha. Já aconteceu **duas vezes
-  em 20 minutos**. O `recusarSeBanido()` faz o CI nomear a causa, mas não impede
-  o vermelho — o que impede é banir outra conta.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -92,54 +73,35 @@
   > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
   > pendentes.
 
-- ⬜ `[28/08]` 🟠 **A moderação de VÍDEO falhou no primeiro vídeo real — causa
-  ainda não confirmada.** *Saiu de "nunca foi exercida" para "foi exercida e
-  não funcionou". O dono postou um vídeo às 22:20.*
+- ⬜ `[28/08]` 🟢 **Confirmar a extração de quadros com o vídeo que falhou.**
+  *A falha foi reproduzida em parte, a causa foi cercada, e o caminho ficou
+  endurecido — falta só o dono repostar aquele vídeo específico.*
 
-  **O que está provado, pelo log da Supabase:** `moderate-text` foi chamada
-  para aquele post; **`moderate-image` não foi chamada nenhuma vez**. Logo, a
-  falha é no navegador, antes da rede — não é a API, não é o
-  `too_many_images`, não é autenticação (o `moderate-text` do mesmo post
-  passou).
+  **O que estava provado:** `moderate-text` foi chamada para o post do vídeo e
+  `moderate-image` **não foi chamada nenhuma vez**. A falha era no navegador,
+  antes da rede.
 
-  **Hipótese, e ela vem com o teste que a confirma** (§1.1): `extrairQuadros`
-  devolveu lista vazia, provavelmente por codec que o `<canvas>` não decodifica.
-  O que confirma é o próximo vídeo publicado — desde 28/08 a tela **avisa** com
-  quantos vídeos não puderam ser analisados.
+  **O bug de fundo, e ele foi corrigido:** `extrairQuadros` tinha **cinco**
+  caminhos diferentes terminando no mesmo `resolve([])` — `createObjectURL`
+  estourando, formato não decodificado, duração não finita, teto de 15 s, e
+  canvas recusando. Cinco causas, um sintoma, nenhuma pista, e correções
+  completamente diferentes para cada uma. Agora cada uma diz seu nome.
 
-  **O que já foi corrigido:** a falha deixou de ser invisível. `moderateVideos`
-  devolve `{ videos, analisados, semQuadros }` em vez de nada, a chamada deixou
-  de ser uma promessa solta sem `catch`, e quem publica vê o aviso. Antes disso
-  o vídeo subia sem análise e ninguém ficava sabendo — nem na tela, nem no
-  `admin_logs`, nem em teste.
+  **O que mais mudou, e por quê:**
 
-  > Não dá para gritar em `admin_logs` daqui: a RPC de registro é
-  > `service_role`, e criar um canal de log chamável pelo navegador repetiria o
-  > erro do `register_login_attempt`, que qualquer um forjava.
+  | Mudança | Motivo |
+  | --- | --- |
+  | trata `duration === Infinity` | caso real e comum em vídeo de celular e de gravação em streaming; era desistência calada |
+  | `crossOrigin` removido | a origem é `blob:` do próprio documento — mesma origem por construção, nada a proteger, e declarar CORS numa `blob:` só cria recusa silenciosa |
+  | vídeo entra no DOM, fora da tela | navegador de celular recusa decodificar elemento solto na memória, e o sintoma é exatamente "nada acontece, sem erro" |
 
-  **Ação do dono:** postar mais um vídeo, de preferência um MP4/H.264 comum. Se
-  o aviso aparecer, é a extração; se não aparecer e o log da Edge Function
-  mostrar `analisadas=3/3`, está resolvido.
+  **Travado por `e2e/quadros-de-video.mjs`**, que roda no CI: fabrica um vídeo
+  de verdade com `MediaRecorder`, exige os 3 quadros distintos em JPEG, e exige
+  que um arquivo inválido falhe **dizendo por quê**.
 
-- ⬜ `[28/08]` 🟡 **`sexual/minors` não roda em imagem — e não há conserto
-  nosso.** *Achado em 28/08 pela instrumentação nova, menos de 24 h depois de
-  ela existir.*
-
-  A `omni-moderation-latest` aplica **seis** categorias a imagem; `sexual/minors`
-  é **text only** (fato conferido na documentação da OpenAI). O piso de 0.10 que
-  está no mapa de imagem nunca disparou e nunca vai disparar.
-
-  **Não é brecha aberta:** quem cobre essa classe em imagem é `sexual` em 0.55,
-  que roda e **oculta na hora** — e o caminho de texto continua com
-  `sexual/minors` ativo. Já está documentado no código, em
-  [MODERACAO-IA.md](docs/MODERACAO-IA.md) e travado por teste, e o log passou a
-  distinguir "não veio e não deveria" de "não veio e deveria".
-
-  **O que fica em aberto é decisão de produto, não código:** se `sexual` em 0.55
-  é folgado o bastante para ser a única linha de defesa dessa classe em imagem.
-  Baixar o piso pega mais casos duvidosos e também mais foto de praia — e este
-  caminho **oculta**, então errar aqui censura de verdade. Sem denúncia ou caso
-  real, mexer seria chute.
+  **Ação do dono, e é a única coisa que falta:** repostar aquele mesmo vídeo. Se
+  passar, o log mostra `analisadas=3/3`. Se falhar, o aviso na tela agora vem
+  com a causa — e aí o conserto é dirigido, não mais adivinhação.
 
 - ⬜ `[28/08]` 🟢 **Aviso do banimento FORA do site, na landing.** *Pedido do
   dono, adiado por ele mesmo: "depois a gente implementa isso".*
@@ -177,41 +139,108 @@
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[28/08]` 🟢 **`moderation_queue.ai_score` é sempre 1 — a nota real nunca
-  chega ao banco.** A `moderate-image` manda `p_score: 1` de propósito (a
-  decisão já foi tomada pelos pisos fixos, e o dial do painel não deve
-  desfazê-la), mas o efeito colateral é que o painel mostra "score 1" para tudo.
-  Quem revisa a fila não consegue distinguir um 0.96 raspando o piso de um 0.99
-  gritante — e são casos com decisões diferentes.
+- ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
+  nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
+  limite (~500/dia), o risco de o Google travar por envio automatizado, e a
+  falta de painel de entrega continuam. Com domínio próprio (~R$40/ano) +
+  Resend vira `nao-responda@…`; sem domínio, o Brevo é a opção. *Não é urgente
+  com 3 usuários.*
 
-  A nota verdadeira existe **só no log da Edge Function**. Conferido em 28/08:
-  o log guarda pelo menos **7 dias** (medido, não suposto — havia 5.814 linhas
-  de 21/08). Serve para ajustar piso; não serve para quem está olhando um item
-  da fila agora.
 
-  **Conserto pequeno:** mandar a nota real num parâmetro novo e gravá-la em
-  `moderation_queue.metadata`, sem tocar no `p_score` que decide.
+## 🟢 Recomendado
 
-- ⬜ `[28/08]` 🟢 **Faltam dois splits de documento: `FUNCIONALIDADES.md` e
-  `DECISOES.md`.** *Escolhidos pelo dono como o próximo passo depois do split do
-  `CLAUDE.md`.*
+- ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** **Conferido contra o
+  sistema em 28/08, e a justificativa original não se sustenta mais** (§1.4).
 
-  | Documento | Maior seção | Situação |
+  O item dizia que a migração "resolveria de verdade os `exhaustive-deps`
+  suprimidos". Medido:
+
+  | | |
+  | --- | --- |
+  | Warnings de lint dentro do `Admin.jsx` | **zero** — os 12 restantes estão espalhados por 10 outros arquivos |
+  | Supressões dentro do `Admin.jsx` | 3 |
+  | Supressões no resto do projeto | 7, em 7 arquivos |
+  | Tamanho do `Admin.jsx` | **213 linhas** (era 918 antes dos splits) |
+
+  E as três supressões têm a **mesma causa, que não é falta de React Query**:
+  as funções de fetch vêm dos hooks de domínio sem `useCallback`, então mudam
+  de identidade a cada render — incluí-las nas deps faria o painel recarregar
+  em loop. **O conserto pequeno é memoizar essas funções nos próprios hooks**,
+  e aí as deps ficam honestas sem migração nenhuma.
+
+  React Query continua tendo valor real (cache entre abas, dedupe, invalidação),
+  mas isso é ganho de arquitetura — não conserto de lint. **Vale decidir qual
+  dos dois se quer** antes de gastar uma sessão nisso.
+
+  **A rede ficou pronta em 28/08.** Ao planejar a migração ficou claro que as
+  duas partes mais arriscadas — a paginação com estado local
+  (`loadMorePosts`/`loadMoreKeys`) e o canal lateral que escreve as notificações
+  no estado do pai — não eram tocadas por teste nenhum. Refatorar camada de
+  dados às cegas justamente ali seria o pior lugar para começar. O
+  `e2e/painel-admin.mjs` passou a **contar as linhas antes e depois do
+  "Carregar mais"** e a exigir estado definido na aba de Notificações.
+
+  **O que falta agora é só a migração em si**, e ela pede sessão própria: são 8
+  consultas num `Promise.all`, duas paginações e um canal lateral para
+  desmontar. Ver [ARQUITETURA.md](docs/ARQUITETURA.md).
+
+- ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
+  A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;
+  cena 3D e Sentry fora do caminho crítico; carregamento inicial hoje em
+  691,7 kB, conferido por `scripts/orcamento-de-bytes.mjs`). Falta o
+  antes/depois de campo, e ele só vale **no mesmo aparelho e na mesma
+  ferramenta** — as duas medições de 27/08 discordaram 4× no TBT (3.690 ms no
+  Termux, 15.310 ms no PageSpeed). Duas fontes: repetir o Lighthouse no mesmo
+  celular, e o **Vercel Speed Insights**, que já está instalado no projeto e
+  coleta de usuário real. *Ação do dono; sem isso "otimizei" é opinião (§6.1).*
+
+  **Como rodar o Lighthouse** (perguntado pelo dono em 28/08) — três caminhos,
+  do mais fácil ao mais fiel:
+
+  | Onde | Como | Serve para |
   | --- | --- | --- |
-  | `docs/FUNCIONALIDADES.md` | `✨ Funcionalidades` — **365 linhas** | aberto |
-  | `docs/DECISOES.md` | `Ferramental` — **302 linhas** | aberto |
-  | ~~`CLAUDE.md`~~ | ~~1.512 linhas, 4 seções acima de 150~~ | ✅ 28/08 → `docs/regras/` via `@import` |
-  | ~~`docs/MODERACAO.md`~~ | ~~política de mídia~~ | ✅ 28/08 → `MODERACAO-IA.md` |
+  | **PageSpeed Insights** | abrir `pagespeed.web.dev`, colar a URL do site | comparar com a medição de 27/08 — foi ela que deu 36 e depois 92 |
+  | **Chrome no PC** | F12 → aba **Lighthouse** → *Mobile* + *Performance* → *Analyze page load* | iterar rápido; roda na sua máquina, então o número oscila com o que estiver aberto |
+  | **O próprio celular** | Termux, como em 27/08 | o único que mede o aparelho real |
 
-  **O corte não é óbvio, e é por isso que ainda não foi feito.**
-  `FUNCIONALIDADES.md` teria que ser cortado por área de produto (feed, lives,
-  painéis…), e `DECISOES.md` por tema — e cortar mal um arquivo de decisões
-  espalha a memória do projeto em vez de organizá-la. Pede proposta (§6.2).
+  **As duas regras que fazem a medição valer alguma coisa** (§0.3 regra 5):
+  medir **antes e depois na MESMA ferramenta e no MESMO aparelho**, e sempre em
+  **janela anônima** (extensão do Chrome entra na conta e suja o resultado).
+  Comparar um PageSpeed de hoje com um Lighthouse local de ontem não diz nada.
 
-  **Ao criar arquivo novo, acrescentar em três lugares**, senão ele nasce órfão:
-  a tabela do `README.md`, o mapa `TERRITORIO` em
-  `scripts/documentacao-envelhecida.mjs`, e o documento de origem com o ponteiro
-  para onde o conteúdo foi.
+  Repare que o número de laboratório oscila mesmo sem nada mudar — foi por isso
+  que o portão do CI virou **byte** (`scripts/orcamento-de-bytes.mjs`) e não
+  tempo. O Lighthouse aqui serve para confirmar a direção, não para aprovar ou
+  reprovar.
+
+- ⬜ `[28/08]` 🔵 **Emagrecer o chunk da cena 3D — o que sobrou depois do
+  gargalo real.** *A cena 3D FICA (decisão do dono, registrada em
+  [DECISOES.md](docs/DECISOES.md)). E o problema de desempenho que ela causava
+  **já foi corrigido** — isto aqui é o resto.*
+
+  **O que foi resolvido em 28/08.** O perfil de CPU do PageSpeed mostrou onde o
+  tempo ia de verdade:
+
+  | Categoria | Tempo |
+  | --- | --- |
+  | **Other** (o laço de animação) | **29.441 ms** |
+  | Script Evaluation | 789 ms |
+  | Script Parsing & Compilation | 79 ms |
+
+  A cena continuava desenhando 60×/s depois que o visitante rolava para longe.
+  Agora o `frameloop` desliga fora da tela — medido num navegador real: **125
+  desenhos em 2 s visível, 0 fora da tela**, travado por `e2e/cena-3d.mjs`.
+
+  **O que sobra, e por que é 🔵 e não 🟠:** o chunk continua com 887 kB, e
+  trocar `<Canvas>` por `createRoot` + `extend` seletivo vale **−20%** (887 →
+  707 kB, medido com experimento descartável). Isso importa para **download em
+  rede lenta**, não para thread principal — os 789 ms de execução já eram
+  pequenos perto do laço.
+
+  **O custo de fazer:** `createRoot` não traz o tratamento de resize que o
+  `<Canvas>` faz sozinho; seria preciso escrever e testar isso. Trabalho real,
+  ganho moderado, risco na porta de entrada do site. Por isso fica para quando
+  houver folga, e não agora.
 
 ## 🔵 Só quando o volume crescer
 

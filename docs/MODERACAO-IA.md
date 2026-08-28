@@ -24,6 +24,18 @@
 | `violence/graphic` | **0.95** | **enfileira** | sim | a única que separa gore de ação comum |
 | `violence` | — | **nada** | sim | aposentada em 28/08 |
 
+### `[29/08]` A nota que decide e a nota que se registra são diferentes
+
+A `moderate-image` manda `p_score = 1` de propósito: a política por categoria já
+bateu o martelo, e o dial do painel não deve desfazer o que os pisos fixos
+decidiram. O efeito colateral era que **todo item de imagem aparecia na fila com
+"score 1"** — quem revisa não distinguia um 0.96 raspando o piso de um 0.99
+gritante, e são casos com decisões diferentes.
+
+`apply_ai_moderation` ganhou `p_score_real`: `p_score` continua decidindo,
+`p_score_real` é o que fica gravado em `moderation_queue.metadata` e no texto do
+log. Sem ele, cai no comportamento antigo — nenhum chamador existente mudou.
+
 ### `sexual/minors` não vale para imagem — e o piso de 0.10 nunca disparou
 
 **Fato conferido na documentação da OpenAI, não dedução.** A
@@ -155,8 +167,23 @@ imagem — nudez, gore, automutilação — por custo de imagem.
 > `service_role`, e abrir um canal de log chamável pelo navegador repetiria o
 > erro do `register_login_attempt` — qualquer um forjaria entradas.
 >
-> **O que ainda falta:** confirmar a causa. O próximo vídeo publicado vai
-> mostrar o aviso na tela, e aí sabemos se é extração vazia ou outra coisa.
+> **`[29/08]` A causa foi cercada e o caminho endurecido.** O dono repostou e o
+> aviso apareceu — confirmando que a extração devolve lista vazia. Investigando,
+> o problema de fundo não era uma causa e sim **cinco**, todas terminando no
+> mesmo `resolve([])` sem dizer nada: `createObjectURL` estourando, formato não
+> decodificado, duração não finita, teto de 15 s, e canvas recusando desenhar.
+>
+> Agora cada uma diz seu nome, e três coisas mudaram no caminho:
+>
+> | Mudança | Motivo |
+> | --- | --- |
+> | trata `duration === Infinity` | caso real e comum em vídeo de celular e de gravação em streaming — era desistência calada |
+> | `crossOrigin` removido | a origem é `blob:` do próprio documento, mesma origem por construção: não havia o que proteger, e declarar CORS numa `blob:` só cria recusa silenciosa |
+> | vídeo entra no DOM, fora da tela | navegador de celular recusa decodificar elemento solto na memória, e o sintoma é exatamente "nada acontece, sem erro" |
+>
+> Travado por `e2e/quadros-de-video.mjs`, que fabrica um vídeo real com
+> `MediaRecorder` e exige tanto os 3 quadros quanto que um arquivo inválido
+> falhe **dizendo por quê**.
 
 **Falha de extração grita.** Vídeo corrompido ou de codec desconhecido devolve
 lista vazia, e lista vazia é tratada como **"não analisado"**, nunca como
