@@ -16,10 +16,16 @@ import { chromium } from 'playwright';
 // opcional — sem o arquivo, o Playwright acha o navegador dele sozinho.
 const CHROMIUM_PRE_INSTALADO = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
-export function abrirNavegador() {
+// WebGL por software. Chromium sem GPU (CI, container) não cria contexto WebGL
+// nenhum — e o teste da cena 3D, que precisa contar desenhos, reportaria "sem
+// contexto" e reprovaria por causa do AMBIENTE, não do site. Fica opcional
+// porque os outros E2E não desenham nada e não têm por que pagar por isto.
+const ARGS_WEBGL = ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'];
+
+export function abrirNavegador({ webgl = false } = {}) {
   return chromium.launch({
     ...(existsSync(CHROMIUM_PRE_INSTALADO) ? { executablePath: CHROMIUM_PRE_INSTALADO } : {}),
-    args: ['--no-sandbox'],
+    args: ['--no-sandbox', ...(webgl ? ARGS_WEBGL : [])],
   });
 }
 
