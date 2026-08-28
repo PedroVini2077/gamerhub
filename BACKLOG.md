@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **18 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **19 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** O canal de recurso do banido entrou em 28/08 e o dono
@@ -56,6 +56,26 @@
   única página que não depende do banco (é para onde o `dbHealth` manda todo
   mundo quando o Supabase cai) — mandar para o formulário de login é passo a mais
   sem motivo. Conferir para onde o `signOut` redireciona e apontar para `/`.
+
+- ⬜ `[28/08]` 🟠 **A conta do E2E ser banível derruba o CI, e isso vai repetir.**
+  Aconteceu **duas vezes em 20 minutos** em 28/08: testar moderação em produção
+  significa banir a `claudetester`, e enquanto ela está banida a `BannedScreen`
+  cobre a tela — o job **"fluxos autenticados" falha**, apontando para o site
+  quando o problema é o estado da conta.
+
+  **Já mitigado:** `recusarSeBanido()` no `e2e/util.mjs` faz o CI dizer *"a conta
+  de teste está banida — não é falha do site"* em vez de um timeout de 30 s.
+  Diagnóstico deixou de custar duas idas ao log.
+
+  **O que falta é não acontecer.** Três saídas, em ordem de preferência:
+  1. **Uma terceira conta descartável só para testar moderação**, e a
+     `claudetester` nunca é banida. Custa uma conta e resolve de vez.
+  2. O job de fluxos **desbanir a conta antes de começar** — resolve sozinho,
+     mas dá poder de desbanimento ao CI, o que é superfície nova.
+  3. Manter como está e lembrar de desbanir. *Já falhou duas vezes hoje.*
+
+  *A (1) é a que eu faria — mesma lógica da `claudestaff`: conta separada por
+  papel, em vez de uma conta acumulando papéis incompatíveis.*
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
