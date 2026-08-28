@@ -68,21 +68,20 @@ export default function Login() {
     }
 
     if (mode === 'login') {
-      // A tentativa de login vem PRIMEIRO, de propósito.
+      // A tentativa de login vem PRIMEIRO, de propósito, e desde 28/08 quem
+      // conta a falha é o BANCO, não esta tela.
       //
-      // Antes o `check_login_status` barrava aqui, ANTES de validar a senha.
-      // Como `register_login_attempt` é chamável por qualquer um (a página de
-      // login precisa dela sem estar autenticado), bastava um script anônimo
-      // chamar a RPC com o email da vítima pra bloquear a conta dela — e,
-      // repetindo depois que o bloqueio de 15min expira, chegar ao bloqueio
-      // PERMANENTE. Ou seja: qualquer pessoa trancava a conta de qualquer
-      // outra, inclusive a do dono, sem nunca saber a senha.
+      // Antes existia um `register_login_attempt` que o frontend chamava para
+      // reportar a própria falha. Duas coisas estavam erradas nisso, as duas
+      // medidas: quem ataca não usa nosso frontend, então força bruta real não
+      // era contada; e a RPC era chamável por anônimo, então bastava um script
+      // chamar com o email da vítima para fabricar alerta de segurança e
+      // marcar a conta como bloqueada, sem nunca saber a senha.
       //
-      // Esse portão nunca protegeu contra ataque real (quem faz força bruta
-      // vai direto no endpoint de auth do Supabase, que tem rate limit
-      // próprio) — ele só atrapalhava quem sabe a senha. Agora quem acerta a
-      // senha entra e o bloqueio é limpo; só quem ERRA é que acumula
-      // tentativa. O contador segue existindo para o alerta aos admins.
+      // Agora o Password Verification Hook do Supabase avisa o banco a cada
+      // verificação de senha, com o veredicto do próprio GoTrue. Aqui a tela só
+      // LÊ o resultado — `check_login_status` é leitura pura. Nada que esta
+      // página faça consegue mover o contador.
       const { error, banned } = await signInWithEmail(email, password);
       if (banned) {
         toast.error('Sua conta foi banida. Entre em contato com o suporte.');
@@ -90,7 +89,7 @@ export default function Login() {
         return;
       }
       if (error) {
-        const { data: after } = await supabase.rpc('register_login_attempt', { p_email: email.trim() });
+        const { data: after } = await supabase.rpc('check_login_status', { p_email: email.trim() });
         if (after?.blocked) {
           setBlock({ permanent: after.permanent, blocked_until: after.blocked_until });
           toast.error(after.permanent

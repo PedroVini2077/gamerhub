@@ -11,42 +11,37 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **21 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **20 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** As três ações de painel do dono saíram em 27/08: Deploy
-> Hook da Vercel apagado, alerta de cota do Sentry confirmado ligado (100% e
-> 80%, com `Errors: On`), e senha da conta de teste trocada — resta só
-> confirmar que o secret `E2E_PASSWORD` foi junto, e o próximo CI responde.
+> **Próximo da fila.** As ações de painel de 27/08 saíram todas: Deploy Hook da
+> Vercel apagado, alerta de cota do Sentry ligado, senha da conta de teste
+> trocada — e o job "fluxos autenticados" do PR #70 provou que o secret
+> `E2E_PASSWORD` acompanhou.
 >
-> **O próximo trabalho é o Password Verification Hook** (abaixo): aprovado pelo
-> dono em 27/08. Eu escrevo a função e a migration; ligar o hook é passo de
-> dashboard, como foi com o de email.
+> **Sobrou uma ação sua:** ligar o Password Verification Hook no painel
+> (abaixo). A função já está no banco e testada; hook não ligado é hook que
+> nunca é chamado.
 
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[27/08]` **Confirmar que o secret `E2E_PASSWORD` acompanhou a troca de
-  senha.** O dono trocou a senha da conta de teste em 27/08 (ela tinha sido
-  combinada por chat e ficou no histórico). Se o secret do repositório não foi
-  atualizado junto, o job **"fluxos autenticados"** passa a falhar no login.
-  **Não dá para eu verificar** — não leio secrets. O próximo PR responde: se o
-  job passar, está sincronizado e este item sai; se falhar no login, é isto.
 - ⬜ `[23/08]` **Usuário banido não tem canal para pedir revisão.** A
   `BannedScreen` mostra o motivo e desloga em 6s: sem botão, sem formulário,
   sem contato. `request_unban` exige `role = 'admin'`, ou seja, só um admin
   abre o pedido em nome de outra pessoa — coerente com a hierarquia, mas deixa
   o banido sem saída. *Mexe em quem pode chamar a RPC: pede aprovação antes.*
+- ⬜ `[28/08]` 🟡 **Ligar o Password Verification Hook.** *Authentication →
+  Hooks → Password Verification → `public.hook_de_verificacao_de_senha`.* A
+  função já está no banco, testada e com `EXECUTE` só para `supabase_auth_admin`
+  — mas hook não ligado é hook que nunca é chamado. **Enquanto isso não for
+  feito:** ninguém consegue mais fabricar alerta de segurança (essa porta já
+  fechou com a remoção do `register_login_attempt`), porém falha de login real
+  também não é contada. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
 - ⬜ `[21/08]` **Migração para TypeScript.** Grande, decisão do dono.
-- ⬜ `[27/08]` 🟡 **Apagar o Deploy Hook da Vercel.** *Settings → Git → Deploy
-  Hooks → apagar o `github`.* Ele é uma **URL-senha**: quem tiver o link
-  dispara deploy sem login nenhum, e queima os 100/dia. O link foi colado no
-  chat em 27/08, então está num histórico de conversa. É redundante — a
-  integração nativa (`Connected May 16`) já faz o trabalho — e era ele o
-  causador dos deploys duplicados. Apagar resolve as duas coisas.
 - ⬜ `[24/08]` **Decidir se eu ganho uma conta de teste com cargo.** Hoje só
   tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
   para provar que `/admin` e `/owner` são **negados**. Promover essa conta
@@ -74,39 +69,6 @@
   Ver também [DECISOES.md](docs/DECISOES.md).
 
 ## 🟠 Importante — dá para fazer
-
-- ⬜ `[27/08]` 🟡 **O contador de login promete o que não entrega, e é abusável.**
-  Achado ao responder "onde está o rate limit?". **Medido, não deduzido:**
-
-  | Teste | Resultado |
-  | --- | --- |
-  | 3 logins com senha errada direto no GoTrue | contador continua **zero** |
-  | 5 chamadas anônimas a `register_login_attempt` | conta marcada como **bloqueada** |
-
-  A RPC é chamável por `anon` (precisa ser — a página de login não está
-  autenticada) e **incrementa sem verificar se o login falhou de verdade**. Ou
-  seja: **não protege contra força bruta** (quem ataca vai direto no
-  `/auth/v1/token`, que tem rate limit próprio do Supabase) e **deixa qualquer
-  um gerar alerta falso** de "conta bloqueada" para qualquer email.
-
-  **O que NÃO é:** não tranca ninguém fora. Uma sessão anterior já mitigou isso
-  colocando o login *antes* da checagem de bloqueio — **verificado**: conta
-  marcada como `blocked` e o dono entrou com a senha certa (HTTP 200).
-
-  **O que sobra:** poluição de `admin_logs` e `admin_notifications` com alertas
-  de segurança fabricados. Mesma classe do `edge_function_error` — fadiga de
-  alarme (`CLAUDE.md` §0.2).
-
-  **Duas saídas, e a segunda é a certa:**
-  1. limitar o alerta a um por hora por email, como fizemos na trilha (rápido);
-  2. **Password Verification Hook** do Supabase — o GoTrue avisa o banco a cada
-     verificação de senha, e aí o contador passa a ser verdade. É a arquitetura
-     correta e faz o mecanismo cumprir o que promete.
-
-  **Aprovado pelo dono em 27/08.** O caminho é o (2). Divisão de trabalho: eu
-  escrevo a função do hook + migration + teste em `ROLLBACK`; **ligar o hook é
-  passo de dashboard** (*Authentication → Hooks*), igual ao de email — eu não
-  consigo fazer essa parte.
 
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
@@ -146,8 +108,9 @@
   regra que decide se o site atualiza pede teste do script antes, não um
   chute. Ganho: ~1 deploy por PR que só mexe em teste.
 - ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
-  A rodada de otimização de 28/08 foi medida **no build** (JS inicial 541,7 →
-  458,3 kB; prints 227 → 94 KB; cena 3D fora do caminho crítico). Falta o
+  A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;
+  cena 3D e Sentry fora do caminho crítico; carregamento inicial hoje em
+  691,7 kB, conferido por `scripts/orcamento-de-bytes.mjs`). Falta o
   antes/depois de campo, e ele só vale **no mesmo aparelho e na mesma
   ferramenta** — as duas medições de 27/08 discordaram 4× no TBT (3.690 ms no
   Termux, 15.310 ms no PageSpeed). Duas fontes: repetir o Lighthouse no mesmo
