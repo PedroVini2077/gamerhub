@@ -199,11 +199,35 @@ Verificado em transação com `ROLLBACK`, 8 checagens: falha conta 1→2→3, ac
 apaga a linha, evento malformado devolve `continue`, e nem `anon` nem
 `authenticated` conseguem chamar qualquer uma das duas funções.
 
-**Falta um passo, e ele é de painel:** *Authentication → Hooks → Password
-Verification* apontando para `public.hook_de_verificacao_de_senha`. Enquanto
-isso não for feito, o hook existe e não é chamado — ninguém consegue fabricar
-alerta (isso já está fechado), mas falha real também não é contada. Está no
-`BACKLOG.md`.
+### `[28/08]` O hook está pronto e **não pode ser ligado no plano Free**
+
+Conferido no painel: em *Authentication → Hooks*, o **Password Verification
+Attempt hook** aparece cinza, com *"Team or Enterprise Plan required"*. A
+organização está no plano `free` (confirmado via API). Eu tinha afirmado o
+caminho do painel sem checar a disponibilidade — era inferência vestida de fato
+(§1.1), e está corrigido aqui.
+
+**Um segundo caminho também está fechado.** `auth.audit_log_entries`, onde o
+GoTrue poderia registrar tentativa de login, está **vazia — zero linhas desde
+sempre**. Não dá para contar falha real por ali.
+
+**O que isso deixa de pé, e é preciso ser exato:**
+
+| | Estado |
+| --- | --- |
+| Fabricar alerta de segurança para qualquer email | **Fechado.** A RPC forjável foi apagada; `anon` recebe 404 |
+| Contar falha de login real | **Impossível no plano Free** |
+| Proteção contra força bruta | **Existe, e nunca foi nossa** — é o rate limit do GoTrue, server-side |
+
+O que sobra do lado do site é uma tabela `login_attempts` que ninguém mais
+preenche. Por isso a tela de login **parou de mostrar "N tentativas até o
+bloqueio"**: com o contador parado, aquele aviso dizia "5 tentativas" para
+sempre, sem nunca descer. Contador que não conta é pior que contador nenhum.
+
+As funções `hook_de_verificacao_de_senha` e `contabilizar_falha_de_login` ficam
+no banco, prontas e com `EXECUTE` revogado de todo mundo exceto o
+`supabase_auth_admin`. Se o projeto um dia subir de plano, ligar o hook é um
+clique. Superfície de ataque: nenhuma — ninguém consegue chamá-las.
 
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.

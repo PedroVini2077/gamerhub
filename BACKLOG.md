@@ -11,17 +11,15 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **20 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **21 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** As ações de painel de 27/08 saíram todas: Deploy Hook da
-> Vercel apagado, alerta de cota do Sentry ligado, senha da conta de teste
-> trocada — e o job "fluxos autenticados" do PR #70 provou que o secret
-> `E2E_PASSWORD` acompanhou.
+> **Próximo da fila.** Nenhuma ação de painel pendente. As de 27/08 saíram
+> todas, e a que sobrava — ligar o Password Verification Hook — **não existe no
+> plano Free**: virou decisão de custo, junto do HIBP.
 >
-> **Sobrou uma ação sua:** ligar o Password Verification Hook no painel
-> (abaixo). A função já está no banco e testada; hook não ligado é hook que
-> nunca é chamado.
+> **O que depende de você agora é decisão, não execução:** a conta de teste com
+> cargo, o TypeScript, e os dois itens de plano pago. O resto anda sozinho.
 
 ---
 
@@ -32,15 +30,17 @@
   sem contato. `request_unban` exige `role = 'admin'`, ou seja, só um admin
   abre o pedido em nome de outra pessoa — coerente com a hierarquia, mas deixa
   o banido sem saída. *Mexe em quem pode chamar a RPC: pede aprovação antes.*
-- ⬜ `[28/08]` 🟡 **Ligar o Password Verification Hook.** *Authentication →
-  Hooks → Password Verification → `public.hook_de_verificacao_de_senha`.* A
-  função já está no banco, testada e com `EXECUTE` só para `supabase_auth_admin`
-  — mas hook não ligado é hook que nunca é chamado. **Enquanto isso não for
-  feito:** ninguém consegue mais fabricar alerta de segurança (essa porta já
-  fechou com a remoção do `register_login_attempt`), porém falha de login real
-  também não é contada. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
+- ⬜ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
+  `hook_de_verificacao_de_senha` está no banco, testada e com `EXECUTE` só para
+  o `supabase_auth_admin` — mas o *Password Verification Attempt hook* aparece
+  cinza no painel: **"Team or Enterprise Plan required"**. O outro caminho
+  também está fechado: `auth.audit_log_entries` está vazia, zero linhas desde
+  sempre. **O que já está resolvido:** ninguém consegue mais fabricar alerta de
+  segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
+  O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
+  decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 - ⬜ `[21/08]` **Migração para TypeScript.** Grande, decisão do dono.
 - ⬜ `[24/08]` **Decidir se eu ganho uma conta de teste com cargo.** Hoje só
   tenho `claudetester` (`user`), e é de propósito: o E2E usa justamente ela
@@ -70,6 +70,14 @@
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[28/08]` 🟠 **Conferir o uso do Supabase — "grace period is over".** O
+  painel avisa que, ao esgotar a cota, o projeto **para de servir requisições**.
+  *Verificado por mim agora:* projeto `ACTIVE_HEALTHY`, banco em **23 MB** (teto
+  500 MB), storage em **6,5 MB** (teto 1 GB), 4 usuários — nenhum desses está
+  perto do limite. **O que eu NÃO consigo ver daqui é o egress** (5 GB/mês), que
+  é justamente a cota apertada do plano (`CLAUDE.md` §0.2). *Onde olhar:
+  Organization → Usage.* Se o egress estiver alto com 4 usuários, é sinal de
+  algo consumindo à toa e vira trabalho meu — me mande o número.
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
