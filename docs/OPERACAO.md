@@ -24,6 +24,22 @@
     configurá-lo num deploy futuro apagaria o monitoramento sem ninguém notar —
     construindo a falha silenciosa que ele existe para acabar.
   - Custo medido: **+27,8 KB gzip** (507 → 535 KB de JS total).
+  - **`[28/08]` Carregado sob demanda, e isso NÃO abre janela cega.** O
+    `@sentry/react` saiu do chunk que bloqueia a primeira pintura (-83,4 KB
+    brutos no caminho crítico) e agora chega num chunk próprio de 85 kB, depois
+    que o navegador fica ocioso.
+
+    A parte que importa é o que cobre o vão: `lib/capturaAntecipada.js` instala,
+    **sincronamente**, dois ouvintes baratos que guardam erro global e promessa
+    rejeitada até o Sentry subir — e o `init()` roda **antes** de eles serem
+    removidos, para as duas redes ficarem ativas por um instante em vez de haver
+    um buraco entre elas. Evento duplicado o Sentry deduplica; evento perdido
+    ninguém recupera. `registrarErro()` e `identificarUsuario()` chamados nesse
+    intervalo também ficam na fila e são aplicados depois.
+
+    A troca só é aceitável porque tem prova: `capturaAntecipada.test.js`.
+    **Se aquele teste passar a falhar, o certo é voltar o Sentry para o
+    carregamento síncrono — não afrouxar o teste.**
 - **Teto de 20 eventos por sessão** (`lib/tetoDeEventos.js`). O plano Free são
   5.000 eventos/mês e, estourando, o Sentry **descarta em silêncio** pelo resto
   do mês. Com 3 usuários, 166/dia não se esgotam por uso normal — o jeito
