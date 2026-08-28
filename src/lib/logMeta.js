@@ -17,6 +17,7 @@ import {
   Tv, Radio, MicOff, Mic, RotateCcw, CheckCircle, XCircle,
   Crown, Shield, UserCog, Image, Mail, UserMinus, Clock, ScrollText,
   Lock, Settings2, Wrench, Siren, Bell, SlidersHorizontal, Filter, EyeOff, Eye,
+  Flag, MailQuestion,
 } from 'lucide-react';
 
 // ─── Categorias ──────────────────────────────────────────────────────────────
@@ -105,6 +106,9 @@ export const ACTION_META = {
   content_post_created:      A(FileText,     'text-neon-green',  '#39ff14'),
   content_post_edited:       A(Pencil,       'text-gray-400',    '#9ca3af'),
   content_post_deleted:      A(Trash2,       'text-red-400',     '#f87171'),
+  content_report_created:    A(Flag,         'text-orange-400',  '#fb923c'),
+
+  user_unban_requested:      A(MailQuestion, 'text-yellow-400',  '#facc15'),
   post_edited:               A(Pencil,       'text-gray-400',    '#9ca3af'),
   post_deleted:              A(Trash2,       'text-red-400',     '#f87171'),
 
@@ -185,4 +189,12 @@ export const ACTIONS_DO_BANCO = [
   'wordlist_flag',
   'auto_ban',
   'auto_suspend',
+  // `[28/08]` Trigger `log_report_created` em `reports`. Denúncia era a única
+  // ação de moderação sem rastro: ocultar, suspender, banir e aprovar na fila
+  // registravam; o gatilho de boa parte disso, não.
+  'content_report_created',
+  // `[28/08]` Pedido de revisão aberto pela PRÓPRIA pessoa banida
+  // (`solicitar_revisao_do_proprio_ban`). Diferente de `admin_unban_requested`,
+  // que é o pedido aberto por um membro da equipe em nome de alguém.
+  'user_unban_requested',
 ];

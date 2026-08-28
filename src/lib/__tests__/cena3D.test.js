@@ -81,8 +81,6 @@ describe('padrão do aparelho', () => {
     ['máquina de 2 núcleos', { nucleos: 2 }],
     ['1 GB de memória', { memoria: 1 }],
     ['modo de economia de dados', { conexao: { saveData: true } }],
-    ['rede 2g', { conexao: { effectiveType: '2g' } }],
-    ['rede 3g', { conexao: { effectiveType: 'slow-3g' } }],
     ['pedido de menos movimento', { reduzMovimento: true }],
   ])('%s recebe a versão leve mesmo em tela grande', (_, condicao) => {
     aparelho({ largura: 1440, ...condicao });
@@ -95,6 +93,25 @@ describe('padrão do aparelho', () => {
       padraoDoAparelho(),
       'Safari não expõe deviceMemory; ausência não pode virar veredicto de aparelho fraco',
     ).toBe('completo');
+  });
+
+  // Trava da correção de 28/08: a decisão precisa ser ESTÁVEL. Se `effectiveType`
+  // voltar a decidir, a mesma máquina troca de modo entre visitas conforme o
+  // navegador reestima a rede — foi o que o dono viu no notebook dele, e é o
+  // tipo de comportamento que ninguém consegue explicar nem reproduzir.
+  it('rede lenta NAO decide mais: a cena carrega depois do ocioso', () => {
+    aparelho({ largura: 1440, conexao: { effectiveType: 'slow-3g' } });
+    expect(
+      padraoDoAparelho(),
+      'effectiveType e o unico portao que muda com o tempo. Ele existia quando a '
+      + 'cena estava no caminho critico; hoje ela carrega depois do ocioso, entao '
+      + 'rede lenta atrasa um enfeite em vez de segurar a pagina.',
+    ).toBe('completo');
+  });
+
+  it('saveData continua decidindo — e escolha explicita de quem usa', () => {
+    aparelho({ largura: 1440, conexao: { saveData: true } });
+    expect(padraoDoAparelho()).toBe('leve');
   });
 
   it('cai na versão leve se consultar o ambiente estourar', () => {

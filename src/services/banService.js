@@ -36,3 +36,18 @@ export async function solicitarDesbanimento(userId, motivo) {
     p_reason: motivo?.trim() ?? '',
   }));
 }
+
+/**
+ * O pedido de revisão da própria pessoa, para ela poder ACOMPANHAR o caso.
+ *
+ * Sem isto o recurso era um buraco: a pessoa enviava e nunca mais sabia de
+ * nada. E notificação em tempo real não resolveria — se o admin decidir
+ * enquanto ela não está online, o aviso passa batido.
+ *
+ * A resposta é **estado consultável**, não notificação: o pedido já vive em
+ * `unban_requests`, e estado no banco não expira nem depende de alguém estar
+ * com o site aberto na hora certa.
+ */
+export async function meuPedidoDeRevisao() {
+  return from(await supabase.rpc('meu_pedido_de_revisao'));
+}

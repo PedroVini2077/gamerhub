@@ -147,15 +147,32 @@ export function AuthProvider({ children }) {
       // não é mais legível direto na tabela.
       const { data: p } = await supabase.rpc('get_own_profile');
       if (p?.banned) {
-        // Registra a tentativa (log + notificação aos admins) enquanto ainda há sessão
+        // Registra a tentativa (log + notificação aos admins) enquanto há sessão.
         await supabase.rpc('record_banned_login_attempt', { p_email: email.trim() });
-        await supabase.auth.signOut();
+
+        // A SESSÃO CONTINUA VIVA DE PROPÓSITO, e isso mudou em 28/08.
+        //
+        // Antes vinha um `signOut()` aqui e o `Login.jsx` mostrava um toast
+        // genérico. Dois problemas, os dois relatados pelo dono testando:
+        //
+        //  1. O formulário de recurso (que subiu no mesmo dia) NUNCA aparecia
+        //     no login — a `BannedScreen` só montava quando o ban era detectado
+        //     numa sessão já aberta. Quem fechasse a aba ficava sem recorrer.
+        //  2. Entre o `signInWithPassword` e o `signOut`, o `onAuthStateChange`
+        //     já tinha disparado: a pessoa via o site por alguns segundos antes
+        //     de ser jogada para fora.
+        //
+        // Agora a tela sobe na hora, cobrindo tudo (`z-[9999]`), e o `signOut`
+        // acontece quando ELA termina — pelo botão, ou pelo contador. Manter a
+        // sessão é o que torna o recurso possível: `solicitar_revisao_do_
+        // proprio_ban` exige `authenticated`, e sem sessão não haveria como
+        // pedir revisão nenhuma.
+        //
+        // Segurança: banido com sessão não cria nada. As policies de INSERT
+        // checam `banned` no banco, então o bloqueio não depende desta tela.
+        applyBannedCheck(p);
         // banned:true sinaliza ao Login para NÃO contar como tentativa de senha errada
-        return {
-          banned: true,
-          reason: p.ban_reason || null,
-          error: { message: 'Sua conta foi banida. Entre em contato com o suporte.' },
-        };
+        return { banned: true, reason: p.ban_reason || null };
       }
       logAudit('auth_login_success',
         `@${p?.username || email.trim()} fez login`,

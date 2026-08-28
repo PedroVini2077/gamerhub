@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ShieldOff, LogOut, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { solicitarRevisaoDoProprioBan } from '../../services/banService';
+import { solicitarRevisaoDoProprioBan, meuPedidoDeRevisao } from '../../services/banService';
 
 const MIN_CARACTERES = 20;
 const MAX_CARACTERES = 1000;
@@ -25,7 +25,20 @@ export default function BannedScreen({ reason, details, onSignOut }) {
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  // O pedido já aberto, se houver. `undefined` = ainda carregando; `null` = não
+  // existe. A distinção importa: mostrar "nenhum pedido" enquanto a consulta
+  // ainda corre faria o botão de recorrer piscar para quem já recorreu.
+  const [pedido, setPedido] = useState(undefined);
   const firedRef = useRef(false);
+
+  // Sem isto a pessoa recorria e nunca mais sabia de nada — e notificação em
+  // tempo real não resolveria, porque a decisão pode sair enquanto ela não está
+  // online. Estado consultável no banco não tem esse problema.
+  useEffect(() => {
+    let vivo = true;
+    meuPedidoDeRevisao().then(({ data }) => { if (vivo) setPedido(data?.existe ? data : null); });
+    return () => { vivo = false; };
+  }, []);
 
   const doSignOut = useCallback(() => {
     if (firedRef.current) return;
@@ -35,7 +48,9 @@ export default function BannedScreen({ reason, details, onSignOut }) {
 
   // Pausa enquanto a pessoa está escrevendo o recurso, e depois de enviado —
   // ela precisa ler a confirmação antes de a tela sumir.
-  const pausado = recorrendo || enviado;
+  // Também pausa enquanto o pedido carrega: a pessoa não pode perder a tela
+  // antes de saber se já tem um recurso em andamento.
+  const pausado = recorrendo || enviado || pedido === undefined;
 
   useEffect(() => {
     if (pausado) return undefined;
@@ -93,6 +108,26 @@ export default function BannedScreen({ reason, details, onSignOut }) {
           )}
         </div>
 
+        {pedido && !enviado && (
+          <div className="bg-dark-700/60 border border-dark-400 rounded-xl p-4 space-y-2">
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Seu pedido de revisão</p>
+            <p className={`text-sm font-mono font-bold ${
+              pedido.status === 'approved' ? 'text-neon-green'
+              : pedido.status === 'rejected' ? 'text-red-400' : 'text-yellow-400'}`}>
+              {pedido.status === 'approved' ? 'Aprovado'
+                : pedido.status === 'rejected' ? 'Negado' : 'Em análise'}
+            </p>
+            {pedido.resposta && (
+              <p className="text-xs font-mono text-gray-400 leading-relaxed">
+                Resposta da equipe: {pedido.resposta}
+              </p>
+            )}
+            <p className="text-[11px] font-mono text-gray-600">
+              Você pode entrar de novo quando quiser para ver se houve resposta.
+            </p>
+          </div>
+        )}
+
         {enviado ? (
           <div className="bg-neon-green/10 border border-neon-green/25 rounded-xl p-4 space-y-2 text-center">
             <CheckCircle2 size={20} className="text-neon-green mx-auto" />
@@ -141,14 +176,14 @@ export default function BannedScreen({ reason, details, onSignOut }) {
               </button>
             </div>
           </div>
-        ) : (
+        ) : pedido === null ? (
           <button
             onClick={() => setRecorrendo(true)}
             className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-bold rounded border border-neon-green/30 text-neon-green hover:bg-neon-green/10 transition-all"
           >
             <Send size={13} /> Pedir revisão do banimento
           </button>
-        )}
+        ) : null}
 
         <div className="text-center space-y-3">
           {!pausado && (
@@ -166,11 +201,12 @@ export default function BannedScreen({ reason, details, onSignOut }) {
           >
             <LogOut size={13} /> Sair agora
           </button>
-          {/* Fecha o caso que o dono levantou: quem fechou a aba antes de
-              recorrer não fica sem saída — basta entrar de novo e esta tela
-              volta, com o formulário. */}
+          {/* Desde 28/08 isto é verdade de fato: a tela sobe no próprio login
+              (ver `useAuth.signInWithEmail`), e não só numa sessão já aberta.
+              Antes a frase estava aqui e era falsa — o login mostrava um toast
+              genérico e a pessoa nunca reencontrava o formulário. */}
           <p className="text-[11px] font-mono text-gray-600 leading-relaxed">
-            Você pode entrar de novo quando quiser: esta tela reaparece a cada login.
+            Esta tela reaparece a cada login, com o andamento do seu pedido.
           </p>
         </div>
       </div>

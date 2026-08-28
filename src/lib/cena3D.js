@@ -76,9 +76,23 @@ export function padraoDoAparelho() {
     // baixar 887 KB de enfeite antes do conteúdo é ruim de verdade.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'leve';
 
-    const conexao = navigator.connection;
-    if (conexao?.saveData) return 'leve';
-    if (conexao?.effectiveType && /(^|-)(2g|3g)$/.test(conexao.effectiveType)) return 'leve';
+    // `saveData` fica: é escolha explícita de quem usa ("economize meus dados"),
+    // e escolha explícita a gente respeita.
+    //
+    // `effectiveType` SAIU em 28/08, e o motivo é uma observação do dono: no
+    // notebook dele a landing abriu em 3D na primeira visita e passou a abrir
+    // em 2D depois. Não era aleatório — `effectiveType` é o ÚNICO destes
+    // portões que muda com o tempo. Ele é uma estimativa contínua de rede que
+    // o navegador recalcula conforme as requisições acontecem, então a mesma
+    // máquina trocava de modo entre visitas, sem nada ter mudado nela.
+    //
+    // E o portão era sobra de uma fase anterior: ele existia quando a cena
+    // estava no caminho crítico, e baixar 887 KB em 3G antes do conteúdo era
+    // ruim de verdade. Hoje a cena só carrega **depois do ocioso** — rede lenta
+    // atrasa um enfeite, não segura mais nada. O custo de mantê-lo era decisão
+    // instável e inexplicável para quem usa; o benefício acabou junto com o
+    // caminho crítico.
+    if (navigator.connection?.saveData) return 'leve';
 
     if (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 1) return 'leve';
     if (typeof navigator.hardwareConcurrency === 'number'
