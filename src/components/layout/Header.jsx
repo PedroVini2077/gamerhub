@@ -1,4 +1,4 @@
-import { Menu, LogIn, LogOut, Bell, X, Heart, Users, ShieldAlert } from 'lucide-react';
+import { Menu, LogIn, LogOut, Bell, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
@@ -6,6 +6,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { metaDaNotificacao } from '../../lib/notifMeta';
+
+/** Ícone de uma notificação. O mapa e o caso desconhecido moram em `notifMeta`. */
+function NotifIcone({ tipo }) {
+  const { Icone, cor } = metaDaNotificacao(tipo);
+  return (
+    <div className={`mt-0.5 shrink-0 ${cor}`}>
+      <Icone size={13} />
+    </div>
+  );
+}
 
 export default function Header({ onMenuClick }) {
   const { user, profile, signOut } = useAuth();
@@ -136,9 +147,7 @@ export default function Header({ onMenuClick }) {
                         !n.read ? 'bg-neon-green/5' : ''
                       }`}
                     >
-                      <div className={`mt-0.5 shrink-0 ${n.type === 'like' ? 'text-neon-green' : n.type === 'moderation' ? 'text-orange-400' : 'text-neon-purple'}`}>
-                        {n.type === 'like' ? <Heart size={13} /> : n.type === 'moderation' ? <ShieldAlert size={13} /> : <Users size={13} />}
-                      </div>
+                      <NotifIcone tipo={n.type} />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-300 leading-relaxed">{n.message}</p>
                         <p className="text-xs text-gray-600 font-mono mt-0.5">

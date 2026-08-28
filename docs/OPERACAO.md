@@ -94,6 +94,26 @@
   > válida? a conta não foi travada por envio automatizado? passou dos ~500
   > envios do dia?
 
+  > **`[28/08]` E esta trilha já pagou o próprio custo.** O dono publicou um
+  > post com 4 imagens e "não deu em nada". A linha
+  > `Falha em moderate-image: provedor openai nao respondeu` foi o único sinal
+  > que existia — e ela levou, em uma consulta, ao log da função:
+  > `400 too_many_images — Number of images (4) exceeds maximum of 1`. Sem
+  > essa linha, a busca teria começado do zero, porque do lado de quem publica
+  > "a IA não achou nada" e "a IA nunca rodou" são a mesma tela.
+  >
+  > A mensagem, porém, **mentia por imprecisão**: o provedor respondeu, e
+  > respondeu explicando o erro. Desde então a análise parcial tem log próprio
+  > (`analise parcial: N de M imagens`), e o número de imagens analisadas vai
+  > no corpo da resposta. Diagnóstico rápido:
+  >
+  > ```sql
+  > select created_at, details, metadata from admin_logs
+  >  where action = 'edge_function_error'
+  >    and metadata->>'funcao' = 'moderate-image'
+  >  order by created_at desc limit 10;
+  > ```
+
 ## Resiliência — quando o banco cai
 
 O site detecta sozinho que perdeu o Supabase (projeto pausado por egress, por

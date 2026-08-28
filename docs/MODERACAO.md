@@ -156,6 +156,19 @@ porque `data:` é a única entrada cujo tamanho quem chama controla: URL de
 storage pesa ~100 bytes, quadro embutido pesa centenas de KB, e sem limite uma
 conta manda 4 imagens gigantes e queima cota da OpenAI.
 
+> **Correção do mesmo dia — e ela apagou este parágrafo por 40 minutos.** A
+> `moderate-image` mandava as imagens todas num `input` só, e a
+> `omni-moderation-latest` aceita **uma por requisição**:
+> `400 too_many_images`. Não era degradação, era tudo ou nada — post com 1
+> imagem funcionava, post com 2 ou mais não era analisado, e **a moderação de
+> vídeo, que nasce mandando 3 quadros de uma vez, nunca funcionou um dia
+> sequer**. Hoje a função fatia em lotes de `MAX_IMAGENS_POR_REQUISICAO`
+> (= 1), e o resultado é idêntico ao que uma chamada única daria, porque a
+> agregação sempre foi por pior caso entre as imagens. Travado por
+> `src/lib/__tests__/moderacaoDeImagem.test.js`, que lê o fonte da Edge
+> Function. Ver [OPERACAO.md](OPERACAO.md) para como o bug apareceu no
+> `admin_logs`.
+
 **Por que quadros e não o vídeo inteiro:** as APIs que analisam vídeo cobram
 por segundo. Alguns quadros herdam de graça toda a cobertura da moderação de
 imagem — nudez, gore, automutilação — por custo de imagem.
@@ -218,12 +231,54 @@ botão, ou pelo contador.
 > **Segurança:** banido com sessão não cria nada. As policies de INSERT checam
 > `banned` no banco, então o bloqueio nunca dependeu desta tela.
 
+**`[28/08]` A tela SUBSTITUI o site, não fica por cima dele.** Manter a sessão
+viva tinha um efeito que só apareceu no teste do dono: *"a pessoa chega a logar
+no site, só fica o popup por cima"*. Ele estava certo, e o mecanismo era este —
+com sessão, `GuestOnly` tirava a pessoa do `/login`, `HomeOrLanding` via `user`
+e **montava o feed inteiro atrás do overlay**. Um `Escape`, um zoom ou o
+DevTools bastariam para ler o site; e o app ficava rodando por trás, assinando
+realtime e buscando post.
+
+O conserto é uma linha no `AuthProvider`: a `BannedScreen` passou de irmã de
+`{children}` a **alternativa** a `{children}`. A sessão continua existindo — é
+o que o formulário de recurso precisa — mas o site nunca chega a montar.
+
+> Efeito colateral que virou melhoria: o `Toaster` é filho do provider e some
+> junto. O erro do formulário passou a aparecer **dentro da própria tela**, que
+> é onde ele deveria estar desde o começo.
+
+**E ao sair, o destino é a landing** — antes era `/login`. A landing é a porta
+de entrada e a única página que não depende do banco; jogar quem acabou de ser
+recusado direto no formulário de login sugere tentar de novo o que não vai dar.
+
 **E ela acompanha o caso.** `meu_pedido_de_revisao()` devolve o pedido do
 banimento atual, e a tela mostra *Em análise* / *Aprovado* / *Negado* com a
 resposta da equipe. **Notificação em tempo real não resolveria** — se o admin
 decidir enquanto a pessoa não está online, o aviso passa batido. Estado
 consultável no banco não expira nem depende de alguém estar com o site aberto
 na hora certa.
+
+### `[28/08]` Ser desbanido também avisa
+
+O contrário faltava, e o dono achou: quando o ban é removido, a `BannedScreen`
+simplesmente **para de aparecer**. Do lado de quem foi desbanido, "meu recurso
+foi aceito" e "o site parou de me bloquear por algum bug" eram a mesma coisa —
+nenhum aviso, nenhuma explicação.
+
+`unban_user` e `approve_unban_request` passaram a gravar uma linha em
+`notifications` (`type = 'unban'`), que o sino do `Header` já lê. **Os dois
+caminhos**, e não só um: o super admin desbanindo direto e o pedido de revisão
+sendo aceito chegam ao mesmo estado por portas diferentes — corrigir uma só
+seria o erro clássico de tratar o caso em vez da classe (`CLAUDE.md` §5).
+
+Por que `notifications` e não email ou realtime: pelo mesmo motivo do parágrafo
+acima. A decisão pode sair enquanto a pessoa não está online; estado guardado
+no banco espera ela voltar.
+
+> O mapa de ícones do sino era dois ternários com um `else` que engolia tudo —
+> `comment` já caía nele havia meses. Virou `lib/notifMeta.js`, com um teste que
+> confronta as chaves do mapa contra todo `INSERT INTO notifications` das
+> migrations.
 
 ### Bug de hierarquia corrigido junto
 

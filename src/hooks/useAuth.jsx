@@ -238,23 +238,45 @@ export function AuthProvider({ children }) {
     if (user) await fetchProfile();
   }
 
-  // Logout do usuário banido: encerra a sessão e força ida pro login com a página recarregada,
-  // garantindo que o overlay suma e o estado fique limpo independente de qualquer race.
+  // Logout do usuário banido: encerra a sessão e força recarregar a página,
+  // garantindo que o overlay suma e o estado fique limpo independente de
+  // qualquer race.
+  //
+  // O destino é a LANDING, não o `/login`. Ela é a porta de entrada do site e a
+  // única página que não depende do banco — é para onde o `dbHealth` manda todo
+  // mundo quando o Supabase cai. Jogar quem acabou de sair direto no formulário
+  // de login é um passo a mais sem motivo, e para o banido é pior ainda:
+  // sugere tentar de novo o que acabou de ser recusado.
   async function signOutBanned() {
     try { await signOut(); } catch { /* ignora — o redirect abaixo garante o estado limpo */ }
-    window.location.replace('/login');
+    window.location.replace('/');
   }
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, onlineCount, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>
-      {bannedScreen && (
+      {/*
+        SUBSTITUI o site, não fica POR CIMA dele. A diferença é o achado do dono
+        em 28/08: "a pessoa chega a logar no site, só fica o popup por cima".
+        Ele estava certo, e o mecanismo é este — a sessão do banido continua
+        viva (é o que permite pedir revisão), então `GuestOnly` tirava a pessoa
+        do `/login`, `HomeOrLanding` via `user` e montava o feed inteiro atrás
+        do overlay. Um `Escape`, um zoom ou o DevTools bastariam para ler o
+        site; e o app inteiro ficava rodando, assinando realtime, buscando post.
+
+        Trocar `&&` por `? :` resolve os dois de uma vez: o feed nunca chega a
+        montar. A sessão continua existindo, então o formulário de recurso
+        continua funcionando — é a única coisa que precisava dela.
+
+        Consequência: o `Toaster` do App é filho deste provider e some junto.
+        Por isso a `BannedScreen` mostra erro na própria tela, sem `toast`.
+      */}
+      {bannedScreen ? (
         <BannedScreen
           reason={bannedScreen.reason}
           details={bannedScreen.details}
           onSignOut={signOutBanned}
         />
-      )}
-      {children}
+      ) : children}
     </AuthContext.Provider>
   );
 }

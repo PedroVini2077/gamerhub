@@ -11,17 +11,18 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **17 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **16 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** O canal de recurso do banido entrou em 28/08 e o dono
-> validou em produção: banir, recorrer, o limite de 1 pedido por ban e o
-> desbanimento funcionam. O teste dele achou **três acertos pequenos** que estão
-> logo abaixo — o mais importante é o banido não reencontrar o formulário ao
-> entrar de novo.
+> **Próximo da fila.** O teste do dono em 28/08 achou o bug mais caro do dia:
+> a moderação de imagem mandava as imagens todas numa requisição só e a OpenAI
+> aceita **uma por vez** (`400 too_many_images`). Post com 2+ imagens não era
+> analisado, e a moderação de vídeo nunca funcionou. Corrigido, implantado
+> (v12) e travado por teste — **falta o dono repostar as imagens** para termos
+> as notas de verdade.
 >
-> **Esperando você:** os prints de jogo para medir o `violence/graphic`, e a
-> decisão sobre log de denúncia. Nenhum dos dois bloqueia nada.
+> **Esperando você:** repostar os prints de jogo (agora medem), confirmar o
+> desempenho em produção, e decidir sobre os 887 KB da cena 3D.
 
 ---
 
@@ -42,11 +43,21 @@
   em 20 minutos**. O `recusarSeBanido()` faz o CI nomear a causa, mas não impede
   o vermelho — o que impede é banir outra conta.
 
-- ⬜ `[28/08]` 🟢 **Depois de sair, o usuário cai no `/login` em vez da landing.**
-  O dono viu com a `claudetester`. A landing é a porta de entrada do site e a
-  única página que não depende do banco (é para onde o `dbHealth` manda todo
-  mundo quando o Supabase cai) — mandar para o formulário de login é passo a mais
-  sem motivo. Conferir para onde o `signOut` redireciona e apontar para `/`.
+- ⬜ `[28/08]` 🟠 **Repostar as imagens de jogo para medir o
+  `violence/graphic`.** Elas foram postadas em 28/08 e não deram em nada — não
+  era o limiar, era o bug do `too_many_images` (corrigido e implantado na v12).
+  Agora a medição é possível pela primeira vez. **Ação do dono:** publicar de
+  novo, uma leva com 1 imagem e outra com 3–4, para exercitar os dois caminhos.
+  As notas saem no log da função:
+
+  ```sql
+  select created_at, details, metadata from admin_logs
+   where action='edge_function_error' and metadata->>'funcao'='moderate-image'
+   order by created_at desc limit 10;
+  ```
+
+  O piso está em 0.80, escolhido sem dado. Como esse caminho **só enfileira e
+  nunca oculta**, errar gera fila maior — não censura.
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
@@ -71,9 +82,6 @@
 
 ## 🟢 Recomendado
 
-- ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
-  0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
-  errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
 - ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** **Conferido contra o
   sistema em 28/08, e a justificativa original não se sustenta mais** (§1.4).
 
@@ -117,6 +125,25 @@
   Termux, 15.310 ms no PageSpeed). Duas fontes: repetir o Lighthouse no mesmo
   celular, e o **Vercel Speed Insights**, que já está instalado no projeto e
   coleta de usuário real. *Ação do dono; sem isso "otimizei" é opinião (§6.1).*
+
+  **Como rodar o Lighthouse** (perguntado pelo dono em 28/08) — três caminhos,
+  do mais fácil ao mais fiel:
+
+  | Onde | Como | Serve para |
+  | --- | --- | --- |
+  | **PageSpeed Insights** | abrir `pagespeed.web.dev`, colar a URL do site | comparar com a medição de 27/08 — foi ela que deu 36 e depois 92 |
+  | **Chrome no PC** | F12 → aba **Lighthouse** → *Mobile* + *Performance* → *Analyze page load* | iterar rápido; roda na sua máquina, então o número oscila com o que estiver aberto |
+  | **O próprio celular** | Termux, como em 27/08 | o único que mede o aparelho real |
+
+  **As duas regras que fazem a medição valer alguma coisa** (§0.3 regra 5):
+  medir **antes e depois na MESMA ferramenta e no MESMO aparelho**, e sempre em
+  **janela anônima** (extensão do Chrome entra na conta e suja o resultado).
+  Comparar um PageSpeed de hoje com um Lighthouse local de ontem não diz nada.
+
+  Repare que o número de laboratório oscila mesmo sem nada mudar — foi por isso
+  que o portão do CI virou **byte** (`scripts/orcamento-de-bytes.mjs`) e não
+  tempo. O Lighthouse aqui serve para confirmar a direção, não para aprovar ou
+  reprovar.
 - ⬜ `[28/08]` **Os 887 KB da cena 3D continuam existindo.** Hoje eles não
   pesam no carregamento (chegam depois do ocioso, e só no desktop), mas quem
   recebe ainda paga 236 KB de download e o parse. Só há dois caminhos reais, e

@@ -1,4 +1,6 @@
-// Capturado da versão 10 implantada em 23/08/2026 — ver ../README.md.
+// Espelho do que está implantado — ver ../README.md. Editar aqui e implantar,
+// nunca o contrário: em 27/08 este diretório passou a ser a fonte, e é ele que
+// os testes de contrato leem.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -99,6 +101,15 @@ type Veredito = {
   score: number;
   ocultar: boolean;
   scores: Record<string, number>;
+  /**
+   * Quantas imagens o provedor de fato analisou.
+   *
+   * Existe porque, desde que cada imagem virou uma requisicao propria, "deu
+   * certo" deixou de ser sim ou nao: 3 de 4 podem responder. Sem este numero, a
+   * imagem que ficou de fora passaria como analisada e limpa — que e o formato
+   * exato de falha silenciosa que este arquivo inteiro tenta evitar (§1.5).
+   */
+  analisadas?: number;
 };
 
 const NADA: Veredito = { categoria: null, score: 0, ocultar: false, scores: {} };
@@ -129,33 +140,66 @@ function decidir(scores: Record<string, number>): Veredito {
   return melhor;
 }
 
-async function viaOpenAI(urls: string[]): Promise<Veredito | null> {
-  const res = await fetch(OPENAI_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      // As imagens estao em bucket publico, entao a OpenAI busca a URL direto —
-      // sem precisar trafegar o arquivo por aqui.
-      input: urls.map(url => ({ type: "image_url", image_url: { url } })),
-    }),
-  });
-  if (!res.ok) {
-    console.error("[moderate-image] OpenAI error:", res.status, await res.text());
-    return null;
-  }
-  const data = await res.json();
-  const resultados = data?.results;
-  if (!Array.isArray(resultados) || resultados.length === 0) return null;
+// UMA IMAGEM POR REQUISICAO. Nao e escolha de estilo — e limite da API.
+//
+// Ate 28/08/2026 esta funcao mandava as imagens todas num `input` so, e a
+// `omni-moderation-latest` respondia:
+//
+//     400 too_many_images — "Number of images (4) exceeds maximum of 1"
+//
+// O efeito era o pior possivel: nao era degradacao, era TUDO OU NADA. Post com
+// 1 imagem funcionava; post com 2 ou mais nao era analisado de forma nenhuma —
+// e a moderacao de VIDEO, que nasceu em 28/08 mandando varios quadros de uma
+// vez, nunca funcionou um dia sequer.
+//
+// Mandar em LOTES resolve porque a agregacao ja era por PIOR CASO entre as
+// imagens (`decidir` recebe o maximo por categoria): o resultado de N
+// requisicoes e o mesmo que o de uma requisicao com N imagens teria sido. O
+// endpoint de moderacao da OpenAI e gratuito, entao N chamadas nao custam N
+// vezes mais — custam N vezes o tempo, e isto e fire-and-forget.
+//
+// A constante e o lote de fato, e nao um comentario: se a OpenAI passar a
+// aceitar mais de uma imagem, muda so este numero (§4, fonte unica).
+const MAX_IMAGENS_POR_REQUISICAO = 1;
 
-  // Pior caso por categoria entre todas as imagens.
+async function viaOpenAI(urls: string[]): Promise<Veredito | null> {
   const maximos: Record<string, number> = {};
-  for (const r of resultados) {
-    for (const [cat, v] of Object.entries(r?.category_scores ?? {})) {
-      if (typeof v === "number" && v > (maximos[cat] ?? 0)) maximos[cat] = v;
+  let analisadas = 0;
+
+  for (let i = 0; i < urls.length; i += MAX_IMAGENS_POR_REQUISICAO) {
+    const lote = urls.slice(i, i + MAX_IMAGENS_POR_REQUISICAO);
+    const res = await fetch(OPENAI_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        // As imagens estao em bucket publico, entao a OpenAI busca a URL direto —
+        // sem precisar trafegar o arquivo por aqui.
+        input: lote.map(url => ({ type: "image_url", image_url: { url } })),
+      }),
+    });
+    if (!res.ok) {
+      console.error("[moderate-image] OpenAI error:", res.status, await res.text());
+      continue;
+    }
+    const data = await res.json();
+    const resultados = data?.results;
+    if (!Array.isArray(resultados) || resultados.length === 0) continue;
+
+    analisadas += lote.length;
+    // Pior caso por categoria entre todas as imagens.
+    for (const r of resultados) {
+      for (const [cat, v] of Object.entries(r?.category_scores ?? {})) {
+        if (typeof v === "number" && v > (maximos[cat] ?? 0)) maximos[cat] = v;
+      }
     }
   }
-  return decidir(maximos);
+
+  // Nenhuma respondeu = nao analisado. Devolver `decidir({})` aqui seria dizer
+  // "analisei e esta limpo" sobre imagem que ninguem olhou (§1.5) — e quem
+  // chama trata `null` gritando em `admin_logs`.
+  if (analisadas === 0) return null;
+  return { ...decidir(maximos), analisadas };
 }
 
 /** Reserva: so pornografia, como era antes. Usado se a chave da OpenAI sumir. */
@@ -281,15 +325,28 @@ Deno.serve(async (req: Request) => {
     return json({ score: 0, flagged: false, provider: provedor, status: "api_error" });
   }
 
+  // Analise PARCIAL tambem precisa gritar. Com uma requisicao por imagem,
+  // "deu certo" virou uma escala: 3 de 4 podem responder, e as 3 decidem o
+  // veredito enquanto a 4ª passa sem ninguem olhar. Se este aviso nao existisse,
+  // esse caso seria indistinguivel de "analisei tudo e esta limpo".
+  const analisadas = veredito.analisadas ?? urls.length;
+  if (analisadas < urls.length) {
+    await gritar(`analise parcial: ${analisadas} de ${urls.length} imagens`, {
+      provedor, analisadas, enviadas: urls.length,
+    });
+  }
+
   console.log(
     `[moderate-image] ${provedor} ${content_type}/${content_id} ` +
+    `analisadas=${analisadas}/${urls.length} ` +
     `categoria=${veredito.categoria ?? "-"} score=${veredito.score.toFixed(3)} ` +
     `acao=${veredito.categoria ? (veredito.ocultar ? "ocultar" : "enfileirar") : "nada"}`
   );
 
   if (!veredito.categoria) {
     return json({ score: Math.round(veredito.score * 1000) / 1000, flagged: false,
-                  scores: veredito.scores, provider: provedor, status: "ok" });
+                  scores: veredito.scores, provider: provedor,
+                  analisadas, enviadas: urls.length, status: "ok" });
   }
 
   // Score 1 porque a decisao ja foi tomada aqui pela politica por categoria; o
@@ -316,6 +373,8 @@ Deno.serve(async (req: Request) => {
     hidden: veredito.ocultar,
     scores: veredito.scores,
     provider: provedor,
+    analisadas,
+    enviadas: urls.length,
     status: "ok",
   });
 });
