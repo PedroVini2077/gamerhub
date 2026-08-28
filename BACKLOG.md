@@ -11,18 +11,18 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **17 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **18 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** A moderação de imagem voltou a funcionar (v12), a
-> medição mostrou que 2 de 2 prints de jogo comuns iam para a fila, e o dono
-> delegou a escolha dos pisos. Feito na v13: `violence` aposentada,
-> `violence/graphic` de 0.80 para 0.95, e as notas de todas as categorias
-> passaram a ir para o log — para o próximo ajuste ser leitura de log em vez de
-> sessão de teste. **Falta rodar uma vez em produção para confirmar.**
+> **Próximo da fila.** O ciclo da moderação de imagem fechou em 28/08:
+> `too_many_images` corrigido (v12), pisos ajustados com dado (v13) e
+> **confirmado em execução** — o dono postou 3 imagens e as notas de todas as
+> categorias apareceram no log. A instrumentação nova já se pagou: em menos de
+> 24 h ela revelou que `sexual/minors` não roda em imagem (v14).
 >
-> **Esperando você:** postar uma imagem qualquer (confirma a v13 em execução),
-> confirmar o desempenho com PageSpeed, e decidir sobre os 887 KB da cena 3D.
+> **Esperando você:** confirmar o desempenho com PageSpeed, decidir sobre os
+> 887 KB da cena 3D, e aprovar os 2 itens antigos que ficaram na fila. Nada
+> disso bloqueia nada.
 
 ---
 
@@ -44,20 +44,32 @@
   o vermelho — o que impede é banir outra conta.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
-  *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v13).*
+  *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
   `violence` foi aposentada e `violence/graphic` subiu de 0.80 para 0.95. O
   raciocínio inteiro está em [MODERACAO.md](docs/MODERACAO.md).
 
-  O que sobrou é acompanhamento, e ele não exige nada de ninguém: desde a v13
-  **toda análise registra as notas de todas as categorias com piso**, tenham
-  disparado ou não. A distribuição se acumula sozinha com o uso normal do site.
+  **A amostra até agora** (toda a medição que existe, 5 posts):
 
-  Daqui a algumas semanas, olhar os logs e responder duas perguntas:
+  | Imagem | `violence` | `violence/graphic` | Fila? |
+  | --- | --- | --- | --- |
+  | comum (2 posts) | 0.000 – 0.001 | 0.000 | não |
+  | "violenta", escolha do dono | 0.834 | 0.414 | não |
+  | print de jogo (1 imagem) | — | **0.854** | não (era sim) |
+  | prints de jogo (4 imagens) | **0.943** | ≤ 0.943 | não (era sim) |
+
+  **Duas leituras honestas disso.** A boa: o modelo separa muito bem — imagem
+  comum dá 0.000 e conteúdo violento sobe para a casa dos 0.8. A que incomoda:
+  **nada que medimos até hoje cruzou 0.95**, então a fila de violência está,
+  na prática, dormente. Isso é o efeito pretendido para print de jogo, mas
+  ainda **não foi provado** que gore de verdade cruza esse piso — e não dá para
+  provar postando gore real de propósito.
+
+  Daqui a algumas semanas, olhar os logs e responder:
 
   | Se… | Então |
   | --- | --- |
-  | a fila continua enchendo de print de jogo | 0.95 ainda está baixo |
-  | nada entra na fila há semanas, e há gore evidente passando | 0.95 está alto |
+  | a fila voltar a encher de print de jogo | 0.95 ainda está baixo |
+  | passar gore evidente e a fila seguir vazia | 0.95 está alto — descer para ~0.88, acima do 0.854 medido |
 
   Onde ler: painel da Supabase → Edge Functions → `moderate-image` → Logs,
   linhas `[moderate-image] ... | notas: ...`.
@@ -67,6 +79,26 @@
   > — são posts de verdade do dono, e limpar fila por fora do painel é
   > exatamente o tipo de mudança de dado sem rastro que o §5 proíbe. Basta
   > aprovar os dois no painel.
+
+- ⬜ `[28/08]` 🟡 **`sexual/minors` não roda em imagem — e não há conserto
+  nosso.** *Achado em 28/08 pela instrumentação nova, menos de 24 h depois de
+  ela existir.*
+
+  A `omni-moderation-latest` aplica **seis** categorias a imagem; `sexual/minors`
+  é **text only** (fato conferido na documentação da OpenAI). O piso de 0.10 que
+  está no mapa de imagem nunca disparou e nunca vai disparar.
+
+  **Não é brecha aberta:** quem cobre essa classe em imagem é `sexual` em 0.55,
+  que roda e **oculta na hora** — e o caminho de texto continua com
+  `sexual/minors` ativo. Já está documentado no código, em
+  [MODERACAO.md](docs/MODERACAO.md) e travado por teste, e o log passou a
+  distinguir "não veio e não deveria" de "não veio e deveria".
+
+  **O que fica em aberto é decisão de produto, não código:** se `sexual` em 0.55
+  é folgado o bastante para ser a única linha de defesa dessa classe em imagem.
+  Baixar o piso pega mais casos duvidosos e também mais foto de praia — e este
+  caminho **oculta**, então errar aqui censura de verdade. Sem denúncia ou caso
+  real, mexer seria chute.
 
 - ⬜ `[28/08]` 🟢 **Aviso do banimento FORA do site, na landing.** *Pedido do
   dono, adiado por ele mesmo: "depois a gente implementa isso".*

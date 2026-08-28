@@ -153,15 +153,42 @@ Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
 
 ## `[28/08]` A política de imagem, e por que ela tem estes números
 
-| Categoria | Piso | Destino | Por quê |
-| --- | --- | --- | --- |
-| `sexual/minors` | 0.10 | **oculta** | o mais baixo de todos, de propósito |
-| `sexual` | 0.55 | **oculta** | mais folgado que no texto: praia e biquíni pontuam sem ser pornografia |
-| `self-harm` | 0.50 | **oculta** | |
-| `self-harm/intent` | 0.40 | **oculta** | |
-| `self-harm/instructions` | 0.30 | **oculta** | |
-| `violence/graphic` | **0.95** | **enfileira** | a única que separa gore de ação comum |
-| `violence` | — | **nada** | aposentada em 28/08 |
+| Categoria | Piso | Destino | Roda em imagem? | Por quê |
+| --- | --- | --- | --- | --- |
+| `sexual` | 0.55 | **oculta** | sim | folgado de propósito: é quem cobre esta classe em imagem |
+| `sexual/minors` | 0.10 | oculta | **NÃO — só texto** | ver abaixo |
+| `self-harm` | 0.50 | **oculta** | sim | |
+| `self-harm/intent` | 0.40 | **oculta** | sim | |
+| `self-harm/instructions` | 0.30 | **oculta** | sim | |
+| `violence/graphic` | **0.95** | **enfileira** | sim | a única que separa gore de ação comum |
+| `violence` | — | **nada** | sim | aposentada em 28/08 |
+
+### `sexual/minors` não vale para imagem — e o piso de 0.10 nunca disparou
+
+**Fato conferido na documentação da OpenAI, não dedução.** A
+`omni-moderation-latest` aplica a imagem **seis** categorias: `sexual`,
+`violence`, `violence/graphic` e as três de `self-harm`. `sexual/minors` — como
+`hate*`, `harassment*` e `illicit*` — é **text only**.
+
+O piso de 0.10 que está no mapa de imagem, portanto, **nunca protegeu nada
+ali**, e não vai proteger enquanto a API for assim.
+
+**Como apareceu:** no dia seguinte a passarmos a registrar todas as notas, o
+log mostrou `sexual/minors=-` em toda análise enquanto as outras vinham com
+número. É o retorno exato do que o §1.5 chama de *configuração que pode
+silenciosamente nunca funcionar* — e a instrumentação a pegou em menos de 24 h.
+
+**O que cobre esta classe em imagem é `sexual` em 0.55**, que roda e **oculta na
+hora**. O piso dele é deliberadamente mais folgado que o do texto justamente
+para pegar o caso duvidoso. **O caminho de texto (`moderate-text`) continua com
+`sexual/minors` ativo e funcionando** — lá a categoria é suportada.
+
+O piso ficou no mapa, com o aviso ao lado, por duas razões: removê-lo pareceria
+mudança de política, e ele volta a valer sozinho no dia em que a OpenAI
+estender a categoria. O que não podia continuar era alguém ler aquele `0.10` e
+concluir que há detecção de menor em imagem. Travado por teste, e o log agora
+marca a diferença entre "não veio e não deveria vir" (`-(so_texto)`) e "não
+veio e deveria" (`-`).
 
 ### Por que `violence` foi aposentada, e não apenas subiu de piso
 

@@ -171,6 +171,37 @@ describe('moderate-image — política de violência num site de jogos', () => {
     ).toBeLessThanOrEqual(0.10);
   });
 
+  // `[28/08]` Achado no dia seguinte a passarmos a registrar todas as notas: a
+  // OpenAI aplica `sexual/minors` só a TEXTO. Em imagem ela não devolve nota
+  // nenhuma, então o piso de 0.10 aqui nunca disparou e nunca vai disparar.
+  //
+  // Não é brecha — `sexual` em 0.55 vale para imagem e oculta na hora, e é ele
+  // que cobre esta classe. Mas é exatamente o tipo de configuração que "pode
+  // silenciosamente nunca funcionar" (§1.5): quem lê o mapa conclui que há
+  // detecção de menor em imagem, e há apenas o piso escrito.
+  it('deixa explícito quais pisos de fato rodam em imagem', () => {
+    const lista = fonte.match(/const CATEGORIAS_QUE_VALEM_EM_IMAGEM = \[([\s\S]*?)\]/);
+    expect(
+      lista,
+      'A lista das categorias que a API aplica a IMAGEM sumiu. Sem ela, "o piso\n'
+      + 'existe" e "o piso funciona" viram a mesma coisa aos olhos de quem lê —\n'
+      + 'e foi assim que o `sexual/minors` passou meses parecendo ativo aqui.',
+    ).not.toBeNull();
+
+    // O que de fato protege esta classe em imagem tem que estar entre as que rodam.
+    expect(
+      lista[1],
+      '`sexual` é o ÚNICO piso desta família que roda em imagem. Se ele sair do\n'
+      + 'mapa ou desta lista, a classe fica sem cobertura nenhuma em imagem.',
+    ).toContain('"sexual"');
+
+    expect(
+      fonte,
+      'O aviso de que `sexual/minors` é text-only precisa continuar ao lado do\n'
+      + 'piso. Sem ele o número de 0.10 parece proteção e não é, em imagem.',
+    ).toMatch(/TEXT ONLY na API: inerte em imagem/);
+  });
+
   it('registra as notas de todas as categorias observadas, passem ou não', () => {
     expect(
       fonte,
