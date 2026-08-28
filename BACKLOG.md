@@ -58,11 +58,31 @@
 - ⬜ `[23/08]` **Medir prints de jogo no `violence/graphic`.** O piso está em
   0.80, escolhido sem dado. Como esse caminho **só enfileira e nunca oculta**,
   errar gera fila maior — não censura. Por isso deixou de ser pré-requisito.
-- ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** Resolveria de verdade os
-  `exhaustive-deps` suprimidos. **Destravado em 28/08:** a conta `claudestaff`
-  existe, e `e2e/painel-admin.mjs` abre o painel e as sete abas num navegador de
-  verdade em todo PR. A rede que faltava para mexer ali com segurança agora
-  existe.
+- ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** **Conferido contra o
+  sistema em 28/08, e a justificativa original não se sustenta mais** (§1.4).
+
+  O item dizia que a migração "resolveria de verdade os `exhaustive-deps`
+  suprimidos". Medido:
+
+  | | |
+  | --- | --- |
+  | Warnings de lint dentro do `Admin.jsx` | **zero** — os 12 restantes estão espalhados por 10 outros arquivos |
+  | Supressões dentro do `Admin.jsx` | 3 |
+  | Supressões no resto do projeto | 7, em 7 arquivos |
+  | Tamanho do `Admin.jsx` | **213 linhas** (era 918 antes dos splits) |
+
+  E as três supressões têm a **mesma causa, que não é falta de React Query**:
+  as funções de fetch vêm dos hooks de domínio sem `useCallback`, então mudam
+  de identidade a cada render — incluí-las nas deps faria o painel recarregar
+  em loop. **O conserto pequeno é memoizar essas funções nos próprios hooks**,
+  e aí as deps ficam honestas sem migração nenhuma.
+
+  React Query continua tendo valor real (cache entre abas, dedupe, invalidação),
+  mas isso é ganho de arquitetura — não conserto de lint. **Vale decidir qual
+  dos dois se quer** antes de gastar uma sessão nisso.
+
+  *Destravado em 28/08:* a conta `claudestaff` existe e o `e2e/painel-admin.mjs`
+  abre o painel e as sete abas em todo PR, então mexer ali agora tem rede.
 - ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
   A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;
   cena 3D e Sentry fora do caminho crítico; carregamento inicial hoje em
