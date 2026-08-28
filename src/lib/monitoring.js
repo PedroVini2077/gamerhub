@@ -1,5 +1,5 @@
-import * as Sentry from '@sentry/react';
 import { criarLimitador } from './tetoDeEventos';
+import { iniciarCapturaAntecipada, LIMITE_DA_FILA } from './capturaAntecipada';
 
 // ---------------------------------------------------------------------------
 // Observabilidade — a implementação prática da §1.5 do CLAUDE.md
@@ -55,13 +55,100 @@ function limparUrl(url) {
 // silêncio pelo resto do mês — ver `tetoDeEventos.js`.
 const limitador = criarLimitador();
 
+// ---------------------------------------------------------------------------
+// Carregamento sob demanda
+//
+// O `@sentry/react` vivia no chunk inicial, que é o que bloqueia a primeira
+// pintura. Agora ele é buscado por `import()` dinâmico, num chunk próprio,
+// depois que o navegador respira.
+//
+// A regra que NÃO pode ser quebrada nessa troca é a do `main.jsx`: o
+// monitoramento liga antes de tudo de propósito, porque erro durante a
+// montagem é o mais grave. Por isso a `capturaAntecipada` entra no lugar dele
+// desde o primeiro instante e entrega tudo o que pegou quando o Sentry sobe.
+// Peso sai do caminho crítico; cobertura não.
+// ---------------------------------------------------------------------------
+
+// Módulo do Sentry depois de carregado. Enquanto for `null`, tudo o que
+// chegar por `registrarErro`/`identificarUsuario` fica guardado abaixo.
+let sentry = null;
+let usuarioPendente;              // `undefined` = ninguém chamou ainda
+const errosPendentes = [];        // { erro, contexto } de antes do carregamento
+
+// Teto para a espera: se o navegador nunca ficar ocioso, o Sentry entra assim
+// mesmo. Monitoramento que nunca liga é a falha silenciosa que ele existe para
+// combater — a mesma armadilha que a cena 3D tinha (ver `landing/Scene3D.jsx`).
+const TETO_DE_ESPERA_MS = 2000;
+const ESPERA_SEM_IDLE_MS = 800;
+
+function agendarQuandoOcioso(tarefa) {
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(tarefa, { timeout: TETO_DE_ESPERA_MS });
+  } else {
+    window.setTimeout(tarefa, ESPERA_SEM_IDLE_MS);
+  }
+}
+
+async function carregarSentry(captura) {
+  let modulo;
+  try {
+    // Desestruturar em vez de guardar o namespace inteiro NÃO é estilo: é o
+    // que mantém o tree-shaking ligado. Com `const m = await import(...)` e
+    // `m.captureException` depois, o Rollup não consegue provar quais exports
+    // são usados e mantém o pacote todo — medido, o chunk foi de ~90 KB para
+    // 475 KB. Ao acrescentar uma função do Sentry aqui, acrescente na lista.
+    const { init, captureException, captureMessage, setUser } = await import('@sentry/react');
+    modulo = { init, captureException, captureMessage, setUser };
+  } catch (erro) {
+    // Sem rede, bloqueador de anúncio ou chunk que sumiu depois de um deploy.
+    // Não dá para reportar a falha do reporter — mas ela não pode sumir calada,
+    // e a fila é liberada para não segurar memória para sempre.
+    console.error('[monitoring] não consegui carregar o Sentry:', erro);
+    captura.encerrar();
+    return;
+  }
+
+  modulo.init(opcoesDoSentry());
+  sentry = modulo;
+
+  // Ordem importa: o `init()` acima já instalou os ouvintes do Sentry, então
+  // encerrar a captura agora deixa as duas redes ativas por um instante em vez
+  // de abrir um vão. Duplicata o Sentry deduplica; evento perdido, não.
+  const capturados = captura.encerrar();
+  for (const { erro, origem } of capturados) {
+    modulo.captureException(erro, { extra: { capturado_antes_do_sentry: true, origem } });
+  }
+  if (captura.descartados() > 0) {
+    modulo.captureMessage(
+      `${captura.descartados()} erros descartados antes do Sentry carregar (fila cheia)`,
+      'warning',
+    );
+  }
+
+  if (usuarioPendente !== undefined) aplicarUsuario(modulo, usuarioPendente);
+  for (const { erro, contexto } of errosPendentes.splice(0, errosPendentes.length)) {
+    modulo.captureException(erro, contexto ? { extra: contexto } : undefined);
+  }
+}
+
+function aplicarUsuario(modulo, profile) {
+  if (!profile?.id) { modulo.setUser(null); return; }
+  modulo.setUser({ id: profile.id, username: profile.username });
+}
+
 /** Liga o monitoramento. Chamado uma vez, no `main.jsx`. */
 export function iniciarMonitoramento() {
   // Em desenvolvimento o erro já aparece no console e no overlay do Vite.
   // Mandar pro Sentry só gastaria cota com bug que eu mesmo acabei de escrever.
   if (!import.meta.env.PROD) return;
 
-  Sentry.init({
+  // Síncrono, na primeira linha: a partir daqui nenhum erro global se perde.
+  const captura = iniciarCapturaAntecipada();
+  agendarQuandoOcioso(() => { carregarSentry(captura); });
+}
+
+function opcoesDoSentry() {
+  return {
     dsn: DSN,
     environment: 'production',
 
@@ -88,7 +175,7 @@ export function iniciarMonitoramento() {
       // token, e mesmo o que for descartado nunca chega a existir com token.
       return limitador.filtrar(evento);
     },
-  });
+  };
 }
 
 /**
@@ -96,11 +183,14 @@ export function iniciarMonitoramento() {
  *
  * Só o `id` e o `username` — nunca email, nunca data de nascimento. São as
  * mesmas colunas que qualquer visitante já vê num perfil público.
+ *
+ * Chamada antes de o Sentry carregar, ela guarda o perfil e aplica depois —
+ * o `App.jsx` chama assim que a sessão resolve, o que costuma acontecer antes.
  */
 export function identificarUsuario(profile) {
   if (!import.meta.env.PROD) return;
-  if (!profile?.id) { Sentry.setUser(null); return; }
-  Sentry.setUser({ id: profile.id, username: profile.username });
+  if (!sentry) { usuarioPendente = profile ?? null; return; }
+  aplicarUsuario(sentry, profile);
 }
 
 /**
@@ -108,11 +198,19 @@ export function identificarUsuario(profile) {
  *
  * Use onde hoje há um `console.error` sozinho — ele serve para depurar, não é
  * tratamento (§1.5).
+ *
+ * Antes de o Sentry carregar, o erro entra na fila em vez de sumir. A fila tem
+ * o mesmo teto da captura antecipada, pelo mesmo motivo: bug em laço não pode
+ * encher a memória nem queimar a cota de uma vez.
  */
 export function registrarErro(erro, contexto) {
   if (!import.meta.env.PROD) {
     console.error('[monitoring]', erro, contexto);
     return;
   }
-  Sentry.captureException(erro, contexto ? { extra: contexto } : undefined);
+  if (!sentry) {
+    if (errosPendentes.length < LIMITE_DA_FILA) errosPendentes.push({ erro, contexto });
+    return;
+  }
+  sentry.captureException(erro, contexto ? { extra: contexto } : undefined);
 }
