@@ -88,6 +88,36 @@ describe('portão de documentação quebrada', () => {
   });
 });
 
+/**
+ * Trava do contador do `BACKLOG.md`.
+ *
+ * Ele diz "N itens abertos" no cabeçalho, e esse número **já mentiu duas
+ * vezes**: em 23/08 a lista tinha cinco itens que já estavam feitos, e em
+ * 28/08 o cabeçalho anunciava 21 quando havia 17 — os quatro tinham sido
+ * fechados durante a sessão e a conta não acompanhou.
+ *
+ * É bobo e é exatamente por isso que erra: ninguém recalcula um número à mão
+ * ao editar um item. E o custo é real — o cabeçalho é a primeira coisa que se
+ * lê para decidir se o backlog está sob controle.
+ */
+describe('BACKLOG.md — o contador bate com a lista', () => {
+  const RAIZ_BL = join(import.meta.dirname, '../..');
+
+  it('o número anunciado é o número de itens', () => {
+    const texto = readFileSync(join(RAIZ_BL, 'BACKLOG.md'), 'utf8');
+    const declarado = texto.match(/\*\*(\d+) itens abertos\*\*/);
+    expect(declarado, 'o cabeçalho perdeu a contagem de itens abertos').not.toBeNull();
+
+    const reais = (texto.match(/^- ⬜/gm) ?? []).length;
+    expect(
+      Number(declarado[1]),
+      `O cabeçalho anuncia ${declarado[1]} itens e a lista tem ${reais}.\n`
+      + 'Atualize o número — ele é a primeira coisa que se lê para saber se o\n'
+      + 'backlog está sob controle, e já mentiu duas vezes.',
+    ).toBe(reais);
+  });
+});
+
 describe('relatório de documentação envelhecida', () => {
   const RELATORIO = join(RAIZ, 'scripts/documentacao-envelhecida.mjs');
 

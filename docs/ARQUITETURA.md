@@ -77,7 +77,7 @@ src/
     │                      # WordlistManager, ViolationsPanel
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
-    │                      # LandingShot, Scene3D
+    │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
     │   └── scene3d/       # LandingScene, Lightning, SceneObjects (LogoBolt/FloatingShapes)
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
@@ -86,9 +86,16 @@ src/
                            # LazyVisible, PageTransition
 ```
 
-> Fora de `src/`: **`db/`** guarda scripts SQL avulsos para rodar no SQL Editor
-> do Supabase (índices, retenção, correções de RPC). Não são migrations
-> automáticas — cada arquivo diz como rodar e o que conferir antes.
+**Fora de `src/`** — atualizado em 28/08, porque esta nota só citava `db/`:
+
+| Pasta | O que guarda |
+| --- | --- |
+| `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
+| `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
+| `scripts/` | Portões que rodam no CI: orçamento de bytes, documentação quebrada, ignorar deploy da Vercel; e o relatório de documentação envelhecida |
+| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, e o laço da cena 3D |
+| `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |
+| `db/` | Scripts SQL avulsos para o SQL Editor e os relatórios de auditoria (`AAAA-MM-DD-*.md`). Não são migrations |
 
 ### Rotas
 
