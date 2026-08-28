@@ -180,6 +180,33 @@ antes: live encerrada que não some do feed é o job de hora em hora parado.
 > O `cleanup_expired_posts()` era uma Edge Function chamável por qualquer um da
 > internet. Virou SQL e saiu da rede — ver `docs/SEGURANCA.md`.
 
+## Orçamento de bytes — o portão de desempenho
+
+`scripts/orcamento-de-bytes.mjs` roda no CI e **reprova o PR** quando o site
+engorda. Ele confere quatro coisas:
+
+| O que | Teto | Por quê |
+| --- | --- | --- |
+| JS do carregamento inicial | 740 kB brutos / 222 kB gzip | é o que o navegador busca antes de pintar qualquer coisa |
+| Qualquer chunk isolado | 320 kB | chunk de **rota** não aparece no `index.html` e escapa do teto acima — mas quem abre a página paga tudo |
+| `LandingScene-*.js` existe | — | se o `lazy()` virar `import` estático, o chunk some e a cena 3D é absorvida pela rota |
+| O HTML ainda é legível | — | se as expressões pararem de casar, ele sai com erro em vez de medir zero byte e aprovar |
+
+**Mede byte, não tempo, de propósito.** Tempo de laboratório oscila com a
+máquina: as duas medições de 27/08 discordaram **4×** no TBT sobre o mesmo site.
+Portão que balança vira alarme falso, e alarme que grita à toa ensina a ignorar
+o canal (`CLAUDE.md` §0.2). Byte é determinístico — o mesmo commit dá o mesmo
+número em qualquer máquina.
+
+**Ele não diz se o site está rápido.** Diz se ficou mais pesado, que é o que dá
+para afirmar sem margem de erro. Para saber se está rápido, o Lighthouse no
+mesmo aparelho e o Vercel Speed Insights (campo).
+
+> **Se ele reprovar seu PR:** a saída lista cada chunk com tamanho e diz o
+> suspeito mais provável. Se o crescimento for intencional, suba o teto **no
+> próprio script** e explique no commit por que o site precisou engordar — o
+> limite existe para forçar essa frase.
+
 ## Portão de qualidade automático
 
 `.github/workflows/ci.yml`, a cada PR e push na `main`:

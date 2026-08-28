@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import Scene2D from './Scene2D';
+import { modoDaCena } from '../../lib/cena3D';
 
 const LandingScene = lazy(() => import('./scene3d/LandingScene'));
 
@@ -23,25 +24,14 @@ const LandingScene = lazy(() => import('./scene3d/LandingScene'));
 //
 // Duas defesas, e elas são independentes:
 //
-//  1. **Quem recebe a cena 3D** — só aparelho que dá conta (`decidirModo`).
-//  2. **Quando ela é baixada** — nunca durante o carregamento inicial.
+//  1. **Quem recebe a cena 3D** — só aparelho que dá conta, ou quem pediu
+//     explicitamente. Essa decisão mora em `lib/cena3D.js`, porque o
+//     `BotaoCena3D` precisa da mesma resposta para saber o que oferecer.
+//  2. **Quando ela é baixada** — nunca durante o carregamento inicial. É o que
+//     este arquivo resolve.
 //
 // Quem não recebe a 3D não fica sem nada: a `Scene2D` desenha o mesmo arranjo
 // em SVG + CSS, com custo de JavaScript zero.
-
-// Abaixo disto, a tela é estreita o bastante para a cena virar enfeite caro:
-// pouco espaço para apreciar e, quase sempre, CPU móvel. 1024px é o `lg` do
-// Tailwind, o mesmo ponto onde a landing troca para layout de coluna única.
-const LARGURA_MINIMA_3D = 1024;
-
-// Este portão é deliberadamente FROUXO, e o motivo é uma medição: a primeira
-// versão cortava em `<= 4` núcleos e derrubou para o modo leve um desktop de
-// 1440 px com 8 GB de RAM. O raciocínio estava errado nos dois sentidos —
-// celular barato reporta 8 núcleos (big.LITTLE), então contagem de núcleo mal
-// identifica celular, enquanto notebook honesto de 4 núcleos parseia os 887 KB
-// sem sofrer. Quem separa celular de PC aqui é a LARGURA; este portão só pega
-// o caso extremo de máquina de 1 ou 2 núcleos.
-const NUCLEOS_MINIMOS_3D = 2;
 
 // Teto para o `requestIdleCallback`: se o navegador nunca ficar ocioso, a cena
 // entra assim mesmo.
@@ -63,36 +53,6 @@ const ESPERA_SEM_IDLE_MS = 1500;
 // Não é hipótese. Medido no sandbox onde o Google Fonts é inalcançável:
 // `document.readyState` ficou em `interactive` por 9 s e o canvas nunca montou.
 const TETO_ABSOLUTO_MS = 2500;
-
-/**
- * Decide o que este aparelho recebe: `'completo'` (three.js) ou `'leve'` (SVG).
- *
- * Todas as APIs consultadas são opcionais e só existem em parte dos
- * navegadores. Quando uma não existe, ela simplesmente não opina — e o
- * `catch` devolve `'leve'`, que é a escolha segura: enfeite mais simples nunca
- * quebra a página, enquanto 887 KB num aparelho fraco quebram a experiência
- * inteira.
- */
-function decidirModo() {
-  try {
-    // Pedido explícito de menos movimento, economia de dados ou rede ruim:
-    // baixar 887 KB de enfeite antes do conteúdo é ruim de verdade.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'leve';
-
-    const conexao = navigator.connection;
-    if (conexao?.saveData) return 'leve';
-    if (conexao?.effectiveType && /(^|-)(2g|3g)$/.test(conexao.effectiveType)) return 'leve';
-
-    if (typeof navigator.deviceMemory === 'number' && navigator.deviceMemory <= 1) return 'leve';
-    if (typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency <= NUCLEOS_MINIMOS_3D) return 'leve';
-
-    if (window.matchMedia(`(max-width: ${LARGURA_MINIMA_3D - 1}px)`).matches) return 'leve';
-
-    return 'completo';
-  } catch {
-    return 'leve';
-  }
-}
 
 /**
  * Libera a cena 3D no primeiro destes dois que acontecer:
@@ -152,8 +112,9 @@ function useCenaLiberada(ativo) {
 // Decorativo: `aria-hidden` + `pointer-events-none`.
 export default function Scene3D({ className = '' }) {
   // `useState(fn)` roda a decisão uma vez, na montagem — o modo não muda no
-  // meio da sessão, e reavaliar a cada render só gastaria trabalho.
-  const [modo] = useState(decidirModo);
+  // meio da sessão (trocar exige recarregar; ver `BotaoCena3D`), e reavaliar
+  // a cada render só gastaria trabalho.
+  const [modo] = useState(modoDaCena);
   const cena3DLiberada = useCenaLiberada(modo === 'completo');
 
   return (

@@ -504,6 +504,47 @@ escrita.
 
 ## Código
 
+### `[28/08]` Não vamos identificar o aparelho para decidir a cena 3D
+
+**A pergunta do dono:** jogos leem o processador e travam gráficos que o
+aparelho não aguenta. Dá para fazer isso num site?
+
+**Tecnicamente, em parte, sim.** No Chrome em Android, `userAgentData
+.getHighEntropyValues(['model'])` devolve o modelo do celular, e
+`WEBGL_debug_renderer_info` devolve a GPU (`"Adreno (TM) 7xx"`). Somando
+`hardwareConcurrency` e `deviceMemory`, dá para montar algo perto do que um jogo
+faz.
+
+**E mesmo assim foi descartado**, por três motivos:
+
+1. **A tabela envelhece.** Todo aparelho lançado depois de escrevermos a lista
+   cai no "desconhecido" — é o fallback silencioso que o `CLAUDE.md` §4 proíbe,
+   com outra roupa.
+2. **A cobertura é desigual.** No iPhone não existe `deviceMemory`, não existe
+   `userAgentData` e a GPU vem mascarada. A regra ficaria boa para Android e
+   cega para iOS.
+3. **É impressão digital.** Núcleos + memória + string da GPU é um dos combos
+   clássicos de *fingerprinting*, e o projeto acabou de passar por um
+   endurecimento de LGPD. Ler para decidir localmente é legítimo; a regra de
+   nunca logar nem enviar seria fácil de esquecer depois.
+
+**O que fazemos no lugar:** portão por características observáveis
+(`lib/cena3D.js` — largura, `saveData`, `effectiveType`, memória, núcleos,
+`prefers-reduced-motion`) para o **padrão**, e um **botão** que deixa o
+visitante sobrepor esse padrão com aviso do custo. Heurística acerta a maioria;
+o botão cobre o resto sem precisar acertar ninguém.
+
+**Também descartada: a sonda de FPS em tempo de execução.** Eu mesmo propus e
+recuei. Com um botão explícito, a sonda só decidiria por quem *não* pediu — e
+subir automaticamente o 3D num celular fraco é exatamente o problema que a
+rodada de 28/08 consertou. Custaria ~80 linhas e um novo modo de falhar, para
+substituir uma escolha humana que já existe.
+
+**Sobre PWA:** virar PWA **não** daria nenhuma dessas APIs. PWA é
+instalabilidade, cache offline e notificação push; o acesso a hardware é o mesmo
+de um site comum. Para ler o SoC de verdade só app nativo. (O GamerHub também
+não é um PWA hoje — não há manifest nem service worker.)
+
 ### `[22/08]` Os warnings de lint que ficam de pé
 
 **0 erros, 12 warnings**, e isso é decisão consciente. São quase todos

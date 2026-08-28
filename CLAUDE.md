@@ -250,6 +250,64 @@ outras IAs, que foi de onde vieram.
 
 ---
 
+## 0.3 Desempenho é experiência do usuário, e ela mede em BYTES
+
+> Pedido do dono em 28/08, depois da primeira rodada de otimização: *"a
+> experiência do usuário, se não for a mais importante, é uma das partes mais
+> importantes do projeto"*. Esta seção existe porque site lento é um defeito que
+> ninguém denuncia — a pessoa fecha a aba e some, e nada aparece em log nenhum.
+
+**A conta que engana, e que eu já errei.** Em 27/08 o Lighthouse acusou 387 KiB
+de página inteira e **13,9 s de main thread**. Os dois números só batem quando
+se percebe que o custo de CPU é proporcional ao JavaScript **descompactado**: o
+chunk da cena 3D tinha 236 KB comprimidos e **887 KB** depois de descompactar.
+
+> **Peso de rede e trabalho de CPU são contas diferentes.** Ao avaliar um
+> arquivo, o número que importa para travamento é o bruto, não o gzip.
+
+### As quatro armadilhas já encontradas aqui
+
+| Armadilha | O que parecia | O que era |
+| --- | --- | --- |
+| `lazy()` **não adia download** | "a cena é lazy, então não pesa" | o componente montava com o Hero, então o pedido saía no primeiro instante — caminho crítico com outro nome |
+| `@import` de CSS externo | "tem `preconnect`, está resolvido" | `preconnect` economiza handshake, **não descoberta**: o navegador só soube da fonte depois de parsear o CSS inteiro |
+| `manualChunks` **vence** `import()` | "troquei para dinâmico, vai separar" | regra ampla (`/react/`) arrastava `@sentry/react` para o chunk ansioso, e chunk manual ganha da divisão automática |
+| Chunk de **rota** escapa do orçamento | "o carregamento inicial está no teto" | a rota é lazy, então a biblioteca pesada foi para o chunk dela — o visitante pagava tudo e o portão não via |
+
+### As regras
+
+**1. Antes de adicionar biblioteca, perguntar quanto ela custa DESCOMPACTADA.**
+E se ela vem inteira: `three` entra com o renderer WebGL completo mesmo quando
+o código usa cinco símbolos. Tree-shaking não alcança tudo.
+
+**2. Decoração cara é opcional, e a decisão nunca é minha sozinha.** Portão por
+aparelho (`lib/cena3D.js`) decide o padrão; **a escolha explícita do visitante
+vence o portão**. Palpite de heurística não passa por cima de quem clicou.
+
+**3. Toda espera precisa de teto absoluto.** Adiar carregamento até `load`, até
+`requestIdleCallback` ou até qualquer evento cria o caso em que o evento não
+vem. Já aconteceu: a cena 3D presa em `readyState: interactive` porque o Google
+Fonts estava inalcançável. Enfeite que some não gera erro, não gera log e não
+quebra teste — é §1.5 puro.
+
+**4. Regressão de desempenho é barrada por byte, não por tempo.**
+`scripts/orcamento-de-bytes.mjs` roda no CI. Tempo de laboratório oscila com a
+máquina — as duas medições de 27/08 discordaram **4×** no TBT medindo o mesmo
+site —, e portão que balança vira alarme falso (§0.2, quarta regra). Byte é
+determinístico.
+
+**5. Medir antes e depois na MESMA ferramenta e no MESMO aparelho.** Comparar um
+PageSpeed de hoje com um Lighthouse local de ontem não diz nada. E medição de
+laboratório não substitui campo: o Vercel Speed Insights já está instalado.
+
+**6. Detectar aparelho é medir, não identificar.** Dá para ler modelo e GPU no
+Chrome/Android (`userAgentData`, `WEBGL_debug_renderer_info`), mas isso é tabela
+que envelhece, não existe no Safari, e é impressão digital — o oposto do
+endurecimento de LGPD que este projeto fez. Ver
+[`docs/DECISOES.md`](docs/DECISOES.md).
+
+---
+
 ## 1. Postura (as regras que valem acima de tudo)
 
 ### 1.1 Sinceridade — sempre, em tudo

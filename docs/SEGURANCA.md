@@ -170,9 +170,40 @@ conta marcada como `blocked`, dono entrou com a senha certa, HTTP 200.
 de segurança fabricados: qualquer um gera "conta bloqueada" para qualquer email.
 Mesma classe do `edge_function_error` — fadiga de alarme.
 
-A correção certa é o **Password Verification Hook** do Supabase, que faria o
-GoTrue avisar o banco a cada verificação de senha. Aí o contador passa a ser
-verdade. Está no `BACKLOG.md` como 🟡 (mexe em auth).
+### `[28/08]` Corrigido — o contador passou a contar o que acontece
+
+A correção não foi remendar a RPC: foi **tirar a decisão do cliente**.
+
+`public.hook_de_verificacao_de_senha(event jsonb)` é o **Password Verification
+Hook** do Supabase. O GoTrue chama o banco a cada verificação de senha e entrega
+o próprio veredicto (`{user_id, valid}`). Errou a senha, conta; acertou, o
+histórico é zerado. Nada que o frontend faça move esse número.
+
+A porta forjável foi **apagada**: `register_login_attempt` não existe mais, e a
+contagem vive em `contabilizar_falha_de_login`, com `EXECUTE` revogado de `anon`
+e de `authenticated`. A tela de login agora só **lê**, por `check_login_status`.
+
+**O hook devolve sempre `decision: 'continue'`, e isso é decisão de produto.**
+Recusar ali transformaria o contador num portão de verdade — e portão desses é
+negação de serviço contra a conta: bastaria errar a senha de alguém 10 vezes
+para trancar a pessoa do lado de fora. Contra força bruta quem protege é o rate
+limit do próprio GoTrue, que é server-side. O papel deste contador é **avisar a
+equipe**, e para avisar ele precisava primeiro parar de mentir.
+
+> O `EXCEPTION WHEN OTHERS` que engole tudo dentro do hook é a única vez que
+> engolir erro é o certo neste projeto (contra a §4): um defeito ali travaria o
+> **login do site inteiro**, inclusive o do dono. Contabilidade de tentativa não
+> vale esse risco.
+
+Verificado em transação com `ROLLBACK`, 8 checagens: falha conta 1→2→3, acerto
+apaga a linha, evento malformado devolve `continue`, e nem `anon` nem
+`authenticated` conseguem chamar qualquer uma das duas funções.
+
+**Falta um passo, e ele é de painel:** *Authentication → Hooks → Password
+Verification* apontando para `public.hook_de_verificacao_de_senha`. Enquanto
+isso não for feito, o hook existe e não é chamado — ninguém consegue fabricar
+alerta (isso já está fechado), mas falha real também não é contada. Está no
+`BACKLOG.md`.
 
 > A política de segurança e os pontos de melhoria são revisados periodicamente
 > pelo plano de auditoria em 3 fases descrito no `CLAUDE.md`.
