@@ -84,7 +84,9 @@ export default function Login() {
       // página faça consegue mover o contador.
       const { error, banned } = await signInWithEmail(email, password);
       if (banned) {
-        toast.error('Sua conta foi banida. Entre em contato com o suporte.');
+        // Sem toast: o `useAuth` já subiu a `BannedScreen`, que mostra o motivo,
+        // o estado do pedido de revisão e o formulário para abrir um. Um toast
+        // por cima seria a versão pior da mesma informação.
         setLoading(false);
         return;
       }

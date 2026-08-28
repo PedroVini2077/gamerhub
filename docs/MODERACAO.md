@@ -205,12 +205,25 @@ novo se ela for desbanida e banida outra vez.
 **pausa enquanto o formulário está aberto** — cronômetro correndo por cima de um
 formulário seria pior que não ter formulário.
 
-> **`[28/08]` CORREÇÃO: a parte do "basta entrar de novo" ainda NÃO é verdade.**
-> Eu escrevi isso sem verificar, e o dono descobriu testando. `Login.jsx:86-89`
-> intercepta o login de conta banida com um toast genérico e um `return` — a
-> `BannedScreen` só monta quando o `useAuth` detecta o ban numa sessão já
-> aberta, nunca no login. A tela também exibe essa frase errada, e ela sai junto
-> com o conserto. Está no `BACKLOG.md` como 🟠, com o diagnóstico pronto.
+**`[28/08]` A tela sobe no PRÓPRIO login, e a sessão fica viva até a pessoa
+terminar.** Antes o `signInWithEmail` deslogava na hora e o `Login.jsx` mostrava
+um toast genérico — o formulário de recurso nunca aparecia no login, e entre o
+`signInWithPassword` e o `signOut` a pessoa via o site por alguns segundos.
+
+Manter a sessão é o que **torna o recurso possível**:
+`solicitar_revisao_do_proprio_ban` exige `authenticated`. Sem sessão não haveria
+como pedir revisão nenhuma. O `signOut` acontece quando ela termina — pelo
+botão, ou pelo contador.
+
+> **Segurança:** banido com sessão não cria nada. As policies de INSERT checam
+> `banned` no banco, então o bloqueio nunca dependeu desta tela.
+
+**E ela acompanha o caso.** `meu_pedido_de_revisao()` devolve o pedido do
+banimento atual, e a tela mostra *Em análise* / *Aprovado* / *Negado* com a
+resposta da equipe. **Notificação em tempo real não resolveria** — se o admin
+decidir enquanto a pessoa não está online, o aviso passa batido. Estado
+consultável no banco não expira nem depende de alguém estar com o site aberto
+na hora certa.
 
 ### Bug de hierarquia corrigido junto
 
