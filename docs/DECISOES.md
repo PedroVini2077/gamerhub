@@ -504,6 +504,29 @@ escrita.
 
 ## Código
 
+### `[28/08]` A cena 3D FICA — não vamos aposentá-la
+
+**Decisão do dono, dita duas vezes:** *"não vamos aposentar a cena 3d não, vamos
+manter, mas fazer o que der pra ficar um desempenho legal"* e, ao fechar a
+sessão de 28/08, *"eu já tinha decidido de não aposentar, quero o 3D lá"*.
+
+**Está aqui porque eu voltei a oferecer o descarte como opção depois de a
+decisão já ter sido tomada.** O `BACKLOG.md` listava "reescrever em WebGL cru
+**ou aposentar a cena e ficar com a `Scene2D`**" como se fossem dois caminhos
+abertos. Não eram: o segundo já tinha sido recusado. Item de backlog que
+reabre decisão fechada faz a mesma discussão voltar, e é justamente o que este
+arquivo existe para impedir.
+
+**O que continua valendo:** a cena é enfeite caro (887 KB descompactados), então
+segue fora do caminho crítico, carregada depois do ocioso e só no desktop, com o
+botão de troca para quem quiser o contrário. O que **não** está mais em
+discussão é a existência dela.
+
+**O que sobra como trabalho** (no backlog, sem pressa): trocar
+`@react-three/fiber` + `three` por WebGL cru com os cinco símbolos usados. E
+**medir antes** quanto do chunk é `three` e quanto é `fiber` — se a maior parte
+for `three`, reescrever o `fiber` não resolve nada.
+
 ### `[28/08]` Não vamos identificar o aparelho para decidir a cena 3D
 
 **A pergunta do dono:** jogos leem o processador e travam gráficos que o
@@ -529,10 +552,18 @@ faz.
    nunca logar nem enviar seria fácil de esquecer depois.
 
 **O que fazemos no lugar:** portão por características observáveis
-(`lib/cena3D.js` — largura, `saveData`, `effectiveType`, memória, núcleos,
+(`lib/cena3D.js` — largura, `saveData`, memória, núcleos,
 `prefers-reduced-motion`) para o **padrão**, e um **botão** que deixa o
 visitante sobrepor esse padrão com aviso do custo. Heurística acerta a maioria;
 o botão cobre o resto sem precisar acertar ninguém.
+
+> **Correção `[28/08]`:** esta lista dizia `effectiveType` e estava
+> desatualizada — ele foi removido no mesmo dia, algumas horas depois, e a
+> frase não acompanhou. Era o **único** portão que mudava com o tempo (o
+> navegador reestima a rede continuamente), então a mesma máquina trocava de
+> modo entre visitas. Foi o que o dono viu no notebook dele. Todos os portões
+> que sobraram são estáveis, e é isso que torna a decisão explicável para quem
+> usa.
 
 **Também descartada: a sonda de FPS em tempo de execução.** Eu mesmo propus e
 recuei. Com um botão explícito, a sonda só decidiria por quem *não* pediu — e

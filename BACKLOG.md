@@ -11,8 +11,8 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **18 itens abertos**
-(+ 1 ideia sem compromisso)
+**Última conferência contra o sistema:** 28/08/2026, ao fechar a sessão ·
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** O ciclo da moderação de imagem fechou em 28/08:
 > `too_many_images` corrigido (v12), pisos ajustados com dado (v13) e
@@ -20,9 +20,16 @@
 > categorias apareceram no log. A instrumentação nova já se pagou: em menos de
 > 24 h ela revelou que `sexual/minors` não roda em imagem (v14).
 >
-> **Esperando você:** confirmar o desempenho com PageSpeed, decidir sobre os
-> 887 KB da cena 3D, e aprovar os 2 itens antigos que ficaram na fila. Nada
-> disso bloqueia nada.
+> **Verificado em produção nesta sessão** (não é inferência — conferido no
+> banco ao fechar): a moderação de imagem roda e registra as notas; o
+> banimento, o recurso e o **aviso de desbanimento** funcionam ponta a ponta —
+> `ogamerpedro` recebeu e leu o aviso às 17:53; a fila está zerada.
+>
+> **O único caminho de 28/08 que ninguém exerceu é a moderação de VÍDEO** (item
+> logo abaixo). Ela nasceu quebrada e foi consertada junto com a de imagem, mas
+> nunca rodou com sucesso uma vez sequer.
+>
+> **Esperando você:** postar um vídeo (fecha o último buraco), e o PageSpeed.
 
 ---
 
@@ -74,11 +81,32 @@
   Onde ler: painel da Supabase → Edge Functions → `moderate-image` → Logs,
   linhas `[moderate-image] ... | notas: ...`.
 
-  > **Dois itens antigos ficaram na fila** (`c6858467` e `3bd9ca59`, os posts
-  > de teste de 28/08). Com os pisos novos eles não teriam entrado. Não apaguei
-  > — são posts de verdade do dono, e limpar fila por fora do painel é
-  > exatamente o tipo de mudança de dado sem rastro que o §5 proíbe. Basta
-  > aprovar os dois no painel.
+  > Os dois itens antigos que tinham ficado na fila já foram resolvidos pelo
+  > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
+  > pendentes.
+
+- ⬜ `[28/08]` 🟠 **A moderação de VÍDEO nunca rodou com sucesso — nem uma vez.**
+  *É o único caminho tocado em 28/08 que ninguém exerceu, e o mais provável de
+  ainda estar quebrado.*
+
+  Ela nasceu em 28/08 mandando 3 quadros numa requisição só, e a OpenAI aceita
+  **um por vez** — ou seja, foi entregue quebrada e passou o dia inteiro assim.
+  A correção do `too_many_images` (v12) conserta o formato, mas **isso é
+  inferência, não observação** (§1.1): o caminho `moderateVideos` →
+  `extrairQuadros` → `data:` embutido → 3 requisições nunca completou com
+  sucesso na vida. Conferido no banco ao fechar a sessão: **zero vídeos no ar**.
+
+  Além do lote, há dois pontos que só um vídeo real testa, e nenhum tem
+  cobertura de teste hoje:
+
+  | O que pode falhar | Por quê |
+  | --- | --- |
+  | `extrairQuadros` devolver lista vazia | codec que o `<canvas>` do navegador não abre |
+  | quadro passar de 400 KB | o teto do `data:` recusa em silêncio e só o `console.warn` conta |
+
+  **Ação do dono, e é barata:** postar um vídeo curto. O veredito sai no log
+  como `analisadas=3/3`. Se vier `analisadas=0/3` ou nada aparecer, o problema é
+  a extração no navegador, não a API.
 
 - ⬜ `[28/08]` 🟡 **`sexual/minors` não roda em imagem — e não há conserto
   nosso.** *Achado em 28/08 pela instrumentação nova, menos de 24 h depois de
@@ -135,6 +163,54 @@
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[28/08]` 🟢 **`moderation_queue.ai_score` é sempre 1 — a nota real nunca
+  chega ao banco.** A `moderate-image` manda `p_score: 1` de propósito (a
+  decisão já foi tomada pelos pisos fixos, e o dial do painel não deve
+  desfazê-la), mas o efeito colateral é que o painel mostra "score 1" para tudo.
+  Quem revisa a fila não consegue distinguir um 0.96 raspando o piso de um 0.99
+  gritante — e são casos com decisões diferentes.
+
+  A nota verdadeira existe **só no log da Edge Function**. Conferido em 28/08:
+  o log guarda pelo menos **7 dias** (medido, não suposto — havia 5.814 linhas
+  de 21/08). Serve para ajustar piso; não serve para quem está olhando um item
+  da fila agora.
+
+  **Conserto pequeno:** mandar a nota real num parâmetro novo e gravá-la em
+  `moderation_queue.metadata`, sem tocar no `p_score` que decide.
+
+- ⬜ `[28/08]` 🟠 **Propor uma regra de "ler antes de escrever" no `CLAUDE.md`.**
+  *Cobrança do dono ao fechar a sessão: "tô vendo que vc tá vacilando muito nas
+  documentações, vou começar a te obrigar a ler sempre".* Ele tem razão, e há
+  três casos concretos só nesta sessão:
+
+  | O que estava escrito | O que era verdade |
+  | --- | --- |
+  | `BACKLOG.md`: "reescrever **ou aposentar** a cena 3D" | ele já tinha recusado o descarte, duas vezes |
+  | `DECISOES.md`: `effectiveType` listado como portão ativo | removido horas antes, no PR #84 |
+  | `BannedScreen`: "esta tela reaparece a cada login" | era falso quando foi escrito (corrigido no #84) |
+
+  O padrão é sempre o mesmo: **eu escrevo por memória do que o projeto era, em
+  vez de ler o arquivo antes de alterá-lo.** É o §1.4 aplicado à documentação —
+  documento envelhece, e quem envelhece o documento sou eu quando não releio.
+
+  Os três casos acima já foram corrigidos. O que falta é a **trava**, e ela
+  precisa de proposta (§6.2, Contrato de Evolução) porque mexe numa regra:
+  provavelmente um passo obrigatório de reler a seção alvo antes de editar
+  documento estrutural, e não confiar no que eu "lembro" que está lá.
+
+- ⬜ `[28/08]` 🟢 **`docs/MODERACAO.md` passou de 400 linhas.** A regra do §6.2
+  (seção acima de ~150 linhas vira arquivo próprio) foi estourada pela política
+  de imagem, que cresceu muito em 28/08 — pisos, medições, o caso do
+  `sexual/minors` e o do `too_many_images`.
+
+  **Precisa de proposta antes** (Contrato de Evolução, §6.2): é mudança de
+  estrutura de documento, não conserto. O corte natural seria
+  `docs/MODERACAO-IA.md` com a política por categoria, os limiares e as
+  medições, deixando no `MODERACAO.md` a fila, o ban e o recurso. Ao criar,
+  acrescentar na tabela do `README.md` — arquivo que ninguém acha é arquivo que
+  ninguém atualiza.
+
 
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
@@ -207,13 +283,25 @@
   que o portão do CI virou **byte** (`scripts/orcamento-de-bytes.mjs`) e não
   tempo. O Lighthouse aqui serve para confirmar a direção, não para aprovar ou
   reprovar.
-- ⬜ `[28/08]` **Os 887 KB da cena 3D continuam existindo.** Hoje eles não
-  pesam no carregamento (chegam depois do ocioso, e só no desktop), mas quem
-  recebe ainda paga 236 KB de download e o parse. Só há dois caminhos reais, e
-  nenhum é urgente: trocar `@react-three/fiber` por WebGL cru com os cinco
-  símbolos usados (`Shape`, `ExtrudeGeometry`, `MathUtils`, `Vector3`,
-  `AdditiveBlending`), ou aposentar a cena 3D e ficar com a `Scene2D` em todo
-  lugar. *Decisão de produto, não de código.*
+- ⬜ `[28/08]` 🔵 **Emagrecer a cena 3D — mantendo ela.** *A cena 3D FICA. O dono
+  decidiu duas vezes ("não vamos aposentar a cena 3d não, vamos manter" e, ao
+  fechar a sessão de 28/08, "eu já tinha decidido de não aposentar, quero o 3D
+  lá"). Registrado em [DECISOES.md](docs/DECISOES.md) para não voltar à mesa.*
+
+  Este item deixou de ser decisão e virou trabalho de otimização, sem pressa.
+
+  Hoje os 887 KB **não pesam no carregamento** — chegam depois do ocioso e só no
+  desktop —, mas quem recebe ainda paga 236 KB de download e o parse.
+
+  **O único caminho que sobrou:** trocar `@react-three/fiber` + `three` por
+  WebGL cru com os cinco símbolos de fato usados (`Shape`, `ExtrudeGeometry`,
+  `MathUtils`, `Vector3`, `AdditiveBlending`). O `three` entra inteiro, com o
+  renderer completo, porque tree-shaking não alcança tudo (§0.3 regra 1).
+
+  **Antes de começar, medir**: quanto do chunk é `three` e quanto é `fiber`. Se
+  a maior parte for `three`, reescrever o `fiber` não resolve. Ninguém mediu
+  isso ainda — e sem o número o trabalho pode não valer o risco de reescrever
+  uma cena que hoje funciona.
 ## 🔵 Só quando o volume crescer
 
 > Nenhum destes é dívida. São decisões **corretas para 3 usuários** que deixam
