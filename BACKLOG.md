@@ -11,21 +11,71 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **15 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **19 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** Nada esperando você. A conta `claudestaff` foi criada
-> em 28/08 e promovida a `admin` pela RPC `owner_set_role` (que grava na
-> trilha), então o `/admin` deixou de ser o único caminho do site sem cobertura
-> de navegador.
+> **Próximo da fila.** O canal de recurso do banido entrou em 28/08 e o dono
+> validou em produção: banir, recorrer, o limite de 1 pedido por ban e o
+> desbanimento funcionam. O teste dele achou **três acertos pequenos** que estão
+> logo abaixo — o mais importante é o banido não reencontrar o formulário ao
+> entrar de novo.
 >
-> **O que sobra é trabalho meu:** moderação de vídeo, `Admin.jsx` para React
-> Query (agora destravado), o smoke test instável, os prints de jogo no
-> `violence/graphic` e a limpeza do `vercel-ignore.sh`.
+> **Esperando você:** os prints de jogo para medir o `violence/graphic`, e a
+> decisão sobre log de denúncia. Nenhum dos dois bloqueia nada.
 
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[28/08]` 🟠 **Banido que entra de novo não vê o formulário de recurso.**
+  Achado pelo dono testando em produção. **Diagnóstico já feito, é só corrigir:**
+  `pages/Login.jsx:86-89` intercepta o login de conta banida com
+  `toast.error('Sua conta foi banida. Entre em contato com o suporte.')` e um
+  `return`. A `BannedScreen` **nunca monta** — ela só aparece quando o
+  `hooks/useAuth.jsx:38` detecta o ban numa sessão já aberta.
+
+  **Eu afirmei o contrário sem verificar**, e a tela até diz em texto "esta tela
+  reaparece a cada login". Está errado, e a frase precisa sair junto com o
+  conserto.
+
+  **O conserto:** no lugar do toast, deixar o fluxo seguir para a `BannedScreen`
+  (o `signInWithEmail` já devolve o ban). Aí o formulário fica acessível em toda
+  tentativa de entrar, que era a promessa. *Mexe no caminho de login — arquivo
+  de alto risco (§7), então pede teste dos dois lados.*
+
+- ⬜ `[28/08]` 🟢 **Atraso ao fechar a `BannedScreen`.** Dois, com tamanhos
+  diferentes: um pequeno quando o contador de 20 s zera sozinho, e **um maior ao
+  clicar em "Sair agora"**. *Hipótese, não medida:* o `signOut` do
+  `useAuth.jsx:212` faz `supabase.auth.signOut()` e a tela só some quando a
+  promessa volta — ou seja, o tempo é ida ao servidor, não render. Se for isso,
+  o certo é a tela sair na hora e o `signOut` correr atrás. **Medir antes de
+  mexer** (§1.2): abrir a aba Network e ver quanto demora o `POST /auth/v1/logout`.
+
+- ⬜ `[28/08]` 🟢 **Depois de sair, o usuário cai no `/login` em vez da landing.**
+  O dono viu com a `claudetester`. A landing é a porta de entrada do site e a
+  única página que não depende do banco (é para onde o `dbHealth` manda todo
+  mundo quando o Supabase cai) — mandar para o formulário de login é passo a mais
+  sem motivo. Conferir para onde o `signOut` redireciona e apontar para `/`.
+
+- ⬜ `[28/08]` 🟠 **A conta do E2E ser banível derruba o CI, e isso vai repetir.**
+  Aconteceu **duas vezes em 20 minutos** em 28/08: testar moderação em produção
+  significa banir a `claudetester`, e enquanto ela está banida a `BannedScreen`
+  cobre a tela — o job **"fluxos autenticados" falha**, apontando para o site
+  quando o problema é o estado da conta.
+
+  **Já mitigado:** `recusarSeBanido()` no `e2e/util.mjs` faz o CI dizer *"a conta
+  de teste está banida — não é falha do site"* em vez de um timeout de 30 s.
+  Diagnóstico deixou de custar duas idas ao log.
+
+  **O que falta é não acontecer.** Três saídas, em ordem de preferência:
+  1. **Uma terceira conta descartável só para testar moderação**, e a
+     `claudetester` nunca é banida. Custa uma conta e resolve de vez.
+  2. O job de fluxos **desbanir a conta antes de começar** — resolve sozinho,
+     mas dá poder de desbanimento ao CI, o que é superfície nova.
+  3. Manter como está e lembrar de desbanir. *Já falhou duas vezes hoje.*
+
+  *A (1) é a que eu faria — mesma lógica da `claudestaff`: conta separada por
+  papel, em vez de uma conta acumulando papéis incompatíveis.*
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.

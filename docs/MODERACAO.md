@@ -203,9 +203,14 @@ novo se ela for desbanida e banida outra vez.
 
 **A contagem regressiva parou de ser armadilha.** Ela subiu para 20 s e agora
 **pausa enquanto o formulário está aberto** — cronômetro correndo por cima de um
-formulário seria pior que não ter formulário. E a tela diz, em texto, que basta
-entrar de novo para ela reaparecer: quem fechou a aba antes de recorrer não fica
-sem saída.
+formulário seria pior que não ter formulário.
+
+> **`[28/08]` CORREÇÃO: a parte do "basta entrar de novo" ainda NÃO é verdade.**
+> Eu escrevi isso sem verificar, e o dono descobriu testando. `Login.jsx:86-89`
+> intercepta o login de conta banida com um toast genérico e um `return` — a
+> `BannedScreen` só monta quando o `useAuth` detecta o ban numa sessão já
+> aberta, nunca no login. A tela também exibe essa frase errada, e ela sai junto
+> com o conserto. Está no `BACKLOG.md` como 🟠, com o diagnóstico pronto.
 
 ### Bug de hierarquia corrigido junto
 
