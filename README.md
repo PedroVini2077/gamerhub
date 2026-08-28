@@ -24,6 +24,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/DECISOES.md`](docs/DECISOES.md) | O que foi decidido e o que foi **descartado**, com o motivo |
 | [`BACKLOG.md`](BACKLOG.md) | O que falta fazer — só isso, é um checklist |
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |
+| [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
 | [`docs/MANIFESTO.md`](docs/MANIFESTO.md) | Como o dono e o Claude trabalham **juntos** — papéis, quando explicar mais, continuidade |
 | [`supabase/functions/`](supabase/functions/README.md) | As Edge Functions em produção, e por que este espelho pode mentir |
 | [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — 136 migrations que recriam o banco |

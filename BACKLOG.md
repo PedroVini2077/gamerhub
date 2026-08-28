@@ -192,132 +192,26 @@
   **Conserto pequeno:** mandar a nota real num parâmetro novo e gravá-la em
   `moderation_queue.metadata`, sem tocar no `p_score` que decide.
 
-- ⬜ `[28/08]` 🟢 **Duas seções ainda estouram o limite do §6.2 — e são maiores
-  que a que eu tinha achado.** A varredura de fechamento mediu **todas** as
-  seções de todos os documentos, em vez de olhar só o tamanho do arquivo. O
-  resultado desmentiu minha própria priorização:
+- ⬜ `[28/08]` 🟢 **Faltam dois splits de documento: `FUNCIONALIDADES.md` e
+  `DECISOES.md`.** *Escolhidos pelo dono como o próximo passo depois do split do
+  `CLAUDE.md`.*
 
   | Documento | Maior seção | Situação |
   | --- | --- | --- |
-  | `docs/FUNCIONALIDADES.md` | `✨ Funcionalidades` — **365 linhas** | 🔴 o pior, e eu não tinha visto |
-  | `docs/DECISOES.md` | `Ferramental` — **302 linhas** | 🔴 idem |
-  | ~~`docs/MODERACAO.md`~~ | ~~política de imagem — 150+~~ | ✅ resolvido em 28/08 → `MODERACAO-IA.md` |
+  | `docs/FUNCIONALIDADES.md` | `✨ Funcionalidades` — **365 linhas** | aberto |
+  | `docs/DECISOES.md` | `Ferramental` — **302 linhas** | aberto |
+  | ~~`CLAUDE.md`~~ | ~~1.512 linhas, 4 seções acima de 150~~ | ✅ 28/08 → `docs/regras/` via `@import` |
+  | ~~`docs/MODERACAO.md`~~ | ~~política de mídia~~ | ✅ 28/08 → `MODERACAO-IA.md` |
 
-  Ou seja: o único que eu tinha anotado era o **menos** grave dos três. Foi
-  medindo que apareceram os outros dois — mais uma vez, o sistema não mente e a
-  minha lista mentia.
+  **O corte não é óbvio, e é por isso que ainda não foi feito.**
+  `FUNCIONALIDADES.md` teria que ser cortado por área de produto (feed, lives,
+  painéis…), e `DECISOES.md` por tema — e cortar mal um arquivo de decisões
+  espalha a memória do projeto em vez de organizá-la. Pede proposta (§6.2).
 
-  **Não executei os dois, e o motivo é o Contrato de Evolução (§6.2):** o corte
-  do `MODERACAO.md` era óbvio (um bloco autocontido de política de mídia); estes
-  dois não são. `FUNCIONALIDADES.md` teria que ser cortado por área de produto,
-  e `DECISOES.md` por tema — e cortar mal um arquivo de decisões espalha a
-  memória do projeto em vez de organizá-la. Pede proposta antes.
-
-  **Ao criar qualquer arquivo novo, acrescentar em três lugares**, senão ele
-  nasce órfão: a tabela do `README.md`, o mapa `TERRITORIO` em
-  `scripts/documentacao-envelhecida.mjs`, e o próprio documento de origem com o
-  ponteiro para onde o conteúdo foi.
-
-
-- ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
-  nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
-  limite (~500/dia), o risco de o Google travar por envio automatizado, e a
-  falta de painel de entrega continuam. Com domínio próprio (~R$40/ano) +
-  Resend vira `nao-responda@…`; sem domínio, o Brevo é a opção. *Não é urgente
-  com 3 usuários.*
-
-## 🟢 Recomendado
-
-- ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** **Conferido contra o
-  sistema em 28/08, e a justificativa original não se sustenta mais** (§1.4).
-
-  O item dizia que a migração "resolveria de verdade os `exhaustive-deps`
-  suprimidos". Medido:
-
-  | | |
-  | --- | --- |
-  | Warnings de lint dentro do `Admin.jsx` | **zero** — os 12 restantes estão espalhados por 10 outros arquivos |
-  | Supressões dentro do `Admin.jsx` | 3 |
-  | Supressões no resto do projeto | 7, em 7 arquivos |
-  | Tamanho do `Admin.jsx` | **213 linhas** (era 918 antes dos splits) |
-
-  E as três supressões têm a **mesma causa, que não é falta de React Query**:
-  as funções de fetch vêm dos hooks de domínio sem `useCallback`, então mudam
-  de identidade a cada render — incluí-las nas deps faria o painel recarregar
-  em loop. **O conserto pequeno é memoizar essas funções nos próprios hooks**,
-  e aí as deps ficam honestas sem migração nenhuma.
-
-  React Query continua tendo valor real (cache entre abas, dedupe, invalidação),
-  mas isso é ganho de arquitetura — não conserto de lint. **Vale decidir qual
-  dos dois se quer** antes de gastar uma sessão nisso.
-
-  **A rede ficou pronta em 28/08.** Ao planejar a migração ficou claro que as
-  duas partes mais arriscadas — a paginação com estado local
-  (`loadMorePosts`/`loadMoreKeys`) e o canal lateral que escreve as notificações
-  no estado do pai — não eram tocadas por teste nenhum. Refatorar camada de
-  dados às cegas justamente ali seria o pior lugar para começar. O
-  `e2e/painel-admin.mjs` passou a **contar as linhas antes e depois do
-  "Carregar mais"** e a exigir estado definido na aba de Notificações.
-
-  **O que falta agora é só a migração em si**, e ela pede sessão própria: são 8
-  consultas num `Promise.all`, duas paginações e um canal lateral para
-  desmontar. Ver [ARQUITETURA.md](docs/ARQUITETURA.md).
-- ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
-  A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;
-  cena 3D e Sentry fora do caminho crítico; carregamento inicial hoje em
-  691,7 kB, conferido por `scripts/orcamento-de-bytes.mjs`). Falta o
-  antes/depois de campo, e ele só vale **no mesmo aparelho e na mesma
-  ferramenta** — as duas medições de 27/08 discordaram 4× no TBT (3.690 ms no
-  Termux, 15.310 ms no PageSpeed). Duas fontes: repetir o Lighthouse no mesmo
-  celular, e o **Vercel Speed Insights**, que já está instalado no projeto e
-  coleta de usuário real. *Ação do dono; sem isso "otimizei" é opinião (§6.1).*
-
-  **Como rodar o Lighthouse** (perguntado pelo dono em 28/08) — três caminhos,
-  do mais fácil ao mais fiel:
-
-  | Onde | Como | Serve para |
-  | --- | --- | --- |
-  | **PageSpeed Insights** | abrir `pagespeed.web.dev`, colar a URL do site | comparar com a medição de 27/08 — foi ela que deu 36 e depois 92 |
-  | **Chrome no PC** | F12 → aba **Lighthouse** → *Mobile* + *Performance* → *Analyze page load* | iterar rápido; roda na sua máquina, então o número oscila com o que estiver aberto |
-  | **O próprio celular** | Termux, como em 27/08 | o único que mede o aparelho real |
-
-  **As duas regras que fazem a medição valer alguma coisa** (§0.3 regra 5):
-  medir **antes e depois na MESMA ferramenta e no MESMO aparelho**, e sempre em
-  **janela anônima** (extensão do Chrome entra na conta e suja o resultado).
-  Comparar um PageSpeed de hoje com um Lighthouse local de ontem não diz nada.
-
-  Repare que o número de laboratório oscila mesmo sem nada mudar — foi por isso
-  que o portão do CI virou **byte** (`scripts/orcamento-de-bytes.mjs`) e não
-  tempo. O Lighthouse aqui serve para confirmar a direção, não para aprovar ou
-  reprovar.
-- ⬜ `[28/08]` 🔵 **Emagrecer o chunk da cena 3D — o que sobrou depois do
-  gargalo real.** *A cena 3D FICA (decisão do dono, registrada em
-  [DECISOES.md](docs/DECISOES.md)). E o problema de desempenho que ela causava
-  **já foi corrigido** — isto aqui é o resto.*
-
-  **O que foi resolvido em 28/08.** O perfil de CPU do PageSpeed mostrou onde o
-  tempo ia de verdade:
-
-  | Categoria | Tempo |
-  | --- | --- |
-  | **Other** (o laço de animação) | **29.441 ms** |
-  | Script Evaluation | 789 ms |
-  | Script Parsing & Compilation | 79 ms |
-
-  A cena continuava desenhando 60×/s depois que o visitante rolava para longe.
-  Agora o `frameloop` desliga fora da tela — medido num navegador real: **125
-  desenhos em 2 s visível, 0 fora da tela**, travado por `e2e/cena-3d.mjs`.
-
-  **O que sobra, e por que é 🔵 e não 🟠:** o chunk continua com 887 kB, e
-  trocar `<Canvas>` por `createRoot` + `extend` seletivo vale **−20%** (887 →
-  707 kB, medido com experimento descartável). Isso importa para **download em
-  rede lenta**, não para thread principal — os 789 ms de execução já eram
-  pequenos perto do laço.
-
-  **O custo de fazer:** `createRoot` não traz o tratamento de resize que o
-  `<Canvas>` faz sozinho; seria preciso escrever e testar isso. Trabalho real,
-  ganho moderado, risco na porta de entrada do site. Por isso fica para quando
-  houver folga, e não agora.
+  **Ao criar arquivo novo, acrescentar em três lugares**, senão ele nasce órfão:
+  a tabela do `README.md`, o mapa `TERRITORIO` em
+  `scripts/documentacao-envelhecida.mjs`, e o documento de origem com o ponteiro
+  para onde o conteúdo foi.
 
 ## 🔵 Só quando o volume crescer
 

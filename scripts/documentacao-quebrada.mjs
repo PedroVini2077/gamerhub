@@ -99,6 +99,21 @@ for (const doc of docsParaConferir()) {
   const texto = readFileSync(join(RAIZ, doc), 'utf8');
   const vistos = new Set();
 
+  // `@caminho.md` no início da linha é IMPORT do Claude Code, não citação — o
+  // arquivo é carregado como se estivesse escrito dentro do CLAUDE.md. Um
+  // caminho quebrado aqui é a pior falha silenciosa possível neste
+  // repositório: as regras simplesmente param de ser carregadas, em toda
+  // sessão futura, sem nada avisar. Por isso entram no mesmo portão.
+  //
+  // (Entre crases o Claude Code NÃO importa, então citar `@algo.md` num texto
+  // continua sendo só citação e cai no laço de baixo.)
+  for (const m of texto.matchAll(/^@([a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+)\s*$/gm)) {
+    const importado = m[1];
+    if (existe(importado)) continue;
+    const linha = texto.slice(0, m.index).split('\n').length;
+    quebrados.push({ doc, citado: `${importado}  (IMPORT — as regras não carregam)`, linha });
+  }
+
   for (const m of texto.matchAll(/`([a-zA-Z0-9_./-]+\.[a-zA-Z0-9]+)`/g)) {
     const citado = m[1];
     // Caminho absoluto num documento é exemplo de comando de terminal
