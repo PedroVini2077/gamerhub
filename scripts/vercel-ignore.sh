@@ -55,6 +55,21 @@ CAMINHOS_QUE_IMPORTAM=(
   vercel.json
 )
 
+# Exceções DENTRO dos caminhos acima: moram em `src/`, mas o bundler nunca os
+# inclui, então mudá-los não muda um byte do que a Vercel serve.
+#
+# Isto existe porque o merge do PR #68 gastou um deploy de produção mexendo
+# só em `src/lib/__tests__/tiposDeConteudo.test.js`. Num plano onde o teto de
+# 100 deploys/dia já estourou uma vez, deploy à toa não é detalhe.
+#
+# **Cuidado ao acrescentar linha aqui.** Cada exclusão empurra o script para o
+# lado do "pula", e errar para esse lado deixa o site velho no ar em silêncio —
+# exatamente a falha que a §1.5 combate. Só entra caminho que comprovadamente
+# não vai para o navegador, e o teste em `scripts/__tests__/` prova isso.
+NAO_VAO_PRO_NAVEGADOR=(
+  ':(exclude)src/**/__tests__/**'
+)
+
 # ── 1. Só a main vira site ─────────────────────────────────────────────────
 if [ "$BRANCH" != "main" ]; then
   echo "PULANDO: '$BRANCH' não é a main. Quem revisa branch aqui é o CI do"
@@ -79,7 +94,7 @@ fi
 # `git diff --quiet` sai 0 quando NÃO há diferença — que é justamente o nosso
 # "pule". E sai 1 quando há — que é o nosso "construa". O código de saída
 # passa direto de propósito.
-if git diff --quiet HEAD^ HEAD -- "${CAMINHOS_QUE_IMPORTAM[@]}"; then
+if git diff --quiet HEAD^ HEAD -- "${CAMINHOS_QUE_IMPORTAM[@]}" "${NAO_VAO_PRO_NAVEGADOR[@]}"; then
   echo "PULANDO: este commit não toca em nada que a Vercel entrega."
   echo "Mudou só documentação, SQL, Edge Function, teste ou CI."
   echo "Conferido em: ${CAMINHOS_QUE_IMPORTAM[*]}"
@@ -87,5 +102,5 @@ if git diff --quiet HEAD^ HEAD -- "${CAMINHOS_QUE_IMPORTAM[@]}"; then
 fi
 
 echo "CONSTRUINDO: mudou algo que vai para o navegador."
-git diff --name-only HEAD^ HEAD -- "${CAMINHOS_QUE_IMPORTAM[@]}" | sed 's/^/  /'
+git diff --name-only HEAD^ HEAD -- "${CAMINHOS_QUE_IMPORTAM[@]}" "${NAO_VAO_PRO_NAVEGADOR[@]}" | sed 's/^/  /'
 exit 1
