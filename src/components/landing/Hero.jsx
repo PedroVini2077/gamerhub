@@ -8,6 +8,7 @@ import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
 import IntroLightning from './IntroLightning';
+import BotaoCena3D from './BotaoCena3D';
 
 export default function Hero() {
   const foraDoAr = useDbOffline();
@@ -58,6 +59,13 @@ export default function Hero() {
 
         <motion.div variants={heroFade(0.45)} initial="initial" animate={show}>
           <Link to="/login" className="btn-solid py-3.5 px-9 text-sm">Entrar / Criar conta</Link>
+        </motion.div>
+
+        {/* Troca entre a cena 3D e a versão leve. Só aparece para quem tem o
+            que trocar — em desktop rodando o padrão (que já é 3D) ele some
+            sozinho, para não poluir a landing. Ver `lib/cena3D.js`. */}
+        <motion.div variants={heroFade(0.6)} initial="initial" animate={show}>
+          <BotaoCena3D />
         </motion.div>
 
         {/* O aviso de pausa era um texto FIXO no código: para tirar ou trocar,
