@@ -92,28 +92,34 @@
   > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
   > pendentes.
 
-- ⬜ `[28/08]` 🟠 **A moderação de VÍDEO nunca rodou com sucesso — nem uma vez.**
-  *É o único caminho tocado em 28/08 que ninguém exerceu, e o mais provável de
-  ainda estar quebrado.*
+- ⬜ `[28/08]` 🟠 **A moderação de VÍDEO falhou no primeiro vídeo real — causa
+  ainda não confirmada.** *Saiu de "nunca foi exercida" para "foi exercida e
+  não funcionou". O dono postou um vídeo às 22:20.*
 
-  Ela nasceu em 28/08 mandando 3 quadros numa requisição só, e a OpenAI aceita
-  **um por vez** — ou seja, foi entregue quebrada e passou o dia inteiro assim.
-  A correção do `too_many_images` (v12) conserta o formato, mas **isso é
-  inferência, não observação** (§1.1): o caminho `moderateVideos` →
-  `extrairQuadros` → `data:` embutido → 3 requisições nunca completou com
-  sucesso na vida. Conferido no banco ao fechar a sessão: **zero vídeos no ar**.
+  **O que está provado, pelo log da Supabase:** `moderate-text` foi chamada
+  para aquele post; **`moderate-image` não foi chamada nenhuma vez**. Logo, a
+  falha é no navegador, antes da rede — não é a API, não é o
+  `too_many_images`, não é autenticação (o `moderate-text` do mesmo post
+  passou).
 
-  Além do lote, há dois pontos que só um vídeo real testa, e nenhum tem
-  cobertura de teste hoje:
+  **Hipótese, e ela vem com o teste que a confirma** (§1.1): `extrairQuadros`
+  devolveu lista vazia, provavelmente por codec que o `<canvas>` não decodifica.
+  O que confirma é o próximo vídeo publicado — desde 28/08 a tela **avisa** com
+  quantos vídeos não puderam ser analisados.
 
-  | O que pode falhar | Por quê |
-  | --- | --- |
-  | `extrairQuadros` devolver lista vazia | codec que o `<canvas>` do navegador não abre |
-  | quadro passar de 400 KB | o teto do `data:` recusa em silêncio e só o `console.warn` conta |
+  **O que já foi corrigido:** a falha deixou de ser invisível. `moderateVideos`
+  devolve `{ videos, analisados, semQuadros }` em vez de nada, a chamada deixou
+  de ser uma promessa solta sem `catch`, e quem publica vê o aviso. Antes disso
+  o vídeo subia sem análise e ninguém ficava sabendo — nem na tela, nem no
+  `admin_logs`, nem em teste.
 
-  **Ação do dono, e é barata:** postar um vídeo curto. O veredito sai no log
-  como `analisadas=3/3`. Se vier `analisadas=0/3` ou nada aparecer, o problema é
-  a extração no navegador, não a API.
+  > Não dá para gritar em `admin_logs` daqui: a RPC de registro é
+  > `service_role`, e criar um canal de log chamável pelo navegador repetiria o
+  > erro do `register_login_attempt`, que qualquer um forjava.
+
+  **Ação do dono:** postar mais um vídeo, de preferência um MP4/H.264 comum. Se
+  o aviso aparecer, é a extração; se não aparecer e o log da Edge Function
+  mostrar `analisadas=3/3`, está resolvido.
 
 - ⬜ `[28/08]` 🟡 **`sexual/minors` não roda em imagem — e não há conserto
   nosso.** *Achado em 28/08 pela instrumentação nova, menos de 24 h depois de
@@ -284,52 +290,35 @@
   que o portão do CI virou **byte** (`scripts/orcamento-de-bytes.mjs`) e não
   tempo. O Lighthouse aqui serve para confirmar a direção, não para aprovar ou
   reprovar.
-- ⬜ `[28/08]` 🔵 **Emagrecer a cena 3D — mantendo ela.** *A cena 3D FICA. O dono
-  decidiu duas vezes ("não vamos aposentar a cena 3d não, vamos manter" e, ao
-  fechar a sessão de 28/08, "eu já tinha decidido de não aposentar, quero o 3D
-  lá"). Registrado em [DECISOES.md](docs/DECISOES.md) para não voltar à mesa.*
+- ⬜ `[28/08]` 🔵 **Emagrecer o chunk da cena 3D — o que sobrou depois do
+  gargalo real.** *A cena 3D FICA (decisão do dono, registrada em
+  [DECISOES.md](docs/DECISOES.md)). E o problema de desempenho que ela causava
+  **já foi corrigido** — isto aqui é o resto.*
 
-  Este item deixou de ser decisão e virou trabalho de otimização, sem pressa.
+  **O que foi resolvido em 28/08.** O perfil de CPU do PageSpeed mostrou onde o
+  tempo ia de verdade:
 
-  Hoje os 887 KB **não pesam no carregamento** — chegam depois do ocioso e só no
-  desktop —, mas quem recebe ainda paga 236 KB de download e o parse.
-
-  **A causa raiz está medida** (28/08, lendo o fonte da dependência):
-  `@react-three/fiber` v9.7.0 executa `extend(THREE)` **dentro do próprio
-  `<Canvas>`**, com este comentário no código dele: *"This will include the
-  entire THREE namespace by default, users can extend their own elements by
-  using the createRoot API instead"*. O namespace inteiro do `three` entra no
-  bundle independentemente do que a nossa cena importa — e ela usa **cinco**
-  símbolos. Nenhum tree-shaking alcança isso enquanto o `<Canvas>` for usado.
-
-  **O ganho do conserto óbvio também está medido, com um experimento
-  descartável** (trocar `<Canvas>` por `createRoot` + `extend()` só dos 14
-  elementos que a cena usa, build, e reverter):
-
-  | | Bruto | Gzip |
-  | --- | --- | --- |
-  | Hoje, com `<Canvas>` | 887,18 kB | 235,86 kB |
-  | Com `createRoot` + `extend` seletivo | **707,15 kB** | **188,75 kB** |
-  | Ganho | −180 kB (−20%) | −47 kB |
-
-  **E é por isso que o item continua aberto em vez de já estar feito: 20% não
-  resolve o problema.** O que sobra são os 707 kB do renderer WebGL do `three`,
-  que a `fiber` referencia direto e é irredutível enquanto ela for a camada de
-  render. Cortar 20% de bytes não transforma um Speed Index de 6,8 s.
-
-  **Os caminhos que sobram, e nenhum é trivial:**
-
-  | Caminho | O que custa |
+  | Categoria | Tempo |
   | --- | --- |
-  | `createRoot` + `extend` seletivo | −20% de bytes; **precisa de tratamento de resize próprio**, que hoje o `<Canvas>` faz sozinho |
-  | Baixar `dpr` e desligar `antialias` no desktop | não mexe em byte nenhum, mas pode ser onde mora o custo real de GPU/CPU |
-  | WebGL cru com os 5 símbolos | o maior ganho possível e o maior risco — reescreve uma cena que hoje funciona |
+  | **Other** (o laço de animação) | **29.441 ms** |
+  | Script Evaluation | 789 ms |
+  | Script Parsing & Compilation | 79 ms |
 
-  **O próximo passo não é escolher: é medir onde o tempo vai.** Byte não é a
-  mesma conta que CPU (§0.3), e a suspeita agora é que o custo esteja na
-  inicialização do renderer e na compilação de shader, não no parse. Um perfil
-  de CPU no DevTools do desktop responde isso em minutos e evita reescrever a
-  cena por palpite.
+  A cena continuava desenhando 60×/s depois que o visitante rolava para longe.
+  Agora o `frameloop` desliga fora da tela — medido num navegador real: **125
+  desenhos em 2 s visível, 0 fora da tela**, travado por `e2e/cena-3d.mjs`.
+
+  **O que sobra, e por que é 🔵 e não 🟠:** o chunk continua com 887 kB, e
+  trocar `<Canvas>` por `createRoot` + `extend` seletivo vale **−20%** (887 →
+  707 kB, medido com experimento descartável). Isso importa para **download em
+  rede lenta**, não para thread principal — os 789 ms de execução já eram
+  pequenos perto do laço.
+
+  **O custo de fazer:** `createRoot` não traz o tratamento de resize que o
+  `<Canvas>` faz sozinho; seria preciso escrever e testar isso. Trabalho real,
+  ganho moderado, risco na porta de entrada do site. Por isso fica para quando
+  houver folga, e não agora.
+
 ## 🔵 Só quando o volume crescer
 
 > Nenhum destes é dívida. São decisões **corretas para 3 usuários** que deixam

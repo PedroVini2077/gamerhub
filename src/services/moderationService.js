@@ -188,27 +188,50 @@ export async function moderateLinks(contentType, contentId, url) {
  * IA quebrada em 26 de 26 chamadas por semanas.
  */
 export async function moderateVideos(contentType, contentId, videoFiles) {
-  if (!videoFiles?.length) return;
+  // `[28/08]` DEVOLVE ESTADO, e o motivo é um buraco real.
+  //
+  // O dono postou um vídeo às 22:20 e a moderação **não rodou**. A prova está
+  // no log da Supabase: `moderate-text` foi chamada para aquele post e
+  // `moderate-image` não foi chamada nenhuma vez — ou seja, a falha aconteceu
+  // no navegador, antes da rede, e não deixou rastro em lugar nenhum que a
+  // gente olhe.
+  //
+  // A causa mais provável é `extrairQuadros` devolver lista vazia (codec que o
+  // `<canvas>` não abre). Mas "mais provável" não basta: o `registrarErro`
+  // manda para o Sentry, que é onde ninguém olhou, enquanto TODO o resto da
+  // moderação grita em `admin_logs`. Falha silenciosa clássica (§1.5).
+  //
+  // Não dá para gritar em `admin_logs` daqui: a RPC que registra é
+  // `service_role`, e abrir um canal de log chamável pelo cliente seria repetir
+  // o erro do `register_login_attempt` — qualquer um forjaria entradas. Então a
+  // saída é o outro canal do §1.5: **quem publicou fica sabendo**, e o
+  // resultado passa a ser inspecionável por quem chama.
+  const resumo = { videos: videoFiles?.length ?? 0, analisados: 0, semQuadros: 0 };
+  if (!videoFiles?.length) return resumo;
+
   const auth = await getAuthHeader();
-  if (!auth) return;
+  if (!auth) return { ...resumo, erro: 'sem_sessao' };
 
   const { extrairQuadros } = await import('../lib/framesDeVideo');
 
   for (const arquivo of videoFiles) {
     const quadros = await extrairQuadros(arquivo);
     if (!quadros.length) {
+      resumo.semQuadros++;
       registrarErro(new Error('nao consegui extrair quadros de um video'), {
         content_type: contentType, content_id: contentId,
         tipo_do_arquivo: arquivo?.type, tamanho: arquivo?.size,
       });
       continue;
     }
+    resumo.analisados++;
     fetch(`${SUPABASE_URL}/functions/v1/moderate-image`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: SUPABASE_ANON },
       body: JSON.stringify({ content_type: contentType, content_id: contentId, image_urls: quadros }),
     }).catch(() => {});
   }
+  return resumo;
 }
 
 // Fire-and-forget: imagens (apenas URLs de imagem; vídeo vai por `moderateVideos`).

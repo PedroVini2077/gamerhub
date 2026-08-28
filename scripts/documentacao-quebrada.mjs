@@ -48,8 +48,16 @@ const PASTAS_DE_DOC = ['docs', 'db', 'supabase'];
  * esconde documentação quebrada — exatamente o que o portão quer impedir.
  */
 const CITACOES_HISTORICAS = new Map([
-  ['DATABASE_SCHEMA_BACKUP.sql', 'dump antigo, citado em nota histórica'],
-  ['dependabot.yml', 'config do GitHub, vive fora da árvore em alguns setups'],
+  // Vazia de propósito, e a história de por quê importa: nasceu com duas
+  // entradas que eu escrevi por precaução, SEM CONFERIR. As duas eram falsas —
+  // `DATABASE_SCHEMA_BACKUP.sql` (132 KB) e `.github/dependabot.yml` estão no
+  // repositório. Ou seja: a primeira versão desta lista já estava dispensando
+  // do portão dois arquivos que ele conferiria sem problema.
+  //
+  // É a lição do §1.4 dentro do próprio script que existe para aplicá-la:
+  // exceção escrita "por garantia" é o lugar onde a verificação morre. Antes de
+  // acrescentar QUALQUER linha aqui, rode `ls` no arquivo. Se ele existe, o
+  // portão dá conta — a exceção não é necessária.
 ]);
 
 /** Extensões que valem a pena conferir. Documento cita muito nome solto. */

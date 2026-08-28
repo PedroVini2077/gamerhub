@@ -137,6 +137,27 @@ imagem — nudez, gore, automutilação — por custo de imagem.
 > limitação real e assumida — a alternativa era não checar nada, que é o que
 > existia antes.
 
+> ### `[28/08]` E ela falhou na primeira vez que rodou de verdade
+>
+> O dono publicou um vídeo às 22:20. O log da Supabase mostra `moderate-text`
+> sendo chamada para aquele post e **`moderate-image` não sendo chamada nenhuma
+> vez** — ou seja, a falha aconteceu no navegador, antes da rede.
+>
+> A causa mais provável é `extrairQuadros` devolver lista vazia (codec que o
+> `<canvas>` não abre), mas **isso ainda é hipótese**: o `registrarErro` manda
+> para o Sentry, e ninguém olhou lá. Enquanto todo o resto da moderação grita
+> em `admin_logs`, este caminho gritava num lugar que não faz parte da rotina.
+>
+> **O que mudou:** `moderateVideos` passou a devolver
+> `{ videos, analisados, semQuadros }` em vez de não devolver nada, e quem
+> publica **é avisado na tela** quando o vídeo não pôde ser checado. Não dá
+> para gritar em `admin_logs` a partir do cliente: a RPC que registra é
+> `service_role`, e abrir um canal de log chamável pelo navegador repetiria o
+> erro do `register_login_attempt` — qualquer um forjaria entradas.
+>
+> **O que ainda falta:** confirmar a causa. O próximo vídeo publicado vai
+> mostrar o aviso na tela, e aí sabemos se é extração vazia ou outra coisa.
+
 **Falha de extração grita.** Vídeo corrompido ou de codec desconhecido devolve
 lista vazia, e lista vazia é tratada como **"não analisado"**, nunca como
 "analisado e limpo": vai para o Sentry via `registrarErro`. Sem isso seria

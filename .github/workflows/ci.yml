@@ -246,6 +246,21 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
+      # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
+      # animação) contra 789 ms de execução de script — ou seja, o custo nunca
+      # foi o tamanho do arquivo, era o laço rodando para quem já tinha rolado
+      # para longe.
+      #
+      # Só um navegador de verdade prova isso: IntersectionObserver,
+      # requestAnimationFrame e WebGL não existem no Vitest. E a regressão é
+      # invisível — a página continua bonita e funcionando, só volta a queimar
+      # CPU (§1.5).
+      - name: A cena 3D para de animar fora da tela
+        run: npm run test:e2e:cena3d
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # Trava das brechas de 23/08. Não precisa de navegador nem de build — só
       # de rede — mas mora aqui porque depende da mesma variável, e porque este
       # job já é o que "fala com o Supabase de verdade".

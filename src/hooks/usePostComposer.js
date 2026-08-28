@@ -149,7 +149,38 @@ export function usePostComposer(onPost) {
         // Os arquivos vêm de `medias`, e não do que voltou do upload, porque a
         // extração precisa do arquivo local — baixar o vídeo do storage de
         // volta só para moderar pagaria egress à toa (§6.1).
-        moderateVideos('post', post.id, medias.filter(m => m.type === 'video').map(m => m.file));
+        // `[28/08]` O resultado deixou de ser descartado. Antes esta linha era
+        // uma promessa solta, sem `.then` e sem `.catch`: se a extração de
+        // quadros falhasse — ou se ela LANÇASSE — o vídeo subia sem análise
+        // nenhuma e ninguém ficava sabendo. Foi o que aconteceu no teste do
+        // dono: `moderate-image` não foi chamada uma vez sequer.
+        //
+        // Continua fire-and-forget (publicar não espera moderação), mas agora
+        // quem publicou é avisado quando o vídeo não pôde ser checado. Aviso na
+        // tela é um dos três canais do §1.5 — e é o único disponível aqui, já
+        // que a trilha de `admin_logs` só aceita `service_role`.
+        // `Promise.resolve(...)` e não `.then` direto: a moderação é enfeite no
+        // caminho crítico de PUBLICAR. Se ela um dia deixar de devolver
+        // promessa, o `.then` estouraria aqui e derrubaria o resto do fluxo —
+        // inclusive o `releaseAll()` que solta os blobs das prévias. O teste
+        // unitário pegou exatamente isso. Moderação pode falhar; publicar, não.
+        Promise.resolve(
+          moderateVideos('post', post.id, medias.filter(m => m.type === 'video').map(m => m.file)),
+        )
+          .then((r) => {
+            if (r?.semQuadros) {
+              // Sem `icon:` — emoji na UI é proibido (§4). O texto carrega o
+              // aviso sozinho.
+              toast(
+                `${r.semQuadros} vídeo(s) não puderam ser analisados automaticamente. `
+                + 'O post foi publicado e pode ser revisado pela equipe.',
+                { duration: 6000 },
+              );
+            }
+          })
+          .catch(() => {
+            toast('Não foi possível analisar o vídeo automaticamente.', { duration: 6000 });
+          });
       }
 
       toast.success('Post publicado!', { id: toastId });
