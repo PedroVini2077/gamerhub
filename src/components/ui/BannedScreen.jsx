@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ShieldOff, LogOut, Send, Loader2, CheckCircle2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { ShieldOff, LogOut, Send, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { solicitarRevisaoDoProprioBan, meuPedidoDeRevisao } from '../../services/banService';
 
 const MIN_CARACTERES = 20;
@@ -29,6 +28,11 @@ export default function BannedScreen({ reason, details, onSignOut }) {
   // existe. A distinção importa: mostrar "nenhum pedido" enquanto a consulta
   // ainda corre faria o botão de recorrer piscar para quem já recorreu.
   const [pedido, setPedido] = useState(undefined);
+  // O erro mora AQUI, e não num `toast`, desde 28/08. Esta tela passou a
+  // substituir o app inteiro em vez de cobri-lo, e o `Toaster` é filho do
+  // `AuthProvider` — ou seja, um `toast.error` daqui não teria onde aparecer.
+  // Erro que não chega em ninguém é o §1.5 na forma mais literal possível.
+  const [erro, setErro] = useState(null);
   const firedRef = useRef(false);
 
   // Sem isto a pessoa recorria e nunca mais sabia de nada — e notificação em
@@ -63,13 +67,14 @@ export default function BannedScreen({ reason, details, onSignOut }) {
 
   async function enviar() {
     setEnviando(true);
+    setErro(null);
     const { error } = await solicitarRevisaoDoProprioBan(motivo);
     setEnviando(false);
     if (error) {
       // A mensagem vem do banco em português e já explica o caso (motivo curto,
       // pedido repetido, conta não banida). Repassar é melhor que traduzir para
       // um "erro ao enviar" que não diz o que fazer (§1.5).
-      toast.error(error.message);
+      setErro(error.message);
       return;
     }
     setEnviado(true);
@@ -151,6 +156,15 @@ export default function BannedScreen({ reason, details, onSignOut }) {
               placeholder="Explique o que aconteceu. Só é possível enviar um pedido por banimento, então conte tudo de uma vez."
               className="input-gamer w-full text-xs font-mono leading-relaxed resize-none"
             />
+            {erro && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 bg-red-500/10 border border-red-500/25 rounded-lg p-3"
+              >
+                <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
+                <p className="text-xs font-mono text-red-300 leading-relaxed">{erro}</p>
+              </div>
+            )}
             <div className="flex items-center justify-between text-[11px] font-mono text-gray-600">
               <span>{faltam > 0 ? `faltam ${faltam} caracteres` : 'pode enviar'}</span>
               <span translate="no" className="notranslate tabular-nums">
