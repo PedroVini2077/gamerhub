@@ -64,15 +64,59 @@ const TABELAS: Record<string, string> = {
 // distingue gore de Doom de gore real. Por isso a nota tem dois destinos:
 // ---------------------------------------------------------------------------
 
-/** Passou disto, OCULTA na hora. So o que nunca e aceitavel aqui. */
+/**
+ * Passou disto, OCULTA na hora. So o que nunca e aceitavel aqui.
+ *
+ * ── `[28/08]` ATENCAO: `sexual/minors` NAO VALE PARA IMAGEM ─────────────────
+ *
+ * Isto e FATO conferido na documentacao da OpenAI, nao deducao. A
+ * `omni-moderation-latest` aplica a imagem apenas seis categorias:
+ *
+ *     sexual · violence · violence/graphic
+ *     self-harm · self-harm/intent · self-harm/instructions
+ *
+ * `sexual/minors` (e tambem `hate*`, `harassment*`, `illicit*`) e TEXT ONLY.
+ * Em imagem a API nao devolve nota nenhuma para ela — nos logs desta funcao ela
+ * aparece como `sexual/minors=-`, e foi assim que o buraco apareceu, no dia
+ * seguinte a passarmos a registrar todas as notas.
+ *
+ * Ou seja: o piso de 0.10 abaixo NUNCA disparou em imagem, e nunca disparara
+ * enquanto a API for assim. Ele nao esta protegendo nada aqui.
+ *
+ * POR QUE ELE FICA MESMO ASSIM: remover daria a impressao de que a decisao de
+ * produto mudou, e ele volta a valer sozinho no dia em que a OpenAI estender a
+ * categoria para imagem. O que NAO pode acontecer e alguem ler esta linha e
+ * concluir que ha deteccao de menor em imagem — por isso este bloco existe.
+ *
+ * QUEM DE FATO PROTEGE IMAGEM NESTA CLASSE e `sexual` em 0.55, que vale para
+ * imagem e OCULTA na hora. Ele e deliberadamente mais folgado que o piso do
+ * texto justamente para pegar o caso duvidoso.
+ *
+ * O caminho de TEXTO (`moderate-text`) continua com `sexual/minors` ativo e
+ * funcionando — la a categoria e suportada.
+ */
 const OCULTA: Record<string, number> = {
-  "sexual/minors":          0.10,
+  "sexual/minors":          0.10, // TEXT ONLY na API: inerte em imagem (ver acima)
   "sexual":                 0.55, // mais folgado que no texto: foto de praia
-                                  // e biquini pontuam sem ser pornografia
+                                  // e biquini pontuam sem ser pornografia.
+                                  // E, na pratica, o unico desta classe que
+                                  // realmente roda em imagem.
   "self-harm":              0.50,
   "self-harm/intent":       0.40,
   "self-harm/instructions": 0.30,
 };
+
+/**
+ * As categorias que a OpenAI de fato aplica a IMAGEM.
+ *
+ * Serve de fonte unica para o teste de contrato saber quais pisos podem
+ * disparar aqui e quais sao decoracao. Sem esta lista, "o piso existe" e "o
+ * piso funciona" viram a mesma coisa aos olhos de quem le o codigo.
+ */
+const CATEGORIAS_QUE_VALEM_EM_IMAGEM = [
+  "sexual", "violence", "violence/graphic",
+  "self-harm", "self-harm/intent", "self-harm/instructions",
+];
 
 /**
  * Passou disto, SO ENFILEIRA para uma pessoa olhar — nunca oculta sozinho.
@@ -391,7 +435,14 @@ Deno.serve(async (req: Request) => {
   const notas = CATEGORIAS_OBSERVADAS
     .map(cat => {
       const v = veredito.scores[cat];
-      return `${cat}=${typeof v === "number" ? v.toFixed(3) : "-"}`;
+      if (typeof v === "number") return `${cat}=${v.toFixed(3)}`;
+      // Sem nota tem duas causas MUITO diferentes, e confundi-las custou tempo:
+      // ou a API nao aplica a categoria a imagem (`sexual/minors`), ou ela
+      // deveria ter vindo e nao veio (a reserva do Hugging Face, ou algo
+      // errado). A primeira e esperada; a segunda e sintoma.
+      const esperado = CATEGORIAS_QUE_VALEM_EM_IMAGEM.includes(cat)
+        ? "-" : "-(so_texto)";
+      return `${cat}=${esperado}`;
     })
     .join(" ");
 
