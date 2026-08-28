@@ -135,3 +135,43 @@ Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
 ---
 
 [← voltar para o README](../README.md)
+
+## `[28/08]` Vídeo, por amostragem de quadros
+
+**O buraco:** vídeo era o único tipo de mídia que subia sem **nenhuma**
+checagem. Em `postService.js`, só `type === 'image'` entrava na lista mandada
+para a IA — texto, imagem e link eram moderados; vídeo passava direto. Ninguém
+escreveu isso de propósito: nasceu no dia em que o formulário passou a aceitar
+vídeo e a moderação não acompanhou.
+
+**Como funciona.** `lib/framesDeVideo.js` extrai **3 quadros** (a 1/6, 3/6 e
+5/6 da duração) num `<canvas>`, a 512px e JPEG 0.7, e `moderateVideos` os manda
+**embutidos** (`data:`) para a mesma `moderate-image` que já analisa imagem.
+
+**Nenhum caminho novo de análise foi preciso:** a API da OpenAI aceita `data:`
+no mesmo campo `image_url.url`, e o `fetch()` do Deno — usado pela reserva do
+Hugging Face — também resolve `data:`. A mudança na Edge Function foi só de
+**validação**, com teto de **400 KB por imagem embutida**. Esse teto existe
+porque `data:` é a única entrada cujo tamanho quem chama controla: URL de
+storage pesa ~100 bytes, quadro embutido pesa centenas de KB, e sem limite uma
+conta manda 4 imagens gigantes e queima cota da OpenAI.
+
+**Por que quadros e não o vídeo inteiro:** as APIs que analisam vídeo cobram
+por segundo. Alguns quadros herdam de graça toda a cobertura da moderação de
+imagem — nudez, gore, automutilação — por custo de imagem.
+
+> **O que isto NÃO garante.** Amostragem não é análise completa: um vídeo com
+> dois segundos de conteúdo proibido entre os quadros amostrados passa. É uma
+> limitação real e assumida — a alternativa era não checar nada, que é o que
+> existia antes.
+
+**Falha de extração grita.** Vídeo corrompido ou de codec desconhecido devolve
+lista vazia, e lista vazia é tratada como **"não analisado"**, nunca como
+"analisado e limpo": vai para o Sentry via `registrarErro`. Sem isso seria
+silêncio absoluto — a mesma forma de falha que manteve a moderação por IA
+quebrada em 26 de 26 chamadas.
+
+**Trava:** `lib/__tests__/moderacaoDeMidia.test.js` varre `src/` e exige que
+todo arquivo que chama `moderateImages` também chame `moderateVideos` — salvo
+os que aceitam só imagem, que precisam estar numa lista com o motivo e são
+conferidos contra o `accept` do próprio input.

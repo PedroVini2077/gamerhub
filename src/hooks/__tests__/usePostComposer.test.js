@@ -22,7 +22,7 @@ vi.mock('../../services/postService', () => ({
   uploadPostMediaFiles: vi.fn(async () => ({ data: { imageUrls: [], failed: 0 }, error: null })),
 }));
 vi.mock('../../services/moderationService', () => ({
-  moderateText: vi.fn(), moderateImages: vi.fn(), moderateLinks: vi.fn(),
+  moderateText: vi.fn(), moderateImages: vi.fn(), moderateVideos: vi.fn(), moderateLinks: vi.fn(),
 }));
 vi.mock('../../lib/embed', () => ({ getEmbedInfo: () => null }));
 vi.mock('react-hot-toast', () => ({
