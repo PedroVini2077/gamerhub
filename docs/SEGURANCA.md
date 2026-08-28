@@ -150,6 +150,11 @@ mensagem nenhuma (§1.5).
 Levantado ao conferir o projeto contra uma lista de camadas de engenharia.
 **Medido, não deduzido.**
 
+> **Esta tabela é o levantamento de 27–28/08, não o estado de hoje.** A
+> linha riscada já foi resolvida; as seções abaixo contam como. Quem lê só
+> a tabela conclui que a RPC ainda existe — foi para isso que o risco
+> ficou marcado, e não apagado.
+
 | Superfície | Protegida? |
 | --- | --- |
 | `/auth/v1/token` (login, cadastro, recuperação) | **Sim** — rate limit próprio do Supabase/GoTrue, server-side |
@@ -158,7 +163,7 @@ Levantado ao conferir o projeto contra uma lista de camadas de engenharia.
 | Trilha de auditoria | **Sim**, desde 27/08 — uma linha por hora por tipo |
 | Sentry | **Sim**, desde 27/08 — 20 eventos por sessão |
 | **Criar conteúdo** (post, comentário, mural, chat) | **Não.** Nada limita o ritmo. Conferido: nenhuma constraint em `posts` |
-| **`register_login_attempt`** | **Não**, e é pior que isso — ver abaixo |
+| ~~`register_login_attempt`~~ | **Era a pior de todas — e foi APAGADA em 28/08.** Ver abaixo |
 
 ### O contador de login promete o que não entrega
 

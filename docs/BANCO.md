@@ -74,10 +74,21 @@ INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspensi
 
 **Chamadas pelo front (RPC):**
 
-- Auth/segurança: `register_login_attempt`, `check_login_status`,
-  `reset_login_attempts`, `record_banned_login_attempt`, `delete_own_account`.
+- Auth/segurança: `check_login_status`, `reset_login_attempts`,
+  `record_banned_login_attempt`, `delete_own_account`.
 - Ban: `ban_user`, `unban_user`, `request_unban`, `approve_unban_request`,
   `deny_unban_request`, `admin_unlock_login`, `get_blocked_logins`.
+- Recurso do próprio banido: `solicitar_revisao_do_proprio_ban` (um pedido por
+  banimento, 20 a 1000 caracteres) e `meu_pedido_de_revisao` (o andamento).
+
+> **Correção `[29/08]`:** esta lista citava `register_login_attempt`, e a função
+> **não existe mais** — conferido no `pg_proc`, não deduzido. Ela era chamada
+> pelo *frontend* para reportar a própria falha de login: força bruta real nunca
+> era contada (quem ataca não usa o nosso site), e qualquer um podia chamá-la
+> com o email de outra pessoa para **bloquear a conta sem saber a senha**.
+>
+> Este mesmo fantasma apareceu em **quatro** documentos diferentes. Ao remover
+> uma função, `grep -rn` no `docs/` inteiro faz parte do trabalho.
 - XP: `get_user_xp`.
 - Auditoria: `log_audit_event`.
 - Owner: `owner_get_stats`, `owner_get_users`, `owner_get_audit_logs`,
