@@ -34,7 +34,7 @@
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/painel-admin.mjs
  * Exige E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD (conta de cargo `admin`).
  */
-import { abrirNavegador, exigirServidor, salvarEvidencia } from './util.mjs';
+import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
 
 import { MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -102,6 +102,10 @@ try {
   // /entrar/i, e o Playwright recusa seletor ambíguo.
   await page.getByRole('button', { name: '// ENTRAR' }).click();
   // O composer só monta depois de a sessão resolver e o perfil carregar.
+  // Antes de esperar o composer: se a conta estiver banida, a BannedScreen
+  // cobre tudo e o timeout diria 'o composer nao apareceu' em vez da causa.
+  await page.waitForTimeout(2500);
+  await recusarSeBanido(page);
   await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
   ok('login com a conta de staff (sessão + perfil)');
 

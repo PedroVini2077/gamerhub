@@ -21,7 +21,7 @@
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/fluxos.mjs
  * Exige E2E_EMAIL e E2E_PASSWORD (conta comum, nunca de staff — ver passo 3).
  */
-import { abrirNavegador, exigirServidor, salvarEvidencia } from './util.mjs';
+import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
 const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
@@ -77,6 +77,10 @@ try {
   // chunk do feed baixar. Ele aparecer prova três coisas de uma vez: sessão
   // válida, perfil existe, conta não suspensa (se estivesse, o
   // `SuspendedNotice` tomaria o lugar do formulário).
+  // Antes de esperar o composer: se a conta estiver banida, a BannedScreen
+  // cobre tudo e o timeout diria 'o composer nao apareceu' em vez da causa.
+  await page.waitForTimeout(2500);
+  await recusarSeBanido(page);
   await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
   ok('entrou e o composer apareceu (sessão + perfil + conta liberada)');
 
