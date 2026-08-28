@@ -46,14 +46,38 @@ for (const rota of ROTAS_VISITANTE) {
 
   let status = 'OK';
   try {
+    // `domcontentloaded`, e NÃO `networkidle`.
+    //
+    // `networkidle` espera a rede ficar parada por 500 ms — e ela nunca para
+    // quando um recurso de terceiro pendura. Foi o que aconteceu numa rodada
+    // local: `/community` estourou o timeout de 20 s, e na repetição passou
+    // 13/13. A causa provável é o Google Fonts inalcançável no sandbox, com o
+    // navegador retentando para sempre.
+    //
+    // O problema nem é a lentidão: é que o teste vermelho apontava para a
+    // ROTA, quando o defeito estava na rede. Teste que acusa o inocente ensina
+    // a ignorar vermelho, que é o oposto do que ele existe para fazer.
+    //
+    // A espera certa não é "a rede parou" — é "o conteúdo que eu vim conferir
+    // apareceu". É isso que o `waitForFunction` abaixo faz.
     const resp = await page.goto(BASE + rota.path, {
-      waitUntil: 'networkidle', timeout: 20000,
+      waitUntil: 'domcontentloaded', timeout: 20000,
     });
     if (!resp || resp.status() >= 400) status = `HTTP ${resp?.status()}`;
 
-    // A app é SPA: dá um tempo pro React montar (e pro guard redirecionar)
-    // antes de olhar o conteúdo.
-    await page.waitForTimeout(900);
+    // A app é SPA: espera o React montar e o guard redirecionar. O timeout
+    // aqui NÃO estoura o teste de propósito — se o conteúdo não vier, as
+    // checagens abaixo produzem uma mensagem precisa ("TELA BRANCA", "guard
+    // levou para X", "sem o conteúdo esperado"), que diagnostica muito melhor
+    // do que um timeout cru.
+    await page
+      .waitForFunction(
+        ({ fonte, flags }) => new RegExp(fonte, flags).test(document.body?.innerText ?? ''),
+        { fonte: rota.esperado.source, flags: rota.esperado.flags },
+        { timeout: 12000 },
+      )
+      .catch(() => {});
+    await page.waitForTimeout(300);
 
     // Onde o guard deixou a pessoa. `destino: null` = a rota não redireciona.
     if (rota.destino !== null) {
