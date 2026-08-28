@@ -235,3 +235,24 @@ que o subordinado dele fazia.
 É a quarta vez que uma lista de papéis escrita à mão morde este projeto
 (`CLAUDE.md` §1.3, *"hierarquia nunca se escreve à mão"*). Passou a usar
 `is_staff()`.
+
+## `[28/08]` Denúncia entra na trilha
+
+A decisão original era **não** logar: qualquer pessoa denuncia, e o receio era
+inflar `admin_logs` com ruído. O dono reavaliou e pediu o log — e o receio se
+inverteu no caminho.
+
+**Denúncia era a única ação de moderação sem rastro.** Ocultar, suspender,
+banir, aprovar na fila — tudo registra. A denúncia, que é o gatilho de boa parte
+disso, sumia: quando um conteúdo aparecia na fila, a trilha não sabia dizer se
+veio da IA, da wordlist ou de alguém denunciando.
+
+**É trigger, não chamada do frontend** (`log_report_created` em `reports`). O
+site entrega a `anon key`, então qualquer um insere em `reports` direto pela
+REST API — log que depende do cliente chamar é log que o cliente escolhe não
+gerar.
+
+**Sobre o volume:** `admin_logs` já tem retenção agendada (`cleanup_old_data`,
+90 dias). Se um dia virar ruído de fato, o caminho é o mesmo do
+`registrar_falha_de_edge_function` — uma linha por hora por tipo — e não voltar
+ao silêncio.

@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **18 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **17 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** O canal de recurso do banido entrou em 28/08 e o dono
@@ -124,9 +124,6 @@
   símbolos usados (`Shape`, `ExtrudeGeometry`, `MathUtils`, `Vector3`,
   `AdditiveBlending`), ou aposentar a cena 3D e ficar com a `Scene2D` em todo
   lugar. *Decisão de produto, não de código.*
-- ⬜ `[20/08]` **Denúncia criada não gera log de auditoria.** Decisão consciente
-  (qualquer um denuncia, e logar inflaria a trilha) — reavaliar se a moderação
-  sentir falta. Ver [DECISOES.md](docs/DECISOES.md).
 ## 🔵 Só quando o volume crescer
 
 > Nenhum destes é dívida. São decisões **corretas para 3 usuários** que deixam
