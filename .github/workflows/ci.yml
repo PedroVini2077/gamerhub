@@ -77,6 +77,18 @@ jobs:
       - name: Build
         run: npm run build
 
+      # O CI barrava build quebrado, lint, teste, rota fora do ar e PR sem
+      # documentação — mas não barrava o site ficar mais pesado. Dava para
+      # mergear algo que dobrasse o JavaScript inicial e ninguém ficaria sabendo
+      # até abrir o PageSpeed por conta própria.
+      #
+      # Mede BYTES, não tempo, de propósito: tempo de laboratório oscila com a
+      # máquina do runner (as duas medições de 27/08 discordaram 4× no TBT
+      # medindo o mesmo site), e portão que balança vira alarme falso. O
+      # raciocínio completo está no cabeçalho do script.
+      - name: Orçamento de bytes do carregamento
+        run: node scripts/orcamento-de-bytes.mjs
+
       - name: Auditoria de dependências
         run: npm audit --audit-level=high
 
