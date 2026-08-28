@@ -191,6 +191,13 @@ Promover aquela conta destruiria a prova. Sem uma conta separada, o painel
 inteiro ficava sem cobertura de navegador — e foi ali que a moderação de
 comentário ficou quebrada por meses.
 
+**`[28/08]` Cobre também paginação e notificações.** Ele conta as linhas antes
+e depois do "Carregar mais" — é o que separa *"o botão existe"* de *"o botão
+funciona"* — e exige que a aba de Notificações mostre lista ou o texto de vazio.
+As duas entraram porque são as partes que a migração do `useAdminData` para
+React Query vai mexer, e nenhuma tinha teste: refatorar camada de dados às
+cegas ali seria o pior lugar para começar.
+
 **Somente leitura, e isso é decisão de segurança.** Uma conta `admin`
 automatizada rodando em todo PR poderia ocultar post e suspender gente; num
 teste que roda a cada push, "se der errado" é questão de tempo. As ações

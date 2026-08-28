@@ -55,3 +55,28 @@ export async function salvarEvidencia(page, { erros = [] } = {}) {
     console.error('\n  Screenshot em e2e-evidencia/falha.png (artefato do CI).\n');
   } catch { /* evidência é bônus; nunca esconder o erro original */ }
 }
+
+/**
+ * Falha com a CAUSA quando a conta de teste está banida.
+ *
+ * Em 28/08 o `fluxos` quebrou com um timeout de 30 s esperando o composer. A
+ * mensagem era verdadeira e inútil: dizia que o formulário não apareceu, não
+ * que a conta estava banida. O motivo real era simples — a `claudetester`
+ * tinha acabado de ser banida à mão para testar o fluxo de recurso, e a
+ * `BannedScreen` (`z-[9999]`) cobria a tela inteira.
+ *
+ * Sem isto, a próxima vez que alguém banir a conta de teste para validar
+ * moderação, o CI volta a acusar "o site não carrega" — e alguém vai caçar um
+ * bug que não existe. Mensagem errada custa mais tempo do que mensagem nenhuma
+ * (`CLAUDE.md` §1.5).
+ */
+export async function recusarSeBanido(page) {
+  const banida = await page.getByText(/conta banida/i).count();
+  if (banida === 0) return;
+  const motivo = await page.locator('main, body').innerText().catch(() => '');
+  throw new Error(
+    'a CONTA DE TESTE esta banida — nao e falha do site.\n'
+    + '  A BannedScreen cobre a tela e nenhuma acao do teste alcanca a pagina.\n'
+    + '  Desbane a conta no painel (ou por unban_user) e rode de novo.\n'
+    + `  Motivo mostrado na tela: ${motivo.slice(0, 200)}`);
+}

@@ -34,7 +34,7 @@
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/painel-admin.mjs
  * Exige E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD (conta de cargo `admin`).
  */
-import { abrirNavegador, exigirServidor, salvarEvidencia } from './util.mjs';
+import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
 
 import { MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -46,6 +46,23 @@ const SENHA = process.env.E2E_STAFF_PASSWORD;
 // fora de propósito: elas só existem para `super_admin` e `owner`, e esperá-las
 // aqui transformaria a hierarquia correta em falha de teste.
 const ABAS = ['Usuários', 'Posts', 'Moderação', 'Mod de Lives', 'Keys & Promos', 'Notificações', 'Logs'];
+
+/**
+ * A aba do painel, e SÓ ela.
+ *
+ * `getByRole('button', { name: /Notificações/ })` casava com o SINO do
+ * cabeçalho, que vem antes no DOM — então `.first()` pegava o sino. O teste
+ * "aba Notificações renderizou" passava sem nunca abrir a aba: ele abria o
+ * dropdown do sino, e o `<main>` continuava com o conteúdo da aba anterior,
+ * satisfazendo a verificação de tamanho. Teste que passa pelo motivo errado é
+ * pior que teste nenhum, e este só foi desmascarado quando o dropdown aberto
+ * passou a bloquear o clique seguinte.
+ *
+ * O que separa os dois sem ambiguidade é o `aria-pressed`: só as abas do
+ * `AdminTabs` o têm. O sino não.
+ */
+const aba = (page, nome) =>
+  page.locator('button[aria-pressed]').filter({ hasText: nome }).first();
 
 if (!EMAIL || !SENHA) {
   console.error('\n  E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD nao definidos.');
@@ -85,6 +102,10 @@ try {
   // /entrar/i, e o Playwright recusa seletor ambíguo.
   await page.getByRole('button', { name: '// ENTRAR' }).click();
   // O composer só monta depois de a sessão resolver e o perfil carregar.
+  // Antes de esperar o composer: se a conta estiver banida, a BannedScreen
+  // cobre tudo e o timeout diria 'o composer nao apareceu' em vez da causa.
+  await page.waitForTimeout(2500);
+  await recusarSeBanido(page);
   await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
   ok('login com a conta de staff (sessão + perfil)');
 
@@ -113,18 +134,67 @@ try {
   ok('/admin acessivel para cargo admin');
 
   // ── 3. As abas renderizam ─────────────────────────────────────────────────
-  for (const aba of ABAS) {
+  for (const nomeDaAba of ABAS) {
     try {
-      await page.getByRole('button', { name: new RegExp(`^${aba}`, 'i') }).first().click({ timeout: 15000 });
+      await aba(page, nomeDaAba).click({ timeout: 15000 });
       // Espera algo além do esqueleto: a aba tem que produzir conteúdo.
       await page.waitForFunction(
         () => document.querySelector('main')?.innerText.trim().length > 80,
         { timeout: 15000 });
-      ok(`aba "${aba}" renderizou`);
+      ok(`aba "${nomeDaAba}" renderizou`);
     } catch (e) {
-      await morrer(`abrir a aba "${aba}"`, e);
+      await morrer(`abrir a aba "${nomeDaAba}"`, e);
     }
   }
+
+  // ── 3b. Paginação e notificações ──────────────────────────────────────────
+  //
+  // Estas duas ficaram de fora da primeira versão, e a falta delas apareceu na
+  // hora errada: ao planejar a migração do `useAdminData` para React Query,
+  // ficou claro que as partes mais arriscadas — a paginação com estado local
+  // (`loadMorePosts`/`loadMoreKeys`) e o canal lateral que escreve as
+  // notificações no estado do pai — eram exatamente as que NENHUM teste tocava.
+  //
+  // Refatorar camada de dados sem cobrir as duas seria refatorar no escuro.
+  // Continua tudo somente leitura: clicar em "Carregar mais" só busca mais
+  // linhas, não altera nada.
+
+  // Paginação: a lista tem que CRESCER. Contar antes e depois é o que separa
+  // "o botão existe" de "o botão funciona" — um `onClick` quebrado deixaria o
+  // botão lá, clicável, sem trazer nada.
+  await aba(page, 'Posts').click();
+  await page.waitForTimeout(2000);
+  const carregarMais = page.getByRole('button', { name: /carregar mais/i }).first();
+  if (await carregarMais.count() > 0) {
+    const linhas = () => page.locator('main tbody tr, main [data-post-row]').count();
+    const antes = await linhas();
+    await carregarMais.click();
+    await page.waitForTimeout(3000);
+    const depois = await linhas();
+    if (depois <= antes) {
+      throw new Error(
+        `"Carregar mais" nao trouxe nada: ${antes} linhas antes, ${depois} depois. `
+        + 'O botao existe mas a paginacao parou de funcionar.');
+    }
+    ok(`paginacao de posts funciona (${antes} -> ${depois} linhas)`);
+  } else {
+    // Menos posts que uma página inteira: não há o que paginar, e exigir o
+    // botão aqui transformaria "banco pequeno" em teste vermelho.
+    ok('paginacao de posts: sem botao (menos de uma pagina de posts)');
+  }
+
+  // Notificações: elas não vêm de uma consulta própria — são escritas no estado
+  // do painel pelo `useAdminData`, num canal lateral. Se esse fio se romper, a
+  // aba fica eternamente vazia sem erro nenhum.
+  await aba(page, 'Notificações').click();
+  await page.waitForTimeout(2500);
+  const textoNotifs = await page.locator('main').innerText();
+  if (!/nenhuma notificação ainda/i.test(textoNotifs) && textoNotifs.trim().length < 120) {
+    throw new Error(
+      'a aba de Notificacoes nao mostrou nem notificacao nem o texto de lista vazia. '
+      + 'O canal que alimenta as notificacoes provavelmente se rompeu.');
+  }
+  ok('aba de Notificacoes com estado definido (lista ou vazio explicito)');
 
   // ── 4. A hierarquia segura para cima ──────────────────────────────────────
   // O `fluxos.mjs` prova que `user` não entra no /admin. Falta a outra metade:
