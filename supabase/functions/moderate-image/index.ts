@@ -80,11 +80,59 @@ const OCULTA: Record<string, number> = {
  * Auto-ocultar `violence/graphic` derrubaria metade do conteudo legitimo do
  * site no primeiro dia. Com o destino sendo a fila, um limiar errado gera fila
  * maior; nunca censura.
+ *
+ * ── `[28/08]` Os numeros mudaram, e agora com dado ──────────────────────────
+ *
+ * Os pisos anteriores (0.80 e 0.90) foram escolhidos sem medicao nenhuma. A
+ * primeira medicao real, assim que o bug do `too_many_images` foi corrigido:
+ *
+ *     print de jogo, 1 imagem  -> violence/graphic 0.854  (piso era 0.80)
+ *     print de jogo, 4 imagens -> violence         0.943  (piso era 0.90)
+ *
+ * DOIS DE DOIS prints de jogo COMUNS foram para a fila. Nao foi erro do modelo
+ * — as imagens sao violentas de fato. Foram os pisos que nao cabiam num site
+ * cujo conteudo normal e print de jogo de tiro e de luta.
+ *
+ * `violence` SAIU. Nao subiu de piso: saiu. Num site de jogos "ha violencia na
+ * imagem" e o estado normal do conteudo, entao a categoria nao separa nada —
+ * ela so produz fila. E a pergunta que decide e o que a equipe FARIA com o
+ * item: um print de jogo de acao na fila e aprovado, sempre, todas as vezes.
+ * Sinal que dispara no caso comum e cujo veredito e sempre o mesmo nao e
+ * sinal; e ruido. E fila 100% ruido ensina a ignorar a fila, o que cega
+ * tambem os avisos que importam (CLAUDE.md §0.2, 4ª regra).
+ *
+ * `violence/graphic` FICOU, em 0.95. E a categoria que de fato separa gore de
+ * acao comum, e 0.95 poe uma margem de ~0.10 acima do unico print medido.
+ *
+ * O QUE SE PERDE, dito sem maquiagem: gore leve — entre 0.80 e 0.95 — deixa de
+ * ser revisado por uma pessoa. Continua coberto por denuncia, pela wordlist do
+ * texto que acompanha, e pela moderacao manual. A troca e deliberada: errar
+ * para baixo enchia a fila e fazia ninguem olhar nenhum item; errar para cima
+ * deixa passar o caso duvidoso e mantem a fila util para o caso grave.
+ *
+ * Nada disto afrouxa o que OCULTA: `sexual*` e `self-harm*` seguem iguais.
  */
 const SO_ENFILEIRA: Record<string, number> = {
-  "violence/graphic": 0.80,
-  "violence":         0.90,
+  "violence/graphic": 0.95,
 };
+
+/**
+ * Categorias que vao para o log em TODA analise, passando ou nao do piso.
+ *
+ * Existe por causa de um buraco que a decisao acima expos: as notas eram
+ * calculadas e jogadas fora. O log so contava a categoria VENCEDORA, e o corpo
+ * da resposta e descartado pelo chamador (fire-and-forget) — entao ajustar
+ * piso exigia pedir ao dono que postasse imagem de teste, uma a uma.
+ *
+ * Registrando sempre, a distribuicao se acumula sozinha com o uso normal do
+ * site, e o proximo ajuste tem amostra em vez de dois pontos. Custo zero: os
+ * numeros ja estao na memoria quando esta linha e escrita.
+ */
+const CATEGORIAS_OBSERVADAS = [
+  "violence/graphic", "violence",
+  "sexual", "sexual/minors",
+  "self-harm", "self-harm/intent", "self-harm/instructions",
+];
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -336,11 +384,23 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // As notas de TODAS as categorias observadas, tenham passado do piso ou nao.
+  // E o que transforma o proximo ajuste de piso numa leitura de log em vez de
+  // uma sessao de teste manual. `-` quando o provedor nao devolveu a categoria
+  // (a reserva do Hugging Face so conhece `nsfw`).
+  const notas = CATEGORIAS_OBSERVADAS
+    .map(cat => {
+      const v = veredito.scores[cat];
+      return `${cat}=${typeof v === "number" ? v.toFixed(3) : "-"}`;
+    })
+    .join(" ");
+
   console.log(
     `[moderate-image] ${provedor} ${content_type}/${content_id} ` +
     `analisadas=${analisadas}/${urls.length} ` +
     `categoria=${veredito.categoria ?? "-"} score=${veredito.score.toFixed(3)} ` +
-    `acao=${veredito.categoria ? (veredito.ocultar ? "ocultar" : "enfileirar") : "nada"}`
+    `acao=${veredito.categoria ? (veredito.ocultar ? "ocultar" : "enfileirar") : "nada"} ` +
+    `| notas: ${notas}`
   );
 
   if (!veredito.categoria) {

@@ -50,6 +50,17 @@ function corpoDoViaOpenAI() {
   return m ? m[0] : '';
 }
 
+/** Lê um dos mapas de piso (`OCULTA` / `SO_ENFILEIRA`) como `{categoria: nota}`. */
+function pisos(nome) {
+  const bloco = fonte.match(
+    new RegExp(`const ${nome}: Record<string, number> = \\{([\\s\\S]*?)\\n\\};`),
+  );
+  if (!bloco) return null;
+  return Object.fromEntries(
+    [...bloco[1].matchAll(/"([^"]+)":\s*([\d.]+)/g)].map(m => [m[1], Number(m[2])]),
+  );
+}
+
 describe('moderate-image — uma imagem por requisição da OpenAI', () => {
   const corpo = corpoDoViaOpenAI();
 
@@ -108,5 +119,76 @@ describe('moderate-image — uma imagem por requisição da OpenAI', () => {
       'Com uma requisição por imagem, 3 de 4 podem responder. Sem este aviso, a\n'
       + 'imagem que ficou de fora é indistinguível de imagem aprovada.',
     ).toMatch(/analise parcial/);
+  });
+});
+
+/**
+ * Trava da POLÍTICA de violência — o invariante de um site de jogos.
+ *
+ * Não é sobre qual número está certo: piso é decisão de produto e vai mudar
+ * conforme a distribuição aparecer no log. É sobre a linha que não pode ser
+ * cruzada por engano — **violência nunca oculta sozinha aqui**.
+ *
+ * Se `violence` ou `violence/graphic` acabar em `OCULTA`, o site começa a
+ * derrubar print de jogo automaticamente, e o autor descobre pelo post
+ * sumindo. Um `Ctrl+X` entre os dois mapas basta para isso acontecer sem
+ * ninguém notar, porque nenhum teste roda a Edge Function.
+ */
+describe('moderate-image — política de violência num site de jogos', () => {
+  const oculta = pisos('OCULTA');
+  const soEnfileira = pisos('SO_ENFILEIRA');
+
+  it('acha os dois mapas (guarda contra o regex quebrar em silêncio)', () => {
+    expect(oculta, 'não consegui ler o mapa OCULTA').not.toBeNull();
+    expect(soEnfileira, 'não consegui ler o mapa SO_ENFILEIRA').not.toBeNull();
+  });
+
+  it('NENHUMA categoria de violência oculta sozinha', () => {
+    const violentas = Object.keys(oculta).filter(c => c.startsWith('violence'));
+
+    expect(violentas, violentas.length
+      ? 'Categoria de violência foi parar em OCULTA: ' + violentas.join(', ') + '\n'
+        + 'Isto faz o site derrubar print de jogo AUTOMATICAMENTE, e o autor\n'
+        + 'descobre pelo post sumindo. Nenhum modelo distingue gore de Doom de\n'
+        + 'gore real — por isso violência SÓ ENFILEIRA neste projeto.\n'
+        + 'Mova de volta para SO_ENFILEIRA.'
+      : undefined).toEqual([]);
+  });
+
+  it('o que nunca é aceitável continua ocultando', () => {
+    // O contrapeso do teste acima: afrouxar violência não pode virar desculpa
+    // para afrouxar o resto. Estes três protegem menor de idade e automutilação.
+    for (const cat of ['sexual/minors', 'self-harm', 'sexual']) {
+      expect(
+        oculta[cat],
+        `${cat} saiu de OCULTA. Esta categoria oculta na hora, sem fila — é o `
+        + 'único caso em que esperar uma pessoa olhar é caro demais.',
+      ).toBeTypeOf('number');
+    }
+    expect(
+      oculta['sexual/minors'],
+      'o piso de sexual/minors é deliberadamente o mais baixo de todos',
+    ).toBeLessThanOrEqual(0.10);
+  });
+
+  it('registra as notas de todas as categorias observadas, passem ou não', () => {
+    expect(
+      fonte,
+      'Sem isto as notas são calculadas e jogadas fora: o log só conta a\n'
+      + 'categoria vencedora e o corpo da resposta é descartado pelo chamador.\n'
+      + 'Aí ajustar piso volta a exigir sessão de teste manual em vez de leitura\n'
+      + 'de log — foi exatamente o custo que a decisão de 28/08 pagou.',
+    ).toMatch(/CATEGORIAS_OBSERVADAS/);
+
+    const lista = fonte.match(/const CATEGORIAS_OBSERVADAS = \[([\s\S]*?)\]/);
+    expect(lista, 'não consegui ler CATEGORIAS_OBSERVADAS').not.toBeNull();
+    for (const cat of Object.keys({ ...oculta, ...soEnfileira })) {
+      expect(
+        lista[1],
+        `${cat} decide alguma coisa e não é registrado no log. Toda categoria `
+        + 'com piso precisa aparecer em CATEGORIAS_OBSERVADAS, senão não dá para '
+        + 'saber por que ela disparou (ou por que não disparou).',
+      ).toContain(cat);
+    }
   });
 });

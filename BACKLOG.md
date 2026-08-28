@@ -14,16 +14,15 @@
 **Última conferência contra o sistema:** 28/08/2026 · **17 itens abertos**
 (+ 1 ideia sem compromisso)
 
-> **Próximo da fila.** A moderação de imagem voltou a funcionar (v12) e o dono
-> confirmou em produção: 1 imagem e 4 imagens, as duas levas analisadas e
-> enfileiradas. Com isso apareceu o **próximo problema, que é de produto e não
-> de código**: 2 de 2 prints de jogo comuns foram para a fila. Os pisos de
-> violência foram escolhidos sem dado e não cabem num site de jogos. A decisão
-> está logo abaixo, com os números.
+> **Próximo da fila.** A moderação de imagem voltou a funcionar (v12), a
+> medição mostrou que 2 de 2 prints de jogo comuns iam para a fila, e o dono
+> delegou a escolha dos pisos. Feito na v13: `violence` aposentada,
+> `violence/graphic` de 0.80 para 0.95, e as notas de todas as categorias
+> passaram a ir para o log — para o próximo ajuste ser leitura de log em vez de
+> sessão de teste. **Falta rodar uma vez em produção para confirmar.**
 >
-> **Esperando você:** decidir os pisos de violência (e postar mais 3–4 imagens
-> variadas para o número não ser outro chute), confirmar o desempenho em
-> produção, e decidir sobre os 887 KB da cena 3D.
+> **Esperando você:** postar uma imagem qualquer (confirma a v13 em execução),
+> confirmar o desempenho com PageSpeed, e decidir sobre os 887 KB da cena 3D.
 
 ---
 
@@ -44,53 +43,30 @@
   em 20 minutos**. O `recusarSeBanido()` faz o CI nomear a causa, mas não impede
   o vermelho — o que impede é banir outra conta.
 
-- ⬜ `[28/08]` 🟠 **Os pisos de violência estão baixos demais para um site de
-  jogos — decisão de produto, com dado pela primeira vez.**
+- ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
+  *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v13).*
+  `violence` foi aposentada e `violence/graphic` subiu de 0.80 para 0.95. O
+  raciocínio inteiro está em [MODERACAO.md](docs/MODERACAO.md).
 
-  A medição finalmente aconteceu (v12 da `moderate-image`, 17:55). Os dois
-  posts de print de jogo do dono:
+  O que sobrou é acompanhamento, e ele não exige nada de ninguém: desde a v13
+  **toda análise registra as notas de todas as categorias com piso**, tenham
+  disparado ou não. A distribuição se acumula sozinha com o uso normal do site.
 
-  | Post | Analisadas | Categoria | Nota | Piso | Ação |
-  | --- | --- | --- | --- | --- | --- |
-  | 1 imagem | 1/1 | `violence/graphic` | **0.854** | 0.80 | enfileirou |
-  | 4 imagens | 4/4 | `violence` | **0.943** | 0.90 | enfileirou |
+  Daqui a algumas semanas, olhar os logs e responder duas perguntas:
 
-  **2 de 2 prints de jogo comuns foram para a fila.** Não é erro da IA: as
-  imagens *são* violentas. É o piso que foi escolhido sem dado e não cabe num
-  site cujo conteúdo normal é print de jogo de tiro e de luta.
+  | Se… | Então |
+  | --- | --- |
+  | a fila continua enchendo de print de jogo | 0.95 ainda está baixo |
+  | nada entra na fila há semanas, e há gore evidente passando | 0.95 está alto |
 
-  Ninguém foi censurado — este caminho **só enfileira, nunca oculta**, e essa
-  parte funcionou exatamente como projetada. O custo é fila cheia de falso
-  positivo, e fila que é 100% ruído ensina a ignorar a fila (§0.2, 4ª regra).
+  Onde ler: painel da Supabase → Edge Functions → `moderate-image` → Logs,
+  linhas `[moderate-image] ... | notas: ...`.
 
-  **A recomendação, e por que ela não foi executada:** mexer em piso de
-  moderação é 🟡 no §7 — proponho e espero. Além disso **5 imagens não são uma
-  distribuição**: dá para dizer que o piso está baixo, não onde ele deveria
-  estar.
-
-  1. **Aposentar `violence` (0.90).** Num site de jogos, "violência" é o estado
-     normal do conteúdo. A categoria não separa nada — só produz fila.
-  2. **Subir `violence/graphic`** de 0.80 para algo entre 0.95 e 0.97. É a
-     categoria que de fato distingue gore de ação comum, e mesmo ela deu 0.854
-     num print corriqueiro.
-
-  **O que falta para escolher o número:** mais 3–4 posts variados, para ver a
-  distribuição em vez de dois pontos. Um jogo *sem* violência (corrida, puzzle,
-  Minecraft) para achar o piso, e um print de gore pesado de verdade para achar
-  o teto. Sem isso qualquer número novo seria outro chute, só que mais alto.
-
-  Onde ler as notas de cada post:
-
-  ```sql
-  -- o veredito de cada chamada fica no log da Edge Function, não no admin_logs:
-  -- painel da Supabase > Edge Functions > moderate-image > Logs
-  -- procurar as linhas "[moderate-image] openai post/<id> analisadas=N/M ..."
-
-  -- e o resultado na fila:
-  select content_id, trigger_type, status, metadata, created_at
-    from moderation_queue where trigger_type = 'ai'
-   order by created_at desc limit 10;
-  ```
+  > **Dois itens antigos ficaram na fila** (`c6858467` e `3bd9ca59`, os posts
+  > de teste de 28/08). Com os pisos novos eles não teriam entrado. Não apaguei
+  > — são posts de verdade do dono, e limpar fila por fora do painel é
+  > exatamente o tipo de mudança de dado sem rastro que o §5 proíbe. Basta
+  > aprovar os dois no painel.
 
 - ⬜ `[28/08]` 🟢 **Aviso do banimento FORA do site, na landing.** *Pedido do
   dono, adiado por ele mesmo: "depois a gente implementa isso".*
