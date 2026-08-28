@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, RotateCcw, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { solicitarDesbanimento } from '../../services/banService';
 
 // Admin comum não desbane sozinho: ele PEDE, e um super admin decide.
 // Este modal é o formulário desse pedido.
@@ -13,7 +13,7 @@ export default function UnbanRequestModal({ target, onClose, onSent }) {
   async function handleSend() {
     if (!reason.trim()) return;
     setLoading(true);
-    const { error } = await supabase.rpc('request_unban', { p_user_id: target.id, p_reason: reason.trim() });
+    const { error } = await solicitarDesbanimento(target.id, reason);
     setLoading(false);
     if (error) {
       if (error.message?.includes('pending')) toast.error('Já existe uma solicitação pendente para este usuário');

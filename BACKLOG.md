@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **16 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **15 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** Nada esperando você. A conta `claudestaff` foi criada
@@ -27,11 +27,6 @@
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[23/08]` **Usuário banido não tem canal para pedir revisão.** A
-  `BannedScreen` mostra o motivo e desloga em 6s: sem botão, sem formulário,
-  sem contato. `request_unban` exige `role = 'admin'`, ou seja, só um admin
-  abre o pedido em nome de outra pessoa — coerente com a hierarquia, mas deixa
-  o banido sem saída. *Mexe em quem pode chamar a RPC: pede aprovação antes.*
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
 - ⬜ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
