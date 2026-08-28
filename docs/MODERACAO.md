@@ -59,6 +59,22 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
     é print de jogo — então `violence/graphic` **enfileira e nunca oculta**,
     enquanto `sexual*` e `self-harm*` ocultam. Um limiar errado passa a gerar
     fila maior, nunca censura.
+
+    > **`[28/08]` A primeira medição real, e ela diz que os pisos estão
+    > baixos.** Dois posts de print de jogo comum do dono, com a v12 já no ar:
+    >
+    > | Post | Analisadas | Categoria | Nota | Piso | Ação |
+    > | --- | --- | --- | --- | --- | --- |
+    > | 1 imagem | 1/1 | `violence/graphic` | 0.854 | 0.80 | enfileirou |
+    > | 4 imagens | 4/4 | `violence` | 0.943 | 0.90 | enfileirou |
+    >
+    > **2 de 2 foram para a fila**, e o site funcionou exatamente como
+    > projetado — ninguém foi ocultado. O que a medição mostra é que a decisão
+    > de projeto acima estava certa (*nunca ocultar*) e que os **números**
+    > estavam errados: num site de jogos, `violence` é o estado normal do
+    > conteúdo. Ajustá-los é decisão de produto e está no
+    > [BACKLOG.md](../BACKLOG.md) com a recomendação e o que falta para
+    > escolher o número.
   - O texto **vem do banco**, não do corpo da requisição: aceitar o texto do
     cliente permitiria mandar o `content_id` de um post alheio junto de uma
     frase ofensiva e derrubar o post de outro. Só o autor (ou a equipe) pede a
