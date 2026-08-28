@@ -206,6 +206,22 @@ trilha passaria a mentir por omissão (`CLAUDE.md` §5).
 — mas o job `qualidade` emite `::warning::` dizendo que o painel está sem
 cobertura. Job que se pula em silêncio é verde que não testou nada.
 
+## Quando a Vercel constrói, e quando não
+
+`scripts/vercel-ignore.sh` decide. Ele pula quando a branch não é a `main`, e
+quando o commit não toca em nada que vá para o navegador — documentação, SQL,
+Edge Function, CI **e teste dentro de `src/`**.
+
+**`[28/08]` A exclusão dos testes veio de um caso real:** o merge do PR #68
+gastou um deploy de produção mexendo só em `src/lib/__tests__/`. Testes moram
+em `src/`, mas o bundler nunca os inclui.
+
+**Este é o único script do projeto onde errar não quebra nada visivelmente.**
+Pular por engano deixa o site velho no ar em silêncio — sem erro, sem log, sem
+teste vermelho. Por isso ele tem trava própria: `scripts/__tests__/` monta
+repositórios git de verdade e confere as sete decisões. Ao acrescentar uma
+exclusão nova, o teste tem que cobrir ela.
+
 ## Orçamento de bytes — o portão de desempenho
 
 `scripts/orcamento-de-bytes.mjs` roda no CI e **reprova o PR** quando o site

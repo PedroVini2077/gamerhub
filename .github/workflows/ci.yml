@@ -65,7 +65,7 @@ jobs:
       - name: Guarda — a suíte não pode encolher em silêncio
         run: |
           total=$(node -p "require('./vitest-report.json').numTotalTests")
-          piso=181
+          piso=217
           echo "testes executados: $total (piso: $piso)"
           if [ "$total" -lt "$piso" ]; then
             echo "::error::A suite caiu para $total testes, abaixo do piso de $piso."
