@@ -36,6 +36,11 @@ export default {
         scanline: "scanline 8s linear infinite",
         "electric-buzz": "electricBuzz 5s ease-in-out infinite",
         "electric-arc": "electricArc 4s ease-in-out infinite",
+        // Cena leve do Hero (`landing/Scene2D.jsx`). São animações de CSS de
+        // propósito: rodam no compositor e não disputam a main thread com o
+        // resto do carregamento, que era exatamente o problema da cena 3D.
+        "bolt-float": "boltFloat 7s ease-in-out infinite",
+        "shape-drift": "shapeDrift 9s ease-in-out infinite",
       },
       keyframes: {
         pulseNeon: {
@@ -64,6 +69,18 @@ export default {
           "91%": { opacity: 0.25 },
           "93%": { opacity: 0.9 },
           "96%": { opacity: 0 },
+        },
+        // O raio-logo da cena leve respira devagar, imitando o `useBob()` que
+        // a versão 3D aplica no mesmo objeto.
+        boltFloat: {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "50%": { transform: "translateY(-14px) rotate(2deg)" },
+        },
+        // As formas de contorno derivam com amplitude maior e fase própria
+        // (cada uma recebe um `animationDelay` negativo diferente).
+        shapeDrift: {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "50%": { transform: "translateY(-22px) rotate(7deg)" },
         },
         slideIn: {
           from: { transform: "translateX(-20px)", opacity: 0 },
