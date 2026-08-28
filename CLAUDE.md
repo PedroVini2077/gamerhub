@@ -1377,6 +1377,57 @@ no CI que **falha o PR** quando ele mexe em `src/`, `db/` ou
 filosofia do piso de testes (§2): não depende da minha memória, depende do
 portão.
 
+### `[28/08]` TODOS os documentos têm que estar atualizados — as três camadas
+
+> Ordem direta do dono, depois de encontrar documentação velha três vezes numa
+> sessão: *"não queira ver mais vacilos daqui pra frente... **TODOS OS
+> DOCUMENTOS DEVEM ESTAR ATUALIZADOS**... nem que vc precise de um gatilho pra
+> lembrar e ver o que está desatualizado"*.
+
+**Por que a trava acima não bastou.** Ela garante que **algum** documento foi
+tocado no PR — não que o documento **certo** continua verdadeiro. Os três casos
+de 28/08 passaram por ela sem esforço:
+
+| O que estava escrito | O que era verdade |
+| --- | --- |
+| `BACKLOG.md`: "reescrever **ou aposentar** a cena 3D" | o dono já tinha recusado o descarte, duas vezes |
+| `DECISOES.md`: `effectiveType` como portão ativo | removido **horas antes**, no mesmo dia |
+| `SEGURANCA.md`: `register_login_attempt` aberta a `anon` | a função **não existe mais** no banco |
+
+O padrão nunca variou: **eu escrevo de memória do que o projeto era, em vez de
+abrir o arquivo antes de alterá-lo.** É o §1.4 — *documento envelhece, o sistema
+não mente* — aplicado à documentação. E quem envelhece o documento sou eu,
+quando não releio.
+
+**1. O portão** — `scripts/documentacao-quebrada.mjs`, roda no CI e **reprova**.
+Nenhum documento pode citar arquivo que não existe. É determinístico: o arquivo
+está lá ou não está, sem julgamento no meio. Pega renomeação e apagamento, que
+é a forma mais comum de documento apodrecer.
+
+**2. O relatório** — `scripts/documentacao-envelhecida.mjs`, roda todo dia 1º e
+**abre issue**, sem reprovar nada. Ele cruza cada documento com os caminhos de
+código que descreve (o mapa `TERRITORIO`) e aponta os que ficaram para trás.
+É **indício, não veredito** — por isso issue e não build vermelho. Portão que
+grita por indício vira ruído, e ruído ensina a ignorar o canal (§0.2, 4ª regra).
+Documento novo sem entrada no mapa é reportado como não mapeado, senão o
+próprio mapa envelheceria em silêncio.
+
+**3. Reler antes de escrever** — a camada que nenhum script cobre, e a que
+falhou nos três casos acima. **Proibido editar trecho de documento estrutural
+sem abrir a seção alvo primeiro.** Não vale "eu lembro o que está lá": foi
+exatamente esse lembrar que produziu os três. Na prática:
+
+- vou mexer numa seção → **leio a seção inteira** antes de propor a mudança;
+- a seção afirma algo sobre o sistema → **confiro na fonte** (§1.4): banco,
+  `pg_proc`, o arquivo, o teste. Nunca na minha memória;
+- achei divergência → **corrijo e digo qual era**, com a evidência. Conserto de
+  informação errada é uma das duas exceções que dispensam proposta (§6.2), mas
+  **não** dispensa avisar.
+
+> As três se complementam de propósito e nenhuma substitui a outra. A 1 pega o
+> arquivo que sumiu; a 2 aponta onde olhar; a 3 é a única que pega texto que
+> ficou falso sem nada ter sumido — que foi o caso do `effectiveType`.
+
 ---
 
 ## 7. Processo para mudanças estruturais

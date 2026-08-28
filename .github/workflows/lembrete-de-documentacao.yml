@@ -1,0 +1,132 @@
+# Lembrete de documentação envelhecida.
+#
+# ── Por que existe ──────────────────────────────────────────────────────────
+#
+# Ordem do dono em 28/08, depois de encontrar três documentos velhos numa
+# sessão só: *"TODOS OS DOCUMENTOS DEVEM ESTAR ATUALIZADOS... nem que vc precise
+# de um gatilho pra lembrar e ver o que está desatualizado"*.
+#
+# O CI já tem duas camadas que REPROVAM:
+#
+#   1. PR que mexe no produto e não toca documentação nenhuma;
+#   2. documento que cita arquivo que não existe (`documentacao-quebrada.mjs`).
+#
+# As duas são objetivas. O que nenhuma das duas alcança é a pergunta de
+# julgamento — *"este texto ainda descreve o sistema?"*. Foi assim que o
+# `DECISOES.md` continuou listando `effectiveType` como portão ativo horas
+# depois de ele ser removido: o arquivo `lib/cena3D.js` continuava lá, só não
+# tinha mais aquilo dentro.
+#
+# ── Por que ele NÃO reprova nada ────────────────────────────────────────────
+#
+# Porque o sinal dele é indício, não prova. "O código deste território andou 7
+# commits desde que o documento foi tocado" sugere fortemente que o documento
+# envelheceu — mas o documento pode continuar correto. Reprovar build por
+# indício produz alarme falso, e alarme falso ensina a ignorar o canal onde a
+# falha real aparece (CLAUDE.md §0.2, 4ª regra). Foi o erro que eu mesmo
+# cometi com o vigia de CI, e ele acabou desligado.
+#
+# ── Por que issue, e por que semanal ────────────────────────────────────────
+#
+# Issue FICA — email some na caixa de entrada. E ele confere se já existe uma
+# aberta antes de criar, então rodar toda semana não vira enxurrada: enquanto
+# ninguém tratar, continua sendo a mesma issue.
+#
+# ── O que ele NÃO faz ───────────────────────────────────────────────────────
+#
+# Não atualiza documento, não reprova, não cobra. Só aponta onde olhar.
+
+name: Lembrete de documentação
+
+on:
+  schedule:
+    # Toda segunda, 12:20 UTC (09:20 em Brasília) — 20 min depois do lembrete
+    # de auditoria, para as duas issues não nascerem no mesmo minuto.
+    - cron: '20 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  lembrar:
+    name: algum documento ficou para trás?
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # o script compara commits; precisa do histórico
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Medir quais documentos o código deixou para trás
+        id: medir
+        run: |
+          set -uo pipefail
+          saida=$(node scripts/documentacao-envelhecida.mjs)
+          echo "$saida"
+
+          if echo "$saida" | grep -q '^OK:'; then
+            echo "disparar=nao" >> "$GITHUB_OUTPUT"
+          else
+            echo "disparar=sim" >> "$GITHUB_OUTPUT"
+            {
+              echo 'relatorio<<FIM_DO_RELATORIO'
+              echo "$saida"
+              echo 'FIM_DO_RELATORIO'
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Abrir issue
+        if: steps.medir.outputs.disparar == 'sim'
+        uses: actions/github-script@v7
+        env:
+          RELATORIO: ${{ steps.medir.outputs.relatorio }}
+        with:
+          script: |
+            const TITULO = 'Documentação possivelmente desatualizada';
+
+            const abertas = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'documentacao',
+            });
+            const existente = abertas.data.find(i => i.title === TITULO);
+
+            const corpo = [
+              'Estes documentos não foram tocados enquanto o código que eles',
+              'descrevem seguiu mudando.',
+              '',
+              process.env.RELATORIO,
+              '',
+              '---',
+              '',
+              '## O que fazer',
+              '',
+              'Abrir cada documento apontado e conferir **contra o sistema**, não',
+              'contra a memória (`CLAUDE.md` §1.4): o banco, o `pg_proc`, o arquivo,',
+              'o teste. Se estiver certo, tocar o documento dizendo que foi conferido',
+              'em tal data — isso zera o aviso e deixa registro de que alguém olhou.',
+              '',
+              '*Aberta automaticamente por `.github/workflows/lembrete-de-documentacao.yml`.',
+              'É indício, não veredito: o documento pode estar correto.*',
+            ].join('\n');
+
+            if (existente) {
+              // Já há uma aberta: atualiza o corpo em vez de criar outra. Assim
+              // a lista fica sempre atual sem virar uma issue por semana.
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existente.number, body: corpo,
+              });
+              core.info(`Issue #${existente.number} atualizada.`);
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo,
+              title: TITULO, body: corpo, labels: ['documentacao'],
+            });
+            core.info('Issue de lembrete criada.');

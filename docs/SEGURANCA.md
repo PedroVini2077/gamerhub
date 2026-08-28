@@ -16,8 +16,17 @@
 - Funções `SECURITY DEFINER` administrativas/owner têm `EXECUTE` **revogado de
   `anon`** (defesa em profundidade): além da checagem interna por `auth.uid()`,
   usuários não autenticados sequer conseguem invocá-las via RPC. Só permanecem
-  abertas a `anon` as do fluxo de login (`check_login_status`,
-  `register_login_attempt`) e a leitura de XP (`get_user_xp`).
+  abertas a `anon` a leitura do estado de login (`check_login_status`) e a
+  leitura de XP (`get_user_xp`).
+
+  > **`[28/08]` `register_login_attempt` foi removida.** Este parágrafo a
+  > listava como aberta a `anon`, e conferir no banco mostrou que ela não existe
+  > mais. Ela era o contador de falhas que o **frontend** chamava para reportar
+  > a própria falha — duas coisas erradas nisso, as duas medidas: quem ataca não
+  > usa o nosso frontend, então força bruta real nunca era contada; e, sendo
+  > chamável por anônimo, bastava um script chamar com o email da vítima para
+  > **fabricar alerta de segurança e marcar a conta como bloqueada sem nunca
+  > saber a senha**. As duas RPCs que sobraram são leitura pura.
 - Notificações geradas por triggers `SECURITY DEFINER` — INSERT direto do
   cliente removido; banidos não burlam filtros via INSERT de notification.
 - RLS consolidada: políticas múltiplas permissivas unificadas; bug "banido ainda
@@ -26,7 +35,9 @@
   não apaga mais conteúdo de super_admin/owner; owner passou a moderar de fato.
   No cliente, os serviços de delete usam `count: 'exact'` e tratam 0 linhas
   como erro real (acabou o "sucesso" falso quando o RLS bloqueia).
-- Bloqueio de login server-side; tela de banido em tempo real.
+- Bloqueio de login server-side; tela de banido em tempo real **e no próprio
+  login**, substituindo o site em vez de cobri-lo (`[28/08]` — antes a sessão
+  ficava viva por baixo do overlay e o feed chegava a montar atrás dele).
 - `auth_rls_initplan`: `auth.uid()` envolto em `(select auth.uid())` em todas
   as políticas — evita re-avaliação por linha.
 - Headers de segurança na Vercel (`X-Frame-Options`, `X-Content-Type-Options`,

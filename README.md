@@ -16,7 +16,8 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | --- | --- |
 | [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Estrutura de pastas, rotas, camada de services, convenções de código |
 | [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md) | O que cada tela faz, hierarquia de cargos, XP, lives, painéis |
-| [`docs/MODERACAO.md`](docs/MODERACAO.md) | Denúncias, lista de palavras, IA, fila, infrações e suspensão |
+| [`docs/MODERACAO.md`](docs/MODERACAO.md) | Denúncias, lista de palavras, fila, infrações, suspensão, banimento e recurso |
+| [`docs/MODERACAO-IA.md`](docs/MODERACAO-IA.md) | A moderação por IA de **mídia**: política por categoria, limiares, as medições que os produziram e o caminho de vídeo |
 | [`docs/BANCO.md`](docs/BANCO.md) | Tabelas, RPCs, RLS, storage, realtime, custo de banda |
 | [`docs/SEGURANCA.md`](docs/SEGURANCA.md) | O que protege o quê, e por quê |
 | [`docs/OPERACAO.md`](docs/OPERACAO.md) | **Quando algo quebra.** Monitoramento, site fora do ar, CI |
