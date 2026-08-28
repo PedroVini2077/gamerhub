@@ -11,7 +11,7 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026 · **18 itens abertos**
+**Última conferência contra o sistema:** 28/08/2026 · **17 itens abertos**
 (+ 1 ideia sem compromisso)
 
 > **Próximo da fila.** Nada esperando você. A conta `claudestaff` foi criada
@@ -63,15 +63,6 @@
   existe, e `e2e/painel-admin.mjs` abre o painel e as sete abas num navegador de
   verdade em todo PR. A rede que faltava para mexer ali com segurança agora
   existe.
-- ⬜ `[27/08]` **O smoke test é instável no `networkidle`.** Numa rodada local,
-  `/community` deu timeout de `page.goto`; na repetição, 13/13. **Não é
-  regressão** — a falha não foi exceção de JS, e outras 10 rotas que
-  renderizam a mesma landing passaram na mesma rodada. *Hipótese:* neste
-  sandbox o Google Fonts é bloqueado, o navegador retenta, e o `networkidle`
-  nunca acha a rede parada. **No CI não apareceu** em nenhuma execução desta
-  semana, o que é consistente com a hipótese. Se um dia aparecer lá, trocar
-  `networkidle` por `domcontentloaded` + espera por seletor. Teste que falha
-  sem motivo ensina a ignorar vermelho — por isso está anotado e não esquecido.
 - ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
   A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;
   cena 3D e Sentry fora do caminho crítico; carregamento inicial hoje em

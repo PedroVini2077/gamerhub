@@ -206,6 +206,24 @@ trilha passaria a mentir por omissão (`CLAUDE.md` §5).
 — mas o job `qualidade` emite `::warning::` dizendo que o painel está sem
 cobertura. Job que se pula em silêncio é verde que não testou nada.
 
+## `[28/08]` Por que os testes de navegador não esperam `networkidle`
+
+`networkidle` espera a rede ficar parada por 500 ms — e ela **nunca para**
+quando um recurso de terceiro pendura. Aconteceu: `/community` estourou o
+timeout de 20 s numa rodada e passou 13/13 na repetição, com o Google Fonts
+inalcançável e o navegador retentando para sempre.
+
+O estrago não é a lentidão. É que o vermelho apontava para a **rota**, quando o
+defeito estava na **rede** — e teste que acusa o inocente ensina a ignorar
+vermelho, que é o oposto do que ele existe para fazer.
+
+A espera certa não é "a rede parou", é **"o conteúdo que eu vim conferir
+apareceu"**. O `smoke.mjs` usa `domcontentloaded` e depois espera pelo regex da
+própria rota. Se o conteúdo não vier, o timeout **não** estoura o teste: as
+checagens seguintes produzem a mensagem precisa (`TELA BRANCA`, `guard levou
+para X`, `sem o conteúdo esperado`), que diagnostica muito melhor que um
+timeout cru.
+
 ## Quando a Vercel constrói, e quando não
 
 `scripts/vercel-ignore.sh` decide. Ele pula quando a branch não é a `main`, e
