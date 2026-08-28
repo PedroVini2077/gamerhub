@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../services/postService';
-import { moderateText, moderateImages, moderateLinks } from '../services/moderationService';
+import { moderateText, moderateImages, moderateVideos, moderateLinks } from '../services/moderationService';
 import { useAuth } from './useAuth.jsx';
 import { useBlockedWords } from './useBlockedWords';
 import { getEmbedInfo } from '../lib/embed';
@@ -142,6 +142,14 @@ export function usePostComposer(onPost) {
         // que a mídia subiu e só descobrir olhando o card.
         if (failed) toast.error(`${failed} mídia(s) não puderam ser enviadas.`);
         moderateImages('post', post.id, imageUrls);
+        // Vídeo era o único tipo de mídia que subia sem NENHUMA checagem: só
+        // `type === 'image'` entrava em `imageUrls`. Agora alguns quadros são
+        // extraídos no navegador e vão pela mesma moderação de imagem.
+        //
+        // Os arquivos vêm de `medias`, e não do que voltou do upload, porque a
+        // extração precisa do arquivo local — baixar o vídeo do storage de
+        // volta só para moderar pagaria egress à toa (§6.1).
+        moderateVideos('post', post.id, medias.filter(m => m.type === 'video').map(m => m.file));
       }
 
       toast.success('Post publicado!', { id: toastId });

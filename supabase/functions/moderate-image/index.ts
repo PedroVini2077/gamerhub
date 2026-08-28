@@ -17,6 +17,33 @@ const HF_MODEL_URL = "https://router.huggingface.co/hf-inference/models/Falconsa
 // que sai de dentro da infra da Supabase.
 const PREFIXO_STORAGE = `${SUPABASE_URL}/storage/v1/object/public/`;
 
+// ─── Imagem embutida (`data:`) — o caminho da moderação de VÍDEO ─────────────
+//
+// Vídeo era o único tipo de mídia que subia sem NENHUMA checagem: em
+// `postService.js`, só `type === 'image'` entrava na lista mandada para cá.
+//
+// A saída é extrair alguns quadros no navegador (`lib/framesDeVideo.js`) e
+// mandá-los aqui. Quadro extraído não é URL de storage — e subi-lo para o
+// bucket só para moderar custaria egress e deixaria lixo para limpar depois.
+//
+// Nenhum caminho novo de análise foi preciso: a API da OpenAI aceita `data:`
+// no mesmo campo `image_url.url`, e o `fetch()` do Deno (usado pela reserva do
+// Hugging Face) também resolve `data:`. A mudança é só de VALIDAÇÃO.
+//
+// E validação com limite, porque `data:` é a única entrada aqui cujo tamanho
+// quem chama controla — URL de storage pesa ~100 bytes, um quadro embutido pesa
+// centenas de KB. Sem teto, uma conta qualquer manda 4 imagens gigantes e
+// queima cota da OpenAI. Os quadros que a `framesDeVideo.js` gera ficam na casa
+// de 30-60 KB, então 400 KB é folga larga e ainda assim um teto.
+const PREFIXO_EMBUTIDO = /^data:image\/(jpeg|png|webp);base64,/;
+const MAX_BYTES_EMBUTIDO = 400 * 1024;
+
+function imagemAceita(u: unknown): u is string {
+  if (typeof u !== "string") return false;
+  if (u.startsWith(PREFIXO_STORAGE)) return true;
+  return PREFIXO_EMBUTIDO.test(u) && u.length <= MAX_BYTES_EMBUTIDO;
+}
+
 const CARGOS_STAFF = ["admin", "super_admin", "owner"];
 const TABELAS: Record<string, string> = {
   post: "posts", comment: "comments", mural: "community_posts",
@@ -220,10 +247,23 @@ Deno.serve(async (req: Request) => {
   }
 
   const urls = image_urls
-    .filter(u => typeof u === "string" && u.startsWith(PREFIXO_STORAGE))
+    .filter(imagemAceita)
     .slice(0, 4);
   const recusadas = image_urls.length - urls.length;
-  if (recusadas > 0) console.warn(`[moderate-image] ${recusadas} url(s) fora do storage ignorada(s)`);
+  // Recusa silenciosa aqui seria falha silenciosa: a mídia passaria sem análise
+  // e ninguém saberia que ela não foi analisada (§1.5). Vai para o log com o
+  // motivo separado, porque "URL de outro domínio" e "quadro grande demais" têm
+  // causas e correções completamente diferentes.
+  if (recusadas > 0) {
+    const grandes = image_urls.filter(
+      u => typeof u === "string" && PREFIXO_EMBUTIDO.test(u) && u.length > MAX_BYTES_EMBUTIDO,
+    ).length;
+    console.warn(
+      `[moderate-image] ${recusadas} imagem(ns) ignorada(s): ` +
+      `${grandes} embutida(s) acima de ${MAX_BYTES_EMBUTIDO} bytes, ` +
+      `${recusadas - grandes} fora do storage`,
+    );
+  }
   if (!urls.length) return json({ score: 0, flagged: false, status: "sem_imagem_valida" });
 
   const provedor = OPENAI_API_KEY ? "openai" : "huggingface";

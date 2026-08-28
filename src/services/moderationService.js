@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { ok, fail, from, fromCount } from './result';
+import { registrarErro } from '../lib/monitoring';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -169,7 +170,48 @@ export async function moderateLinks(contentType, contentId, url) {
   }).catch(() => {});
 }
 
-// Fire-and-forget: imagens (apenas URLs de imagem, vídeos são ignorados).
+/**
+ * Fire-and-forget: vídeos, por amostragem de quadros.
+ *
+ * Vídeo era o único tipo de mídia que subia sem nenhuma checagem. Aqui alguns
+ * quadros são extraídos no navegador e mandados **embutidos** para a mesma
+ * Edge Function que analisa imagem — reaproveitando a cobertura que ela já tem
+ * de nudez, gore e automutilação, por custo de imagem e não de vídeo.
+ *
+ * `extrairQuadros` é importado sob demanda: ele só existe para quem publica
+ * vídeo, e não tem por que pesar no carregamento de quem só lê o feed (§0.3).
+ *
+ * **Lista vazia é "não analisado", nunca "analisado e limpo".** Por isso o
+ * `registrarErro`: sem ele, um vídeo que a extração não conseguisse abrir
+ * passaria em silêncio absoluto — nada na tela, nada no log, nenhum teste
+ * quebrando (§1.5). É exatamente a forma de falha que manteve a moderação por
+ * IA quebrada em 26 de 26 chamadas por semanas.
+ */
+export async function moderateVideos(contentType, contentId, videoFiles) {
+  if (!videoFiles?.length) return;
+  const auth = await getAuthHeader();
+  if (!auth) return;
+
+  const { extrairQuadros } = await import('../lib/framesDeVideo');
+
+  for (const arquivo of videoFiles) {
+    const quadros = await extrairQuadros(arquivo);
+    if (!quadros.length) {
+      registrarErro(new Error('nao consegui extrair quadros de um video'), {
+        content_type: contentType, content_id: contentId,
+        tipo_do_arquivo: arquivo?.type, tamanho: arquivo?.size,
+      });
+      continue;
+    }
+    fetch(`${SUPABASE_URL}/functions/v1/moderate-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: SUPABASE_ANON },
+      body: JSON.stringify({ content_type: contentType, content_id: contentId, image_urls: quadros }),
+    }).catch(() => {});
+  }
+}
+
+// Fire-and-forget: imagens (apenas URLs de imagem; vídeo vai por `moderateVideos`).
 export async function moderateImages(contentType, contentId, imageUrls) {
   if (!imageUrls?.length) return;
   const auth = await getAuthHeader();
