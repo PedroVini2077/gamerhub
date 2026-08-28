@@ -126,6 +126,55 @@ try {
     }
   }
 
+  // ── 3b. Paginação e notificações ──────────────────────────────────────────
+  //
+  // Estas duas ficaram de fora da primeira versão, e a falta delas apareceu na
+  // hora errada: ao planejar a migração do `useAdminData` para React Query,
+  // ficou claro que as partes mais arriscadas — a paginação com estado local
+  // (`loadMorePosts`/`loadMoreKeys`) e o canal lateral que escreve as
+  // notificações no estado do pai — eram exatamente as que NENHUM teste tocava.
+  //
+  // Refatorar camada de dados sem cobrir as duas seria refatorar no escuro.
+  // Continua tudo somente leitura: clicar em "Carregar mais" só busca mais
+  // linhas, não altera nada.
+
+  // Paginação: a lista tem que CRESCER. Contar antes e depois é o que separa
+  // "o botão existe" de "o botão funciona" — um `onClick` quebrado deixaria o
+  // botão lá, clicável, sem trazer nada.
+  await page.getByRole('button', { name: /^Posts/i }).first().click();
+  await page.waitForTimeout(2000);
+  const carregarMais = page.getByRole('button', { name: /carregar mais/i }).first();
+  if (await carregarMais.count() > 0) {
+    const linhas = () => page.locator('main tbody tr, main [data-post-row]').count();
+    const antes = await linhas();
+    await carregarMais.click();
+    await page.waitForTimeout(3000);
+    const depois = await linhas();
+    if (depois <= antes) {
+      throw new Error(
+        `"Carregar mais" nao trouxe nada: ${antes} linhas antes, ${depois} depois. `
+        + 'O botao existe mas a paginacao parou de funcionar.');
+    }
+    ok(`paginacao de posts funciona (${antes} -> ${depois} linhas)`);
+  } else {
+    // Menos posts que uma página inteira: não há o que paginar, e exigir o
+    // botão aqui transformaria "banco pequeno" em teste vermelho.
+    ok('paginacao de posts: sem botao (menos de uma pagina de posts)');
+  }
+
+  // Notificações: elas não vêm de uma consulta própria — são escritas no estado
+  // do painel pelo `useAdminData`, num canal lateral. Se esse fio se romper, a
+  // aba fica eternamente vazia sem erro nenhum.
+  await page.getByRole('button', { name: /^Notificações/i }).first().click();
+  await page.waitForTimeout(2500);
+  const textoNotifs = await page.locator('main').innerText();
+  if (!/nenhuma notificação ainda/i.test(textoNotifs) && textoNotifs.trim().length < 120) {
+    throw new Error(
+      'a aba de Notificacoes nao mostrou nem notificacao nem o texto de lista vazia. '
+      + 'O canal que alimenta as notificacoes provavelmente se rompeu.');
+  }
+  ok('aba de Notificacoes com estado definido (lista ou vazio explicito)');
+
   // ── 4. A hierarquia segura para cima ──────────────────────────────────────
   // O `fluxos.mjs` prova que `user` não entra no /admin. Falta a outra metade:
   // `admin` também não pode subir até o /owner. Sem isto, uma regressão que

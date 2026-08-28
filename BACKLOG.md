@@ -76,8 +76,17 @@
   mas isso é ganho de arquitetura — não conserto de lint. **Vale decidir qual
   dos dois se quer** antes de gastar uma sessão nisso.
 
-  *Destravado em 28/08:* a conta `claudestaff` existe e o `e2e/painel-admin.mjs`
-  abre o painel e as sete abas em todo PR, então mexer ali agora tem rede.
+  **A rede ficou pronta em 28/08.** Ao planejar a migração ficou claro que as
+  duas partes mais arriscadas — a paginação com estado local
+  (`loadMorePosts`/`loadMoreKeys`) e o canal lateral que escreve as notificações
+  no estado do pai — não eram tocadas por teste nenhum. Refatorar camada de
+  dados às cegas justamente ali seria o pior lugar para começar. O
+  `e2e/painel-admin.mjs` passou a **contar as linhas antes e depois do
+  "Carregar mais"** e a exigir estado definido na aba de Notificações.
+
+  **O que falta agora é só a migração em si**, e ela pede sessão própria: são 8
+  consultas num `Promise.all`, duas paginações e um canal lateral para
+  desmontar. Ver [ARQUITETURA.md](docs/ARQUITETURA.md).
 - ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
   A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;
   cena 3D e Sentry fora do caminho crítico; carregamento inicial hoje em
