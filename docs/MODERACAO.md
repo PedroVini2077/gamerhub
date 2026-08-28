@@ -175,3 +175,45 @@ quebrada em 26 de 26 chamadas.
 todo arquivo que chama `moderateImages` também chame `moderateVideos` — salvo
 os que aceitam só imagem, que precisam estar numa lista com o motivo e são
 conferidos contra o `accept` do próprio input.
+
+## `[28/08]` Quem é banido passa a ter como recorrer
+
+**O que existia:** a `BannedScreen` mostrava o motivo e deslogava em 6 segundos
+— sem botão, sem formulário, sem contato. E `request_unban` exigia cargo de
+staff, ou seja, **só um admin abria o pedido em nome da pessoa**.
+
+Era coerente com a hierarquia e, ainda assim, uma porta que só abre de um lado:
+quem foi banido por engano — e engano acontece, ainda mais com moderação
+automática — não tinha a quem recorrer nem sabia a quem.
+
+**O formulário.** `solicitar_revisao_do_proprio_ban` é chamável pela própria
+pessoa banida, com as regras **no banco** (o site entrega a `anon key`, então
+validação só no cliente não vale nada):
+
+| Regra | Valor |
+| --- | --- |
+| Pedidos por banimento | **1** |
+| Tamanho do texto | 20 a 1000 caracteres |
+| Quem pode chamar | `authenticated` e de fato banido; `anon` não |
+
+**O corte de "um por banimento" é `profiles.banned_at`**, e não "existe pedido
+pendente". A diferença importa: contar pendentes deixaria a pessoa insistir para
+sempre depois de uma negativa; contar desde o ban atual dá direito a recorrer de
+novo se ela for desbanida e banida outra vez.
+
+**A contagem regressiva parou de ser armadilha.** Ela subiu para 20 s e agora
+**pausa enquanto o formulário está aberto** — cronômetro correndo por cima de um
+formulário seria pior que não ter formulário. E a tela diz, em texto, que basta
+entrar de novo para ela reaparecer: quem fechou a aba antes de recorrer não fica
+sem saída.
+
+### Bug de hierarquia corrigido junto
+
+`request_unban` checava `v_caller_role NOT IN ('admin')` — lista literal com
+**um** cargo. Efeito: `super_admin` e `owner`, que estão acima de admin, **não
+conseguiam abrir pedido de desbanimento**. O fundador era barrado de uma ação
+que o subordinado dele fazia.
+
+É a quarta vez que uma lista de papéis escrita à mão morde este projeto
+(`CLAUDE.md` §1.3, *"hierarquia nunca se escreve à mão"*). Passou a usar
+`is_staff()`.
