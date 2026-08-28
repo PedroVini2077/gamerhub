@@ -47,6 +47,23 @@ const SENHA = process.env.E2E_STAFF_PASSWORD;
 // aqui transformaria a hierarquia correta em falha de teste.
 const ABAS = ['Usuários', 'Posts', 'Moderação', 'Mod de Lives', 'Keys & Promos', 'Notificações', 'Logs'];
 
+/**
+ * A aba do painel, e SÓ ela.
+ *
+ * `getByRole('button', { name: /Notificações/ })` casava com o SINO do
+ * cabeçalho, que vem antes no DOM — então `.first()` pegava o sino. O teste
+ * "aba Notificações renderizou" passava sem nunca abrir a aba: ele abria o
+ * dropdown do sino, e o `<main>` continuava com o conteúdo da aba anterior,
+ * satisfazendo a verificação de tamanho. Teste que passa pelo motivo errado é
+ * pior que teste nenhum, e este só foi desmascarado quando o dropdown aberto
+ * passou a bloquear o clique seguinte.
+ *
+ * O que separa os dois sem ambiguidade é o `aria-pressed`: só as abas do
+ * `AdminTabs` o têm. O sino não.
+ */
+const aba = (page, nome) =>
+  page.locator('button[aria-pressed]').filter({ hasText: nome }).first();
+
 if (!EMAIL || !SENHA) {
   console.error('\n  E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD nao definidos.');
   console.error('  Este teste precisa de uma conta com cargo admin.\n');
@@ -113,16 +130,16 @@ try {
   ok('/admin acessivel para cargo admin');
 
   // ── 3. As abas renderizam ─────────────────────────────────────────────────
-  for (const aba of ABAS) {
+  for (const nomeDaAba of ABAS) {
     try {
-      await page.getByRole('button', { name: new RegExp(`^${aba}`, 'i') }).first().click({ timeout: 15000 });
+      await aba(page, nomeDaAba).click({ timeout: 15000 });
       // Espera algo além do esqueleto: a aba tem que produzir conteúdo.
       await page.waitForFunction(
         () => document.querySelector('main')?.innerText.trim().length > 80,
         { timeout: 15000 });
-      ok(`aba "${aba}" renderizou`);
+      ok(`aba "${nomeDaAba}" renderizou`);
     } catch (e) {
-      await morrer(`abrir a aba "${aba}"`, e);
+      await morrer(`abrir a aba "${nomeDaAba}"`, e);
     }
   }
 
@@ -141,7 +158,7 @@ try {
   // Paginação: a lista tem que CRESCER. Contar antes e depois é o que separa
   // "o botão existe" de "o botão funciona" — um `onClick` quebrado deixaria o
   // botão lá, clicável, sem trazer nada.
-  await page.getByRole('button', { name: /^Posts/i }).first().click();
+  await aba(page, 'Posts').click();
   await page.waitForTimeout(2000);
   const carregarMais = page.getByRole('button', { name: /carregar mais/i }).first();
   if (await carregarMais.count() > 0) {
@@ -165,7 +182,7 @@ try {
   // Notificações: elas não vêm de uma consulta própria — são escritas no estado
   // do painel pelo `useAdminData`, num canal lateral. Se esse fio se romper, a
   // aba fica eternamente vazia sem erro nenhum.
-  await page.getByRole('button', { name: /^Notificações/i }).first().click();
+  await aba(page, 'Notificações').click();
   await page.waitForTimeout(2500);
   const textoNotifs = await page.locator('main').innerText();
   if (!/nenhuma notificação ainda/i.test(textoNotifs) && textoNotifs.trim().length < 120) {
