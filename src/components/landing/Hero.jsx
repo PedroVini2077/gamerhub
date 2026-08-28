@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Zap, ChevronDown, PauseCircle } from 'lucide-react';
+import { Zap, ChevronDown, PauseCircle, ShieldQuestion } from 'lucide-react';
 import { useDbOffline } from '../../hooks/useDbOffline';
 import { motivoDaPausa } from '../../lib/pauseReason';
 import { heroFade } from '../../lib/landingMotion';
@@ -59,6 +59,32 @@ export default function Hero() {
 
         <motion.div variants={heroFade(0.45)} initial="initial" animate={show}>
           <Link to="/login" className="btn-solid py-3.5 px-9 text-sm">Entrar / Criar conta</Link>
+        </motion.div>
+
+        {/*
+          `[29/08]` Porta de entrada para quem foi banido.
+
+          O pedido do dono era um aviso na landing "só para ele" — identificando
+          quem está banido. Descartado, e o motivo está em `docs/DECISOES.md`: a
+          landing é vista por visitante anônimo, então identificar exigiria
+          guardar no navegador que AQUELA MÁQUINA teve um login banido. Num PC ou
+          celular compartilhado, isso conta a terceiros algo que não é da conta
+          deles — o oposto do endurecimento de LGPD que este projeto fez.
+
+          Este link resolve o problema real sem identificar ninguém: quem está
+          banido JÁ consegue entrar e ver o andamento do recurso na
+          `BannedScreen`; o que faltava era saber que isso existe. O link é
+          igual para todo mundo e não revela nada — quem não está banido só
+          encontra a tela de login normal.
+        */}
+        <motion.div variants={heroFade(0.5)} initial="initial" animate={show}>
+          <Link
+            to="/login"
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-mono text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            <ShieldQuestion size={13} />
+            Conta bloqueada? Consulte seu caso
+          </Link>
         </motion.div>
 
         {/* Troca entre a cena 3D e a versão leve. Só aparece para quem tem o

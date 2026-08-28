@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Users, FileText, Key, Crown, Bell, Activity, ShieldAlert, UserPlus, Siren } from 'lucide-react';
@@ -63,7 +63,15 @@ export default function Admin() {
 
   // `refresh` recarrega a base E as solicitações de desban — as duas coisas
   // mudam juntas depois de banir/desbanir.
-  function refresh() { fetchAll(); fetchUnbanRequests(); }
+  //
+  // Memoizada porque ela entra nas dependências do efeito de montagem. Sem
+  // isso, ela troca de identidade a cada render e o efeito rodaria em laço —
+  // que foi exatamente o motivo da supressão de `exhaustive-deps` que existia
+  // aqui até 29/08.
+  const refresh = useCallback(() => {
+    fetchAll();
+    fetchUnbanRequests();
+  }, [fetchAll, fetchUnbanRequests]);
 
   const contentActions = useAdminContentActions({
     setConfirmModal, username: profile?.username, posts: adminData.posts, refresh,
@@ -80,30 +88,31 @@ export default function Admin() {
   useEffect(() => {
     if (!isAdmin) { navigate('/'); return; }
     refresh();
-    // Só `isAdmin`: `refresh` é recriada a cada render (não é useCallback), então
-    // incluí-la aqui recarregaria o painel inteiro em loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
+  }, [isAdmin, navigate, refresh]);
 
+  // `[29/08]` DOIS efeitos viraram UM, e as três supressões de
+  // `exhaustive-deps` do arquivo sumiram junto.
+  //
+  // Antes havia um efeito por `[tab]` e outro por `[logCat]`, e eles brigavam:
+  // o de `logCat` precisava de `tab` nas dependências para ser honesto, mas
+  // incluí-lo fazia a aba de logs buscar DUAS vezes ao ser aberta. A saída na
+  // época foi suprimir a regra nos dois.
+  //
+  // Unidos, o conflito desaparece: `logCat` só muda enquanto a aba de logs está
+  // aberta, então as outras condições são falsas e nada mais é rebuscado. Entrar
+  // na aba busca uma vez; trocar de categoria busca uma vez.
+  //
+  // As funções entram nas dependências porque agora TODAS são estáveis —
+  // `useAdminData` foi o último a ganhar `useCallback`, em 29/08. Com deps
+  // honestas, o lint volta a ajudar em vez de ser calado.
   useEffect(() => {
     if (tab === 'lives' || tab === 'super') fetchLiveMod();
     if (tab === 'notifs') fetchNotifications();
     if (tab === 'logs') fetchLogs(logCat);
     if (tab === 'users') fetchUnbanRequests();
     if (tab === 'super' && isSuperAdmin) { fetchBlockedLogins(); fetchUnbanRequests(); }
-    // Só `tab`: a intenção é buscar QUANDO A ABA MUDA. As funções de fetch vêm
-    // dos hooks de domínio e mudam de identidade a cada render deles; incluí-las
-    // faria a aba recarregar sozinha em loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
-
-  useEffect(() => {
-    if (tab === 'logs') fetchLogs(logCat);
-    // Só `logCat`: trocar de categoria refaz a busca. `tab` de propósito fora —
-    // a troca de aba já é tratada no efeito acima, e incluir aqui buscaria duas
-    // vezes ao entrar na aba de logs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [logCat]);
+  }, [tab, logCat, isSuperAdmin, fetchLiveMod, fetchNotifications, fetchLogs,
+      fetchUnbanRequests, fetchBlockedLogins]);
 
   useAdminRealtime({
     tab, isSuperAdmin,

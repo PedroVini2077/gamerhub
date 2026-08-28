@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { notifAudience } from './useAdminNotifications';
 
@@ -29,7 +29,22 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
   const [loadingMoreKeys, setLoadingMoreKeys] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  async function fetchAll() {
+  // ── `[29/08]` As três funções são MEMOIZADAS, e isso não é estilo ──────────
+  //
+  // Elas eram funções soltas, recriadas a cada render. O `Admin.jsx` as usa
+  // dentro de `useEffect`, e incluí-las nas dependências — que é o que o
+  // `exhaustive-deps` pede — faria o painel recarregar em laço infinito. A
+  // saída na época foi suprimir a regra em três lugares.
+  //
+  // Supressão é dívida com juros: ela cala o aviso e deixa a dependência
+  // DESONESTA, então a próxima pessoa que acrescentar uma dep de verdade não
+  // recebe ajuda nenhuma do lint. Memoizar resolve a causa — as deps ficam
+  // completas e o efeito para de mentir.
+  //
+  // `loadMorePosts` e `loadMoreKeys` dependem de `posts.length`/`keys.length`
+  // para saber de onde continuar, então entram nas deps. Elas trocam de
+  // identidade quando a lista cresce, que é exatamente quando devem trocar.
+  const fetchAll = useCallback(async () => {
     setLoading(true);
     const audience = notifAudience(isSuperAdmin, isOwner);
     const [
@@ -55,9 +70,9 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
     setReadIds(new Set((reads || []).map(r => r.notification_id)));
     setNotifications(allNotifs || []);
     setLoading(false);
-  }
+  }, [userId, isSuperAdmin, isOwner, setNotifications, setReadIds]);
 
-  async function loadMorePosts() {
+  const loadMorePosts = useCallback(async () => {
     setLoadingMorePosts(true);
     const { data, count } = await supabase
       .from('posts').select('*, profiles(username)', { count: 'exact' })
@@ -67,9 +82,9 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
     setPosts(next);
     setPostsHasMore(next.length < (count ?? next.length));
     setLoadingMorePosts(false);
-  }
+  }, [posts]);
 
-  async function loadMoreKeys() {
+  const loadMoreKeys = useCallback(async () => {
     setLoadingMoreKeys(true);
     const { data, count } = await supabase
       .from('game_keys').select('*', { count: 'exact' })
@@ -79,7 +94,7 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
     setKeys(next);
     setKeysHasMore(next.length < (count ?? next.length));
     setLoadingMoreKeys(false);
-  }
+  }, [keys]);
 
   return {
     users, posts, keys, stats, loading,

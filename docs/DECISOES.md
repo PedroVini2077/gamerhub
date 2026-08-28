@@ -109,6 +109,62 @@ reversível.
 > o piso de 0.10 no caminho de imagem nunca disparou. Quem cobre essa classe em
 > imagem é `sexual` em 0.55.
 
+### `[29/08]` O aviso de banimento na landing não identifica ninguém
+
+**O pedido original do dono:** *"seria legal o site também identificar o usuário
+banido, e aparecer uma nova aba ou botão na landing page **só pra ele**… pode
+ser um sino"*.
+
+**O "só pra ele" foi descartado**, e o motivo é mecânico. A landing é vista por
+visitante anônimo, sem sessão. Para saber que aquela pessoa está banida sem
+login, seria preciso guardar no navegador que **aquela máquina** teve um login
+banido. Num PC ou celular compartilhado — que é a regra, não a exceção, no
+público deste site — isso conta a terceiros algo que não é da conta deles. É o
+oposto do endurecimento de LGPD que o projeto fez em agosto.
+
+**O que entrou no lugar** resolve o problema real e não revela nada: um link
+discreto na landing, **igual para todo mundo** — *"Conta bloqueada? Consulte seu
+caso"* — que leva ao login.
+
+A chave é que quem está banido **já consegue entrar**: a `BannedScreen` sobe no
+próprio login e mostra o motivo, o formulário de recurso e o andamento do
+pedido. O que faltava nunca foi a capacidade — era **saber que isso existe**.
+Quem não está banido clica e encontra a tela de login normal.
+
+**O que se perde:** a descoberta é passiva. Quem nunca olhar a landing continua
+sem saber. A alternativa custava privacidade de terceiros, e essa troca não vale.
+
+### `[29/08]` React Query no `Admin.jsx`: adiado, e a justificativa original caiu
+
+**O item vivia no backlog desde 22/08** dizendo que a migração "resolveria de
+verdade os `exhaustive-deps` suprimidos". Medindo antes de fazer, a premissa
+não se sustentou:
+
+| | |
+| --- | --- |
+| Hooks de domínio do painel | **6** |
+| Já com `useCallback` antes desta sessão | **5** |
+| Faltando | **1** (`useAdminData`) |
+
+Ou seja: as três supressões não vinham de falta de React Query. Vinham de **um**
+hook sem memoização e de dois efeitos que brigavam entre si — o de `[tab]` e o
+de `[logCat]`, em que tornar um honesto fazia a aba de logs buscar duas vezes.
+
+**O conserto foi pequeno e as três supressões sumiram:** memoizar as três
+funções do `useAdminData` e **unir os dois efeitos num só**. Unidos, o conflito
+desaparece, porque `logCat` só muda enquanto a aba de logs está aberta.
+
+**React Query continua tendo valor real** — cache entre abas, dedupe,
+invalidação —, mas isso é ganho de arquitetura, não conserto de lint. A
+migração pede sessão própria: 8 consultas num `Promise.all`, duas paginações e
+um canal lateral.
+
+**O gatilho que reabre a decisão:** quando trocar de aba e voltar passar a
+incomodar por rebuscar tudo, ou quando duas telas precisarem do mesmo dado
+fresco. Aí o cache deixa de ser luxo. A rede de testes para a migração já
+existe desde 28/08 (`e2e/painel-admin.mjs` conta linhas antes e depois do
+"Carregar mais").
+
 ### `[28/08]` `sexual` em 0.55 é a única defesa dessa classe em imagem
 
 **O fato, conferido na documentação da OpenAI:** a `omni-moderation-latest`
