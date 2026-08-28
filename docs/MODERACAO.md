@@ -60,21 +60,20 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
     enquanto `sexual*` e `self-harm*` ocultam. Um limiar errado passa a gerar
     fila maior, nunca censura.
 
-    > **`[28/08]` A primeira medição real, e ela diz que os pisos estão
-    > baixos.** Dois posts de print de jogo comum do dono, com a v12 já no ar:
+    > **`[28/08]` A primeira medição real, e o ajuste que ela produziu.** Dois
+    > posts de print de jogo comum do dono, com a v12 já no ar:
     >
-    > | Post | Analisadas | Categoria | Nota | Piso | Ação |
+    > | Post | Analisadas | Categoria | Nota | Piso antigo | Ação |
     > | --- | --- | --- | --- | --- | --- |
     > | 1 imagem | 1/1 | `violence/graphic` | 0.854 | 0.80 | enfileirou |
     > | 4 imagens | 4/4 | `violence` | 0.943 | 0.90 | enfileirou |
     >
     > **2 de 2 foram para a fila**, e o site funcionou exatamente como
-    > projetado — ninguém foi ocultado. O que a medição mostra é que a decisão
-    > de projeto acima estava certa (*nunca ocultar*) e que os **números**
-    > estavam errados: num site de jogos, `violence` é o estado normal do
-    > conteúdo. Ajustá-los é decisão de produto e está no
-    > [BACKLOG.md](../BACKLOG.md) com a recomendação e o que falta para
-    > escolher o número.
+    > projetado — ninguém foi ocultado. A decisão de *nunca ocultar* estava
+    > certa; os **números** é que estavam errados.
+    >
+    > **O que mudou (v13):** `violence` **saiu** do mapa e `violence/graphic`
+    > subiu para **0.95**. Ver a tabela de política abaixo.
   - O texto **vem do banco**, não do corpo da requisição: aceitar o texto do
     cliente permitiria mandar o `content_id` de um post alheio junto de uma
     frase ofensiva e derrubar o post de outro. Só o autor (ou a equipe) pede a
@@ -151,6 +150,62 @@ Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
 ---
 
 [← voltar para o README](../README.md)
+
+## `[28/08]` A política de imagem, e por que ela tem estes números
+
+| Categoria | Piso | Destino | Por quê |
+| --- | --- | --- | --- |
+| `sexual/minors` | 0.10 | **oculta** | o mais baixo de todos, de propósito |
+| `sexual` | 0.55 | **oculta** | mais folgado que no texto: praia e biquíni pontuam sem ser pornografia |
+| `self-harm` | 0.50 | **oculta** | |
+| `self-harm/intent` | 0.40 | **oculta** | |
+| `self-harm/instructions` | 0.30 | **oculta** | |
+| `violence/graphic` | **0.95** | **enfileira** | a única que separa gore de ação comum |
+| `violence` | — | **nada** | aposentada em 28/08 |
+
+### Por que `violence` foi aposentada, e não apenas subiu de piso
+
+A pergunta que decidiu não foi "qual número acerta mais", foi **o que a equipe
+faria com o item**. Um print de jogo de ação na fila é aprovado — sempre, todas
+as vezes. Um sinal que dispara no caso comum e cujo veredito é sempre o mesmo
+não é sinal, é ruído. E fila 100% ruído ensina a ignorar a fila, o que cega
+também os avisos que importam (`CLAUDE.md` §0.2, 4ª regra).
+
+Num site de jogos, "há violência na imagem" é o **estado normal do conteúdo**.
+Nenhum piso conserta uma categoria que não separa nada.
+
+### O que se perde, dito sem maquiagem
+
+Gore leve — entre 0.80 e 0.95 — deixa de ser revisado por uma pessoa. Continua
+coberto por denúncia, pela wordlist do texto que acompanha o post, e pela
+moderação manual. A troca é deliberada: errar para baixo enchia a fila e fazia
+ninguém olhar item nenhum; errar para cima deixa passar o caso duvidoso e
+mantém a fila útil para o caso grave.
+
+**Nada disto afrouxa o que oculta.** `sexual*` e `self-harm*` seguem iguais, e
+há teste travando que nenhuma categoria de violência caia no mapa que oculta —
+um `Ctrl+X` entre os dois mapas faria o site derrubar print de jogo sozinho, e
+o autor descobriria pelo post sumindo.
+
+### Como ajustar da próxima vez sem sessão de teste
+
+O buraco que esta decisão expôs: as notas eram calculadas e **jogadas fora**. O
+log contava só a categoria vencedora, e o corpo da resposta é descartado pelo
+chamador (fire-and-forget) — então ajustar piso exigia pedir posts de teste, um
+a um.
+
+Desde a v13 toda análise registra as notas de **todas** as categorias com piso,
+tenham disparado ou não:
+
+```
+[moderate-image] openai post/<id> analisadas=4/4 categoria=- score=0.000 acao=nada
+  | notas: violence/graphic=0.812 violence=0.943 sexual=0.021 sexual/minors=0.000 ...
+```
+
+A distribuição passa a se acumular sozinha com o uso normal do site. Onde ler:
+painel da Supabase → Edge Functions → `moderate-image` → Logs.
+
+---
 
 ## `[28/08]` Vídeo, por amostragem de quadros
 
