@@ -96,9 +96,19 @@ export default function Login() {
             ? 'Conta bloqueada por excesso de tentativas. Contate o suporte ou redefina sua senha.'
             : 'Muitas tentativas falhas. Conta bloqueada por 15 minutos.');
         } else {
-          const left = 5 - (after?.attempts || 0);
-          const aviso = left > 0 ? ` (${left} tentativa${left > 1 ? 's' : ''} até o bloqueio)` : '';
-          toast.error(error.message + aviso);
+          // Sem contagem de tentativa aqui, e isso é honestidade, não falta.
+          //
+          // Existia um "(N tentativas até o bloqueio)" nesta mensagem. Ele parou
+          // de ser verdade em 28/08, quando a contagem forjável foi removida:
+          // `attempts` passou a ser sempre 0, então o aviso dizia "5 tentativas"
+          // para sempre, sem nunca descer. Contador que não conta é pior que
+          // contador nenhum — manda a pessoa confiar num número inventado.
+          //
+          // Contar de verdade exigiria o Password Verification Hook, que é
+          // exclusivo do plano Team (ver BACKLOG.md). Enquanto isso, quem
+          // protege contra força bruta é o rate limit do próprio GoTrue, que é
+          // server-side e não precisa desta tela para nada.
+          toast.error(error.message);
         }
       } else {
         // await obrigatório: o builder do supabase-js é lazy — sem await o reset nunca é enviado.

@@ -66,6 +66,39 @@ Achado que some em silêncio é a única saída proibida.
 > de entregar) continua valendo integralmente. Ela não é "dívida distante": é
 > sujeira que eu mesmo acabei de fazer.
 
+### O que eu faço sem ser mandado
+
+> Pedido do dono em 28/08: *"combinamos de muitas coisas serem automáticas sem
+> eu pedir... quero que vc sempre faça automaticamente tudo sem precisar de mim
+> pra dizer 'faça'... às vezes nós fazemos muitas coisas, e eu vou esquecer que
+> isso existe"*.
+
+**O padrão é: se está escrito neste arquivo, eu executo por conta.** Pedir
+autorização para cumprir uma regra que já foi combinada é atrito sem ganho — e,
+pior, transfere para o dono a obrigação de lembrar que a regra existe. Ele não
+tem como lembrar de tudo; o arquivo é que tem.
+
+| Roda sozinho, sempre | Onde está a regra |
+| --- | --- |
+| Dividir arquivo que passou de 300 linhas | §4 |
+| Fechar falha de segurança explorável | §1.3 |
+| Diagnosticar e matar bug | §1.2 |
+| Bateria de faxina ao fechar um bloco | §6.1 |
+| **Medir desempenho ao mexer em bundle, rota, asset ou dependência** | §0.3 |
+| Atualizar `README.md` e `BACKLOG.md` no mesmo PR | §6.2 |
+| Abrir o PR e mergear ao concluir | §8 |
+
+**O que continua dependendo do dono** é curto e proposital: decisão de produto,
+decisão de custo, ação de painel que eu não alcanço, mudança em documento
+estrutural (§6.2), e o que o §7 marca como 🟡/🔴. **A auditoria completa (§6)
+continua sendo pedida por ele** — ela consome uma sessão inteira, então quem
+decide a hora é quem paga o token.
+
+> **Só que "ele pede" não pode virar "ninguém lembra".** Por isso existe o
+> lembrete de auditoria (§6, no fim): um robô mensal que abre issue no
+> repositório dizendo que passou do prazo. O dono continua decidindo se e
+> quando roda — mas deixa de precisar lembrar sozinho de que aquilo existe.
+
 ### Organização é PRÉ-REQUISITO das outras regras, não estética
 
 > Observação do dono depois de uma sessão inteira: *"percebeu que quando fomos
@@ -1120,6 +1153,21 @@ grep -rn "table: '\|useRealtime('" src/ --include=*.js --include=*.jsx
 não é um bug pontual: é um par de lugares que precisa concordar para sempre, e
 que vai divergir de novo na próxima mudança. Corrigir sem travar aqui é
 garantir que a Fase 4 da próxima auditoria vai achar exatamente a mesma coisa.
+
+---
+
+### O lembrete — para "ele pede" não virar "ninguém lembra"
+
+A auditoria continua sendo decisão do dono, mas a **lembrança** não pode
+depender da memória dele. `.github/workflows/lembrete-de-auditoria.yml` roda
+todo dia 1º, lê a data do relatório mais recente em `db/AAAA-MM-DD-*.md` e, se
+passou de **90 dias**, abre uma issue no repositório.
+
+Três escolhas deliberadas: a data vem do **relatório**, não de um número escrito
+à mão que poderia divergir do que aconteceu (§1.4); é **issue** e não email,
+porque issue fica; e ele **confere se já existe uma aberta** antes de criar,
+porque lembrete mensal repetido vira ruído e ruído ensina a ignorar o canal
+(§0.2). Ele não roda auditoria, não reprova nada e não cobra — só avisa.
 
 ---
 
