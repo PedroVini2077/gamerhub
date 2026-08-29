@@ -155,6 +155,32 @@ continuar contando desenhos. Provado nos dois sentidos: **0 ms** com a correçã
 > medida e travada, o certo é procurar o caso que não foi medido — e não repetir
 > a mesma medição esperando outro resultado (§1.2).
 
+### `[29/08]` A parte da otimização que foi REVERTIDA, e por quê
+
+A resolução adaptativa começava em `dpr` 0,5 e subia. Foi o que zerou as long
+tasks na tabela acima — e foi revertida no mesmo dia, pelo dono, testando em
+dois aparelhos: *"a cena em 3d ela começa muito pixelada, fica horrível"*.
+
+**O erro de método vale mais do que o número.** Eu otimizei o TBT do Lighthouse
+contra a coisa que o TBT existe para medir. A cena feia e a bonita valem igual
+para a ferramenta; não valem igual para quem abre o site.
+
+Custo da reversão, isolando as duas mudanças sob freio de 4×:
+
+| Configuração | Thread bloqueada (total) |
+| --- | --- |
+| `dpr` 0,5 + `antialias` off | 670 ms |
+| `dpr` do aparelho + `antialias` off | 1.073 ms |
+| `dpr` do aparelho + `antialias` on (o que ficou) | 3.362 ms |
+
+O caro é o `antialias`, não a resolução — o contrário do que supus ao desligá-lo.
+Os dois ficaram ligados assim mesmo: a medição é em software, e numa GPU o MSAA
+é quase de graça.
+
+**O que sobrou de otimização, e não foi tocado:** o laço parado fora da tela
+(zero desenhos), o chunk 20% menor, e a queda de resolução no aparelho que não
+aguenta — que é onde os 8.066 ms apareciam de verdade.
+
 ### `[29/08]` O tamanho do chunk — feito, e a explicação anterior estava errada
 
 **A correção primeiro.** Esta seção afirmava que `@react-three/fiber` v9.7.0

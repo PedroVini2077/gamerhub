@@ -223,10 +223,15 @@ por ela.
 **Por que adaptativo e não um número fixo:** a medição acima é em rasterização
 por software (SwiftShader), que é o que o Lighthouse, o PageSpeed e qualquer
 máquina com GPU bloqueada usam. Numa máquina com GPU, cinco chamadas de desenho
-não custam nada — cravar 0,5 puniria quem não tem problema nenhum. A cena
-começa no degrau mais barato e sobe se os quadros couberem em 60 fps; se
-descer uma vez, não volta a subir (resolução piscando é pior de olhar do que
-resolução baixa e estável).
+não custam nada — cravar 0,5 puniria quem não tem problema nenhum.
+
+> **`[29/08]` A DIREÇÃO foi invertida no mesmo dia, e o motivo é um relato do
+> dono.** A primeira versão começava no degrau mais barato e subia — ou seja, o
+> primeiro quadro que o visitante via era o pior. Ele testou e reprovou: *"começa
+> muito pixelada, fica horrível"*, e o brilho do raio sumia junto.
+>
+> Agora começa no que o aparelho pede e **só desce**. A proteção continua; o
+> preço deixou de ser cobrado de todo mundo. Ver [DECISOES.md](DECISOES.md).
 
 **Travado nos dois lados:** `e2e/cena-3d.mjs` reprova se a cena bloquear a
 thread principal acima de 800 ms na janela de 2 s (medido: 0 ms com a correção,

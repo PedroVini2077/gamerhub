@@ -416,7 +416,62 @@ ganho era real, a explicação não. Ver [DESEMPENHO.md](DESEMPENHO.md).
 porque o `WebGLRenderer` tem caminho de código para quase tudo que ele traz.
 Encolher além daqui exigiria WebGL cru — outra conversa, e de outro tamanho.
 
-### `[29/08]` A resolução da cena 3D é ADAPTATIVA, não um número fixo
+### `[29/08]` A cena 3D começa no MELHOR estado — a versão que começava baixa foi revertida
+
+**Relato do dono, testando no celular e no PC:** *"a cena em 3d ela começa muito
+pixelada, fica horrível, depois volta ao normal"*, *"o raio ao estourar, a luz
+verde não fica tão forte quando a landing 3d está ativada, mas fica normal na
+landing em 2d"*, e *"ao atualizar a landing 3d, por alguns segundos dá pra ver a
+landing 2d"*.
+
+**Os dois primeiros eram o mesmo defeito, e ele era meu.** A resolução
+adaptativa começava em `dpr` 0,5 e subia. Ou seja, **o primeiro quadro que todo
+visitante via era o pior estado possível** — e o brilho dos `pointLight` do
+raio, que é o efeito mais bonito da cena, é justamente o que mais sofre com
+queda de resolução, porque o degradê da luz borra.
+
+**O erro de método, e é o que vale guardar:** eu otimizei um número (o TBT do
+Lighthouse) contra a coisa que o número existe para medir — a experiência de
+quem abre o site. O dono viu em dois aparelhos no primeiro teste; o Lighthouse
+nunca veria, porque para ele a cena feia e a bonita valem igual.
+
+**A regra agora:** começa no que o aparelho pede (`devicePixelRatio` preso entre
+1 e 1,5, a mesma conta do antigo `dpr={[1, 1.5]}`) e **só desce** se os quadros
+atrasarem. Nunca sobe. A proteção do aparelho fraco continua — é ali que os
+8.066 ms de thread bloqueada apareciam — mas ela deixou de cobrar o preço de
+todo mundo.
+
+**O `antialias` também voltou**, e o custo foi medido isolando as duas
+mudanças, sob freio de CPU de 4×:
+
+| Configuração | Thread bloqueada (total) |
+| --- | --- |
+| `dpr` 0,5 + `antialias` off (o que foi revertido) | 670 ms |
+| `dpr` do aparelho + `antialias` off | 1.073 ms |
+| `dpr` do aparelho + `antialias` on (o que ficou) | 3.362 ms |
+
+O caro é o `antialias`, não a resolução — ao contrário do que eu supus ao
+desligá-lo. **Fica ligado mesmo assim**, pela mesma razão que vale para o `dpr`:
+a medição é em rasterização por software, que é o que o Lighthouse usa; numa GPU
+o MSAA é praticamente de graça. O custo acima é quase todo de laboratório, e
+esta cena é feita de linhas finas e néon, onde serrilhado aparece.
+
+**O terceiro sintoma é de outra natureza** e não foi introduzido agora: a
+`Scene2D` é o fallback enquanto o chunk chega, e a cena 3D espera o navegador
+ficar ocioso de propósito (`Scene3D.jsx`), para não disputar a thread com a
+intro. Encurtar essa espera devolveria 708 kB ao caminho crítico. O que dava
+para tirar era o **corte seco**: a troca virou um fade de 500 ms. O tempo é o
+mesmo; o susto não.
+
+**O que sobra de otimização, e continua valendo:** o laço parado fora da tela, o
+chunk 20% menor, e a queda de resolução no aparelho que não aguenta.
+
+### ~~`[29/08]` A resolução da cena 3D é ADAPTATIVA, não um número fixo~~ — REVERTIDA no mesmo dia
+
+> **Esta decisão foi revertida horas depois, pelo dono, testando.** O que ficou
+> de pé dela: a cena ainda se adapta, mas na direção oposta — começa no melhor e
+> só desce. Ver a decisão acima. O texto original fica porque o raciocínio
+> continua útil, e o erro dele é o registro que importa.
 
 **O que foi decidido:** a cena começa no `dpr` mais barato (0,5) e sobe até 1 se
 os quadros couberem em 60 fps. Se descer uma vez, não volta a subir. O

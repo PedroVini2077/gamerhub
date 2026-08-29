@@ -1,19 +1,21 @@
 import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { DEGRAUS_DE_RESOLUCAO, QUADROS_POR_AMOSTRA, proximoDegrau } from '../../../lib/resolucaoDaCena';
+import {
+  DEGRAUS_DE_RESOLUCAO, QUADROS_POR_AMOSTRA, degrauInicial, proximoDegrau,
+} from '../../../lib/resolucaoDaCena';
 
 /**
- * O componente que aplica a decisão de `lib/resolucaoDaCena.js` a cada amostra.
+ * Aplica a regra de `lib/resolucaoDaCena.js` a cada amostra de quadros.
  *
- * A regra em si mora lá, sem React, porque a metade que importa — a cena SOBE
- * de resolução numa máquina capaz — não dá para provar num navegador sem GPU,
- * e precisa de teste de unidade (ver `__tests__/resolucaoAdaptativa.test.js`).
- * Aqui fica só a ponte com o `useFrame`.
+ * A cena começa no melhor que o aparelho pede e só DESCE — ver lá o porquê, e
+ * o relato do dono que fez a versão anterior (que começava baixa e subia) ser
+ * jogada fora.
  */
 export default function ResolucaoAdaptativa() {
   const setDpr = useThree(estado => estado.setDpr);
-  const degrau = useRef(0);
-  const teto = useRef(DEGRAUS_DE_RESOLUCAO.length - 1);
+  const degrau = useRef(degrauInicial(
+    typeof window === 'undefined' ? 1 : window.devicePixelRatio,
+  ));
   const amostras = useRef([]);
 
   useFrame((_, delta) => {
@@ -27,13 +29,10 @@ export default function ResolucaoAdaptativa() {
     const mediana = ordenado[Math.floor(ordenado.length / 2)];
     amostras.current = [];
 
-    const novo = proximoDegrau({
-      degrau: degrau.current, teto: teto.current, mediana,
-    });
-    if (novo.degrau === degrau.current) return;
-    degrau.current = novo.degrau;
-    teto.current = novo.teto;
-    setDpr(DEGRAUS_DE_RESOLUCAO[novo.degrau]);
+    const novo = proximoDegrau({ degrau: degrau.current, mediana });
+    if (novo === degrau.current) return;
+    degrau.current = novo;
+    setDpr(DEGRAUS_DE_RESOLUCAO[novo]);
   });
 
   return null;

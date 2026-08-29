@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**14 itens abertos** (+ 1 ideia sem compromisso)
+**13 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -119,22 +119,6 @@
   segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
-
-- ⬜ `[29/08]` 🔵 **Apagar a função `zz_prova_da_trava()` do banco.** *Lixo meu,
-  e o `DROP` foi recusado na hora — fica registrado em vez de sumir.*
-
-  Criei essa função vazia (retorna `trigger`, não faz nada, nenhum trigger a
-  usa) só para provar se o PostgREST expõe função de trigger quando ela tem
-  `EXECUTE`. A prova valeu a pena — mostrou que **não expõe**, e que um teste
-  que eu tinha acabado de escrever nunca falharia. Mas a função ficou.
-
-  É inofensiva: sem trigger apontando para ela, ela nunca roda; e chamá-la por
-  RPC devolve 404. Ainda assim é sujeira minha no schema (§5, regra 3: dado de
-  teste que eu crio, eu apago).
-
-  ```sql
-  DROP FUNCTION IF EXISTS public.zz_prova_da_trava();
-  ```
 
 ## 🟠 Importante — dá para fazer
 
