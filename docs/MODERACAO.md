@@ -177,11 +177,18 @@ existência de conteúdo oculto.
 | --- | --- | --- |
 | post | `/post/:id` | página própria |
 | comentário | `/post/:post_id` | comentário só existe dentro do post |
-| mural | `/community` | o mural não tem página por item |
+| mural | `/mural/:id` | ganhou página própria em 29/08, pelo mesmo motivo do post |
 | chat | `/lives/:post_id` | a live onde a mensagem foi escrita |
 
 Tipo sem destino honesto devolve `null` e **o botão não aparece**. Link que leva
 ao lugar errado é pior do que link nenhum: o moderador julgaria outro conteúdo.
+
+> **`[29/08]` O mural ganhou página própria.** Ele era o único tipo sem destino
+> exato: o link caía em `/community` e o moderador ainda precisava caçar a
+> mensagem. Num painel de moderação isso é pior do que parece — a lista é
+> paginada, e uma mensagem antiga pode nem estar na primeira página, então o
+> botão levaria a lugar nenhum. Agora existe `/mural/:id`, com as mesmas regras
+> de visibilidade da página de post.
 
 **Duas decisões de custo na prévia da mídia:** vídeo não toca sozinho
 (`preload="metadata"`) porque a fila pode ter vários itens e egress é a cota

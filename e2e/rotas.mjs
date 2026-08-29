@@ -68,6 +68,9 @@ export const ROTAS_LOGADO = [
   // post nenhum no banco, nem de qual.
   { path: '/post/00000000-0000-0000-0000-000000000000', nome: 'Post por id',
     esperado: /não existe ou não está visível/i },
+  // Mesma lógica para o mural, que ganhou página própria em 29/08.
+  { path: '/mural/00000000-0000-0000-0000-000000000000', nome: 'Mural por id',
+    esperado: /não existe ou não está visível/i },
   // A tela de 404 é a única rota renderizada FORA do `Layout` (App.jsx): não
   // tem Sidebar, Header nem `<main>`. Procurar dentro de `<main>` ali dá
   // timeout com a tela correta na frente — foi o que aconteceu no primeiro CI.

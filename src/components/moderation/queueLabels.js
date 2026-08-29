@@ -47,7 +47,7 @@ export const FONTE_DO_CONTEUDO = {
  * | --- | --- | --- |
  * | post | `/post/:id` | página própria, criada junto com isto |
  * | comment | `/post/:post_id` | comentário só existe dentro do post |
- * | mural | `/community` | o mural não tem página por item |
+ * | mural | `/mural/:id` | ganhou página própria em 29/08 |
  * | chat | `/lives/:post_id` | a live onde a mensagem foi escrita |
  *
  * @param {string} tipo
@@ -59,7 +59,7 @@ export function linkDoConteudo(tipo, dados) {
   switch (tipo) {
     case 'post':    return `/post/${dados.id}`;
     case 'comment': return dados.post_id ? `/post/${dados.post_id}` : null;
-    case 'mural':   return '/community';
+    case 'mural':   return `/mural/${dados.id}`;
     case 'chat':    return dados.post_id ? `/lives/${dados.post_id}` : null;
     default:        return null;
   }

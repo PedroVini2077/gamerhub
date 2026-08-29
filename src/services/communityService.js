@@ -38,6 +38,26 @@ async function attachMuralEngagement(items, viewerId) {
   }));
 }
 
+/**
+ * Um item do mural pelo id, para a página `/mural/:id`.
+ *
+ * Mesma razão e mesmas regras do `fetchPostById`: **não** filtra `hidden_at`,
+ * porque quem decide isso é a RLS — `community_posts_select` libera o oculto
+ * para `role_rank >= 2` (conferido em `pg_policies`). Filtrar aqui esconderia
+ * do moderador justamente o item que ele precisa julgar.
+ */
+export async function fetchMuralPostById(id, viewerId = null) {
+  const { data, error } = await supabase
+    .from('community_posts')
+    .select(MURAL_SELECT)
+    .eq('id', id)
+    .maybeSingle();
+  if (error) return fail(error, null);
+  if (!data) return ok(null);
+  const [comEngajamento] = await attachMuralEngagement([data], viewerId);
+  return ok(comEngajamento);
+}
+
 // Paginação por keyset (created_at < cursor) — escala melhor que offset em
 // listas grandes. `before` = created_at do último item da página anterior.
 export async function fetchMuralPage({ limit = 20, before = null, viewerId = null }) {

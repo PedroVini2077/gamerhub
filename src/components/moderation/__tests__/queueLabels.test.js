@@ -58,8 +58,13 @@ describe('linkDoConteudo — leva ao lugar certo, ou a lugar nenhum', () => {
     expect(linkDoConteudo('chat', { id: 'm1', post_id: 'live7' })).toBe('/lives/live7');
   });
 
-  it('mural vai para o mural', () => {
-    expect(linkDoConteudo('mural', { id: 'm1' })).toBe('/community');
+  it('mural vai para a mensagem, não para a lista', () => {
+    expect(
+      linkDoConteudo('mural', { id: 'm1' }),
+      'O link do mural voltou a apontar para `/community`. A lista é paginada:\n'
+      + 'uma mensagem antiga pode nem estar na primeira página, e o moderador\n'
+      + 'clicaria em "ver no site" sem encontrar nada.',
+    ).toBe('/mural/m1');
   });
 
   it('sem a coluna que o link precisa, devolve NULL — não um caminho quebrado', () => {
@@ -124,6 +129,11 @@ describe('a rota que o link do post usa existe de verdade', () => {
       + 'nenhum teste de unidade pegaria, porque o caminho em si está certo.',
     ).toContain('path="/post/:id"');
     expect(app).toMatch(/import\('\.\/pages\/PostPage'\)/);
+    expect(
+      app,
+      'A rota `/mural/:id` sumiu do App — mesmo problema, para o mural.',
+    ).toContain('path="/mural/:id"');
+    expect(app).toMatch(/import\('\.\/pages\/MuralPage'\)/);
   });
 });
 

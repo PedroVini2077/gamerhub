@@ -201,6 +201,12 @@ Para os demais, a página diz que o post não existe **ou** não está visível 
 duas causas juntas de propósito, já que separá-las entregaria a existência do
 conteúdo oculto.
 
+### `[29/08]` Página de uma mensagem do mural (`/mural/:id`)
+
+Mesma ideia e mesmas regras da página de post, para o mural. Existe porque ele
+era o único tipo da fila de moderação sem destino exato — o link caía na lista,
+que é paginada, e uma mensagem antiga podia nem estar na primeira página.
+
 ### Comentários, likes e notificações
 
 - **Comentários** (`CommentSection` / `CommentCard`): abrir/fechar, criar,
