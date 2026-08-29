@@ -137,7 +137,7 @@ export function usePostComposer(onPost) {
       if (postError) throw postError;
 
       if (medias.length > 0) {
-        const { data: { imageUrls, failed } = {} } = await uploadPostMediaFiles(user.id, post.id, medias);
+        const { data: { imageUrls, videoUrls, failed } = {} } = await uploadPostMediaFiles(user.id, post.id, medias);
         // O post já foi criado — avisar é melhor do que deixar o usuário achar
         // que a mídia subiu e só descobrir olhando o card.
         if (failed) toast.error(`${failed} mídia(s) não puderam ser enviadas.`);
@@ -165,7 +165,14 @@ export function usePostComposer(onPost) {
         // inclusive o `releaseAll()` que solta os blobs das prévias. O teste
         // unitário pegou exatamente isso. Moderação pode falhar; publicar, não.
         Promise.resolve(
-          moderateVideos('post', post.id, medias.filter(m => m.type === 'video').map(m => m.file)),
+          moderateVideos(
+            'post', post.id,
+            medias.filter(m => m.type === 'video').map(m => m.file),
+            // As URLs já publicadas, na mesma ordem, para o plano B: se o
+            // navegador recusar o arquivo local, a moderação tenta a mídia que
+            // acabou de subir para o storage.
+            videoUrls,
+          ),
         )
           .then((r) => {
             if (r?.semQuadros) {

@@ -38,7 +38,14 @@ src/
 │   ├── csv.js             # Geração + download de CSV (export de logs)
 │   ├── wordlist.js        # Match de palavra inteira do filtro de moderação
 │   ├── framesDeVideo.js   # Extrai 3 quadros de um vídeo no navegador, para a
-│   │                      # moderação de imagem analisar (ver MODERACAO-IA.md)
+│   │                      # moderação de imagem analisar (ver MODERACAO-IA.md).
+│   │                      # Aceita o arquivo local OU a URL já publicada — o
+│   │                      # plano B de quando o navegador recusa o `blob:`
+│   ├── quadroDesenhado.js # `nadaFoiDesenhado`: quadro transparente prova que o
+│   │                      # `drawImage` não teve o que desenhar
+│   ├── erroDeMidia.js     # Traduz os 4 `MediaError` — cada um aponta para um
+│   │                      # lugar diferente, e uma frase só mentia sobre três
+│   ├── paginacaoDePosts.js# Faixa da página por sub-aba no painel de posts
 │   ├── resolucaoDaCena.js # Regra pura de resolução adaptativa da cena 3D
 │   │                      # (fora do React porque a metade que importa — a
 │   │                      # cena SOBE de resolução — não dá para provar num

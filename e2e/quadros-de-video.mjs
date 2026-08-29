@@ -105,8 +105,18 @@ const resultado = await page.evaluate(async () => {
     new Blob(['isto definitivamente nao e um video'], { type: 'video/mp4' }),
   );
 
+  // O vídeo fabricado volta em base64 para o Node poder gravá-lo em disco e
+  // servi-lo por HTTP — é assim que o caminho "extrair a partir de uma URL"
+  // ganha um vídeo de verdade sem binário versionado no repositório.
+  const base64 = await new Promise((resolve) => {
+    const leitor = new FileReader();
+    leitor.onloadend = () => resolve(String(leitor.result).split(',')[1]);
+    leitor.readAsDataURL(blob);
+  });
+
   return {
     mimeType,
+    base64,
     bytesDoVideo: blob.size,
     motivo,
     motivoDoLixo: lixo.motivo,
@@ -166,6 +176,49 @@ if (resultado.erro) {
   // disso é recusado lá e vira análise silenciosamente parcial.
   if (resultado.menorEmBytes > 400 * 1024) {
     falhar('os quadros passaram de 400 KB — a Edge Function recusa nesse tamanho');
+  }
+}
+
+
+// ── O PLANO B: a mesma extração, a partir de uma URL ────────────────────────
+//
+// `moderateVideos` tenta o arquivo local e, se o navegador recusar, repete a
+// extração a partir da URL pública do vídeo já enviado ao storage. Esse segundo
+// caminho tem código próprio — `crossOrigin`, nenhum object URL para revogar —
+// e nada no teste anterior passava por ele.
+//
+// Sem esta parte, o plano B poderia estar quebrado desde o primeiro dia e o
+// sintoma seria o de sempre: o vídeo passa sem análise e ninguém fica sabendo.
+//
+// O arquivo temporário é escrito, servido pelo vite e APAGADO no fim (§2: script
+// de teste avulso não fica no repositório).
+import { writeFileSync, rmSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const PASTA = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
+const NOME = 'temporario-plano-b.webm';
+const ARQUIVO = join(PASTA, NOME);
+
+if (!falhas && resultado.base64) {
+  writeFileSync(ARQUIVO, Buffer.from(resultado.base64, 'base64'));
+  try {
+    const endereco = `${BASE}/e2e/fixtures/${NOME}`;
+    const pelaUrl = await page.evaluate(
+      (url) => window.extrairQuadros(url), endereco,
+    );
+    if (!pelaUrl.quadros?.length) {
+      falhar(
+        `o plano B nao rendeu quadros a partir da URL (${pelaUrl.motivo}).\n`
+        + '  E o caminho que a moderacao usa quando o navegador recusa o arquivo\n'
+        + '  local — se ele nao funciona, o video sobe sem analise nenhuma.');
+    } else if (!pelaUrl.quadros.every(q => q.startsWith('data:image/jpeg'))) {
+      falhar('o plano B devolveu algo que nao e JPEG');
+    } else {
+      console.log(`  plano B (pela URL): ${pelaUrl.quadros.length}/${resultado.esperado} quadros`);
+    }
+  } finally {
+    rmSync(ARQUIVO, { force: true });
   }
 }
 

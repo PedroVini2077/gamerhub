@@ -84,33 +84,43 @@
   > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
   > pendentes.
 
-- ⬜ `[29/08]` 🟢 **Descobrir POR QUE o vídeo do dono não rende quadros.**
-  *Ainda aberto, e agora com instrumentação em vez de hipótese.*
+- ⬜ `[29/08]` 🟢 **Confirmar que o plano B da moderação de vídeo salva o caso
+  real.** *O erro do dono foi capturado, a mensagem que o descrevia estava
+  errada, e o caminho alternativo foi construído e travado. Falta um vídeo de
+  verdade passar por ele.*
 
-  **O que está provado (log da Supabase, 29/08 03:19:44 UTC):** a
-  `moderate-text` foi chamada para o post do vídeo e a `moderate-image`
-  **não foi chamada nenhuma vez**. A falha está no navegador, antes da rede.
-  Isto é fato, não dedução.
+  **O que o aviso na tela finalmente disse** (08:13 de 29/08):
+  `o navegador não decodificou o arquivo (tipo: video/mp4)`.
 
-  **O que NÃO está provado:** qual das causas dispara. Continua desconhecido, e
-  nenhuma das correções abaixo foi feita por ser "a provável" — cada uma fecha
-  um caminho de falha silenciosa que estava aberto de verdade.
+  **E essa frase não era confiável — o erro era meu.** `video.src = url` já
+  inicia a carga; logo abaixo havia um `video.load()`, que **aborta a carga em
+  andamento**. Um `MEDIA_ERR_ABORTED` era relatado como problema de codec. A
+  mensagem única cobria os quatro `MediaError`, que têm causas opostas: 1 é bug
+  nosso, 2 é a fonte, 3 é o arquivo, 4 é o codec.
 
-  **O que mudou em 29/08:**
-
-  | Mudança | O que resolve |
+  | Correção | Efeito |
   | --- | --- |
-  | motivo vai para o `admin_logs` via `falha_de_extracao` | o motivo deixou de viver só num toast de segundos e no Sentry — duas investigações começaram do zero por causa disso |
-  | motivo aparece no aviso da tela, e ele dura 12 s | quem publicou consegue dizer a causa sem abrir painel nenhum |
-  | quadro em branco passa a ser reprovado | `drawImage` com vídeo não decodificado **não lança**: saía um JPEG válido e transparente, a IA devolvia `score 0`, e o vídeo era gravado como **analisado e limpo** — pior do que não analisar |
-  | `load()` + `play()` mudo antes de amostrar | `preload` é dica, e o Safari do iPhone a ignora fora de gesto do usuário — e o gesto já expirou no upload |
-  | vigia de 4 s por salto | `seeked` não é garantido; um salto travado consumia os 15 s e levava junto os quadros que já tinham dado certo |
-  | exige `videoWidth`/`videoHeight` | sem dimensão, o canvas de 512×512 saía transparente |
+  | `load()` redundante removido | tira a causa que o próprio erro podia ter |
+  | manipuladores antes do `src` | o `onerror` deixa de ser registrado depois de a carga começar |
+  | `lib/erroDeMidia.js` | a mensagem passa a trazer o código real e o texto do navegador |
+  | **plano B pela URL do storage** | se o arquivo local for recusado, a extração é repetida a partir do vídeo que acabou de subir |
 
-  **Ação do dono, e é a única que falta:** repostar um vídeo. Se passar, o log
-  mostra `analisadas=3/3`. Se falhar, a causa aparece **na tela e no
-  `admin_logs`** com nome — consulta pronta em
-  [OPERACAO.md](docs/OPERACAO.md).
+  O plano B é o conserto de verdade: todas as causas plausíveis para o `<video>`
+  recusar um `blob:` têm a mesma saída — a mídia **já está publicada**, e o
+  navegador trata a URL dela como mídia comum, igual à que ele toca no feed.
+  Custo: um download a mais, só quando o caminho local já falhou.
+
+  Travado em `e2e/quadros-de-video.mjs`, que agora grava o vídeo fabricado em
+  disco, serve por HTTP, extrai pela URL e apaga o arquivo. Provado nos dois
+  sentidos.
+
+  **Ação do dono:** postar um vídeo. Três desfechos, e todos são informação:
+
+  | O que aparece | O que significa |
+  | --- | --- |
+  | nenhum aviso | passou — pelo arquivo local ou pelo plano B |
+  | aviso com `arquivo local: … \| storage: …` | falhou nos dois; o vídeo é indecodificável para aquele navegador, e **também não toca no feed** dele |
+  | aviso com um motivo só | caso novo — o motivo diz onde olhar |
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
