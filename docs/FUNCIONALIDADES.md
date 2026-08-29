@@ -254,19 +254,35 @@ lista, e que os três componentes importem a lista em vez de escrever a própria
 Âncora inexistente **não dá erro** no navegador — ele só não rola, e para quem
 clica é indistinguível de site travado.
 
-### `[29/08]` A página "Sobre" nasce com partes declaradamente em branco
+### `[29/08]` A página "Sobre" — sete blocos, escritos pelo dono
 
-Três dos cinco blocos — a origem do projeto, quem está por trás, e para onde ele
-vai — dependem da história do dono, e ele ficou de mandar o texto.
+`/sobre` é pública de propósito: dá para ler o que o projeto é **antes** de
+criar conta. Ela nasceu com três blocos em branco — a origem, quem está por
+trás e para onde o site vai dependiam da história do dono, e inventá-los
+produziria uma origem que não aconteceu. Ele respondeu em 29/08 e os sete
+blocos estão preenchidos.
 
-Eles aparecem na tela **marcados como pendentes**, com a dica do que entra ali.
-A alternativa seria eu inventar: ficaria plausível, ele leria, aceitaria por
-parecer certo, e o site passaria a contar uma origem que não aconteceu. Seção
-que simplesmente some é pior ainda — some sem explicação e ninguém lembra que
-faltava.
+| Bloco | O que conta |
+| --- | --- |
+| O que é o GamerHub | comunidade gamer, não agregador de notícia |
+| De onde o projeto nasceu | curiosidade — **não** um buraco nos lugares que ele já usava |
+| Quem está por trás | Pedro, o curso, o interesse por back-end, e os jogos que ele joga |
+| O que a gente espera de quem entra | o bloco em destaque, com o lema **"Respeito, risos e muito gaming."** |
+| Como a comunidade é cuidada | a moderação por IA + fila humana, em linguagem de visitante |
+| Este site foi construído com inteligência artificial | dito na cara, a pedido dele |
+| Para onde o GamerHub vai | o que ele quer que o site seja |
 
-Para preencher: `components/sobre/conteudoDoSobre.js`, trocar `pendente: true`
-por `false` e escrever. O aviso some sozinho.
+**A fonte é `components/sobre/conteudoDoSobre.js`** — a página só renderiza a
+lista. Bloco com `pendente: true` volta a aparecer como pendente na tela, com a
+dica do que entra ali; o mecanismo continua de pé para quando um bloco novo
+nascer sem texto.
+
+**A trava:** `conteudoDoSobre.test.js` falha se algum bloco ficar sem título ou
+sem parágrafo, se dois ids colidirem, e — o que importa aqui — se o texto
+deixar de mencionar as respostas específicas do dono (o lema, os jogos que ele
+citou, o aviso de IA, o nome dele). Sem isso, uma reescrita de estilo apagaria a
+história dele sem nada acusar. Provada removendo o lema: o teste apontou
+`A página deixou de mencionar "respeito, risos e muito gaming"`.
 
 ### `[29/08]` Página de um post (`/post/:id`)
 
