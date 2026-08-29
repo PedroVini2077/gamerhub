@@ -63,6 +63,8 @@ src/
 │   ├── liveService.js     # Chat de live, silenciamentos
 │   ├── keyService.js      # Keys/promos, stats do site
 │   ├── authService.js     # Trocar senha/email, deletar conta
+│   ├── commentService.js  # Comentários e curtidas de comentário (saiu do
+│   │                      # postService em 29/08, quando ele passou de 300)
 │   ├── moderationService.js # Denúncias, fila, wordlist, infrações, hide/restore
 │   └── moderationAiService.js # As chamadas de IA (Edge Functions), separadas
 │                            # do resto em 29/08: o de cima fala com TABELAS e
@@ -74,6 +76,9 @@ src/
 │   ├── Home.jsx           # Feed principal
 │   ├── Login.jsx          # Login / cadastro / recuperação de senha
 │   ├── AuthConfirm.jsx    # Confirmação de e-mail / reset de senha (magic link)
+│   ├── PostPage.jsx       # Um post sozinho, em `/post/:id`. Existe para o link
+│   │                      # direto da fila de moderação; mostra conteúdo oculto
+│   │                      # para quem é da equipe (a RLS decide)
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
 │   ├── Lives.jsx          # Lista de lives + sub-tabs + player + chat + moderação

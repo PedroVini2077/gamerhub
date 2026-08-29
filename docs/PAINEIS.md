@@ -30,6 +30,9 @@
   porque offset errado não estoura — ele pula linhas em silêncio.
 - **Moderação**: central de moderação de conteúdo (ver seção abaixo) — fila de
   revisão, denúncias, palavras bloqueadas e histórico de infrações.
+  Desde 29/08 a prévia de cada item mostra **imagem e vídeo**, abre texto longo
+  por inteiro e traz um botão **"ver no site"** que leva ao conteúdo denunciado
+  — inclusive quando ele já está oculto. Ver [MODERACAO.md](MODERACAO.md).
 - **Mod de Lives**: usuários silenciados (com tempo restante), lives ativas
   (encerrar), lives encerradas (solicitar reativação), fila de solicitações.
 - **Keys & Promos**: adicionar/editar/remover keys e promoções (paginado).

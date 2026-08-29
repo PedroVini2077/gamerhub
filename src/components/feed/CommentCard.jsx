@@ -3,7 +3,7 @@ import { Trash2, Heart, Reply, Flag } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import { useCommentLike } from '../../hooks/useCommentLike';
-import { deleteComment } from '../../services/postService';
+import { deleteComment } from '../../services/commentService';
 import { logAudit } from '../../lib/auditLog';
 import { canDeleteContent } from '../../lib/roles';
 import toast from 'react-hot-toast';

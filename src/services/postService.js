@@ -90,6 +90,34 @@ export async function fetchFeedPosts(limit = 30, viewerId = null) {
   return ok(await attachEngagement(data || [], viewerId));
 }
 
+/**
+ * Um post pelo id, para a página `/post/:id`.
+ *
+ * ── Por que NÃO filtra `deleted_at` nem `hidden_at` ─────────────────────────
+ *
+ * Porque quem decide isso é a RLS, e ela já faz melhor do que este arquivo
+ * conseguiria: a policy `posts_select` libera conteúdo oculto **e** apagado
+ * para `role_rank >= 2` (conferido em `pg_policies`). Filtrar aqui esconderia
+ * do moderador exatamente o conteúdo que ele precisa julgar — que é o motivo
+ * desta função existir.
+ *
+ * Para quem não é da equipe, a mesma consulta devolve vazio, e a página mostra
+ * "não existe ou não está visível". As duas causas são indistinguíveis do lado
+ * do cliente por construção, e é assim que deve ser: dizer "existe, mas você
+ * não pode ver" já é vazar a existência.
+ */
+export async function fetchPostById(postId, viewerId = null) {
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .eq('id', postId)
+    .maybeSingle();
+  if (error) return fail(error, null);
+  if (!data) return ok(null);
+  const [comEngajamento] = await attachEngagement([data], viewerId);
+  return ok(comEngajamento);
+}
+
 export async function fetchUserPosts(userId, viewerId = null) {
   const { data, error } = await supabase
     .from('posts')
@@ -236,57 +264,4 @@ export async function uploadPostMediaFiles(userId, postId, medias) {
   }
   const { error } = await supabase.from('post_media').insert(rows);
   return error ? { data: carga, error } : ok(carga);
-}
-
-// ─── Comments ────────────────────────────────────────────────────────────────
-
-export async function fetchComments(postId) {
-  const { data, error } = await supabase
-    .from('comments')
-    .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true });
-  if (error) return fail(error, []);
-  return ok(data || []);
-}
-
-export async function fetchCommentCount(postId) {
-  const { count, error } = await supabase
-    .from('comments')
-    .select('*', { count: 'exact', head: true })
-    .eq('post_id', postId);
-  if (error) return fail(error, 0);
-  return ok(count || 0);
-}
-
-export async function addComment({ postId, userId, content, parentId = null }) {
-  return from(await supabase.from('comments')
-    .insert({ post_id: postId, user_id: userId, content, parent_id: parentId })
-    .select('id').single());
-}
-
-export async function deleteComment(commentId, userId, isAdmin) {
-  let q = supabase.from('comments').delete({ count: 'exact' }).eq('id', commentId);
-  if (!isAdmin) q = q.eq('user_id', userId);
-  return fromCount(await q, 'Você não tem permissão para deletar isto.');
-}
-
-// ─── Curtidas em comentários ───────────────────────────────────────────────────
-
-export async function fetchCommentLikeStatus(commentId, userId) {
-  const [{ count }, { data: liked }] = await Promise.all([
-    supabase.from('comment_likes').select('*', { count: 'exact', head: true }).eq('comment_id', commentId),
-    userId
-      ? supabase.from('comment_likes').select('id').eq('comment_id', commentId).eq('user_id', userId).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-  return ok({ count: count || 0, liked: !!liked });
-}
-
-export async function likeComment(commentId, userId) {
-  return from(await supabase.from('comment_likes').insert({ comment_id: commentId, user_id: userId }));
-}
-
-export async function unlikeComment(commentId, userId) {
-  return from(await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId));
 }

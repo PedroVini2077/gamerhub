@@ -56,6 +56,18 @@ export const ROTAS_LOGADO = [
   { path: '/lives',               nome: 'Lives',          esperado: /Lives/i },
   { path: '/ranks',               nome: 'Ranks',          esperado: /Todos os Ranks/i },
   { path: `/u/${PERFIL_PUBLICO}`, nome: 'Perfil público', esperado: /./ },
+  // `[29/08]` A página de um post, com um id que NÃO existe de propósito.
+  //
+  // O caminho do post encontrado já é exercitado pelo feed (é o mesmo
+  // `PostCard`). O que não tinha cobertura nenhuma era o caso vazio — e ele é o
+  // mais provável de quebrar em silêncio, porque "não achei" e "ainda estou
+  // carregando" já foram o mesmo estado neste projeto uma vez, deixando a tela
+  // girando para sempre.
+  //
+  // Um id fixo e inexistente torna o teste determinístico: não depende de haver
+  // post nenhum no banco, nem de qual.
+  { path: '/post/00000000-0000-0000-0000-000000000000', nome: 'Post por id',
+    esperado: /não existe ou não está visível/i },
   // A tela de 404 é a única rota renderizada FORA do `Layout` (App.jsx): não
   // tem Sidebar, Header nem `<main>`. Procurar dentro de `<main>` ali dá
   // timeout com a tela correta na frente — foi o que aconteceu no primeiro CI.

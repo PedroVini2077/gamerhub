@@ -140,6 +140,61 @@ Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
 
 [← voltar para o README](../README.md)
 
+## `[29/08]` A fila mostrava menos do que existia
+
+**Achado do dono:** *"lá só aparece o conteúdo de texto, agora imagens, e até
+mesmo vídeos não aparecem"*. Um post denunciado **por causa da imagem** era
+julgado às cegas — o moderador via a legenda e decidia sobre o que não conseguia
+ver.
+
+É a falha mais difícil de perceber que existe nesta base: a tela não dava erro
+nenhum, não ficava carregando, não travava. Ela só mostrava **menos**, e nada
+indicava que faltava algo. Não é o §1.5 clássico (algo que quebra em silêncio);
+é o caso em que nada quebrou e ainda assim a informação não chegou.
+
+**As três mudanças, todas pedidas pelo dono:**
+
+| O que | Como ficou |
+| --- | --- |
+| imagem e vídeo | aparecem na prévia (`QueueMidia.jsx`), lidos de `post_media` e `community_post_media` |
+| texto longo | acima de 400 caracteres entra recolhido, com **"mostrar tudo (N caracteres)"** — o `line-clamp-4` anterior escondia o resto **sem dizer que havia resto** |
+| link direto | botão **"ver no site"** leva ao conteúdo denunciado |
+
+**O link exigiu criar um endereço que não existia.** O site não tinha página
+para um post: o feed é `/`, e um post antigo podia nem estar na primeira
+página. Agora existe `/post/:id` (`pages/PostPage.jsx`).
+
+**E ele funciona para conteúdo JÁ OCULTO**, que é o caso que importa aqui — a
+policy `posts_select` libera oculto e apagado para `role_rank >= 2` (conferido
+em `pg_policies`, não suposto). Para quem não é da equipe, a mesma consulta
+volta vazia e a página diz que o post não existe **ou** não está visível: as
+duas causas são indistinguíveis de propósito, porque separá-las já entregaria a
+existência de conteúdo oculto.
+
+**Para onde cada tipo leva** (`linkDoConteudo`, em `queueLabels.js`):
+
+| Tipo | Destino | Por quê |
+| --- | --- | --- |
+| post | `/post/:id` | página própria |
+| comentário | `/post/:post_id` | comentário só existe dentro do post |
+| mural | `/community` | o mural não tem página por item |
+| chat | `/lives/:post_id` | a live onde a mensagem foi escrita |
+
+Tipo sem destino honesto devolve `null` e **o botão não aparece**. Link que leva
+ao lugar errado é pior do que link nenhum: o moderador julgaria outro conteúdo.
+
+**Duas decisões de custo na prévia da mídia:** vídeo não toca sozinho
+(`preload="metadata"`) porque a fila pode ter vários itens e egress é a cota
+mais apertada do Supabase (§6.1); e toda URL passa por `safeExternalUrl`,
+porque elas vêm de upload de usuário e o painel é justamente onde a equipe abre
+conteúdo hostil de propósito.
+
+**Travas** (`components/moderation/__tests__/queueLabels.test.js`): todo tipo
+rotulado tem fonte e tabela de autor; `post` e `mural` declaram de onde vem a
+mídia; `comment` e `chat` carregam `post_id`; e a rota `/post/:id` existe no
+`App`. As duas últimas são as que protegem contra sumiço silencioso — sem
+`post_id` o botão simplesmente desaparece, e sem a rota ele leva a um 404.
+
 ## `[28/08]` Moderação por IA de mídia — mudou de arquivo
 
 A política por categoria (o que **oculta** × o que só **enfileira**), os
