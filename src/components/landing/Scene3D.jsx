@@ -110,21 +110,59 @@ function useCenaLiberada(ativo) {
 }
 
 // Decorativo: `aria-hidden` + `pointer-events-none`.
+/**
+ * Começa a BAIXAR o chunk da cena assim que o Hero monta, sem montá-la.
+ *
+ * A espera pelo ocioso (`useCenaLiberada`) existe para a cena não disputar a
+ * thread principal com a intro — e ela continua inteira. O que não precisava
+ * esperar era o DOWNLOAD, que acontece na rede e não na CPU.
+ *
+ * Sem isto, os dois eram serializados: espera o ocioso, e só então começa a
+ * buscar 708 kB. Era isso que fazia o buraco durar "alguns segundos" no PC da
+ * loja. Agora o arquivo já está em mãos quando a hora de montar chega.
+ */
+function usePrebuscaDaCena(ativo) {
+  useEffect(() => {
+    if (!ativo) return;
+    // O `catch` é obrigatório: rede que falha aqui não pode virar erro não
+    // tratado. Se a busca falhar, o `lazy()` tenta de novo na montagem.
+    import('./scene3d/LandingScene').catch(() => {});
+  }, [ativo]);
+}
+
 export default function Scene3D({ className = '' }) {
   // `useState(fn)` roda a decisão uma vez, na montagem — o modo não muda no
   // meio da sessão (trocar exige recarregar; ver `BotaoCena3D`), e reavaliar
   // a cada render só gastaria trabalho.
   const [modo] = useState(modoDaCena);
   const cena3DLiberada = useCenaLiberada(modo === 'completo');
+  usePrebuscaDaCena(modo === 'completo');
 
   return (
     <div aria-hidden className={`pointer-events-none ${className}`}>
-      {modo === 'completo' && cena3DLiberada ? (
-        // A `Scene2D` como fallback do Suspense mantém o Hero decorado
-        // enquanto os 887 KB chegam, em vez de deixar um buraco.
-        <Suspense fallback={<Scene2D />}>
-          <LandingScene />
-        </Suspense>
+      {modo === 'completo' ? (
+        // ── `[29/08]` A `Scene2D` NUNCA aparece para quem vai receber a 3D ──
+        //
+        // Ela era o fallback: mantinha o Hero decorado enquanto o chunk chegava.
+        // Parecia gentileza e era um defeito — o dono viu no PC da loja, onde a
+        // espera é mais longa: *"a landing 2d aparecendo por alguns segundos
+        // depois de recarregar a landing 3d"*, e *"não é pra aparecer em
+        // hipótese alguma"*.
+        //
+        // Ele está certo, e o motivo é mais forte do que estética: são duas
+        // cenas com arranjos diferentes. Trocar uma pela outra no meio do
+        // carregamento não é "carregando", é a página mudando na frente de quem
+        // está olhando — o visitante vê um layout, se orienta por ele, e ele
+        // vira outro.
+        //
+        // Agora o espaço fica VAZIO até a cena chegar. O Hero tem título, texto
+        // e botão por cima, então o que se vê é o fundo escuro do site — que é
+        // exatamente o que se vê depois, atrás da cena. Nada muda de lugar.
+        cena3DLiberada ? (
+          <Suspense fallback={null}>
+            <LandingScene />
+          </Suspense>
+        ) : null
       ) : (
         <Scene2D />
       )}
