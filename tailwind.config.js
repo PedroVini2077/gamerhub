@@ -41,6 +41,11 @@ export default {
         // resto do carregamento, que era exatamente o problema da cena 3D.
         "bolt-float": "boltFloat 7s ease-in-out infinite",
         "shape-drift": "shapeDrift 9s ease-in-out infinite",
+        // Fundo da página "Sobre" (`sobre/FundoAnimado.jsx`). Atravessa a tela
+        // devagar. Só `transform` e `opacity`: as duas rodam no compositor, e
+        // é isso que separa "enfeite de graça" de "laço queimando CPU numa
+        // página de LEITURA", onde a pessoa fica parada minutos.
+        travessia: "travessia 34s linear infinite",
       },
       keyframes: {
         pulseNeon: {
@@ -97,6 +102,14 @@ export default {
         },
         // As formas de contorno derivam com amplitude maior e fase própria
         // (cada uma recebe um `animationDelay` negativo diferente).
+        // Entra por um lado, cruza a tela e sai pelo outro, girando devagar.
+        // A opacidade abre e fecha nas pontas para a forma não "aparecer do
+        // nada" nem sumir cortada na borda.
+        travessia: {
+          "0%":        { transform: "translate3d(-12vw, 0, 0) rotate(0deg)", opacity: 0 },
+          "12%, 88%":  { opacity: 1 },
+          "100%":      { transform: "translate3d(112vw, -18vh, 0) rotate(160deg)", opacity: 0 },
+        },
         shapeDrift: {
           "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
           "50%": { transform: "translateY(-22px) rotate(7deg)" },
