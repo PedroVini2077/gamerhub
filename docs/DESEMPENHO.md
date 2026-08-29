@@ -37,7 +37,7 @@ Acessibilidade 98, Práticas 100, SEO 92 nos dois.
 **No celular a rodada de otimização funcionou, e o número que prova é o TBT
 zerado.** Em 27/08 ele estava em 3.690 ms (Termux) e 15.310 ms (PageSpeed); a
 nota saiu de 36 para 87. O celular recebe a `Scene2D` e simplesmente não paga
-os 887 KB.
+os 887 KB de então.
 
 **No desktop o resultado é ruim, e ele desmente uma frase que eu havia
 escrito.** A documentação dizia que a cena 3D "não pesa no carregamento, porque
@@ -79,8 +79,8 @@ no total** — e ela reescreve o diagnóstico:
 | Parse HTML & CSS | 3 ms |
 
 **96% do custo está em "Other"**, que num app WebGL é o `requestAnimationFrame`
-— o laço de animação. Parsear, compilar e executar os 887 KB somam **menos de
-900 ms**.
+— o laço de animação. Parsear, compilar e executar os 887 KB de então somam
+**menos de 900 ms**.
 
 **A conclusão incomoda e é importante:** o plano que eu tinha (`createRoot` +
 `extend` seletivo, −20% de bytes) mexeria nos 789 ms e deixaria os 29.441 ms
@@ -155,20 +155,55 @@ continuar contando desenhos. Provado nos dois sentidos: **0 ms** com a correçã
 > medida e travada, o certo é procurar o caso que não foi medido — e não repetir
 > a mesma medição esperando outro resultado (§1.2).
 
-### O tamanho do chunk continua sendo outra conversa
+### `[29/08]` O tamanho do chunk — feito, e a explicação anterior estava errada
 
-`@react-three/fiber` v9.7.0 executa `extend(THREE)` dentro do próprio
-`<Canvas>`, com o comentário no fonte dele: *"This will include the entire THREE
-namespace by default"*. O namespace inteiro do `three` entra no bundle
-independentemente do que a cena importa — e ela usa **cinco** símbolos
-(`MathUtils`, `Vector3`, `Shape`, `ExtrudeGeometry`, `AdditiveBlending`).
-Nenhum tree-shaking alcança isso enquanto o `<Canvas>` for usado. A saída
-oficial está na mesma frase: *"users can extend their own elements by using the
-createRoot API instead"*, e ela vale **−20%** (887 → 707 kB, medido).
+**A correção primeiro.** Esta seção afirmava que `@react-three/fiber` v9.7.0
+executa `extend(THREE)` dentro do `<Canvas>`, arrastando o namespace inteiro do
+`three`. Fui conferir na fonte que executa (§1.4) e **não é verdade nesta
+versão**: `grep "extend(THREE)"` no pacote implantado não encontra nada, e o
+fiber referencia ~22 símbolos específicos (`WebGLRenderer`, `Scene`,
+`Raycaster`, `PerspectiveCamera`…), não o namespace.
 
-Isso continua valendo a pena um dia, por causa do download em rede lenta. Mas
-**não** era o que segurava a thread principal, e agora sabemos disso com
-número.
+Também testei a metade que dependia dessa explicação: trocar
+`import * as THREE` por importações nomeadas nos nossos dois arquivos. O chunk
+ficou **byte a byte idêntico** — o empacotador já resolvia isso sozinho.
+
+**Onde estavam os 20%, então.** Pesando cada biblioteca sozinha (build de lib,
+sem minificar):
+
+| O que | Tamanho |
+| --- | --- |
+| só `three` (`WebGLRenderer` + `Scene` + `PerspectiveCamera`) | 604 kB |
+| `@react-three/fiber` importando `Canvas` | 1.420 kB |
+| `@react-three/fiber` importando só `createRoot` | **1.137 kB** |
+
+A diferença é o **sistema de eventos de ponteiro** que o `<Canvas>` monta:
+raycasting a cada movimento, mapeamento de eventos, medição de camadas. Esta
+cena não tem **um único** manipulador de clique ou de ponteiro — é decoração
+pura —, então era peso morto inteiro.
+
+**O resultado, medido nos dois eixos:**
+
+| | Antes | Depois |
+| --- | --- | --- |
+| chunk da cena | 888.149 B | **708.484 B** (−20,2%) |
+| thread principal atribuível à cena (freio 4×) | 520 ms | **428 ms** (−18%) |
+
+Os dois números andando juntos confirmam o que se esperava: o custo de carga é
+proporcional a bytes, e aqui ele era o que sobrava depois da resolução
+adaptativa ter zerado o custo do laço.
+
+**O que NÃO mudou, e é o teto do que dá para fazer por este caminho:** o
+`three` continua entrando praticamente inteiro — o chunk ainda contém áudio,
+carregadores, `SkinnedMesh`, `PMREMGenerator`. Não é desleixo do empacotador: o
+`WebGLRenderer` tem caminho de código para quase tudo isso, e é ele que a cena
+precisa. Encolher além daqui exigiria trocar o `three` por WebGL cru, que é
+outra conversa e de outro tamanho.
+
+**O custo assumido na troca:** `<Canvas>` media o contêiner e reconfigurava
+sozinho ao redimensionar. Isso agora é um `ResizeObserver` nosso, e passou a ter
+teste próprio em `e2e/cena-3d.mjs` — sem ele, um observador quebrado deixaria a
+cena esticada ou cortada sem gerar erro nenhum.
 
 > **Se ele reprovar seu PR:** a saída lista cada chunk com tamanho e diz o
 > suspeito mais provável. Se o crescimento for intencional, suba o teto **no

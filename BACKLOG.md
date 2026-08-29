@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**15 itens abertos** (+ 1 ideia sem compromisso)
+**14 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -38,8 +38,16 @@
 > deixavam o clique podendo não mudar nada. Custo: uma consulta a mais na carga
 > inicial, dentro do mesmo `Promise.all`.
 >
+> **Fechado também:** o chunk da cena 3D, que era 🔵. Ele deixou de ser "bytes
+> para rede lenta" quando o A/B mostrou que a cena responde por 520 ms de thread
+> principal e que, depois da resolução adaptativa, esses 520 ms são quase todos
+> CARGA. Trocar `<Canvas>` por `createRoot` deu −20,2% de bytes e −18% de thread.
+> A justificativa antiga do item (`extend(THREE)`) estava errada — conferida na
+> fonte e corrigida em [DESEMPENHO.md](docs/DESEMPENHO.md).
+>
 > **Viraram decisão** (§6.2 regra 4): resolução adaptativa em vez de `dpr` fixo,
-> e o brilho do título por `opacity` → [DECISOES.md](docs/DECISOES.md).
+> o brilho do título por `opacity`, e o `<Canvas>` saindo em favor do
+> `createRoot` → [DECISOES.md](docs/DECISOES.md).
 >
 > **Esperando você:** três decisões de custo (HIBP, plano Team, sair do Gmail),
 > a escolha do React Query, o desenho do aviso na landing, repostar um vídeo e
@@ -191,35 +199,6 @@
   ban/suspensão (canal + poll de 60 s) do estado de sessão/perfil. São as duas
   responsabilidades que já convivem ali, e a primeira tem teste próprio.
   **Pede aprovação antes** (§7 🟡): mexe em autenticação.
-
-- ⬜ `[28/08]` 🔵 **Emagrecer o chunk da cena 3D — o que sobrou depois de duas
-  correções de desempenho.** *A cena 3D FICA (decisão do dono, registrada em
-  [DECISOES.md](docs/DECISOES.md)). Isto aqui é BYTE, e byte nunca foi o
-  gargalo dela.*
-
-  **`[29/08]` Correção do que este item dizia.** Ele afirmava que o problema de
-  desempenho da cena "já foi corrigido" em 28/08, quando o `frameloop` passou a
-  desligar fora da tela. Estava **errado pela metade**, e a metade que faltava
-  era a maior:
-
-  | Rodada | O que foi corrigido | O que continuava |
-  | --- | --- | --- |
-  | 28/08 | a cena desenhando 60×/s **depois** de o visitante rolar para longe | ela custava ~92 ms **por quadro** enquanto visível |
-  | 29/08 | resolução adaptativa: 8.066 ms → 52 ms de thread bloqueada | — |
-
-  O erro de raciocínio foi olhar só o caso "ninguém está vendo". O caso "está
-  na tela" nunca foi medido, e era 99% de ocupação da thread principal.
-
-  **O que sobra, e por que é 🔵:** o chunk continua com 887 kB, e trocar
-  `<Canvas>` por `createRoot` + `extend` seletivo vale **−20%** (887 → 707 kB,
-  medido com experimento descartável). Isso importa para **download em rede
-  lenta** — não para thread principal, que agora está resolvida por outro
-  caminho.
-
-  **O custo de fazer:** `createRoot` não traz o tratamento de resize que o
-  `<Canvas>` faz sozinho; seria preciso escrever e testar isso. Trabalho real,
-  ganho moderado, risco na porta de entrada do site. Fica para quando houver
-  folga.
 
 ## 🔵 Só quando o volume crescer
 
