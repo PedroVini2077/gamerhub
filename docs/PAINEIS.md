@@ -22,7 +22,12 @@
   detalhes; **mudar role** via fluxo de indicação (respeitando hierarquia);
   **banir/desbanir**; **deletar todos os posts** de um usuário; fluxo de
   solicitação de desbanimento.
-- **Posts**: listar e deletar posts (paginado em blocos de 20).
+- **Posts**: listar e deletar posts, em duas sub-abas — "Posts ativos" e
+  "Lixeira". Paginado em blocos de 20, **por sub-aba** (`[29/08]`): antes a
+  consulta trazia os 20 mais recentes misturados e o botão só existia em
+  "ativos", então clicar podia carregar de verdade e não mudar nada na tela.
+  A conta do offset mora em `src/lib/paginacaoDePosts.js`, isolada e com teste,
+  porque offset errado não estoura — ele pula linhas em silêncio.
 - **Moderação**: central de moderação de conteúdo (ver seção abaixo) — fila de
   revisão, denúncias, palavras bloqueadas e histórico de infrações.
 - **Mod de Lives**: usuários silenciados (com tempo restante), lives ativas

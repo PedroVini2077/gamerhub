@@ -195,17 +195,20 @@ try {
   // correção do mesmo teste, e a causa é diferente da primeira.
   //
   // A aba Posts tem duas sub-abas — "Posts ativos" e "Lixeira" — e mostra só
-  // uma por vez. Mas a paginação não é por sub-aba: `fetchAll` traz os 20 posts
-  // mais recentes MISTURADOS, e `loadMorePosts` traz os próximos 20, também
-  // misturados.
+  // uma por vez. Na época, a paginação NÃO era por sub-aba: `fetchAll` trazia
+  // os 20 posts mais recentes MISTURADOS, e `loadMorePosts` os próximos 20,
+  // também misturados.
   //
-  // Resultado observado no CI: 8 ativos, 14 na lixeira. O botão aparece porque
-  // faltam posts a carregar, mas os que vêm são antigos — e antigos aqui estão
-  // quase todos apagados. A lista de ATIVOS não muda, e contar só ela dava
-  // "8 antes, 8 depois" com a paginação funcionando perfeitamente.
+  // Resultado observado no CI: 8 ativos, 14 na lixeira. O botão aparecia porque
+  // faltavam posts a carregar, mas os que vinham eram antigos — e antigos aqui
+  // estão quase todos apagados. A lista de ATIVOS não mudava, e contar só ela
+  // dava "8 antes, 8 depois" com a paginação funcionando perfeitamente.
   //
-  // Os contadores das sub-abas somados são a medida certa: eles dizem quantos
-  // posts o painel tem em mãos, que é exatamente o que o botão altera.
+  // AINDA NO MESMO DIA a causa de fundo foi corrigida: cada sub-aba passou a
+  // paginar a si mesma (`lib/paginacaoDePosts.js`), então hoje o contador da
+  // sub-aba visível também cresceria. A soma FICA assim mesmo por dois motivos:
+  // ela continua verdadeira nos dois desenhos, e é a medida do que o botão de
+  // fato altera — quantos posts o painel tem em mãos.
   const totalCarregado = async () => {
     const txt = await page.locator('main').innerText();
     const ativos = Number(txt.match(/Posts ativos\s*(\d+)/)?.[1] ?? -1);

@@ -129,8 +129,12 @@ export default function PostsPanel({
         ))
       )}
 
-      {subTab === 'active' && hasMore && (
-        <button onClick={onLoadMore} disabled={loadingMore}
+      {/* `[29/08]` O botão aparece nas DUAS sub-abas, e cada uma tem o seu
+          `hasMore`. Antes ele só existia em "ativos" e paginava a lista
+          misturada: o clique carregava de verdade e a tela não mudava, porque
+          os 20 seguintes podiam ser todos da lixeira. */}
+      {hasMore?.[subTab] && (
+        <button onClick={() => onLoadMore(subTab)} disabled={loadingMore}
           className="btn-neon w-full py-2.5 text-xs disabled:opacity-40">
           {loadingMore ? 'Carregando...' : 'Carregar mais'}
         </button>

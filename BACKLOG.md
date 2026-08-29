@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**16 itens abertos** (+ 1 ideia sem compromisso)
+**15 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -32,42 +32,22 @@
 > problema de desempenho da cena está corrigido". Nunca tinha medido o caso "na
 > tela", que era o caro. Registrado no item do chunk 3D.
 >
+> **Fechado com a permissão que você deu** ("pode fazer todas elas"): o
+> "Carregar mais" do painel. Escolhi a saída mais correta das três — cada
+> sub-aba pagina a si mesma — e não a mais barata, porque as outras duas
+> deixavam o clique podendo não mudar nada. Custo: uma consulta a mais na carga
+> inicial, dentro do mesmo `Promise.all`.
+>
 > **Viraram decisão** (§6.2 regra 4): resolução adaptativa em vez de `dpr` fixo,
 > e o brilho do título por `opacity` → [DECISOES.md](docs/DECISOES.md).
 >
 > **Esperando você:** três decisões de custo (HIBP, plano Team, sair do Gmail),
-> a escolha do React Query, o desenho do aviso na landing, a saída do "Carregar
-> mais", repostar um vídeo e repetir o PageSpeed do desktop no preset padrão.
+> a escolha do React Query, o desenho do aviso na landing, repostar um vídeo e
+> repetir o PageSpeed do desktop no preset padrão.
 
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[29/08]` 🟢 **"Carregar mais" no painel pode não mudar nada na tela.**
-  *Achado ao consertar o teste do painel, não relatado por ninguém — mas é um
-  no-op visível, e este projeto trata isso como defeito (§1.5).*
-
-  A aba Posts tem duas sub-abas, "Posts ativos" e "Lixeira", e mostra uma por
-  vez. **A paginação não é por sub-aba:** `fetchAll` traz os 20 posts mais
-  recentes misturados, e `loadMorePosts` traz os 20 seguintes, também
-  misturados.
-
-  O botão só aparece na sub-aba **ativos**. Se os próximos posts forem todos
-  apagados — provável, porque os antigos costumam estar na lixeira — o admin
-  clica, o painel carrega de verdade, e **a lista na frente dele não muda**.
-  Foi exatamente o que o CI mostrou: 8 ativos antes, 8 depois, com a paginação
-  funcionando.
-
-  **Três saídas, e a escolha é de produto:**
-
-  | Saída | O que muda |
-  | --- | --- |
-  | Paginar por sub-aba | consulta filtrada por `deleted_at`; mais correto e mais consultas |
-  | Mostrar o botão nas duas sub-abas | trivial; o clique passa a fazer sentido em ambas |
-  | Rótulo honesto ("carregar mais posts, incluindo lixeira") | o mais barato, e resolve a expectativa sem mexer na lógica |
-
-  Não escolhi sozinho porque muda o que o admin vê. Nada quebra hoje: o botão
-  carrega de verdade, e o contador da Lixeira sobe.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
