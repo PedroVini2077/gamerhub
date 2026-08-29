@@ -87,6 +87,28 @@ export const QUADROS_POR_AMOSTRA = 10;
 const LENTO_MS = 28;
 
 /**
+ * Um quadro acima disto não é "lento": é um aparelho que não tem como desenhar
+ * esta cena nessa resolução. Aí a queda é IMEDIATA, sem esperar a amostra.
+ *
+ * ── O número que obrigou isto a existir ─────────────────────────────────────
+ *
+ * O CI mediu **1.938 ms de bloqueio numa janela de 2.000 ms** logo depois de a
+ * cena começar a abrir na resolução cheia. A conta fecha exatamente: ~190 ms
+ * por quadro no runner (que rasteriza por software) × 10 quadros de amostragem
+ * = a janela inteira.
+ *
+ * Ou seja: começar bonito é certo, mas esperar 10 quadros para decidir custava
+ * **dois segundos de tela travada** num aparelho fraco — pior do que a
+ * pixelação que a mudança veio corrigir, só que menos visível, porque a tela
+ * congela em vez de ficar feia.
+ *
+ * 100 ms é folgado de propósito: 60 fps são 16,7 ms e até um aparelho ruim fica
+ * na casa dos 30–40. Passar de 100 num único quadro é sinal inequívoco, não
+ * ruído — e por isso não precisa de amostra para ser levado a sério.
+ */
+const QUADRO_ABSURDO_MS = 100;
+
+/**
  * Desce um degrau quando os quadros atrasam. **Nunca sobe.**
  *
  * Não subir é decisão, não esquecimento. Começando no melhor estado, subir não
@@ -99,6 +121,19 @@ const LENTO_MS = 28;
 export function proximoDegrau({ degrau, mediana }) {
   if (mediana > LENTO_MS && degrau > 0) return degrau - 1;
   return degrau;
+}
+
+/**
+ * A queda de emergência, decidida por UM quadro.
+ *
+ * Existe porque a amostra de 10 quadros é rápida para um aparelho normal e
+ * lenta demais para um que está sofrendo: são 10 × o custo do quadro, e num
+ * aparelho fraco isso vira segundos de tela travada.
+ *
+ * @returns {boolean} se este quadro sozinho já justifica descer
+ */
+export function quedaDeEmergencia(deltaMs) {
+  return deltaMs > QUADRO_ABSURDO_MS;
 }
 
 export const DEGRAUS_DE_RESOLUCAO = DEGRAUS;

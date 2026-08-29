@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  proximoDegrau, degrauInicial, DEGRAUS_DE_RESOLUCAO,
+  proximoDegrau, degrauInicial, quedaDeEmergencia, DEGRAUS_DE_RESOLUCAO,
 } from '../resolucaoDaCena';
 
 /**
@@ -80,5 +80,32 @@ describe('proximoDegrau — só desce, e só quando precisa', () => {
     // 24 ms ainda é ~40 fps. Rebaixar aí puniria uma máquina que está bem por
     // causa de outra aba, do próprio carregamento ou de uma coleta de lixo.
     expect(proximoDegrau({ degrau: TOPO, mediana: 24 })).toBe(TOPO);
+  });
+});
+
+describe('quedaDeEmergencia — um quadro absurdo não espera a amostra', () => {
+  // O número que obrigou isto: o CI mediu 1.938 ms de bloqueio numa janela de
+  // 2.000 ms. A conta fecha — ~190 ms por quadro no runner × 10 quadros de
+  // amostragem = a janela inteira. Esperar a amostra custava DOIS SEGUNDOS de
+  // tela travada num aparelho fraco, que é pior do que a pixelação que a
+  // mudança veio corrigir: a tela congela em vez de ficar feia.
+  it('quadro acima de 100 ms derruba na hora', () => {
+    expect(quedaDeEmergencia(190)).toBe(true);
+    expect(quedaDeEmergencia(101)).toBe(true);
+  });
+
+  it('quadro apenas lento NÃO derruba sozinho — isso é da amostra', () => {
+    expect(
+      quedaDeEmergencia(40),
+      'Um quadro de 40 ms passou a derrubar a resolução sozinho. Aparelho\n'
+      + 'normal engasga assim durante o próprio carregamento, e rebaixar por\n'
+      + 'causa de um quadro isolado pune quem estava bem.',
+    ).toBe(false);
+    expect(quedaDeEmergencia(16.7)).toBe(false);
+  });
+
+  it('o limite é folgado o bastante para não confundir com 30 fps', () => {
+    // 33 ms é 30 fps — ruim, mas não é "não consigo desenhar isto".
+    expect(quedaDeEmergencia(33)).toBe(false);
   });
 });

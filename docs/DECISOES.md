@@ -456,6 +456,25 @@ a medição é em rasterização por software, que é o que o Lighthouse usa; nu
 o MSAA é praticamente de graça. O custo acima é quase todo de laboratório, e
 esta cena é feita de linhas finas e néon, onde serrilhado aparece.
 
+**E a restauração custou mais do que eu previ — o CI mostrou.** Com a qualidade
+de volta, o portão de thread do `e2e/cena-3d.mjs` reprovou: **1.938 ms de
+bloqueio numa janela de 2.000 ms**, praticamente o mesmo do bug que o portão
+existe para pegar (2.151 ms). E não era o pico inicial: o teste mede o estado
+**estável**, seis segundos depois de a cena aparecer.
+
+Duas correções saíram disso, e as duas são melhorias de verdade:
+
+| Correção | Por quê |
+| --- | --- |
+| **queda imediata** com um quadro acima de 100 ms | esperar os 10 quadros da amostra custava ~2 s de tela travada num aparelho fraco — pior que a pixelação, e menos visível, porque a tela congela em vez de ficar feia |
+| **desligar o `antialias` como último recurso** | depois do piso de resolução, o que ainda pesa é ele; e como é opção do contexto WebGL, a única saída é remontar a cena uma vez |
+
+Medido sob freio de 8× (mais lento que o runner do CI), bloqueio total:
+**10.871 ms → 2.982 ms**.
+
+O último recurso só dispara em quem já está engasgando. Quem tem GPU nunca chega
+lá — vê a cena no melhor estado, do primeiro quadro ao último.
+
 **O terceiro sintoma é de outra natureza** e não foi introduzido agora: a
 `Scene2D` é o fallback enquanto o chunk chega, e a cena 3D espera o navegador
 ficar ocioso de propósito (`Scene3D.jsx`), para não disputar a thread com a
