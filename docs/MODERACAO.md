@@ -140,6 +140,56 @@ Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
 
 [← voltar para o README](../README.md)
 
+## `[29/08]` Denunciar não servia para nada, e o motivo era um número
+
+**Pergunta do dono:** *"pra que exatamente a denúncia no site serve? pq o post
+só vai lá pra área de denúncia e a única coisa que dá pra fazer é dispensar"*.
+
+Ele estava certo, e a causa estava no `site_config`: `mod_report_threshold` era
+**3**. O gatilho só levava o conteúdo à fila quando **três pessoas diferentes**
+denunciassem o mesmo item. O site tem **5 usuários**. Na prática, nunca.
+
+Enquanto isso o toast prometia *"nossa equipe vai revisar em breve"* — falso
+para o caso comum, que é o §1.5 na forma mais direta: a mensagem afirmava algo
+que o sistema não fazia.
+
+**O segundo sintoma tinha a mesma raiz.** *"quando eu dispenso a denúncia,
+quando tento denunciar o mesmo post, fala que já denunciei, sendo que
+dispensei"*. A restrição era `UNIQUE (reporter_id, content_type, content_id)`,
+sem olhar o status: uma vez denunciado, nunca mais — nem depois de a própria
+equipe dispensar. E a mensagem dizia só "você já denunciou", verdadeira e
+inútil.
+
+**E havia um terceiro, que ninguém tinha visto ainda.** O contador somava
+denúncia **dispensada** também. Três dispensadas deixariam o contador cravado
+em 3, e a denúncia seguinte ocultaria o conteúdo na hora — passando por cima do
+julgamento humano que já tinha dito "isto não é problema".
+
+### As três decisões do dono
+
+| Decisão | Efeito |
+| --- | --- |
+| **1 denúncia** já leva à fila | com 5 usuários, é o único piso que faz o botão funcionar |
+| **nada é ocultado sozinho** | com piso 1, auto-ocultar deixaria qualquer um derrubar qualquer post. Quem oculta é o moderador, pelo painel |
+| o contador **ignora dispensadas** | denúncia julgada infundada para de contar |
+
+A terceira mudança acompanha: a restrição passou a valer só para denúncia
+**pendente** (índice único parcial). Enquanto houver uma sua em aberto, não dá
+para denunciar de novo — que é o que evita spam. Depois de avaliada, dá — o
+conteúdo pode ter sido editado, ou piorado.
+
+A função mudou de nome junto (`handle_report_auto_hide` →
+`enfileirar_conteudo_denunciado`), porque o nome antigo virou mentira: ela não
+oculta mais nada.
+
+**E a aba Denúncias deixou de ser beco sem saída:** cada denúncia agora tem um
+botão "ver o conteúdo". Comentário e chat ficam sem botão de propósito — para
+eles o destino depende do post, e a denúncia guarda só `content_type` e
+`content_id`.
+
+**O piso continua configurável** em `site_config.mod_report_threshold`, hoje em
+`1`. Quando a base crescer, subir esse número é uma linha de SQL.
+
 ## `[29/08]` A fila mostrava menos do que existia
 
 **Achado do dono:** *"lá só aparece o conteúdo de texto, agora imagens, e até
@@ -177,11 +227,18 @@ existência de conteúdo oculto.
 | --- | --- | --- |
 | post | `/post/:id` | página própria |
 | comentário | `/post/:post_id` | comentário só existe dentro do post |
-| mural | `/community` | o mural não tem página por item |
+| mural | `/mural/:id` | ganhou página própria em 29/08, pelo mesmo motivo do post |
 | chat | `/lives/:post_id` | a live onde a mensagem foi escrita |
 
 Tipo sem destino honesto devolve `null` e **o botão não aparece**. Link que leva
 ao lugar errado é pior do que link nenhum: o moderador julgaria outro conteúdo.
+
+> **`[29/08]` O mural ganhou página própria.** Ele era o único tipo sem destino
+> exato: o link caía em `/community` e o moderador ainda precisava caçar a
+> mensagem. Num painel de moderação isso é pior do que parece — a lista é
+> paginada, e uma mensagem antiga pode nem estar na primeira página, então o
+> botão levaria a lugar nenhum. Agora existe `/mural/:id`, com as mesmas regras
+> de visibilidade da página de post.
 
 **Duas decisões de custo na prévia da mídia:** vídeo não toca sozinho
 (`preload="metadata"`) porque a fila pode ter vários itens e egress é a cota

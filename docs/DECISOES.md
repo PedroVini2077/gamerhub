@@ -346,6 +346,47 @@ discussão é a existência dela.
 **medir antes** quanto do chunk é `three` e quanto é `fiber` — se a maior parte
 for `three`, reescrever o `fiber` não resolve nada.
 
+### `[29/08]` Uma denúncia já leva à fila, e nada é ocultado sozinho
+
+**O que foi decidido**, com o piso em `site_config.mod_report_threshold = 1`:
+
+1. **Uma** denúncia leva o conteúdo à fila de revisão.
+2. **Nada** é ocultado automaticamente por denúncia.
+3. O contador **ignora** denúncia dispensada.
+
+**Por que 1, e não 3.** O piso era 3 e o site tem 5 usuários — três pessoas
+diferentes denunciando o mesmo item é, na prática, impossível. O resultado era
+um botão de denunciar que não fazia nada e um toast que prometia revisão.
+
+**Por que sem auto-ocultar.** As duas coisas juntas seriam perigosas: com piso
+1, auto-ocultar deixaria **qualquer pessoa derrubar qualquer post sozinha**.
+Separando, uma denúncia mal-intencionada custa no máximo um item de fila que um
+moderador dispensa. Quem oculta é a pessoa, pelo painel — caminho que já existia
+e já funcionava.
+
+**A alternativa considerada e recusada:** manter 3 e só corrigir a mensagem do
+toast. Seria honesto, mas deixaria o recurso inútil nesta escala — trocaria uma
+mentira por uma inutilidade declarada.
+
+**Quando isto envelhece:** quando a base crescer, subir o piso é uma linha de
+SQL, e o auto-ocultar pode voltar com um piso próprio, mais alto. A decisão está
+casada com o tamanho do site, não com o mecanismo.
+
+### `[29/08]` Redenunciar é permitido depois que a equipe avalia
+
+A restrição era `UNIQUE (reporter_id, content_type, content_id)`, sem olhar o
+status: uma vez denunciado, nunca mais — nem depois de a própria equipe
+dispensar. Foi assim que o dono dispensou a própria denúncia e ficou impedido de
+denunciar de novo, com a mensagem "você já denunciou", verdadeira e inútil.
+
+Agora o índice único é **parcial** (`WHERE status = 'pending'`): enquanto houver
+uma sua em aberto, não dá para denunciar de novo — que é o que evita spam.
+Depois de avaliada, dá, porque o conteúdo pode ter sido editado ou piorado.
+
+**O que se perde:** alguém pode denunciar, ver dispensado, e denunciar de novo
+em loop. Se isso virar problema real, o caminho é limitar por tempo, não voltar
+à restrição eterna — e aí já haverá dado para decidir.
+
 ### `[29/08]` O `<Canvas>` do fiber saiu — a cena é montada por `createRoot`
 
 **O que mudou:** `LandingScene` deixou de usar o componente `<Canvas>` do

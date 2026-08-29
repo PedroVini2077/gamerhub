@@ -58,8 +58,13 @@ describe('linkDoConteudo — leva ao lugar certo, ou a lugar nenhum', () => {
     expect(linkDoConteudo('chat', { id: 'm1', post_id: 'live7' })).toBe('/lives/live7');
   });
 
-  it('mural vai para o mural', () => {
-    expect(linkDoConteudo('mural', { id: 'm1' })).toBe('/community');
+  it('mural vai para a mensagem, não para a lista', () => {
+    expect(
+      linkDoConteudo('mural', { id: 'm1' }),
+      'O link do mural voltou a apontar para `/community`. A lista é paginada:\n'
+      + 'uma mensagem antiga pode nem estar na primeira página, e o moderador\n'
+      + 'clicaria em "ver no site" sem encontrar nada.',
+    ).toBe('/mural/m1');
   });
 
   it('sem a coluna que o link precisa, devolve NULL — não um caminho quebrado', () => {
@@ -124,6 +129,11 @@ describe('a rota que o link do post usa existe de verdade', () => {
       + 'nenhum teste de unidade pegaria, porque o caminho em si está certo.',
     ).toContain('path="/post/:id"');
     expect(app).toMatch(/import\('\.\/pages\/PostPage'\)/);
+    expect(
+      app,
+      'A rota `/mural/:id` sumiu do App — mesmo problema, para o mural.',
+    ).toContain('path="/mural/:id"');
+    expect(app).toMatch(/import\('\.\/pages\/MuralPage'\)/);
   });
 });
 
@@ -160,5 +170,28 @@ describe('todo tipo de gatilho tem rótulo e cor', () => {
         + 'precisam concordar, senão o teste acima deixa de cobri-lo.',
       ).toContain(tipo);
     }
+  });
+});
+
+describe('o link da aba Denúncias funciona só com o que a denúncia guarda', () => {
+  // A denúncia guarda `content_type` e `content_id`, e mais nada. Para post e
+  // mural isso basta. Para comentário e chat o destino depende do post, que a
+  // denúncia NÃO guarda — então ali não há botão.
+  //
+  // Inventar `/post/<id-do-comentário>` levaria o moderador a um post que não
+  // existe, ou pior, a outro conteúdo (§4).
+  it('post e mural têm link a partir do id sozinho', () => {
+    expect(linkDoConteudo('post', { id: 'p1' })).toBe('/post/p1');
+    expect(linkDoConteudo('mural', { id: 'm1' })).toBe('/mural/m1');
+  });
+
+  it('comentário e chat NÃO têm link a partir do id sozinho', () => {
+    expect(
+      linkDoConteudo('comment', { id: 'c1' }),
+      'O link do comentário passou a ser montado a partir do id dele. Na aba\n'
+      + 'Denúncias isso levaria a `/post/<id-do-comentário>` — um post que não\n'
+      + 'existe, ou o conteúdo errado.',
+    ).toBeNull();
+    expect(linkDoConteudo('chat', { id: 'x1' })).toBeNull();
   });
 });

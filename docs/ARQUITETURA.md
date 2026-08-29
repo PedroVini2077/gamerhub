@@ -79,6 +79,7 @@ src/
 │   ├── PostPage.jsx       # Um post sozinho, em `/post/:id`. Existe para o link
 │   │                      # direto da fila de moderação; mostra conteúdo oculto
 │   │                      # para quem é da equipe (a RLS decide)
+│   ├── MuralPage.jsx      # Uma mensagem do mural, em `/mural/:id`
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
 │   ├── Lives.jsx          # Lista de lives + sub-tabs + player + chat + moderação

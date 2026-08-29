@@ -166,6 +166,33 @@ Levantado ao conferir o projeto contra uma lista de camadas de engenharia.
 | **Criar conteúdo** (post, comentário, mural, chat) | **Não.** Nada limita o ritmo. Conferido: nenhuma constraint em `posts` |
 | ~~`register_login_attempt`~~ | **Era a pior de todas — e foi APAGADA em 28/08.** Ver abaixo |
 
+### `[29/08]` Funções de trigger fora da API pública — e uma afirmação minha que estava errada
+
+Ao criar a `enfileirar_conteudo_denunciado`, o `get_advisors` acusou
+`anon_security_definer_function_executable`. Varri a **classe** (§1.3) e achei
+duas funções que devolvem `trigger` com `EXECUTE` para `anon`/`authenticated`:
+a minha, nova, e a `log_report_created`, antiga. As duas foram revogadas.
+
+Função de trigger **não precisa de `EXECUTE` para disparar** — o Postgres checa
+esse privilégio na criação do trigger, não a cada disparo. Confirmado em
+`ROLLBACK` depois do revoke: a denúncia continua enfileirando normalmente.
+
+> **A correção, e ela é minha.** Eu escrevi na migration que o `GRANT`
+> "publica a função em `/rest/v1/rpc/<nome>`" e que qualquer um com a anon key
+> poderia chamá-la. **Testei depois e é falso:** o PostgREST não expõe função
+> que retorna `trigger`, com ou sem `EXECUTE`. Criei uma função de teste,
+> concedi `EXECUTE` a `anon`, chamei pela anon key — **404**, o mesmo das
+> revogadas.
+>
+> Cheguei a escrever um teste em `e2e/portas-fechadas.mjs` para travar isso.
+> Ele **nunca falharia**, porque as duas situações respondem igual — era
+> decoração, não trava (§2), e foi removido.
+>
+> **O que continua verdadeiro:** o revoke é higiene correta, tira o aviso do
+> advisor e é defesa em profundidade se o PostgREST algum dia mudar. **O que
+> era falso:** a brecha explorável que eu descrevi. Severidade real: 🔵 baixo,
+> não o 🟠 que o texto da migration sugeria.
+
 ### `[29/08]` Por que o relato de falha de vídeo NÃO é o `register_login_attempt` de novo
 
 O caminho novo permite que o navegador escreva no `admin_logs`, que é
