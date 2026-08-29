@@ -1,90 +1,150 @@
 /**
- * A resolução da cena 3D sobe se o aparelho aguentar, e não sobe se não.
+ * A resolução da cena 3D: começa no melhor que o aparelho pede, e só CAI.
  *
- * ── A medição que originou isto (29/08, navegador de verdade) ───────────────
+ * ── `[29/08]` A versão anterior fazia o contrário, e ficou horrível ─────────
  *
- * A landing foi medida com `PerformanceObserver` de `longtask` numa janela de
- * 8 s com o Hero na tela, no build de produção:
+ * Relato do dono, testando no celular e no PC: *"a cena em 3d ela começa muito
+ * pixelada, fica horrível, depois volta ao normal"* e *"o raio ao estourar, a
+ * luz verde não fica tão forte quando a landing 3d está ativada"*.
  *
- *     dpr 1,5 + antialias   88 quadros    88 long tasks   8.066 ms bloqueados
- *     dpr 1,0 sem antialias 133 quadros   132 long tasks  7.897 ms bloqueados
- *     dpr 0,75              182 quadros     9 long tasks     468 ms bloqueados
- *     dpr 0,5               243 quadros      0 long tasks       0 ms bloqueados
+ * Os dois sintomas eram o mesmo defeito, e ele era meu: a cena começava em
+ * `dpr` 0,5 e SUBIA. Ou seja, **a primeira coisa que todo visitante via era o
+ * pior estado possível** — e o brilho dos `pointLight` do raio, que é o efeito
+ * mais bonito da cena, era justamente o que mais sofria, porque queda de
+ * resolução borra o degradê da luz.
  *
- * A thread principal ficava **99% ocupada** enquanto a cena estava visível, e
- * cada quadro isolado era uma long task. Não é degrau: é um penhasco, porque
- * o custo é proporcional a PIXEL, e abaixo de ~50 ms por quadro o quadro
- * deixa de contar como long task — que é exatamente a conta do TBT.
+ * O raciocínio original não era absurdo: começar barato evita pagar a conta
+ * cheia durante a amostragem, que cai no meio do carregamento. Mas ele otimizou
+ * um número (o TBT do Lighthouse) contra a coisa que o número serve para medir
+ * — a experiência de quem abre o site. O dono viu na hora; o Lighthouse nunca
+ * veria.
  *
- * Isso também explica a contradição dos dois PageSpeed do dono: o do celular
- * marcou **TBT 0 ms** e o do desktop, 31 s de thread principal. Não é
- * inconsistência — a cena 3D não sobe abaixo de 1024px (`lib/cena3D.js`),
- * então o celular nunca pagou por ela.
+ * ── A regra agora ───────────────────────────────────────────────────────────
  *
- * ── Por que ADAPTATIVO, e não simplesmente baixar o dpr ─────────────────────
+ * Começa no que o aparelho pede (o `devicePixelRatio`, preso entre 1 e 1,5, que
+ * era o comportamento original) e desce se os quadros atrasarem. **Nunca sobe.**
  *
- * Porque a medição acima foi feita em rasterização por SOFTWARE (SwiftShader),
- * que é o que o Lighthouse e o PageSpeed usam — e o que também acontece em
- * máquina com GPU bloqueada. Numa máquina com GPU de verdade, cinco chamadas
- * de desenho não custam nada, e cravar 0,5 puniria justamente quem não tem
- * problema nenhum. Fixar um número seria trocar um erro por outro.
+ * | Antes | Agora |
+ * | --- | --- |
+ * | primeiro quadro no pior estado, melhora depois | primeiro quadro no melhor estado |
+ * | aparelho fraco começa bonito? não | sim, e degrada em ~1/3 de segundo se precisar |
+ * | aparelho bom passa por um estado feio | não passa por estado nenhum |
  *
- * ── Por que COMEÇA baixo e sobe, e não o contrário ──────────────────────────
+ * **O que isso custa, dito sem maquiagem:** num renderizador por software (o
+ * que o Lighthouse e o PageSpeed usam), os ~20 quadros de amostragem agora
+ * rodam na resolução cheia antes de a cena cair. Isso devolve parte do TBT que
+ * a versão anterior tinha economizado. É uma troca deliberada — decisão do
+ * dono, e a certa: enfeite feio é um defeito que o visitante vê, e nota de
+ * laboratório não é.
  *
- * Começar em 1,5 e descer significa pagar a conta cheia durante a amostragem —
- * e a amostragem cai bem no meio do carregamento, que é a janela que o
- * Lighthouse observa e a que o visitante sente. Enfeite não taxa o caminho
- * crítico para depois pedir desculpas (`CLAUDE.md` §0.3, regra 2). Começando
- * embaixo, o pior caso é uma fração de segundo mais macia antes de firmar.
- *
- * ── Por que `delta`, e não o tempo de render ────────────────────────────────
- *
- * `delta` é o intervalo entre quadros. Com vsync ele fica preso em ~16,7 ms
- * enquanto a GPU der conta, e cresce assim que ela não der. É exatamente a
- * pergunta que importa — "estamos perdendo quadros?" — e não exige instrumentar
- * o renderer.
+ * A proteção que importa continua de pé: aparelho que não dá conta **desce**, e
+ * é ali que os 8.066 ms de thread bloqueada de 29/08 apareciam.
  */
 
-// Degraus de resolução. 0,5 é o piso porque abaixo disso o serrilhado aparece
-// mesmo numa cena difusa e brilhante; 1 é o teto porque acima dele o ganho
-// visual é imperceptível numa cena sem texto nem textura fina — era o que o
-// antigo `[1, 1.5]` pagava sem devolver nada.
-const DEGRAUS = [0.5, 0.75, 1];
-
-// Quantos quadros entram em cada veredito. 20 quadros são ~1/3 de segundo a
-// 60 fps: rápido o bastante para o visitante não ver a subida, longo o
-// bastante para um engasgo isolado (troca de aba, GC) não decidir nada.
-export const QUADROS_POR_AMOSTRA = 20;
-
-// Acima disto estamos perdendo quadros de propósito (60 fps = 16,7 ms).
-const LENTO_MS = 24;
-// Abaixo disto há folga de sobra para pagar mais pixel.
-const RAPIDO_MS = 18;
+/** Degraus de resolução, do mais barato ao mais caro. */
+const DEGRAUS = [0.5, 0.75, 1, 1.5];
 
 /**
- * A decisão, isolada do React de propósito.
+ * O teto que o aparelho pede, na mesma conta que o `<Canvas>` fazia com
+ * `dpr={[1, 1.5]}`: o `devicePixelRatio` preso entre 1 e 1,5.
  *
- * Sobe um degrau quando sobra folga, desce quando falta — e **nunca volta a
- * subir depois de descer**. Sem esse teto, uma máquina no limiar oscila entre
- * dois degraus para sempre, e resolução piscando é pior de olhar do que
- * resolução baixa e estável. O primeiro rebaixamento é o veredito daquele
- * aparelho.
- *
- * Está separada porque a metade que importa não dá para provar num navegador
- * sem GPU: aqui a cena só **desce**. Que ela também **sobe** numa máquina
- * capaz é afirmação sobre código que nenhuma medição deste ambiente alcança —
- * então vira teste de unidade, e não suposição (§1.1).
- *
- * @returns {{degrau: number, teto: number}} o estado novo
+ * Acima de 1,5 o ganho é imperceptível numa cena sem texto nem textura fina, e
+ * o custo é por pixel — num celular com `devicePixelRatio` 3 isso seria 4×
+ * mais pixel para desenhar exatamente a mesma coisa.
  */
-export function proximoDegrau({ degrau, teto, mediana }) {
-  if (mediana > LENTO_MS && degrau > 0) {
-    return { degrau: degrau - 1, teto: degrau - 1 };
-  }
-  if (mediana < RAPIDO_MS && degrau < teto) {
-    return { degrau: degrau + 1, teto };
-  }
-  return { degrau, teto };
+export function degrauInicial(devicePixelRatio = 1) {
+  const alvo = Math.min(1.5, Math.max(1, devicePixelRatio || 1));
+  // O maior degrau que não passa do alvo.
+  let indice = 0;
+  for (let i = 0; i < DEGRAUS.length; i++) if (DEGRAUS[i] <= alvo) indice = i;
+  return indice;
+}
+
+/**
+ * Quantos quadros entram em cada veredito (~1/6 de segundo a 60 fps).
+ *
+ * Eram 20, e o número importa mais do que parece: **é o tempo em que um
+ * aparelho fraco desenha na resolução cheia antes de a cena cair.** Medido sob
+ * freio de CPU de 4×, cada quadro desses custa ~170 ms — então 20 quadros são
+ * mais de 3 segundos de thread ocupada que ninguém precisava pagar.
+ *
+ * 10 corta isso pela metade sem custo visual nenhum: aparelho que aguenta nunca
+ * chega a descer, e aparelho que não aguenta é protegido mais cedo.
+ *
+ * Não desce mais do que isso porque a amostra precisa sobreviver a um engasgo
+ * isolado — com 3 ou 4 quadros, um soluço do próprio carregamento rebaixaria
+ * para sempre a cena de uma máquina que estava bem.
+ */
+export const QUADROS_POR_AMOSTRA = 10;
+
+/**
+ * Acima disto o aparelho não está acompanhando.
+ *
+ * ── Por que 45, e não 28 (que era o valor e estava errado) ──────────────────
+ *
+ * `delta` é o INTERVALO entre quadros, não o custo de desenhar. Com vsync ele
+ * fica preso na cadência da tela — e isso significa que **uma tela de 30 Hz
+ * reporta ~33 ms mesmo com a cena rodando folgada**. O mesmo vale para o rAF
+ * limitado pelo navegador (bateria fraca, aba quase em segundo plano).
+ *
+ * Com o limite em 28, esses casos rebaixariam a cena de um aparelho
+ * perfeitamente capaz — exatamente o defeito que esta rodada veio corrigir, só
+ * que disparado por outro caminho.
+ *
+ * 45 fica no meio de terra de ninguém: acima dos 33 ms de uma tela de 30 Hz, e
+ * bem abaixo dos ~60 ms que um aparelho realmente engasgado produz (medido: o
+ * runner do CI fez 165 desenhos em 2 s, ou seja ~60 ms por quadro).
+ */
+export const LENTO_MS = 45;
+
+/**
+ * Um quadro acima disto não é "lento": é um aparelho que não tem como desenhar
+ * esta cena nessa resolução. Aí a queda é IMEDIATA, sem esperar a amostra.
+ *
+ * ── O número que obrigou isto a existir ─────────────────────────────────────
+ *
+ * O CI mediu **1.938 ms de bloqueio numa janela de 2.000 ms** logo depois de a
+ * cena começar a abrir na resolução cheia. A conta fecha exatamente: ~190 ms
+ * por quadro no runner (que rasteriza por software) × 10 quadros de amostragem
+ * = a janela inteira.
+ *
+ * Ou seja: começar bonito é certo, mas esperar 10 quadros para decidir custava
+ * **dois segundos de tela travada** num aparelho fraco — pior do que a
+ * pixelação que a mudança veio corrigir, só que menos visível, porque a tela
+ * congela em vez de ficar feia.
+ *
+ * 100 ms é folgado de propósito: 60 fps são 16,7 ms e até um aparelho ruim fica
+ * na casa dos 30–40. Passar de 100 num único quadro é sinal inequívoco, não
+ * ruído — e por isso não precisa de amostra para ser levado a sério.
+ */
+const QUADRO_ABSURDO_MS = 100;
+
+/**
+ * Desce um degrau quando os quadros atrasam. **Nunca sobe.**
+ *
+ * Não subir é decisão, não esquecimento. Começando no melhor estado, subir não
+ * teria para onde ir; e permitir voltar a subir depois de uma queda faria a
+ * cena oscilar entre dois níveis numa máquina no limiar — e resolução piscando
+ * incomoda mais do que resolução estável.
+ *
+ * @returns {number} o índice novo
+ */
+export function proximoDegrau({ degrau, mediana }) {
+  if (mediana > LENTO_MS && degrau > 0) return degrau - 1;
+  return degrau;
+}
+
+/**
+ * A queda de emergência, decidida por UM quadro.
+ *
+ * Existe porque a amostra de 10 quadros é rápida para um aparelho normal e
+ * lenta demais para um que está sofrendo: são 10 × o custo do quadro, e num
+ * aparelho fraco isso vira segundos de tela travada.
+ *
+ * @returns {boolean} se este quadro sozinho já justifica descer
+ */
+export function quedaDeEmergencia(deltaMs) {
+  return deltaMs > QUADRO_ABSURDO_MS;
 }
 
 export const DEGRAUS_DE_RESOLUCAO = DEGRAUS;

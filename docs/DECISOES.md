@@ -416,7 +416,108 @@ ganho era real, a explicação não. Ver [DESEMPENHO.md](DESEMPENHO.md).
 porque o `WebGLRenderer` tem caminho de código para quase tudo que ele traz.
 Encolher além daqui exigiria WebGL cru — outra conversa, e de outro tamanho.
 
-### `[29/08]` A resolução da cena 3D é ADAPTATIVA, não um número fixo
+### `[29/08]` A cena 3D começa no MELHOR estado — a versão que começava baixa foi revertida
+
+**Relato do dono, testando no celular e no PC:** *"a cena em 3d ela começa muito
+pixelada, fica horrível, depois volta ao normal"*, *"o raio ao estourar, a luz
+verde não fica tão forte quando a landing 3d está ativada, mas fica normal na
+landing em 2d"*, e *"ao atualizar a landing 3d, por alguns segundos dá pra ver a
+landing 2d"*.
+
+**Os dois primeiros eram o mesmo defeito, e ele era meu.** A resolução
+adaptativa começava em `dpr` 0,5 e subia. Ou seja, **o primeiro quadro que todo
+visitante via era o pior estado possível** — e o brilho dos `pointLight` do
+raio, que é o efeito mais bonito da cena, é justamente o que mais sofre com
+queda de resolução, porque o degradê da luz borra.
+
+**O erro de método, e é o que vale guardar:** eu otimizei um número (o TBT do
+Lighthouse) contra a coisa que o número existe para medir — a experiência de
+quem abre o site. O dono viu em dois aparelhos no primeiro teste; o Lighthouse
+nunca veria, porque para ele a cena feia e a bonita valem igual.
+
+**A regra agora:** começa no que o aparelho pede (`devicePixelRatio` preso entre
+1 e 1,5, a mesma conta do antigo `dpr={[1, 1.5]}`) e **só desce** se os quadros
+atrasarem. Nunca sobe. A proteção do aparelho fraco continua — é ali que os
+8.066 ms de thread bloqueada apareciam — mas ela deixou de cobrar o preço de
+todo mundo.
+
+**O `antialias` também voltou**, e o custo foi medido isolando as duas
+mudanças, sob freio de CPU de 4×:
+
+| Configuração | Thread bloqueada (total) |
+| --- | --- |
+| `dpr` 0,5 + `antialias` off (o que foi revertido) | 670 ms |
+| `dpr` do aparelho + `antialias` off | 1.073 ms |
+| `dpr` do aparelho + `antialias` on (o que ficou) | 3.362 ms |
+
+O caro é o `antialias`, não a resolução — ao contrário do que eu supus ao
+desligá-lo. **Fica ligado mesmo assim**, pela mesma razão que vale para o `dpr`:
+a medição é em rasterização por software, que é o que o Lighthouse usa; numa GPU
+o MSAA é praticamente de graça. O custo acima é quase todo de laboratório, e
+esta cena é feita de linhas finas e néon, onde serrilhado aparece.
+
+**E a restauração custou mais do que eu previ — o CI mostrou.** Com a qualidade
+de volta, o portão de thread do `e2e/cena-3d.mjs` reprovou: **1.938 ms de
+bloqueio numa janela de 2.000 ms**, praticamente o mesmo do bug que o portão
+existe para pegar (2.151 ms). E não era o pico inicial: o teste mede o estado
+**estável**, seis segundos depois de a cena aparecer.
+
+Duas correções saíram disso, e as duas são melhorias de verdade:
+
+| Correção | Por quê |
+| --- | --- |
+| **queda imediata** com um quadro acima de 100 ms | esperar os 10 quadros da amostra custava ~2 s de tela travada num aparelho fraco — pior que a pixelação, e menos visível, porque a tela congela em vez de ficar feia |
+| **desligar o `antialias` como último recurso** | depois do piso de resolução, o que ainda pesa é ele; e como é opção do contexto WebGL, a única saída é remontar a cena uma vez |
+
+**E os dois primeiros consertos não bastaram — o CI reprovou de novo, com o
+número PIOR (2.029 ms).** A causa estava no meu próprio desenho: o runner fazia
+~60 ms por quadro, que é lento para a amostra mas **abaixo** do limite de
+emergência de 100 ms. No piso, `proximoDegrau` devolvia o mesmo degrau, nada
+acontecia, e o desligamento do antialias nunca era alcançado. O aviso precisava
+sair da MESMA decisão que a queda, e não só do caminho de emergência.
+
+**E ao corrigir isso apareceu um risco que ninguém tinha visto:** `delta` é o
+intervalo entre quadros, não o custo de desenhar. Com vsync ele fica preso na
+cadência da tela — então **uma tela de 30 Hz reporta ~33 ms com a cena rodando
+folgada**. Com o limite em 28 ms, um aparelho perfeitamente capaz seria
+rebaixado. O limite subiu para 45: acima dos 33 ms de uma tela de 30 Hz, e bem
+abaixo dos ~60 ms de um aparelho realmente engasgado.
+
+Medido na mesma janela que o CI usa, com freio de CPU:
+
+| Freio | Bloqueio na janela de 2 s | Resolução | `antialias` |
+| --- | --- | --- | --- |
+| 1× | 0 ms | 0,5 | **ligado** |
+| 4× | 0 ms | 0,5 | desligado |
+| 8× | 0 ms | 0,5 | desligado |
+
+E sob freio de 8×, bloqueio total desde o carregamento: **10.871 ms → 2.982 ms**.
+
+> **O que esta máquina NÃO consegue provar:** ela rasteriza por software, então a
+> cena cai de resolução mesmo sem freio. Que um aparelho com GPU de verdade
+> permaneça em 1 ou 1,5 é o comportamento esperado da regra (60 fps = 16,7 ms,
+> bem abaixo do limite de 45), mas é **dedução**, não medição — quem confirma é
+> o dono, abrindo a landing.
+
+O último recurso só dispara em quem já está engasgando. Quem tem GPU nunca chega
+lá — vê a cena no melhor estado, do primeiro quadro ao último.
+
+**O terceiro sintoma é de outra natureza** e não foi introduzido agora: a
+`Scene2D` é o fallback enquanto o chunk chega, e a cena 3D espera o navegador
+ficar ocioso de propósito (`Scene3D.jsx`), para não disputar a thread com a
+intro. Encurtar essa espera devolveria 708 kB ao caminho crítico. O que dava
+para tirar era o **corte seco**: a troca virou um fade de 500 ms. O tempo é o
+mesmo; o susto não.
+
+**O que sobra de otimização, e continua valendo:** o laço parado fora da tela, o
+chunk 20% menor, e a queda de resolução no aparelho que não aguenta.
+
+### ~~`[29/08]` A resolução da cena 3D é ADAPTATIVA, não um número fixo~~ — REVERTIDA no mesmo dia
+
+> **Esta decisão foi revertida horas depois, pelo dono, testando.** O que ficou
+> de pé dela: a cena ainda se adapta, mas na direção oposta — começa no melhor e
+> só desce. Ver a decisão acima. O texto original fica porque o raciocínio
+> continua útil, e o erro dele é o registro que importa.
 
 **O que foi decidido:** a cena começa no `dpr` mais barato (0,5) e sobe até 1 se
 os quadros couberem em 60 fps. Se descer uma vez, não volta a subir. O

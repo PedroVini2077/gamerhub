@@ -1,23 +1,47 @@
 import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { DEGRAUS_DE_RESOLUCAO, QUADROS_POR_AMOSTRA, proximoDegrau } from '../../../lib/resolucaoDaCena';
+import {
+  DEGRAUS_DE_RESOLUCAO, QUADROS_POR_AMOSTRA, LENTO_MS, degrauInicial,
+  proximoDegrau, quedaDeEmergencia,
+} from '../../../lib/resolucaoDaCena';
 
 /**
- * O componente que aplica a decisão de `lib/resolucaoDaCena.js` a cada amostra.
+ * Aplica a regra de `lib/resolucaoDaCena.js` a cada amostra de quadros.
  *
- * A regra em si mora lá, sem React, porque a metade que importa — a cena SOBE
- * de resolução numa máquina capaz — não dá para provar num navegador sem GPU,
- * e precisa de teste de unidade (ver `__tests__/resolucaoAdaptativa.test.js`).
- * Aqui fica só a ponte com o `useFrame`.
+ * A cena começa no melhor que o aparelho pede e só DESCE — ver lá o porquê, e
+ * o relato do dono que fez a versão anterior (que começava baixa e subia) ser
+ * jogada fora.
  */
-export default function ResolucaoAdaptativa() {
+export default function ResolucaoAdaptativa({ aoSofrerNoPiso }) {
   const setDpr = useThree(estado => estado.setDpr);
-  const degrau = useRef(0);
-  const teto = useRef(DEGRAUS_DE_RESOLUCAO.length - 1);
+  const degrau = useRef(degrauInicial(
+    typeof window === 'undefined' ? 1 : window.devicePixelRatio,
+  ));
   const amostras = useRef([]);
 
+  const cair = (novo) => {
+    if (novo === degrau.current) return;
+    degrau.current = novo;
+    amostras.current = [];
+    setDpr(DEGRAUS_DE_RESOLUCAO[novo]);
+  };
+
   useFrame((_, delta) => {
-    amostras.current.push(delta * 1000);
+    const ms = delta * 1000;
+
+    // Um quadro absurdo derruba na hora, sem esperar a amostra. Sem isto, um
+    // aparelho fraco pagava 10 quadros na resolução cheia antes de a cena cair
+    // — o CI mediu 1.938 ms de bloqueio numa janela de 2.000 ms.
+    if (quedaDeEmergencia(ms)) {
+      if (degrau.current > 0) { cair(degrau.current - 1); return; }
+      // Já está no piso e AINDA não dá conta. Aqui a resolução acabou: quem
+      // ainda pesa é o `antialias`, que não se troca com a cena montada (é
+      // opção do contexto WebGL). Quem resolve isso é `LandingScene`.
+      aoSofrerNoPiso?.();
+      return;
+    }
+
+    amostras.current.push(ms);
     if (amostras.current.length < QUADROS_POR_AMOSTRA) return;
 
     // Mediana, e não média: um único quadro de 500 ms (aba em segundo plano,
@@ -27,13 +51,20 @@ export default function ResolucaoAdaptativa() {
     const mediana = ordenado[Math.floor(ordenado.length / 2)];
     amostras.current = [];
 
-    const novo = proximoDegrau({
-      degrau: degrau.current, teto: teto.current, mediana,
-    });
-    if (novo.degrau === degrau.current) return;
-    degrau.current = novo.degrau;
-    teto.current = novo.teto;
-    setDpr(DEGRAUS_DE_RESOLUCAO[novo.degrau]);
+    const novo = proximoDegrau({ degrau: degrau.current, mediana });
+    if (novo !== degrau.current) { cair(novo); return; }
+
+    // JÁ NO PISO E AINDA LENTO — e este caminho faltava.
+    //
+    // O CI mediu 165 desenhos em 2 s, ou seja ~60 ms por quadro: lento o
+    // bastante para a amostra reprovar, e **abaixo** do limite de emergência de
+    // 100 ms. Resultado: no piso, `proximoDegrau` devolvia o mesmo degrau,
+    // nada acontecia, e o desligamento do antialias nunca era alcançado.
+    //
+    // O aviso tem que sair da MESMA decisão que a queda, senão ele só existe no
+    // papel — foi exatamente o que aconteceu, e o número piorou de 1.938 para
+    // 2.029 ms enquanto eu achava que tinha resolvido.
+    if (degrau.current === 0 && mediana > LENTO_MS) aoSofrerNoPiso?.();
   });
 
   return null;

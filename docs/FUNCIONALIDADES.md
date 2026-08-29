@@ -54,7 +54,14 @@ estado de autenticação.
   Vale −20% do chunk (888 → 708 kB) e −18% da thread principal atribuível a ela
   (520 → 428 ms, sob freio de CPU de 4×). Em troca, medir o contêiner ao
   redimensionar passou a ser nosso: é um `ResizeObserver`, com teste próprio.
-- **`[29/08]` E a resolução se ajusta ao aparelho enquanto ela ESTÁ na tela.**
+- **`[29/08]` A resolução se ajusta ao aparelho, começando no MELHOR estado.**
+  A cena abre no `devicePixelRatio` (preso entre 1 e 1,5) e só **desce** se os
+  quadros atrasarem. A primeira versão fazia o contrário — começava baixa e
+  subia — e o dono reprovou testando: *"começa muito pixelada, fica horrível"*,
+  com o brilho do raio sumindo junto. A troca entre a cena e o 2D também ganhou
+  um fade de 500 ms, para a espera deliberada do carregamento não parecer um
+  corte seco.
+- **`[29/08]` (histórico) O ajuste enquanto ela ESTÁ na tela.**
   O item acima resolvia só metade: com a cena visível, cada quadro custava ~92 ms
   e a thread principal ficava **99% ocupada** (8.066 ms de bloqueio numa janela
   de 8 s, medido em navegador de verdade). O custo de uma cena WebGL é por
