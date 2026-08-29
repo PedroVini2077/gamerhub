@@ -37,6 +37,10 @@ export const ROTAS_VISITANTE = [
   { path: '/lives/1',             nome: 'Live por id',    destino: '/',      esperado: /gamerhub/i },
   { path: '/ranks',               nome: 'Ranks',          destino: '/',      esperado: /gamerhub/i },
   { path: `/u/${PERFIL_PUBLICO}`, nome: 'Perfil público', destino: '/',      esperado: /gamerhub/i },
+  // `[29/08]` A página do projeto. Pública de propósito: alguém precisa poder
+  // ler sobre o GamerHub antes de decidir criar conta — então ela tem que
+  // funcionar para o VISITANTE, e é aqui que isso fica travado.
+  { path: '/sobre', nome: 'Sobre', destino: '/sobre', esperado: /O GamerHub/i },
   { path: '/rota-que-nao-existe', nome: '404',            destino: null,     esperado: /404|não encontrad/i },
 ];
 

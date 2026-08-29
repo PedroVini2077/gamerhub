@@ -191,6 +191,44 @@ transições discretas das páginas internas.
 - Posts com `live_kind` (lives de jogadores) são **excluídos do feed** — só
   aparecem na aba Lives.
 
+### `[29/08]` A landing como CAMADA 1 — navegação, rodapé e "Sobre"
+
+A landing deixou de ser uma rolagem só. Ver `CLAUDE.md` §0.4 sobre a ordem por
+camadas, que é o que colocou este trabalho na frente.
+
+| O que | O que resolve |
+| --- | --- |
+| **Cards do topo levam às seções** | pedido do dono: *"imagina o site cresce, e o usuário ter que rolar uma tela grande"*. A faixa deixou de ser enfeite e virou o índice da página |
+| **Navegação lateral** (gaveta) | abre pelo menu da barra fixa. Coluna fixa disputaria espaço com o Hero, e no celular não caberia |
+| **Rodapé de verdade** | eram duas linhas que não levavam a lugar nenhum. Agora tem as seções, o projeto, o GitHub e a conta |
+| **Página `/sobre`** | pública de propósito: dá para ler sobre o projeto **antes** de criar conta |
+
+**A lista de seções é fonte única** (`components/landing/secoesDaLanding.js`).
+Os três lugares que a usam — faixa, rodapé e gaveta — liam listas próprias
+antes, e a do topo **já divergia**: citava "Lives ao vivo" e não mencionava
+Keys, que é uma seção inteira do site. Ninguém notou porque a faixa não levava a
+lugar nenhum; assim que virou navegação, isso seria link quebrado.
+
+**Trava:** `components/landing/__tests__/secoesDaLanding.test.js` exige que toda
+seção declarada tenha âncora na página, que toda âncora da página esteja na
+lista, e que os três componentes importem a lista em vez de escrever a própria.
+Âncora inexistente **não dá erro** no navegador — ele só não rola, e para quem
+clica é indistinguível de site travado.
+
+### `[29/08]` A página "Sobre" nasce com partes declaradamente em branco
+
+Três dos cinco blocos — a origem do projeto, quem está por trás, e para onde ele
+vai — dependem da história do dono, e ele ficou de mandar o texto.
+
+Eles aparecem na tela **marcados como pendentes**, com a dica do que entra ali.
+A alternativa seria eu inventar: ficaria plausível, ele leria, aceitaria por
+parecer certo, e o site passaria a contar uma origem que não aconteceu. Seção
+que simplesmente some é pior ainda — some sem explicação e ninguém lembra que
+faltava.
+
+Para preencher: `components/sobre/conteudoDoSobre.js`, trocar `pendente: true`
+por `false` e escrever. O aviso some sozinho.
+
 ### `[29/08]` Página de um post (`/post/:id`)
 
 Um post sozinho, com o card inteiro — texto, imagem, vídeo, áudio e embed.

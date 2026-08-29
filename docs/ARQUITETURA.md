@@ -78,6 +78,7 @@ src/
 │   ├── PostPage.jsx       # Um post sozinho, em `/post/:id`. Existe para o link
 │   │                      # direto da fila de moderação; mostra conteúdo oculto
 │   │                      # para quem é da equipe (a RLS decide)
+│   ├── Sobre.jsx          # `/sobre` — pública, para ler antes de criar conta
 │   ├── MuralPage.jsx      # Uma mensagem do mural, em `/mural/:id`
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
@@ -105,6 +106,8 @@ src/
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
+    │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
+    │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
     │                      # SceneObjects (LogoBolt/FloatingShapes)
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,

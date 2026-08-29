@@ -28,6 +28,7 @@ export default function Landing() {
         <HighlightsStrip />
 
         <FeatureSection
+          id="feed"
           icon={Newspaper}
           eyebrow="Feed"
           title="Dicas, curiosidades e news da comunidade"
@@ -38,6 +39,7 @@ export default function Landing() {
         />
 
         <FeatureSection
+          id="mural"
           icon={Users}
           eyebrow="Mural"
           title="Mural da comunidade"
@@ -49,6 +51,7 @@ export default function Landing() {
         />
 
         <FeatureSection
+          id="lives"
           icon={Tv}
           eyebrow="Lives"
           title="Suas lives do Twitch e YouTube, com chat na hora"
@@ -59,6 +62,7 @@ export default function Landing() {
         />
 
         <FeatureSection
+          id="keys"
           icon={Key}
           eyebrow="Keys & Promos"
           title="Keys de jogos grátis e as melhores promoções"
@@ -70,6 +74,7 @@ export default function Landing() {
         />
 
         <FeatureSection
+          id="ranks"
           icon={Trophy}
           eyebrow="Ranks & XP"
           title="Suba de rank e mostre seu progresso"

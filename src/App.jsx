@@ -34,6 +34,7 @@ import NotFound from './pages/NotFound';
 // no bundle inicial fazia todo mundo baixar a que nunca ia ver.
 const Landing     = lazy(() => import('./pages/Landing'));
 const Home        = lazy(() => import('./pages/Home'));
+const Sobre       = lazy(() => import('./pages/Sobre'));
 const PostPage    = lazy(() => import('./pages/PostPage'));
 const MuralPage   = lazy(() => import('./pages/MuralPage'));
 const Community   = lazy(() => import('./pages/Community'));
@@ -165,6 +166,10 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/auth/confirm" element={<AuthConfirm />} />
+      {/* Pública de propósito: alguém precisa poder ler sobre o projeto ANTES
+          de decidir criar conta. Fica fora do `Layout` porque a landing também
+          fica — as duas são as páginas de quem ainda não entrou. */}
+      <Route path="/sobre" element={<Sobre />} />
       <Route path="/" element={<HomeOrLanding />} />
       {/* Endereço próprio de um post. Existe para o link direto da fila de
           moderação — antes não havia para onde apontar, o feed é `/` e um post
