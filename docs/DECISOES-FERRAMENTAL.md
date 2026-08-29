@@ -35,6 +35,31 @@ o dono já tem uma conta pessoal que serve. Menos superfície é melhor.
 **nomear a causa** em vez de dar timeout de 30 s. Mas mitigar o diagnóstico não
 impede o vermelho: o que impede é banir outra conta.
 
+### `[29/08]` Gancho de teste no componente, e não seletor de CSS
+
+O `e2e/painel-admin.mjs` contava as linhas de post com
+`main tbody tr, main [data-post-row]`. **Nenhum dos dois casava**: a lista é de
+`<div class="card">`, não de tabela, e o atributo nunca existiu no componente.
+O contador dava **zero, sempre**.
+
+**E o teste passava.** Com menos de uma página de posts, o botão "Carregar mais"
+não aparece, e o `else` registrava *"sem botão"* como sucesso. Ele passou meses
+sem nunca ter contado uma linha. Quando o banco cruzou 20 posts, o botão surgiu
+e a asserção caiu com `0 linhas antes, 0 depois`.
+
+**Por que `data-post-row` e não a classe `.card`:** classe de CSS existe para
+estilo e muda com o layout; amarrar o teste a ela troca um acoplamento frágil
+por outro. Um atributo dedicado declara *"isto é uma linha de post"* e é um
+contrato explícito entre o componente e o teste.
+
+**A trava real, porém, é outra:** o teste agora **exige ver linhas antes de
+olhar o botão**. Com ou sem paginação, ele prova que sabe enxergar um post — e
+o ramo do `else`, que era o esconderijo, deixou de ser alcançável às cegas.
+
+É a segunda vez que este mesmo arquivo passa pelo motivo errado: antes, o
+seletor da aba de Notificações casava com o sino do `Header`. Teste verde não é
+prova de teste útil.
+
 ### `[24/08]` Contas de teste com cargo: o que decidir antes de criar
 
 **Eu consigo mudar cargo sozinho.** O guard `guard_profile_privileged_cols` só

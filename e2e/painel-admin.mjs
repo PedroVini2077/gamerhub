@@ -165,9 +165,34 @@ try {
   await aba(page, 'Posts').click();
   await page.waitForTimeout(2000);
   const carregarMais = page.getByRole('button', { name: /carregar mais/i }).first();
+  const linhas = () => page.locator('main [data-post-row]').count();
+
+  // `[29/08]` O SELETOR É CONFERIDO ANTES DE QUALQUER COISA, e esta linha é a
+  // correção de um teste que passou meses mentindo.
+  //
+  // O contador usava `main tbody tr, main [data-post-row]`. Nenhum dos dois
+  // casava: a lista de posts é de `<div class="card">`, não de tabela, e o
+  // atributo não existia no componente. O contador dava ZERO — sempre.
+  //
+  // E ninguém percebeu porque o ramo de baixo (`else`) era o que rodava: com
+  // menos de uma página de posts o botão "Carregar mais" nem aparece, e o teste
+  // registrava "sem botao" como SUCESSO. Ele passava sem nunca ter contado uma
+  // linha na vida. Quando o banco passou de 20 posts, o botão surgiu e a
+  // asserção caiu com `0 linhas antes, 0 depois`.
+  //
+  // Exigir linhas ANTES de olhar o botão fecha esse esconderijo: com ou sem
+  // paginação, o teste agora prova que sabe enxergar um post.
+  const linhasVisiveis = await linhas();
+  if (linhasVisiveis === 0) {
+    throw new Error(
+      'nenhuma linha de post encontrada com [data-post-row]. Ou a aba nao '
+      + 'carregou, ou o atributo saiu do PostsPanel — e sem ele o teste de '
+      + 'paginacao passa a contar zero e vira decoracao.');
+  }
+  ok(`aba Posts lista ${linhasVisiveis} post(s)`);
+
   if (await carregarMais.count() > 0) {
-    const linhas = () => page.locator('main tbody tr, main [data-post-row]').count();
-    const antes = await linhas();
+    const antes = linhasVisiveis;
     await carregarMais.click();
     await page.waitForTimeout(3000);
     const depois = await linhas();
@@ -179,7 +204,8 @@ try {
     ok(`paginacao de posts funciona (${antes} -> ${depois} linhas)`);
   } else {
     // Menos posts que uma página inteira: não há o que paginar, e exigir o
-    // botão aqui transformaria "banco pequeno" em teste vermelho.
+    // botão aqui transformaria "banco pequeno" em teste vermelho. Mas agora
+    // este ramo só é alcançado depois de o teste ter contado linhas de verdade.
     ok('paginacao de posts: sem botao (menos de uma pagina de posts)');
   }
 
