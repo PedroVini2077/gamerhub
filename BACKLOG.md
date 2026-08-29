@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**15 itens abertos** (+ 1 ideia sem compromisso)
+**14 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -38,8 +38,16 @@
 > deixavam o clique podendo não mudar nada. Custo: uma consulta a mais na carga
 > inicial, dentro do mesmo `Promise.all`.
 >
+> **Fechado também:** o chunk da cena 3D, que era 🔵. Ele deixou de ser "bytes
+> para rede lenta" quando o A/B mostrou que a cena responde por 520 ms de thread
+> principal e que, depois da resolução adaptativa, esses 520 ms são quase todos
+> CARGA. Trocar `<Canvas>` por `createRoot` deu −20,2% de bytes e −18% de thread.
+> A justificativa antiga do item (`extend(THREE)`) estava errada — conferida na
+> fonte e corrigida em [DESEMPENHO.md](docs/DESEMPENHO.md).
+>
 > **Viraram decisão** (§6.2 regra 4): resolução adaptativa em vez de `dpr` fixo,
-> e o brilho do título por `opacity` → [DECISOES.md](docs/DECISOES.md).
+> o brilho do título por `opacity`, e o `<Canvas>` saindo em favor do
+> `createRoot` → [DECISOES.md](docs/DECISOES.md).
 >
 > **Esperando você:** três decisões de custo (HIBP, plano Team, sair do Gmail),
 > a escolha do React Query, o desenho do aviso na landing, repostar um vídeo e
@@ -84,33 +92,43 @@
   > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
   > pendentes.
 
-- ⬜ `[29/08]` 🟢 **Descobrir POR QUE o vídeo do dono não rende quadros.**
-  *Ainda aberto, e agora com instrumentação em vez de hipótese.*
+- ⬜ `[29/08]` 🟢 **Confirmar que o plano B da moderação de vídeo salva o caso
+  real.** *O erro do dono foi capturado, a mensagem que o descrevia estava
+  errada, e o caminho alternativo foi construído e travado. Falta um vídeo de
+  verdade passar por ele.*
 
-  **O que está provado (log da Supabase, 29/08 03:19:44 UTC):** a
-  `moderate-text` foi chamada para o post do vídeo e a `moderate-image`
-  **não foi chamada nenhuma vez**. A falha está no navegador, antes da rede.
-  Isto é fato, não dedução.
+  **O que o aviso na tela finalmente disse** (08:13 de 29/08):
+  `o navegador não decodificou o arquivo (tipo: video/mp4)`.
 
-  **O que NÃO está provado:** qual das causas dispara. Continua desconhecido, e
-  nenhuma das correções abaixo foi feita por ser "a provável" — cada uma fecha
-  um caminho de falha silenciosa que estava aberto de verdade.
+  **E essa frase não era confiável — o erro era meu.** `video.src = url` já
+  inicia a carga; logo abaixo havia um `video.load()`, que **aborta a carga em
+  andamento**. Um `MEDIA_ERR_ABORTED` era relatado como problema de codec. A
+  mensagem única cobria os quatro `MediaError`, que têm causas opostas: 1 é bug
+  nosso, 2 é a fonte, 3 é o arquivo, 4 é o codec.
 
-  **O que mudou em 29/08:**
-
-  | Mudança | O que resolve |
+  | Correção | Efeito |
   | --- | --- |
-  | motivo vai para o `admin_logs` via `falha_de_extracao` | o motivo deixou de viver só num toast de segundos e no Sentry — duas investigações começaram do zero por causa disso |
-  | motivo aparece no aviso da tela, e ele dura 12 s | quem publicou consegue dizer a causa sem abrir painel nenhum |
-  | quadro em branco passa a ser reprovado | `drawImage` com vídeo não decodificado **não lança**: saía um JPEG válido e transparente, a IA devolvia `score 0`, e o vídeo era gravado como **analisado e limpo** — pior do que não analisar |
-  | `load()` + `play()` mudo antes de amostrar | `preload` é dica, e o Safari do iPhone a ignora fora de gesto do usuário — e o gesto já expirou no upload |
-  | vigia de 4 s por salto | `seeked` não é garantido; um salto travado consumia os 15 s e levava junto os quadros que já tinham dado certo |
-  | exige `videoWidth`/`videoHeight` | sem dimensão, o canvas de 512×512 saía transparente |
+  | `load()` redundante removido | tira a causa que o próprio erro podia ter |
+  | manipuladores antes do `src` | o `onerror` deixa de ser registrado depois de a carga começar |
+  | `lib/erroDeMidia.js` | a mensagem passa a trazer o código real e o texto do navegador |
+  | **plano B pela URL do storage** | se o arquivo local for recusado, a extração é repetida a partir do vídeo que acabou de subir |
 
-  **Ação do dono, e é a única que falta:** repostar um vídeo. Se passar, o log
-  mostra `analisadas=3/3`. Se falhar, a causa aparece **na tela e no
-  `admin_logs`** com nome — consulta pronta em
-  [OPERACAO.md](docs/OPERACAO.md).
+  O plano B é o conserto de verdade: todas as causas plausíveis para o `<video>`
+  recusar um `blob:` têm a mesma saída — a mídia **já está publicada**, e o
+  navegador trata a URL dela como mídia comum, igual à que ele toca no feed.
+  Custo: um download a mais, só quando o caminho local já falhou.
+
+  Travado em `e2e/quadros-de-video.mjs`, que agora grava o vídeo fabricado em
+  disco, serve por HTTP, extrai pela URL e apaga o arquivo. Provado nos dois
+  sentidos.
+
+  **Ação do dono:** postar um vídeo. Três desfechos, e todos são informação:
+
+  | O que aparece | O que significa |
+  | --- | --- |
+  | nenhum aviso | passou — pelo arquivo local ou pelo plano B |
+  | aviso com `arquivo local: … \| storage: …` | falhou nos dois; o vídeo é indecodificável para aquele navegador, e **também não toca no feed** dele |
+  | aviso com um motivo só | caso novo — o motivo diz onde olhar |
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
@@ -181,35 +199,6 @@
   ban/suspensão (canal + poll de 60 s) do estado de sessão/perfil. São as duas
   responsabilidades que já convivem ali, e a primeira tem teste próprio.
   **Pede aprovação antes** (§7 🟡): mexe em autenticação.
-
-- ⬜ `[28/08]` 🔵 **Emagrecer o chunk da cena 3D — o que sobrou depois de duas
-  correções de desempenho.** *A cena 3D FICA (decisão do dono, registrada em
-  [DECISOES.md](docs/DECISOES.md)). Isto aqui é BYTE, e byte nunca foi o
-  gargalo dela.*
-
-  **`[29/08]` Correção do que este item dizia.** Ele afirmava que o problema de
-  desempenho da cena "já foi corrigido" em 28/08, quando o `frameloop` passou a
-  desligar fora da tela. Estava **errado pela metade**, e a metade que faltava
-  era a maior:
-
-  | Rodada | O que foi corrigido | O que continuava |
-  | --- | --- | --- |
-  | 28/08 | a cena desenhando 60×/s **depois** de o visitante rolar para longe | ela custava ~92 ms **por quadro** enquanto visível |
-  | 29/08 | resolução adaptativa: 8.066 ms → 52 ms de thread bloqueada | — |
-
-  O erro de raciocínio foi olhar só o caso "ninguém está vendo". O caso "está
-  na tela" nunca foi medido, e era 99% de ocupação da thread principal.
-
-  **O que sobra, e por que é 🔵:** o chunk continua com 887 kB, e trocar
-  `<Canvas>` por `createRoot` + `extend` seletivo vale **−20%** (887 → 707 kB,
-  medido com experimento descartável). Isso importa para **download em rede
-  lenta** — não para thread principal, que agora está resolvida por outro
-  caminho.
-
-  **O custo de fazer:** `createRoot` não traz o tratamento de resize que o
-  `<Canvas>` faz sozinho; seria preciso escrever e testar isso. Trabalho real,
-  ganho moderado, risco na porta de entrada do site. Fica para quando houver
-  folga.
 
 ## 🔵 Só quando o volume crescer
 

@@ -35,7 +35,7 @@ estado de autenticação.
 
 **Cena 3D do Hero** (`Scene3D` + `scene3d/`):
 - Canvas React Three Fiber carregado sob demanda (lazy) com `Suspense`. É o
-  maior asset do site (~236 KB gzip, 887 KB descompactados) e é puramente
+  maior asset do site (~183 KB gzip, 708 KB descompactados) e é puramente
   decorativo, então `Scene3D` nem baixa o chunk quando não vai ser aproveitado.
   A decisão inteira mora em `lib/cena3D.js`, e os portões são:
   `prefers-reduced-motion`, `navigator.connection.saveData`, `deviceMemory ≤ 1`,
@@ -48,6 +48,12 @@ estado de autenticação.
   `IntersectionObserver` desliga o `frameloop` do `<Canvas>`. Sem isso a cena
   continuava desenhando 60×/s para quem já tinha rolado para longe. Travado por
   `e2e/cena-3d.mjs`.
+- **`[29/08]` O `<Canvas>` do fiber saiu; a cena é montada por `createRoot`.**
+  Ele trazia junto o sistema de eventos de ponteiro (raycasting a cada
+  movimento), e esta cena não tem um único manipulador de clique — é decoração.
+  Vale −20% do chunk (888 → 708 kB) e −18% da thread principal atribuível a ela
+  (520 → 428 ms, sob freio de CPU de 4×). Em troca, medir o contêiner ao
+  redimensionar passou a ser nosso: é um `ResizeObserver`, com teste próprio.
 - **`[29/08]` E a resolução se ajusta ao aparelho enquanto ela ESTÁ na tela.**
   O item acima resolvia só metade: com a cena visível, cada quadro custava ~92 ms
   e a thread principal ficava **99% ocupada** (8.066 ms de bloqueio numa janela

@@ -24,6 +24,9 @@
  * automaticamente também: quem decide é a Edge Function, não este arquivo.
  */
 
+import { descreverErroDeMidia } from './erroDeMidia';
+import { nadaFoiDesenhado } from './quadroDesenhado';
+
 // Três quadros: começo, meio e fim. Cobre a abertura (onde costuma estar a
 // isca), o miolo e o final, sem chegar perto do teto de 4 imagens por chamada
 // que a Edge Function aplica.
@@ -64,34 +67,8 @@ const TEMPO_POR_SALTO_MS = 4000;
 const INSTANTE_ABSURDO = 1e6;
 
 /**
- * Um quadro que o `<canvas>` recebeu de fato tem pixels OPACOS.
- *
- * ── Por que isto existe, e é a falha mais perigosa das que já apareceram aqui ─
- *
- * `drawImage` com um vídeo que o navegador não decodificou **não lança**: ele
- * simplesmente não desenha nada. O `<canvas>` nasce totalmente transparente,
- * então o resultado é um JPEG válido, do tamanho certo, e em branco — e ele
- * seguia para a moderação, que devolvia `score 0`. O vídeo era então marcado
- * como **analisado e limpo**, que é pior do que não ter sido analisado: o
- * primeiro caso mente, o segundo pelo menos aparece como pendência.
- *
- * Quadro de vídeo é sempre opaco (alpha 255). Alpha 0 em toda a amostra prova
- * que nada foi desenhado — não é julgamento sobre o conteúdo, é a diferença
- * entre ter pixel e não ter.
- *
- * @param {Uint8ClampedArray|number[]} dados RGBA vindo de `getImageData`
- * @returns {boolean} `true` quando NADA foi desenhado
- */
-export function nadaFoiDesenhado(dados) {
-  if (!dados?.length) return true;
-  for (let i = 3; i < dados.length; i += 4) {
-    if (dados[i] !== 0) return false;
-  }
-  return true;
-}
-
-/**
- * @param {File|Blob} arquivo vídeo escolhido pelo usuário
+ * @param {File|Blob|string} arquivo o vídeo escolhido pelo usuário, ou a URL
+ *   pública dele já no storage (o plano B de `moderateVideos`)
  * @returns {Promise<{quadros: string[], motivo: string|null}>} `quadros` são
  *   data URLs JPEG; `motivo` diz por que a lista veio vazia (ou `null` quando
  *   deu certo). Lista vazia é **"não analisado"**, nunca "analisado e limpo".
@@ -106,6 +83,11 @@ export function nadaFoiDesenhado(dados) {
  * completamente diferentes.
  */
 export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
+  // Aceita um arquivo local OU uma URL já publicada. A segunda forma é o plano
+  // B de `moderateVideos`: quando o navegador recusa o `blob:` do arquivo que a
+  // pessoa acabou de escolher, a mesma mídia já está no storage e pode ser lida
+  // de lá. Ver o comentário do plano B lá.
+  const ehEndereco = typeof arquivo === 'string';
   return new Promise((resolve) => {
     let url;
     let encerrado = false;
@@ -132,22 +114,39 @@ export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
       TEMPO_MAXIMO_MS,
     );
 
-    try {
-      url = URL.createObjectURL(arquivo);
-    } catch {
-      encerrar('o navegador recusou criar a URL do arquivo');
-      return;
-    }
-
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    // `crossOrigin` SAIU. Ele foi escrito para evitar canvas "tainted", mas a
-    // origem aqui é sempre `blob:` do próprio documento — mesma origem por
-    // construção, então não havia o que proteger. E declarar CORS numa URL
-    // `blob:` faz o navegador tratar a carga como requisição de outra origem,
-    // que é justamente o tipo de recusa silenciosa que estamos caçando.
-    video.src = url;
+
+    // ── OS MANIPULADORES VÊM ANTES DO `src`, e a ordem aqui é a correção ────
+    //
+    // Atribuir `src` já dispara o algoritmo de carga do navegador. Registrar o
+    // `onerror` depois disso funcionava por sorte (eventos são assíncronos),
+    // mas deixava o arquivo carregando sem ninguém escutando durante a
+    // montagem — e foi o tipo de fragilidade que produziu o bug abaixo.
+    video.onerror = () => encerrar(
+      `o navegador recusou a mídia — ${descreverErroDeMidia(video.error)}`
+      + ` (tipo: ${(ehEndereco ? 'url' : arquivo?.type) || 'desconhecido'}`
+      + `${ehEndereco ? '' : `, canPlayType: "${video.canPlayType(arquivo?.type || '') || 'vazio'}"`})`,
+    );
+
+    if (ehEndereco) {
+      // CORS ligado SÓ aqui. Numa URL `blob:` ele criava recusa silenciosa
+      // (mesma origem por construção, nada a proteger); numa URL do storage ele
+      // é obrigatório, senão o `<canvas>` fica "tainted" e todo `getImageData`
+      // lança — o que apareceria como "o canvas recusou desenhar".
+      video.crossOrigin = 'anonymous';
+      url = null;               // não é object URL: não há o que revogar
+      video.src = arquivo;
+    } else {
+      try {
+        url = URL.createObjectURL(arquivo);
+      } catch {
+        encerrar('o navegador recusou criar a URL do arquivo');
+        return;
+      }
+      video.src = url;
+    }
 
     // Fora da tela, mas DENTRO do documento. Navegador de celular costuma
     // recusar decodificar vídeo de elemento solto na memória — e o sintoma é
@@ -155,21 +154,20 @@ export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
     video.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
     document.body.appendChild(video);
 
-    // O empurrão. `preload` é uma DICA, e o Safari do iPhone a ignora fora de
-    // gesto do usuário — e aqui o gesto já expirou, porque entre o clique em
-    // "Publicar" e esta linha houve o upload inteiro. Sem carga, nem
-    // `loadedmetadata` nem `error` disparam: o arquivo fica parado e a única
-    // coisa que acontece é o teto de 15 s estourar.
+    // O empurrão, e ele é SÓ o `play()`.
     //
-    // `play()` num vídeo mudo e `playsInline` é permitido sem gesto desde o
-    // iOS 10, e obriga o navegador a decodificar. A pausa vem no
-    // `loadedmetadata`: a partir dali quem manda na posição é o salto.
-    video.load();
-    video.play().catch(() => { /* navegador que recusa autoplay já carregou pelo load() */ });
-
-    video.onerror = () => encerrar(
-      `o navegador não decodificou o arquivo (tipo: ${arquivo?.type || 'desconhecido'})`,
-    );
+    // Aqui havia um `video.load()` antes, e ele era um bug: atribuir `src` já
+    // inicia a carga, então `load()` **aborta a carga em andamento e recomeça**.
+    // O resultado possível é um `MEDIA_ERR_ABORTED` — que a mensagem antiga
+    // relatava como "o navegador não decodificou o arquivo", mandando procurar
+    // codec quando a causa era o nosso próprio código.
+    //
+    // O `play()` fica porque resolve outro problema, real: `preload` é uma
+    // DICA, e o Safari do iPhone a ignora fora de gesto do usuário — e o gesto
+    // já expirou, porque entre o clique em "Publicar" e esta linha aconteceu o
+    // upload inteiro. Vídeo mudo e `playsInline` pode tocar sem gesto desde o
+    // iOS 10, e tocar obriga a decodificar.
+    video.play().catch(() => { /* recusou autoplay: o `preload` ainda pode dar conta */ });
 
     video.onloadedmetadata = () => {
       video.pause();

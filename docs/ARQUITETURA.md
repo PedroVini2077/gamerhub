@@ -38,7 +38,14 @@ src/
 │   ├── csv.js             # Geração + download de CSV (export de logs)
 │   ├── wordlist.js        # Match de palavra inteira do filtro de moderação
 │   ├── framesDeVideo.js   # Extrai 3 quadros de um vídeo no navegador, para a
-│   │                      # moderação de imagem analisar (ver MODERACAO-IA.md)
+│   │                      # moderação de imagem analisar (ver MODERACAO-IA.md).
+│   │                      # Aceita o arquivo local OU a URL já publicada — o
+│   │                      # plano B de quando o navegador recusa o `blob:`
+│   ├── quadroDesenhado.js # `nadaFoiDesenhado`: quadro transparente prova que o
+│   │                      # `drawImage` não teve o que desenhar
+│   ├── erroDeMidia.js     # Traduz os 4 `MediaError` — cada um aponta para um
+│   │                      # lugar diferente, e uma frase só mentia sobre três
+│   ├── paginacaoDePosts.js# Faixa da página por sub-aba no painel de posts
 │   ├── resolucaoDaCena.js # Regra pura de resolução adaptativa da cena 3D
 │   │                      # (fora do React porque a metade que importa — a
 │   │                      # cena SOBE de resolução — não dá para provar num
@@ -89,7 +96,8 @@ src/
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
-    │   └── scene3d/       # LandingScene, Lightning, SceneObjects (LogoBolt/FloatingShapes)
+    │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
+    │                      # SceneObjects (LogoBolt/FloatingShapes), ResolucaoAdaptativa
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
@@ -145,7 +153,8 @@ exceto o owner, reagindo em tempo real à `site_config`.
 **A conta que engana.** A página inteira transferia 387 KiB, mas o Lighthouse
 media 13,9 s de main thread. Os dois números só batem quando se percebe que o
 custo de CPU é proporcional ao JavaScript **descompactado**: o chunk da cena 3D
-tem 236 KB comprimidos e **887 KB** depois de descompactar. Peso de rede e
+tinha 236 KB comprimidos e **887 KB** depois de descompactar (hoje, depois da
+troca por `createRoot`, são 183 KB e 708 KB). Peso de rede e
 trabalho de CPU são contas diferentes.
 
 **As quatro regras que saíram disso:**
@@ -213,6 +222,27 @@ resolução baixa e estável).
 thread principal acima de 800 ms na janela de 2 s (medido: 0 ms com a correção,
 2.151 ms com o bug reinjetado), e `src/lib/__tests__/resolucaoDaCena.test.js`
 cobre a subida, que nenhum navegador sem GPU deste ambiente consegue exercitar.
+
+### `[29/08]` E o que sobrou depois disso era CARGA, não laço
+
+Com o laço resolvido, um A/B da landing com e sem a cena, sob freio de CPU de
+4×, isolou o que restava:
+
+| | Long tasks | Thread principal |
+| --- | --- | --- |
+| landing **sem** a cena 3D | 2 | 177 ms |
+| landing **com** a cena | 6 | 697 ms |
+
+A cena respondia por **520 ms**, e o laço já dava zero long tasks — ou seja, era
+tudo parse e execução dos 888 kB. Isso mudou a natureza do item de chunk que
+estava no backlog como 🔵 "bytes para rede lenta": ele passou a ser o gargalo
+que sobrava.
+
+A troca de `<Canvas>` por `createRoot` (o `<Canvas>` traz o sistema de eventos
+de ponteiro, que esta cena nunca usa) deu **888 → 708 kB** e **520 → 428 ms**.
+Os dois números andando juntos confirmam a proporcionalidade. O raciocínio
+completo e a correção da explicação antiga estão em
+[DESEMPENHO.md](DESEMPENHO.md).
 
 **No mesmo lote:** o `HUB` do título da landing — que é o **elemento de LCP** —
 animava `text-shadow`, que não roda no compositor. Era o "1 elemento animado"

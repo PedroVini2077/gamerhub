@@ -151,6 +151,43 @@ if (visivel === -1) {
   }
 }
 
+// ── O canvas acompanha o tamanho da janela ─────────────────────────────────
+//
+// Esta parte existe porque em 29/08 o `<Canvas>` do fiber foi trocado por
+// `createRoot` (−20% do chunk: ele traz junto o sistema de eventos de ponteiro,
+// que esta cena decorativa nunca usa). O `<Canvas>` media o contêiner e
+// reconfigurava sozinho ao redimensionar; agora isso é um `ResizeObserver`
+// nosso, em `LandingScene.jsx`.
+//
+// Quebrar esse observador não gera erro nenhum: a cena continua desenhando, só
+// que esticada ou cortada, e ninguém percebe até alguém girar o celular ou
+// mudar a janela. É falha silenciosa (§1.5) — por isso vira teste.
+if (!falhas) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(1200);
+
+  const larguraDoCanvas = () => page.evaluate(
+    () => document.querySelector('canvas')?.clientWidth ?? -1,
+  );
+
+  const antes = await larguraDoCanvas();
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.waitForTimeout(1200);
+  const depois = await larguraDoCanvas();
+
+  if (antes <= 0 || depois <= 0) {
+    falhar('nao consegui medir a largura do canvas antes/depois do resize');
+  } else if (depois >= antes) {
+    falhar(
+      `o canvas nao acompanhou o resize: ${antes}px antes, ${depois}px depois de\n`
+      + `  a janela encolher de ${JANELA.width}px para 1100px.\n`
+      + '  O ResizeObserver de LandingScene.jsx parou de reconfigurar a raiz. A cena\n'
+      + '  continua desenhando — esticada ou cortada — e nada acusa isso.');
+  } else {
+    console.log(`  canvas acompanha o resize: ${antes}px -> ${depois}px`);
+  }
+}
+
 await browser.close();
 
 if (falhas) {

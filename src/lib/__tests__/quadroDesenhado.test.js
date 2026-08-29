@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nadaFoiDesenhado } from '../framesDeVideo';
+import { nadaFoiDesenhado } from '../quadroDesenhado';
 
 /**
  * Trava do quadro em branco — a falha de vídeo mais perigosa que já apareceu.

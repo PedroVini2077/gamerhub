@@ -335,7 +335,8 @@ abertos. Não eram: o segundo já tinha sido recusado. Item de backlog que
 reabre decisão fechada faz a mesma discussão voltar, e é justamente o que este
 arquivo existe para impedir.
 
-**O que continua valendo:** a cena é enfeite caro (887 KB descompactados), então
+**O que continua valendo:** a cena é enfeite caro (708 KB descompactados desde
+29/08, quando o `<Canvas>` saiu — antes eram 887 KB), então
 segue fora do caminho crítico, carregada depois do ocioso e só no desktop, com o
 botão de troca para quem quiser o contrário. O que **não** está mais em
 discussão é a existência dela.
@@ -344,6 +345,35 @@ discussão é a existência dela.
 `@react-three/fiber` + `three` por WebGL cru com os cinco símbolos usados. E
 **medir antes** quanto do chunk é `three` e quanto é `fiber` — se a maior parte
 for `three`, reescrever o `fiber` não resolve nada.
+
+### `[29/08]` O `<Canvas>` do fiber saiu — a cena é montada por `createRoot`
+
+**O que mudou:** `LandingScene` deixou de usar o componente `<Canvas>` do
+`@react-three/fiber` e passa a montar a cena com `createRoot` + `extend` de uma
+lista fechada de 14 classes do `three`.
+
+**Por quê, com número.** O `<Canvas>` traz junto o sistema de eventos de
+ponteiro do fiber — raycasting a cada movimento do mouse, mapeamento de
+eventos, medição de camadas. Esta cena **não tem um único manipulador de clique
+ou de ponteiro**: ela é decoração. Pesando as bibliotecas isoladas, `Canvas`
+custa 1.420 kB contra 1.137 kB de `createRoot`. No chunk real: 888 → 708 kB
+(−20,2%), e a thread principal atribuível à cena caiu de 520 ms para 428 ms sob
+freio de CPU de 4×.
+
+**O que se assume em troca:** o `<Canvas>` media o contêiner e reconfigurava
+sozinho ao redimensionar. Agora isso é um `ResizeObserver` nosso. Um observador
+quebrado não gera erro — a cena continuaria desenhando, esticada ou cortada —,
+então virou teste em `e2e/cena-3d.mjs`, provado nos dois sentidos.
+
+**A justificativa anterior deste item estava errada, e vale registrar.** O
+backlog e o `DESEMPENHO.md` diziam que o ganho vinha de o `<Canvas>` executar
+`extend(THREE)` e arrastar o namespace inteiro. Fui à fonte que executa:
+`grep "extend(THREE)"` no pacote implantado não encontra nada nesta versão. O
+ganho era real, a explicação não. Ver [DESEMPENHO.md](DESEMPENHO.md).
+
+**O que isto NÃO resolve:** o `three` continua entrando praticamente inteiro,
+porque o `WebGLRenderer` tem caminho de código para quase tudo que ele traz.
+Encolher além daqui exigiria WebGL cru — outra conversa, e de outro tamanho.
 
 ### `[29/08]` A resolução da cena 3D é ADAPTATIVA, não um número fixo
 

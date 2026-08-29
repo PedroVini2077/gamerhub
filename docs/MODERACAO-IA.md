@@ -229,7 +229,7 @@ imagem — nudez, gore, automutilação — por custo de imagem.
 > enquanto a análise falsa afirma que alguém olhou. Agora todo quadro passa por
 > `nadaFoiDesenhado` — quadro de vídeo é sempre **opaco**, então alpha 0 em toda
 > a amostra prova que nada foi desenhado. Travado em
-> `src/lib/__tests__/framesDeVideo.test.js`, com a contraprova de que quadro
+> `src/lib/__tests__/quadroDesenhado.test.js`, com a contraprova de que quadro
 > preto **legítimo** (fade, corte) continua passando.
 >
 > **Mais dois endurecimentos, cada um com o mecanismo nomeado:**
@@ -254,10 +254,52 @@ analisado"**, nunca como "analisado e limpo":
 | --- | --- |
 | (a) quem está usando | toast de 12 s com o motivo, no formulário do post |
 | (b) fica gravado | `admin_logs`, ação `edge_function_error`, via `falha_de_extracao` |
-| (c) teste que falha | `e2e/quadros-de-video.mjs` e `src/lib/__tests__/framesDeVideo.test.js` |
+| (c) teste que falha | `e2e/quadros-de-video.mjs` e `src/lib/__tests__/quadroDesenhado.test.js` |
 
 O Sentry continua recebendo via `registrarErro`, agora como quarto canal e não
 como o único.
+
+> ### `[29/08]` A terceira rodada — e a mensagem que eu escrevi estava mentindo
+>
+> Com o motivo finalmente na tela, o dono repostou e apareceu:
+> `o navegador não decodificou o arquivo (tipo: video/mp4)`. Progresso — cinco
+> causas viraram uma família. Mas ao abrir o código para agir sobre isso,
+> **a mensagem se mostrou não confiável**, e por culpa minha:
+>
+> `video.src = url` já inicia a carga. Logo abaixo eu chamava `video.load()`,
+> que **aborta a carga em andamento e recomeça**. O resultado possível disso é
+> `MEDIA_ERR_ABORTED` — e a minha frase única relatava qualquer um dos quatro
+> `MediaError` como problema de codec. Era o §1.5 ao contrário: não é falha
+> silenciosa, é falha que **fala mentira**, o que manda investigar o lugar
+> errado por horas.
+>
+> **O que mudou:**
+>
+> | Mudança | Por quê |
+> | --- | --- |
+> | o `load()` redundante saiu | ele podia ser a causa do próprio erro que reportava |
+> | os manipuladores vêm ANTES do `src` | atribuir `src` já dispara a carga; registrar depois funcionava por sorte |
+> | a mensagem traz o `MediaError` real | `lib/erroDeMidia.js` separa os quatro códigos, e cada um aponta para um lugar diferente: 1 é bug nosso, 2 é a fonte, 3 é o arquivo, 4 é o codec |
+> | e traz o `canPlayType` do tipo declarado | resposta do próprio navegador sobre o formato, antes de qualquer dedução |
+>
+> **O plano B, que é o conserto de verdade.** Todas as causas plausíveis para o
+> `<video>` recusar um `blob:` — codec que ele não abre a partir de Blob, `type`
+> preenchido errado pelo seletor de arquivos, arquivo que o sistema já não
+> entrega — têm a mesma saída: **o vídeo já subiu e já é público**. Então, se o
+> arquivo local falhar, a extração é repetida a partir da URL do storage, que o
+> navegador trata como mídia comum, igual à que ele toca no feed.
+>
+> `crossOrigin = 'anonymous'` volta a existir, mas **só nesse caminho**: numa
+> URL `blob:` ele criava recusa silenciosa; numa URL de storage ele é
+> obrigatório, senão o `<canvas>` fica "tainted" e todo `getImageData` lança.
+>
+> Custo: um download a mais, de até 10 MB, **só quando o caminho local já
+> falhou** (§0.2, regra 2).
+>
+> **E se falhar dos dois lados**, o motivo sai com as duas metades
+> (`arquivo local: … | storage: …`) — e aí a conclusão é mais forte e mais útil:
+> o vídeo é indecodificável para aquele navegador, o que significa que ele
+> **também não toca no feed** para quem usa o mesmo aparelho.
 
 **Trava de deriva:** `src/lib/__tests__/relatoDeFalhaDeVideo.test.js` exige que
 o nome do campo `falha_de_extracao` exista **nos dois lados** (cliente e Edge

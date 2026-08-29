@@ -206,6 +206,10 @@ export async function uploadAudio(userId, audioFile) {
 export async function uploadPostMediaFiles(userId, postId, medias) {
   const rows = [];
   const imageUrls = [];
+  // `[29/08]` As URLs de vídeo saem daqui também. Elas são o plano B da
+  // moderação: quando o navegador recusa decodificar o arquivo LOCAL, a mesma
+  // mídia já está publicada e pode ser lida do storage. Ver `moderateVideos`.
+  const videoUrls = [];
   // Comprime ANTES de subir: o arquivo no bucket é o que o CDN serve a cada
   // view. Vídeo/áudio passam intactos.
   const prepared = await compressMedias(medias);
@@ -224,8 +228,9 @@ export async function uploadPostMediaFiles(userId, postId, medias) {
     const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
     rows.push({ post_id: postId, url: publicUrl, type, position: i });
     if (type === 'image') imageUrls.push(publicUrl);
+    if (type === 'video') videoUrls.push(publicUrl);
   }
-  const carga = { imageUrls, failed };
+  const carga = { imageUrls, videoUrls, failed };
   if (!rows.length) {
     return failed ? { data: carga, error: { message: 'Falha ao enviar a mídia.' } } : ok(carga);
   }

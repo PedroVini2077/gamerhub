@@ -71,7 +71,7 @@ export async function moderateLinks(contentType, contentId, url) {
  * quebrando (§1.5). É exatamente a forma de falha que manteve a moderação por
  * IA quebrada em 26 de 26 chamadas por semanas.
  */
-export async function moderateVideos(contentType, contentId, videoFiles) {
+export async function moderateVideos(contentType, contentId, videoFiles, videoUrls = []) {
   // `[28/08]` DEVOLVE ESTADO, e o motivo é um buraco real.
   //
   // O dono postou um vídeo às 22:20 e a moderação **não rodou**. A prova está
@@ -98,8 +98,40 @@ export async function moderateVideos(contentType, contentId, videoFiles) {
 
   const { extrairQuadros } = await import('../lib/framesDeVideo');
 
-  for (const arquivo of videoFiles) {
-    const { quadros, motivo } = await extrairQuadros(arquivo);
+  for (let i = 0; i < videoFiles.length; i++) {
+    const arquivo = videoFiles[i];
+    let { quadros, motivo } = await extrairQuadros(arquivo);
+
+    // ── PLANO B: a mesma mídia, lida do storage ──────────────────────────────
+    //
+    // `[29/08]` Existe porque o navegador do dono recusou o `blob:` do arquivo
+    // que ele mesmo acabou de escolher. As causas possíveis para isso — codec
+    // que o `<video>` não abre a partir de Blob, `type` que o seletor de
+    // arquivos preencheu errado, arquivo que o sistema já não entrega — têm
+    // todas a MESMA saída: o vídeo já subiu, já é público, e a URL dele o
+    // navegador trata como mídia comum, igual à do próprio feed.
+    //
+    // Se ele não conseguir decodificar nem daí, aí sim o vídeo é indecodificável
+    // para este navegador — e nesse caso ele também não tocaria no feed, que é
+    // uma informação bem mais útil do que "a moderação falhou".
+    //
+    // Custo: um download a mais, de até 10 MB, e SÓ quando o caminho local
+    // falha. Sem isso a alternativa era não analisar nada (§0.2, regra 2: a
+    // pergunta é quantas vezes por dia isto roda — e a resposta é "só quando já
+    // deu errado").
+    const enderecoPublico = videoUrls?.[i];
+    if (!quadros.length && enderecoPublico) {
+      resumo.tentouPeloStorage = (resumo.tentouPeloStorage ?? 0) + 1;
+      const pelaUrl = await extrairQuadros(enderecoPublico);
+      if (pelaUrl.quadros.length) {
+        quadros = pelaUrl.quadros;
+        motivo = null;
+        resumo.salvosPeloStorage = (resumo.salvosPeloStorage ?? 0) + 1;
+      } else {
+        motivo = `arquivo local: ${motivo} | storage: ${pelaUrl.motivo}`;
+      }
+    }
+
     if (!quadros.length) {
       resumo.semQuadros++;
       // O motivo entra no texto do erro, e não só nos metadados: o Sentry
