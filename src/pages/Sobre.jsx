@@ -5,6 +5,7 @@ import { ArrowLeft, PencilLine, Zap, ArrowRight, Gamepad2 } from 'lucide-react';
 import { BLOCOS } from '../components/sobre/conteudoDoSobre';
 import { iconeDoBloco } from '../components/sobre/iconesDoSobre';
 import LandingFooter from '../components/landing/LandingFooter';
+import FundoAnimado from '../components/sobre/FundoAnimado';
 import { fadeUpReveal, VIEWPORT } from '../lib/landingMotion';
 
 /**
@@ -88,8 +89,13 @@ function BlocoPendente({ dica }) {
 
 export default function Sobre() {
   return (
-    <div className="min-h-screen bg-dark-900 grid-bg">
-      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-10 pb-16 space-y-10">
+    <div className="min-h-screen bg-dark-900 grid-bg relative">
+      <FundoAnimado />
+
+      {/* `relative` + `z-10`: o texto fica ACIMA da camada animada. Sem isto o
+          enfeite passaria por cima das palavras — que é a diferença entre
+          "dinâmico" e "poluído". */}
+      <div className="relative z-10 max-w-2xl mx-auto px-4 md:px-6 pt-10 pb-16 space-y-10">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-xs font-mono text-gray-400 hover:text-neon-green transition-colors"
@@ -170,7 +176,9 @@ export default function Sobre() {
         </motion.div>
       </div>
 
-      <LandingFooter />
+      <div className="relative z-10">
+        <LandingFooter />
+      </div>
     </div>
   );
 }

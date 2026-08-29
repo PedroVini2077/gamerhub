@@ -283,6 +283,28 @@ E o mapa não tem ícone padrão de propósito — bloco novo sem ícone **estou
 teste** em vez de escolher um símbolo qualquer sozinho (§4, fallback
 silencioso).
 
+**O fundo que se mexe** `[29/08]`: seis formas de contorno atravessam a tela
+devagar atrás do texto (`components/sobre/FundoAnimado.jsx`). O pedido do dono
+era "formas flutuando e batendo aleatoriamente, tipo ping-pong em tempo real" —
+e colisão de verdade **não foi feita de propósito**: ela exige um laço de
+JavaScript por quadro, que é o mesmo custo que derrubou o desempenho da cena 3D,
+e aqui seria pior porque numa página de leitura a pessoa fica parada minutos.
+
+O que substitui a aleatoriedade é cada peça ter duração, atraso e trajetória
+próprias, com durações que não são múltiplas entre si — os ciclos demoram
+muito para coincidir, então o conjunto não se repete de forma perceptível.
+
+**Medido, não suposto:** com a CPU emulada 4x mais lenta e a página parada 6 s,
+**0 tarefas longas** com a animação rodando — mesma marca do estado sem
+animação. É o que se espera de `transform`/`opacity`, que rodam no compositor;
+seria outra história com `text-shadow` ou `filter` animados (foi por isso que o
+`electricBuzz` da landing perdeu o `textShadow`).
+
+Some por completo para quem pediu menos movimento no sistema
+(`motion-reduce:hidden`) — conferido no navegador: `display: none` e altura
+zero. Movimento de fundo dispara enjoo em quem tem sensibilidade vestibular, e
+isso não é detalhe decorativo.
+
 **A fonte é `components/sobre/conteudoDoSobre.js`** — a página só renderiza a
 lista. Bloco com `pendente: true` volta a aparecer como pendente na tela, com a
 dica do que entra ali; o mecanismo continua de pé para quando um bloco novo
