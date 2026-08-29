@@ -188,6 +188,67 @@ if (!falhas) {
   }
 }
 
+// ── Desmontar e remontar não pode vazar contexto WebGL ─────────────────────
+//
+// A outra capacidade que veio junto com o `createRoot`: soltar o contexto ao
+// desmontar. O `<Canvas>` fazia isso sozinho; agora é o nosso `root.unmount()`
+// no cleanup do efeito.
+//
+// O navegador mantém um número limitado de contextos WebGL vivos (o Chromium
+// descarta os mais antigos por volta de 16). Se o unmount não soltar, a cena
+// simplesmente PARA DE APARECER para quem navegou pelo site um tempo — sem erro,
+// sem log, sem teste quebrando (§1.5). Por isso o laço vai além do teto.
+//
+// Navegação pelo `history` de propósito: `page.goto` recarrega o documento e
+// nunca chamaria o unmount, que é justamente o que precisa ser exercitado.
+if (!falhas) {
+  const VOLTAS = 20;
+  const avisos = [];
+  const ouvinte = (m) => {
+    if (/too many active webgl/i.test(m.text())) avisos.push(m.text());
+  };
+  page.on('console', ouvinte);
+
+  await page.setViewportSize(JANELA);
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  for (let i = 0; i < VOLTAS; i++) {
+    await page.evaluate(() => {
+      window.history.pushState({}, '', '/login');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await page.waitForTimeout(250);
+    await page.evaluate(() => {
+      window.history.pushState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await page.waitForSelector('canvas', { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(250);
+  }
+  page.off('console', ouvinte);
+
+  const fim = await page.evaluate(() => {
+    const telas = document.querySelectorAll('canvas');
+    const cv = telas[0];
+    const gl = cv && (cv.getContext('webgl2') || cv.getContext('webgl'));
+    return { quantas: telas.length, temContexto: !!gl, perdido: gl ? gl.isContextLost() : null };
+  });
+
+  if (avisos.length) {
+    falhar(
+      `o navegador reclamou de contextos WebGL demais depois de ${VOLTAS} idas e voltas.\n`
+      + '  O `root.unmount()` de LandingScene.jsx parou de soltar o contexto. O sintoma\n'
+      + '  para quem usa e a cena PARAR DE APARECER depois de navegar um pouco pelo site —\n'
+      + '  sem erro nenhum.');
+  } else if (fim.quantas !== 1) {
+    falhar(`sobraram ${fim.quantas} canvas na pagina depois de ${VOLTAS} remontagens (esperado 1)`);
+  } else if (!fim.temContexto || fim.perdido) {
+    falhar(`a cena ficou sem contexto WebGL vivo depois de ${VOLTAS} remontagens`);
+  } else {
+    console.log(`  ${VOLTAS} desmontagens sem vazar contexto WebGL (1 canvas, contexto vivo)`);
+  }
+}
+
 await browser.close();
 
 if (falhas) {
