@@ -195,6 +195,55 @@ mídia; `comment` e `chat` carregam `post_id`; e a rota `/post/:id` existe no
 `App`. As duas últimas são as que protegem contra sumiço silencioso — sem
 `post_id` o botão simplesmente desaparece, e sem a rota ele leva a um 404.
 
+## `[29/08]` Vídeo que ninguém conseguiu analisar vai para a fila
+
+**Decisão do dono**, com o receio dele registrado junto: *"acho bom enfileirar
+sim no painel, mas vai ficar 300 vídeos enfileirados, e isso vai dar um trabalho
+pra ver"*.
+
+O receio é legítimo, e a resposta a ele é **quando** enfileirar, não **se**:
+
+| | |
+| --- | --- |
+| Enfileira | só quando os **dois** caminhos falham — arquivo local **e** URL do storage |
+| Não enfileira | quando o plano B salvou, porque aí o vídeo **foi** analisado |
+
+Com a extração funcionando (confirmado em produção no mesmo dia:
+`analisadas=3/3`), um item aqui passa a significar algo raro e específico —
+aquele vídeo está publicado e **ninguém olhou para ele**. Fila de item raro é
+fila que alguém lê; fila de item comum é fila que ninguém abre (§0.2, 4ª regra).
+
+### Por que um tipo novo, e não `ai`
+
+Os cinco tipos que existiam significam todos a mesma coisa: *"alguma checagem
+apontou este conteúdo"*. Este significa o **oposto** — nenhuma checagem
+conseguiu olhar.
+
+Marcá-lo como `ai` faria o painel dizer que a IA sinalizou algo quando a IA nem
+rodou. Mensagem falsa manda o moderador julgar pelo critério errado (§1.5), e
+neste caso o critério certo é outro: não há nota, não há categoria, não há nada
+— o item está ali justamente porque não há informação.
+
+`sem_analise` entrou por migration aditiva (`fila_aceita_video_sem_analise`),
+testada em `ROLLBACK` antes de aplicar: aceita o tipo novo, recusa tipo
+inventado, e os cinco antigos seguem valendo. O rótulo é **"Não analisado"** e
+a cor é **cinza** — não é acusação, é ausência de informação, e pintá-lo de
+vermelho sugeriria uma gravidade que ninguém mediu.
+
+### O que acontece ao resolver um item desses
+
+Nada de especial, e isso foi conferido em vez de suposto: `handleResolve` chama
+`aplicarOcultacao` no "confirmar", então aprovar um item `sem_analise` **oculta
+o vídeo de verdade** — ele não tinha sido ocultado ao entrar na fila, ao
+contrário dos itens de IA.
+
+### Duplicata
+
+Um mesmo conteúdo pode ser relatado mais de uma vez (aba reaberta, nova
+tentativa). O item só entra se ainda não houver um pendente para aquele
+conteúdo — item repetido é trabalho repetido, e é assim que uma fila deixa de
+ser olhada.
+
 ## `[28/08]` Moderação por IA de mídia — mudou de arquivo
 
 A política por categoria (o que **oculta** × o que só **enfileira**), os

@@ -35,7 +35,7 @@ todas as tabelas públicas.**
 | `reports`                    | Denúncias da comunidade (tipo/id do conteúdo, motivo, status)    |
 | `blocked_words`              | Wordlist de palavras bloqueadas (com severidade)                |
 | `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor)     |
-| `moderation_queue`           | Fila de revisão humana (origem: denúncia/wordlist/IA/escalação) |
+| `moderation_queue`           | Fila de revisão humana. `trigger_type`: `report`, `wordlist`, `ai`, `escalation`, `links` e — desde 29/08 — `sem_analise`, que significa o oposto dos outros: nenhuma checagem conseguiu olhar o conteúdo |
 
 #### Colunas relevantes em `posts`
 

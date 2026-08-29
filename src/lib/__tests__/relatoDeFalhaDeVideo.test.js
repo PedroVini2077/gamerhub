@@ -87,3 +87,34 @@ describe('relato de falha de vídeo — navegador × moderate-image', () => {
     }
   });
 });
+
+describe('a falha de extração também vira TAREFA, não só registro', () => {
+  it('a Edge Function enfileira o conteúdo como `sem_analise`', () => {
+    expect(
+      FUNCAO,
+      'A `moderate-image` parou de enfileirar o conteúdo cuja análise falhou.\n'
+      + 'O log conta a história; a fila cria a tarefa. Sem o INSERT, o vídeo fica\n'
+      + 'publicado sem análise nenhuma e a única pista é uma linha de log que\n'
+      + 'ninguém tem obrigação de ler.',
+    ).toMatch(/trigger_type:\s*"sem_analise"/);
+    expect(FUNCAO).toMatch(/from\("moderation_queue"\)\s*\.insert/s);
+  });
+
+  it('não cria item duplicado para o mesmo conteúdo', () => {
+    expect(
+      FUNCAO,
+      'A guarda contra duplicata sumiu. Um mesmo vídeo relatado duas vezes\n'
+      + '(aba reaberta, nova tentativa) vira dois itens na fila — trabalho\n'
+      + 'repetido para quem revisa, e é assim que uma fila deixa de ser olhada.',
+    ).toMatch(/status", "pending"\)\s*\.limit\(1\)/s);
+  });
+
+  it('o cliente só relata depois de tentar o plano B', () => {
+    expect(
+      CLIENTE,
+      'O relato de falha subiu para antes da tentativa pela URL do storage.\n'
+      + 'Isso enfileiraria vídeo que o plano B teria analisado sem problema —\n'
+      + 'exatamente a enxurrada de itens que a decisão de 29/08 evitou.',
+    ).toMatch(/enderecoPublico[\s\S]*extrairQuadros\(enderecoPublico\)[\s\S]*falha_de_extracao/);
+  });
+});

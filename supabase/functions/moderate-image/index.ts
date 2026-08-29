@@ -415,7 +415,46 @@ Deno.serve(async (req: Request) => {
       tamanho: Number(falha_de_extracao.tamanho) || null,
       agente: (req.headers.get("user-agent") ?? "").slice(0, 200),
     });
-    return json({ status: "falha_registrada", motivo });
+    // ─── E O CONTEUDO VAI PARA A FILA ────────────────────────────────────
+    //
+    // O log conta a HISTORIA; a fila cria a TAREFA. Sem esta parte, o video
+    // ficava publicado sem analise nenhuma e a unica pista era uma linha de log
+    // que ninguem tem obrigacao de ler.
+    //
+    // `sem_analise` e um tipo proprio, e nao `ai`, porque significa o oposto
+    // dos outros cinco: nenhuma checagem conseguiu olhar. Marca-lo como `ai`
+    // faria o painel dizer que a IA sinalizou algo quando ela nem rodou.
+    //
+    // O cliente so chega aqui quando os DOIS caminhos falharam (arquivo local e
+    // URL do storage), entao o volume fica preso ao caso raro — decisao do dono
+    // em 29/08, justamente para a fila nao encher de video que o plano B ja
+    // analisou.
+    //
+    // Duplicata: um mesmo conteudo pode ser relatado mais de uma vez (aba
+    // reaberta, nova tentativa). Item repetido na fila e trabalho repetido para
+    // quem revisa, entao so entra se ainda nao houver um pendente.
+    const { data: jaNaFila } = await admin
+      .from("moderation_queue")
+      .select("id")
+      .eq("content_id", content_id)
+      .eq("status", "pending")
+      .limit(1);
+
+    let enfileirado = false;
+    if (!jaNaFila?.length) {
+      const { error: erroFila } = await admin.from("moderation_queue").insert({
+        content_type, content_id,
+        trigger_type: "sem_analise",
+        status: "pending",
+        metadata: { origem: "navegador", motivo },
+      });
+      // Falhar aqui em silencio devolveria o problema inteiro: o video seguiria
+      // publicado sem analise E sem tarefa para ninguem.
+      if (erroFila) await gritar(`nao consegui enfileirar para revisao: ${erroFila.message}`, { motivo });
+      else enfileirado = true;
+    }
+
+    return json({ status: "falha_registrada", motivo, enfileirado });
   }
 
   const urls = (image_urls ?? [])
