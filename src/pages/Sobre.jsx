@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, PencilLine, Zap, ArrowRight } from 'lucide-react';
 import { BLOCOS } from '../components/sobre/conteudoDoSobre';
 import LandingFooter from '../components/landing/LandingFooter';
-import { fadeUpReveal, staggerContainer, VIEWPORT } from '../lib/landingMotion';
+import { fadeUpReveal, VIEWPORT } from '../lib/landingMotion';
 
 /**
  * A página "Sobre", pedida pelo dono como primeira aba da navegação lateral.
@@ -57,15 +57,19 @@ export default function Sobre() {
           </h1>
         </motion.header>
 
-        <motion.div
-          variants={staggerContainer(0.08)} initial="initial" whileInView="animate" viewport={VIEWPORT}
-          className="space-y-10"
-        >
+        {/* Cada seção decide sozinha quando aparecer.
+            NÃO envolver isto num container com `whileInView`: `VIEWPORT` usa
+            `amount: 0.25`, e 25% de um container de ~3.900px são ~975px — mais
+            do que a janela de um celular inteira. O container nunca entraria em
+            vista, e os sete blocos ficariam invisíveis PARA SEMPRE, com o texto
+            presente no DOM. Foi exatamente esse o bug de 29/08. */}
+        <div className="space-y-10">
           {BLOCOS.map(bloco => (
             <motion.section
               key={bloco.id}
               id={bloco.id}
               variants={fadeUpReveal}
+              initial="initial" whileInView="animate" viewport={VIEWPORT}
               style={{ scrollMarginTop: '2rem' }}
               className={bloco.destaque
                 ? 'card p-6 space-y-4 border-neon-green/25'
@@ -90,7 +94,7 @@ export default function Sobre() {
                   ))}
             </motion.section>
           ))}
-        </motion.div>
+        </div>
 
         <motion.div
           variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}

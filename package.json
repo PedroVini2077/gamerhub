@@ -15,7 +15,8 @@
     "test:portas": "node e2e/portas-fechadas.mjs",
     "test:e2e:painel": "node e2e/painel-admin.mjs",
     "test:e2e:cena3d": "node e2e/cena-3d.mjs",
-    "test:e2e:quadros": "node e2e/quadros-de-video.mjs"
+    "test:e2e:quadros": "node e2e/quadros-de-video.mjs",
+    "test:e2e:visivel": "node e2e/conteudo-visivel.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

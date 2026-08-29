@@ -340,6 +340,14 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
   nas *Variables* do repositório; sem elas seria "0 rotas", falha que não diz
   nada sobre o código.
+- **conteúdo visível** (`e2e/conteudo-visivel.mjs`, dentro do job de fumaça) —
+  rola cada página pública numa janela de celular (412x830) e reprova se algo
+  com tamanho real ficar em `opacity: 0`. Existe porque a `/sobre` subiu com os
+  sete blocos invisíveis e **o smoke marcou OK**: ele procura texto, e
+  `innerText` devolve o texto de um elemento invisível. Cobertura que não
+  cobria (§1.5). A causa era de classe — `whileInView` com `amount: 0.25` num
+  container mais alto que 4x a janela —, então a trava varre as páginas em vez
+  de conferir aquela.
 - job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
   `/admin` e `/owner` **negados** para `role = 'user'`, publicar → conferir no

@@ -246,6 +246,20 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[29/08]` O conteúdo tem que APARECER, não só existir. A `/sobre` subiu
+      # com os sete blocos em `opacity: 0` permanente: a rota carregava, o
+      # texto estava no DOM, nenhum erro aparecia — e a tela era um cabeçalho
+      # seguido de 4.000 px de nada. O smoke marcou "OK" porque `innerText`
+      # devolve o texto de um elemento invisível.
+      #
+      # Só um navegador de verdade pega isto: depende de IntersectionObserver,
+      # de layout real e do tamanho da janela — nada disso existe no Vitest, e
+      # numa janela de desktop alta o mesmo container passaria.
+      - name: O conteúdo das páginas públicas aparece de verdade
+        run: npm run test:e2e:visivel
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
       # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
       # animação) contra 789 ms de execução de script — ou seja, o custo nunca

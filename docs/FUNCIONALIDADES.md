@@ -277,6 +277,22 @@ lista. Bloco com `pendente: true` volta a aparecer como pendente na tela, com a
 dica do que entra ali; o mecanismo continua de pé para quando um bloco novo
 nascer sem texto.
 
+**O bug que a página teve no primeiro dia, porque ele ensina uma classe.** Ela
+foi ao ar com os sete blocos em `opacity: 0` **permanente** — o cabeçalho
+aparecia e abaixo dele havia 4.000 px de nada. A causa não era da página: o
+container que embrulhava os blocos usava `whileInView` com `viewport={{ amount:
+0.25 }}`, e 25% de um container de 3.902 px são 975 px — **mais do que a janela
+inteira de um celular** (830 px). O limiar era inatingível por construção, o
+`whileInView` do pai nunca disparava, e os filhos ficavam escondidos para
+sempre.
+
+Nenhum teste pegou, e o motivo importa: o Vitest monta em jsdom, que não tem
+`IntersectionObserver` de verdade nem layout; o `smoke.mjs` procura **texto**, e
+`innerText` devolve normalmente o texto de um elemento invisível — ele marcou
+"Sobre OK" com a página em branco. Hoje cada seção carrega o próprio
+`whileInView`, e `e2e/conteudo-visivel.mjs` rola as páginas públicas numa janela
+de celular e reprova se algo com tamanho real ficar invisível.
+
 **A trava:** `conteudoDoSobre.test.js` falha se algum bloco ficar sem título ou
 sem parágrafo, se dois ids colidirem, e — o que importa aqui — se o texto
 deixar de mencionar as respostas específicas do dono (o lema, os jogos que ele
