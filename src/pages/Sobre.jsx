@@ -1,7 +1,9 @@
+import { createElement } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, PencilLine, Zap, ArrowRight } from 'lucide-react';
+import { ArrowLeft, PencilLine, Zap, ArrowRight, Gamepad2 } from 'lucide-react';
 import { BLOCOS } from '../components/sobre/conteudoDoSobre';
+import { iconeDoBloco } from '../components/sobre/iconesDoSobre';
 import LandingFooter from '../components/landing/LandingFooter';
 import { fadeUpReveal, VIEWPORT } from '../lib/landingMotion';
 
@@ -15,6 +17,61 @@ import { fadeUpReveal, VIEWPORT } from '../lib/landingMotion';
  * de qual bloco ainda está por escrever, que aparece na tela em vez de a seção
  * simplesmente sumir.
  */
+
+/**
+ * O ícone do bloco, num quadrado com o brilho da identidade do site.
+ *
+ * Se o mapa não conhecer o nome, NÃO desenha nada em silêncio — o teste de
+ * `conteudoDoSobre.test.js` já reprova nesse caso, e aqui a ausência some
+ * limpa em vez de virar um retângulo vazio na cara de quem lê.
+ */
+function IconeDoBloco({ nome, destaque }) {
+  const icone = iconeDoBloco(nome);
+  if (!icone) return null;
+  // `createElement` e não `<Icone />`: o lint recusa uma variável em maiúscula
+  // resolvida durante o render (`react-hooks/static-components`), porque não
+  // consegue provar que ela é estável. Aqui ela é — vem de um mapa fixo —, mas
+  // silenciar o aviso seria maquiagem (§6.1). Isto diz a mesma coisa sem mentir.
+  const desenhado = createElement(icone, {
+    size: 17, className: 'text-neon-green',
+  });
+  return (
+    <span
+      className={`shrink-0 grid place-items-center rounded-xl border w-9 h-9 ${
+        destaque
+          ? 'border-neon-green/40 bg-neon-green/10'
+          : 'border-dark-500 bg-dark-800'}`}
+    >
+      {desenhado}
+    </span>
+  );
+}
+
+/**
+ * Os jogos do dono, em chips.
+ *
+ * Sem capa de jogo, e a razão é dupla: capa é material com dono (Sony, Konami)
+ * e não se põe num site público por conta própria; e imagem hospedada aqui
+ * comeria egress, que é a cota mais apertada do plano. Ver docs/DECISOES.md.
+ */
+function MuralDeJogos({ jogos }) {
+  return (
+    <ul className="flex flex-wrap gap-2 pt-1">
+      {jogos.map(jogo => (
+        <li
+          key={jogo.nome}
+          className="card px-3 py-2 flex items-center gap-2 border-dark-500"
+        >
+          <Gamepad2 size={13} className="text-neon-green shrink-0" />
+          <span className="font-display text-xs text-white">{jogo.nome}</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-gray-500">
+            {jogo.genero}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /** Um bloco que ainda espera o texto. Aparece; não some. */
 function BlocoPendente({ dica }) {
@@ -75,7 +132,8 @@ export default function Sobre() {
                 ? 'card p-6 space-y-4 border-neon-green/25'
                 : 'space-y-3'}
             >
-              <h2 className="font-display text-xl md:text-2xl font-bold text-white">
+              <h2 className="font-display text-xl md:text-2xl font-bold text-white flex items-center gap-3">
+                <IconeDoBloco nome={bloco.icone} destaque={bloco.destaque} />
                 {bloco.titulo}
               </h2>
 
@@ -92,6 +150,8 @@ export default function Sobre() {
                 : bloco.paragrafos.map((texto, i) => (
                     <p key={i} className="text-gray-400 font-body leading-relaxed">{texto}</p>
                   ))}
+
+              {bloco.jogos?.length > 0 && <MuralDeJogos jogos={bloco.jogos} />}
             </motion.section>
           ))}
         </div>

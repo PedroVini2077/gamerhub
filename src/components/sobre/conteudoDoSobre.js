@@ -22,11 +22,23 @@
  *
  * Cada bloco vira uma seção da página, na ordem desta lista. `pendente: true`
  * troca o texto por um aviso na tela dizendo o que falta ali.
+ *
+ * ── Os campos ───────────────────────────────────────────────────────────────
+ *
+ * `icone`   nome de um ícone do `lucide-react`, resolvido pelo mapa em
+ *           `iconesDoSobre.js`. OBRIGATÓRIO, e há teste que falha se faltar —
+ *           bloco sem ícone sairia com um buraco no lugar dele, e ninguém
+ *           repara num buraco (§1.5).
+ * `jogos`   lista de `{ nome, genero }`. Vira um mural de chips no lugar de
+ *           mais um parágrafo. NÃO usamos capa de jogo: capa é material com
+ *           dono (Sony, Konami), e imagem hospedada aqui ainda comeria egress,
+ *           que é a cota mais apertada do plano. Ver docs/DECISOES.md.
  */
 
 export const BLOCOS = [
   {
     id: 'o-que-e',
+    icone: 'Gamepad2',
     titulo: 'O que é o GamerHub',
     pendente: false,
     paragrafos: [
@@ -42,6 +54,7 @@ export const BLOCOS = [
 
   {
     id: 'origem',
+    icone: 'Sprout',
     titulo: 'De onde o projeto nasceu',
     pendente: false,
     paragrafos: [
@@ -72,6 +85,7 @@ export const BLOCOS = [
 
   {
     id: 'quem-faz',
+    icone: 'User',
     titulo: 'Quem está por trás',
     pendente: false,
     paragrafos: [
@@ -84,20 +98,28 @@ export const BLOCOS = [
       + 'diferentes, mas que se encontram aqui: organização, responsabilidade, '
       + 'comunicação, atenção aos detalhes, trabalho em equipe e, '
       + 'principalmente, disposição para aprender.',
-      'Sobre o que eu jogo: ação é meu terreno — Call of Duty, Battlefield, '
-      + 'tiro em geral. Também sou do tipo que fica preso numa boa história, '
-      + 'daquelas de The Last of Us e God of War. E ficção científica é paixão '
-      + 'antiga: meu preferido é Metal Gear Rising: Revengeance.',
+      'Sobre o que eu jogo: ação é meu terreno, mas fico preso numa boa '
+      + 'história do mesmo jeito — e ficção científica é paixão antiga.',
       'Não estou aqui dizendo que sei tudo — muito pelo contrário. Ainda estou '
       + 'aprendendo, testando, errando, corrigindo e descobrindo muita coisa '
       + 'pelo caminho. E talvez seja justamente isso que torna esse projeto tão '
       + 'especial para mim: ele começou com uma pergunta sobre até onde eu '
       + 'conseguiria chegar, e a resposta ainda está sendo construída.',
     ],
+    // Os títulos que ele citou, na ordem em que citou. Viram chips na tela —
+    // sem capa de jogo, pelo motivo escrito no cabeçalho deste arquivo.
+    jogos: [
+      { nome: 'Call of Duty', genero: 'Ação' },
+      { nome: 'Battlefield', genero: 'Ação' },
+      { nome: 'The Last of Us', genero: 'História' },
+      { nome: 'God of War', genero: 'História' },
+      { nome: 'Metal Gear Rising: Revengeance', genero: 'O preferido' },
+    ],
   },
 
   {
     id: 'espirito',
+    icone: 'HeartHandshake',
     titulo: 'O que a gente espera de quem entra',
     pendente: false,
     // `destaque` dá tratamento visual próprio a este bloco. Ele é o coração da
@@ -117,6 +139,7 @@ export const BLOCOS = [
 
   {
     id: 'como-cuidamos',
+    icone: 'ShieldCheck',
     titulo: 'Como a comunidade é cuidada',
     pendente: false,
     paragrafos: [
@@ -132,6 +155,7 @@ export const BLOCOS = [
 
   {
     id: 'feito-com-ia',
+    icone: 'Bot',
     titulo: 'Este site foi construído com inteligência artificial',
     pendente: false,
     paragrafos: [
@@ -153,6 +177,7 @@ export const BLOCOS = [
 
   {
     id: 'para-onde-vai',
+    icone: 'Rocket',
     titulo: 'Para onde o GamerHub vai',
     pendente: false,
     paragrafos: [

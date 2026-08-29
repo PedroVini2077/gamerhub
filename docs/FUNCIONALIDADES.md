@@ -272,6 +272,17 @@ blocos estão preenchidos.
 | Este site foi construído com inteligência artificial | dito na cara, a pedido dele |
 | Para onde o GamerHub vai | o que ele quer que o site seja |
 
+**Como ela é enfeitada** `[29/08]`: cada bloco abre com um ícone num quadrado
+na identidade do site, e os jogos que o dono citou viram **chips** com nome e
+gênero em vez de mais um parágrafo. Sem capa de jogo — o motivo está em
+[DECISOES.md](DECISOES.md), e vale a pena ler antes de propor imagem de novo.
+
+O ícone vem de um mapa explícito (`components/sobre/iconesDoSobre.js`), não de
+import dinâmico: import por nome traria o `lucide-react` inteiro para o pacote.
+E o mapa não tem ícone padrão de propósito — bloco novo sem ícone **estoura no
+teste** em vez de escolher um símbolo qualquer sozinho (§4, fallback
+silencioso).
+
 **A fonte é `components/sobre/conteudoDoSobre.js`** — a página só renderiza a
 lista. Bloco com `pendente: true` volta a aparecer como pendente na tela, com a
 dica do que entra ali; o mecanismo continua de pé para quando um bloco novo
