@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 28/08/2026, madrugada ·
-**16 itens abertos** (+ 1 ideia sem compromisso)
+**15 itens abertos** (+ 1 ideia sem compromisso)
 
 > **Conferência item a item, e ela achou um erro meu.** Ao reescrever um item no
 > PR #92 usei um recorte por INTERVALO e engoli o que estava no meio: **quatro
@@ -37,6 +37,32 @@
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[29/08]` 🟢 **"Carregar mais" no painel pode não mudar nada na tela.**
+  *Achado ao consertar o teste do painel, não relatado por ninguém — mas é um
+  no-op visível, e este projeto trata isso como defeito (§1.5).*
+
+  A aba Posts tem duas sub-abas, "Posts ativos" e "Lixeira", e mostra uma por
+  vez. **A paginação não é por sub-aba:** `fetchAll` traz os 20 posts mais
+  recentes misturados, e `loadMorePosts` traz os 20 seguintes, também
+  misturados.
+
+  O botão só aparece na sub-aba **ativos**. Se os próximos posts forem todos
+  apagados — provável, porque os antigos costumam estar na lixeira — o admin
+  clica, o painel carrega de verdade, e **a lista na frente dele não muda**.
+  Foi exatamente o que o CI mostrou: 8 ativos antes, 8 depois, com a paginação
+  funcionando.
+
+  **Três saídas, e a escolha é de produto:**
+
+  | Saída | O que muda |
+  | --- | --- |
+  | Paginar por sub-aba | consulta filtrada por `deleted_at`; mais correto e mais consultas |
+  | Mostrar o botão nas duas sub-abas | trivial; o clique passa a fazer sentido em ambas |
+  | Rótulo honesto ("carregar mais posts, incluindo lixeira") | o mais barato, e resolve a expectativa sem mexer na lógica |
+
+  Não escolhi sozinho porque muda o que o admin vê. Nada quebra hoje: o botão
+  carrega de verdade, e o contador da Lixeira sobe.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -103,28 +129,6 @@
   passar, o log mostra `analisadas=3/3`. Se falhar, o aviso na tela agora vem
   com a causa — e aí o conserto é dirigido, não mais adivinhação.
 
-- ⬜ `[28/08]` 🟢 **Aviso do banimento FORA do site, na landing.** *Pedido do
-  dono, adiado por ele mesmo: "depois a gente implementa isso".*
-
-  Eu entendi errado da primeira vez e entreguei outra coisa. O que ele pediu em
-  28/08 foi: *"seria legal o site também identificar o usuário banido, e
-  aparecer uma nova aba ou botão na landing page só pra ele… pode ser um sino"*.
-  O que eu fiz foi notificação **dentro** do site (o sino do `Header`, que só
-  existe depois do login). As duas são úteis e não se substituem: a de dentro
-  serve para quem voltou; esta serve para quem **não consegue entrar**.
-
-  **O obstáculo real, e é por onde a implementação tem que começar:** a landing
-  é vista por visitante anônimo, sem sessão. Identificar "esta pessoa está
-  banida" sem login exige guardar algo no navegador dela — e aí vêm as
-  perguntas que decidem o desenho: o que exatamente fica guardado (um `id`? um
-  `token`?), por quanto tempo, e o que acontece se outra pessoa usar o mesmo
-  computador. Vazar "esta máquina pertence a alguém banido" para quem
-  compartilha o PC é o tipo de coisa que este projeto passou o mês endurecendo
-  contra (§1.3).
-
-  Sem responder isso primeiro, qualquer implementação vira brecha nova ou
-  aviso que aparece para a pessoa errada.
-
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
 - ⬜ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
@@ -148,41 +152,6 @@
 
 
 ## 🟢 Recomendado
-
-- ⬜ `[22/08]` **Migrar `Admin.jsx` para React Query.** **Conferido contra o
-  sistema em 28/08, e a justificativa original não se sustenta mais** (§1.4).
-
-  O item dizia que a migração "resolveria de verdade os `exhaustive-deps`
-  suprimidos". Medido:
-
-  | | |
-  | --- | --- |
-  | Warnings de lint dentro do `Admin.jsx` | **zero** — os 12 restantes estão espalhados por 10 outros arquivos |
-  | Supressões dentro do `Admin.jsx` | 3 |
-  | Supressões no resto do projeto | 7, em 7 arquivos |
-  | Tamanho do `Admin.jsx` | **213 linhas** (era 918 antes dos splits) |
-
-  E as três supressões têm a **mesma causa, que não é falta de React Query**:
-  as funções de fetch vêm dos hooks de domínio sem `useCallback`, então mudam
-  de identidade a cada render — incluí-las nas deps faria o painel recarregar
-  em loop. **O conserto pequeno é memoizar essas funções nos próprios hooks**,
-  e aí as deps ficam honestas sem migração nenhuma.
-
-  React Query continua tendo valor real (cache entre abas, dedupe, invalidação),
-  mas isso é ganho de arquitetura — não conserto de lint. **Vale decidir qual
-  dos dois se quer** antes de gastar uma sessão nisso.
-
-  **A rede ficou pronta em 28/08.** Ao planejar a migração ficou claro que as
-  duas partes mais arriscadas — a paginação com estado local
-  (`loadMorePosts`/`loadMoreKeys`) e o canal lateral que escreve as notificações
-  no estado do pai — não eram tocadas por teste nenhum. Refatorar camada de
-  dados às cegas justamente ali seria o pior lugar para começar. O
-  `e2e/painel-admin.mjs` passou a **contar as linhas antes e depois do
-  "Carregar mais"** e a exigir estado definido na aba de Notificações.
-
-  **O que falta agora é só a migração em si**, e ela pede sessão própria: são 8
-  consultas num `Promise.all`, duas paginações e um canal lateral para
-  desmontar. Ver [ARQUITETURA.md](docs/ARQUITETURA.md).
 
 - ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
   A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;

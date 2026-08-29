@@ -88,6 +88,13 @@ estado de autenticação.
   com delay fiquem em `opacity: 0` durante a espera (não aparecem todos de
   uma vez e somem um a um).
 
+**`[29/08]` Link para quem está bloqueado.** Abaixo do CTA, um link discreto —
+*"Conta bloqueada? Consulte seu caso"* — que leva ao login. Ele é **igual para
+todos** e não identifica ninguém: quem está banido já consegue entrar e ver o
+andamento do recurso na `BannedScreen`; o que faltava era saber que isso existe.
+Identificar o visitante banido foi descartado por privacidade — ver
+[DECISOES.md](DECISOES.md).
+
 **Seções de features** (`FeatureSection`):
 - Cada seção tem ícone, eyebrow, título, descrição e botão "Saiba mais" que
   abre/fecha painel animado com mais detalhes (`expandPanel`).

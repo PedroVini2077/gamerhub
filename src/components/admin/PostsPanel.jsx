@@ -65,7 +65,22 @@ export default function PostsPanel({
         </div>
       ) : (
         visible.map(p => (
-          <div key={p.id}
+          // `data-post-row` é gancho de TESTE, e existe por um bug que passou
+          // meses despercebido: o `e2e/painel-admin.mjs` contava as linhas com
+          // `main tbody tr, main [data-post-row]` — e nenhum dos dois casava,
+          // porque a lista é de `<div>`, não de tabela. O contador dava ZERO.
+          //
+          // O teste não acusava porque o outro ramo do `if` era o que rodava:
+          // com menos de uma página de posts, o botão "Carregar mais" nem
+          // aparece, e ele registrava "sem botão" como sucesso. Em 29/08 o banco
+          // passou de 20 posts, o botão surgiu, e a asserção caiu na hora — com
+          // `0 linhas antes, 0 depois`.
+          //
+          // Foi o teste passando pelo motivo errado (§1.5). Amarrar o teste à
+          // classe de CSS seria trocar um acoplamento frágil por outro; um
+          // atributo dedicado diz "isto é uma linha de post" e sobrevive a
+          // qualquer mudança de layout.
+          <div key={p.id} data-post-row
             className={`card p-4 flex items-start justify-between gap-3 ${p.hidden_at ? 'border-yellow-500/20' : ''}`}>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
