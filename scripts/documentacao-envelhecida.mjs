@@ -53,6 +53,14 @@ const TERRITORIO = {
   // O que a equipe opera. O território dele são os painéis e o caminho de ban.
   'docs/PAINEIS.md': ['src/pages/Admin.jsx', 'src/pages/Owner.jsx', 'src/components/admin'],
   'docs/OPERACAO.md': ['.github/workflows', 'scripts'],
+  // Investigação de desempenho: envelhece quando o que ela mede muda de forma —
+  // a cena 3D, o orçamento de bytes e o build.
+  'docs/DESEMPENHO.md': [
+    'src/components/landing/scene3d',
+    'src/lib/resolucaoDaCena.js',
+    'scripts/orcamento-de-bytes.mjs',
+    'vite.config.js',
+  ],
   // Decisão não envelhece por commit; envelhece por reversão — e reversão é
   // coisa que uma pessoa registra, não que um script detecta.
   'docs/DECISOES.md': [],

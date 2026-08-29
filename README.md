@@ -22,6 +22,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/BANCO.md`](docs/BANCO.md) | Tabelas, RPCs, RLS, storage, realtime, custo de banda |
 | [`docs/SEGURANCA.md`](docs/SEGURANCA.md) | O que protege o quê, e por quê |
 | [`docs/OPERACAO.md`](docs/OPERACAO.md) | **Quando algo quebra.** Monitoramento, site fora do ar, CI |
+| [`docs/DESEMPENHO.md`](docs/DESEMPENHO.md) | **O histórico das medições.** O que cada rodada mediu, o que ela desmentiu, e onde o custo estava de verdade |
 | [`docs/DECISOES.md`](docs/DECISOES.md) | Por que **o site** se comporta assim — decisões de produto, com o que foi **descartado** |
 | [`docs/DECISOES-FERRAMENTAL.md`](docs/DECISOES-FERRAMENTAL.md) | Por que **a esteira** é assim — CI, Vercel, Sentry, Dependabot, Edge Functions, email |
 | [`BACKLOG.md`](BACKLOG.md) | O que falta fazer — só isso, é um checklist |
