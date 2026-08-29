@@ -40,6 +40,14 @@ const QUALIDADE_JPEG = 0.7;
 // para sempre. Enfeite que trava é ruim; moderação que trava é pior.
 const TEMPO_MAXIMO_MS = 15000;
 
+// Teto POR SALTO, e ele existe por um motivo diferente do teto geral. O evento
+// `seeked` não é garantido: navegador que já está na posição pedida não dispara
+// nada, e vídeo muito curto faz as três marcas caírem dentro da mesma
+// granularidade de busca. Sem este teto, um salto travado consumia os 15 s
+// inteiros e levava junto os quadros que já tinham dado certo — o resultado
+// virava zero quadros, que é indistinguível de "vídeo limpo" (§1.5).
+const TEMPO_POR_SALTO_MS = 4000;
+
 /**
  * Um vídeo cuja duração o navegador só descobre depois de procurar o fim.
  *
@@ -54,6 +62,33 @@ const TEMPO_MAXIMO_MS = 15000;
  * número. Depois disso a amostragem normal funciona.
  */
 const INSTANTE_ABSURDO = 1e6;
+
+/**
+ * Um quadro que o `<canvas>` recebeu de fato tem pixels OPACOS.
+ *
+ * ── Por que isto existe, e é a falha mais perigosa das que já apareceram aqui ─
+ *
+ * `drawImage` com um vídeo que o navegador não decodificou **não lança**: ele
+ * simplesmente não desenha nada. O `<canvas>` nasce totalmente transparente,
+ * então o resultado é um JPEG válido, do tamanho certo, e em branco — e ele
+ * seguia para a moderação, que devolvia `score 0`. O vídeo era então marcado
+ * como **analisado e limpo**, que é pior do que não ter sido analisado: o
+ * primeiro caso mente, o segundo pelo menos aparece como pendência.
+ *
+ * Quadro de vídeo é sempre opaco (alpha 255). Alpha 0 em toda a amostra prova
+ * que nada foi desenhado — não é julgamento sobre o conteúdo, é a diferença
+ * entre ter pixel e não ter.
+ *
+ * @param {Uint8ClampedArray|number[]} dados RGBA vindo de `getImageData`
+ * @returns {boolean} `true` quando NADA foi desenhado
+ */
+export function nadaFoiDesenhado(dados) {
+  if (!dados?.length) return true;
+  for (let i = 3; i < dados.length; i += 4) {
+    if (dados[i] !== 0) return false;
+  }
+  return true;
+}
 
 /**
  * @param {File|Blob} arquivo vídeo escolhido pelo usuário
@@ -120,11 +155,24 @@ export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
     video.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0';
     document.body.appendChild(video);
 
+    // O empurrão. `preload` é uma DICA, e o Safari do iPhone a ignora fora de
+    // gesto do usuário — e aqui o gesto já expirou, porque entre o clique em
+    // "Publicar" e esta linha houve o upload inteiro. Sem carga, nem
+    // `loadedmetadata` nem `error` disparam: o arquivo fica parado e a única
+    // coisa que acontece é o teto de 15 s estourar.
+    //
+    // `play()` num vídeo mudo e `playsInline` é permitido sem gesto desde o
+    // iOS 10, e obriga o navegador a decodificar. A pausa vem no
+    // `loadedmetadata`: a partir dali quem manda na posição é o salto.
+    video.load();
+    video.play().catch(() => { /* navegador que recusa autoplay já carregou pelo load() */ });
+
     video.onerror = () => encerrar(
       `o navegador não decodificou o arquivo (tipo: ${arquivo?.type || 'desconhecido'})`,
     );
 
     video.onloadedmetadata = () => {
+      video.pause();
       // Duração desconhecida: força o navegador a varrer até o fim.
       if (!Number.isFinite(video.duration) && !duracaoResolvida) {
         duracaoResolvida = true;
@@ -151,6 +199,13 @@ export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
         encerrar(`o navegador não soube dizer a duração (${duracao})`);
         return;
       }
+      // Sem dimensão não há o que desenhar, e o `|| LARGURA_MAXIMA` de antes
+      // fabricava um canvas 512×512 que ficava transparente — quadro em branco
+      // seguindo para a moderação como se fosse conteúdo.
+      if (!video.videoWidth || !video.videoHeight) {
+        encerrar('o navegador não expôs as dimensões do vídeo (faixa de vídeo ausente ou não decodificada)');
+        return;
+      }
 
       // Frações em vez de segundos fixos: funciona igual num vídeo de 5 s e num
       // de 5 min. Evita 0 e 1 exatos porque o primeiro e o último quadro
@@ -160,30 +215,47 @@ export function extrairQuadros(arquivo, quantidade = QUANTIDADE_DE_QUADROS) {
         (_, i) => duracao * ((i + 0.5) / quantidade),
       );
 
-      const escala = Math.min(1, LARGURA_MAXIMA / (video.videoWidth || LARGURA_MAXIMA));
+      const escala = Math.min(1, LARGURA_MAXIMA / video.videoWidth);
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round((video.videoWidth || LARGURA_MAXIMA) * escala));
-      canvas.height = Math.max(1, Math.round((video.videoHeight || LARGURA_MAXIMA) * escala));
+      canvas.width = Math.max(1, Math.round(video.videoWidth * escala));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * escala));
       const ctx = canvas.getContext('2d');
 
       let indice = 0;
       let falhasAoDesenhar = 0;
+      let emBranco = 0;
+      let vigia;
+
       const proximo = () => {
+        clearTimeout(vigia);
         if (encerrado) return;
         if (indice >= marcas.length) {
-          encerrar(falhasAoDesenhar
-            ? `o canvas recusou desenhar os ${falhasAoDesenhar} quadros`
-            : 'nenhum quadro foi produzido');
+          encerrar(motivoDaAmostragemVazia());
           return;
         }
+        // O vigia por salto: se `seeked` não vier, segue para a próxima marca
+        // em vez de deixar o teto geral levar junto o que já deu certo.
+        vigia = setTimeout(proximo, TEMPO_POR_SALTO_MS);
         video.currentTime = marcas[indice++];
+      };
+
+      const motivoDaAmostragemVazia = () => {
+        if (emBranco) return `o navegador devolveu ${emBranco} quadro(s) em branco — o vídeo não foi decodificado`;
+        if (falhasAoDesenhar) return `o canvas recusou desenhar os ${falhasAoDesenhar} quadros`;
+        return 'nenhum salto no vídeo chegou a completar';
       };
 
       video.onseeked = () => {
         if (encerrado) return;
         try {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          quadros.push(canvas.toDataURL('image/jpeg', QUALIDADE_JPEG));
+          // A conferência que faltava. Um quadro transparente prova que o
+          // `drawImage` não teve o que desenhar — e ele NÃO lança nesse caso,
+          // então sem esta checagem o JPEG em branco ia para a moderação e
+          // voltava "limpo" (ver `nadaFoiDesenhado`).
+          const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          if (nadaFoiDesenhado(data)) emBranco++;
+          else quadros.push(canvas.toDataURL('image/jpeg', QUALIDADE_JPEG));
         } catch {
           // Um quadro que falhou não invalida os outros: três quadros com dois
           // aproveitados ainda é infinitamente melhor que nenhuma checagem.

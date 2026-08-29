@@ -9,7 +9,7 @@ import {
 import { logAudit } from '../lib/auditLog';
 import { canModerateLive } from '../lib/roles';
 import { useBlockedWords } from './useBlockedWords';
-import { moderateText } from '../services/moderationService';
+import { moderateText } from '../services/moderationAiService';
 
 const isActive = t => t && new Date(t.expires_at) > new Date();
 

@@ -184,12 +184,87 @@ imagem — nudez, gore, automutilação — por custo de imagem.
 > Travado por `e2e/quadros-de-video.mjs`, que fabrica um vídeo real com
 > `MediaRecorder` e exige tanto os 3 quadros quanto que um arquivo inválido
 > falhe **dizendo por quê**.
+>
+> ### `[29/08]` Falhou de novo — e desta vez o motivo tinha onde ficar
+>
+> O dono repostou e o aviso apareceu outra vez. O log da Supabase confirmou o
+> mesmo quadro de antes, agora como **fato**, não hipótese: às 03:19:44 UTC a
+> `moderate-text` foi chamada para o post e a `moderate-image` **não foi
+> chamada nenhuma vez** em toda a janela.
+>
+> O que ficou claro é que o problema não era só a causa desconhecida: era o
+> motivo **não ter onde morar**. Ele existia num toast de 6 segundos e no
+> Sentry, e a segunda rodada de investigação começou exatamente do zero da
+> primeira.
+>
+> **Três coisas mudaram.**
+>
+> **1. O motivo aparece na tela.** O aviso deixou de ser genérico: agora traz a
+> causa (`Motivo: o navegador não decodificou o arquivo (tipo: video/mp4)`) e
+> dura 12 s em vez de 6.
+>
+> **2. O motivo vai para o `admin_logs`** — e a afirmação anterior de que "não
+> dá para gritar em `admin_logs` a partir do cliente" estava **errada**, o que
+> vale registrar. Ela era verdadeira sobre o caminho que eu tinha imaginado
+> (uma RPC aberta ao navegador, que qualquer um forjaria). Mas existe um
+> caminho que já é autenticado e que já checa dono: a própria `moderate-image`.
+> Ela passou a aceitar um corpo com `falha_de_extracao` e **sem imagem nenhuma**,
+> e registra a falha com `registrar_falha_de_moderacao`, como já fazia para
+> provedor fora do ar.
+>
+> O ramo fica **depois** da checagem de dono do conteúdo, de propósito: só dá
+> para relatar falha sobre conteúdo próprio, então o volume fica preso ao ritmo
+> de publicação e não ao que um estranho quiser mandar. A entrada sai com
+> severidade `critical` e categoria `moderation` (herdadas da RPC, conferido em
+> `pg_proc`), com deduplicação de 1 hora por motivo.
+>
+> **3. Um buraco pior foi fechado no caminho.** Lendo o código para instrumentar,
+> apareceu uma falha que ninguém tinha notado: `ctx.drawImage` com um vídeo que
+> o navegador **não decodificou não lança exceção** — ele simplesmente não
+> desenha. O `<canvas>` nasce transparente, então saía um JPEG válido, do
+> tamanho certo, **em branco**, que ia para a moderação e voltava com
+> `score 0`. O vídeo era registrado como **analisado e limpo**.
+>
+> Isso é pior do que não analisar: a ausência de análise aparece como pendência,
+> enquanto a análise falsa afirma que alguém olhou. Agora todo quadro passa por
+> `nadaFoiDesenhado` — quadro de vídeo é sempre **opaco**, então alpha 0 em toda
+> a amostra prova que nada foi desenhado. Travado em
+> `src/lib/__tests__/framesDeVideo.test.js`, com a contraprova de que quadro
+> preto **legítimo** (fade, corte) continua passando.
+>
+> **Mais dois endurecimentos, cada um com o mecanismo nomeado:**
+>
+> | Mudança | Mecanismo |
+> | --- | --- |
+> | `load()` + `play()` mudo antes de amostrar | `preload` é uma DICA, e o Safari do iPhone a ignora fora de gesto do usuário — e o gesto já expirou, porque o upload inteiro aconteceu antes. Sem carga, nem `loadedmetadata` nem `error` disparam: o arquivo fica parado até o teto de 15 s estourar |
+> | vigia de 4 s **por salto** | `seeked` não é garantido: navegador já posicionado não dispara nada, e vídeo curto faz as três marcas caírem na mesma granularidade de busca. Sem o vigia, um salto travado consumia os 15 s e levava junto os quadros que já tinham dado certo |
+> | exige `videoWidth`/`videoHeight` | o `|| LARGURA_MAXIMA` de antes fabricava um canvas 512×512 que ficava transparente — era um dos caminhos que produziam o quadro em branco acima |
+>
+> **O que ainda NÃO se sabe, dito com todas as letras:** qual das causas
+> disparou no vídeo do dono. Nenhuma das mudanças acima foi feita porque ela
+> "provavelmente era a causa" — foram feitas porque cada uma é um caminho real
+> de falha silenciosa que estava aberto. A causa em si aparece no próximo vídeo
+> que falhar, na trilha e na tela, com nome.
 
-**Falha de extração grita.** Vídeo corrompido ou de codec desconhecido devolve
-lista vazia, e lista vazia é tratada como **"não analisado"**, nunca como
-"analisado e limpo": vai para o Sentry via `registrarErro`. Sem isso seria
-silêncio absoluto — a mesma forma de falha que manteve a moderação por IA
-quebrada em 26 de 26 chamadas.
+**Falha de extração grita, em três canais.** Vídeo corrompido ou de codec
+desconhecido devolve lista vazia, e lista vazia é tratada como **"não
+analisado"**, nunca como "analisado e limpo":
+
+| Canal (§1.5) | Onde |
+| --- | --- |
+| (a) quem está usando | toast de 12 s com o motivo, no formulário do post |
+| (b) fica gravado | `admin_logs`, ação `edge_function_error`, via `falha_de_extracao` |
+| (c) teste que falha | `e2e/quadros-de-video.mjs` e `src/lib/__tests__/framesDeVideo.test.js` |
+
+O Sentry continua recebendo via `registrarErro`, agora como quarto canal e não
+como o único.
+
+**Trava de deriva:** `src/lib/__tests__/relatoDeFalhaDeVideo.test.js` exige que
+o nome do campo `falha_de_extracao` exista **nos dois lados** (cliente e Edge
+Function), que a função continue aceitando corpo sem imagem, e que o ramo do
+relato fique depois da checagem de dono. Deriva aqui não estoura em lugar
+nenhum: o cliente dispara e descarta, então um campo renomeado de um lado vira
+a função respondendo 400 para ninguém.
 
 **Trava:** `lib/__tests__/moderacaoDeMidia.test.js` varre `src/` e exige que
 todo arquivo que chama `moderateImages` também chame `moderateVideos` — salvo

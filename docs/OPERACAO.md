@@ -114,6 +114,38 @@
   >  order by created_at desc limit 10;
   > ```
 
+  > **`[29/08]` A falha do NAVEGADOR também chega aqui agora.** Quando o vídeo
+  > sobe mas a extração de quadros não produz nada, a falha acontecia inteira
+  > dentro do navegador de quem publicou: a `moderate-image` não era chamada
+  > nenhuma vez, e o motivo existia só num toast de segundos e no Sentry. Duas
+  > investigações começaram do zero por causa disso.
+  >
+  > Agora o navegador relata a falha pela própria `moderate-image` (corpo com
+  > `falha_de_extracao` e sem imagem), e ela grava com o motivo, o tipo do
+  > arquivo, o tamanho e o agente:
+  >
+  > ```sql
+  > select created_at,
+  >        metadata->>'motivo'          as motivo,
+  >        metadata->>'tipo_do_arquivo' as tipo,
+  >        metadata->>'tamanho'         as bytes,
+  >        metadata->>'agente'          as navegador
+  >   from admin_logs
+  >  where action = 'edge_function_error'
+  >    and metadata->>'origem' = 'navegador'
+  >  order by created_at desc limit 20;
+  > ```
+  >
+  > Os motivos possíveis são fechados e cada um tem correção diferente: o
+  > navegador não decodificou o arquivo · não soube dizer a duração · não expôs
+  > as dimensões · estourou o teto de 15 s · devolveu quadros em branco · o
+  > canvas recusou desenhar · nenhum salto completou. Ver
+  > [MODERACAO-IA.md](MODERACAO-IA.md).
+  >
+  > **Só o dono do conteúdo consegue relatar**, porque o ramo fica depois da
+  > checagem de dono da `moderate-image` — o volume fica preso ao ritmo de
+  > publicação, e não ao que um estranho quiser mandar.
+
 ## Resiliência — quando o banco cai
 
 O site detecta sozinho que perdeu o Supabase (projeto pausado por egress, por

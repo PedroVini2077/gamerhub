@@ -49,13 +49,32 @@ export default {
         },
         // Zumbido de neon instável — a palavra HUB "vacila" em momentos
         // irregulares, como uma letra elétrica mal aterrada.
+        //
+        // `[29/08]` `textShadow` SAIU dos keyframes, e sobrou só `opacity`.
+        //
+        // O motivo veio do PageSpeed do dono, no aviso "Evitar animações não
+        // compostas — 1 elemento animado": `text-shadow` NÃO roda no
+        // compositor. Cada quadro dos 5 s de laço infinito repintava, na
+        // thread principal, um brilho de 60px de raio — e o elemento em
+        // questão é justamente o **LCP da landing** (o `HUB` do título), que
+        // aparecia com 2.780 ms de atraso de renderização.
+        //
+        // `opacity` roda no compositor e faz quase o mesmo serviço: ela
+        // atenua o texto E o brilho dele juntos, então a palavra continua
+        // "vacilando" como neon mal aterrado. O que se perde é a variação do
+        // RAIO do brilho entre um pisca e outro — mudança sutil, e o preço
+        // dela era repintar o maior texto da página 60 vezes por segundo,
+        // para sempre.
+        //
+        // O brilho em si não sumiu: ele é estático, no `style` do próprio
+        // span em `ElectricTitle.jsx`.
         electricBuzz: {
-          "0%, 100%": { opacity: 1, textShadow: "0 0 30px #39ff14, 0 0 60px #39ff1450" },
-          "8%": { opacity: 0.7, textShadow: "0 0 12px #39ff14" },
-          "10%": { opacity: 1, textShadow: "0 0 30px #39ff14, 0 0 60px #39ff1450" },
+          "0%, 100%": { opacity: 1 },
+          "8%": { opacity: 0.7 },
+          "10%": { opacity: 1 },
           "53%": { opacity: 1 },
-          "55%": { opacity: 0.5, textShadow: "0 0 8px #39ff14" },
-          "57%": { opacity: 1, textShadow: "0 0 30px #39ff14, 0 0 60px #39ff1450" },
+          "55%": { opacity: 0.5 },
+          "57%": { opacity: 1 },
           "78%": { opacity: 0.85 },
           "80%": { opacity: 1 },
         },

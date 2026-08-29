@@ -42,6 +42,9 @@ const TERRITORIO = {
     'supabase/functions/moderate-image',
     'supabase/functions/moderate-text',
     'src/lib/framesDeVideo.js',
+    // O cliente das Edge Functions de IA saiu do `moderationService` em 29/08.
+    // É por ele que o relato de falha de vídeo chega ao `admin_logs`.
+    'src/services/moderationAiService.js',
   ],
   'docs/BANCO.md': ['supabase/migrations'],
   'docs/SEGURANCA.md': ['supabase/functions', 'src/hooks/useAuth.jsx', 'src/lib/roles.js'],
