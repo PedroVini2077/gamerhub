@@ -16,7 +16,11 @@ src/
 │   └── landing/           # Prints reais do site usados na landing (feed, mural, lives,
 │                          # ranks, keys) — nomes de usuários censados por privacidade
 ├── hooks/
-│   ├── useAuth.jsx        # Sessão, perfil, detecção de ban, presença online
+│   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
+│   │                      # árvore e o arquivo de maior risco do projeto (§7)
+│   ├── useVigiaDeBanimento.js # Realtime + poll de 60 s que detectam ban durante
+│   │                      # o uso. Saiu do useAuth em 29/08 — testável isolado
+│   ├── usePresenca.js     # Canal de presence: quantos estão online agora
 │   ├── useRole.js         # Deriva flags isOwner/isAdmin/isSuperAdmin/isBanned
 │   ├── useRealtime.js     # Helper genérico de subscription Postgres changes
 │   ├── useCommentLike.js  # Estado de like de comentário
