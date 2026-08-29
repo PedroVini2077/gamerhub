@@ -50,7 +50,6 @@ src/
 │   ├── erroDeMidia.js     # Traduz os 4 `MediaError` — cada um aponta para um
 │   │                      # lugar diferente, e uma frase só mentia sobre três
 │   ├── paginacaoDePosts.js# Faixa da página por sub-aba no painel de posts
-│   ├── resolucaoDaCena.js # Regra pura de resolução adaptativa da cena 3D
 │   │                      # (fora do React porque a metade que importa — a
 │   │                      # cena SOBE de resolução — não dá para provar num
 │   │                      # navegador sem GPU)
@@ -107,7 +106,7 @@ src/
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
-    │                      # SceneObjects (LogoBolt/FloatingShapes), ResolucaoAdaptativa
+    │                      # SceneObjects (LogoBolt/FloatingShapes)
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
@@ -175,7 +174,7 @@ trabalho de CPU são contas diferentes.
 | Decoração cara é **opcional por aparelho** | `Scene3D.decidirModo()` | Tela < 1024px, `saveData`, 2g/3g, ≤ 2 núcleos ou `reduce-motion` recebem a `Scene2D` (SVG + CSS, custo de JS zero) |
 | `@import` de CSS externo cria **cadeia serial** | `index.html` | `preconnect` economiza handshake, não descoberta. O CSS de fonte agora é `<link>` com `media="print"`/`onload` |
 | `manualChunks` **vence** `import()` dinâmico | `vite.config.js` | Os caminhos casam `/node_modules/<pacote>/` inteiro. A regra antiga (`/react/`) arrastava `@sentry/react` para o `vendor-react` |
-| **O custo de uma cena WebGL é por PIXEL**, não por byte nem por objeto | `scene3d/ResolucaoAdaptativa.jsx` + `lib/resolucaoDaCena.js` | Cinco chamadas de desenho por quadro, e ainda assim a thread principal ficava 99% ocupada. Ver a medição abaixo |
+| **O custo de uma cena WebGL é por PIXEL**, não por byte nem por objeto | `scene3d/LandingScene.jsx` | Cinco chamadas de desenho por quadro, e ainda assim a thread principal ficava 99% ocupada. A correção que saiu disso foi desfeita — ver abaixo |
 
 **Toda espera precisa de teto absoluto.** As duas esperas introduzidas aqui —
 a cena 3D e o Sentry — liberam sozinhas se o gatilho não vier. A primeira
@@ -220,44 +219,19 @@ marcou TBT **0 ms** e o do **desktop**, 31 s. Não é inconsistência de mediç�
 a cena não sobe abaixo de 1024px (`lib/cena3D.js`), então o celular nunca pagou
 por ela.
 
-**Por que adaptativo e não um número fixo:** a medição acima é em rasterização
-por software (SwiftShader), que é o que o Lighthouse, o PageSpeed e qualquer
-máquina com GPU bloqueada usam. Numa máquina com GPU, cinco chamadas de desenho
-não custam nada — cravar 0,5 puniria quem não tem problema nenhum.
-
-> **`[29/08]` A DIREÇÃO foi invertida no mesmo dia, e o motivo é um relato do
-> dono.** A primeira versão começava no degrau mais barato e subia — ou seja, o
-> primeiro quadro que o visitante via era o pior. Ele testou e reprovou: *"começa
-> muito pixelada, fica horrível"*, e o brilho do raio sumia junto.
+> **`[29/08]` A resolução adaptativa foi DESFEITA, e é o registro que importa.**
 >
-> Agora começa no que o aparelho pede e **só desce**. A proteção continua; o
-> preço deixou de ser cobrado de todo mundo. Ver [DECISOES.md](DECISOES.md).
-
-**Travado nos dois lados:** `e2e/cena-3d.mjs` reprova se a cena bloquear a
-thread principal acima de 800 ms na janela de 2 s (medido: 0 ms com a correção,
-2.151 ms com o bug reinjetado), e `src/lib/__tests__/resolucaoDaCena.test.js`
-cobre a subida, que nenhum navegador sem GPU deste ambiente consegue exercitar.
-
-### `[29/08]` E o que sobrou depois disso era CARGA, não laço
-
-Com o laço resolvido, um A/B da landing com e sem a cena, sob freio de CPU de
-4×, isolou o que restava:
-
-| | Long tasks | Thread principal |
-| --- | --- | --- |
-| landing **sem** a cena 3D | 2 | 177 ms |
-| landing **com** a cena | 6 | 697 ms |
-
-A cena respondia por **520 ms**, e o laço já dava zero long tasks — ou seja, era
-tudo parse e execução dos 888 kB. Isso mudou a natureza do item de chunk que
-estava no backlog como 🔵 "bytes para rede lenta": ele passou a ser o gargalo
-que sobrava.
-
-A troca de `<Canvas>` por `createRoot` (o `<Canvas>` traz o sistema de eventos
-de ponteiro, que esta cena nunca usa) deu **888 → 708 kB** e **520 → 428 ms**.
-Os dois números andando juntos confirmam a proporcionalidade. O raciocínio
-completo e a correção da explicação antiga estão em
-[DESEMPENHO.md](DESEMPENHO.md).
+> Ela zerava as long tasks da tabela acima — e o dono reprovou em três rodadas,
+> testando no celular e no PC: *"começa muito pixelada"*, *"a luz verde não fica
+> tão forte"*, *"o raio às vezes é cortado pela metade"*.
+>
+> O erro foi de método, não de implementação: eu estava otimizando o número do
+> Lighthouse contra a coisa que o número existe para medir. Para a ferramenta,
+> cena feia e cena bonita valem igual.
+>
+> O `dpr` e o `antialias` voltaram a ser exatamente os de antes. **O que ficou**
+> é o que é invisível e está medido: o laço parado fora da tela, e o chunk 20%
+> menor. Ver [DECISOES.md](DECISOES.md).
 
 **No mesmo lote:** o `HUB` do título da landing — que é o **elemento de LCP** —
 animava `text-shadow`, que não roda no compositor. Era o "1 elemento animado"

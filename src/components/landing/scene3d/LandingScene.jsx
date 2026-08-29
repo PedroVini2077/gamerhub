@@ -7,44 +7,49 @@ import {
 } from 'three';
 import { LogoBolt, FloatingShapes } from './SceneObjects';
 import Lightning from './Lightning';
-import ResolucaoAdaptativa from './ResolucaoAdaptativa';
-import { DEGRAUS_DE_RESOLUCAO, degrauInicial } from '../../../lib/resolucaoDaCena';
 
 /**
  * A cena 3D do Hero — montada por `createRoot`, e não por `<Canvas>`.
  *
- * ── Por que trocar o `<Canvas>`, com o número que decidiu ───────────────────
+ * ── `[29/08]` O QUE FOI DESFEITO, e por quê ─────────────────────────────────
  *
- * `<Canvas>` traz junto o sistema de eventos de ponteiro do fiber: raycasting
- * a cada movimento do mouse, mapeamento de eventos, medição de camadas. Esta
- * cena **não tem um único manipulador de clique ou de ponteiro** — ela é
- * decoração pura —, então tudo isso era peso morto.
+ * Numa tentativa de otimizar, esta cena ganhou resolução adaptativa, antialias
+ * desligado e um fade de entrada. O dono testou no celular e no PC e reprovou —
+ * três vezes, cada vez com um sintoma novo:
  *
- * Pesado em 29/08, cada biblioteca sozinha (build de lib, sem minificar):
+ * | Sintoma | Causa |
+ * | --- | --- |
+ * | "começa muito pixelada" | a resolução começava em `dpr` 0,5 |
+ * | "a luz verde não fica tão forte" | resolução baixa borra o degradê do `pointLight` |
+ * | "o raio às vezes é cortado pela metade" / cena escura | o fade de 500 ms, pego no meio |
  *
- *     só `three`                       604 kB
- *     `@react-three/fiber` com Canvas  1.420 kB
- *     `@react-three/fiber` só createRoot 1.137 kB   <- −20%
+ * **Tudo isso saiu.** O `dpr` e o `gl` voltaram a ser exatamente os de antes, e
+ * não há mais fade nem remontagem.
  *
- * E o que sobra importa: o A/B da landing com e sem a cena, sob freio de CPU
- * de 4×, mostrou que a cena responde por **520 ms de thread principal** — e,
- * depois da resolução adaptativa, esses 520 ms são quase todos **carga**
- * (parse e execução dos 888 kB), não mais o laço de animação, que passou a dar
- * zero long tasks.
+ * A lição, e é minha: eu estava otimizando o número do Lighthouse contra a
+ * coisa que o número existe para medir. Para a ferramenta, cena feia e cena
+ * bonita valem igual — e eu insisti três rodadas antes de aceitar isso.
  *
- * ── O que a troca custa, e como isso foi coberto ────────────────────────────
+ * ── O que FICOU, porque é invisível e está medido ───────────────────────────
  *
- * `<Canvas>` faz sozinho duas coisas que agora são nossas:
+ * **1. `createRoot` no lugar de `<Canvas>`.** O `<Canvas>` traz o sistema de
+ * eventos de ponteiro do fiber (raycasting a cada movimento), e esta cena não
+ * tem um único manipulador de clique — é decoração. Vale −20% do chunk
+ * (888 → 708 kB), com zero efeito no que aparece na tela.
+ *
+ * **2. O laço parado fora da tela.** Um `IntersectionObserver` desliga o
+ * `frameloop` quando a cena sai da viewport: ninguém vê, e a CPU parava de
+ * pagar. Medido: 0 desenhos com a cena longe.
+ *
+ * ── O que o `<Canvas>` fazia e agora é nosso ────────────────────────────────
  *
  * | O que ele fazia | O que fazemos |
  * | --- | --- |
  * | medir o contêiner e reconfigurar ao redimensionar | `ResizeObserver` chamando `configure({ size })` |
  * | esperar ter tamanho antes de renderizar | não renderizamos com 0×0 — senão o canvas nasce vazio e nunca se recupera |
+ * | soltar o contexto WebGL ao desmontar | `root.unmount()` no cleanup |
  *
- * `e2e/cena-3d.mjs` cobre os dois: ele reprova se não houver canvas, se a cena
- * não desenhar estando visível, se continuar desenhando fora da tela, se
- * estourar o teto de thread principal, e se o canvas não acompanhar uma
- * mudança de tamanho da janela.
+ * `e2e/cena-3d.mjs` cobre os três, e todos foram provados reinjetando o defeito.
  */
 
 // O catálogo do fiber, explícito. Cada nome aqui vira uma tag JSX minúscula:
@@ -60,26 +65,9 @@ extend({
 });
 
 const CAMERA = { position: [0, 0, 5.5], fov: 42 };
-// `[29/08]` `antialias` VOLTOU a ficar ligado, e o custo dele foi medido.
-//
-// Isolando as duas mudanças sob freio de CPU de 4×, thread principal bloqueada
-// no total:
-//
-//     dpr 0,5 + antialias off (como ficou pela manhã)     670 ms
-//     dpr do aparelho + antialias off                   1.073 ms
-//     dpr do aparelho + antialias on   (o que está aqui) 3.362 ms
-//
-// Ou seja: o caro é o `antialias`, não a resolução — ao contrário do que eu
-// tinha suposto ao desligá-lo.
-//
-// FICA LIGADO MESMO ASSIM, e a razão é a mesma que vale para o `dpr`: essa
-// medição é em rasterização por SOFTWARE, que é o que o Lighthouse e o
-// PageSpeed usam. Numa GPU de verdade o MSAA é praticamente de graça — o custo
-// acima é quase todo de laboratório, e esta cena é feita de linhas finas e
-// néon, onde serrilhado aparece.
-//
-// A troca está registrada em DECISOES.md: nota de laboratório vale menos que a
-// primeira impressão de quem abre o site.
+// Exatamente como era antes de 29/08. Ver o bloco no topo do arquivo sobre o
+// que foi desfeito e por quê.
+const DPR = [1, 1.5];
 const GL = { antialias: true, alpha: true };
 
 /**
@@ -116,7 +104,7 @@ function useVisivel(ref) {
   return visivel;
 }
 
-function Conteudo({ aoSofrerNoPiso }) {
+function Conteudo() {
   return (
     <>
       <ambientLight intensity={0.35} />
@@ -125,7 +113,6 @@ function Conteudo({ aoSofrerNoPiso }) {
       <directionalLight position={[3, 4, 5]} intensity={1.6} color="#eafff0" />
       <pointLight position={[4, 3, 4]} intensity={1.2} color="#39ff14" />
       <pointLight position={[-4, -2, 3]} intensity={1.1} color="#bf00ff" />
-      <ResolucaoAdaptativa aoSofrerNoPiso={aoSofrerNoPiso} />
       <LogoBolt />
       <FloatingShapes />
       <Lightning />
@@ -143,34 +130,7 @@ export default function LandingScene() {
   // de montagem exigiria pô-lo nas dependências — e aí a cena remontaria a cada
   // rolagem, jogando fora o contexto WebGL várias vezes por sessão.
   const visivelRef = useRef(visivel);
-  // `[29/08]` A cena ENTRA aparecendo, em vez de aparecer de uma vez.
-  //
-  // Relato do dono: "ao atualizar a landing 3d, por alguns segundos dá pra ver
-  // a landing 2d". Isso é por construção — a `Scene2D` é o fallback enquanto o
-  // chunk chega, e a cena 3D ainda espera o navegador ficar ocioso de propósito
-  // (`Scene3D.jsx`), para não disputar a thread com a intro.
-  //
-  // Encurtar a espera devolveria 708 kB ao caminho crítico, que é justamente o
-  // que a otimização evitou. O que dá para tirar é o CORTE SECO: a troca vira
-  // um fade curto, e o que era "a página mudou na minha frente" vira uma
-  // transição. O tempo é o mesmo; o susto não.
-  const [pronto, setPronto] = useState(false);
-  // `[29/08]` O último recurso, e ele existe por causa de um número do CI.
-  //
-  // Depois de a resolução chegar ao piso, o que ainda pesa é o `antialias` — e
-  // ele não se troca com a cena montada, porque é opção do contexto WebGL. O
-  // runner do CI, que rasteriza por software, media **1.938 ms de bloqueio numa
-  // janela de 2.000 ms** mesmo já no piso: a página ficava travada enquanto o
-  // Hero estivesse na tela.
-  //
-  // Então, no aparelho que sofre até no piso, a cena se remonta uma vez sem
-  // antialias. É um pisca só, e só acontece em quem já estava engasgando — e a
-  // alternativa era manter a página travada para preservar um suavizado que
-  // esse aparelho nem consegue desenhar.
-  //
-  // Uma vez só, de propósito: `semAntialias` nunca volta a `false`, então não há
-  // como entrar em laço de remontagem.
-  const [semAntialias, setSemAntialias] = useState(false);
+
 
   useEffect(() => {
     const canvas = tela.current;
@@ -189,28 +149,15 @@ export default function LandingScene() {
       // `ResizeObserver` abaixo dispara de novo assim que houver tamanho.
       if (!width || !height) return;
       raizLocal.configure({
-        camera: CAMERA,
-        gl: semAntialias ? { antialias: false, alpha: true } : GL,
-        // Vai JUNTO da criação. Sem isto, a raiz recriada nascia em `always` e
-        // voltava a desenhar fora da tela — o e2e pegou 495 desenhos com a cena
-        // longe da viewport, que é exatamente o desperdício que o
-        // `IntersectionObserver` existe para fechar.
+        camera: CAMERA, gl: GL, dpr: DPR,
+        // O `frameloop` vai junto da criação, lido de uma ref: a raiz precisa
+        // nascer já sabendo se a cena está visível.
         frameloop: visivelRef.current ? 'always' : 'never',
-        // Começa no que o APARELHO pede — a mesma conta que o antigo
-        // `dpr={[1, 1.5]}` fazia. A cena só desce daqui se os quadros
-        // atrasarem (`ResolucaoAdaptativa`), e nunca sobe: assim o primeiro
-        // quadro que o visitante vê já é o melhor, em vez do pior.
-        dpr: DEGRAUS_DE_RESOLUCAO[degrauInicial(
-          typeof window === 'undefined' ? 1 : window.devicePixelRatio,
-        )],
         size: { width, height, top: 0, left: 0 },
       });
       if (!renderizou) {
-        raizLocal.render(<Conteudo aoSofrerNoPiso={() => setSemAntialias(true)} />);
+        raizLocal.render(<Conteudo />);
         renderizou = true;
-        // Um quadro de folga antes de revelar: sem isso o fade começa com o
-        // canvas ainda vazio, e o corte seco volta — só que transparente.
-        requestAnimationFrame(() => requestAnimationFrame(() => setPronto(true)));
       }
     };
 
@@ -223,10 +170,7 @@ export default function LandingScene() {
       raiz.current = null;
       raizLocal.unmount();
     };
-    // `semAntialias` entra nas dependências de propósito: mudar de `false` para
-    // `true` derruba a raiz e cria outra, que é a única forma de trocar uma
-    // opção do contexto WebGL. Acontece no máximo uma vez.
-  }, [semAntialias]);
+  }, []);
 
   // O `frameloop` é reconfigurado à parte, e não dentro do efeito de montagem:
   // ele muda com a rolagem, e recriar a raiz a cada mudança jogaria fora o
@@ -240,23 +184,8 @@ export default function LandingScene() {
   }, [visivel]);
 
   return (
-    <div
-      ref={involucro}
-      style={{
-        width: '100%',
-        height: '100%',
-        opacity: pronto ? 1 : 0,
-        transition: 'opacity 500ms ease-out',
-      }}
-    >
-      {/* `key` força um <canvas> NOVO ao remontar sem antialias: um contexto
-          WebGL já criado não muda de opção, e reaproveitar o elemento devolveria
-          o mesmo contexto de antes. */}
-      <canvas
-        key={semAntialias ? 'sem-aa' : 'com-aa'}
-        ref={tela}
-        style={{ width: '100%', height: '100%', display: 'block' }}
-      />
+    <div ref={involucro} style={{ width: '100%', height: '100%' }}>
+      <canvas ref={tela} style={{ width: '100%', height: '100%', display: 'block' }} />
     </div>
   );
 }

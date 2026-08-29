@@ -53,20 +53,26 @@ await page.waitForTimeout(4000);
 
 // Teto de thread principal BLOQUEADA na janela de medicao, com a cena visivel.
 //
-// Os dois lados foram medidos nesta mesma janela de 2 s, nesta mesma maquina,
-// em 29/08:
+// `[29/08]` ESTE NUMERO E INFORMATIVO, e nao reprova mais. A razao e uma
+// decisao de produto, e ela precisa estar escrita aqui para ninguem "consertar"
+// o teste depois.
 //
-//     dpr 1,5 + antialias (como estava)  ->  2.151 ms em 22 long tasks
-//     resolucao adaptativa (como esta)   ->      0 ms em  0 long tasks
+// O teto existia porque a cena, na resolucao cheia, ocupava ~99% da thread
+// principal em rasterizacao por software: 2.151 ms numa janela de 2.000 ms. A
+// correcao foi baixar a resolucao — e o dono reprovou, em tres rodadas,
+// testando no celular e no PC: "comeca muito pixelada", "a luz verde nao fica
+// tao forte", "o raio as vezes e cortado pela metade".
 //
-// Nao e estimativa: o numero ruim veio de reinjetar o bug e rodar (§2, a trava
-// tem que ser provada). O teto fica no meio, longe dos dois.
+// A cena voltou ao `dpr` e ao `antialias` originais de proposito. Ou seja: o
+// numero alto agora e a ESCOLHA, nao o defeito — e um portao que reprova a
+// escolha do dono e um portao que vai ser desligado na primeira pressa, ou pior,
+// afrouxado ate nao valer nada (CLAUDE.md §0.2, 4a regra: alarme que grita a
+// toa cega o canal).
 //
-// Por que TEMPO aqui, sendo que o §0.3 manda barrar por BYTE: o portao de byte
-// existe porque medicao de tempo com diferenca PEQUENA vira alarme falso. Aqui
-// nao ha diferenca pequena — e zero contra dois mil na mesma maquina, e nenhuma
-// oscilacao de ambiente atravessa essa distancia.
-const TETO_DE_BLOQUEIO_MS = 800;
+// O que continua REPROVANDO neste arquivo e o que e defeito de verdade e nao
+// tem contrapartida visual: a cena desenhando fora da tela, o canvas ignorando
+// resize, e o contexto WebGL vazando na desmontagem.
+const TETO_DE_BLOQUEIO_MS = null;
 
 /** Soma o tempo de long task (>50 ms) observado durante `ms`. */
 function medirBloqueio(ms) {
@@ -121,14 +127,10 @@ if (visivel === -1) {
       `  thread principal: ${bloqueio.ms} ms em ${bloqueio.quantas} long task(s) `
       + `numa janela de ${JANELA_DE_MEDICAO_MS} ms`,
     );
-    if (bloqueio.ms > TETO_DE_BLOQUEIO_MS) {
+    if (TETO_DE_BLOQUEIO_MS !== null && bloqueio.ms > TETO_DE_BLOQUEIO_MS) {
       falhar(
         `a cena bloqueou a thread principal por ${bloqueio.ms} ms de ${JANELA_DE_MEDICAO_MS} ms.\n`
-        + `  Teto: ${TETO_DE_BLOQUEIO_MS} ms. Nesta mesma janela, com dpr 1,5 e antialias, deu 2.151 ms —\n`
-        + '  ou seja, a landing travada enquanto o Hero estivesse na tela. Foi de onde\n'
-        + '  saiu o "Other: 30.182 ms" do PageSpeed no desktop.\n'
-        + '  O suspeito e a resolucao: o custo por quadro e proporcional a PIXEL. Confira\n'
-        + '  `dpr` e `antialias` no <Canvas> e `ResolucaoAdaptativa.jsx`.',
+        + `  Teto: ${TETO_DE_BLOQUEIO_MS} ms.`,
       );
     }
   }

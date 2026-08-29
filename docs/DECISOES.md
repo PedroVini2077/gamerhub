@@ -416,101 +416,43 @@ ganho era real, a explicação não. Ver [DESEMPENHO.md](DESEMPENHO.md).
 porque o `WebGLRenderer` tem caminho de código para quase tudo que ele traz.
 Encolher além daqui exigiria WebGL cru — outra conversa, e de outro tamanho.
 
-### `[29/08]` A cena 3D começa no MELHOR estado — a versão que começava baixa foi revertida
+### `[29/08]` A cena 3D volta ao original — a otimização de resolução foi DESFEITA
 
-**Relato do dono, testando no celular e no PC:** *"a cena em 3d ela começa muito
-pixelada, fica horrível, depois volta ao normal"*, *"o raio ao estourar, a luz
-verde não fica tão forte quando a landing 3d está ativada, mas fica normal na
-landing em 2d"*, e *"ao atualizar a landing 3d, por alguns segundos dá pra ver a
-landing 2d"*.
+**Decisão do dono, depois de três rodadas de teste no celular e no PC.** Cada
+rodada eu consertei o sintoma e ele voltou com outro:
 
-**Os dois primeiros eram o mesmo defeito, e ele era meu.** A resolução
-adaptativa começava em `dpr` 0,5 e subia. Ou seja, **o primeiro quadro que todo
-visitante via era o pior estado possível** — e o brilho dos `pointLight` do
-raio, que é o efeito mais bonito da cena, é justamente o que mais sofre com
-queda de resolução, porque o degradê da luz borra.
+| Rodada | O que ele viu | O que era |
+| --- | --- | --- |
+| 1 | *"começa muito pixelada, fica horrível, depois volta ao normal"* | a resolução começava em `dpr` 0,5 e subia |
+| 2 | *"a luz verde não fica tão forte quando a landing 3d está ativada"* | resolução baixa borra o degradê do `pointLight` do raio |
+| 3 | *"o raio às vezes é cortado pela metade"*, cena escura | o fade de entrada de 500 ms, pego no meio |
 
-**O erro de método, e é o que vale guardar:** eu otimizei um número (o TBT do
-Lighthouse) contra a coisa que o número existe para medir — a experiência de
-quem abre o site. O dono viu em dois aparelhos no primeiro teste; o Lighthouse
-nunca veria, porque para ele a cena feia e a bonita valem igual.
+**O erro foi de método, não de implementação, e é o que vale guardar.** Eu
+estava otimizando o número do Lighthouse contra a coisa que o número existe para
+medir. Para a ferramenta, a cena feia e a bonita valem igual; para quem abre o
+site, não. E eu insisti **três rodadas** — a cada uma consertando o sintoma em
+vez de aceitar que a direção estava errada.
 
-**A regra agora:** começa no que o aparelho pede (`devicePixelRatio` preso entre
-1 e 1,5, a mesma conta do antigo `dpr={[1, 1.5]}`) e **só desce** se os quadros
-atrasarem. Nunca sobe. A proteção do aparelho fraco continua — é ali que os
-8.066 ms de thread bloqueada apareciam — mas ela deixou de cobrar o preço de
-todo mundo.
+**O que voltou a ser exatamente como era:** `dpr={[1, 1.5]}`, `antialias: true`,
+sem resolução adaptativa, sem fade, sem remontagem.
 
-**O `antialias` também voltou**, e o custo foi medido isolando as duas
-mudanças, sob freio de CPU de 4×:
+**O que FICOU, porque é invisível e está medido:**
 
-| Configuração | Thread bloqueada (total) |
-| --- | --- |
-| `dpr` 0,5 + `antialias` off (o que foi revertido) | 670 ms |
-| `dpr` do aparelho + `antialias` off | 1.073 ms |
-| `dpr` do aparelho + `antialias` on (o que ficou) | 3.362 ms |
+| Otimização | Ganho | Custo visual |
+| --- | --- | --- |
+| laço parado fora da tela | 0 desenhos com a cena longe | nenhum |
+| `createRoot` no lugar de `<Canvas>` | −20% do chunk (888 → 708 kB) | nenhum |
 
-O caro é o `antialias`, não a resolução — ao contrário do que eu supus ao
-desligá-lo. **Fica ligado mesmo assim**, pela mesma razão que vale para o `dpr`:
-a medição é em rasterização por software, que é o que o Lighthouse usa; numa GPU
-o MSAA é praticamente de graça. O custo acima é quase todo de laboratório, e
-esta cena é feita de linhas finas e néon, onde serrilhado aparece.
+**O que se perde, dito sem maquiagem:** num aparelho sem GPU — o que o
+Lighthouse usa — a cena volta a ocupar a thread principal enquanto o Hero está
+na tela (medido: ~1.920 ms numa janela de 2.000 ms). O portão que reprovava isso
+no CI virou **informativo**: ele agora mediria a escolha do dono, não um defeito,
+e portão que reprova a escolha de quem decide é portão que alguém desliga na
+primeira pressa.
 
-**E a restauração custou mais do que eu previ — o CI mostrou.** Com a qualidade
-de volta, o portão de thread do `e2e/cena-3d.mjs` reprovou: **1.938 ms de
-bloqueio numa janela de 2.000 ms**, praticamente o mesmo do bug que o portão
-existe para pegar (2.151 ms). E não era o pico inicial: o teste mede o estado
-**estável**, seis segundos depois de a cena aparecer.
-
-Duas correções saíram disso, e as duas são melhorias de verdade:
-
-| Correção | Por quê |
-| --- | --- |
-| **queda imediata** com um quadro acima de 100 ms | esperar os 10 quadros da amostra custava ~2 s de tela travada num aparelho fraco — pior que a pixelação, e menos visível, porque a tela congela em vez de ficar feia |
-| **desligar o `antialias` como último recurso** | depois do piso de resolução, o que ainda pesa é ele; e como é opção do contexto WebGL, a única saída é remontar a cena uma vez |
-
-**E os dois primeiros consertos não bastaram — o CI reprovou de novo, com o
-número PIOR (2.029 ms).** A causa estava no meu próprio desenho: o runner fazia
-~60 ms por quadro, que é lento para a amostra mas **abaixo** do limite de
-emergência de 100 ms. No piso, `proximoDegrau` devolvia o mesmo degrau, nada
-acontecia, e o desligamento do antialias nunca era alcançado. O aviso precisava
-sair da MESMA decisão que a queda, e não só do caminho de emergência.
-
-**E ao corrigir isso apareceu um risco que ninguém tinha visto:** `delta` é o
-intervalo entre quadros, não o custo de desenhar. Com vsync ele fica preso na
-cadência da tela — então **uma tela de 30 Hz reporta ~33 ms com a cena rodando
-folgada**. Com o limite em 28 ms, um aparelho perfeitamente capaz seria
-rebaixado. O limite subiu para 45: acima dos 33 ms de uma tela de 30 Hz, e bem
-abaixo dos ~60 ms de um aparelho realmente engasgado.
-
-Medido na mesma janela que o CI usa, com freio de CPU:
-
-| Freio | Bloqueio na janela de 2 s | Resolução | `antialias` |
-| --- | --- | --- | --- |
-| 1× | 0 ms | 0,5 | **ligado** |
-| 4× | 0 ms | 0,5 | desligado |
-| 8× | 0 ms | 0,5 | desligado |
-
-E sob freio de 8×, bloqueio total desde o carregamento: **10.871 ms → 2.982 ms**.
-
-> **O que esta máquina NÃO consegue provar:** ela rasteriza por software, então a
-> cena cai de resolução mesmo sem freio. Que um aparelho com GPU de verdade
-> permaneça em 1 ou 1,5 é o comportamento esperado da regra (60 fps = 16,7 ms,
-> bem abaixo do limite de 45), mas é **dedução**, não medição — quem confirma é
-> o dono, abrindo a landing.
-
-O último recurso só dispara em quem já está engasgando. Quem tem GPU nunca chega
-lá — vê a cena no melhor estado, do primeiro quadro ao último.
-
-**O terceiro sintoma é de outra natureza** e não foi introduzido agora: a
-`Scene2D` é o fallback enquanto o chunk chega, e a cena 3D espera o navegador
-ficar ocioso de propósito (`Scene3D.jsx`), para não disputar a thread com a
-intro. Encurtar essa espera devolveria 708 kB ao caminho crítico. O que dava
-para tirar era o **corte seco**: a troca virou um fade de 500 ms. O tempo é o
-mesmo; o susto não.
-
-**O que sobra de otimização, e continua valendo:** o laço parado fora da tela, o
-chunk 20% menor, e a queda de resolução no aparelho que não aguenta.
+**O que continua reprovando** no `e2e/cena-3d.mjs` é o que é defeito sem
+contrapartida visual: cena desenhando fora da tela, canvas ignorando resize, e
+contexto WebGL vazando na desmontagem.
 
 ### ~~`[29/08]` A resolução da cena 3D é ADAPTATIVA, não um número fixo~~ — REVERTIDA no mesmo dia
 

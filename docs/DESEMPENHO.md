@@ -139,8 +139,8 @@ Isso também explica a contradição entre os dois relatórios do dono: o do
 **celular** trazia TBT **0 ms**, o do **desktop**, 31 s. Não era ruído de
 medição — a cena não sobe abaixo de 1024px, então o celular nunca pagou por ela.
 
-**A correção** é resolução adaptativa (`lib/resolucaoDaCena.js` +
-`scene3d/ResolucaoAdaptativa.jsx`): a cena começa no `dpr` mais barato e sobe se
+**A correção da época** foi resolução adaptativa (desfeita depois — ver a seção
+seguinte): a cena começava no `dpr` mais barato e subia se
 os quadros couberem em 60 fps. Não é um número fixo porque a medição acima é em
 rasterização por software — o que Lighthouse e PageSpeed usam, e o que também
 acontece em máquina com GPU bloqueada; numa máquina com GPU, cravar 0,5 puniria
@@ -155,33 +155,33 @@ continuar contando desenhos. Provado nos dois sentidos: **0 ms** com a correçã
 > medida e travada, o certo é procurar o caso que não foi medido — e não repetir
 > a mesma medição esperando outro resultado (§1.2).
 
-### `[29/08]` A parte da otimização que foi REVERTIDA, e por quê
+### `[29/08]` A parte da otimização que foi DESFEITA, e o que ela ensinou
 
-A resolução adaptativa começava em `dpr` 0,5 e subia. Foi o que zerou as long
-tasks na tabela acima — e foi revertida no mesmo dia, pelo dono, testando em
-dois aparelhos: *"a cena em 3d ela começa muito pixelada, fica horrível"*.
+A resolução adaptativa era o que zerava as long tasks na tabela acima. Ela foi
+desfeita — pelo dono, testando, em **três rodadas seguidas**, cada uma com um
+sintoma novo:
 
-**O erro de método vale mais do que o número.** Eu otimizei o TBT do Lighthouse
-contra a coisa que o TBT existe para medir. A cena feia e a bonita valem igual
-para a ferramenta; não valem igual para quem abre o site.
-
-Custo da reversão, isolando as duas mudanças sob freio de 4×:
-
-| Configuração | Thread bloqueada (total) |
+| Rodada | O que ele viu |
 | --- | --- |
-| `dpr` 0,5 + `antialias` off | 670 ms |
-| `dpr` do aparelho + `antialias` off | 1.073 ms |
-| `dpr` do aparelho + `antialias` on (o que ficou) | 3.362 ms |
+| 1 | *"começa muito pixelada, fica horrível"* — ela começava em `dpr` 0,5 e subia |
+| 2 | *"a luz verde não fica tão forte"* — resolução baixa borra o degradê do `pointLight` |
+| 3 | *"o raio às vezes é cortado pela metade"* — o fade de entrada, pego no meio |
 
-O caro é o `antialias`, não a resolução — o contrário do que supus ao desligá-lo.
-Os dois ficaram ligados assim mesmo: a medição é em software, e numa GPU o MSAA
-é quase de graça.
+**O erro foi de método, e é o que vale guardar.** Eu estava otimizando o número
+do Lighthouse contra a coisa que o número existe para medir. Para a ferramenta,
+a cena feia e a bonita valem igual; para quem abre o site, não. E eu insisti
+três rodadas antes de aceitar isso — a cada uma, consertando o sintoma em vez de
+aceitar que a direção estava errada.
 
-**O que sobrou de otimização, e não foi tocado:** o laço parado fora da tela
-(zero desenhos), o chunk 20% menor, e a queda de resolução no aparelho que não
-aguenta — que é onde os 8.066 ms apareciam de verdade.
+**O que ficou**, porque é invisível e está medido: o laço parado fora da tela
+(0 desenhos), e o chunk 20% menor pela troca do `<Canvas>` por `createRoot`.
 
-### `[29/08]` O tamanho do chunk — feito, e a explicação anterior estava errada
+**O que se perde:** num aparelho sem GPU — o que o Lighthouse usa — a cena volta
+a ocupar a thread principal enquanto o Hero está na tela. É uma troca deliberada
+e do dono: nota de laboratório vale menos que a primeira impressão de quem abre
+o site.
+
+### `[29/08]` O tamanho do chunk### `[29/08]` O tamanho do chunk — feito, e a explicação anterior estava errada
 
 **A correção primeiro.** Esta seção afirmava que `@react-three/fiber` v9.7.0
 executa `extend(THREE)` dentro do `<Canvas>`, arrastando o namespace inteiro do
