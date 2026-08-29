@@ -370,6 +370,52 @@ endurecimento de LGPD que este projeto fez. Ver
 
 ---
 
+## 0.4 A ordem do trabalho é de FORA para DENTRO — as camadas
+
+> Ideia do dono em 29/08: *"começar as coisas de fora pra dentro... como a
+> landing page é a primeira coisa, ela é a primeira camada, o login e cadastro é
+> a segunda camada, o site em si são outras camadas"*.
+
+**Por que isto existe, e o custo que ele evita.** No mesmo dia, gastei **três
+rodadas** afinando a resolução da cena 3D — enquanto o rodapé da landing era
+duas linhas, não havia página "sobre", e os cards que apresentam o site não
+levavam a lugar nenhum. Nada me dizia que eu estava no lugar errado: cada rodada
+tinha justificativa própria, medição própria e resultado próprio.
+
+A ordem por camada tira essa escolha do meu julgamento no calor do momento.
+
+| Camada | O que é | Quem vê |
+| --- | --- | --- |
+| **1** | Landing | qualquer pessoa, antes de decidir se fica |
+| **2** | Login e cadastro | quem decidiu entrar |
+| **3** | O site logado — feed, mural, lives, perfil, ranks | quem já é da casa |
+| **—** | Painéis e moderação | só a equipe (transversal: atende todas as outras) |
+
+**A regra:** na dúvida entre duas coisas boas, faz a da camada mais externa. Um
+defeito na camada 1 é visto por todo mundo que chega; um refinamento na camada 3
+é visto por quem já ficou.
+
+### O que FURA a fila, e não é negociável
+
+A ordem das camadas é desempate, não hierarquia acima do §0. Continua valendo,
+na frente de qualquer camada:
+
+1. **Falha de segurança explorável** — fecha na hora (§1.3).
+2. **Bug** que quebra um caminho de uso — diagnostica e mata (§1.2).
+3. **Pedido explícito do dono** — ele conhece o que é urgente melhor do que a
+   régua; a régua serve para quando ele **não** disse.
+
+### O que a regra NÃO quer dizer
+
+Não é "proibido tocar em camada interna". É que, quando **eu** escolho o que
+fazer, começo por fora. Se o dono pede uma coisa da camada 3, faço a coisa da
+camada 3 — a régua nunca vira desculpa para não atender.
+
+E não é "termine a camada antes de passar para a próxima": camada nenhuma
+termina. É sobre a ordem de escolher, não sobre um portão.
+
+---
+
 ## 1. Postura
 
 As regras que valem acima de todas: sinceridade, diagnosticar antes de

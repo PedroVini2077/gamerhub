@@ -12,12 +12,16 @@ const ACCENTS = {
 // Bloco "explicação + mockup" usado pra cada feature do site. O botão
 // "Saiba mais" abre um painel animado com mais detalhes — interação
 // exclusiva da landing (clique → conteúdo se expande).
-export default function FeatureSection({ icon: Icon, eyebrow, title, description, details, accent = 'green', reverse = false, mockup }) {
+export default function FeatureSection({ id, icon: Icon, eyebrow, title, description, details, accent = 'green', reverse = false, mockup }) {
   const [open, setOpen] = useState(false);
   const c = ACCENTS[accent];
 
   return (
     <motion.section
+      id={id}
+      // `scroll-mt` compensa a barra fixa do topo: sem isso o link leva a seção
+      // para debaixo dela, e o visitante cai num lugar que parece o errado.
+      style={{ scrollMarginTop: '5rem' }}
       variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}
       className={`flex flex-col ${reverse ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-10 md:gap-16 py-14`}
     >
