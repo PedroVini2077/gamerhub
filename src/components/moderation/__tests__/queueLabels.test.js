@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   CONTENT_LABEL, FONTE_DO_CONTEUDO, TABELA_DO_AUTOR, linkDoConteudo,
+  TIPOS_DE_GATILHO, TRIGGER_LABEL, TRIGGER_COLOR,
 } from '../queueLabels';
 
 /**
@@ -123,5 +124,41 @@ describe('a rota que o link do post usa existe de verdade', () => {
       + 'nenhum teste de unidade pegaria, porque o caminho em si está certo.',
     ).toContain('path="/post/:id"');
     expect(app).toMatch(/import\('\.\/pages\/PostPage'\)/);
+  });
+});
+
+describe('todo tipo de gatilho tem rótulo e cor', () => {
+  // Deriva clássica desta base: o banco aceita um valor que o painel não sabe
+  // desenhar. O resultado é `undefined` no lugar do rótulo — nada estoura, e o
+  // moderador vê um item sem saber por que ele está ali.
+  it.each(TIPOS_DE_GATILHO)('`%s` aparece nos dois mapas', (tipo) => {
+    expect(
+      TRIGGER_LABEL[tipo],
+      `O gatilho "${tipo}" é aceito pelo banco mas não tem rótulo no painel.\n`
+      + 'O card mostraria "undefined" onde deveria dizer por que o item está na\n'
+      + 'fila — e a razão de estar ali é a informação mais importante do card.',
+    ).toBeTruthy();
+    expect(TRIGGER_COLOR[tipo], `sem cor para "${tipo}"`).toBeTruthy();
+  });
+
+  it('`sem_analise` NÃO se descreve como acusação', () => {
+    // Ele é o único que significa "ninguém conseguiu olhar", e não "alguma
+    // checagem apontou". Descrevê-lo como os outros faria o moderador julgar
+    // pelo critério errado (§1.5).
+    expect(
+      TRIGGER_LABEL.sem_analise,
+      'O rótulo de `sem_analise` passou a sugerir que algo foi detectado.\n'
+      + 'Ele existe justamente para o caso em que NADA foi analisado.',
+    ).toMatch(/não analisad/i);
+  });
+
+  it('a lista de gatilhos não encolheu sem os mapas acompanharem', () => {
+    for (const tipo of Object.keys(TRIGGER_LABEL)) {
+      expect(
+        TIPOS_DE_GATILHO,
+        `"${tipo}" tem rótulo mas saiu de TIPOS_DE_GATILHO — os dois lados\n`
+        + 'precisam concordar, senão o teste acima deixa de cobri-lo.',
+      ).toContain(tipo);
+    }
   });
 });

@@ -71,15 +71,34 @@ export const TABELA_DO_AUTOR = {
   post: 'posts', comment: 'comments', mural: 'community_posts', chat: 'live_chat',
 };
 
+// `sem_analise` é o único que NÃO significa "alguma checagem apontou isto".
+// Ele significa o oposto: nenhuma checagem conseguiu olhar. O rótulo precisa
+// dizer isso, senão o moderador julga pelo critério errado (§1.5).
 export const TRIGGER_LABEL = {
   report: 'Denúncias', wordlist: 'Palavrão', ai: 'IA',
   escalation: 'Escalação', links: 'Link perigoso',
+  sem_analise: 'Não analisado',
 };
 
 export const TRIGGER_COLOR = {
   report: 'text-orange-400', wordlist: 'text-yellow-400', ai: 'text-purple-400',
   escalation: 'text-red-400', links: 'text-red-500',
+  // Cinza de propósito: não é acusação, é ausência de informação. Pintá-lo de
+  // vermelho sugeriria gravidade que ninguém mediu.
+  sem_analise: 'text-gray-400',
 };
+
+/**
+ * Os tipos que o banco aceita em `moderation_queue.trigger_type`.
+ *
+ * Fonte única para o teste de contrato: o `CHECK` do banco e os mapas acima
+ * precisam concordar. Se divergirem, o INSERT é recusado pelo Postgres (item
+ * que nunca chega na fila) ou o painel mostra `undefined` no lugar do rótulo —
+ * nos dois casos sem ninguém entender por quê.
+ */
+export const TIPOS_DE_GATILHO = [
+  'report', 'wordlist', 'ai', 'escalation', 'links', 'sem_analise',
+];
 
 // Pontos por ação escolhida pelo moderador. Alimentam a escalação automática
 // (`trigger_violation_escalation`): 8 pontos suspendem, 15 banem.

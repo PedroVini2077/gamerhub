@@ -92,43 +92,21 @@
   > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
   > pendentes.
 
-- ⬜ `[29/08]` 🟢 **Confirmar que o plano B da moderação de vídeo salva o caso
-  real.** *O erro do dono foi capturado, a mensagem que o descrevia estava
-  errada, e o caminho alternativo foi construído e travado. Falta um vídeo de
-  verdade passar por ele.*
+- ⬜ `[29/08]` 🟢 **Conferir a fila `Não analisado` daqui a alguns dias.**
+  *Não é pendência de código — o caminho está fechado. É a conferência que diz
+  se o número escolhido foi o certo.*
 
-  **O que o aviso na tela finalmente disse** (08:13 de 29/08):
-  `o navegador não decodificou o arquivo (tipo: video/mp4)`.
+  **O que ficou pronto:** a moderação de vídeo funciona (confirmado em produção,
+  `analisadas=3/3`), e o vídeo que falhar **nos dois caminhos** vai para a fila
+  como `sem_analise`.
 
-  **E essa frase não era confiável — o erro era meu.** `video.src = url` já
-  inicia a carga; logo abaixo havia um `video.load()`, que **aborta a carga em
-  andamento**. Um `MEDIA_ERR_ABORTED` era relatado como problema de codec. A
-  mensagem única cobria os quatro `MediaError`, que têm causas opostas: 1 é bug
-  nosso, 2 é a fonte, 3 é o arquivo, 4 é o codec.
+  **O que conferir**, no painel de Moderação:
 
-  | Correção | Efeito |
+  | Se… | Então |
   | --- | --- |
-  | `load()` redundante removido | tira a causa que o próprio erro podia ter |
-  | manipuladores antes do `src` | o `onerror` deixa de ser registrado depois de a carga começar |
-  | `lib/erroDeMidia.js` | a mensagem passa a trazer o código real e o texto do navegador |
-  | **plano B pela URL do storage** | se o arquivo local for recusado, a extração é repetida a partir do vídeo que acabou de subir |
-
-  O plano B é o conserto de verdade: todas as causas plausíveis para o `<video>`
-  recusar um `blob:` têm a mesma saída — a mídia **já está publicada**, e o
-  navegador trata a URL dela como mídia comum, igual à que ele toca no feed.
-  Custo: um download a mais, só quando o caminho local já falhou.
-
-  Travado em `e2e/quadros-de-video.mjs`, que agora grava o vídeo fabricado em
-  disco, serve por HTTP, extrai pela URL e apaga o arquivo. Provado nos dois
-  sentidos.
-
-  **Ação do dono:** postar um vídeo. Três desfechos, e todos são informação:
-
-  | O que aparece | O que significa |
-  | --- | --- |
-  | nenhum aviso | passou — pelo arquivo local ou pelo plano B |
-  | aviso com `arquivo local: … \| storage: …` | falhou nos dois; o vídeo é indecodificável para aquele navegador, e **também não toca no feed** dele |
-  | aviso com um motivo só | caso novo — o motivo diz onde olhar |
+  | a fila `Não analisado` seguir vazia | o plano B está dando conta — nada a fazer |
+  | aparecer um item de vez em quando | funcionando como projetado; o motivo no item diz qual navegador falhou |
+  | encher | o plano B não está cobrindo o caso real, e aí o motivo (que vem com as duas metades) aponta onde |
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
