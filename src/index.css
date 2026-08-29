@@ -199,3 +199,27 @@ body {
   object-fit: cover;
   border-radius: 9999px;
 }
+
+/*
+ * A camada decorativa da página "Sobre" (`sobre/FundoAnimado.jsx`).
+ *
+ * As duas linhas de `height` são de propósito: é o padrão de fallback do CSS.
+ * Navegador que não conhece `lvh` ignora a segunda linha e fica com `100vh`;
+ * quem conhece usa a segunda, que vence por vir depois.
+ *
+ * POR QUE `lvh` E NÃO `vh` NEM `dvh` — este é o conserto do salto que o dono
+ * viu no celular em 29/08. A camada é `fixed` e cada peça é posicionada em
+ * PORCENTAGEM da altura dela. Ao rolar para baixo o celular esconde a barra de
+ * endereço, a janela cresce, e toda porcentagem é recalculada de uma vez: as
+ * peças pulam. Medido antes do conserto, com a janela indo de 830 para 930 px,
+ * a peça do topo saltava 4 px e a de baixo 70 px — quanto mais embaixo, maior
+ * o salto, que é a assinatura do defeito.
+ *
+ * `lvh` é a altura da janela COM a barra recolhida: um valor fixo, que não
+ * muda quando a barra vai e volta. `dvh` faria o oposto — ele ACOMPANHA a
+ * barra, e é exatamente o que provoca o pulo.
+ */
+.camada-de-fundo {
+  height: 100vh;
+  height: 100lvh;
+}

@@ -29,9 +29,16 @@
 
 /** Contorno neon, sem preenchimento: pesa quase nada e casa com a identidade. */
 const FORMAS = {
-  triangulo: 'M12 2 L22 21 L2 21 Z',
+  triangulo: 'M12 3 L21.5 20.5 L2.5 20.5 Z',
   losango: 'M12 2 L21 12 L12 22 L3 12 Z',
-  quadrado: 'M4 4 H20 V20 H4 Z',
+  quadrado: 'M4.5 4.5 H19.5 V19.5 H4.5 Z',
+  // Os quatro botões do controle, desenhados aqui como geometria simples e nas
+  // cores do site — não são o logotipo de ninguém, são um X, um círculo, um
+  // quadrado e um triângulo.
+  xis: 'M5 5 L19 19 M19 5 L5 19',
+  circulo: 'M12 3.5 A8.5 8.5 0 1 1 11.99 3.5 Z',
+  // Uma cruz cheia (não o X), para variar o ritmo visual.
+  cruz: 'M10 3 H14 V10 H21 V14 H14 V21 H10 V14 H3 V10 H10 Z',
 };
 
 /**
@@ -41,20 +48,26 @@ const FORMAS = {
  * ele, a tela começaria vazia e tudo apareceria junto.
  */
 const PECAS = [
-  { forma: 'triangulo', topo: '12%', tamanho: 38, duracao: 34, atraso: -2,  cor: '#39ff14' },
-  { forma: 'losango',   topo: '28%', tamanho: 26, duracao: 47, atraso: -19, cor: '#a855f7' },
-  { forma: 'quadrado',  topo: '44%', tamanho: 30, duracao: 39, atraso: -31, cor: '#39ff14' },
-  { forma: 'triangulo', topo: '61%', tamanho: 22, duracao: 53, atraso: -8,  cor: '#22d3ee' },
-  { forma: 'losango',   topo: '74%', tamanho: 44, duracao: 41, atraso: -25, cor: '#39ff14' },
-  { forma: 'quadrado',  topo: '88%', tamanho: 20, duracao: 58, atraso: -44, cor: '#a855f7' },
+  { forma: 'triangulo', topo: '6%',  tamanho: 34, duracao: 21, atraso: -3,  cor: '#39ff14' },
+  { forma: 'xis',       topo: '14%', tamanho: 26, duracao: 29, atraso: -17, cor: '#22d3ee' },
+  { forma: 'circulo',   topo: '23%', tamanho: 22, duracao: 24, atraso: -9,  cor: '#a855f7' },
+  { forma: 'quadrado',  topo: '31%', tamanho: 30, duracao: 33, atraso: -22, cor: '#39ff14' },
+  { forma: 'losango',   topo: '39%', tamanho: 20, duracao: 19, atraso: -14, cor: '#39ff14' },
+  { forma: 'cruz',      topo: '47%', tamanho: 25, duracao: 27, atraso: -6,  cor: '#a855f7' },
+  { forma: 'triangulo', topo: '55%', tamanho: 19, duracao: 31, atraso: -25, cor: '#22d3ee' },
+  { forma: 'circulo',   topo: '63%', tamanho: 33, duracao: 23, atraso: -11, cor: '#39ff14' },
+  { forma: 'xis',       topo: '71%', tamanho: 21, duracao: 35, atraso: -30, cor: '#39ff14' },
+  { forma: 'quadrado',  topo: '79%', tamanho: 24, duracao: 26, atraso: -19, cor: '#a855f7' },
+  { forma: 'losango',   topo: '87%', tamanho: 28, duracao: 22, atraso: -4,  cor: '#22d3ee' },
+  { forma: 'cruz',      topo: '94%', tamanho: 18, duracao: 30, atraso: -27, cor: '#39ff14' },
 ];
 
 export default function FundoAnimado() {
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 overflow-hidden pointer-events-none
-                 motion-reduce:hidden"
+      className="camada-de-fundo fixed top-0 left-0 w-full overflow-hidden
+                 pointer-events-none motion-reduce:hidden"
     >
       {PECAS.map((peca, i) => (
         <svg

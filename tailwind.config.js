@@ -45,7 +45,7 @@ export default {
         // devagar. Só `transform` e `opacity`: as duas rodam no compositor, e
         // é isso que separa "enfeite de graça" de "laço queimando CPU numa
         // página de LEITURA", onde a pessoa fica parada minutos.
-        travessia: "travessia 34s linear infinite",
+        travessia: "travessia 24s linear infinite",
       },
       keyframes: {
         pulseNeon: {
