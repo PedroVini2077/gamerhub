@@ -200,10 +200,19 @@ carregadores, `SkinnedMesh`, `PMREMGenerator`. Não é desleixo do empacotador: 
 precisa. Encolher além daqui exigiria trocar o `three` por WebGL cru, que é
 outra conversa e de outro tamanho.
 
-**O custo assumido na troca:** `<Canvas>` media o contêiner e reconfigurava
-sozinho ao redimensionar. Isso agora é um `ResizeObserver` nosso, e passou a ter
-teste próprio em `e2e/cena-3d.mjs` — sem ele, um observador quebrado deixaria a
-cena esticada ou cortada sem gerar erro nenhum.
+**O custo assumido na troca são DUAS capacidades**, e as duas falhariam em
+silêncio. Ambas viraram teste em `e2e/cena-3d.mjs`, provadas nos dois sentidos:
+
+| O que o `<Canvas>` fazia | Como está coberto | Sintoma se quebrar |
+| --- | --- | --- |
+| medir o contêiner e reconfigurar ao redimensionar | `ResizeObserver` + teste que encolhe a janela de 1440 para 1100px | a cena fica esticada ou cortada, sem erro |
+| soltar o contexto WebGL ao desmontar | `root.unmount()` + teste com **20 desmontagens** | o navegador guarda um número limitado de contextos (~16 no Chromium): a cena **para de aparecer** para quem navegou um pouco pelo site |
+
+O segundo é o mais traiçoeiro dos dois, e foi por isso que o laço do teste vai
+**além** do teto do navegador: com 8 voltas nada aparece, e o vazamento só se
+manifesta depois. Medido: 20 voltas, um canvas, contexto vivo, nenhum aviso de
+"too many active WebGL contexts" — e, com o `unmount()` removido de propósito, o
+aviso aparece e o teste reprova.
 
 > **Se ele reprovar seu PR:** a saída lista cada chunk com tamanho e diz o
 > suspeito mais provável. Se o crescimento for intencional, suba o teto **no
