@@ -191,6 +191,45 @@ transições discretas das páginas internas.
 - Posts com `live_kind` (lives de jogadores) são **excluídos do feed** — só
   aparecem na aba Lives.
 
+### `[29/08]` Três defeitos da abertura da landing
+
+**1. A landing 2D aparecia antes da 3D.** A `Scene2D` era o fallback enquanto o
+chunk chegava — parecia gentileza e era defeito. O dono viu no PC da loja, onde
+a espera é mais longa: *"não é pra aparecer em hipótese alguma"*.
+
+São duas cenas com arranjos diferentes: trocar uma pela outra no meio do
+carregamento não é "carregando", é a página mudando na frente de quem olha.
+Agora o espaço fica **vazio** até a 3D chegar — o Hero tem título e botão por
+cima, então o que se vê é o mesmo fundo escuro que fica atrás da cena depois.
+
+Junto, o download passou a começar na montagem em vez de depois da espera pelo
+ocioso: os dois eram serializados, e era isso que fazia o buraco durar segundos.
+A espera pela CPU continua inteira — o que não precisava esperar era a rede.
+
+**Conferido num navegador:** 42 amostras do DOM a cada 100 ms desde a montagem,
+e a cena 2D não apareceu em nenhuma.
+
+**2. A explosão do raio era pequena no monitor.** `vmax` é a maior dimensão da
+tela: num celular em pé isso é a altura e o clarão saía enorme; num monitor
+deitado é a largura, e a mesma conta dava um círculo pequeno. O clarão cresceu e
+o miolo brilhante foi empurrado para fora — é o núcleo que lê como "explosão",
+não o halo.
+
+**3. A intro tocava toda vez.** *"Quando recarrego a página, vem a animação,
+mudo de aba, de novo, saio do login, novamente."* Agora toca **uma vez por
+sessão do navegador** (`sessionStorage`): sobrevive a recarregar, a navegar e a
+voltar do login, e reaparece numa visita futura. `localStorage` mostraria a
+abertura uma vez na vida.
+
+Quem pediu `prefers-reduced-motion` não recebe a intro: ela é o movimento mais
+agressivo do site — tela inteira, flash e clarão.
+
+A decisão mora em `lib/introJaVista.js`, fora do componente, porque
+`sessionStorage` **lança** em modo privado. Enterrado num `useState`, esse
+`throw` derrubaria a landing inteira por causa de um enfeite. O padrão quando
+não dá para lembrar é **mostrar** — errar exibindo é melhor do que sumir com a
+abertura para todo mundo em janela anônima.
+
 ### `[29/08]` A landing como CAMADA 1 — navegação, rodapé e "Sobre"
 
 A landing deixou de ser uma rolagem só. Ver `CLAUDE.md` §0.4 sobre a ordem por

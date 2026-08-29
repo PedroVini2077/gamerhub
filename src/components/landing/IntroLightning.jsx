@@ -41,19 +41,29 @@ export default function IntroLightning({ onComplete }) {
         transition={{ duration: 0.34, delay: 0.28, times: [0, 0.25, 1], ease: 'easeOut' }}
       />
 
-      {/* Clarão verde — estoura no impacto e se expande sumindo. */}
+      {/* Clarão verde — estoura no impacto e se expande sumindo.
+
+          `[29/08]` Ele cresceu, e o motivo é geométrico. `vmax` é a MAIOR
+          dimensão da tela: num celular em pé isso é a altura, e o clarão saía
+          enorme; num monitor deitado é a largura, e a mesma conta produzia um
+          círculo que ocupava pouco da tela. O dono viu no PC da loja — *"a
+          explosão está pequena"* — e no celular nunca tinha reclamado disso.
+
+          Além do tamanho, o miolo brilhante foi empurrado para fora (14% → 22%)
+          e a queda ficou mais lenta: o que ele chama de "explosão" é o núcleo
+          claro, não o halo, e era o núcleo que estava pequeno. */}
       <motion.div
         aria-hidden
         className="absolute rounded-full"
         style={{
-          width: '60vmax',
-          height: '60vmax',
+          width: '95vmax',
+          height: '95vmax',
           background:
-            'radial-gradient(circle, rgba(235,255,230,1) 0%, rgba(160,255,120,0.95) 14%, rgba(57,255,20,0.55) 34%, rgba(57,255,20,0.15) 55%, transparent 72%)',
+            'radial-gradient(circle, rgba(240,255,235,1) 0%, rgba(180,255,140,0.98) 22%, rgba(57,255,20,0.6) 45%, rgba(57,255,20,0.18) 66%, transparent 80%)',
         }}
         initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: [0, 0.9, 2.4], opacity: [0, 1, 0] }}
-        transition={{ duration: 0.72, delay: 0.28, times: [0, 0.35, 1], ease: 'easeOut' }}
+        animate={{ scale: [0, 1.05, 2.6], opacity: [0, 1, 0] }}
+        transition={{ duration: 0.8, delay: 0.28, times: [0, 0.35, 1], ease: 'easeOut' }}
       />
 
       {/* Raio descendo do topo até o centro. */}

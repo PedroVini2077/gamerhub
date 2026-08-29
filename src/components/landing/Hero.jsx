@@ -8,18 +8,34 @@ import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
 import IntroLightning from './IntroLightning';
+import { deveTocarIntroAgora, marcarIntroVista } from '../../lib/introJaVista';
 import BotaoCena3D from './BotaoCena3D';
 
 export default function Hero() {
   const foraDoAr = useDbOffline();
   // O raio de abertura cobre o Hero, estoura, some e então libera o conteúdo.
-  const [introDone, setIntroDone] = useState(false);
+  //
+  // `[29/08]` Ele toca UMA VEZ por sessão do navegador. Antes tocava a cada
+  // recarga, a cada volta do login e a cada nova montagem — o dono descreveu
+  // exatamente isso, e a intro segura o conteúdo do Hero enquanto roda, então
+  // cada repetição é ~1,3 s de espera para ver a mesma coisa.
+  //
+  // `useState(fn)` decide na montagem: quem já viu entra direto com o Hero
+  // pronto (`introDone` nasce `true`), sem um quadro sequer de tela preta.
+  // Ver `lib/introJaVista.js` para o porquê de `sessionStorage` e não
+  // `localStorage`.
+  const [introDone, setIntroDone] = useState(() => !deveTocarIntroAgora());
   const show = introDone ? 'animate' : 'initial';
+
+  function aoTerminarIntro() {
+    marcarIntroVista();
+    setIntroDone(true);
+  }
 
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-x-clip">
       <AnimatePresence>
-        {!introDone && <IntroLightning key="intro" onComplete={() => setIntroDone(true)} />}
+        {!introDone && <IntroLightning key="intro" onComplete={aoTerminarIntro} />}
       </AnimatePresence>
 
       {/* Glows flutuantes — assinatura exclusiva da landing, não existem no resto do site */}
