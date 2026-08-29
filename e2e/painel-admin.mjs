@@ -191,17 +191,45 @@ try {
   }
   ok(`aba Posts lista ${linhasVisiveis} post(s)`);
 
+  // `[29/08]` MEDE O TOTAL CARREGADO, e não as linhas visíveis. Segunda
+  // correção do mesmo teste, e a causa é diferente da primeira.
+  //
+  // A aba Posts tem duas sub-abas — "Posts ativos" e "Lixeira" — e mostra só
+  // uma por vez. Mas a paginação não é por sub-aba: `fetchAll` traz os 20 posts
+  // mais recentes MISTURADOS, e `loadMorePosts` traz os próximos 20, também
+  // misturados.
+  //
+  // Resultado observado no CI: 8 ativos, 14 na lixeira. O botão aparece porque
+  // faltam posts a carregar, mas os que vêm são antigos — e antigos aqui estão
+  // quase todos apagados. A lista de ATIVOS não muda, e contar só ela dava
+  // "8 antes, 8 depois" com a paginação funcionando perfeitamente.
+  //
+  // Os contadores das sub-abas somados são a medida certa: eles dizem quantos
+  // posts o painel tem em mãos, que é exatamente o que o botão altera.
+  const totalCarregado = async () => {
+    const txt = await page.locator('main').innerText();
+    const ativos = Number(txt.match(/Posts ativos\s*(\d+)/)?.[1] ?? -1);
+    const lixeira = Number(txt.match(/Lixeira\s*(\d+)/)?.[1] ?? -1);
+    if (ativos < 0 || lixeira < 0) {
+      throw new Error(
+        'nao consegui ler os contadores das sub-abas ("Posts ativos" / '
+        + '"Lixeira"). Se os rotulos mudaram, atualize este teste — sem eles a '
+        + 'medicao da paginacao volta a ser cega.');
+    }
+    return ativos + lixeira;
+  };
+
   if (await carregarMais.count() > 0) {
-    const antes = linhasVisiveis;
+    const antes = await totalCarregado();
     await carregarMais.click();
     await page.waitForTimeout(3000);
-    const depois = await linhas();
+    const depois = await totalCarregado();
     if (depois <= antes) {
       throw new Error(
-        `"Carregar mais" nao trouxe nada: ${antes} linhas antes, ${depois} depois. `
-        + 'O botao existe mas a paginacao parou de funcionar.');
+        `"Carregar mais" nao trouxe nada: ${antes} posts carregados antes, `
+        + `${depois} depois. O botao existe mas a paginacao parou de funcionar.`);
     }
-    ok(`paginacao de posts funciona (${antes} -> ${depois} linhas)`);
+    ok(`paginacao de posts funciona (${antes} -> ${depois} posts carregados)`);
   } else {
     // Menos posts que uma página inteira: não há o que paginar, e exigir o
     // botão aqui transformaria "banco pequeno" em teste vermelho. Mas agora

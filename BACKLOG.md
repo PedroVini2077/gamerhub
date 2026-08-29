@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 28/08/2026, madrugada ·
-**14 itens abertos** (+ 1 ideia sem compromisso)
+**15 itens abertos** (+ 1 ideia sem compromisso)
 
 > **Conferência item a item, e ela achou um erro meu.** Ao reescrever um item no
 > PR #92 usei um recorte por INTERVALO e engoli o que estava no meio: **quatro
@@ -37,6 +37,32 @@
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[29/08]` 🟢 **"Carregar mais" no painel pode não mudar nada na tela.**
+  *Achado ao consertar o teste do painel, não relatado por ninguém — mas é um
+  no-op visível, e este projeto trata isso como defeito (§1.5).*
+
+  A aba Posts tem duas sub-abas, "Posts ativos" e "Lixeira", e mostra uma por
+  vez. **A paginação não é por sub-aba:** `fetchAll` traz os 20 posts mais
+  recentes misturados, e `loadMorePosts` traz os 20 seguintes, também
+  misturados.
+
+  O botão só aparece na sub-aba **ativos**. Se os próximos posts forem todos
+  apagados — provável, porque os antigos costumam estar na lixeira — o admin
+  clica, o painel carrega de verdade, e **a lista na frente dele não muda**.
+  Foi exatamente o que o CI mostrou: 8 ativos antes, 8 depois, com a paginação
+  funcionando.
+
+  **Três saídas, e a escolha é de produto:**
+
+  | Saída | O que muda |
+  | --- | --- |
+  | Paginar por sub-aba | consulta filtrada por `deleted_at`; mais correto e mais consultas |
+  | Mostrar o botão nas duas sub-abas | trivial; o clique passa a fazer sentido em ambas |
+  | Rótulo honesto ("carregar mais posts, incluindo lixeira") | o mais barato, e resolve a expectativa sem mexer na lógica |
+
+  Não escolhi sozinho porque muda o que o admin vê. Nada quebra hoje: o botão
+  carrega de verdade, e o contador da Lixeira sobe.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
