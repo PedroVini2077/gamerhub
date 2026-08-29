@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**16 itens abertos** (+ 1 ideia sem compromisso)
+**20 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -142,6 +142,48 @@
   **Por que não é 🟢:** se a hipótese estiver certa, isto não é problema de
   teste — é uma pessoa publicando, não vendo o próprio post, e concluindo que o
   site comeu o que ela escreveu. O post existe; a tela mente. É §1.5.
+
+- ⬜ `[29/08]` 🟠 **Aba "Fui banido / meu caso" na navegação lateral da LANDING.**
+  *Ideia do dono em 29/08. Fica registrada com a armadilha junto, porque a
+  parte difícil não é a tela — é decidir quem pode ver o quê.*
+
+  A ideia: quem foi banido tem hoje só a `BannedScreen`, uma tela que cobre
+  tudo e diz pouco. Vira uma página própria na landing, com o caso: o motivo,
+  a data, o prazo, o id da conta e a situação do recurso.
+
+  **A armadilha, e ela é de segurança.** A página é da landing, ou seja,
+  pública. Se ela aceitar um email ou um usuário e responder "esta conta está
+  banida", vira **oráculo de enumeração**: qualquer um descobre se um email
+  tem conta, e se aquela pessoa foi punida. Isso é dado de terceiro exposto
+  sem consentimento — o oposto do endurecimento de LGPD que já foi feito.
+
+  **O caminho que não tem esse problema:** a pessoa **entra** e a página lê
+  `auth.uid()`. O login continua funcionando para conta banida (ela só não
+  navega no site), então a conta dela é a prova de identidade — sem oráculo,
+  sem enumeração. O link para essa página sai de dentro da própria
+  `BannedScreen` e da landing.
+
+  **O que falta decidir antes de codar:** quais campos a pessoa vê (o motivo,
+  sim; **quem** moderou, não — isso expõe a equipe a retaliação), e se o
+  recurso passa a ser feito ali.
+
+  Depende de: policy/RPC nova para a pessoa ler o próprio caso, rota nova,
+  e o link dentro da `BannedScreen`.
+
+- ⬜ `[29/08]` 🟢 **Página "Regras da comunidade" na navegação lateral.**
+  Hoje o site modera, oculta e bane sem nenhuma página que diga **qual regra**
+  foi quebrada. Isso enfraquece a moderação — punição sem regra escrita parece
+  arbitrária — e é o primeiro link que a página de banimento acima vai querer
+  apontar. Mesmo padrão da `/sobre`: conteúdo em arquivo, sem banco.
+
+- ⬜ `[29/08]` 🟢 **Página "Privacidade / seus dados" na navegação lateral.**
+  O projeto fez endurecimento de LGPD (colunas revogadas, dado de terceiro
+  fechado) e não tem nenhuma página que conte isso a quem usa. Mesmo padrão da
+  `/sobre`.
+
+- ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
+  O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
+  agora está bom. Fica anotado para não virar decisão esquecida.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não

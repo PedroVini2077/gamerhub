@@ -589,3 +589,27 @@ forte: o gateway aceitaria qualquer JWT do projeto, inclusive a própria anon ke
 
 
 [← voltar para o README](../README.md)
+
+## `[29/08]` Sem capa de jogo na página "Sobre" — chips no lugar
+
+**Recusado:** buscar imagem dos jogos na internet para enfeitar o bloco "Quem
+está por trás". O dono perguntou se dava para pegar da internet.
+
+**Por que não**, e são três motivos independentes — qualquer um já bastaria:
+
+1. **Capa de jogo tem dono.** The Last of Us e God of War são da Sony, Metal
+   Gear é da Konami. Publicar num site aberto é risco jurídico real, e não
+   combina com o cuidado que o resto do projeto tem.
+2. **Egress.** Imagem hospedada aqui come a cota mais apertada do plano
+   (§0.2). Cinco capas por visita, num bloco que ninguém precisa ver para usar
+   o site.
+3. **Link de terceiro apodrece.** Imagem servida de fora quebra sozinha e
+   ninguém fica sabendo — falha silenciosa (§1.5).
+
+**O que foi feito no lugar:** os títulos viraram chips com nome e gênero, no
+estilo neon que a identidade já tem, com ícone do `lucide-react`. Zero byte de
+imagem, zero risco, e a informação que importa — o que ele joga — continua lá.
+
+**O caminho legítimo, se um dia quisermos imagem:** print do próprio dono
+jogando. Aí o conteúdo é dele.
+
