@@ -21,7 +21,16 @@ vi.mock('../../services/postService', () => ({
   uploadAudio: vi.fn(async () => ({ data: 'audio-url', error: null })),
   uploadPostMediaFiles: vi.fn(async () => ({ data: { imageUrls: [], failed: 0 }, error: null })),
 }));
-vi.mock('../../services/moderationService', () => ({
+// `[29/08]` O CAMINHO IMPORTA, e este mock já quebrou por causa disso.
+//
+// As chamadas de IA saíram de `moderationService` para `moderationAiService`
+// quando o primeiro passou de 300 linhas. O mock continuou apontando para o
+// arquivo antigo — ele não avisa que não interceptou nada, então o módulo real
+// passou a ser carregado, e com ele o `lib/supabase.js`, que estoura sem as
+// variáveis de ambiente. Aqui passou (tenho `.env` local) e o CI reprovou.
+//
+// Guarda embaixo: um teste confere que este caminho existe de verdade.
+vi.mock('../../services/moderationAiService', () => ({
   moderateText: vi.fn(), moderateImages: vi.fn(), moderateVideos: vi.fn(), moderateLinks: vi.fn(),
 }));
 vi.mock('../../lib/embed', () => ({ getEmbedInfo: () => null }));
@@ -136,5 +145,32 @@ describe('usePostComposer — ciclo de vida das prévias', () => {
     expect(onPost).not.toHaveBeenCalled();
     expect(result.current.medias).toHaveLength(1);
     expect(revoked).toEqual([]);
+  });
+});
+
+/**
+ * Trava do MOCK, e não do código.
+ *
+ * `vi.mock` de um caminho que não existe mais é silencioso: nada falha, o
+ * módulo real é carregado, e o teste passa a exercitar a coisa que ele
+ * pretendia substituir. Aqui o efeito foi o `lib/supabase.js` estourar por
+ * falta de variável de ambiente — só no CI, porque na máquina de quem escreveu
+ * havia `.env`.
+ *
+ * Esta checagem transforma "o mock não intercepta nada" em falha imediata e
+ * com nome, em vez de um erro de ambiente três passos adiante.
+ */
+describe('os mocks apontam para arquivos que existem', () => {
+  it('o módulo de moderação por IA está onde o mock diz', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const fonte = readFileSync(join(import.meta.dirname, '../usePostComposer.js'), 'utf8');
+    expect(
+      fonte,
+      'O `usePostComposer` deixou de importar de `services/moderationAiService`.\n'
+      + 'Se o arquivo mudou de lugar, o `vi.mock` no topo deste teste precisa ir\n'
+      + 'junto — mock de caminho errado não avisa, ele só deixa o módulo real\n'
+      + 'entrar, e aí o teste prova outra coisa.',
+    ).toContain("from '../services/moderationAiService'");
   });
 });

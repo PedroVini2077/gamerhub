@@ -11,58 +11,43 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 28/08/2026, madrugada ·
+**Última conferência contra o sistema:** 29/08/2026, manhã ·
 **15 itens abertos** (+ 1 ideia sem compromisso)
 
-> **Conferência item a item, e ela achou um erro meu.** Ao reescrever um item no
-> PR #92 usei um recorte por INTERVALO e engoli o que estava no meio: **quatro
-> itens e a seção `🟢 Recomendado` inteira** — Gmail, React Query, confirmar
-> desempenho e emagrecer o chunk 3D. Nada acusou; o CI ficou verde e a lista só
-> encolheu. Recuperados do `git show`, conferidos um a um contra a versão
-> íntegra, e agora há teste exigindo que as quatro seções de prioridade existam.
+> **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
+> principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
+> medido em navegador de verdade e travado no CI; o `HUB` do título (elemento de
+> LCP) deixou de animar `text-shadow`, que não roda no compositor; e a falha de
+> extração de quadros de vídeo passou a chegar ao `admin_logs` com o motivo, o
+> tipo do arquivo e o navegador.
 >
-> **Fechados nesta madrugada:** o atraso da `BannedScreen` (medido: 0,30 a
-> 1,08 s de ida ao servidor — agora usa escopo local e sai na hora), a nota real
-> da IA chegando ao painel, e a extração de quadros de vídeo, que ganhou motivo
-> de falha e trava em navegador de verdade.
+> **O buraco encontrado no caminho, e ele era o pior dos três:** `drawImage` com
+> um vídeo não decodificado **não lança** — saía um JPEG válido e transparente,
+> a IA respondia `score 0`, e o vídeo ficava registrado como **analisado e
+> limpo**. Análise falsa é pior que ausência de análise: a ausência aparece como
+> pendência, a falsa afirma que alguém olhou.
 >
-> **Viraram decisão** (§6.2 regra 4, decisão não é backlog): testar moderação
-> com `ogamerpedro` → [DECISOES-FERRAMENTAL.md](docs/DECISOES-FERRAMENTAL.md);
-> `sexual` em 0.55 ser a única defesa dessa classe em imagem →
-> [DECISOES.md](docs/DECISOES.md).
+> **A correção que eu tinha declarado e estava pela metade:** o `frameloop` de
+> 28/08 resolvia a cena desenhando **fora** da tela, e eu li isso como "o
+> problema de desempenho da cena está corrigido". Nunca tinha medido o caso "na
+> tela", que era o caro. Registrado no item do chunk 3D.
+>
+> **Fechado com a permissão que você deu** ("pode fazer todas elas"): o
+> "Carregar mais" do painel. Escolhi a saída mais correta das três — cada
+> sub-aba pagina a si mesma — e não a mais barata, porque as outras duas
+> deixavam o clique podendo não mudar nada. Custo: uma consulta a mais na carga
+> inicial, dentro do mesmo `Promise.all`.
+>
+> **Viraram decisão** (§6.2 regra 4): resolução adaptativa em vez de `dpr` fixo,
+> e o brilho do título por `opacity` → [DECISOES.md](docs/DECISOES.md).
 >
 > **Esperando você:** três decisões de custo (HIBP, plano Team, sair do Gmail),
-> a escolha do React Query, e o desenho do aviso na landing.
+> a escolha do React Query, o desenho do aviso na landing, repostar um vídeo e
+> repetir o PageSpeed do desktop no preset padrão.
 
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[29/08]` 🟢 **"Carregar mais" no painel pode não mudar nada na tela.**
-  *Achado ao consertar o teste do painel, não relatado por ninguém — mas é um
-  no-op visível, e este projeto trata isso como defeito (§1.5).*
-
-  A aba Posts tem duas sub-abas, "Posts ativos" e "Lixeira", e mostra uma por
-  vez. **A paginação não é por sub-aba:** `fetchAll` traz os 20 posts mais
-  recentes misturados, e `loadMorePosts` traz os 20 seguintes, também
-  misturados.
-
-  O botão só aparece na sub-aba **ativos**. Se os próximos posts forem todos
-  apagados — provável, porque os antigos costumam estar na lixeira — o admin
-  clica, o painel carrega de verdade, e **a lista na frente dele não muda**.
-  Foi exatamente o que o CI mostrou: 8 ativos antes, 8 depois, com a paginação
-  funcionando.
-
-  **Três saídas, e a escolha é de produto:**
-
-  | Saída | O que muda |
-  | --- | --- |
-  | Paginar por sub-aba | consulta filtrada por `deleted_at`; mais correto e mais consultas |
-  | Mostrar o botão nas duas sub-abas | trivial; o clique passa a fazer sentido em ambas |
-  | Rótulo honesto ("carregar mais posts, incluindo lixeira") | o mais barato, e resolve a expectativa sem mexer na lógica |
-
-  Não escolhi sozinho porque muda o que o admin vê. Nada quebra hoje: o botão
-  carrega de verdade, e o contador da Lixeira sobe.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -99,35 +84,33 @@
   > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
   > pendentes.
 
-- ⬜ `[28/08]` 🟢 **Confirmar a extração de quadros com o vídeo que falhou.**
-  *A falha foi reproduzida em parte, a causa foi cercada, e o caminho ficou
-  endurecido — falta só o dono repostar aquele vídeo específico.*
+- ⬜ `[29/08]` 🟢 **Descobrir POR QUE o vídeo do dono não rende quadros.**
+  *Ainda aberto, e agora com instrumentação em vez de hipótese.*
 
-  **O que estava provado:** `moderate-text` foi chamada para o post do vídeo e
-  `moderate-image` **não foi chamada nenhuma vez**. A falha era no navegador,
-  antes da rede.
+  **O que está provado (log da Supabase, 29/08 03:19:44 UTC):** a
+  `moderate-text` foi chamada para o post do vídeo e a `moderate-image`
+  **não foi chamada nenhuma vez**. A falha está no navegador, antes da rede.
+  Isto é fato, não dedução.
 
-  **O bug de fundo, e ele foi corrigido:** `extrairQuadros` tinha **cinco**
-  caminhos diferentes terminando no mesmo `resolve([])` — `createObjectURL`
-  estourando, formato não decodificado, duração não finita, teto de 15 s, e
-  canvas recusando. Cinco causas, um sintoma, nenhuma pista, e correções
-  completamente diferentes para cada uma. Agora cada uma diz seu nome.
+  **O que NÃO está provado:** qual das causas dispara. Continua desconhecido, e
+  nenhuma das correções abaixo foi feita por ser "a provável" — cada uma fecha
+  um caminho de falha silenciosa que estava aberto de verdade.
 
-  **O que mais mudou, e por quê:**
+  **O que mudou em 29/08:**
 
-  | Mudança | Motivo |
+  | Mudança | O que resolve |
   | --- | --- |
-  | trata `duration === Infinity` | caso real e comum em vídeo de celular e de gravação em streaming; era desistência calada |
-  | `crossOrigin` removido | a origem é `blob:` do próprio documento — mesma origem por construção, nada a proteger, e declarar CORS numa `blob:` só cria recusa silenciosa |
-  | vídeo entra no DOM, fora da tela | navegador de celular recusa decodificar elemento solto na memória, e o sintoma é exatamente "nada acontece, sem erro" |
+  | motivo vai para o `admin_logs` via `falha_de_extracao` | o motivo deixou de viver só num toast de segundos e no Sentry — duas investigações começaram do zero por causa disso |
+  | motivo aparece no aviso da tela, e ele dura 12 s | quem publicou consegue dizer a causa sem abrir painel nenhum |
+  | quadro em branco passa a ser reprovado | `drawImage` com vídeo não decodificado **não lança**: saía um JPEG válido e transparente, a IA devolvia `score 0`, e o vídeo era gravado como **analisado e limpo** — pior do que não analisar |
+  | `load()` + `play()` mudo antes de amostrar | `preload` é dica, e o Safari do iPhone a ignora fora de gesto do usuário — e o gesto já expirou no upload |
+  | vigia de 4 s por salto | `seeked` não é garantido; um salto travado consumia os 15 s e levava junto os quadros que já tinham dado certo |
+  | exige `videoWidth`/`videoHeight` | sem dimensão, o canvas de 512×512 saía transparente |
 
-  **Travado por `e2e/quadros-de-video.mjs`**, que roda no CI: fabrica um vídeo
-  de verdade com `MediaRecorder`, exige os 3 quadros distintos em JPEG, e exige
-  que um arquivo inválido falhe **dizendo por quê**.
-
-  **Ação do dono, e é a única coisa que falta:** repostar aquele mesmo vídeo. Se
-  passar, o log mostra `analisadas=3/3`. Se falhar, o aviso na tela agora vem
-  com a causa — e aí o conserto é dirigido, não mais adivinhação.
+  **Ação do dono, e é a única que falta:** repostar um vídeo. Se passar, o log
+  mostra `analisadas=3/3`. Se falhar, a causa aparece **na tela e no
+  `admin_logs`** com nome — consulta pronta em
+  [OPERACAO.md](docs/OPERACAO.md).
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
@@ -153,63 +136,80 @@
 
 ## 🟢 Recomendado
 
-- ⬜ `[28/08]` **Confirmar a melhora de performance com número, em produção.**
-  A rodada de otimização de 28/08 foi medida **no build** (prints 227 → 94 KB;
-  cena 3D e Sentry fora do caminho crítico; carregamento inicial hoje em
-  691,7 kB, conferido por `scripts/orcamento-de-bytes.mjs`). Falta o
-  antes/depois de campo, e ele só vale **no mesmo aparelho e na mesma
-  ferramenta** — as duas medições de 27/08 discordaram 4× no TBT (3.690 ms no
-  Termux, 15.310 ms no PageSpeed). Duas fontes: repetir o Lighthouse no mesmo
-  celular, e o **Vercel Speed Insights**, que já está instalado no projeto e
-  coleta de usuário real. *Ação do dono; sem isso "otimizei" é opinião (§6.1).*
+- ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
+  *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*
 
-  **Como rodar o Lighthouse** (perguntado pelo dono em 28/08) — três caminhos,
-  do mais fácil ao mais fiel:
+  **O que a rodada de 29/08 achou.** O PageSpeed do dono acusava 31,3 s de
+  thread principal, dos quais **30.182 ms em "Other"** — e byte nenhum explicava
+  aquilo, porque o custo de uma cena WebGL é por **pixel**. Medido num navegador
+  de verdade, janela de 8 s com o Hero na tela:
 
-  | Onde | Como | Serve para |
+  | Configuração | Long tasks | Thread bloqueada |
   | --- | --- | --- |
-  | **PageSpeed Insights** | abrir `pagespeed.web.dev`, colar a URL do site | comparar com a medição de 27/08 — foi ela que deu 36 e depois 92 |
-  | **Chrome no PC** | F12 → aba **Lighthouse** → *Mobile* + *Performance* → *Analyze page load* | iterar rápido; roda na sua máquina, então o número oscila com o que estiver aberto |
-  | **O próprio celular** | Termux, como em 27/08 | o único que mede o aparelho real |
+  | como estava (`dpr` até 1,5 + `antialias`) | 88 | **8.066 ms de 8.000 ms** |
+  | resolução adaptativa (como está) | 1 | **52 ms** |
 
-  **As duas regras que fazem a medição valer alguma coisa** (§0.3 regra 5):
-  medir **antes e depois na MESMA ferramenta e no MESMO aparelho**, e sempre em
-  **janela anônima** (extensão do Chrome entra na conta e suja o resultado).
-  Comparar um PageSpeed de hoje com um Lighthouse local de ontem não diz nada.
+  A thread principal ficava 99% ocupada enquanto a cena estivesse visível. Isso
+  também explica a contradição dos dois prints do dono: o do celular deu **TBT
+  0 ms** porque a cena 3D não sobe abaixo de 1024px — o celular nunca pagou.
+  Detalhes em [ARQUITETURA.md](docs/ARQUITETURA.md).
 
-  Repare que o número de laboratório oscila mesmo sem nada mudar — foi por isso
-  que o portão do CI virou **byte** (`scripts/orcamento-de-bytes.mjs`) e não
-  tempo. O Lighthouse aqui serve para confirmar a direção, não para aprovar ou
-  reprovar.
+  **O que falta, e por que é do dono:** o print do desktop mostrava
+  *"Limitação personalizada"*. Comparar uma medição de preset customizado com
+  outra não diz nada (§0.3, regra 5). O pedido é: **PageSpeed, aba Desktop,
+  janela anônima**, e comparar com o próximo — sempre no mesmo preset.
 
-- ⬜ `[28/08]` 🔵 **Emagrecer o chunk da cena 3D — o que sobrou depois do
-  gargalo real.** *A cena 3D FICA (decisão do dono, registrada em
-  [DECISOES.md](docs/DECISOES.md)). E o problema de desempenho que ela causava
-  **já foi corrigido** — isto aqui é o resto.*
-
-  **O que foi resolvido em 28/08.** O perfil de CPU do PageSpeed mostrou onde o
-  tempo ia de verdade:
-
-  | Categoria | Tempo |
+  | Onde | Como |
   | --- | --- |
-  | **Other** (o laço de animação) | **29.441 ms** |
-  | Script Evaluation | 789 ms |
-  | Script Parsing & Compilation | 79 ms |
+  | **PageSpeed Insights** | `pagespeed.web.dev`, colar a URL, aba Desktop |
+  | **Chrome no PC** | F12 → Lighthouse → Desktop + Performance → Analyze page load |
+  | **Vercel Speed Insights** | já instalado; é o único que mede usuário real, e o único que responde se a cena incomoda quem TEM GPU |
 
-  A cena continuava desenhando 60×/s depois que o visitante rolava para longe.
-  Agora o `frameloop` desliga fora da tela — medido num navegador real: **125
-  desenhos em 2 s visível, 0 fora da tela**, travado por `e2e/cena-3d.mjs`.
+  O portão do CI continua sendo **byte** (`scripts/orcamento-de-bytes.mjs`),
+  porque tempo de laboratório oscila. A exceção nova é `e2e/cena-3d.mjs`, que
+  agora barra bloqueio de thread acima de 800 ms — ali a margem é zero contra
+  dois mil, não uma porcentagem.
 
-  **O que sobra, e por que é 🔵 e não 🟠:** o chunk continua com 887 kB, e
-  trocar `<Canvas>` por `createRoot` + `extend` seletivo vale **−20%** (887 →
-  707 kB, medido com experimento descartável). Isso importa para **download em
-  rede lenta**, não para thread principal — os 789 ms de execução já eram
-  pequenos perto do laço.
+- ⬜ `[29/08]` **`useAuth.jsx` passou de 300 linhas (311) — e é o arquivo de
+  maior risco do projeto.** *Esbarrei nele na varredura de tamanho de 29/08,
+  fazendo outra coisa. Não dividi na hora e o motivo é explícito: dividir
+  `useAuth` não é corte mecânico — ele carrega sessão, perfil, realtime de ban
+  e o `signOut`, e quebrá-lo derruba o site inteiro (`CLAUDE.md` §7, arquivo de
+  alto risco). O §4 manda dividir arquivo que eu inchei; eu não inchei este.*
+
+  **O corte que parece certo, para quando for a hora:** separar o realtime de
+  ban/suspensão (canal + poll de 60 s) do estado de sessão/perfil. São as duas
+  responsabilidades que já convivem ali, e a primeira tem teste próprio.
+  **Pede aprovação antes** (§7 🟡): mexe em autenticação.
+
+- ⬜ `[28/08]` 🔵 **Emagrecer o chunk da cena 3D — o que sobrou depois de duas
+  correções de desempenho.** *A cena 3D FICA (decisão do dono, registrada em
+  [DECISOES.md](docs/DECISOES.md)). Isto aqui é BYTE, e byte nunca foi o
+  gargalo dela.*
+
+  **`[29/08]` Correção do que este item dizia.** Ele afirmava que o problema de
+  desempenho da cena "já foi corrigido" em 28/08, quando o `frameloop` passou a
+  desligar fora da tela. Estava **errado pela metade**, e a metade que faltava
+  era a maior:
+
+  | Rodada | O que foi corrigido | O que continuava |
+  | --- | --- | --- |
+  | 28/08 | a cena desenhando 60×/s **depois** de o visitante rolar para longe | ela custava ~92 ms **por quadro** enquanto visível |
+  | 29/08 | resolução adaptativa: 8.066 ms → 52 ms de thread bloqueada | — |
+
+  O erro de raciocínio foi olhar só o caso "ninguém está vendo". O caso "está
+  na tela" nunca foi medido, e era 99% de ocupação da thread principal.
+
+  **O que sobra, e por que é 🔵:** o chunk continua com 887 kB, e trocar
+  `<Canvas>` por `createRoot` + `extend` seletivo vale **−20%** (887 → 707 kB,
+  medido com experimento descartável). Isso importa para **download em rede
+  lenta** — não para thread principal, que agora está resolvida por outro
+  caminho.
 
   **O custo de fazer:** `createRoot` não traz o tratamento de resize que o
   `<Canvas>` faz sozinho; seria preciso escrever e testar isso. Trabalho real,
-  ganho moderado, risco na porta de entrada do site. Por isso fica para quando
-  houver folga, e não agora.
+  ganho moderado, risco na porta de entrada do site. Fica para quando houver
+  folga.
 
 ## 🔵 Só quando o volume crescer
 

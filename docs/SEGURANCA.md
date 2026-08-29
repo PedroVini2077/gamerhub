@@ -160,10 +160,34 @@ Levantado ao conferir o projeto contra uma lista de camadas de engenharia.
 | `/auth/v1/token` (login, cadastro, recuperação) | **Sim** — rate limit próprio do Supabase/GoTrue, server-side |
 | `send-email` | **Sim** — exige assinatura Standard Webhooks |
 | `moderate-links` / `moderate-text` / `moderate-image` | **Sim** — exigem sessão válida (`auth.getUser()`) |
+| `moderate-image` com `falha_de_extracao` (relato do navegador, `[29/08]`) | **Sim** — sessão válida **e** ser dono do conteúdo; e a RPC deduplica 1 h por motivo |
 | Trilha de auditoria | **Sim**, desde 27/08 — uma linha por hora por tipo |
 | Sentry | **Sim**, desde 27/08 — 20 eventos por sessão |
 | **Criar conteúdo** (post, comentário, mural, chat) | **Não.** Nada limita o ritmo. Conferido: nenhuma constraint em `posts` |
 | ~~`register_login_attempt`~~ | **Era a pior de todas — e foi APAGADA em 28/08.** Ver abaixo |
+
+### `[29/08]` Por que o relato de falha de vídeo NÃO é o `register_login_attempt` de novo
+
+O caminho novo permite que o navegador escreva no `admin_logs`, que é
+exatamente o que tornou a antiga `register_login_attempt` a pior superfície do
+projeto. A diferença é onde a checagem fica, e ela é o motivo de a comparação
+não valer:
+
+| | `register_login_attempt` (apagada) | `falha_de_extracao` |
+| --- | --- | --- |
+| Quem podia chamar | **qualquer um**, sem conta | só sessão válida |
+| Sobre quem | **sobre qualquer conta**, informada no corpo | só sobre conteúdo **do próprio chamador** |
+| Efeito de forjar | marcava conta alheia como sob ataque | uma linha de log sobre um post que já é seu |
+| Ritmo máximo | o que o atacante quisesse | o ritmo em que a pessoa publica |
+
+O ramo do relato fica **depois** da checagem de dono da `moderate-image`, e
+existe teste de contrato exigindo que continue assim
+(`src/lib/__tests__/relatoDeFalhaDeVideo.test.js`). Se alguém mover o ramo para
+cima da checagem, o teste falha nomeando o problema.
+
+**O que sobra de risco:** uma conta legítima pode publicar vídeos em sequência
+para gerar linhas. É ruído, não escalada — e a deduplicação de 1 hora por motivo
+da própria RPC limita a uma linha por causa por hora.
 
 ### O contador de login promete o que não entrega
 

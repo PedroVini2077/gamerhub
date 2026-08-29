@@ -37,6 +37,12 @@ src/
 │   ├── date.js            # Cálculo de idade / idade mínima de cadastro
 │   ├── csv.js             # Geração + download de CSV (export de logs)
 │   ├── wordlist.js        # Match de palavra inteira do filtro de moderação
+│   ├── framesDeVideo.js   # Extrai 3 quadros de um vídeo no navegador, para a
+│   │                      # moderação de imagem analisar (ver MODERACAO-IA.md)
+│   ├── resolucaoDaCena.js # Regra pura de resolução adaptativa da cena 3D
+│   │                      # (fora do React porque a metade que importa — a
+│   │                      # cena SOBE de resolução — não dá para provar num
+│   │                      # navegador sem GPU)
 │   ├── motion.js          # Variantes Framer Motion compartilhadas (fade, grid, list)
 │   └── landingMotion.js   # Variantes de animação exclusivas da landing (hero, reveal, stagger)
 ├── services/              # Camada de acesso a dados (Supabase) por domínio
@@ -46,7 +52,12 @@ src/
 │   ├── liveService.js     # Chat de live, silenciamentos
 │   ├── keyService.js      # Keys/promos, stats do site
 │   ├── authService.js     # Trocar senha/email, deletar conta
-│   └── moderationService.js # Denúncias, fila, wordlist, infrações, hide/restore
+│   ├── moderationService.js # Denúncias, fila, wordlist, infrações, hide/restore
+│   └── moderationAiService.js # As chamadas de IA (Edge Functions), separadas
+│                            # do resto em 29/08: o de cima fala com TABELAS e
+│                            # devolve `{data,error}` para a tela; este fala com
+│                            # EDGE FUNCTIONS por `fetch`, é fire-and-forget, e
+│                            # tem que gritar sozinho (§1.5)
 ├── pages/
 │   ├── Landing.jsx        # Página pública para visitantes não logados
 │   ├── Home.jsx           # Feed principal
@@ -145,6 +156,7 @@ trabalho de CPU são contas diferentes.
 | Decoração cara é **opcional por aparelho** | `Scene3D.decidirModo()` | Tela < 1024px, `saveData`, 2g/3g, ≤ 2 núcleos ou `reduce-motion` recebem a `Scene2D` (SVG + CSS, custo de JS zero) |
 | `@import` de CSS externo cria **cadeia serial** | `index.html` | `preconnect` economiza handshake, não descoberta. O CSS de fonte agora é `<link>` com `media="print"`/`onload` |
 | `manualChunks` **vence** `import()` dinâmico | `vite.config.js` | Os caminhos casam `/node_modules/<pacote>/` inteiro. A regra antiga (`/react/`) arrastava `@sentry/react` para o `vendor-react` |
+| **O custo de uma cena WebGL é por PIXEL**, não por byte nem por objeto | `scene3d/ResolucaoAdaptativa.jsx` + `lib/resolucaoDaCena.js` | Cinco chamadas de desenho por quadro, e ainda assim a thread principal ficava 99% ocupada. Ver a medição abaixo |
 
 **Toda espera precisa de teto absoluto.** As duas esperas introduzidas aqui —
 a cena 3D e o Sentry — liberam sozinhas se o gatilho não vier. A primeira
@@ -162,6 +174,51 @@ Lighthouse no mesmo aparelho):
 | Cena 3D no caminho crítico | 887 kB | **0** (depois do ocioso, e só no desktop) |
 | Prints da landing | 227 KB | **94 KB** |
 | Sentry | dentro do chunk inicial | 85 kB, sob demanda |
+
+### `[29/08]` A conta que faltava: o custo por PIXEL da cena 3D
+
+As otimizações acima mexeram em **bytes**, e o dono continuou vendo 58 no
+PageSpeed do desktop, com 31,3 s de thread principal — dos quais 30.182 ms em
+"Other". Byte não explicava aquilo.
+
+Medido num navegador de verdade (`PerformanceObserver` de `longtask`, janela de
+8 s com o Hero na tela, build de produção):
+
+| Configuração | Quadros | Long tasks | Thread bloqueada |
+| --- | --- | --- | --- |
+| `dpr [1, 1.5]` + `antialias` (como estava) | 88 | 88 | **8.066 ms de 8.000 ms** |
+| `dpr 1`, sem `antialias` | 133 | 132 | 7.897 ms |
+| `dpr 0,75` | 182 | 9 | 468 ms |
+| `dpr 0,5` | 243 | **0** | **0 ms** |
+| resolução adaptativa (como está) | 236 | 1 | 52 ms |
+
+A thread principal ficava **99% ocupada** enquanto a cena estivesse visível, e
+cada quadro isolado passava dos 50 ms que definem uma long task — a mesma conta
+do TBT. Não é um degrau, é um penhasco, porque o custo é proporcional a pixel.
+
+Isso também resolve a contradição dos dois PageSpeed do dono: o do **celular**
+marcou TBT **0 ms** e o do **desktop**, 31 s. Não é inconsistência de medição —
+a cena não sobe abaixo de 1024px (`lib/cena3D.js`), então o celular nunca pagou
+por ela.
+
+**Por que adaptativo e não um número fixo:** a medição acima é em rasterização
+por software (SwiftShader), que é o que o Lighthouse, o PageSpeed e qualquer
+máquina com GPU bloqueada usam. Numa máquina com GPU, cinco chamadas de desenho
+não custam nada — cravar 0,5 puniria quem não tem problema nenhum. A cena
+começa no degrau mais barato e sobe se os quadros couberem em 60 fps; se
+descer uma vez, não volta a subir (resolução piscando é pior de olhar do que
+resolução baixa e estável).
+
+**Travado nos dois lados:** `e2e/cena-3d.mjs` reprova se a cena bloquear a
+thread principal acima de 800 ms na janela de 2 s (medido: 0 ms com a correção,
+2.151 ms com o bug reinjetado), e `src/lib/__tests__/resolucaoDaCena.test.js`
+cobre a subida, que nenhum navegador sem GPU deste ambiente consegue exercitar.
+
+**No mesmo lote:** o `HUB` do título da landing — que é o **elemento de LCP** —
+animava `text-shadow`, que não roda no compositor. Era o "1 elemento animado"
+do aviso "Evitar animações não compostas": o maior texto da página repintado na
+thread principal, 60 vezes por segundo, para sempre. Agora o brilho é estático
+e só a `opacity` anima.
 
 ---
 

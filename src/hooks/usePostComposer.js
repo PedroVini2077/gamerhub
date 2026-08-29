@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { createPost, uploadAudio, uploadPostMediaFiles } from '../services/postService';
-import { moderateText, moderateImages, moderateVideos, moderateLinks } from '../services/moderationService';
+import { moderateText, moderateImages, moderateVideos, moderateLinks } from '../services/moderationAiService';
 import { useAuth } from './useAuth.jsx';
 import { useBlockedWords } from './useBlockedWords';
 import { getEmbedInfo } from '../lib/embed';
@@ -171,10 +171,16 @@ export function usePostComposer(onPost) {
             if (r?.semQuadros) {
               // Sem `icon:` — emoji na UI é proibido (§4). O texto carrega o
               // aviso sozinho.
+              // O motivo vai NO TEXTO. Sem ele o aviso dizia apenas que algo
+              // deu errado, e as cinco causas possíveis pedem correções
+              // completamente diferentes — foi exatamente esse aviso mudo que
+              // custou uma segunda rodada de investigação em 29/08.
+              const causa = r.motivos?.filter(Boolean).join(' · ');
               toast(
                 `${r.semQuadros} vídeo(s) não puderam ser analisados automaticamente. `
-                + 'O post foi publicado e pode ser revisado pela equipe.',
-                { duration: 6000 },
+                + 'O post foi publicado e pode ser revisado pela equipe.'
+                + (causa ? `\nMotivo: ${causa}` : ''),
+                { duration: 12000 },
               );
             }
           })

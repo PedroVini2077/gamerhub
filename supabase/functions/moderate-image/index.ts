@@ -338,13 +338,16 @@ Deno.serve(async (req: Request) => {
     return json({ error: "API key nao configurada" }, 500);
   }
 
-  let body: { content_type?: string; content_id?: string; image_urls?: string[] };
+  let body: {
+    content_type?: string; content_id?: string; image_urls?: string[];
+    falha_de_extracao?: { motivo?: string; tipo?: string; tamanho?: number };
+  };
   try { body = await req.json(); }
   catch { return json({ error: "Payload invalido" }, 400); }
 
-  const { content_type, content_id, image_urls } = body;
+  const { content_type, content_id, image_urls, falha_de_extracao } = body;
   const tabela = content_type ? TABELAS[content_type] : undefined;
-  if (!tabela || !content_id || !image_urls?.length)
+  if (!tabela || !content_id || (!image_urls?.length && !falha_de_extracao))
     return json({ error: "content_type, content_id e image_urls sao obrigatorios" }, 400);
 
   const clienteUsuario = createClient(SUPABASE_URL, SUPABASE_ANON, {
@@ -382,16 +385,49 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  const urls = image_urls
+  // ─── Relato de falha do navegador ─────────────────────────────────────────
+  //
+  // O caso que este ramo existe para resolver: em 29/08 o dono postou um video
+  // e a extracao de quadros devolveu zero. O log da Supabase provou onde a
+  // falha estava (`moderate-image` nao foi chamada nenhuma vez), mas nao dizia
+  // POR QUE — o motivo so existia no Sentry e num toast de 6 segundos, e as
+  // cinco causas possiveis pedem correcoes completamente diferentes.
+  //
+  // Por que aqui, e nao numa RPC aberta ao cliente: abrir um canal de log
+  // chamavel direto seria repetir o erro do `register_login_attempt`, onde
+  // qualquer um forjava entrada. Aqui a checagem de dono ja rodou logo acima —
+  // so da para relatar falha sobre CONTEUDO PROPRIO, entao o volume fica preso
+  // ao ritmo de publicacao, e nao ao que um estranho quiser mandar (§0.2, 4a
+  // regra: quem pode disparar isto?).
+  //
+  // A entrada sai com severidade `critical` e categoria `moderation`, herdadas
+  // de `registrar_falha_de_moderacao` — a RPC nao aceita severidade, e isto
+  // aqui e afirmacao conferida em `pg_proc`, nao suposicao. E o nivel certo:
+  // "video publicado e visivel sem NENHUMA analise automatica" e um buraco de
+  // moderacao de verdade, nao a funcao trabalhando (§0.2, 4a regra). O volume
+  // fica contido pela deduplicacao de 1 hora por motivo que a propria RPC faz.
+  if (!image_urls?.length && falha_de_extracao) {
+    const motivo = String(falha_de_extracao.motivo ?? "sem motivo").slice(0, 300);
+    await gritar(`extracao de quadros falhou no navegador: ${motivo}`, {
+      origem: "navegador",
+      motivo,
+      tipo_do_arquivo: String(falha_de_extracao.tipo ?? "desconhecido").slice(0, 100),
+      tamanho: Number(falha_de_extracao.tamanho) || null,
+      agente: (req.headers.get("user-agent") ?? "").slice(0, 200),
+    });
+    return json({ status: "falha_registrada", motivo });
+  }
+
+  const urls = (image_urls ?? [])
     .filter(imagemAceita)
     .slice(0, 4);
-  const recusadas = image_urls.length - urls.length;
+  const recusadas = (image_urls ?? []).length - urls.length;
   // Recusa silenciosa aqui seria falha silenciosa: a mídia passaria sem análise
   // e ninguém saberia que ela não foi analisada (§1.5). Vai para o log com o
   // motivo separado, porque "URL de outro domínio" e "quadro grande demais" têm
   // causas e correções completamente diferentes.
   if (recusadas > 0) {
-    const grandes = image_urls.filter(
+    const grandes = (image_urls ?? []).filter(
       u => typeof u === "string" && PREFIXO_EMBUTIDO.test(u) && u.length > MAX_BYTES_EMBUTIDO,
     ).length;
     console.warn(

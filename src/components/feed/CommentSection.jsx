@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { fetchComments, fetchCommentCount, addComment } from '../../services/postService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
-import { moderateText } from '../../services/moderationService';
+import { moderateText } from '../../services/moderationAiService';
 import { suspendedUntil } from '../../lib/roles';
 import { logAudit } from '../../lib/auditLog';
 import toast from 'react-hot-toast';

@@ -48,7 +48,14 @@ export default function ElectricTitle({ active = true }) {
       className="relative font-display font-black text-5xl md:text-7xl text-white mb-4"
     >
       GAMER
-      <span className="text-neon-green animate-electric-buzz" style={{ textShadow: '0 0 30px #39ff14' }}>
+      {/* O brilho é ESTÁTICO aqui, e o pisca-pisca é só `opacity` (ver os
+          keyframes de `electricBuzz`): `text-shadow` não roda no compositor, e
+          este span é o elemento de LCP da landing — animá-lo repintava o maior
+          texto da página na thread principal, 60 vezes por segundo. */}
+      <span
+        className="text-neon-green animate-electric-buzz"
+        style={{ textShadow: '0 0 30px #39ff14, 0 0 60px #39ff1450', willChange: 'opacity' }}
+      >
         HUB
       </span>
       {revealed && (

@@ -3,7 +3,7 @@ import { addMuralPost, uploadMuralMediaFiles } from '../../services/communitySer
 import { useAuth } from '../../hooks/useAuth';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
 import { logAudit } from '../../lib/auditLog';
-import { moderateText, moderateImages } from '../../services/moderationService';
+import { moderateText, moderateImages } from '../../services/moderationAiService';
 import { suspendedUntil } from '../../lib/roles';
 import SuspendedNotice from '../ui/SuspendedNotice';
 import toast from 'react-hot-toast';

@@ -46,8 +46,17 @@ estado de autenticação.
   pessoa).
 - **`[28/08]` O laço de animação para quando a cena sai da tela.** Um
   `IntersectionObserver` desliga o `frameloop` do `<Canvas>`. Sem isso a cena
-  continuava desenhando 60×/s para quem já tinha rolado para longe — foram
-  29.441 ms de thread principal no PageSpeed. Travado por `e2e/cena-3d.mjs`.
+  continuava desenhando 60×/s para quem já tinha rolado para longe. Travado por
+  `e2e/cena-3d.mjs`.
+- **`[29/08]` E a resolução se ajusta ao aparelho enquanto ela ESTÁ na tela.**
+  O item acima resolvia só metade: com a cena visível, cada quadro custava ~92 ms
+  e a thread principal ficava **99% ocupada** (8.066 ms de bloqueio numa janela
+  de 8 s, medido em navegador de verdade). O custo de uma cena WebGL é por
+  **pixel**, então a cena passou a começar em `dpr` 0,5 e subir até 1 se os
+  quadros couberem em 60 fps — 52 ms de bloqueio na mesma janela. O `antialias`
+  saiu. `e2e/cena-3d.mjs` agora reprova bloqueio acima de 800 ms, e
+  `lib/resolucaoDaCena.js` tem a regra pura com teste da subida, que nenhum
+  navegador sem GPU consegue exercitar.
 
   > **Correção `[28/08]`:** este trecho listava "conexão 2g/3g" como portão. O
   > `effectiveType` foi **removido** no mesmo dia: era o único que mudava com o

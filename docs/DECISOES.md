@@ -345,6 +345,63 @@ discussão é a existência dela.
 **medir antes** quanto do chunk é `three` e quanto é `fiber` — se a maior parte
 for `three`, reescrever o `fiber` não resolve nada.
 
+### `[29/08]` A resolução da cena 3D é ADAPTATIVA, não um número fixo
+
+**O que foi decidido:** a cena começa no `dpr` mais barato (0,5) e sobe até 1 se
+os quadros couberem em 60 fps. Se descer uma vez, não volta a subir. O
+`antialias` foi desligado.
+
+**Por que não cravar 0,5 e acabar.** Porque seria o mesmo erro de sinal ao
+contrário. A medição que motivou a mudança foi feita em rasterização por
+**software** (SwiftShader) — que é o que o Lighthouse, o PageSpeed e qualquer
+máquina com GPU bloqueada usam. Lá, `dpr 1,5` bloqueava a thread principal
+**8.066 ms de uma janela de 8.000 ms**. Mas numa máquina com GPU, cinco chamadas
+de desenho por quadro não custam nada: fixar 0,5 entregaria uma cena borrada
+para quem não tinha problema nenhum. Os números completos estão em
+[ARQUITETURA.md](ARQUITETURA.md).
+
+**Por que começa embaixo e sobe, e não o contrário.** Começar alto e descer
+significa pagar a conta cheia durante a amostragem — e a amostragem cai bem no
+meio do carregamento, que é a janela que o Lighthouse observa e que o visitante
+sente. Enfeite não taxa o caminho crítico para depois pedir desculpas
+(`CLAUDE.md` §0.3, regra 2). O pior caso agora é uma fração de segundo mais
+macia antes de firmar.
+
+**Por que não volta a subir depois de descer.** Máquina no limiar oscilaria
+entre dois degraus para sempre, e resolução piscando incomoda mais do que
+resolução baixa e estável. O primeiro rebaixamento é o veredito daquele
+aparelho.
+
+**O que se perde, sem maquiagem:** numa tela de alta densidade a cena fica
+visivelmente mais macia que antes até subir de degrau, e o teto passou de 1,5
+para 1 — acima disso o ganho era imperceptível numa cena sem texto nem textura
+fina, e a conta era paga em pixel. O `antialias` suavizava serrilhado que, em
+formas brilhantes e difusas, quase não aparece.
+
+**Isto não reabre a decisão acima:** a cena continua existindo e continua sendo
+a que o dono escolheu. O que mudou foi quanto ela cobra por quadro.
+
+### `[29/08]` O brilho do título da landing deixou de piscar por `text-shadow`
+
+**O que mudou:** os keyframes de `electricBuzz` animavam `opacity` **e**
+`text-shadow`. Agora animam só `opacity`; o brilho virou valor estático no
+`style` do span.
+
+**Por quê:** `text-shadow` não roda no compositor. O PageSpeed do dono trazia o
+aviso "Evitar animações não compostas — 1 elemento animado", e o elemento era
+justamente o `HUB` do título — o **elemento de LCP da landing**, com 2.780 ms de
+atraso de renderização. Um laço infinito de 5 s repintava o maior texto da
+página na thread principal, para sempre.
+
+**O que se perde:** a variação do **raio** do brilho entre um pisca e outro. O
+`opacity` atenua o texto e o brilho juntos, então a palavra continua "vacilando"
+como neon mal aterrado — o que some é a mudança de espalhamento, sutil o
+bastante para não valer o custo.
+
+**Registrado aqui porque é mudança de visual**, ainda que pequena, e feita sem
+pedir: ela é a correção direta de um defeito que a ferramenta apontou pelo nome,
+e é reversível numa linha.
+
 ### `[28/08]` Não vamos identificar o aparelho para decidir a cena 3D
 
 **A pergunta do dono:** jogos leem o processador e travam gráficos que o

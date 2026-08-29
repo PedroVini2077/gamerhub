@@ -51,6 +51,40 @@ await page.goto(BASE, { waitUntil: 'domcontentloaded' });
 await page.waitForSelector('canvas', { timeout: 20000 }).catch(() => {});
 await page.waitForTimeout(4000);
 
+// Teto de thread principal BLOQUEADA na janela de medicao, com a cena visivel.
+//
+// Os dois lados foram medidos nesta mesma janela de 2 s, nesta mesma maquina,
+// em 29/08:
+//
+//     dpr 1,5 + antialias (como estava)  ->  2.151 ms em 22 long tasks
+//     resolucao adaptativa (como esta)   ->      0 ms em  0 long tasks
+//
+// Nao e estimativa: o numero ruim veio de reinjetar o bug e rodar (§2, a trava
+// tem que ser provada). O teto fica no meio, longe dos dois.
+//
+// Por que TEMPO aqui, sendo que o §0.3 manda barrar por BYTE: o portao de byte
+// existe porque medicao de tempo com diferenca PEQUENA vira alarme falso. Aqui
+// nao ha diferenca pequena — e zero contra dois mil na mesma maquina, e nenhuma
+// oscilacao de ambiente atravessa essa distancia.
+const TETO_DE_BLOQUEIO_MS = 800;
+
+/** Soma o tempo de long task (>50 ms) observado durante `ms`. */
+function medirBloqueio(ms) {
+  return page.evaluate((duracao) => new Promise((resolve) => {
+    let total = 0;
+    let quantas = 0;
+    const observador = new PerformanceObserver((lista) => {
+      for (const e of lista.getEntries()) { total += e.duration; quantas++; }
+    });
+    try { observador.observe({ type: 'longtask' }); }
+    catch { return resolve(null); }   // navegador sem a API: nao inventa numero
+    setTimeout(() => {
+      observador.disconnect();
+      resolve({ ms: Math.round(total), quantas });
+    }, duracao);
+  }), ms);
+}
+
 /** Conta chamadas reais de desenho do WebGL durante `ms`. */
 function medirDesenhos(ms) {
   return page.evaluate((duracao) => new Promise((resolve) => {
@@ -77,6 +111,27 @@ if (visivel === -1) {
   falhar('a cena está VISÍVEL e não desenhou nenhum quadro em 2 s — ela deveria animar aqui');
 } else {
   console.log(`  cena visível: ${visivel} desenhos em ${JANELA_DE_MEDICAO_MS} ms`);
+
+  // O desenho acontecer nao basta: ele precisa caber na thread principal.
+  const bloqueio = await medirBloqueio(JANELA_DE_MEDICAO_MS);
+  if (bloqueio === null) {
+    console.log('  (sem PerformanceObserver de longtask neste navegador — bloqueio nao medido)');
+  } else {
+    console.log(
+      `  thread principal: ${bloqueio.ms} ms em ${bloqueio.quantas} long task(s) `
+      + `numa janela de ${JANELA_DE_MEDICAO_MS} ms`,
+    );
+    if (bloqueio.ms > TETO_DE_BLOQUEIO_MS) {
+      falhar(
+        `a cena bloqueou a thread principal por ${bloqueio.ms} ms de ${JANELA_DE_MEDICAO_MS} ms.\n`
+        + `  Teto: ${TETO_DE_BLOQUEIO_MS} ms. Nesta mesma janela, com dpr 1,5 e antialias, deu 2.151 ms —\n`
+        + '  ou seja, a landing travada enquanto o Hero estivesse na tela. Foi de onde\n'
+        + '  saiu o "Other: 30.182 ms" do PageSpeed no desktop.\n'
+        + '  O suspeito e a resolucao: o custo por quadro e proporcional a PIXEL. Confira\n'
+        + '  `dpr` e `antialias` no <Canvas> e `ResolucaoAdaptativa.jsx`.',
+      );
+    }
+  }
 
   // Rola bem para longe do Hero. A margem do observador é 200px, então 4000
   // garante que a cena saiu da zona de "quase visível".

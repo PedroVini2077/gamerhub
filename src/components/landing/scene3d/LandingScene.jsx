@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { LogoBolt, FloatingShapes } from './SceneObjects';
 import Lightning from './Lightning';
+import ResolucaoAdaptativa from './ResolucaoAdaptativa';
+import { DEGRAUS_DE_RESOLUCAO } from '../../../lib/resolucaoDaCena';
 
 /**
  * O laço de animação só roda enquanto a cena está NA TELA.
@@ -65,8 +67,14 @@ export default function LandingScene() {
   return (
     <div ref={involucro} style={{ width: '100%', height: '100%' }}>
     <Canvas
-      dpr={[1, 1.5]}
-      gl={{ antialias: true, alpha: true }}
+      // Começa no degrau mais barato e sobe se o aparelho aguentar — ver
+      // `ResolucaoAdaptativa`, que tem a medição que motivou isto.
+      dpr={DEGRAUS_DE_RESOLUCAO[0]}
+      // `antialias` SAIU. Ele multiplica o custo por pixel justamente na conta
+      // que se mostrou dominante, e numa cena de formas brilhantes e difusas o
+      // serrilhado que ele suaviza quase não aparece. Medido: 88 -> 133 quadros
+      // na mesma janela, só tirando ele e o dpr de 1,5 para 1.
+      gl={{ antialias: false, alpha: true }}
       camera={{ position: [0, 0, 5.5], fov: 42 }}
       frameloop={visivel ? 'always' : 'never'}
     >
@@ -76,6 +84,7 @@ export default function LandingScene() {
       <directionalLight position={[3, 4, 5]} intensity={1.6} color="#eafff0" />
       <pointLight position={[4, 3, 4]} intensity={1.2} color="#39ff14" />
       <pointLight position={[-4, -2, 3]} intensity={1.1} color="#bf00ff" />
+      <ResolucaoAdaptativa />
       <LogoBolt />
       <FloatingShapes />
       <Lightning />

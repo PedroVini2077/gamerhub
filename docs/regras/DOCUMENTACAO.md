@@ -38,6 +38,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/BANCO.md` | Tabelas, RPCs, RLS, storage, realtime, custo | Como *usar* o site |
 | `docs/SEGURANCA.md` | O que protege o quê | — |
 | `docs/OPERACAO.md` | **Quando quebra.** Monitoramento, site fora do ar, CI | Feature |
+| `docs/DESEMPENHO.md` | **O histórico das medições** e o que cada uma desmentiu | O portão de bytes, que é operação |
 | `docs/DECISOES.md` | O que foi decidido e **descartado**, com data e motivo | Item a fazer |
 | `BACKLOG.md` | **Checklist.** Só o que falta | Decisão, histórico, item já feito |
 | `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado | — |

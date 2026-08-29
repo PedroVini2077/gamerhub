@@ -1,13 +1,14 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { notifAudience } from './useAdminNotifications';
+import { faixaDaPagina, TAMANHO_DA_PAGINA } from '../lib/paginacaoDePosts';
 
 // Posts/keys crescem sem limite com o uso do site — pagina em blocos pra não
 // carregar tudo de uma vez (landmine de escalabilidade do `fetchAll` antigo).
 // Usuários continuam carregados por inteiro: a busca/filtros/badges de role do
 // UsersPanel dependem da lista completa, e a base de usuários cresce bem mais
 // devagar que posts.
-const PAGE_SIZE = 20;
+const PAGE_SIZE = TAMANHO_DA_PAGINA;
 const MAX_USERS = 1000;
 
 /**
@@ -23,7 +24,11 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
   const [posts, setPosts] = useState([]);
   const [keys, setKeys] = useState([]);
   const [stats, setStats] = useState({ users: 0, posts: 0, keys: 0 });
-  const [postsHasMore, setPostsHasMore] = useState(false);
+  // `[29/08]` Um `hasMore` POR SUB-ABA, e não um só. A aba Posts mostra
+  // "ativos" ou "lixeira", uma por vez, e as duas se esgotam em momentos
+  // diferentes — um booleano só fazia o botão sumir de uma sub-aba por causa
+  // do fim da outra. Ver `lib/paginacaoDePosts.js`.
+  const [postsHasMore, setPostsHasMore] = useState({ active: false, deleted: false });
   const [keysHasMore, setKeysHasMore] = useState(false);
   const [loadingMorePosts, setLoadingMorePosts] = useState(false);
   const [loadingMoreKeys, setLoadingMoreKeys] = useState(false);
@@ -48,12 +53,20 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
     setLoading(true);
     const audience = notifAudience(isSuperAdmin, isOwner);
     const [
-      { data: u }, { data: p }, { data: k },
+      { data: u }, { data: ativos }, { data: apagados }, { data: k },
       { count: postsCount }, { count: activePostsCount }, { count: keysCount },
       { data: allNotifs }, { data: reads },
     ] = await Promise.all([
       supabase.rpc('admin_list_users', { p_limit: MAX_USERS }),
-      supabase.from('posts').select('*, profiles(username)').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
+      // Duas consultas de posts, uma por sub-aba, em vez de uma misturada. A
+      // mistura era o bug: os 20 mais recentes podiam ser quase todos da
+      // lixeira, e a sub-aba "ativos" abria com dois itens e um botão que não
+      // mudava nada. Custo: uma ida a mais no MESMO `Promise.all` — nenhum
+      // round-trip extra.
+      supabase.from('posts').select('*, profiles(username)').is('deleted_at', null)
+        .order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
+      supabase.from('posts').select('*, profiles(username)').not('deleted_at', 'is', null)
+        .order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
       supabase.from('game_keys').select('*').order('created_at', { ascending: false }).range(0, PAGE_SIZE - 1),
       supabase.from('posts').select('id', { count: 'exact', head: true }),
       supabase.from('posts').select('id', { count: 'exact', head: true }).is('deleted_at', null),
@@ -62,9 +75,14 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
       supabase.from('admin_notification_reads').select('notification_id').eq('admin_id', userId),
     ]);
     setUsers(u || []);
-    setPosts(p || []);
+    // Uma lista só na saída, como antes: o `PostsPanel` já separa por
+    // `deleted_at`, e mudar o contrato dele não faz parte deste conserto.
+    setPosts([...(ativos || []), ...(apagados || [])]);
     setKeys(k || []);
-    setPostsHasMore((p?.length || 0) < (postsCount ?? 0));
+    setPostsHasMore({
+      active: (ativos?.length || 0) < (activePostsCount ?? 0),
+      deleted: (apagados?.length || 0) < Math.max(0, (postsCount ?? 0) - (activePostsCount ?? 0)),
+    });
     setKeysHasMore((k?.length || 0) < (keysCount ?? 0));
     setStats({ users: u?.length || 0, posts: activePostsCount ?? 0, keys: keysCount ?? k?.length ?? 0 });
     setReadIds(new Set((reads || []).map(r => r.notification_id)));
@@ -72,15 +90,30 @@ export function useAdminData({ userId, isSuperAdmin, isOwner, setNotifications, 
     setLoading(false);
   }, [userId, isSuperAdmin, isOwner, setNotifications, setReadIds]);
 
-  const loadMorePosts = useCallback(async () => {
+  // Recebe a sub-aba VISÍVEL. Sem isso ela continuava do tamanho da lista
+  // inteira numa consulta que agora é filtrada — offset errado não estoura,
+  // ele pula linhas em silêncio. A conta está em `lib/paginacaoDePosts.js`,
+  // isolada porque é onde o erro mora.
+  const loadMorePosts = useCallback(async (subAba = 'active') => {
+    const jaCarregados = posts.filter(
+      p => (subAba === 'deleted' ? !!p.deleted_at : !p.deleted_at),
+    ).length;
+    const { apagados, de, ate } = faixaDaPagina(subAba, jaCarregados);
+
     setLoadingMorePosts(true);
-    const { data, count } = await supabase
+    let consulta = supabase
       .from('posts').select('*, profiles(username)', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(posts.length, posts.length + PAGE_SIZE - 1);
-    const next = [...posts, ...(data || [])];
-    setPosts(next);
-    setPostsHasMore(next.length < (count ?? next.length));
+      .order('created_at', { ascending: false });
+    consulta = apagados
+      ? consulta.not('deleted_at', 'is', null)
+      : consulta.is('deleted_at', null);
+    const { data, count } = await consulta.range(de, ate);
+
+    setPosts(atuais => [...atuais, ...(data || [])]);
+    setPostsHasMore(atual => ({
+      ...atual,
+      [subAba]: jaCarregados + (data?.length || 0) < (count ?? 0),
+    }));
     setLoadingMorePosts(false);
   }, [posts]);
 
