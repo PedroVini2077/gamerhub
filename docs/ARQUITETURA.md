@@ -37,6 +37,8 @@ src/
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
+│   ├── introJaVista.js    # Lembra, por sessão do navegador, que a intro do
+│   │                      # raio já foi vista — e decide se ela toca
 │   ├── password.js        # Força de senha (compartilhado Login/AuthConfirm)
 │   ├── date.js            # Cálculo de idade / idade mínima de cadastro
 │   ├── csv.js             # Geração + download de CSV (export de logs)
@@ -102,7 +104,8 @@ src/
     ├── owner/             # PainelTab, UsuariosTab, LogsTab, SiteTab,
     │                      # NotificacoesTab, MetricasTab
     ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,
-    │                      # WordlistManager, ViolationsPanel
+    │                      # WordlistManager, ViolationsPanel, QueueMidia
+    │                      # (a prévia de imagem e vídeo dentro da fila)
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
@@ -110,6 +113,13 @@ src/
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
     │                      # SceneObjects (LogoBolt/FloatingShapes)
+    ├── sobre/             # A página do projeto (`/sobre`), pública
+    │   ├── conteudoDoSobre.js # Os sete blocos de texto — a FONTE, escrita pelo
+    │   │                  # dono. A página só renderiza esta lista
+    │   ├── iconesDoSobre.js   # Mapa explícito nome -> ícone do lucide. Sem
+    │   │                  # padrão de propósito: bloco sem ícone estoura no teste
+    │   └── FundoAnimado.jsx   # As doze peças que atravessam a tela atrás do
+    │                      # texto. Só CSS, sem laço de JS — ver DESEMPENHO.md
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
@@ -124,7 +134,7 @@ src/
 | `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
 | `scripts/` | Portões que rodam no CI: orçamento de bytes, documentação quebrada, ignorar deploy da Vercel; e o relatório de documentação envelhecida |
-| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, e o laço da cena 3D |
+| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
 | `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |
 | `db/` | Scripts SQL avulsos para o SQL Editor e os relatórios de auditoria (`AAAA-MM-DD-*.md`). Não são migrations |
 
