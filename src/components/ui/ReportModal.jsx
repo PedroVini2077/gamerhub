@@ -23,7 +23,16 @@ export default function ReportModal({ contentType, contentId, onClose }) {
     setLoading(true);
     const { error } = await createReport({ contentType, contentId, reason, details });
     if (error) {
-      if (error.code === '23505') toast.error('Você já denunciou este conteúdo.');
+      // `[29/08]` A mensagem passou a dizer POR QUE está bloqueado. A restrição
+      // agora vale só enquanto houver uma denúncia PENDENTE sua sobre este
+      // conteúdo — depois de a equipe avaliar, dá para denunciar de novo (o
+      // conteúdo pode ter sido editado, ou piorado). Antes ela valia para
+      // sempre e a mensagem dizia apenas "você já denunciou", que era
+      // verdadeiro e inútil: o dono dispensou a própria denúncia e continuou
+      // impedido de denunciar, sem entender o motivo.
+      if (error.code === '23505') {
+        toast.error('Você já denunciou este conteúdo e a equipe ainda não avaliou.');
+      }
       else toast.error('Erro ao enviar denúncia.');
     } else {
       toast.success('Denúncia enviada. Nossa equipe vai revisar em breve.');

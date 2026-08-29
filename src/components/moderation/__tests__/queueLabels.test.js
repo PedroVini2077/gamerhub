@@ -172,3 +172,26 @@ describe('todo tipo de gatilho tem rótulo e cor', () => {
     }
   });
 });
+
+describe('o link da aba Denúncias funciona só com o que a denúncia guarda', () => {
+  // A denúncia guarda `content_type` e `content_id`, e mais nada. Para post e
+  // mural isso basta. Para comentário e chat o destino depende do post, que a
+  // denúncia NÃO guarda — então ali não há botão.
+  //
+  // Inventar `/post/<id-do-comentário>` levaria o moderador a um post que não
+  // existe, ou pior, a outro conteúdo (§4).
+  it('post e mural têm link a partir do id sozinho', () => {
+    expect(linkDoConteudo('post', { id: 'p1' })).toBe('/post/p1');
+    expect(linkDoConteudo('mural', { id: 'm1' })).toBe('/mural/m1');
+  });
+
+  it('comentário e chat NÃO têm link a partir do id sozinho', () => {
+    expect(
+      linkDoConteudo('comment', { id: 'c1' }),
+      'O link do comentário passou a ser montado a partir do id dele. Na aba\n'
+      + 'Denúncias isso levaria a `/post/<id-do-comentário>` — um post que não\n'
+      + 'existe, ou o conteúdo errado.',
+    ).toBeNull();
+    expect(linkDoConteudo('chat', { id: 'x1' })).toBeNull();
+  });
+});

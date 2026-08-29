@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Flag, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Flag, CheckCircle, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchReports, updateReportStatus } from '../../services/moderationService';
 import { apenasData } from '../../services/result';
+import { linkDoConteudo } from './queueLabels';
 
 const STATUS_COLOR = { pending: 'tag-purple', reviewed: 'tag-cyan', dismissed: 'text-gray-600 border border-dark-500 bg-dark-700 px-2 py-0.5 rounded text-xs font-mono' };
 const REASON_LABEL = {
@@ -61,6 +63,20 @@ export default function ReportsList() {
                   <span className="text-xs font-mono text-gray-500">{r.content_type} · {r.content_id?.slice(0,8)}...</span>
                 </div>
                 {r.details && <p className="text-xs font-mono text-gray-500 mt-0.5 truncate">{r.details}</p>}
+                {/* `[29/08]` Sem isto a aba era um beco sem saída: dava para ler
+                    o motivo e dispensar, mas não para VER o conteúdo denunciado.
+                    O id só existe aqui, então o link é montado a partir dele —
+                    e comentário e chat ficam sem botão de propósito, porque
+                    para eles o destino depende do post, que a denúncia não
+                    guarda. Link chutado levaria o moderador a outro conteúdo. */}
+                {linkDoConteudo(r.content_type, { id: r.content_id }) && (
+                  <Link
+                    to={linkDoConteudo(r.content_type, { id: r.content_id })}
+                    className="inline-flex items-center gap-1 text-xs font-mono text-neon-green hover:underline mt-1"
+                  >
+                    <ExternalLink size={11} /> ver o conteúdo
+                  </Link>
+                )}
                 <p className="text-xs font-mono text-gray-600 mt-0.5">
                   @{r.reporter?.username || '?'} · {new Date(r.created_at).toLocaleString('pt-BR')}
                 </p>

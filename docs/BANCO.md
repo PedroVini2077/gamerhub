@@ -32,7 +32,7 @@ todas as tabelas públicas.**
 | `admin_notifications`        | Notificações para admins                                         |
 | `admin_notification_reads`   | Marcação de lidas por admin                                      |
 | `site_config`                | Configuração global (manutenção, flags, banner, thresholds de moderação) |
-| `reports`                    | Denúncias da comunidade (tipo/id do conteúdo, motivo, status)    |
+| `reports`                    | Denúncias da comunidade. Índice único **parcial**: uma pendente por pessoa e conteúdo — depois de dispensada, dá para denunciar de novo |
 | `blocked_words`              | Wordlist de palavras bloqueadas (com severidade)                |
 | `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor)     |
 | `moderation_queue`           | Fila de revisão humana. `trigger_type`: `report`, `wordlist`, `ai`, `escalation`, `links` e — desde 29/08 — `sem_analise`, que significa o oposto dos outros: nenhuma checagem conseguiu olhar o conteúdo |
