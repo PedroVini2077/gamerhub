@@ -6,12 +6,64 @@ export const CONTENT_LABEL = { post: 'Post', comment: 'Comentário', mural: 'Mur
 // O `else → community_posts` que existia antes mandava item de `chat` para a
 // tabela errada: a linha nunca existia lá, o erro era descartado e o card ficava
 // em "Carregando..." para sempre.
+//
+// `[29/08]` Cada fonte ganhou duas coisas: de onde vem a MÍDIA (a fila mostrava
+// só texto, então imagem e vídeo denunciados eram julgados às cegas) e a coluna
+// que permite montar o LINK para o conteúdo.
 export const FONTE_DO_CONTEUDO = {
-  post:    { tabela: 'posts',           cols: 'id, title, content, user_id, profiles(username)' },
-  comment: { tabela: 'comments',        cols: 'id, content, user_id, profiles(username)' },
-  mural:   { tabela: 'community_posts', cols: 'id, message, user_id, profiles(username)' },
-  chat:    { tabela: 'live_chat',       cols: 'id, message, user_id, profiles(username)' },
+  post: {
+    tabela: 'posts',
+    cols: 'id, title, content, user_id, media_url, media_type, embed_url, profiles(username)',
+    midia: { tabela: 'post_media', fk: 'post_id' },
+  },
+  comment: {
+    // `post_id` entra para o link: um comentário só faz sentido dentro do post
+    // em que foi escrito.
+    tabela: 'comments',
+    cols: 'id, content, user_id, post_id, profiles(username)',
+  },
+  mural: {
+    tabela: 'community_posts',
+    cols: 'id, message, user_id, profiles(username)',
+    midia: { tabela: 'community_post_media', fk: 'post_id' },
+  },
+  chat: {
+    tabela: 'live_chat',
+    cols: 'id, message, user_id, post_id, profiles(username)',
+  },
 };
+
+/**
+ * Para onde o moderador é levado ao clicar em "ver no site".
+ *
+ * ── Por que um mapa, e por que ele devolve `null` de propósito ──────────────
+ *
+ * Nem todo tipo de conteúdo tem endereço próprio, e inventar um link que leva
+ * ao lugar errado é pior do que não ter link: o moderador julga o conteúdo
+ * errado. Então o desconhecido devolve `null` e a interface simplesmente não
+ * mostra o botão (§4 — nada de escolher um destino por chute).
+ *
+ * | Tipo | Destino | Por quê |
+ * | --- | --- | --- |
+ * | post | `/post/:id` | página própria, criada junto com isto |
+ * | comment | `/post/:post_id` | comentário só existe dentro do post |
+ * | mural | `/community` | o mural não tem página por item |
+ * | chat | `/lives/:post_id` | a live onde a mensagem foi escrita |
+ *
+ * @param {string} tipo
+ * @param {object} dados a linha carregada pela prévia
+ * @returns {string|null} caminho, ou `null` quando não há destino honesto
+ */
+export function linkDoConteudo(tipo, dados) {
+  if (!dados) return null;
+  switch (tipo) {
+    case 'post':    return `/post/${dados.id}`;
+    case 'comment': return dados.post_id ? `/post/${dados.post_id}` : null;
+    case 'mural':   return '/community';
+    case 'chat':    return dados.post_id ? `/lives/${dados.post_id}` : null;
+    default:        return null;
+  }
+}
 
 // Onde mora o autor de cada tipo — usado pra registrar a violação e pra abrir
 // o modal de banimento com a pessoa certa.

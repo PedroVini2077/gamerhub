@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth.jsx';
-import { fetchCommentLikeStatus, likeComment, unlikeComment } from '../services/postService';
+import { fetchCommentLikeStatus, likeComment, unlikeComment } from '../services/commentService';
 import { runLikeToggle } from '../lib/like';
 import toast from 'react-hot-toast';
 

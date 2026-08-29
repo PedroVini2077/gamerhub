@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { fetchComments, fetchCommentCount, addComment } from '../../services/postService';
+import { fetchComments, fetchCommentCount, addComment } from '../../services/commentService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
 import { moderateText } from '../../services/moderationAiService';

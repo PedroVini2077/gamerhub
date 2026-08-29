@@ -34,6 +34,7 @@ import NotFound from './pages/NotFound';
 // no bundle inicial fazia todo mundo baixar a que nunca ia ver.
 const Landing     = lazy(() => import('./pages/Landing'));
 const Home        = lazy(() => import('./pages/Home'));
+const PostPage    = lazy(() => import('./pages/PostPage'));
 const Community   = lazy(() => import('./pages/Community'));
 const Keys        = lazy(() => import('./pages/Keys'));
 const Profile     = lazy(() => import('./pages/Profile'));
@@ -164,6 +165,10 @@ function AppRoutes() {
       <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/auth/confirm" element={<AuthConfirm />} />
       <Route path="/" element={<HomeOrLanding />} />
+      {/* Endereço próprio de um post. Existe para o link direto da fila de
+          moderação — antes não havia para onde apontar, o feed é `/` e um post
+          antigo podia nem estar na primeira página. Ver `PostPage.jsx`. */}
+      <Route path="/post/:id" element={<RequireAuth><Layout><PostPage /></Layout></RequireAuth>} />
       <Route path="/community" element={<RequireAuth><Layout><FeatureGate flag="feature_community"><Community /></FeatureGate></Layout></RequireAuth>} />
       <Route path="/keys" element={<RequireAuth><Layout><FeatureGate flag="feature_keys"><Keys /></FeatureGate></Layout></RequireAuth>} />
       <Route path="/profile" element={<RequireAuth><Layout><Profile /></Layout></RequireAuth>} />

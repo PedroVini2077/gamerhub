@@ -187,6 +187,20 @@ transições discretas das páginas internas.
 - Posts com `live_kind` (lives de jogadores) são **excluídos do feed** — só
   aparecem na aba Lives.
 
+### `[29/08]` Página de um post (`/post/:id`)
+
+Um post sozinho, com o card inteiro — texto, imagem, vídeo, áudio e embed.
+
+**Por que existe:** a fila de moderação ganhou um botão "ver no site", e não
+havia para onde apontar. O feed é `/`, e um post antigo podia nem estar na
+primeira página.
+
+**Quem vê o quê:** conteúdo **oculto ou apagado** aparece para quem é da equipe
+(`role_rank >= 2`), porque é justamente esse conteúdo que precisa ser julgado.
+Para os demais, a página diz que o post não existe **ou** não está visível — as
+duas causas juntas de propósito, já que separá-las entregaria a existência do
+conteúdo oculto.
+
 ### Comentários, likes e notificações
 
 - **Comentários** (`CommentSection` / `CommentCard`): abrir/fechar, criar,
