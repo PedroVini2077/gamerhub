@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**16 itens abertos** (+ 1 ideia sem compromisso)
+**15 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -119,23 +119,6 @@
   segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
-
-- ⬜ `[29/08]` 🟠 **Escrever os três blocos pendentes da página `/sobre`.**
-  *Só você pode escrever isto — é a sua história, e inventar seria pior do que
-  deixar em branco.*
-
-  A página está no ar com os três marcados como pendentes, e a dica do que entra
-  em cada um aparece na própria tela:
-
-  | Bloco | O que entra |
-  | --- | --- |
-  | De onde o projeto nasceu | a ideia, quando surgiu, e o que faltava nos lugares que você já usava |
-  | Quem está por trás | quem é você, o quanto quiser expor, e por que resolveu construir isto |
-  | Para onde o GamerHub vai | o que você quer que o site seja daqui a um ano |
-
-  Pode responder solto, sem se preocupar com forma — eu escrevo. Para preencher
-  direto: `src/components/sobre/conteudoDoSobre.js`, trocar `pendente: true` por
-  `false`.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não

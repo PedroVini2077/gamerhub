@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, PencilLine } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, PencilLine, Zap, ArrowRight } from 'lucide-react';
 import { BLOCOS } from '../components/sobre/conteudoDoSobre';
+import LandingFooter from '../components/landing/LandingFooter';
+import { fadeUpReveal, staggerContainer, VIEWPORT } from '../lib/landingMotion';
 
 /**
  * A página "Sobre", pedida pelo dono como primeira aba da navegação lateral.
@@ -8,14 +11,28 @@ import { BLOCOS } from '../components/sobre/conteudoDoSobre';
  * É pública de propósito: alguém precisa poder ler sobre o projeto **antes** de
  * decidir criar conta. Por isso ela não entra no `RequireAuth`.
  *
- * O conteúdo mora em `components/sobre/conteudoDoSobre.js`. Os blocos que
- * dependem da história do dono estão marcados como pendentes e aparecem na tela
- * como pendentes — ver lá o porquê de não serem inventados.
+ * O conteúdo mora em `components/sobre/conteudoDoSobre.js` — inclusive a marca
+ * de qual bloco ainda está por escrever, que aparece na tela em vez de a seção
+ * simplesmente sumir.
  */
+
+/** Um bloco que ainda espera o texto. Aparece; não some. */
+function BlocoPendente({ dica }) {
+  return (
+    <div className="card p-4 border-dashed border-dark-500 space-y-1">
+      <p className="inline-flex items-center gap-2 text-sm font-mono text-gray-400">
+        <PencilLine size={14} className="text-neon-purple" />
+        Esta parte ainda vai ser escrita.
+      </p>
+      <p className="text-xs font-mono text-gray-600">{dica}</p>
+    </div>
+  );
+}
+
 export default function Sobre() {
   return (
     <div className="min-h-screen bg-dark-900 grid-bg">
-      <div className="max-w-2xl mx-auto px-4 md:px-6 py-10 space-y-8">
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-10 pb-16 space-y-10">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-xs font-mono text-gray-400 hover:text-neon-green transition-colors"
@@ -23,42 +40,73 @@ export default function Sobre() {
           <ArrowLeft size={14} /> Voltar
         </Link>
 
-        <header className="space-y-2">
-          <p className="font-display text-xs tracking-widest uppercase text-neon-green">
-            Sobre
-          </p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold text-white">
-            O GamerHub
+        <motion.header
+          initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="space-y-3"
+        >
+          <div className="flex items-center gap-2">
+            <Zap size={14} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
+            <p className="font-display text-xs tracking-widest uppercase text-neon-green">
+              Sobre o projeto
+            </p>
+          </div>
+          <h1 className="font-display text-3xl md:text-5xl font-bold text-white leading-tight">
+            Começou com uma pergunta:
+            <span className="block text-neon-green">até onde dá pra levar?</span>
           </h1>
-        </header>
+        </motion.header>
 
-        {BLOCOS.map(bloco => (
-          <section key={bloco.id} className="space-y-3">
-            <h2 className="font-display text-xl font-bold text-white">{bloco.titulo}</h2>
+        <motion.div
+          variants={staggerContainer(0.08)} initial="initial" whileInView="animate" viewport={VIEWPORT}
+          className="space-y-10"
+        >
+          {BLOCOS.map(bloco => (
+            <motion.section
+              key={bloco.id}
+              id={bloco.id}
+              variants={fadeUpReveal}
+              style={{ scrollMarginTop: '2rem' }}
+              className={bloco.destaque
+                ? 'card p-6 space-y-4 border-neon-green/25'
+                : 'space-y-3'}
+            >
+              <h2 className="font-display text-xl md:text-2xl font-bold text-white">
+                {bloco.titulo}
+              </h2>
 
-            {bloco.pendente ? (
-              // Aparece na TELA em vez de a seção simplesmente não existir. Uma
-              // seção que some sem explicação é indistinguível de esquecimento;
-              // assim fica claro que falta um texto, e qual.
-              <div className="card p-4 border-dashed border-dark-500 space-y-1">
-                <p className="inline-flex items-center gap-2 text-sm font-mono text-gray-400">
-                  <PencilLine size={14} className="text-neon-purple" />
-                  Esta parte ainda vai ser escrita.
+              {/* O lema aparece grande e sozinho: é a frase que a pessoa devia
+                  levar embora se lesse só uma linha da página inteira. */}
+              {bloco.lema && (
+                <p className="font-display text-lg md:text-xl text-neon-green">
+                  {bloco.lema}
                 </p>
-                <p className="text-xs font-mono text-gray-600">{bloco.dica}</p>
-              </div>
-            ) : (
-              bloco.paragrafos.map((texto, i) => (
-                <p key={i} className="text-gray-400 font-body leading-relaxed">{texto}</p>
-              ))
-            )}
-          </section>
-        ))}
+              )}
 
-        <p className="text-xs font-mono text-gray-700 pt-4 border-t border-dark-700">
-          // esta página cresce junto com o projeto
-        </p>
+              {bloco.pendente
+                ? <BlocoPendente dica={bloco.dica} />
+                : bloco.paragrafos.map((texto, i) => (
+                    <p key={i} className="text-gray-400 font-body leading-relaxed">{texto}</p>
+                  ))}
+            </motion.section>
+          ))}
+        </motion.div>
+
+        <motion.div
+          variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}
+          className="card p-6 text-center space-y-3 border-neon-green/25"
+        >
+          <p className="font-display text-lg text-white">Bora fazer parte disso?</p>
+          <p className="text-sm text-gray-400 font-body">
+            A comunidade tá aberta — e ela cresce com quem chega.
+          </p>
+          <Link to="/login" className="btn-neon inline-flex items-center gap-2 py-2.5 px-6 text-xs">
+            Entrar ou criar conta <ArrowRight size={14} />
+          </Link>
+        </motion.div>
       </div>
+
+      <LandingFooter />
     </div>
   );
 }
