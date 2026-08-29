@@ -1,6 +1,8 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
+import { useVigiaDeBanimento } from './useVigiaDeBanimento';
+import { usePresenca } from './usePresenca';
 import BannedScreen from '../components/ui/BannedScreen';
 
 const AuthContext = createContext(null);
@@ -20,27 +22,33 @@ export function AuthProvider({ children }) {
   // "linha alheia" — sem isso, qualquer usuário logado lia o histórico de
   // moderação e a data de nascimento de todo mundo. `get_own_profile()` é
   // SECURITY DEFINER e devolve só a linha de auth.uid().
-  async function fetchProfile() {
+  // `useCallback` com dependências vazias, e isto NÃO é estilo: `fetchProfile` e
+  // `applyBannedCheck` alimentam o `revalidar` que vai para o
+  // `useVigiaDeBanimento`, e esse callback entra nas dependências de um efeito
+  // que abre canal de realtime. Recriado a cada render, ele derrubaria e
+  // reabriria o canal sem parar. Os dois só usam setters de estado, que o React
+  // garante estáveis — então a lista vazia é honesta, não uma supressão.
+  const fetchProfile = useCallback(async () => {
     const { data, error } = await supabase.rpc('get_own_profile');
     // Só atualiza o profile em caso de sucesso — erros temporários (rede, refresh de token)
     // não devem apagar o profile existente e quebrar a UI
     if (!error) setProfile(data);
     return data ?? null;
-  }
+  }, []);
 
   // Mostra a tela de banido a partir de uma checagem EXPLÍCITA (carga inicial,
   // realtime ou poll). Não é um effect reativo sobre profile.banned de propósito:
   // durante o login de uma conta banida há uma sessão transitória que setaria
   // profile.banned por um instante antes do signOut — isso faria a tela piscar
   // na página de login. As checagens explícitas evitam esse falso-positivo.
-  function applyBannedCheck(p) {
+  const applyBannedCheck = useCallback((p) => {
     if (p?.banned) {
       setBannedScreen({
         reason: p.ban_reason || 'Violação dos termos de uso',
         details: p.ban_details || null,
       });
     }
-  }
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -60,77 +68,16 @@ export function AuthProvider({ children }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile, applyBannedCheck]);
 
-  // Detecta ban em tempo real enquanto o usuário está logado.
-  // Caminho instantâneo: subscription realtime no próprio profile.
-  useEffect(() => {
-    if (!user?.id) return;
-    async function revalidate() {
-      applyBannedCheck(await fetchProfile());
-    }
+  // Relê o perfil e decide se a tela de banido sobe. É o único ponto de
+  // contato entre o estado daqui e o vigia — ele não devolve nada, só avisa.
+  const revalidar = useCallback(async () => {
+    applyBannedCheck(await fetchProfile());
+  }, [fetchProfile, applyBannedCheck]);
 
-    const channel = supabase
-      .channel(`profile-ban-watch-${user.id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'profiles',
-        filter: `id=eq.${user.id}`,
-      }, (payload) => {
-        // Usa o evento só como GATILHO e relê pela RPC, em vez de confiar nas
-        // colunas do payload: `ban_reason`/`ban_details` não são mais legíveis
-        // direto na tabela por `authenticated`.
-        //
-        // Medido em 23/08 (o comentário anterior dizia que isto era
-        // desconhecido): o Realtime **respeita privilégio de coluna**. O
-        // payload chega só com o que `authenticated` pode ler — sem
-        // `birth_date`, `suspended_until`, `ban_reason` nem `email`. Ou seja,
-        // `payload.new.banned` é confiável.
-        //
-        // Ainda assim relemos pela RPC, agora por outro motivo: o ban precisa
-        // de `ban_reason` para a tela do banido, e isso o payload não traz.
-        // Reler é o caminho que já funciona nos dois casos.
-        if (payload.new?.banned) revalidate();
-      })
-      .subscribe();
-
-    // Fallback confiável pra quando o realtime perder o evento (timing da
-    // subscription, reconexão). Antes rodava a cada 20s SEMPRE — um SELECT por
-    // usuário logado a cada 20s, inclusive com a aba em segundo plano e sem
-    // ninguém olhando. Agora: 60s e só com a aba visível, mais uma revalidação
-    // no momento em que a aba volta ao foco (que é justamente quando o usuário
-    // poderia agir sem saber que foi banido).
-    const poll = setInterval(() => {
-      if (document.visibilityState === 'visible') revalidate();
-    }, 60000);
-
-    function onVisible() {
-      if (document.visibilityState === 'visible') revalidate();
-    }
-    document.addEventListener('visibilitychange', onVisible);
-
-    return () => {
-      supabase.removeChannel(channel);
-      clearInterval(poll);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [user?.id]);
-
-  const [onlineCount, setOnlineCount] = useState(0);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    const ch = supabase.channel('gamerhub-presence');
-    ch.on('presence', { event: 'sync' }, () => {
-      setOnlineCount(Object.keys(ch.presenceState()).length);
-    }).subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await ch.track({ user_id: user.id });
-      }
-    });
-    return () => supabase.removeChannel(ch);
-  }, [user?.id]);
+  useVigiaDeBanimento(user?.id, revalidar);
+  const onlineCount = usePresenca(user?.id);
 
   async function signInWithEmail(email, password) {
     if (!email?.trim() || !password) {

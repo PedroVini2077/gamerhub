@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**14 itens abertos** (+ 1 ideia sem compromisso)
+**13 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -187,18 +187,6 @@
   porque tempo de laboratório oscila. A exceção nova é `e2e/cena-3d.mjs`, que
   agora barra bloqueio de thread acima de 800 ms — ali a margem é zero contra
   dois mil, não uma porcentagem.
-
-- ⬜ `[29/08]` **`useAuth.jsx` passou de 300 linhas (311) — e é o arquivo de
-  maior risco do projeto.** *Esbarrei nele na varredura de tamanho de 29/08,
-  fazendo outra coisa. Não dividi na hora e o motivo é explícito: dividir
-  `useAuth` não é corte mecânico — ele carrega sessão, perfil, realtime de ban
-  e o `signOut`, e quebrá-lo derruba o site inteiro (`CLAUDE.md` §7, arquivo de
-  alto risco). O §4 manda dividir arquivo que eu inchei; eu não inchei este.*
-
-  **O corte que parece certo, para quando for a hora:** separar o realtime de
-  ban/suspensão (canal + poll de 60 s) do estado de sessão/perfil. São as duas
-  responsabilidades que já convivem ali, e a primeira tem teste próprio.
-  **Pede aprovação antes** (§7 🟡): mexe em autenticação.
 
 ## 🔵 Só quando o volume crescer
 
