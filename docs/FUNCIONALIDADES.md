@@ -283,7 +283,30 @@ E o mapa não tem ícone padrão de propósito — bloco novo sem ícone **estou
 teste** em vez de escolher um símbolo qualquer sozinho (§4, fallback
 silencioso).
 
-**O fundo que se mexe** `[29/08]`: seis formas de contorno atravessam a tela
+**O fundo que se mexe** `[29/08]`: doze peças atravessam a tela devagar atrás do
+texto — triângulo, quadrado, losango, cruz, e os quatro botões de controle (X,
+círculo, quadrado, triângulo), desenhados como geometria simples nas cores do
+site. Antes eram seis, e o dono achou pouco e lento; a duração caiu de 34 s
+para 19–35 s por peça.
+
+**O salto que ele viu no celular, e o conserto.** As peças davam um pulo no
+começo da rolagem e outro no fim. A camada é `fixed` e cada peça é posicionada
+em **porcentagem da altura dela**; ao rolar, o celular esconde a barra de
+endereço, a janela cresce e toda porcentagem é recalculada de uma vez. Medido
+com a janela indo de 830 para 930 px: a peça do topo saltava 4 px e a de baixo
+**70 px** — quanto mais embaixo, maior o salto, que é a assinatura do defeito.
+
+A correção é a classe `.camada-de-fundo` (`index.css`): altura em `100lvh`, que
+é a altura da janela **com a barra recolhida** — valor fixo, que não muda
+quando a barra vai e volta. `dvh` faria o oposto: acompanharia a barra, que é
+justamente o que provoca o pulo.
+
+> **O que NÃO foi verificado:** o conserto em si. Num navegador de desktop não
+> existe barra retrátil, então `lvh` é igual a `vh` e redimensionar a janela
+> move os dois juntos — a medição prova o **mecanismo**, não a cura. Isso só se
+> confirma num celular de verdade.
+
+Antes disso, seis formas de contorno atravessavam a tela
 devagar atrás do texto (`components/sobre/FundoAnimado.jsx`). O pedido do dono
 era "formas flutuando e batendo aleatoriamente, tipo ping-pong em tempo real" —
 e colisão de verdade **não foi feita de propósito**: ela exige um laço de
