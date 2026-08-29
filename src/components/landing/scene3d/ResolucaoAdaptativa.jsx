@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import {
-  DEGRAUS_DE_RESOLUCAO, QUADROS_POR_AMOSTRA, degrauInicial, proximoDegrau,
-  quedaDeEmergencia,
+  DEGRAUS_DE_RESOLUCAO, QUADROS_POR_AMOSTRA, LENTO_MS, degrauInicial,
+  proximoDegrau, quedaDeEmergencia,
 } from '../../../lib/resolucaoDaCena';
 
 /**
@@ -51,7 +51,20 @@ export default function ResolucaoAdaptativa({ aoSofrerNoPiso }) {
     const mediana = ordenado[Math.floor(ordenado.length / 2)];
     amostras.current = [];
 
-    cair(proximoDegrau({ degrau: degrau.current, mediana }));
+    const novo = proximoDegrau({ degrau: degrau.current, mediana });
+    if (novo !== degrau.current) { cair(novo); return; }
+
+    // JÁ NO PISO E AINDA LENTO — e este caminho faltava.
+    //
+    // O CI mediu 165 desenhos em 2 s, ou seja ~60 ms por quadro: lento o
+    // bastante para a amostra reprovar, e **abaixo** do limite de emergência de
+    // 100 ms. Resultado: no piso, `proximoDegrau` devolvia o mesmo degrau,
+    // nada acontecia, e o desligamento do antialias nunca era alcançado.
+    //
+    // O aviso tem que sair da MESMA decisão que a queda, senão ele só existe no
+    // papel — foi exatamente o que aconteceu, e o número piorou de 1.938 para
+    // 2.029 ms enquanto eu achava que tinha resolvido.
+    if (degrau.current === 0 && mediana > LENTO_MS) aoSofrerNoPiso?.();
   });
 
   return null;

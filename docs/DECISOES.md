@@ -469,8 +469,35 @@ Duas correções saíram disso, e as duas são melhorias de verdade:
 | **queda imediata** com um quadro acima de 100 ms | esperar os 10 quadros da amostra custava ~2 s de tela travada num aparelho fraco — pior que a pixelação, e menos visível, porque a tela congela em vez de ficar feia |
 | **desligar o `antialias` como último recurso** | depois do piso de resolução, o que ainda pesa é ele; e como é opção do contexto WebGL, a única saída é remontar a cena uma vez |
 
-Medido sob freio de 8× (mais lento que o runner do CI), bloqueio total:
-**10.871 ms → 2.982 ms**.
+**E os dois primeiros consertos não bastaram — o CI reprovou de novo, com o
+número PIOR (2.029 ms).** A causa estava no meu próprio desenho: o runner fazia
+~60 ms por quadro, que é lento para a amostra mas **abaixo** do limite de
+emergência de 100 ms. No piso, `proximoDegrau` devolvia o mesmo degrau, nada
+acontecia, e o desligamento do antialias nunca era alcançado. O aviso precisava
+sair da MESMA decisão que a queda, e não só do caminho de emergência.
+
+**E ao corrigir isso apareceu um risco que ninguém tinha visto:** `delta` é o
+intervalo entre quadros, não o custo de desenhar. Com vsync ele fica preso na
+cadência da tela — então **uma tela de 30 Hz reporta ~33 ms com a cena rodando
+folgada**. Com o limite em 28 ms, um aparelho perfeitamente capaz seria
+rebaixado. O limite subiu para 45: acima dos 33 ms de uma tela de 30 Hz, e bem
+abaixo dos ~60 ms de um aparelho realmente engasgado.
+
+Medido na mesma janela que o CI usa, com freio de CPU:
+
+| Freio | Bloqueio na janela de 2 s | Resolução | `antialias` |
+| --- | --- | --- | --- |
+| 1× | 0 ms | 0,5 | **ligado** |
+| 4× | 0 ms | 0,5 | desligado |
+| 8× | 0 ms | 0,5 | desligado |
+
+E sob freio de 8×, bloqueio total desde o carregamento: **10.871 ms → 2.982 ms**.
+
+> **O que esta máquina NÃO consegue provar:** ela rasteriza por software, então a
+> cena cai de resolução mesmo sem freio. Que um aparelho com GPU de verdade
+> permaneça em 1 ou 1,5 é o comportamento esperado da regra (60 fps = 16,7 ms,
+> bem abaixo do limite de 45), mas é **dedução**, não medição — quem confirma é
+> o dono, abrindo a landing.
 
 O último recurso só dispara em quem já está engasgando. Quem tem GPU nunca chega
 lá — vê a cena no melhor estado, do primeiro quadro ao último.

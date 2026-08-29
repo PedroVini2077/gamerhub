@@ -76,10 +76,26 @@ describe('proximoDegrau — só desce, e só quando precisa', () => {
     expect(proximoDegrau({ degrau: 0, mediana: 999 })).toBe(0);
   });
 
-  it('engasgo isolado não rebaixa: o limite é folgado', () => {
-    // 24 ms ainda é ~40 fps. Rebaixar aí puniria uma máquina que está bem por
-    // causa de outra aba, do próprio carregamento ou de uma coleta de lixo.
+  it('TELA DE 30 Hz não é aparelho lento', () => {
+    // `delta` é o intervalo entre quadros, não o custo de desenhar: com vsync
+    // ele fica preso na cadência da tela. Uma tela de 30 Hz reporta ~33 ms com
+    // a cena rodando folgada — rebaixar aí seria estragar a cena de um aparelho
+    // perfeitamente capaz, que é o defeito que esta regra veio corrigir.
+    expect(
+      proximoDegrau({ degrau: TOPO, mediana: 33.3 }),
+      'O limite voltou a ficar abaixo dos 33 ms de uma tela de 30 Hz. Aparelho\n'
+      + 'bom com tela de 30 Hz — ou com o rAF limitado por bateria — passa a ver\n'
+      + 'a cena rebaixada sem motivo.',
+    ).toBe(TOPO);
+  });
+
+  it('engasgo leve também não rebaixa', () => {
     expect(proximoDegrau({ degrau: TOPO, mediana: 24 })).toBe(TOPO);
+    expect(proximoDegrau({ degrau: TOPO, mediana: 40 })).toBe(TOPO);
+  });
+
+  it('mas ~60 ms por quadro rebaixa — foi o que o CI mediu', () => {
+    expect(proximoDegrau({ degrau: TOPO, mediana: 60 })).toBe(TOPO - 1);
   });
 });
 

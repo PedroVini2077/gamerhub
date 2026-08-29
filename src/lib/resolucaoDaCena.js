@@ -78,13 +78,24 @@ export function degrauInicial(devicePixelRatio = 1) {
 export const QUADROS_POR_AMOSTRA = 10;
 
 /**
- * Acima disto estamos perdendo quadros de propósito (60 fps = 16,7 ms).
+ * Acima disto o aparelho não está acompanhando.
  *
- * Folgado de propósito: um engasgo de origem externa — outra aba, coleta de
- * lixo, o próprio carregamento do site — não pode rebaixar para sempre a cena
- * de um aparelho que estava indo bem.
+ * ── Por que 45, e não 28 (que era o valor e estava errado) ──────────────────
+ *
+ * `delta` é o INTERVALO entre quadros, não o custo de desenhar. Com vsync ele
+ * fica preso na cadência da tela — e isso significa que **uma tela de 30 Hz
+ * reporta ~33 ms mesmo com a cena rodando folgada**. O mesmo vale para o rAF
+ * limitado pelo navegador (bateria fraca, aba quase em segundo plano).
+ *
+ * Com o limite em 28, esses casos rebaixariam a cena de um aparelho
+ * perfeitamente capaz — exatamente o defeito que esta rodada veio corrigir, só
+ * que disparado por outro caminho.
+ *
+ * 45 fica no meio de terra de ninguém: acima dos 33 ms de uma tela de 30 Hz, e
+ * bem abaixo dos ~60 ms que um aparelho realmente engasgado produz (medido: o
+ * runner do CI fez 165 desenhos em 2 s, ou seja ~60 ms por quadro).
  */
-const LENTO_MS = 28;
+export const LENTO_MS = 45;
 
 /**
  * Um quadro acima disto não é "lento": é um aparelho que não tem como desenhar
