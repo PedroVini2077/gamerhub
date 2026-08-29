@@ -19,6 +19,71 @@
 
 ---
 
+### `[29/08]` O fundo animado da "Sobre" custa zero, e isso foi medido
+
+O dono pediu formas se mexendo atrás do texto — *"batendo aleatoriamente, tipo
+um ping-pong em tempo real"* — e perguntou antes **se aquilo lesa o
+desempenho**. A pergunta certa, e a resposta depende de qual caminho se toma.
+
+**O que foi recusado:** física de verdade. Colisão exige um laço de JavaScript
+a cada quadro, que é o mesmo custo dos 29.441 ms de thread principal da cena
+3D. Numa página de **leitura** o estrago seria maior, porque a pessoa fica
+parada minutos e o laço nunca para.
+
+**O que foi feito:** doze peças animadas só com `transform` e `opacity` — as
+duas rodam no compositor, fora da thread principal.
+
+**A medição.** A/B no mesmo build e na mesma página, usando o próprio
+`prefers-reduced-motion` como estado de controle (com ele a camada some), CPU
+emulada **4× mais lenta**, 6 s com a página parada:
+
+| Estado | Tarefas longas |
+| --- | --- |
+| Sem animação (camada escondida) | **0** |
+| Com as doze peças atravessando | **0** |
+
+**O que isso confirma, e o que não confirma.** Confirma a regra que já estava
+neste arquivo: a propriedade animada decide o custo, não a quantidade de
+elementos. `transform`/`opacity` são compostas; `text-shadow` e `filter` não —
+foi por isso que o `electricBuzz` da landing perdeu o `textShadow`. **Não**
+confirma nada sobre aparelho real: é laboratório, e laboratório não substitui
+campo (regra 5 do §0.3).
+
+---
+
+### `[29/08]` O salto do fundo no celular era a barra de endereço
+
+**O sintoma**, relatado pelo dono: as peças davam um pulo no começo da rolagem
+e outro no fim. Ele disse que precisaria gravar a tela para explicar.
+
+**A causa.** A camada é `fixed` e cada peça é posicionada em **porcentagem da
+altura dela**. Ao rolar para baixo, o celular esconde a barra de endereço — a
+janela cresce, toda porcentagem é recalculada de uma vez, e as peças pulam
+juntas. No fim, a barra volta e elas pulam de novo.
+
+**A medição que provou**, com as animações congeladas (para ler posição base, e
+não movimento) e a janela indo de 830 para 930 px:
+
+| Peça | 1ª | 2ª | 3ª | 4ª | 5ª | 6ª |
+| --- | --- | --- | --- | --- | --- | --- |
+| Salto | 4 px | 16 px | 42 px | 54 px | 57 px | **70 px** |
+
+**Quanto mais embaixo a peça, maior o salto.** É essa progressão que prova ser
+porcentagem recalculada — corte de animação ou defeito de renderização
+atingiriam todas por igual. Foi o que descartou as duas hipóteses erradas sem
+precisar testá-las.
+
+**A correção:** altura em `100lvh` (`.camada-de-fundo`, em `index.css`), que é a
+altura da janela **com a barra recolhida** — valor fixo. `dvh` seria o erro
+oposto: ele acompanha a barra, e é exatamente o que provoca o pulo.
+
+> **O que NÃO foi verificado, e é importante que esteja escrito:** a correção
+> em si. Num navegador de desktop não existe barra retrátil — `lvh` é igual a
+> `vh`, e redimensionar a janela move os dois juntos. A medição prova o
+> **mecanismo**, não a cura. Só um celular de verdade confirma.
+
+---
+
 ### `[28/08]` A medição de campo, e o que ela desmentiu
 
 PageSpeed Insights, 28/08 às 19:19, Lighthouse 13.4.1:

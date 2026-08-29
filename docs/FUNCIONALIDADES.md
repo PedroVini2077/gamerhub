@@ -289,22 +289,7 @@ círculo, quadrado, triângulo), desenhados como geometria simples nas cores do
 site. Antes eram seis, e o dono achou pouco e lento; a duração caiu de 34 s
 para 19–35 s por peça.
 
-**O salto que ele viu no celular, e o conserto.** As peças davam um pulo no
-começo da rolagem e outro no fim. A camada é `fixed` e cada peça é posicionada
-em **porcentagem da altura dela**; ao rolar, o celular esconde a barra de
-endereço, a janela cresce e toda porcentagem é recalculada de uma vez. Medido
-com a janela indo de 830 para 930 px: a peça do topo saltava 4 px e a de baixo
-**70 px** — quanto mais embaixo, maior o salto, que é a assinatura do defeito.
-
-A correção é a classe `.camada-de-fundo` (`index.css`): altura em `100lvh`, que
-é a altura da janela **com a barra recolhida** — valor fixo, que não muda
-quando a barra vai e volta. `dvh` faria o oposto: acompanharia a barra, que é
-justamente o que provoca o pulo.
-
-> **O que NÃO foi verificado:** o conserto em si. Num navegador de desktop não
-> existe barra retrátil, então `lvh` é igual a `vh` e redimensionar a janela
-> move os dois juntos — a medição prova o **mecanismo**, não a cura. Isso só se
-> confirma num celular de verdade.
+**O salto que ele viu no celular** era a barra de endereço mudando a altura da janela e recalculando toda porcentagem de uma vez. Corrigido com `100lvh` na classe `.camada-de-fundo`. Os números que provaram a causa — e a parte que **não** foi possível verificar no desktop — estão em [DESEMPENHO.md](DESEMPENHO.md).
 
 Antes disso, seis formas de contorno atravessavam a tela
 devagar atrás do texto (`components/sobre/FundoAnimado.jsx`). O pedido do dono
@@ -317,11 +302,7 @@ O que substitui a aleatoriedade é cada peça ter duração, atraso e trajetóri
 próprias, com durações que não são múltiplas entre si — os ciclos demoram
 muito para coincidir, então o conjunto não se repete de forma perceptível.
 
-**Medido, não suposto:** com a CPU emulada 4x mais lenta e a página parada 6 s,
-**0 tarefas longas** com a animação rodando — mesma marca do estado sem
-animação. É o que se espera de `transform`/`opacity`, que rodam no compositor;
-seria outra história com `text-shadow` ou `filter` animados (foi por isso que o
-`electricBuzz` da landing perdeu o `textShadow`).
+**Custo:** medido em zero tarefa longa, com a CPU 4x mais lenta. A medição, o A/B e o que ela NÃO prova estão em [DESEMPENHO.md](DESEMPENHO.md) — é lá que mora o histórico de medição.
 
 Some por completo para quem pediu menos movimento no sistema
 (`motion-reduce:hidden`) — conferido no navegador: `display: none` e altura
