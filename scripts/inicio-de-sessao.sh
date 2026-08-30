@@ -50,4 +50,16 @@ echo "                 arquivo novo -> ARQUITETURA.md · o que falta -> BACKLOG.
 echo "  §2  fechar:    'npm run fim' antes de encerrar. Ele reprova o que sobrou."
 echo "  §8  ciclo:     PR + merge + sincronizar a branch são MINHA obrigação."
 echo
+echo "── O que NENHUM script verifica (§2: 7 dos 13 itens) ──"
+echo "  Estas perguntas aparecem aqui e NÃO só no fim de propósito: no fim elas"
+echo "  chegam tarde para mudar COMO a coisa foi construída."
+echo "  §1.3  Como alguém abusaria disto? Dado forjado, RLS que não cobre um"
+echo "        caminho, RPC chamável por quem não devia, corrida, permissão."
+echo "  §1.5  Se quebrar de madrugada: o que a pessoa vê? o que fica gravado?"
+echo "        qual teste falha? Se as três forem 'nada', não está pronto."
+echo "  §2    Todo bug corrigido vira TRAVA — e a trava se prova reinjetando o"
+echo "        bug e vendo o teste falhar. Senão é decoração."
+echo "  §5    Mexeu em banco/RPC/RLS? Testar em ROLLBACK ANTES da produção."
+echo "  §6.1  Faxina no que tocou: código morto, duplicação, egress, cleanup."
+echo
 echo "═══════════════════════════════════════════════════════════"
