@@ -161,6 +161,14 @@ jobs:
       - name: Nenhum documento cita arquivo que não existe
         run: node scripts/documentacao-quebrada.mjs
 
+      # `[29/08]` A outra direção do mesmo problema. O portão acima pega
+      # documento que cita arquivo INEXISTENTE; este pega arquivo que EXISTE e
+      # nenhum documento cita. Faltava — e por isso o ARQUITETURA.md chegou a
+      # não conhecer 80 arquivos de src/, incluindo `lib/roles.js` e
+      # `lib/realtimeTables.js`, que são travas do projeto.
+      - name: todo arquivo de src/ está no mapa
+        run: node scripts/mapa-de-arquivos.mjs
+
   deploys:
     name: a branch não gasta deploy da Vercel
     runs-on: ubuntu-latest
