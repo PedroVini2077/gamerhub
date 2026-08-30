@@ -670,6 +670,40 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `scripts/mapa-de-arquivos.mjs` | CI, **reprova o PR** | arquivo em `src/` que o `ARQUITETURA.md` não conhece |
 | `scripts/fim-de-sessao.mjs` (`npm run fim`) | **eu rodo antes de encerrar** | o que o CI nunca viu: trabalho não commitado, commit não empurrado, arquivo acima de 300 linhas, contador do backlog mentindo |
 
+### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
+
+> Pergunta do dono em 30/08, no minuto seguinte à entrega: *"esse script te faz
+> lembrar dessas regras ou testes? ... te faz lembrar de **tudo** oq vc precisa
+> fazer na sessão?"*.
+
+**Não. E não tem conserto em código.** Dos 13 itens da definição de pronto (§2),
+os mecanismos acima cobrem **seis** — os que uma máquina consegue medir. Os
+outros sete são de julgamento, e o principal deles é justamente o de segurança:
+não existe comando que responda *"eu pensei em como alguém abusaria disto?"*.
+
+| Verificado por máquina | Só por julgamento |
+| --- | --- |
+| build · lint · testes | **pensar como o atacante (§1.3)** |
+| arquivo acima de 300 linhas | o bug virou trava, e a trava foi provada (§2) |
+| contador do backlog | teste dos três canais (§1.5) |
+| arquivo fora do `ARQUITETURA.md` | faxina no que toquei (§6.1) |
+| documento citando arquivo que sumiu | caminhos que não podiam quebrar (§1.2) |
+| trabalho não commitado ou não empurrado | mudança de banco testada em `ROLLBACK` (§5) |
+
+**Fingir que verifica seria pior do que não verificar.** Um portão que dá verde
+sobre julgamento ensina a confiar num sinal que não sustenta nada — a mesma
+falha das cotas que estouram em silêncio (§0.2), só que pelo lado da falsa
+confiança. Por isso `npm run fim` termina dizendo, com todas as letras, que
+verde ali **não** quer dizer pronto: quer dizer que o que dá para medir por
+máquina está medido.
+
+**O que os dois gatilhos fazem com os sete itens restantes:** põem a lista na
+frente. No **início**, porque no fim ela chegaria tarde demais para mudar *como*
+a coisa foi construída — pensar em abuso depois de entregar não é segurança
+proativa, é auditoria do próprio erro. E no **fim**, como última chance de
+voltar. A resposta de cada um vai **dita ao dono no relatório de entrega**, que
+é o único lugar onde ele pode cobrar.
+
 ### Onde cada coisa escrita mora — a tabela que eu errei
 
 Está no §6.2 por extenso. Repetida aqui em uma linha porque foi **este** acerto

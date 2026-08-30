@@ -415,3 +415,10 @@ quatro conferências acima. Ele reprova com a lista do que falta.
 Não é CI de propósito: o CI roda no PR, e o problema que ele resolve acontece
 **depois** do PR — no momento de encerrar. Rodar antes de fechar a sessão é
 obrigação escrita no `CLAUDE.md` §6.3.
+
+**O que ele NÃO verifica, e diz isso na tela.** Ele cobre 6 dos 13 itens da
+definição de pronto. Os outros sete são de julgamento — incluindo *"pensei em
+como abusar disto"* — e nenhum comando responde por eles. Ele os imprime como
+perguntas, e termina avisando que verde ali não quer dizer pronto. Portão que
+finge medir julgamento é falsa confiança, e falsa confiança cega igual a
+silêncio (§0.2).

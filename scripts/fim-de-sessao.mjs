@@ -121,6 +121,44 @@ try {
     + 'se o PR já foi mergeado, falta o passo 4/5 do §8 (sincronizar e realinhar).');
 } catch { /* sem origin/main local */ }
 
+// ── O que NENHUM script consegue conferir ──────────────────────────────────
+//
+// Pergunta do dono em 30/08: *"esse script te faz lembrar dessas regras ou
+// testes? ... te faz lembrar de TUDO oq vc precisa fazer na sessão?"*
+//
+// A resposta honesta é NÃO, e por um motivo que não tem conserto em código: dos
+// 13 itens da definição de pronto (§2), seis são MECÂNICOS e as verificações
+// acima os cobrem. Os outros sete são de JULGAMENTO — não existe comando que
+// responda "eu pensei como um atacante pensaria?".
+//
+// Fingir que verifica seria pior do que não verificar. Um portão que dá verde
+// sobre julgamento ensina a confiar num sinal que não sustenta nada — é a
+// mesma falha das cotas que estouram em silêncio (§0.2), só que do lado da
+// falsa confiança.
+//
+// Então isto NÃO é uma checagem: é a lista sendo posta na frente de quem vai
+// fechar, no último momento em que ainda dá para voltar. A resposta é dita ao
+// dono, no relatório de entrega, e é lá que ela pode ser cobrada.
+const JULGAMENTO = [
+  ['§1.3', 'Pensei em como ABUSAR disto — dado forjado, RLS que não cobre um '
+         + 'caminho, RPC chamável por quem não devia, corrida, permissão? '
+         + 'Fechei o que achei?'],
+  ['§1.5', 'Teste dos três canais: se isto quebrar de madrugada, (a) o que a '
+         + 'pessoa vê, (b) o que fica gravado, (c) qual teste falha? Se as três '
+         + 'forem "nada", não está pronto.'],
+  ['§2',   'Todo bug que corrigi virou TRAVA, e eu provei a trava reinjetando '
+         + 'o bug e vendo o teste falhar?'],
+  ['§1.2', 'Os caminhos que NÃO podiam quebrar foram testados de propósito, e '
+         + 'não só o caminho que eu mexi?'],
+  ['§5',   'Mexi em banco/RPC/RLS? Testei em transação com ROLLBACK ANTES de '
+         + 'aplicar em produção?'],
+  ['§6.1', 'Faxina no que toquei: código morto, duplicação, egress, cleanup de '
+         + 'timer/subscription/objectURL?'],
+  ['§6.2', 'A documentação que mudou foi a CERTA? (medição -> DESEMPENHO, '
+         + 'decisão -> DECISOES, arquivo novo -> ARQUITETURA, o que falta -> '
+         + 'BACKLOG, quando quebra -> OPERACAO)'],
+];
+
 // ── Veredicto ──────────────────────────────────────────────────────────────
 if (avisos.length) {
   console.log('\n  Avisos:');
@@ -134,4 +172,12 @@ if (falhas.length) {
   process.exit(1);
 }
 
-console.log('\n  Sessão pode ser fechada.\n');
+console.log('\n  A parte MECÂNICA está fechada — 6 dos 13 itens do §2.');
+console.log('  Os outros 7 nenhum script verifica. Responda cada um, em voz alta,');
+console.log('  no relatório de entrega ao dono:\n');
+JULGAMENTO.forEach(([sec, pergunta]) => {
+  console.log(`  ${sec.padEnd(5)} ${pergunta.replace(/(.{72}) /g, '$1\n        ')}`);
+  console.log('');
+});
+console.log('  Verde aqui NÃO quer dizer pronto. Quer dizer que o que dá para');
+console.log('  medir por máquina está medido.\n');
