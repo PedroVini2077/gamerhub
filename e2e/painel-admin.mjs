@@ -182,14 +182,48 @@ try {
   //
   // Exigir linhas ANTES de olhar o botão fecha esse esconderijo: com ou sem
   // paginação, o teste agora prova que sabe enxergar um post.
+  // `[30/08]` ZERO TEM DUAS CAUSAS OPOSTAS, e confundi-las custou um CI
+  // vermelho por motivo nenhum.
+  //
+  // Em 30/08 este teste reprovou com o site legitimamente VAZIO: o dono tinha
+  // esvaziado a lixeira ("20 posts da lixeira apagados permanentemente"), e o
+  // painel mostrava "Nenhum post ativo" — funcionando perfeitamente. O teste
+  // dependia de existir dado em PRODUÇÃO, e alarme que grita à toa ensina a
+  // ignorar o canal (§0.2, 4ª regra).
+  //
+  // Mas aceitar zero de graça reabriria o buraco descrito acima. A saída é
+  // perguntar ao PRÓPRIO PAINEL quantos posts ele diz ter:
+  //
+  //   declara N > 0 e não acho linha   -> seletor quebrou. FALHA (a trava original)
+  //   declara 0 (ou nada) e mostra vazio -> site vazio. O painel está certo
+  //   não mostra o vazio e não há linha  -> a aba não renderizou. FALHA
+  //
+  // `declarados <= 0` e não `=== 0` porque com o site vazio o painel não
+  // imprime número nenhum ao lado de "Posts ativos" — o regex devolve -1. Ler
+  // isso como "declara zero" seria chute; aqui é o oposto: ausência de número
+  // só passa ACOMPANHADA do estado vazio explícito na tela.
+  //
+  // Assim a trava continua pegando a regressão de seletor sempre que houver
+  // dado, e para de mentir quando não houver.
   const linhasVisiveis = await linhas();
-  if (linhasVisiveis === 0) {
+  const textoAba = await page.locator('main').innerText();
+  const declarados = Number(textoAba.match(/Posts ativos\s*(\d+)/)?.[1] ?? -1);
+  const mostraVazio = /nenhum post ativo/i.test(textoAba);
+
+  if (linhasVisiveis === 0 && declarados <= 0 && mostraVazio) {
+    ok('aba Posts: site sem post ativo, e o painel mostra o estado vazio');
+    console.log('           (a paginacao nao pode ser exercitada sem dado — '
+      + 'a trava do seletor volta a valer assim que houver post)');
+  } else if (linhasVisiveis === 0) {
     throw new Error(
-      'nenhuma linha de post encontrada com [data-post-row]. Ou a aba nao '
-      + 'carregou, ou o atributo saiu do PostsPanel — e sem ele o teste de '
-      + 'paginacao passa a contar zero e vira decoracao.');
+      'nenhuma linha de post encontrada com [data-post-row], e o painel NAO '
+      + `esta no estado vazio (ele declara ${declarados} post(s) ativo(s), `
+      + `estado vazio na tela: ${mostraVazio}).\n`
+      + '  Ou a aba nao carregou, ou o atributo saiu do PostsPanel — e sem ele '
+      + 'o teste de paginacao passa a contar zero e vira decoracao.');
+  } else {
+    ok(`aba Posts lista ${linhasVisiveis} post(s)`);
   }
-  ok(`aba Posts lista ${linhasVisiveis} post(s)`);
 
   // `[29/08]` MEDE O TOTAL CARREGADO, e não as linhas visíveis. Segunda
   // correção do mesmo teste, e a causa é diferente da primeira.

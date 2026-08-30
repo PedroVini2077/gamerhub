@@ -422,3 +422,25 @@ como abusar disto"* — e nenhum comando responde por eles. Ele os imprime como
 perguntas, e termina avisando que verde ali não quer dizer pronto. Portão que
 finge medir julgamento é falsa confiança, e falsa confiança cega igual a
 silêncio (§0.2).
+
+### `[30/08]` O teste do painel dependia de existir dado em produção
+
+Ele reprovou com o site **legitimamente vazio**: o dono esvaziou a lixeira
+(`admin_permanent_delete_all`, 20 posts), o painel passou a mostrar "Nenhum post
+ativo" — funcionando perfeitamente — e o teste caiu porque exigia encontrar ao
+menos uma linha de post.
+
+**Por que a exigência existia:** o seletor de linhas já contou zero em silêncio
+por meses, e o ramo "sem botão de paginar" registrava isso como sucesso. Aceitar
+zero de graça reabriria esse buraco.
+
+**A saída foi separar as duas causas de zero**, perguntando ao próprio painel:
+
+| O painel diz | Há linha? | Veredicto |
+| --- | --- | --- |
+| N > 0 | não | **falha** — o seletor quebrou (a trava original) |
+| 0 ou nada, com "Nenhum post ativo" na tela | não | passa — o site está vazio |
+| nada, e sem estado vazio | não | **falha** — a aba não renderizou |
+
+Assim a trava continua pegando regressão de seletor sempre que houver dado, e
+deixa de gritar à toa quando não houver (§0.2, 4ª regra).

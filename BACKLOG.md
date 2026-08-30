@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**21 itens abertos** (+ 1 ideia sem compromisso)
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -235,6 +235,15 @@
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
+
+- ⬜ `[30/08]` 🟢 **Tornar o teste do painel independente de dado de produção.**
+  Em 30/08 ele reprovou porque o site ficou sem post — não por defeito nenhum.
+  O remendo de agora distingue "seletor quebrou" de "site vazio", e mantém a
+  trava viva; mas o teste continua **medindo o banco** em vez de medir o painel.
+
+  O certo é ele criar o próprio post antes de conferir a aba e apagá-lo depois,
+  como o `fluxos.mjs` já faz. Aí a paginação volta a ser exercitada sempre, e
+  não só quando alguém tiver postado.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
