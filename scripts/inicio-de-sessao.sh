@@ -62,4 +62,13 @@ echo "        bug e vendo o teste falhar. Senão é decoração."
 echo "  §5    Mexeu em banco/RPC/RLS? Testar em ROLLBACK ANTES da produção."
 echo "  §6.1  Faxina no que tocou: código morto, duplicação, egress, cleanup."
 echo
+echo "── A pergunta, antes de entregar QUALQUER coisa ──"
+echo "  \"Quais regras deste projeto se aplicam ao que acabei de fazer — e para"
+echo "   cada uma, ONDE ESTÁ A EVIDÊNCIA de que cumpri?\""
+echo
+echo "  Ela é assim de propósito. \"Estou fazendo tudo?\" se responde com um"
+echo "  \"sim\" preguiçoso, e teria deixado passar todas as falhas de 29/08."
+echo "  Esta obriga a NOMEAR regra e evidência. Sem evidência nomeada, não"
+echo "  cumpri: só acho que cumpri."
+echo
 echo "═══════════════════════════════════════════════════════════"

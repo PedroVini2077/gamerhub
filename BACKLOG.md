@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**20 itens abertos** (+ 1 ideia sem compromisso)
+**21 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -56,6 +56,57 @@
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[30/08]` 🔴 **PRIMEIRO ITEM DA PRÓXIMA SESSÃO — auditoria de mim mesmo.**
+  *Pedido do dono em 30/08: "o primeiro item do backlog literalmente vai ser vc
+  como IA... oq vc quase sempre falha, oq ficamos quebrando cabeça por sua
+  causa". Marcado 🔴 porque é o item que decide a qualidade de todos os outros.*
+
+  **O objetivo:** o mesmo tratamento que o projeto recebe — achar as brechas,
+  fechar o que der, e travar o que não der — aplicado a **mim**. Não é
+  autocrítica: é varredura de classe (§1.3) sobre o meu próprio comportamento.
+
+  **O catálogo já começa aqui, com evidência.** Não custa nada agora e a
+  próxima sessão não tem como reconstruir isto de memória:
+
+  | Padrão de falha | Evidência |
+  | --- | --- |
+  | Escrevo de memória em vez de abrir o arquivo | 3 casos em 28/08 (§6.2) + 2 em 29/08: medição no `FUNCIONALIDADES` e 6 arquivos fora do `ARQUITETURA` |
+  | Afirmo **inferência** como **fato** | 23/08, duas vezes, eu mesmo tive que corrigir (§1.1) |
+  | Escrevo teste que **não pode falhar** | o teste de portas RPC em `portas-fechadas.mjs` — PostgREST nunca expõe função `trigger` |
+  | Construo portão que acusa **errado** | `mapa-de-arquivos.mjs` acusou 145 arquivos na 1ª execução; comparava com a extensão |
+  | Produzo **verde que promete demais** | `npm run fim` dizia "sessão pode ser fechada" cobrindo 6 de 13 itens |
+  | Prometo acompanhar coisa **depois do turno** | 2 vezes em 29/08; o turno acaba e a sessão para — não existe "eu aviso depois" |
+  | Tentativa e erro em vez de diagnóstico | 3 rodadas na cena 3D, cada uma com justificativa própria e alvo errado (§1.2) |
+  | Crio dado de teste que **confunde o dono** | fila de moderação com itens falsos marcados `trigger_type: ai` |
+  | Entendo errado e **não pergunto** | a aba de banimento: eu li "site logado", ele quis "landing" |
+
+  **O método proposto** (a decidir com ele):
+  1. Ler o `CLAUDE.md` e os `docs/regras/` inteiros procurando **regra que já
+     falhou** — cada uma existe porque eu errei, e o histórico está escrito lá.
+  2. Varrer `git log` e os corpos de PR atrás de "corrigi o que eu mesmo fiz".
+  3. Para cada padrão: existe mecanismo que o pega? Se não, dá para criar um?
+     Se não der, ele vira pergunta nos gatilhos — que é o mais fraco, e por
+     isso o último recurso (§2).
+  4. **Estender os gatilhos ao resto do projeto**, que foi o outro pedido: hoje
+     eles cobrem documentação e fechamento. Faltam banco, moderação e
+     segurança.
+
+  **A pergunta que ele pediu, na forma que não deixa escapar.** A versão
+  original — *"estou fazendo tudo o que preciso?"* — é respondível com um "sim"
+  preguiçoso, e teria deixado passar todas as falhas de 29/08. A versão que
+  obriga a nomear:
+
+  > **Quais regras deste projeto se aplicam ao que acabei de fazer — e para
+  > cada uma, onde está a evidência de que cumpri?**
+
+  Sem evidência nomeada, não cumpri: só acho que cumpri. Formalizar isto no
+  `CLAUDE.md` é decisão da próxima sessão (§6.2 pede proposta).
+
+  **O que este item NÃO promete:** que eu pare de errar. Prometer isso seria a
+  mesma mentira do verde que prometia demais. O alvo é o mesmo do projeto —
+  **o mínimo possível**, e cada erro que acontecer virando trava para não
+  acontecer de novo.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
