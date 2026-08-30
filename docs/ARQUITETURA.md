@@ -24,7 +24,32 @@ src/
 │   ├── useRole.js         # Deriva flags isOwner/isAdmin/isSuperAdmin/isBanned
 │   ├── useRealtime.js     # Helper genérico de subscription Postgres changes
 │   ├── useCommentLike.js  # Estado de like de comentário
-│   └── useBlockedWords.js # Cache da wordlist + checkContent() (filtro de moderação)
+│   ├── useBlockedWords.js # Cache da wordlist + checkContent() (filtro de moderação)
+│   ├── useAdminData.js    # Dados do painel admin, paginados em blocos (posts e
+│   │                      # keys crescem sem limite com o uso)
+│   ├── useAdminRealtime.js# Realtime do painel, em DOIS canais por tempo de vida
+│   ├── useAdminLogs.js    # Estado e busca dos logs de auditoria
+│   ├── useAdminNotifications.js # Quais notificações de staff este usuário vê
+│   ├── useAdminContentActions.js # Ações destrutivas sobre post e key, atrás de ConfirmModal
+│   ├── useAdminLiveActions.js    # Ações sobre live. Trata 0 linhas como falha —
+│   │                      # a RLS nega devolvendo zero linhas e NENHUM erro
+│   ├── useAdminStaffActions.js   # Promover, rebaixar, banir, suspender
+│   ├── useOwnerUserActions.js    # As mesmas ações, no painel do fundador
+│   ├── useCargoDecisions.js      # Decisões de indicação/estágio/rebaixamento
+│   ├── useUnbanRequests.js       # Pedidos de desbanimento pendentes
+│   ├── useBlockedLogins.js       # Logins travados por excesso de tentativa
+│   ├── usePostComposer.js # Publicar: upload, moderação e limpeza do formulário
+│   ├── usePostEngagement.js # Curtidas e comentários de um post
+│   ├── useLiveChat.js     # Chat da live
+│   ├── useLiveModeration.js # Silenciar e remover no chat da live
+│   ├── useLivesList.js    # Lista de lives, com debounce (INSERT e UPDATE quase juntos)
+│   ├── useProfileForm.js  # Estado do formulário de perfil
+│   ├── useProfileStats.js # Números do perfil
+│   ├── useUserXP.js       # XP e rank do usuário
+│   ├── useAvatarUpload.js # Envio da foto de perfil
+│   ├── useDeleteCountdown.js # Contagem antes de ação destrutiva, com cancelar
+│   ├── useDbOffline.js    # `true` enquanto o site está sem banco (ver lib/dbHealth)
+│   └── useVisiblePoll.js  # Repete uma chamada, mas SÓ com a aba visível
 ├── lib/
 │   ├── supabase.js        # Cliente Supabase
 │   ├── queryClient.js     # React Query client (staleTime 30s, retry 1)
@@ -39,6 +64,20 @@ src/
 │   ├── format.js          # Formatação de números (1K, 1M...)
 │   ├── introJaVista.js    # Lembra, por sessão do navegador, que a intro do
 │   │                      # raio já foi vista — e decide se ela toca
+│   ├── roles.js           # Hierarquia de cargos no cliente; espelha `role_rank()`
+│   │                      # do banco. TRAVA: lista literal de cargo é bug (§1.3)
+│   ├── roleLabels.js      # Fonte única do nome e da cor de cada cargo na UI
+│   ├── realtimeTables.js  # TRAVA: assinatura de realtime só vale para tabela que
+│   │                      # está na publicação `supabase_realtime`
+│   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
+│   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
+│   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
+│   ├── pauseReason.js     # Motivo da pausa, guardado no navegador
+│   ├── objectUrls.js      # Controle de blob URLs — sem revoke, o arquivo fica na RAM
+│   ├── monitoring.js      # Sentry sob demanda
+│   ├── capturaAntecipada.js # Rede de captura que existe ANTES de o Sentry chegar
+│   ├── tetoDeEventos.js   # Teto de eventos por sessão: uma rajada vira 1 evento,
+│   │                      # não mil — é o que protege a cota do Sentry (§0.2)
 │   ├── password.js        # Força de senha (compartilhado Login/AuthConfirm)
 │   ├── date.js            # Cálculo de idade / idade mínima de cadastro
 │   ├── csv.js             # Geração + download de CSV (export de logs)
@@ -58,6 +97,12 @@ src/
 │   ├── motion.js          # Variantes Framer Motion compartilhadas (fade, grid, list)
 │   └── landingMotion.js   # Variantes de animação exclusivas da landing (hero, reveal, stagger)
 ├── services/              # Camada de acesso a dados (Supabase) por domínio
+│   ├── result.js          # Contrato ÚNICO de retorno da camada de services —
+│   │                      # existir isto é o que impede cada service inventar
+│   │                      # a sua convenção (um chegou a lançar exceção)
+│   ├── banService.js      # Ban, desban e o pedido de revisão aberto pela
+│   │                      # PRÓPRIA pessoa banida
+│   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
 │   ├── communityService.js# Mural da comunidade
@@ -100,19 +145,46 @@ src/
     ├── keys/              # KeyEditor
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal
     ├── admin/             # UsersPanel, PostsPanel, LivesPanel, KeysPanel,
-    │                      # NotifsPanel, LogsPanel, SuperAdminPanel
+    │                      # NotifsPanel, LogsPanel, SuperAdminPanel, StatCard,
+    │                      # AdminTabs, AdminTabContent, AdminModals
+    │   ├── UnlockLoginModal.jsx / UnlockCountdownBtn.jsx # Desbloqueio de login,
+    │   │                  # com espera forçada de 10 s — o tom é pesado de propósito
+    │   ├── UnbanRequestModal.jsx / ReactivationModal.jsx # Análise de pedidos
+    │   └── cargos/        # CargosTab e as peças dela: CargoSection, NominationCard,
+    │                      # TrialCard, DemotionCard, CandidateHeader,
+    │                      # EligibilityChecklist, DecisionButton
     ├── owner/             # PainelTab, UsuariosTab, LogsTab, SiteTab,
-    │                      # NotificacoesTab, MetricasTab
+    │                      # NotificacoesTab, MetricasTab, SiteModerationCards
+    │   └── usuarios/      # UserRow, UserFilters, RoleOverride (o cargo de
+    │                      # fundador NÃO se atribui por override)
     ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,
-    │                      # WordlistManager, ViolationsPanel, QueueMidia
-    │                      # (a prévia de imagem e vídeo dentro da fila)
+    │                      # WordlistManager, ViolationsPanel, QueueItemCard,
+    │                      # QueueContentPreview, QueueMidia (a prévia de imagem
+    │                      # e vídeo dentro da fila)
+    │   └── queueLabels.js # TRAVA: todo tipo da fila precisa existir nos três
+    │                      # mapas — foi um tipo novo sem entrada que travou a tela
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
+    │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
     │                      # SceneObjects (LogoBolt/FloatingShapes)
+    ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
+    │                      # InputWrap, e os dois porteiros de rota:
+    │                      # RequireAuth (barra visitante) e GuestOnly (barra logado)
+    ├── layout/            # Header e RightPanel do site logado
+    ├── feed/              # PostCard, PostForm, CommentSection, CommentCard,
+    │                      # CommentComposer, EditCountdown (janela de edição)
+    │   └── composer/      # ComposerToolbar, MediaPreviewGrid, AudioAttachment,
+    │                      # EmbedComposer
+    ├── community/         # MuralCard, MuralForm
+    ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal
+    ├── keys/              # KeyEditor
+    ├── profile/           # ProfileIdentityCard, PersonalInfoCard, GamingCard,
+    │                      # SocialLinksCard, PlayerStatsCard, AvatarModal,
+    │                      # AdminApplicationCard
     ├── sobre/             # A página do projeto (`/sobre`), pública
     │   ├── conteudoDoSobre.js # Os sete blocos de texto — a FONTE, escrita pelo
     │   │                  # dono. A página só renderiza esta lista
@@ -124,7 +196,8 @@ src/
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
                            # AudioRecorder, GlobalBanner, FeatureGate,
-                           # LazyVisible, PageTransition
+                           # LazyVisible, PageTransition, SplashScreen (só durante
+                           # a resolução inicial da sessão) e OfflineGate
 ```
 
 **Fora de `src/`** — atualizado em 28/08, porque esta nota só citava `db/`:
@@ -133,8 +206,9 @@ src/
 | --- | --- |
 | `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
-| `scripts/` | Portões que rodam no CI: orçamento de bytes, documentação quebrada, ignorar deploy da Vercel; e o relatório de documentação envelhecida |
+| `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
 | `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
+| `.claude/` | `settings.json` com o hook `SessionStart` — o gatilho que injeta o estado real do projeto no começo de toda sessão |
 | `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |
 | `db/` | Scripts SQL avulsos para o SQL Editor e os relatórios de auditoria (`AAAA-MM-DD-*.md`). Não são migrations |
 

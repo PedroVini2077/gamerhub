@@ -340,6 +340,12 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
   nas *Variables* do repositório; sem elas seria "0 rotas", falha que não diz
   nada sobre o código.
+- **mapa de arquivos** (`scripts/mapa-de-arquivos.mjs`) — reprova o PR se algum
+  arquivo de `src/` não aparecer no `ARQUITETURA.md`. É a **outra direção** do
+  portão de documentação quebrada: aquele pega documento citando arquivo que não
+  existe; este pega arquivo que existe e nenhum documento cita. Faltava, e por
+  isso o mapa chegou a não conhecer 80 arquivos — incluindo `lib/roles.js` e
+  `lib/realtimeTables.js`, que são travas do projeto.
 - **conteúdo visível** (`e2e/conteudo-visivel.mjs`, dentro do job de fumaça) —
   rola cada página pública numa janela de celular (412x830) e reprova se algo
   com tamanho real ficar em `opacity: 0`. Existe porque a `/sobre` subiu com os
@@ -392,3 +398,20 @@ react-router que motivou o teste de fumaça existir).
 ---
 
 [← voltar para o README](../README.md)
+
+---
+
+## `[29/08]` `npm run fim` — o fechamento de sessão
+
+O CI só enxerga o que já foi **empurrado**. Ele nunca soube dizer se sobrou
+trabalho não commitado, commit não empurrado, arquivo que passou de 300 linhas,
+ou contador do backlog divergindo da contagem real. Essas quatro coisas só
+existiam na memória de quem estava trabalhando — e memória foi exatamente o que
+falhou em 29/08.
+
+`scripts/fim-de-sessao.mjs` roda build, lint, testes e os portões, **e** as
+quatro conferências acima. Ele reprova com a lista do que falta.
+
+Não é CI de propósito: o CI roda no PR, e o problema que ele resolve acontece
+**depois** do PR — no momento de encerrar. Rodar antes de fechar a sessão é
+obrigação escrita no `CLAUDE.md` §6.3.

@@ -647,6 +647,51 @@ mantêm tudo atualizado (portão no CI, lembrete semanal, reler antes de escreve
 
 @docs/regras/DOCUMENTACAO.md
 
+## 6.3 Os mecanismos que não dependem da minha memória
+
+> Ordem do dono em 29/08, depois de eu falhar **duas vezes na mesma sessão**:
+> *"quero algum tipo de gatilho pra vc poder ler a documentação e principalmente
+> sua própria memória (CLAUDE.md), nada mais pode falhar"*.
+
+**O que essa cobrança revelou, e é o motivo desta seção existir.** As duas
+falhas foram com as regras **escritas, certas, e lidas por mim no começo da
+sessão**: escrevi medição no `FUNCIONALIDADES.md` (o lugar é `DESEMPENHO.md`) e
+deixei seis arquivos novos fora do `ARQUITETURA.md`. Nenhum portão acusou,
+porque nenhum deles olhava isso.
+
+A tabela do §2 já dizia o que fazer: *"comentário explicando o porquê"* é a
+**mais fraca** das cinco travas, e só vale *"quando nenhum dos quatro couber"*.
+Responder a uma falha de cumprimento escrevendo **mais uma regra** seria repetir
+exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto.
+
+| Mecanismo | Quando roda | O que ele pega |
+| --- | --- | --- |
+| `scripts/inicio-de-sessao.sh` | **sozinho**, no `SessionStart` | põe na minha frente o estado real: pendência não commitada, backlog, e há quantos dias cada documento não é tocado |
+| `scripts/mapa-de-arquivos.mjs` | CI, **reprova o PR** | arquivo em `src/` que o `ARQUITETURA.md` não conhece |
+| `scripts/fim-de-sessao.mjs` (`npm run fim`) | **eu rodo antes de encerrar** | o que o CI nunca viu: trabalho não commitado, commit não empurrado, arquivo acima de 300 linhas, contador do backlog mentindo |
+
+### Onde cada coisa escrita mora — a tabela que eu errei
+
+Está no §6.2 por extenso. Repetida aqui em uma linha porque foi **este** acerto
+que falhou, e o gatilho de início a mostra em toda sessão:
+
+> medição → `DESEMPENHO.md` · decisão → `DECISOES.md` · arquivo novo →
+> `ARQUITETURA.md` · o que falta → `BACKLOG.md` · quando quebra → `OPERACAO.md`
+
+### Nada fica para a próxima sessão — o que isso quer dizer de verdade
+
+A sessão acaba e o contexto morre junto. Então **o que eu comecei, eu fecho**:
+sem código não commitado, sem PR sem merge, sem achado que existe só na
+conversa. `npm run fim` reprova os três.
+
+**O que essa regra NÃO promete**, porque regra impossível vira regra ignorada
+(§0): que todo trabalho caiba numa sessão. Uma auditoria consome uma inteira; um
+bug que só reproduz no celular do dono depende dele. O que não cabe vai para o
+`BACKLOG.md` **escrito**, com o que já foi descartado e qual evidência
+resolveria — nunca para a minha cabeça, que não sobrevive ao fim da sessão.
+
+---
+
 ## 7. Processo para mudanças estruturais
 
 - **Antes de alterar**, apresentar análise/plano e **aguardar aprovação**.
