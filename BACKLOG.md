@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -329,6 +329,27 @@
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
+
+- ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
+  *Auditoria da cena 3D de 01/09. A medição inteira está em
+  [DESEMPENHO.md](docs/DESEMPENHO.md); aqui fica só a decisão que falta.*
+
+  A cena tem **7 `pointLight`**, e quatro delas são flashes que ficam apagados a
+  maior parte do tempo. No three.js, luz com `intensity = 0` **continua custando
+  shader inteiro** — ela segue no array de uniforms e é avaliada por fragmento.
+
+  **O conserto óbvio é armadilha:** alternar `visible` mudaria a contagem de
+  luzes, que faz parte da chave do cache de programas — cada troca recompila
+  shader. Custo constante viraria engasgo a cada 0,6 s.
+
+  **A proposta viável:** uma `pointLight` compartilhada pelos três arcos (7 → 5).
+  **O risco é específico e real:** quando dois arcos disparam dentro da mesma
+  janela de 0,36 s, hoje são duas luzes e passariam a ser uma.
+
+  **Por que não implementei:** *"a luz verde não fica tão forte"* já foi uma
+  regressão deste projeto, e este ambiente renderiza WebGL por software — não dá
+  para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
+  no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
 
 - ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em duas tabelas públicas.**
   *Achado na auditoria de gatilhos de 01/09, sondando a REST API como visitante.*

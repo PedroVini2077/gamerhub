@@ -19,6 +19,82 @@
 
 ---
 
+### `[01/09]` Auditoria da cena 3D — o que medi, e o experimento que deu ZERO
+
+O dono disse *"tô percebendo que ele tá pesando"* sobre o raio, e pediu
+otimização **sem tirar qualidade**. Auditar antes de alterar.
+
+#### O experimento do `import * as THREE` — não vale a pena alterar
+
+`Lightning.jsx` e `SceneObjects.jsx` usam `import * as THREE from 'three'`;
+`LandingScene.jsx` usa imports nomeados. A sabedoria comum diz que namespace
+quebra tree-shaking. **Medi em vez de acreditar:** converti os dois arquivos
+para imports nomeados (só 5 símbolos: `AdditiveBlending`, `ExtrudeGeometry`,
+`MathUtils`, `Shape`, `Vector3`) e reconstruí.
+
+| | chunk `LandingScene` |
+| --- | --- |
+| `import * as THREE` | 707,98 kB · 189,03 kB gzip |
+| imports nomeados | 707,98 kB · 189,03 kB gzip |
+
+**Byte a byte igual — o hash do arquivo nem mudou.** O Rollup já tree-shakeava
+o namespace de forma idêntica, porque todo acesso é estático (`THREE.Vector3`).
+Revertido: sem ganho mensurável, não se altera.
+
+> Fica registrado justamente para eu (ou outra IA) não "consertar" isto de novo
+> daqui a três meses achando que é ganho fácil.
+
+#### O custo do raio NÃO está no laço por quadro
+
+Li o `useFrame` do `Lightning.jsx` inteiro. Ele é bem escrito: nenhuma alocação
+por quadro (muta um `Float32Array` pré-alocado), refs em vez de estado do React,
+e a geometria só é regerada **quando o arco dispara** — a cada 0,6 a 2,4 s, não
+a cada quadro. O trabalho por quadro por arco é uma subtração, um `clamp` e um
+`sin`. Isso não pesa.
+
+#### O suspeito real: SETE `pointLight`
+
+| Onde | Quantas |
+| --- | --- |
+| `LandingScene` (estáticas) | 2 |
+| `Lightning` — uma por arco | 3 |
+| `Lightning` — flash de trovão | 1 |
+| `SceneObjects` — flash | 1 |
+| **total de `pointLight`** | **7** (+ 1 direcional + 1 ambiente) |
+
+**O detalhe que torna isso caro:** no three.js, luz com `intensity = 0`
+**continua custando shader inteiro**. Ela permanece no array de uniforms e é
+avaliada por fragmento, em toda superfície com `MeshStandardMaterial`. As quatro
+luzes de flash ficam apagadas a maior parte do tempo e cobram o tempo todo.
+
+**E o conserto óbvio é uma armadilha.** Alternar `light.visible` conforme o
+flash mudaria a CONTAGEM de luzes, e a contagem faz parte da chave do cache de
+programas do three.js: cada mudança dispara **recompilação de shader**. Trocar
+custo constante por engasgo a cada 0,6 s é piorar.
+
+#### O que eu NÃO consigo medir aqui, e por isso não alterei nada
+
+Este ambiente renderiza WebGL **por software** (swiftshader). Contagem de luz,
+draw call e bytes são independentes de GPU; **tempo de quadro e custo de
+fragmento não são**. Medir FPS aqui e chamar de resultado seria inventar número
+— e comparar laboratório de software com o celular dele é o erro que a regra 5
+do §0.3 proíbe.
+
+**Draw calls medidos:** 215 em 3 s, num canvas de 1280x800 a DPR 1.
+
+#### A proposta que precisa do aparelho do dono
+
+Compartilhar **uma** `pointLight` entre os três arcos, em vez de uma por arco:
+7 → 5 luzes. O risco visual é real e específico — quando dois arcos disparam
+dentro da mesma janela de 0,36 s, hoje há duas luzes e passaria a haver uma.
+Pelos intervalos configurados isso acontece com frequência não desprezível.
+
+**Não implementado**, porque "a luz verde não fica tão forte" já foi uma
+regressão real deste projeto, e eu não tenho como medir aqui se o ganho paga o
+risco. Depende de comparação lado a lado no aparelho dele.
+
+---
+
 ### `[29/08]` O fundo animado da "Sobre" custa zero, e isso foi medido
 
 O dono pediu formas se mexendo atrás do texto — *"batendo aleatoriamente, tipo
