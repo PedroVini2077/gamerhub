@@ -20,7 +20,8 @@
     "mapa": "node scripts/mapa-de-arquivos.mjs",
     "fim": "node scripts/fim-de-sessao.mjs",
     "test:banco": "node e2e/portas-do-banco.mjs",
-    "segredos": "node scripts/segredos-vazados.mjs"
+    "segredos": "node scripts/segredos-vazados.mjs",
+    "test:e2e:navegacao": "node e2e/navegacao.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

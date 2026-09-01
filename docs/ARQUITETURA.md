@@ -199,7 +199,9 @@ src/
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
                            # AudioRecorder, GlobalBanner, FeatureGate,
-                           # LazyVisible, PageTransition, SplashScreen (só durante
+                           # LazyVisible, PageTransition, RolagemDeRota (decide
+                           # para onde a página rola ao trocar de rota),
+                           # SplashScreen (só durante
                            # a resolução inicial da sessão) e OfflineGate
 ```
 

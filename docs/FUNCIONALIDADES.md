@@ -474,3 +474,36 @@ quem **administra** opera.
 ---
 
 [← voltar para o README](../README.md)
+
+---
+
+### `[01/09]` Para onde a página rola quando a rota muda
+
+Dois bugs relatados pelo dono tinham a mesma raiz: **ninguém mandava a página
+rolar**. Nenhum dos dois quebrava nada visível — a página abria, os links
+existiam, o console ficava limpo. Eles só entregavam a pessoa no lugar errado.
+
+| O que ele viu | A causa |
+| --- | --- |
+| abrir "Sobre" pelo rodapé caía no meio da página | navegação do React Router é troca de rota no cliente; o v6 **não reseta scroll**, e a posição antiga fica |
+| links de seção do rodapé não faziam nada na "Sobre" | o rodapé aparece nas duas páginas, mas usava âncora **relativa** (`#feed`), que só existe na landing |
+
+**Quem resolve:** `components/ui/RolagemDeRota.jsx`, montado uma vez no
+`App.jsx`. Ele distingue três navegações, porque tratá-las igual quebra duas:
+
+| Navegação | O certo | O que um `scrollTo(0,0)` cego faria |
+| --- | --- | --- |
+| link para outra página | ir para o topo | certo por acidente |
+| link com âncora (`/#feed`) | rolar até a seção | **mataria a âncora** |
+| voltar/avançar | restaurar onde a pessoa estava | **perderia o lugar** |
+
+O `POP` é o caso mais esquecido: o navegador já guarda a posição de quem volta,
+e sobrescrever isso é apagar trabalho dele.
+
+O rodapé passou a usar `Link` com `{ pathname: '/', hash }` em vez de `href` —
+funciona das duas páginas e não recarrega. `HighlightsStrip` e a navegação
+lateral continuam com âncora simples: as duas só existem na landing.
+
+**A trava:** `e2e/navegacao.mjs`, no CI. Confere os **três** casos, não um.
+Provada removendo o `RolagemDeRota`: reprovou dizendo *"a /sobre abriu em
+4420px, vinda de 4420px na landing"* e apontando o arquivo.
