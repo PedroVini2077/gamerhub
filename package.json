@@ -18,7 +18,8 @@
     "test:e2e:quadros": "node e2e/quadros-de-video.mjs",
     "test:e2e:visivel": "node e2e/conteudo-visivel.mjs",
     "mapa": "node scripts/mapa-de-arquivos.mjs",
-    "fim": "node scripts/fim-de-sessao.mjs"
+    "fim": "node scripts/fim-de-sessao.mjs",
+    "test:banco": "node e2e/portas-do-banco.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

@@ -340,6 +340,28 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
   nas *Variables* do repositório; sem elas seria "0 rotas", falha que não diz
   nada sobre o código.
+- **portas do banco** (`e2e/portas-do-banco.mjs`, dentro do job de fumaça) —
+  bate na REST API do Supabase **como um estranho sem conta** e reprova o PR se
+  alguma porta saiu do lugar. Era a **única camada sem portão nenhum**: o
+  `portas-fechadas` cobre Edge Functions, o resto lê `src/` e documentação.
+
+  Confere as **duas direções**, e a segunda é a que falta em todo lugar:
+
+  | Direção | O que pega |
+  | --- | --- |
+  | fechado continua fechado | `admin_logs`, `profiles`, `posts`, `moderation_queue`… e 8 RPCs privilegiadas |
+  | **aberto continua aberto** | `site_config` e `blocked_words`, que a landing lê antes de qualquer login |
+
+  A segunda existe porque [POSTURA.md](regras/POSTURA.md) registra **três quedas
+  do site** causadas por correção de segurança legítima — revogar colunas de
+  `profiles` parou post, comentário, mural e chat. Um portão que só olhasse a
+  primeira direção aprovaria com prazer o revoke que derruba tudo.
+
+  **O que ele não cobre, e está escrito no próprio arquivo:** é caixa-preta com
+  a `anon key`. Não enxerga policy, `search_path` de `SECURITY DEFINER`, nem o
+  que um usuário **logado** alcança. Responde uma pergunta só — *o que um
+  estranho consegue?* — e responde bem.
+
 - **mapa de arquivos** (`scripts/mapa-de-arquivos.mjs`) — reprova o PR se algum
   arquivo de `src/` não aparecer no `ARQUITETURA.md`. É a **outra direção** do
   portão de documentação quebrada: aquele pega documento citando arquivo que não
