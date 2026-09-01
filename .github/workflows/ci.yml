@@ -169,6 +169,19 @@ jobs:
       - name: todo arquivo de src/ está no mapa
         run: node scripts/mapa-de-arquivos.mjs
 
+      # `[01/09]` Segredo commitado e o erro com a pior curva de conserto:
+      # apagar o arquivo NAO resolve, porque a chave fica no historico do git e
+      # o repositorio e publico. O conserto e rotacionar no fornecedor.
+      #
+      # O .gitignore cobre .env, mas .gitignore e convencao, nao trava: um
+      # `git add -f`, um nome de arquivo novo, ou uma chave colada dentro de um
+      # .js passam sem ninguem ver.
+      #
+      # Ele NAO procura a anon key: ela e publica por construcao (vai no bundle),
+      # e marca-la como vazamento seria alarme falso em todo PR.
+      - name: nenhum segredo no repositório
+        run: npm run segredos
+
   deploys:
     name: a branch não gasta deploy da Vercel
     runs-on: ubuntu-latest

@@ -340,6 +340,13 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
   nas *Variables* do repositório; sem elas seria "0 rotas", falha que não diz
   nada sobre o código.
+- **segredos** (`scripts/segredos-vazados.mjs`) — reprova o PR se algum arquivo
+  rastreado tiver chave privada, `service_role`, token do GitHub ou senha em
+  texto. Não procura a `anon key`: ela é pública por construção, e acusá-la
+  seria alarme falso em todo PR. Existe porque `.gitignore` é convenção, não
+  trava — e segredo vazado não se conserta apagando o arquivo: o repositório é
+  público e a chave fica no histórico. O conserto é rotacionar no fornecedor.
+
 - **portas do banco** (`e2e/portas-do-banco.mjs`, dentro do job de fumaça) —
   bate na REST API do Supabase **como um estranho sem conta** e reprova o PR se
   alguma porta saiu do lugar. Era a **única camada sem portão nenhum**: o
