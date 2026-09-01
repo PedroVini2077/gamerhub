@@ -71,4 +71,12 @@ echo "  \"sim\" preguiçoso, e teria deixado passar todas as falhas de 29/08."
 echo "  Esta obriga a NOMEAR regra e evidência. Sem evidência nomeada, não"
 echo "  cumpri: só acho que cumpri."
 echo
+echo "  E a segunda, que cobre o que a primeira não vê:"
+echo
+echo "  \"O que estou afirmando agora que ainda não provei?\""
+echo
+echo "  Esta ataca a falha mais registrada deste projeto: apresentar INFERÊNCIA"
+echo "  como FATO (§1.1). Em 23/08 duas afirmações minhas eram dedução vestida"
+echo "  de fato, e eu mesmo tive que corrigir as duas depois."
+echo
 echo "═══════════════════════════════════════════════════════════"

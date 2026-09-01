@@ -107,6 +107,100 @@
   mesma mentira do verde que prometia demais. O alvo é o mesmo do projeto —
   **o mínimo possível**, e cada erro que acontecer virando trava para não
   acontecer de novo.
+  ---
+
+  ### `[30/08]` Complemento do dono — a pergunta muda de "onde errei" para
+  ### "por que consegui errar"
+
+  > *"Não quero apenas descobrir onde o Claude errou, mas entender **por que ele
+  > conseguiu errar e por que o projeto permitiu que o erro passasse**."*
+
+  Isto reenquadra o item inteiro. O catálogo acima vira **entrada**, não
+  resultado: cada linha dele passa a ser uma pergunta sobre **cobertura**, e não
+  um troféu de erro encontrado.
+
+  #### A. Gatilho por área — a matriz que ainda não existe
+
+  Hoje os gatilhos cobrem documentação e fechamento de sessão. **Nenhuma outra
+  área tem gatilho nenhum**, e isso nunca foi olhado de frente.
+
+  Mapear, uma linha por área: autenticação/autorização · Supabase, banco e RLS ·
+  usuários e dado sensível · admin/staff · APIs e Edge Functions · fluxos
+  críticos · testes e auditoria · configuração e segredo · CI/CD · documentação.
+
+  E para **cada** uma, responder as cinco:
+
+  | Pergunta | Por que ela importa |
+  | --- | --- |
+  | Qual gatilho **deveria** disparar? | sem isto, "está protegido" é opinião |
+  | O que ele **exige** de quem mexe ali? | obrigação vaga não se cumpre nem se cobra |
+  | Quais arquivos/fluxos ele **realmente** cobre? | cobertura declarada ≠ cobertura real (§1.5, fonte nº 6) |
+  | Existe caminho para **alterar a área sem acioná-lo**? | é a pergunta que encontra a brecha; as outras quatro só descrevem |
+  | Ele pode dar **falso positivo ou negativo**? | falso negativo cega; falso positivo ensina a ignorar (§0.2, 4ª regra) |
+
+  **A forma que o dono deu, e que vale como critério de aceite do item:**
+
+  > **gatilho → obrigação → evidência.** Não "confiar que a IA vai lembrar".
+
+  Já há prova de que os dois últimos itens da matriz não são teóricos: o
+  `mapa-de-arquivos.mjs` nasceu dando **145 falsos positivos**, e o teste do
+  painel gritou com o site legitimamente vazio. Os dois eram gatilhos novos.
+
+  #### B. Erro é CLASSE, nunca caso
+
+  Isto já é regra do projeto (§1.3, *"varredura de classe, não de caso"*), mas
+  aqui ela se aplica **a mim**. Ao achar uma falha minha, a pergunta obrigatória
+  é *"onde mais esse mesmo padrão está?"*.
+
+  As classes a varrer, nomeadas pelo dono: inferência apresentada como fato ·
+  teste que não consegue falhar · validação que acusa errado · documentação não
+  consultada · diagnóstico sem evidência · conclusão prematura.
+
+  > Corrigir só o caso encontrado deixa os outros no site — foi exatamente assim
+  > que 14 policies ficaram sem `owner` três vezes seguidas.
+
+  #### C. Causa → prevenção, e a proteção NÃO é sempre uma regra
+
+  Para cada falha relevante, percorrer os quatro degraus:
+
+  > **erro → causa → padrão → proteção possível**
+
+  E então **escolher o tipo de proteção**, em vez de escrever regra por reflexo:
+  regra, gatilho, teste, script, documentação, ou mudança de código que torne o
+  erro impossível.
+
+  **Este é o ponto mais fácil de errar do item inteiro, e o dono já o marcou:**
+  *"não transforme tudo automaticamente em mais uma regra no CLAUDE.md"*. A
+  tabela do §2 concorda — regra escrita é a **mais fraca** das cinco travas, e a
+  falha de 29/08 foi precisamente uma regra escrita, certa, e não cumprida.
+  Responder a isso com mais regra é repetir o que não funcionou.
+
+  #### D. As duas perguntas obrigatórias durante a auditoria
+
+  A primeira já está no gatilho de início. A segunda é nova, e cobre o buraco
+  que a primeira não vê — afirmar sem ter provado:
+
+  > **1.** Quais regras se aplicam ao que acabei de fazer — e, para cada uma,
+  > **onde está a evidência** de que cumpri?
+  >
+  > **2.** **O que estou afirmando agora que ainda não provei?**
+
+  A segunda ataca a minha falha mais registrada: apresentar **inferência como
+  fato** (§1.1). Ela deve entrar no gatilho de início junto com a primeira — e
+  isso é execução, não decisão nova.
+
+  #### E. A regra que fecha o item
+
+  > **Não assumir que algo está protegido só porque existe uma regra para isso.
+  > Verificar cobertura, acionamento e evidência.**
+
+  Aplicável inclusive a esta auditoria: se ela terminar com uma lista de
+  proteções que ninguém acionou nem viu falhar, ela não provou nada — provou
+  apenas que eu sei escrever proteção.
+
+  **Critério de aceite do item, então:** cada proteção proposta sai com (a) o
+  que ela cobre, (b) como foi **acionada** para provar que funciona, e (c) o que
+  ela explicitamente **não** cobre. As três, ou ela não entrou.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
