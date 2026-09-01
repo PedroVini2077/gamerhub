@@ -305,3 +305,61 @@ clique. Superfície de ataque: nenhuma — ninguém consegue chamá-las.
 ---
 
 [← voltar para o README](../README.md)
+
+---
+
+## `[01/09]` A matriz de gatilhos — o que cobre cada área, e o que NÃO cobre
+
+> Pedido do dono: *"todo lugar onde dê pra colocar um gatilho pra vc lembrar oq
+> falta, quero que vc ponha, desde do front até o banco de dados"*, com a forma
+> exigida sendo **gatilho → obrigação → evidência**.
+
+A pergunta que encontra brecha não é "existe portão?" — é **"existe caminho
+para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
+
+| Área | Portão | Existe caminho sem acionar? |
+| --- | --- | --- |
+| Autenticação/autorização | `useAuth.test.js`, `roles.test.js`, `fluxos.mjs` (nega `/admin` e `/owner` a `role='user'`) | **Sim** — mudança de policy no banco não passa por nenhum deles |
+| Banco e RLS | **`portas-do-banco.mjs`** (novo) + `tabelasSemUpdate.test.js` (novo) | **Sim, parcialmente** — ver "o buraco que fica" |
+| Dado sensível | `portas-do-banco.mjs` prova que `profiles` responde 401 ao anônimo | Sim — não cobre o que um usuário **logado** alcança |
+| Admin/staff | `painel-admin.mjs` num navegador real | Sim — cobre a tela, não a permissão no banco |
+| Edge Functions | `portas-fechadas.mjs`, batendo na **produção** | Não, e é de propósito: as functions não estão no git |
+| Fluxos críticos | `fluxos.mjs` (publicar → conferir → apagar → sair) | Sim — cobre o caminho feliz de uma conta comum |
+| Testes | piso de testes no CI, `rotasE2E.test.js` | Não |
+| **Segredo/configuração** | **`segredos-vazados.mjs`** (novo) | Não, para os padrões que ele conhece |
+| CI/CD | portão de deploy da Vercel | Não |
+| Documentação | `documentacao-quebrada`, `mapa-de-arquivos`, `documentacao-envelhecida` | Não |
+
+### O que a auditoria de 01/09 mediu, e o que ela desmentiu
+
+Rodando `get_advisors` e consultando `pg_proc`/`pg_policies` diretamente:
+
+| Classe verificada | Resultado |
+| --- | --- |
+| `SECURITY DEFINER` sem `search_path` | **zero** — a classe está fechada |
+| Tabela sem RLS ligada | **zero** |
+| Tabela sem policy de UPDATE | 13 — e **nenhuma** recebe `update` no código hoje |
+| `SECURITY DEFINER` chamável por `anon` | 2: `check_login_status`, `get_user_xp` |
+
+**O WARN de `check_login_status` NÃO se confirmou como brecha.** A suspeita era
+oráculo de enumeração de e-mail. Medido: `login_attempts` tem **0 linhas** com 5
+usuários reais — a tabela só ganha linha em tentativa **falha**, então a função
+devolve `{attempts: 0, blocked: false}` para e-mail existente e inexistente do
+mesmo jeito. Ela não distingue os dois casos. Ela **precisa** ser pública: a tela
+de login consulta o bloqueio antes de autenticar.
+
+> Registrado porque lint que acusa não é prova de brecha, e tratar WARN como
+> vulnerabilidade é o mesmo erro de tratar verde como garantia.
+
+### O buraco que FICA, e por que não fechei
+
+As duas classes mais perigosas do banco — **policy** e **privilégio de coluna** —
+só se verificam com acesso administrativo ao Postgres. Pôr a `service_role` nos
+secrets do CI daria a um runner público a chave que ignora toda a RLS: trocar
+uma incerteza de monitoramento por uma credencial exposta é a conta ruim de
+sempre (§0.2).
+
+Então elas continuam sendo trabalho de **auditoria** (§6), rodadas por MCP. As
+consultas estão em [`regras/AUDITORIA.md`](regras/AUDITORIA.md) e a de policy de
+UPDATE está repetida no cabeçalho de `lib/tabelasSemUpdate.js`, junto da lista
+que ela gera.

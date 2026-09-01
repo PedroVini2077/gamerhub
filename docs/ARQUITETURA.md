@@ -69,6 +69,9 @@ src/
 │   ├── roleLabels.js      # Fonte única do nome e da cor de cada cargo na UI
 │   ├── realtimeTables.js  # TRAVA: assinatura de realtime só vale para tabela que
 │   │                      # está na publicação `supabase_realtime`
+│   ├── tabelasSemUpdate.js # TRAVA: as tabelas SEM policy de UPDATE no banco.
+│   │                      # `update` nelas devolve 0 linhas e NENHUM erro — a
+│   │                      # tela diz que salvou e nada acontece
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
 │   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
@@ -206,7 +209,7 @@ src/
 | --- | --- |
 | `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
-| `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
+| `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, **segredos vazados**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
 | `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, **portas do banco** (`portas-do-banco.mjs`, o único que fala com o Postgres), o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
 | `.claude/` | `settings.json` com o hook `SessionStart` — o gatilho que injeta o estado real do projeto no começo de toda sessão |
 | `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |
