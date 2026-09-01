@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**22 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -329,6 +329,32 @@
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
+
+- ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em duas tabelas públicas.**
+  *Achado na auditoria de gatilhos de 01/09, sondando a REST API como visitante.*
+
+  As duas tabelas que o visitante lê de propósito carregam junto a coluna de
+  autoria: `site_config.updated_by` e `blocked_words.created_by`. Qualquer um
+  sem conta lê o UUID de quem mexeu na configuração do site e de quem cadastrou
+  cada palavra da lista.
+
+  **Por que 🔵 e não mais:** é UUID, não nome. `profiles` responde **401** ao
+  anônimo, então não há como mapear UUID → pessoa pela REST API. O impacto real
+  hoje é ligar mudanças de config a uma conta, sem saber qual.
+
+  **É CLASSE, não caso:** a pergunta certa não é "essas duas colunas incomodam?"
+  e sim *"toda tabela legível pelo anônimo está devolvendo só o que a tela
+  precisa?"*. A landing lê `site_config` para o modo manutenção e `blocked_words`
+  para o filtro — **nenhuma das duas telas usa a coluna de autoria**.
+
+  **Solução provável:** view ou `select()` explícito sem as colunas de autoria,
+  em vez de `select=*`. Antes de revogar coluna, rodar a consulta de "quem lê"
+  do [POSTURA.md](docs/regras/POSTURA.md) — revoke já derrubou o site três vezes.
+
+  **Bônus a decidir junto:** a lista inteira de 322 palavras bloqueadas é
+  pública. Isso é consequência do filtro rodar no cliente, não descuido — mas
+  entrega a quem quiser burlar o dicionário exato. Vale registrar como decisão
+  consciente em `DECISOES.md`, ou mudar de abordagem.
 
 - ⬜ `[30/08]` 🟢 **Tornar o teste do painel independente de dado de produção.**
   Em 30/08 ele reprovou porque o site ficou sem post — não por defeito nenhum.

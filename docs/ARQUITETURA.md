@@ -207,7 +207,7 @@ src/
 | `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
 | `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
-| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
+| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, **portas do banco** (`portas-do-banco.mjs`, o único que fala com o Postgres), o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
 | `.claude/` | `settings.json` com o hook `SessionStart` — o gatilho que injeta o estado real do projeto no começo de toda sessão |
 | `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |
 | `db/` | Scripts SQL avulsos para o SQL Editor e os relatórios de auditoria (`AAAA-MM-DD-*.md`). Não são migrations |

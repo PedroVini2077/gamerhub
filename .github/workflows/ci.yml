@@ -315,6 +315,27 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
 
+      # `[01/09]` A CAMADA QUE NAO TINHA PORTAO NENHUM.
+      #
+      # Ate aqui nenhum job do CI tocava o Postgres. O passo acima bate nas
+      # Edge Functions; o resto le `src/` e a documentacao. E o banco e onde a
+      # seguranca de verdade mora: o site usa a `anon key`, entao qualquer um
+      # chama a REST API direto e pula o frontend inteiro.
+      #
+      # Pior: mudanca de banco e feita por MCP e NAO deixa rastro no
+      # repositorio (§5). Um GRANT a mais some junto com a conversa, e nenhum
+      # portao que leia arquivos veria isso.
+      #
+      # Ele confere as DUAS direcoes. A segunda e a que ja derrubou o site tres
+      # vezes: revoke bem-intencionado que para post, comentario e upload EM
+      # SILENCIO. Um portao que so olhasse "fechado continua fechado" aprovaria
+      # com prazer o revoke que derruba tudo.
+      - name: As portas do banco continuam no lugar
+        run: npm run test:banco
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
   fluxos:
     name: fluxos autenticados
     runs-on: ubuntu-latest
