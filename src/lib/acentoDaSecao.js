@@ -57,6 +57,53 @@ export function acentoDaSecao(caminho) {
   return ACENTOS.find(([prefixo]) => caminho.startsWith(prefixo))?.[1];
 }
 
+/**
+ * As peças de videogame que flutuam em cada seção.
+ *
+ * ── Por que elencos DIFERENTES, e não o mesmo em todo lugar ─────────────────
+ *
+ * Pedido do dono em 02/09: *"toda aba (que fizer sentido) ter animações
+ * diversas, pra não ficar repetido"*. Um elenco só em cinco telas seria a
+ * mesma cena com outra cor — o olho reconhece a repetição antes de reconhecer
+ * a variação.
+ *
+ * Cada lista conversa com o que a seção É: troféu e moeda nos ranks, chave nas
+ * keys, balão no mural e no chat das lives. Não é aleatório, e por isso lê como
+ * ambientação em vez de enfeite genérico.
+ *
+ * ── O mesmo cuidado do acento: sem padrão ───────────────────────────────────
+ *
+ * Seção sem entrada aqui fica **sem peças**, e isso é deliberado. Um elenco
+ * padrão faria toda tela nova nascer com decoração que ninguém escolheu.
+ */
+const ELENCOS = {
+  '/community': ['Balao', 'Controle', 'VidaExtra'],
+  '/lives':     ['Nave', 'Balao', 'Raio'],
+  '/keys':      ['Chave', 'Moeda', 'Controle'],
+  '/ranks':     ['Trofeu', 'Moeda', 'VidaExtra'],
+  '/profile':   ['Controle', 'VidaExtra', 'Raio'],
+  '/u/':        ['Controle', 'VidaExtra', 'Raio'],
+  '/settings':  ['Direcional', 'Controle'],
+  '/post/':     ['Fliperama', 'Balao', 'Raio'],
+  '/mural/':    ['Balao', 'Controle', 'VidaExtra'],
+  '/':          ['Fliperama', 'Controle', 'Raio'],
+};
+
+/**
+ * @param {string} caminho `location.pathname`
+ * @returns {string[]} nomes das peças; vazio quando a seção não tem.
+ *
+ * A ordem de `ACENTOS` decide o casamento, e não a de `ELENCOS`: as duas
+ * listas precisam concordar sobre QUAL seção é cada caminho, e ter duas ordens
+ * seria duas fontes de verdade para a mesma pergunta (§4).
+ */
+export function elencoDaSecao(caminho) {
+  if (typeof caminho !== 'string') return [];
+  if (SEM_FUNDO.some(p => caminho.startsWith(p))) return [];
+  const prefixo = ACENTOS.find(([p]) => caminho.startsWith(p))?.[0];
+  return ELENCOS[prefixo] ?? [];
+}
+
 /** Exportado para o teste conferir que toda rota do App foi considerada. */
 export const PREFIXOS_COM_ACENTO = ACENTOS.map(([p]) => p);
 export const PREFIXOS_SEM_FUNDO = SEM_FUNDO;

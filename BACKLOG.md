@@ -123,14 +123,6 @@
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 
 
-- ⬜ `[01/09]` 🔵 **`login_attempts`, `admin_logs` e `contact_messages` sem
-  política de retenção.** As três são append-only e guardam dado pessoal —
-  e-mail em duas, quem fez o quê na outra. Sem prazo, crescem para sempre, e a
-  LGPD fala em necessidade e prazo. Já existe infraestrutura de retenção em
-  `lib/logMeta.js`; falta a decisão de por quanto tempo guardar.
-  *`[02/09]` `contact_messages` entrou na lista ao nascer. O prazo dela é mais
-  delicado que os outros dois: apagar conversa de moderação cedo demais
-  atrapalha a própria moderação, então o número é decisão de produto.*
 
 - ⬜ `[02/09]` 🔵 **Captcha no formulário de contato.** Os limites de vazão
   atuais (3 por e-mail em 24 h, disjuntor de 60/hora) impedem a tabela de virar
@@ -285,6 +277,19 @@
   dois mil, não uma porcentagem.
 
 ## 🔵 Só quando o volume crescer
+
+- ⬜ `[02/09]` 🔵 **Mensagem marcada como SPAM não precisa de 2 anos.**
+  *Refinamento do prazo decidido em 02/09, não correção dele.*
+
+  `contact_messages` tem prazo único de 2 anos, e ele foi calibrado pela
+  conversa de moderação legítima. Mensagem que a equipe marcou como spam não
+  tem essa finalidade — pela LGPD, guardar dado sem finalidade é justamente o
+  que o prazo existe para evitar.
+
+  **Por que não fiz junto:** o dono aprovou "2 anos", e inventar uma segunda
+  regra que ele não pediu é decidir por ele. Fica registrado; a mudança é uma
+  linha no `cleanup_old_data`.
+
 
 - ⬜ `[02/09]` 🔵 **`date.js` e `roles.js` têm regiões que nenhum teste toca.**
   *Achado pelo teste de mutação — coluna `# no cov`, 65 mutantes.*

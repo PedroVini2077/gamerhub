@@ -60,6 +60,33 @@ e não uma redescoberta.
 
 ---
 
+### `[02/09]` As peças de videogame custam ZERO, e o número é o ponto
+
+O site logado ganhou uma segunda camada de fundo — peças de videogame em SVG,
+somadas ao fluxo de dados que já estava lá. Duas camadas numa tela onde a
+pessoa passa uma hora pede número, não fé.
+
+Medido com a página **parada**, CPU a 1/4, 6 segundos:
+
+| | |
+| --- | --- |
+| fps | **59,6** |
+| bloqueio da thread principal | **0 ms em 0 tarefas** |
+
+**Por que dá zero.** Tudo é `transform` e `opacity` em `@keyframes` — as duas
+propriedades que o navegador anima no **compositor**, fora da thread principal.
+Não existe laço de JavaScript por quadro em lugar nenhum das duas camadas.
+
+É a mesma escolha que o `FundoAnimado` das páginas públicas já fazia, e a razão
+está registrada desde 29/08: foi o laço por quadro que custou 29.441 ms de
+thread na cena 3D. A lição virou o jeito padrão de fazer enfeite aqui.
+
+**O que este número NÃO diz:** ele mede a página parada. Rolagem e digitação
+competem por thread de outras formas, e o feed é a tela onde mais se rola — por
+isso o `parallax={false}` no `FluxoDeDados` do site logado continua valendo.
+
+---
+
 ### `[02/09]` A cena 3D em regime permanente — e por que o número NÃO serve para julgá-la
 
 O item do backlog dizia que a cena "está pesada", e isso era impressão sem
