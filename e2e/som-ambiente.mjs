@@ -151,6 +151,59 @@ try {
       + 'dono relatou como travado.');
   }
   ok('desliga e religa no mesmo carregamento');
+  // ── 6. O som ATRAVESSA as páginas públicas, sem reiniciar ────────────────
+  //
+  // Pedido do dono em 02/09: *"essa música deve funcionar em toda landing
+  // page, então no sobre deve funcionar, regras e tals, até mesmo no login"*.
+  //
+  // **A navegação aqui é por CLIQUE, e isso é o teste.** `page.goto()` é
+  // recarga completa — ele derrubaria o áudio de qualquer jeito e o teste
+  // passaria mesmo com o botão montado dentro de cada página. Só o clique
+  // exercita o roteamento do app, que é onde o componente precisa sobreviver.
+  //
+  // O contador de downloads é a prova de que a trilha não reiniciou: se o
+  // `BotaoDeSom` desmontasse a cada rota, cada página baixaria o arquivo de
+  // novo.
+  const baixados = [];
+  page.on('response', r => { if (/\.opus/.test(r.url())) baixados.push(1); });
+
+  await page.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await assentar();
+  if (await pressionado() !== 'true') {
+    await botaoLigar().click({ delay: 220 });
+    await page.waitForTimeout(1500);
+  }
+  const antes = baixados.length;
+
+  for (const [rotulo, nome] of [
+    ['/sobre', /sobre o gamerhub/i],
+    ['/privacidade', /^privacidade$/i],
+    ['/regras', /regras da comunidade/i],
+    ['/termos', /termos de uso/i],
+    ['/contato', /não consigo entrar na conta/i],
+    ['/login', /entrar ou criar conta/i],
+  ]) {
+    const link = page.getByRole('link', { name: nome }).first();
+    if (!await link.count()) throw new Error(`o link para ${rotulo} sumiu do rodapé`);
+    await link.click();
+    await page.waitForTimeout(900);
+    if (await pressionado() !== 'true') {
+      throw new Error(
+        `o som PAROU ao navegar para ${rotulo}.\n`
+        + '  Ele tem que atravessar as paginas publicas. Se o BotaoDeSom voltou\n'
+        + '  para dentro de uma pagina (em vez de ficar no App.jsx, FORA do\n'
+        + '  <Routes>), cada rota o desmonta e o audio recomeca.');
+    }
+  }
+
+  const depois = baixados.length;
+  if (depois > antes) {
+    throw new Error(
+      `a trilha foi baixada ${depois - antes} vez(es) a mais ao trocar de pagina.\n`
+      + '  Ela deveria continuar tocando, e nao reiniciar — sinal de que o\n'
+      + '  componente esta desmontando entre rotas.');
+  }
+  ok('o som atravessa as páginas públicas sem reiniciar');
 } catch (e) {
   console.error(`\n  FALHOU no passo ${passo + 1}: ${e.message}\n`);
   await salvarEvidencia(page);

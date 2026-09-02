@@ -10,6 +10,8 @@
 ```
 src/
 ├── App.jsx                # Rotas, layout, HomeOrLanding, modo manutenção, feature gates
+├── paginasLazy.js         # As páginas sob demanda, só declaração. Saíram do
+│                          # App.jsx quando ele passou de 300 linhas (§4)
 ├── main.jsx               # Bootstrap React
 ├── index.css              # Tema (cores neon, classes .card/.btn/.tag/.input)
 ├── assets/
@@ -78,6 +80,12 @@ src/
 │   │                      # botão "ligado" sem som — a tela mentindo
 │   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
 │   │                      # da cena a cada mudança de frameloop
+│   ├── rotasComSom.js     # Onde o som ambiente toca. Lista FECHADA: rota
+│   │                      # desconhecida é silêncio, não música — a regra
+│   │                      # invertida faria toda página nova nascer tocando
+│   ├── acentoDaSecao.js   # A cor do fundo animado por seção do site logado.
+│   │                      # Sem cor padrão de propósito: tela nova sem entrada
+│   │                      # aparece SEM fundo, e alguém nota
 │   ├── documentosLegais.js # Os três documentos que a pessoa aceita, e a
 │   │                      # VERSÃO de cada um. Sem versão, mudar a política
 │   │                      # apagaria o sentido de todo aceite anterior
@@ -185,6 +193,10 @@ src/
 │   └── NotFound.jsx       # 404
 └── components/
     ├── ErrorBoundary.jsx
+    ├── layout/            # Sidebar, Header
+    │   └── FundoDaSecao.jsx # O fundo animado do site logado: o MESMO
+    │                      # componente da landing, com cor por seção e
+    │                      # `parallax={false}` — o feed é onde mais se rola
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
     │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
     │                      # com links em aba nova. Três caixinhas separadas

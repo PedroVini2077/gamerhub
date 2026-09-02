@@ -122,13 +122,21 @@ describe('a rota que o link do post usa existe de verdade', () => {
     const app = readFileSync(
       join(import.meta.dirname, '../../../App.jsx'), 'utf8',
     );
+    // `[02/09]` As declarações `lazy()` saíram do `App.jsx` para o
+    // `paginasLazy.js`, quando o `App` passou de 300 linhas (§4). Esta trava
+    // acusou a mudança na hora — que é o trabalho dela. O conserto é olhar
+    // onde a declaração mora AGORA, e não afrouxar a asserção: se ela passasse
+    // a aceitar a ausência, deixaria de pegar a rota realmente removida.
+    const lazyPages = readFileSync(
+      join(import.meta.dirname, '../../../paginasLazy.js'), 'utf8',
+    );
     expect(
       app,
       'A rota `/post/:id` sumiu do App. O botão "ver no site" continua na fila,\n'
       + 'continua clicável, e leva para a página de 404 — link quebrado que\n'
       + 'nenhum teste de unidade pegaria, porque o caminho em si está certo.',
     ).toContain('path="/post/:id"');
-    expect(app).toMatch(/import\('\.\/pages\/PostPage'\)/);
+    expect(lazyPages).toMatch(/import\('\.\/pages\/PostPage'\)/);
     expect(
       app,
       'A rota `/mural/:id` sumiu do App — mesmo problema, para o mural.',

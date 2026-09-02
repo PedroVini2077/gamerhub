@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
@@ -19,6 +19,9 @@ import AvisoSemBanco from './components/ui/AvisoSemBanco';
 import RolagemDeRota from './components/ui/RolagemDeRota';
 import GlobalBanner from './components/ui/GlobalBanner';
 import AvisoDeAceite from './components/ui/AvisoDeAceite';
+import BotaoDeSom from './components/landing/BotaoDeSom';
+import { deveTocarSom } from './lib/rotasComSom';
+import FundoDaSecao from './components/layout/FundoDaSecao';
 import FeatureGate from './components/ui/FeatureGate';
 import PageTransition from './components/ui/PageTransition';
 import SplashScreen from './components/ui/SplashScreen';
@@ -28,32 +31,15 @@ import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
 import IntroLightning from './components/landing/IntroLightning';
-import { deveTocarIntroAgora, marcarIntroVista } from './lib/introJaVista';
+import { deveTocarIntroAgora, marcarIntroVista, introJaVista } from './lib/introJaVista';
 import Login from './pages/Login';
 import AuthConfirm from './pages/AuthConfirm';
 import NotFound from './pages/NotFound';
 
-// Lazy loading — carregam só quando o usuário acessar.
-// Landing e Home são exclusivas entre si (visitante × logado): deixar as duas
-// no bundle inicial fazia todo mundo baixar a que nunca ia ver.
-const Landing     = lazy(() => import('./pages/Landing'));
-const Home        = lazy(() => import('./pages/Home'));
-const Sobre       = lazy(() => import('./pages/Sobre'));
-const Privacidade = lazy(() => import('./pages/Privacidade'));
-const Regras      = lazy(() => import('./pages/Regras'));
-const Contato     = lazy(() => import('./pages/Contato'));
-const Termos      = lazy(() => import('./pages/Termos'));
-const PostPage    = lazy(() => import('./pages/PostPage'));
-const MuralPage   = lazy(() => import('./pages/MuralPage'));
-const Community   = lazy(() => import('./pages/Community'));
-const Keys        = lazy(() => import('./pages/Keys'));
-const Profile     = lazy(() => import('./pages/Profile'));
-const Admin       = lazy(() => import('./pages/Admin'));
-const Settings    = lazy(() => import('./pages/Settings'));
-const UserProfile = lazy(() => import('./pages/UserProfile'));
-const Lives       = lazy(() => import('./pages/Lives'));
-const Ranks       = lazy(() => import('./pages/Ranks'));
-const Owner       = lazy(() => import('./pages/Owner'));
+// As páginas sob demanda moram em `paginasLazy.js` — ver o porquê lá.
+import {
+  Landing, Home, Sobre, Privacidade, Regras, Contato, Termos, PostPage, MuralPage, Community, Keys, Profile, Admin, Settings, UserProfile, Lives, Ranks, Owner,
+} from './paginasLazy';
 
 function PageLoader() {
   return (
@@ -120,6 +106,7 @@ function Layout({ children }) {
 
   return (
     <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay">
+      <FundoDaSecao />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="md:ml-60 flex flex-col min-h-screen">
         <Header onMenuClick={() => setSidebarOpen(true)} />
@@ -195,8 +182,20 @@ function HomeOrLanding() {
 
 // Splash enquanto a sessão resolve — evita flash de Landing↔Home/guard.
 function AppRoutes() {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   const semBanco = useDbOffline();
+  const { pathname } = useLocation();
+  // `[02/09]` O som atravessa TODAS as páginas de fora — landing, /sobre,
+  // /regras, /privacidade, /termos, /contato e /login — e para ao entrar no
+  // site. Pedido do dono, com essas palavras.
+  //
+  // O botão fica AQUI, fora do `<Routes>`, e essa posição é o mecanismo
+  // inteiro: navegar entre rotas não desmonta o que está fora do `<Routes>`,
+  // então a trilha continua tocando de uma página para a outra em vez de
+  // recomeçar. E quando `deveTocarSom` vira falso, o componente desmonta e o
+  // `desligarSom()` do cleanup dele solta o áudio — parar é consequência de
+  // sair, e não uma segunda regra que alguém precisa lembrar de manter.
+  const comSom = deveTocarSom(pathname, !!user);
 
   // Sem banco, o `loading` da sessão nunca termina — sem esta saída a pessoa
   // ficaria no splash para sempre. Mas o app NÃO é sequestrado: as rotas
@@ -207,6 +206,10 @@ function AppRoutes() {
     <>
       {semBanco && <AvisoSemBanco />}
       <RolagemDeRota />
+      {/* `introTerminou` só faz sentido na raiz, onde a intro toca. Nas outras
+          páginas públicas não há raio para esperar, então a tentativa pode
+          acontecer assim que a página monta. */}
+      {comSom && <BotaoDeSom introTerminou={pathname !== '/' || introJaVista()} />}
       <Routes>
       <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/auth/confirm" element={<AuthConfirm />} />
