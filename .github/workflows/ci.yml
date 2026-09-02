@@ -281,6 +281,19 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[01/09]` Chegar no LUGAR CERTO. Dois bugs achados pelo dono não
+      # quebravam nada visível — a página abria, os links existiam, o console
+      # ficava limpo. Eles só entregavam a pessoa no lugar errado, e por isso
+      # passaram por todos os portões que já existiam.
+      #
+      # Confere os TRÊS casos de propósito: um `scrollTo(0,0)` jogado em
+      # qualquer lugar consertaria o primeiro e quebraria a âncora e o botão
+      # voltar.
+      - name: A navegação entrega a pessoa no lugar certo
+        run: npm run test:e2e:navegacao
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
       # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
       # animação) contra 789 ms de execução de script — ou seja, o custo nunca

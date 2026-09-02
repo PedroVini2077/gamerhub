@@ -16,6 +16,7 @@ import { identificarUsuario } from './lib/monitoring';
 import { useDbOffline } from './hooks/useDbOffline';
 import { guardarMotivoDaPausa } from './lib/pauseReason';
 import OfflineGate from './components/ui/OfflineGate';
+import RolagemDeRota from './components/ui/RolagemDeRota';
 import GlobalBanner from './components/ui/GlobalBanner';
 import FeatureGate from './components/ui/FeatureGate';
 import PageTransition from './components/ui/PageTransition';
@@ -163,7 +164,9 @@ function AppRoutes() {
   if (loading) return <SplashScreen />;
 
   return (
-    <Routes>
+    <>
+      <RolagemDeRota />
+      <Routes>
       <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
       <Route path="/auth/confirm" element={<AuthConfirm />} />
       {/* Pública de propósito: alguém precisa poder ler sobre o projeto ANTES
@@ -187,7 +190,8 @@ function AppRoutes() {
       <Route path="/ranks" element={<RequireAuth><Layout><Ranks /></Layout></RequireAuth>} />
       <Route path="/owner" element={<RequireAuth><Layout><Owner /></Layout></RequireAuth>} />
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

@@ -67,7 +67,14 @@ export default function LandingFooter() {
 
         <Coluna titulo="O que tem aqui">
           {SECOES.map(({ id, rotulo }) => (
-            <ItemDeLink key={id} href={alvoDaSecao(id)}>{rotulo}</ItemDeLink>
+            // `para` e nao `href`: este rodape aparece na landing E na
+            // pagina "Sobre". Uma ancora relativa (`#feed`) so existe na
+            // landing — na Sobre ela apontava para uma secao inexistente e o
+            // clique nao fazia nada. O objeto com `pathname` leva para a
+            // landing E rola ate a secao, das duas paginas, sem recarregar.
+            <ItemDeLink key={id} para={{ pathname: '/', hash: alvoDaSecao(id) }}>
+              {rotulo}
+            </ItemDeLink>
           ))}
         </Coluna>
 
