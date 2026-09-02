@@ -190,6 +190,10 @@ src/
     ├── profile/           # ProfileIdentityCard, PersonalInfoCard, GamingCard,
     │                      # SocialLinksCard, PlayerStatsCard, AvatarModal,
     │                      # AdminApplicationCard
+    ├── privacidade/       # A política de privacidade (`/privacidade`), pública
+    │   └── conteudoDaPrivacidade.js # O texto, escrito a partir do
+    │                      # levantamento medido em docs/PRIVACIDADE.md. Bloco
+    │                      # `pendente` = decisão do dono, marcada na tela
     ├── sobre/             # A página do projeto (`/sobre`), pública
     │   ├── conteudoDoSobre.js # Os sete blocos de texto — a FONTE, escrita pelo
     │   │                  # dono. A página só renderiza esta lista

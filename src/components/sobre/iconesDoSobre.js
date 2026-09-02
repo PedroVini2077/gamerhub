@@ -13,10 +13,15 @@
  */
 import {
   Gamepad2, Sprout, User, HeartHandshake, ShieldCheck, Bot, Rocket,
+  Cookie, Database, Share2, UserCheck, CalendarClock, Timer, Mail,
 } from 'lucide-react';
 
+// `[02/09]` A página `/privacidade` usa o mesmo mapa. Manter DOIS mapas de
+// ícone seria duas fontes de verdade para a mesma coisa (§4) — e o teste que
+// exige "todo bloco tem ícone" passaria a precisar saber qual mapa consultar.
 export const ICONES = {
   Gamepad2, Sprout, User, HeartHandshake, ShieldCheck, Bot, Rocket,
+  Cookie, Database, Share2, UserCheck, CalendarClock, Timer, Mail,
 };
 
 /** Devolve o componente, ou `undefined` — nunca um palpite. */
