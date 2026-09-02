@@ -57,6 +57,7 @@
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+
 - ⬜ `[01/09]` 🟡 **Decidir sobre teste de mutação — o que sobrou da auditoria.**
   *A auditoria de mim mesmo foi concluída (partes A a E). Este é o único ponto
   dela que depende de decisão sua, então virou item próprio em vez de manter o
@@ -146,24 +147,6 @@
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 
-- ⬜ `[01/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
-  *Achado na auditoria de privacidade de 01/09. O levantamento inteiro está em
-  [PRIVACIDADE.md](docs/PRIVACIDADE.md).*
-
-  O `RegisterForm.jsx` limita a data pelo atributo `max` do input. **O banco não
-  tem CHECK em `birth_date`** — conferido: existem CHECKs para `platform`,
-  `playstyle` e `role`, e nenhum para a data. Com a `anon key`, qualquer um
-  chama a REST API e cadastra a data que quiser (§1.3: validação no cliente não
-  vale nada sozinha).
-
-  **Por que pesa mais que política de produto:** a LGPD trata dado de criança e
-  adolescente em artigo próprio, com consentimento específico.
-
-  **Dimensionado:** 5 perfis, 2 com data, **nenhum** abaixo de 13 e nenhuma data
-  absurda. Um CHECK entra sem rejeitar linha existente.
-
-  **Falta a sua decisão:** qual é o piso — 13, 16 ou 18? O número é escolha de
-  produto e jurídica, não minha. Com ele eu aplico a migration e travo.
 
 - ⬜ `[01/09]` 🔵 **`login_attempts`, `admin_logs` e `contact_messages` sem
   política de retenção.** As três são append-only e guardam dado pessoal —
@@ -246,6 +229,26 @@
 
 ## 🟠 Importante — dá para fazer
 
+
+- ⬜ `[02/09]` 🟠 **A cena 3D "está pesada" — a parte que NÃO foi medida.**
+  *O raio da intro, que vinha junto neste item, foi resolvido em 02/09 — a
+  medição inteira está em [DESEMPENHO.md](docs/DESEMPENHO.md). Sobrou a outra
+  metade, e ela continua sem número.*
+
+  **O que já se sabe, e desmente a suspeita óbvia:** a cena 3D **não** era a
+  causa do raio falhar. A/B com ela ligada e desligada deu 602 ms contra 594 ms
+  de bloqueio durante a intro — ruído. A investigação de 02/09 acabou provando
+  o que a cena 3D **não** faz, não o que ela custa.
+
+  **O que falta medir**, porque "está pesada" ainda é impressão sem número:
+  quanto do quadro ela consome com a página parada e visível, quantas draw
+  calls, e se o custo mora em CPU ou GPU. A medição de 01/09 mediu carga, não
+  regime permanente.
+
+  **O que NÃO pode:** reduzir qualidade visual para ganhar FPS. O dono já
+  recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md).
+
+
 - ⬜ `[02/09]` 🟠 **O job "painel de admin" falhou uma vez publicando, e eu não
   sei por quê.** *Instrumentado, não corrigido — está aqui para não sumir.*
 
@@ -285,6 +288,7 @@
 
 
 ## 🟢 Recomendado
+
 
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
   *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*

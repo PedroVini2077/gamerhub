@@ -47,6 +47,7 @@ export const CHAVES_DECLARADAS = [
   'gh_chunk_reload_at',
   'gh_som_ambiente',
   'gh_som_avisado',
+  'gh_aceite_adiado',
 ];
 
 /**
@@ -91,7 +92,7 @@ export const BLOCOS = [
       'É por isso que você não vê aqui aquela faixa pedindo para aceitar '
       + 'cookies. Ela existiria para pedir permissão de uma coisa que não '
       + 'acontece.',
-      'O que o site guarda no seu navegador são cinco itens de preferência e '
+      'O que o site guarda no seu navegador são alguns itens de preferência e '
       + 'sessão, listados abaixo. Eles ficam só no seu aparelho.',
     ],
     tabela: {
@@ -103,8 +104,9 @@ export const BLOCOS = [
         ['Cena 3D ligada/desligada', 'respeitar a sua escolha', 'você limpar o navegador'],
         ['Motivo da pausa', 'explicar direito quando o site sai do ar', 'o site volta'],
         ['Último recarregamento', 'evitar laço de recarregamento', 'você fecha o navegador'],
-        ['Som ambiente ligado', 'lembrar que você ligou o som da landing', 'você desliga o som'],
+        ['Sua escolha sobre o som', 'lembrar se você ligou ou DESLIGOU o som da landing', 'você limpar o navegador'],
         ['Aviso de som já visto', 'não repetir o aviso a cada página', 'você fecha o navegador'],
+        ['"Ver depois" no aviso de documentos', 'não repetir o pedido de aceite a cada tela', 'você fecha o navegador'],
       ],
     },
   },

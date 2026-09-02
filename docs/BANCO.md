@@ -27,6 +27,7 @@ todas as tabelas públicas.**
 | `live_muted`                 | Silenciamentos (registro complementar)                           |
 | `live_reactivation_requests` | Fila de reativação de lives (admin → super admin)                |
 | `unban_requests`             | Fila de desbanimento (admin → super admin/owner)                 |
+| `policy_acceptances`         | **A prova do aceite** das políticas: quem, qual documento, qual versão, quando. Append-only por desenho — sem policy de UPDATE nem DELETE, porque registro de consentimento que pode ser reescrito não prova nada. `ON DELETE CASCADE` é a exceção deliberada: a política promete que apagar a conta apaga os dados |
 | `contact_messages`           | Mensagens do formulário público `/contato`. **Sem policy de INSERT de propósito** — a única porta é a RPC `enviar_mensagem_de_contato`. Só `is_staff()` lê e atualiza |
 | `login_attempts`             | Tentativas de login por e-mail (bloqueio) — sem acesso direto    |
 | `admin_logs`                 | Trilha de auditoria                                              |

@@ -195,4 +195,25 @@ export const BLOCOS = [
       + 'pode chegar.',
     ],
   },
+
+  {
+    id: 'creditos',
+    icone: 'HeartHandshake',
+    titulo: 'Créditos',
+    pendente: false,
+    paragrafos: [
+      'O GamerHub usa trabalho de outras pessoas, e isso aparece aqui porque é '
+      + 'o certo — e, no caso de licença CC-BY, porque é obrigatório.',
+    ],
+    creditos: [
+      {
+        titulo: 'Universe',
+        autor: 'AiTechEye',
+        origem: 'https://opengameart.org/content/universe',
+        licenca: 'CC BY 4.0',
+        licencaUrl: 'https://creativecommons.org/licenses/by/4.0/',
+        adaptacao: 'adaptada: recortada e costurada em laço contínuo',
+      },
+    ],
+  },
 ];

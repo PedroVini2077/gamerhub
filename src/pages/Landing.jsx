@@ -20,7 +20,14 @@ import ranksShot from '../assets/landing/ranks.jpg';
 // página e o feed real com base no estado de autenticação).
 // As imagens das features são prints reais do site (nomes de usuários
 // borrados por privacidade).
-export default function Landing() {
+/**
+ * @param {{introDone?: boolean}} props `introDone` vem do `HomeOrLanding`, que
+ *   é quem monta a intro do raio desde 02/09. Ele serve a duas coisas aqui: o
+ *   Hero revela o conteúdo, e o som ambiente ganha o momento de tentar entrar
+ *   sozinho — antes disso a tela ainda está no clarão, e um som subindo por
+ *   baixo dele seria atropelo, não ambiente.
+ */
+export default function Landing({ introDone = true }) {
   return (
     <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay relative">
       <FluxoDeDados />
@@ -30,7 +37,7 @@ export default function Landing() {
           ambientação e poluição. */}
       <div className="relative z-10">
       <LandingNav />
-      <Hero />
+      <Hero introDone={introDone} />
 
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         <HighlightsStrip />
@@ -98,7 +105,7 @@ export default function Landing() {
       <LandingFooter />
       </div>
 
-      <BotaoDeSom />
+      <BotaoDeSom introTerminou={introDone} />
     </div>
   );
 }

@@ -602,6 +602,87 @@ existe mecanismo por trás dela** — não é lista de bom-tom inventada.
 Pública de propósito: a futura tela de "fui banido" vai apontar para cá, e quem
 foi punido precisa alcançá-la **sem estar logado**.
 
+### `[02/09]` Os três documentos, e o aceite que os torna verificáveis
+
+Pergunta do dono: *"acha uma boa ideia já colocar o check no login ou cadastro
+pra a pessoa aceitar os termos? na vdd sites reais existem vários"*.
+
+**Sim, e agora são três** — cada um respondendo uma pergunta diferente, porque
+juntá-los faria os três piorarem:
+
+| Documento | Responde |
+| --- | --- |
+| [`/privacidade`](FUNCIONALIDADES.md) | o que fazemos com os **seus dados** |
+| [`/regras`](FUNCIONALIDADES.md) | o que você pode **publicar** |
+| **`/termos`** *(novo)* | as regras do **acordo**: de quem é o conteúdo, quando a conta é encerrada, que garantia não existe |
+
+O terceiro era o único que faltava, e é o único que fala de contrato.
+
+#### A caixinha não é a prova — o registro é
+
+Para a LGPD o que conta não é a pessoa ter marcado: é **conseguir provar
+depois** que ela marcou, **qual versão** aceitou e **quando**. Uma caixinha que
+só valida o formulário é teatro — no dia em que alguém questionar, não há o que
+mostrar.
+
+Por isso o desenho tem três partes, e a terceira é a que quase todo site
+esquece:
+
+1. cada documento tem uma **versão**, em `lib/documentosLegais.js`;
+2. o cadastro **grava** em `policy_acceptances` qual versão foi aceita e quando;
+3. quando um documento mudar de forma relevante, quem já tem conta **reaceita**
+   — este terceiro passo está no `BACKLOG.md`, é fluxo próprio.
+
+#### Quem já tinha conta, e quando o documento muda
+
+O aceite no cadastro cobre quem se cadastrar de 02/09 em diante. Os outros dois
+casos — as contas criadas antes, e qualquer pessoa no dia em que um documento
+mudar de versão — são o mesmo mecanismo: comparar a versão vigente com o que a
+pessoa aceitou.
+
+**Avisa, não bloqueia** (decisão do dono: *"só avisa sem bloquear"*), e a
+decisão é a correta: um modal que trava o site força a pessoa a clicar em
+"aceito" **para conseguir ler** o documento que está aceitando. Consentimento
+arrancado assim vale menos, não mais.
+
+O aviso é uma faixa na área logada, com os documentos como link em aba nova e
+dois botões: *Li e aceito* e *ver depois*. O "depois" some **por sessão** — se
+fosse permanente, o aviso deixaria de existir na prática; se voltasse a cada
+tela, viraria praga.
+
+**Três estados, e o terceiro é o que evita o alarme falso:** `[]` (tudo
+aceito, não mostra), lista com itens (mostra), e **`null`** — *não consegui
+perguntar*, com a rede caída. Nesse terceiro o aviso fica calado: cutucar quem
+já aceitou tudo por causa de uma falha de rede ensina a ignorar o canal
+(§0.2, 4ª regra).
+
+#### UMA caixinha, e não três
+
+Decisão de produto: uma marcação só, cobrindo os três documentos, com link para
+cada um. Três caixinhas separadas não deixam ninguém mais informado — treinam a
+pessoa a clicar três vezes sem ler, e o consentimento fica **pior**, não melhor.
+
+Dois detalhes que parecem pequenos e não são:
+
+- os links abrem em **aba nova**. Sem isso, clicar em "Termos de Uso" no meio do
+  cadastro faria a pessoa perder tudo que já digitou — e o resultado previsível
+  é ninguém clicar, ou seja, ninguém ler;
+- o clique no link **não marca a caixinha**. O link vive dentro do `<label>`, e
+  sem `stopPropagation` ler o documento registraria um aceite que a pessoa não
+  deu.
+
+#### O que o banco garante, e o que ele não garante
+
+Garante que ninguém forja aceite alheio (`WITH CHECK (user_id = auth.uid())`,
+testado), que a data não pode ser reescrita (sem policy de UPDATE) e que a
+versão é sempre uma data (`CHECK`).
+
+Não garante que toda conta tenha registro: quem criar conta fora do site fica
+sem. O registro prova quem aceitou — não prova que todos aceitaram, e a
+diferença está escrita aqui para ninguém confundir as duas.
+
+---
+
 ### `[02/09]` A página `/contato` — falar com a administração de FORA do site
 
 Pedido do dono: *"nós precisamos de uma maneira dos usuários falarem com a

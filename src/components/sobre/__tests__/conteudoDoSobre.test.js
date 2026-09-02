@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BLOCOS } from '../conteudoDoSobre';
 import { iconeDoBloco } from '../iconesDoSobre';
+import { readdirSync } from 'node:fs';
 
 /**
  * Trava do conteúdo da página "Sobre".
@@ -128,6 +129,66 @@ describe('ícones dos blocos', () => {
       'god of war', 'metal gear rising']) {
       expect(nomes, `a lista de jogos perdeu "${jogo}" — são os títulos que o `
         + 'dono citou, não uma seleção minha.').toContain(jogo);
+    }
+  });
+});
+
+/**
+ * ── A trava de licença ──────────────────────────────────────────────────────
+ *
+ * A trilha da landing é CC BY 4.0: usar sem crédito visível é usar **sem
+ * licença**. E o risco real não é a trilha de hoje — é a segunda mídia, o dia
+ * em que alguém largar um arquivo em `src/assets/som/` e esquecer o crédito.
+ * O site passaria a violar uma licença sem nada acusar.
+ *
+ * Por isso a trava é de CLASSE e não do caso: ela varre a pasta e exige que
+ * **cada arquivo** tenha um crédito declarado. Corrigir só a linha da trilha
+ * atual deixaria a próxima passar batido (§1.3).
+ */
+describe('toda mídia de terceiro tem crédito na tela', () => {
+  const PASTA = 'src/assets/som';
+
+  const creditos = BLOCOS.flatMap(b => b.creditos ?? []);
+
+  it('a pasta de mídia existe e tem arquivos', () => {
+    // Sem esta guarda, renomear a pasta faria a varredura devolver vazio e o
+    // teste abaixo passar VERDE para sempre, sem olhar arquivo nenhum — o
+    // padrão de falha que o `varrerFontes` existe para matar.
+    let arquivos = [];
+    try { arquivos = readdirSync(PASTA); } catch { /* tratado abaixo */ }
+    expect(arquivos.length,
+      `${PASTA} nao tem arquivo nenhum. A pasta foi movida? Sem ela esta trava\n`
+      + '  passaria verde para sempre. Corrija o caminho, ou apague a trava se\n'
+      + '  o projeto deixou de servir midia de terceiro.')
+      .toBeGreaterThan(0);
+  });
+
+  it('todo arquivo de mídia tem um crédito declarado', () => {
+    const arquivos = readdirSync(PASTA);
+    // `universe-loop.opus` -> casa com o credito de titulo "Universe".
+    const semCredito = arquivos.filter((nome) => {
+      const base = nome.replace(/\.[^.]+$/, '').toLowerCase();
+      return !creditos.some(c => base.includes(c.titulo.toLowerCase()));
+    });
+    expect(semCredito,
+      `Arquivo de midia sem credito na pagina /sobre: ${semCredito.join(', ')}.\n`
+      + '  Licenca CC-BY exige atribuicao VISIVEL — sem ela, o site esta usando\n'
+      + '  a obra sem licenca. Acrescente em `creditos` no bloco "Créditos" de\n'
+      + '  src/components/sobre/conteudoDoSobre.js.')
+      .toEqual([]);
+  });
+
+  it('todo crédito tem os quatro campos do padrão TASL', () => {
+    // Titulo, Autor, Source e Licenca — o que a Creative Commons recomenda.
+    // Um credito sem link de licenca nao diz o que a pessoa pode fazer com a
+    // obra, e um sem origem nao deixa ninguem conferir.
+    expect(creditos.length).toBeGreaterThan(0);
+    for (const c of creditos) {
+      expect(c.titulo, 'credito sem titulo').toBeTruthy();
+      expect(c.autor, `"${c.titulo}" sem autor`).toBeTruthy();
+      expect(c.origem, `"${c.titulo}" sem link de origem`).toMatch(/^https:\/\//);
+      expect(c.licenca, `"${c.titulo}" sem nome da licenca`).toBeTruthy();
+      expect(c.licencaUrl, `"${c.titulo}" sem link da licenca`).toMatch(/^https:\/\//);
     }
   });
 });

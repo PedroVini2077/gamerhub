@@ -24,7 +24,8 @@
 //                       and p.tablename=t.tablename and p.cmd in ('UPDATE','ALL'))
 //    order by 1;
 //
-// Conferido em 01/09/2026. Se uma tabela GANHAR policy de UPDATE, tire-a
+// Conferido em 02/09/2026 (entrou `policy_acceptances`, append-only por
+// desenho: registro de consentimento que pode ser reescrito nao prova nada). Se uma tabela GANHAR policy de UPDATE, tire-a
 // daqui — senão a lista passa a reprovar um `update` legítimo, e portão que
 // acusa errado ensina a ignorar o canal (`CLAUDE.md` §0.2, 4ª regra).
 export const TABELAS_SEM_UPDATE = [
@@ -36,6 +37,7 @@ export const TABELAS_SEM_UPDATE = [
   'community_post_media',
   'live_chat',
   'live_muted',
+  'policy_acceptances',
   'post_likes',
   'post_media',
   'role_change_requests',

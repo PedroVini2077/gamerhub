@@ -1,4 +1,5 @@
 import { Mail, Lock, User, Calendar, MapPin, Gamepad2 } from 'lucide-react';
+import AceiteDosDocumentos from './AceiteDosDocumentos';
 import { InputWrap } from './InputWrap';
 import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../../lib/password';
 
@@ -14,6 +15,7 @@ export default function RegisterForm({
   uf, setUf,
   selectedPlatform, setSelectedPlatform,
   loading, onSubmit, onSwitchToLogin,
+  aceitouDocumentos, setAceitouDocumentos,
 }) {
   const passwordStrength = getPasswordStrength(password);
 
@@ -153,7 +155,12 @@ export default function RegisterForm({
           </div>
         </div>
 
-        <button onClick={onSubmit} disabled={loading}
+        <AceiteDosDocumentos aceito={aceitouDocumentos} setAceito={setAceitouDocumentos} />
+
+        {/* `disabled` sem aceite, e não um alerta depois de clicar: a pessoa
+            vê que falta alguma coisa ANTES de tentar. Alerta pós-clique num
+            formulário longo faz rolar a tela atrás do que deu errado. */}
+        <button onClick={onSubmit} disabled={loading || !aceitouDocumentos}
           className="btn-solid w-full py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
           {loading ? 'Aguarde...' : '// CRIAR CONTA'}
         </button>

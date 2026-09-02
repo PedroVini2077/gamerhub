@@ -38,6 +38,9 @@ src/
 │   ├── useCargoDecisions.js      # Decisões de indicação/estágio/rebaixamento
 │   ├── useUnbanRequests.js       # Pedidos de desbanimento pendentes
 │   ├── useMensagensDeContato.js  # Estado da aba "Contato" do painel admin
+│   ├── useAceitesPendentes.js    # Quais documentos faltam ser aceitos. Guarda
+│   │                      # de QUEM são os dados: resposta que chega depois de
+│   │                      # a sessão trocar é reconhecível como velha
 │   ├── useBlockedLogins.js       # Logins travados por excesso de tentativa
 │   ├── usePostComposer.js # Publicar: upload, moderação e limpeza do formulário
 │   ├── usePostEngagement.js # Curtidas e comentários de um post
@@ -63,10 +66,25 @@ src/
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
-│   ├── somAmbiente.js     # Som ambiente da landing, SINTETIZADO na Web Audio
-│   │                      # API — zero arquivo, zero download, zero licença
+│   ├── somAmbiente.js     # Som ambiente da landing: ciclo de vida do áudio,
+│   │                      # volume, fade e a garantia de UMA instância só.
+│   │                      # Não sabe QUE som toca — isso são os dois abaixo
+│   ├── trilhaAmbiente.js  # O arquivo real (Universe, AiTechEye, CC BY 4.0).
+│   │                      # Baixa sob demanda, decodifica e toca em laço. O
+│   │                      # original NÃO era loop: fade-in e cauda foram
+│   │                      # recortados e costurados com crossfade
+│   ├── vozesSintetizadas.js # O plano B, quando o arquivo não chega (rede
+│   │                      # fora, codec ausente). Silêncio aqui daria um
+│   │                      # botão "ligado" sem som — a tela mentindo
 │   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
 │   │                      # da cena a cada mudança de frameloop
+│   ├── documentosLegais.js # Os três documentos que a pessoa aceita, e a
+│   │                      # VERSÃO de cada um. Sem versão, mudar a política
+│   │                      # apagaria o sentido de todo aceite anterior
+│   ├── preferenciaDeSom.js # A decisão sobre o som ambiente, com TRÊS estados
+│   │                      # (ligado / desligado / nunca escolheu). Apagar a
+│   │                      # chave ao desligar tornava "desliguei" igual a
+│   │                      # "nunca escolhi" — e o autoplay religaria o som
 │   ├── introJaVista.js    # Lembra, por sessão do navegador, que a intro do
 │   │                      # raio já foi vista — e decide se ela toca
 │   ├── roles.js           # Hierarquia de cargos no cliente; espelha `role_rank()`
@@ -120,6 +138,9 @@ src/
 │   │                      # PRÓPRIA pessoa banida
 │   ├── contatoService.js  # O canal público `/contato`: envio pela RPC (única
 │   │                      # porta de entrada da tabela) e a leitura da equipe
+│   ├── aceiteService.js   # Grava a PROVA do aceite dos documentos: quem, qual
+│   │                      # documento, qual versão, quando. A caixinha do
+│   │                      # formulário não prova nada sozinha
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
@@ -144,6 +165,9 @@ src/
 │   │                      # direto da fila de moderação; mostra conteúdo oculto
 │   │                      # para quem é da equipe (a RLS decide)
 │   ├── Sobre.jsx          # `/sobre` — pública, para ler antes de criar conta
+│   ├── Termos.jsx         # `/termos` — o terceiro documento, e o único que
+│   │                      # fala de CONTRATO: de quem é o conteúdo, quando a
+│   │                      # conta é encerrada, que garantia não existe
 │   ├── Contato.jsx        # `/contato` — falar com a administração de FORA do
 │   │                      # site. Pública porque quem está banido, quem perdeu
 │   │                      # o acesso e quem nem tem conta são exatamente as
@@ -162,6 +186,9 @@ src/
 └── components/
     ├── ErrorBoundary.jsx
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
+    │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
+    │                      # com links em aba nova. Três caixinhas separadas
+    │                      # treinam a pessoa a clicar sem ler
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
@@ -222,6 +249,10 @@ src/
     ├── regras/            # As regras da comunidade (`/regras`), públicas
     │   └── conteudoDasRegras.js # O texto, tirado do que a moderação REALMENTE
     │                      # faz — se uma regra está lá, há mecanismo por trás
+    ├── termos/            # Os Termos de Uso (`/termos`), públicos
+    │   └── conteudoDosTermos.js # O texto, escrito a partir do que o sistema
+    │                      # faz — termo que promete o que o site não faz é
+    │                      # pior do que termo nenhum
     ├── contato/           # O canal público para falar com a administração
     │   ├── assuntosDeContato.js # Mapa EXPLÍCITO dos assuntos. A lista existe
     │   │                  # também no CHECK do banco, e um teste compara as
@@ -238,6 +269,9 @@ src/
     │   │                  # dono. A página só renderiza esta lista
     │   ├── iconesDoSobre.js   # Mapa explícito nome -> ícone do lucide. Sem
     │   │                  # padrão de propósito: bloco sem ícone estoura no teste
+    │   ├── CreditosDeMidia.jsx # Atribuição TASL da mídia de terceiro. NÃO é
+    │   │                  # cortesia: CC-BY exige crédito visível, e um teste
+    │   │                  # varre src/assets/som/ exigindo crédito por arquivo
     │   └── FundoAnimado.jsx   # As doze peças que atravessam a tela atrás do
     │                      # texto. Só CSS, sem laço de JS — ver DESEMPENHO.md
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
@@ -246,6 +280,8 @@ src/
                            # AudioRecorder, GlobalBanner, FeatureGate,
                            # LinhaDoTempoDoCaso (o andamento do recurso, na
                            # tela de quem foi banido),
+                           # AvisoDeAceite (documento novo para aceitar — avisa
+                           # e NÃO bloqueia; some por sessão, não para sempre),
                            # LazyVisible, PageTransition, RolagemDeRota (decide
                            # para onde a página rola ao trocar de rota),
                            # AvisoSemBanco (faixa

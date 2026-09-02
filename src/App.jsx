@@ -18,6 +18,7 @@ import { guardarMotivoDaPausa } from './lib/pauseReason';
 import AvisoSemBanco from './components/ui/AvisoSemBanco';
 import RolagemDeRota from './components/ui/RolagemDeRota';
 import GlobalBanner from './components/ui/GlobalBanner';
+import AvisoDeAceite from './components/ui/AvisoDeAceite';
 import FeatureGate from './components/ui/FeatureGate';
 import PageTransition from './components/ui/PageTransition';
 import SplashScreen from './components/ui/SplashScreen';
@@ -26,6 +27,8 @@ import GuestOnly from './components/auth/GuestOnly';
 import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
+import IntroLightning from './components/landing/IntroLightning';
+import { deveTocarIntroAgora, marcarIntroVista } from './lib/introJaVista';
 import Login from './pages/Login';
 import AuthConfirm from './pages/AuthConfirm';
 import NotFound from './pages/NotFound';
@@ -39,6 +42,7 @@ const Sobre       = lazy(() => import('./pages/Sobre'));
 const Privacidade = lazy(() => import('./pages/Privacidade'));
 const Regras      = lazy(() => import('./pages/Regras'));
 const Contato     = lazy(() => import('./pages/Contato'));
+const Termos      = lazy(() => import('./pages/Termos'));
 const PostPage    = lazy(() => import('./pages/PostPage'));
 const MuralPage   = lazy(() => import('./pages/MuralPage'));
 const Community   = lazy(() => import('./pages/Community'));
@@ -121,6 +125,12 @@ function Layout({ children }) {
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 pt-20 pb-8 px-4 md:px-6 max-w-6xl w-full mx-auto">
           <GlobalBanner />
+          {/* `[02/09]` Só na área logada, e por dois motivos: a landing é
+              vista por quem nem tem conta (não há aceite a cobrar de
+              ninguém), e é justamente ali que a pessoa vai LER os documentos
+              — cobrar aceite na mesma tela em que ela está lendo seria
+              atropelo. */}
+          <AvisoDeAceite />
           <AnimatePresence mode="wait" initial={false}>
             {showMaintenance ? (
               <PageTransition key="maintenance">
@@ -147,13 +157,39 @@ function Layout({ children }) {
 function HomeOrLanding() {
   const { user } = useAuth();
   const semBanco = useDbOffline();
+  // `[02/09]` A intro do raio é montada AQUI, e não dentro do Hero.
+  //
+  // Ela morava no Hero, que vive no chunk lazy da landing. Consequência
+  // medida: o raio só existia na tela depois de aquele chunk baixar e
+  // executar — 1320 ms a 6x de CPU, 1820 ms a 8x. Todo esse tempo é tela
+  // preta, e era metade do "às vezes não aparece" que o dono relatou.
+  //
+  // Aqui ela está no pacote inicial, e por isso pode aparecer enquanto a
+  // landing ainda baixa. Custa quase nada em bytes porque, desde a mesma
+  // sessão, a intro é CSS puro — ela não arrasta o Framer Motion junto.
+  //
+  // O hook fica ANTES do `return` do feed de propósito: hooks não podem ficar
+  // atrás de saída condicional (Rules of Hooks).
+  const [introDone, setIntroDone] = useState(() => !deveTocarIntroAgora());
+
+  function aoTerminarIntro() {
+    marcarIntroVista();
+    setIntroDone(true);
+  }
+
   // Sem banco o feed não tem o que mostrar — ele é consulta pura. A landing é
   // estática e continua de pé, então é ela que atende a raiz até o banco voltar.
   if (user && !semBanco) return <Layout><Home /></Layout>;
   return (
-    <Suspense fallback={<SplashScreen />}>
-      <Landing />
-    </Suspense>
+    <>
+      {!introDone && <IntroLightning onComplete={aoTerminarIntro} />}
+      {/* A intro cobre a tela inteira, então ela TAMBÉM serve de fallback:
+          enquanto o chunk da landing baixa, quem está olhando vê o raio em vez
+          do splash. Os dois nunca aparecem juntos. */}
+      <Suspense fallback={introDone ? <SplashScreen /> : null}>
+        <Landing introDone={introDone} />
+      </Suspense>
+    </>
   );
 }
 
@@ -190,6 +226,9 @@ function AppRoutes() {
           criou conta são exatamente as pessoas que mais precisam falar com a
           equipe — e todas estão do lado de fora do `RequireAuth`. */}
       <Route path="/contato" element={<Contato />} />
+      {/* `[02/09]` Pública pela razão mais direta de todas: ninguém deveria
+          precisar criar conta para ler o que está aceitando AO criar conta. */}
+      <Route path="/termos" element={<Termos />} />
       <Route path="/" element={<HomeOrLanding />} />
       {/* Endereço próprio de um post. Existe para o link direto da fila de
           moderação — antes não havia para onde apontar, o feed é `/` e um post

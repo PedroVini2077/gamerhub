@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import toast from 'react-hot-toast';
+import { registrarAceiteDosDocumentos } from '../services/aceiteService';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
@@ -167,6 +169,26 @@ export function AuthProvider({ children }) {
       if (Object.keys(updates).length > 0) {
         const { error: extraErr } = await supabase.from('profiles').update(updates).eq('id', data.user.id);
         if (extraErr) console.warn('[GamerHub] Erro ao salvar campos extras do perfil:', extraErr.message);
+      }
+    }
+
+    // `[02/09]` A PROVA do consentimento. A caixinha do formulário é como a
+    // pessoa expressa a escolha; esta linha é o que sobra dela — com qual
+    // VERSÃO de cada documento, e quando.
+    //
+    // Não derruba o cadastro se falhar, e não fica em silêncio se falhar. Os
+    // dois extremos são ruins: estourar deixaria a pessoa com uma conta pela
+    // metade (o `auth.users` já existe neste ponto) por causa de uma linha de
+    // auditoria; engolir deixaria uma conta sem registro de aceite, que é a
+    // única coisa que prova o consentimento (§1.5).
+    //
+    // O aviso vai para a tela porque é o único canal disponível: `admin_logs`
+    // só aceita `service_role`, e o console não é tratamento.
+    if (data?.user?.id) {
+      const { error: aceiteErro } = await registrarAceiteDosDocumentos(data.user.id);
+      if (aceiteErro) {
+        toast.error('Sua conta foi criada, mas o registro do aceite dos '
+          + 'documentos falhou. Avise a equipe pelo /contato.', { duration: 10000 });
       }
     }
 

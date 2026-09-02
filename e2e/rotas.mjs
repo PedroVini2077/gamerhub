@@ -54,6 +54,10 @@ export const ROTAS_VISITANTE = [
   // deixa de atender justamente quem ele existe para atender, e é este teste
   // que precisa gritar.
   { path: '/contato', nome: 'Contato', destino: '/contato', esperado: /falar com/i },
+  // `[02/09]` Pública pela razão mais direta: ninguém deveria precisar criar
+  // conta para ler o que está aceitando AO criar conta. Se esta rota cair
+  // atrás do login, a tela de consentimento passa a linkar para o nada.
+  { path: '/termos', nome: 'Termos', destino: '/termos', esperado: /do acordo/i },
   { path: '/rota-que-nao-existe', nome: '404',            destino: null,     esperado: /404|não encontrad/i },
 ];
 

@@ -1,41 +1,38 @@
 /**
- * Trava do bug de 02/09: com a preferência de som já salva, clicar no botão
- * não fazia nada.
- *
- * ── Por que o teste anterior não pegou ──────────────────────────────────────
- *
- * A primeira verificação rodou com o `localStorage` VAZIO. Nesse caminho o
- * ouvinte problemático nem era registrado, e tudo parecia funcionar. O bug só
- * existia para quem **já tinha ligado o som antes** — ou seja, exatamente para
- * quem usa a funcionalidade.
- *
- * A lição, e é por isso que este arquivo existe: testar só o primeiro acesso é
- * testar o caminho de quem nunca voltou.
- *
- * ── O que era o bug ────────────────────────────────────────────────────────
- *
- * O componente registrava um `pointerdown` para retomar o som em qualquer
- * gesto. `pointerdown` dispara ANTES de `click`: ao clicar no próprio botão, o
- * ouvinte ligava, o estado atualizava, e o `click` do botão desligava em
- * seguida. Ligar e desligar no mesmo clique aparece como "o botão não faz nada".
+ * O contrato do som ambiente da landing, num navegador de verdade.
  *
  * ── O QUE ESTE TESTE PROVA, E O QUE NÃO PROVA ───────────────────────────────
  *
- * **Não prova o conserto do bug relatado.** Reinjetei o ouvinte antigo e este
- * teste PASSOU mesmo assim: num navegador sem cabeça o `pointerdown` do
- * clique sintético não produz a mesma corrida que produz num clique humano —
- * conferido com instrumentação, o handler do botão nem chegou a rodar.
+ * **Não prova o conserto do bug de 02/09** (o `pointerdown` que competia com o
+ * clique). Reinjetei o ouvinte antigo e este teste PASSOU mesmo assim: num
+ * navegador sem cabeça o clique sintético não produz a mesma corrida de um
+ * clique humano — conferido com instrumentação, o handler do botão nem chegou
+ * a rodar. Dizer que ele valida aquela correção seria vender trava por mais do
+ * que ela é, e esse é um padrão de falha catalogado neste projeto.
  *
- * Dizer que ele valida a correção seria vender trava por mais do que ela é, e
- * esse é um padrão de falha catalogado neste projeto.
+ * **O que ele prova:** o contrato do botão — clicar sempre alterna, com e sem
+ * preferência salva — e, desde 02/09, a regra nova que mais importa:
+ * **desligar tem que sobreviver ao recarregamento**.
  *
- * **O que ele prova:** o CONTRATO do botão — que clicar sempre alterna, com e
- * sem preferência salva, e que o aviso aparece no primeiro acesso. Isso pega
- * regressão futura de comportamento, que é trabalho real, só não é este.
+ * ── Por que a regra do "desligado" ganhou trava ─────────────────────────────
  *
- * A causa raiz do relato segue como **inferência**: a explicação mais provável
- * é a corrida de eventos, e a correção foi tirar a esperteza que a criava. A
- * confirmação depende do aparelho do dono.
+ * Até 02/09 o desligar fazia `removeItem`: "desliguei de propósito" e "nunca
+ * escolhi" viravam a mesma ausência de chave. Enquanto nada tocava sozinho,
+ * dava no mesmo. **No instante em que existe autoplay, isso vira o pior defeito
+ * possível deste recurso** — a pessoa desliga o som, volta no dia seguinte, e
+ * ele toca de novo. Um site que religa o que você desligou é um site que não
+ * te escuta. O passo 4 é essa trava.
+ *
+ * ── Duas armadilhas de teste que este arquivo já pisou ──────────────────────
+ *
+ * 1. **Seletor ambíguo.** `/ligar som ambiente/i` casa "Ligar som ambiente" **e**
+ *    "Desligar som ambiente" — a segunda contém a primeira. Enquanto o som
+ *    nunca ligava sozinho, o botão estava sempre em "Ligar" e ninguém notou.
+ *    Com autoplay, o mesmo seletor passou a clicar num botão já ligado e a
+ *    DESLIGAR o som, e o teste reprovou um código correto. Daí os `^...$`.
+ * 2. **Corrida com o autoplay.** A tentativa automática só resolve depois da
+ *    intro do raio (~2,5 s medidos). Asserção antes disso lê um estado que
+ *    ainda vai mudar. Daí o `assentar()`.
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia } from './util.mjs';
 
@@ -48,69 +45,106 @@ let passo = 0;
 const ok = (m) => console.log(`  ${String(++passo).padStart(2)}. OK   ${m}`);
 
 const pressionado = () => page.evaluate(
-  () => document.querySelector('[aria-label*="som ambiente" i]')?.getAttribute('aria-pressed'));
+  () => document.querySelector('[aria-label$="som ambiente"]')?.getAttribute('aria-pressed'));
+
+const preferencia = () => page.evaluate(
+  () => localStorage.getItem('gh_som_ambiente'));
+
+/** Rótulos ANCORADOS — ver a armadilha 1 no cabeçalho. */
+const botaoLigar = () => page.getByRole('button', { name: /^Ligar som ambiente$/ });
+const botaoDesligar = () => page.getByRole('button', { name: /^Desligar som ambiente$/ });
+
+/**
+ * Espera a poeira do carregamento baixar: intro do raio + a tentativa
+ * automática de tocar. Sem isto o teste corre contra o autoplay e lê um estado
+ * intermediário.
+ */
+const assentar = () => page.waitForTimeout(3800);
 
 try {
   await exigirServidor(BASE);
   console.log(`\n  Som ambiente em ${BASE}\n`);
 
-  // ── 1. Primeiro acesso: aviso presente, som desligado ────────────────────
+  // ── 1. Primeiro acesso: o aviso existe ───────────────────────────────────
+  //
+  // O aviso é a única coisa que este site faz sobre autoplay que o navegador
+  // não faz: ele NÃO pede permissão para áudio, ele bloqueia em silêncio.
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForTimeout(1500);
-
+  await page.waitForTimeout(1200);
   const texto = await page.locator('body').innerText();
   if (!/som ambiente/i.test(texto)) {
     throw new Error('o aviso de que o site tem som nao apareceu no primeiro acesso.\n'
       + '  Navegador NENHUM pede permissao para audio — ele so bloqueia em\n'
       + '  silencio. Se a gente nao avisa, ninguem avisa.');
   }
-  if (await pressionado() !== 'false') throw new Error('o som comecou ligado — nao devia');
-  ok('primeiro acesso: aviso visível e som desligado');
+  ok('primeiro acesso: o aviso de som aparece');
 
-  const botao = page.getByRole('button', { name: /ligar som ambiente/i });
-  await botao.click();
-  await page.waitForTimeout(800);
-  if (await pressionado() !== 'true') throw new Error('o clique nao ligou o som');
-  ok('clique liga');
-
-  // ── 2. O CENÁRIO DO BUG: recarregar COM a preferência salva ──────────────
+  // ── 2. Ligar pelo botão grava a preferência ──────────────────────────────
   //
-  // Este é o passo que importa. O teste antigo nunca chegava aqui, e por isso
-  // deu verde num botão quebrado.
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await page.waitForTimeout(1500);
-
-  const salva = await page.evaluate(() => localStorage.getItem('gh_som_ambiente'));
-  if (salva !== 'ligado') throw new Error('a preferencia nao sobreviveu ao reload');
-
-  const btn2 = page.getByRole('button', { name: /ligar som ambiente/i });
-  // `delay: 220` NÃO é enfeite, e a primeira versão deste teste falhou por não
-  // ter isso: o clique sintético sem atraso dispara `pointerdown` e `click`
-  // praticamente juntos, e o React nem chega a re-renderizar entre os dois. A
-  // corrida que existe no navegador de verdade simplesmente não acontecia, e o
-  // teste passava com o bug reinjetado — "teste que não consegue falhar", pela
-  // terceira vez neste projeto.
-  //
-  // O atraso entre pressionar e soltar reproduz o clique humano, que é onde a
-  // corrida acontece.
-  await btn2.click({ delay: 220 });
+  // Nada é afirmado sobre o estado ANTES daqui: a tentativa automática pode
+  // ter ligado o som sozinha (é o que acontece neste navegador) ou ter sido
+  // barrada (é o que acontece na maioria dos navegadores de verdade). As duas
+  // são corretas, e um teste que exigisse uma delas estaria testando a política
+  // de autoplay do Chromium, não o nosso código.
+  await assentar();
+  if (await pressionado() === 'true') {
+    await botaoDesligar().click();
+    await page.waitForTimeout(700);
+  }
+  await botaoLigar().click({ delay: 220 });
   await page.waitForTimeout(900);
-
   if (await pressionado() !== 'true') {
     throw new Error(
-      'com a preferencia salva, o clique NAO ligou o som.\n'
-      + '  E o bug de 02/09 de volta: algum ouvinte de gesto esta ligando o som\n'
-      + '  no `pointerdown` e o `click` do botao esta desligando em seguida.\n'
-      + '  O som deve ser ligado PELO BOTAO, e so por ele.');
+      'o clique NAO ligou o som.\n'
+      + '  Suspeito historico: algum ouvinte de gesto ligando no `pointerdown`\n'
+      + '  e o `click` do botao desligando em seguida. O som deve ser ligado\n'
+      + '  PELO BOTAO, e so por ele.');
   }
-  ok('com preferência salva, o clique continua ligando');
+  if (await preferencia() !== 'ligado') {
+    throw new Error('ligou o som mas nao gravou `ligado` no localStorage.');
+  }
+  ok('clique liga e grava a preferência');
 
-  // ── 3. Desligar e religar no mesmo carregamento ──────────────────────────
-  await btn2.click();
+  // ── 3. Recarregar com `ligado` salvo ─────────────────────────────────────
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await assentar();
+  if (await preferencia() !== 'ligado') {
+    throw new Error('a preferencia `ligado` nao sobreviveu ao reload');
+  }
+  ok('preferência `ligado` sobrevive ao recarregamento');
+
+  // ── 4. A TRAVA NOVA: desligar sobrevive ao recarregamento ────────────────
+  //
+  // Este passo é o que impede o defeito descrito no cabeçalho. Ele falha se
+  // alguém voltar a fazer `removeItem` no desligar.
+  if (await pressionado() !== 'true') {
+    await botaoLigar().click({ delay: 220 });
+    await page.waitForTimeout(700);
+  }
+  await botaoDesligar().click();
   await page.waitForTimeout(700);
-  if (await pressionado() !== 'false') throw new Error('o clique nao desligou o som');
 
-  await page.getByRole('button', { name: /ligar som ambiente/i }).click({ delay: 220 });
+  if (await pressionado() !== 'false') throw new Error('o clique nao desligou o som');
+  if (await preferencia() !== 'desligado') {
+    throw new Error(
+      'desligar o som NAO gravou `desligado` — gravou ' + JSON.stringify(await preferencia()) + '.\n'
+      + '  Se a chave for apagada em vez de gravada, "desliguei de proposito" e\n'
+      + '  "nunca escolhi" viram a MESMA coisa, e o autoplay religa o som de\n'
+      + '  quem pediu silencio. Ver src/lib/preferenciaDeSom.js.');
+  }
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await assentar();
+  if (await pressionado() !== 'false') {
+    throw new Error(
+      'o som VOLTOU sozinho depois de a pessoa ter desligado.\n'
+      + '  E o defeito que o `preferenciaDeSom.js` existe para impedir:\n'
+      + '  `podeTentarSozinho(DESLIGADO)` tem que ser false, sempre.');
+  }
+  ok('desligado sobrevive ao recarregamento — o som NÃO volta sozinho');
+
+  // ── 5. Religar depois de desligar, no mesmo carregamento ─────────────────
+  await botaoLigar().click({ delay: 220 });
   await page.waitForTimeout(900);
   if (await pressionado() !== 'true') {
     throw new Error('depois de desligar, religar nao funcionou — o caminho que o '
@@ -125,4 +159,4 @@ try {
 }
 
 await navegador.close();
-console.log(`\n  ${passo}/4 comportamentos do som corretos.\n`);
+console.log(`\n  ${passo}/${passo} comportamentos do som corretos.\n`);

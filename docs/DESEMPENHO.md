@@ -60,6 +60,150 @@ e não uma redescoberta.
 
 ---
 
+### `[02/09]` O raio da intro nunca era desenhado — e a culpa NÃO era da cena 3D
+
+Relato do dono: *"o raio/efeito visual da intro às vezes corta, falha ou
+simplesmente não aparece"*. Medido, o resultado é pior do que "às vezes".
+
+**O teste:** amostrar o `stroke-dashoffset` do traço a cada quadro. Se o raio
+desenha, o valor passa por estados intermediários entre 1 (nada desenhado) e 0
+(completo). Se ele só aparece pronto, o desenho nunca aconteceu na tela.
+
+| CPU | Valores distintos de `stroke-dashoffset` | Leitura |
+| --- | --- | --- |
+| 1× | **1** (`0px` desde a primeira amostra, às 496 ms) | nunca desenhou |
+| 4× | **1** (`0px` desde as 894 ms) | nunca desenhou |
+| 6× | 0 amostras em 1,5 s | nem apareceu |
+
+**Em nenhuma medição o traço chegou a ser desenhado.** Ele pulava direto para o
+estado final — o desenho, que é a graça inteira da animação, nunca acontecia.
+
+#### O palpite que a medição derrubou
+
+A suspeita óbvia era a cena 3D disputando a thread principal com a intro. O A/B
+diz que não:
+
+| | bloqueio durante a intro (0–1300 ms), CPU 4× |
+| --- | --- |
+| com a cena 3D | 602 ms em 4 tarefas |
+| **sem** a cena 3D | **594 ms em 4 tarefas** |
+
+Oito milissegundos de diferença é ruído. **Mexer na cena 3D não teria
+adiantado nada** — e essa era a otimização que eu ia fazer. É a terceira vez
+neste arquivo que uma medição corrige o alvo de um plano bem fundamentado.
+
+#### O mecanismo de verdade
+
+O Framer Motion calcula cada quadro dentro de `requestAnimationFrame`. Durante
+o boot da landing a thread principal fica ocupada (os 602 ms acima), o rAF não
+roda, e quando volta a rodar **a animação já passou do fim**: ela salta em vez
+de correr. Não é lentidão — é a animação inteira sendo pulada.
+
+#### A correção, e o depois
+
+A intro passou a ser **CSS puro**: `stroke-dashoffset` em `@keyframes`, com
+`pathLength="1"` no SVG para normalizar o comprimento sem medir nada em JS. O
+relógio de uma animação CSS é do navegador e corre independente do JavaScript —
+com a thread travada ela perde quadros, mas continua na posição certa quando
+volta.
+
+| CPU | Antes | Depois |
+| --- | --- | --- |
+| 1× | 1 valor | **5 valores** — `1 → 0,994 → 0,795 → 0,340 → 0` |
+| 4× | 1 valor | **4 valores** |
+
+O traço passou a ser desenhado de verdade nas duas velocidades.
+
+#### A metade que faltava: a intro saiu do chunk da landing
+
+**Primeiro, uma correção do que eu escrevi acima.** Eu tinha registrado que a
+6× a medição era "inconclusiva". Remedindo com uma janela maior, ela é
+**positiva**: o traço desenha a 6× e a 8× também. A janela de 1,5 s é que
+acabava antes — era limitação do meu teste, não do código.
+
+O que sobrava era outra coisa, e essa era real: **o traço só existia no DOM às
+1320 ms a 6× e 1820 ms a 8×**, porque a intro morava no Hero, que vive dentro
+do chunk lazy da landing. Todo esse tempo é tela preta.
+
+A intro passou a ser montada pelo `HomeOrLanding` (`App.jsx`), que está no
+pacote inicial — e ela **também serve de fallback** do `Suspense`: enquanto o
+chunk da landing baixa, quem está olhando vê o raio em vez do splash.
+
+| CPU | Traço aparece — antes | depois | Valores distintos |
+| --- | --- | --- | --- |
+| 6× | 1320 ms | **911 ms** | 3 → 4 |
+| 8× | 1820 ms | **1433 ms** | 3 → **6** |
+
+A 8× o desenho ficou visivelmente mais completo: `1 → 0,994 → 0,844 → 0,488 →
+0,091 → 0`, ou seja, a animação progride de verdade em vez de dar dois saltos.
+
+**O que isso custou, medido:** o pacote inicial foi de 702,5 kB para 712,1 kB
+(**+9,6 kB**; +3,0 kB gzip), dentro do teto de 740 kB. Só foi barato porque, na
+mesma leva, a intro deixou de depender do Framer Motion — mover a versão antiga
+teria arrastado a biblioteca junto.
+
+**Por que valeu:** 400 ms a menos de tela preta no aparelho fraco, que é
+exatamente onde o problema aparecia. Num aparelho rápido a diferença é
+imperceptível — e é assim que tem que ser.
+
+---
+
+### `[02/09]` A trilha da landing: o que ela custa, e o que NÃO custa
+
+O som ambiente deixou de ser sintetizado e passou a ser um arquivo real
+("Universe", AiTechEye, CC BY 4.0). Arquivo tem peso; o desenho existe para
+esse peso não cair em quem não pediu.
+
+**O que ele custa a quem NÃO liga o som: zero.** Medido num navegador de
+verdade, contando as requisições:
+
+| Momento | Pedidos do `.opus` |
+| --- | --- |
+| página carregada, som desligado | **0** |
+| depois do clique em ligar | 1 (HTTP 200) |
+| desligar e religar | 2 — rebaixa do cache |
+
+O módulo não pede o arquivo, não cria `AudioContext` e não aloca nada até
+alguém ligar o som ou a tentativa pós-intro acontecer.
+
+**Rede.** O original tem 980 KB (Ogg Vorbis estéreo, 195 kbps). O publicado
+tem **296 KB** (Opus estéreo, 56 kbps): 3,3× menor. Nesta faixa de volume, e
+neste material, a diferença não é audível — Opus a 56 kbps entrega o que o
+Vorbis entregava a 195. O arquivo sai do build com hash no nome, então é
+cacheável para sempre.
+
+**Memória, e é o número que quase passou batido.** `decodeAudioData` guarda PCM
+descompactado: 36 s × 48 kHz × 2 canais × 4 bytes = **~13,8 MB de RAM**
+enquanto o som toca. É o preço de um laço sem emenda; a alternativa
+(`<audio loop>`) quase não gasta memória mas tem furo audível na volta em
+vários navegadores.
+
+**O erro que eu quase deixei passar:** escrevi no código que o `close()` do
+contexto devolvia esses 13,8 MB. **Não devolve.** O buffer vive num módulo à
+parte, e `AudioBuffer` não pertence a contexto nenhum — fechar o contexto não
+o alcança. Ficavam 13,8 MB retidos pelo resto da sessão de alguém que tinha
+acabado de pedir silêncio. Hoje o desligar chama `esquecerTrilha()`, e o custo
+disso é rebaixar do cache ao religar (confirmado: 1 pedido vira 2).
+
+**O laço, medido em vez de ouvido.** O original não é loop, apesar de o autor
+descrevê-lo assim:
+
+| | RMS dos primeiros 10 ms | RMS dos últimos 10 ms |
+| --- | --- | --- |
+| original | 0,2440 | 0,0013 |
+| publicado | 0,1484 | **0,1576** |
+
+Tocar o original em laço daria, a cada 41 s, a música morrendo até quase o
+silêncio e voltando de repente no volume cheio. Não é estalo — é a faixa
+reiniciando na cara de quem está lendo. A região entre 1 s e 37 s foi recortada
+e costurada com crossfade de 3 s em curva de cosseno; o salto na emenda ficou
+**35 dB abaixo do pico**.
+
+Não dá para eu escutar o resultado, e não vou fingir que escutei: o que está
+provado aqui é a medida, não a impressão auditiva.
+
+---
+
 ### `[02/09]` A camada mais densa, e o parallax de ROLAGEM que ela ganhou
 
 O dono achou o efeito acima *"muito discreto"* e pediu mais — com a ressalva
