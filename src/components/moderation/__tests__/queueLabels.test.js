@@ -141,7 +141,7 @@ describe('a rota que o link do post usa existe de verdade', () => {
       app,
       'A rota `/mural/:id` sumiu do App — mesmo problema, para o mural.',
     ).toContain('path="/mural/:id"');
-    expect(app).toMatch(/import\('\.\/pages\/MuralPage'\)/);
+    expect(lazyPages).toMatch(/import\('\.\/pages\/MuralPage'\)/);
   });
 });
 
