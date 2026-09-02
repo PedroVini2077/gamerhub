@@ -1,0 +1,94 @@
+# Vigia do teste de mutação.
+#
+# ── Por que ele NÃO roda em todo PR ─────────────────────────────────────────
+#
+# Não é por custo: a rodada leva 39 segundos, medidos. É por natureza do
+# número. Score de mutação é métrica de qualidade de SUÍTE, que se move devagar
+# e balança com refatoração inocente — extrair uma função muda a contagem de
+# mutantes sem nada ter piorado.
+#
+# Portão que reprova PR por um número que oscila sozinho é o alarme falso do
+# `CLAUDE.md` §0.2, 4ª regra: ele ensina todo mundo a ignorar o canal, e aí
+# deixa de servir no dia em que a queda for real.
+#
+# Mesma escolha, e pelo mesmo motivo, do lembrete de auditoria: ISSUE, não
+# build vermelho.
+#
+# ── O que ele pega ──────────────────────────────────────────────────────────
+#
+# A pergunta que `npm test` não responde: os testes DETECTAM a mudança errada,
+# ou só passam por cima do código? Na primeira execução ele achou o
+# `lib/loginBlock.js` — fonte única de "esta pessoa pode entrar?" — com
+# **zero** testes, e a suíte inteira verde.
+name: vigia do teste de mutação
+
+on:
+  schedule:
+    # Dia 1º, 06:00 UTC — junto do lembrete de auditoria.
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  mutacao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `continue-on-error`: a queda do score vira ISSUE, não job vermelho.
+      # Um vermelho aqui não teria quem consertar — ninguém está olhando um
+      # agendamento mensal em tempo real.
+      - id: rodar
+        continue-on-error: true
+        run: npm run mutacao 2>&1 | tee /tmp/mutacao.txt
+
+      - name: abrir issue se o score caiu abaixo do piso
+        if: steps.rodar.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const saida = fs.readFileSync('/tmp/mutacao.txt', 'utf8');
+            const tabela = saida.split('\n')
+              .filter(l => l.includes('|'))
+              .slice(0, 20).join('\n');
+
+            const titulo = 'Score de mutação abaixo do piso';
+            // Não repetir issue aberta: lembrete repetido vira ruído, e ruído
+            // ensina a ignorar o canal (CLAUDE.md §0.2, 4ª regra).
+            const abertas = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open',
+            });
+            if (abertas.data.some(i => i.title === titulo)) return;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: titulo,
+              body: [
+                'O `npm run mutacao` ficou abaixo do piso configurado em',
+                '`stryker.config.json`.',
+                '',
+                '**O que isso quer dizer, e o que NÃO quer.** Não quer dizer que',
+                'existe bug. Quer dizer que a suíte deixou de DETECTAR mudanças',
+                'que ela deveria detectar — teste que roda por cima do código',
+                'sem conferir o resultado.',
+                '',
+                'A coluna que mais informa é `# no cov`: mutantes em código que',
+                'nenhum teste toca. Foi assim que o `lib/loginBlock.js` apareceu',
+                'com zero cobertura, com a suíte inteira verde.',
+                '',
+                '```',
+                tabela,
+                '```',
+                '',
+                'Para ver de perto: `npm run mutacao` na máquina.',
+              ].join('\n'),
+            });

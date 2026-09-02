@@ -76,6 +76,7 @@ const PostForm = memo(function PostForm({ onPost }) {
         onRecord={() => setShowRecorder(true)}
         onAddEmbed={() => setShowEmbed(true)}
         loading={loading} onSubmit={handleSubmit}
+        perfilPronto={!!profile?.id}
       />
 
       <input ref={fileRef} type="file" className="hidden" onChange={handleFileChange} />

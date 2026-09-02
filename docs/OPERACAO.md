@@ -3,6 +3,19 @@
 > O que fazer quando algo quebra, e o que o projeto faz sozinho para avisar que
 > quebrou. Este é o arquivo para abrir num aperto.
 
+## `[02/09]` Teste de mutação — `npm run mutacao`
+
+Roda em ~39 s e responde a pergunta que `npm test` não responde: **os testes
+detectam a mudança errada, ou só passam por cima do código?**
+
+**Não roda no CI de todo PR**, e isso é escolha — o número balança com
+refatoração inocente, e portão que oscila vira alarme falso. Um robô mensal
+(`.github/workflows/lembrete-de-mutacao.yml`) abre **issue** se o score cair
+abaixo do piso.
+
+O porquê inteiro, o escopo e o que ele **não** faz estão em
+[DECISOES-FERRAMENTAL.md](DECISOES-FERRAMENTAL.md).
+
 ## Observabilidade — a falha tem que gritar
 
 > Regra de origem: `CLAUDE.md` §1.5. De 11 achados numa única rodada de testes,
