@@ -294,6 +294,20 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[01/09]` Com o banco fora, o site inteiro ficava inacessível: um
+      # `return <OfflineGate />` acima do <Routes> matava até /sobre e /login,
+      # que não dependem do banco. A regra que ficou: fora do ar bloqueia SÓ o
+      # que depende do banco.
+      #
+      # O teste bloqueia o host do Supabase dentro do navegador e força o
+      # estado de verdade com 4 tentativas de login — a primeira versão dele
+      # NAO chegava a esse estado e passava mesmo com o bug reinjetado.
+      - name: Com o banco fora, o que é estático continua de pé
+        run: npm run test:e2e:sembanco
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+
       # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
       # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
       # animação) contra 789 ms de execução de script — ou seja, o custo nunca

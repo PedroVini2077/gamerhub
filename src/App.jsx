@@ -15,7 +15,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { identificarUsuario } from './lib/monitoring';
 import { useDbOffline } from './hooks/useDbOffline';
 import { guardarMotivoDaPausa } from './lib/pauseReason';
-import OfflineGate from './components/ui/OfflineGate';
+import AvisoSemBanco from './components/ui/AvisoSemBanco';
 import RolagemDeRota from './components/ui/RolagemDeRota';
 import GlobalBanner from './components/ui/GlobalBanner';
 import FeatureGate from './components/ui/FeatureGate';
@@ -143,7 +143,10 @@ function Layout({ children }) {
 // A Landing fica fora do Layout, então precisa do próprio Suspense.
 function HomeOrLanding() {
   const { user } = useAuth();
-  if (user) return <Layout><Home /></Layout>;
+  const semBanco = useDbOffline();
+  // Sem banco o feed não tem o que mostrar — ele é consulta pura. A landing é
+  // estática e continua de pé, então é ela que atende a raiz até o banco voltar.
+  if (user && !semBanco) return <Layout><Home /></Layout>;
   return (
     <Suspense fallback={<SplashScreen />}>
       <Landing />
@@ -156,15 +159,14 @@ function AppRoutes() {
   const { loading } = useAuth();
   const semBanco = useDbOffline();
 
-  // Sem banco, qualquer rota interna vira uma sucessão de erros sem explicação.
-  // Vem ANTES do `loading` de propósito: se o banco caiu durante a resolução da
-  // sessão, o `loading` nunca termina e a pessoa fica no splash para sempre.
-  if (semBanco) return <OfflineGate />;
-
-  if (loading) return <SplashScreen />;
+  // Sem banco, o `loading` da sessão nunca termina — sem esta saída a pessoa
+  // ficaria no splash para sempre. Mas o app NÃO é sequestrado: as rotas
+  // continuam montadas, e quem barra o que depende do banco é o `RequireAuth`.
+  if (loading && !semBanco) return <SplashScreen />;
 
   return (
     <>
+      {semBanco && <AvisoSemBanco />}
       <RolagemDeRota />
       <Routes>
       <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
