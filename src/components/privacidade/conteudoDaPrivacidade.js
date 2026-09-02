@@ -24,6 +24,44 @@
 
 export const ATUALIZADO_EM = '02/09/2026';
 
+/**
+ * ── AS LISTAS QUE O SITE NÃO PODE CRESCER SEM ATUALIZAR ─────────────────────
+ *
+ * Pedido do dono em 02/09: *"o site vai crescer mais, então a gente precisa que
+ * essa aba de políticas de privacidade esteja sempre atualizada, sempre mesmo"*.
+ *
+ * Promessa não serve para isso. Estas duas listas são a versão CONFERÍVEL do
+ * que a página afirma, e `conteudoDaPrivacidade.test.js` as cruza com o código:
+ * chave de armazenamento nova ou dependência que manda dado para fora reprovam
+ * o PR até a política dizer o que passou a acontecer.
+ *
+ * A tabela acima é para quem lê; estas listas são para a máquina conferir. As
+ * duas descrevem a mesma coisa de propósito — o que muda é quem consegue ler.
+ */
+
+/** Toda chave que o código do site grava no navegador. */
+export const CHAVES_DECLARADAS = [
+  'gh_intro_vista',
+  'gh_landing_3d',
+  'gh_pause_reason',
+  'gh_chunk_reload_at',
+];
+
+/**
+ * Toda dependência que envia dado para fora.
+ *
+ * O critério é "manda alguma coisa para um servidor de terceiro", não "é
+ * biblioteca externa": `framer-motion` anima e não fala com ninguém, então não
+ * entra. O que entra é o que faz uma pessoa aparecer no registro de outra
+ * empresa.
+ */
+export const TERCEIROS_DECLARADOS = [
+  '@supabase/supabase-js',
+  '@sentry/react',
+  '@vercel/analytics',
+  '@vercel/speed-insights',
+];
+
 export const BLOCOS = [
   {
     id: 'resumo',

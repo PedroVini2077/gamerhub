@@ -37,6 +37,7 @@ const Landing     = lazy(() => import('./pages/Landing'));
 const Home        = lazy(() => import('./pages/Home'));
 const Sobre       = lazy(() => import('./pages/Sobre'));
 const Privacidade = lazy(() => import('./pages/Privacidade'));
+const Regras      = lazy(() => import('./pages/Regras'));
 const PostPage    = lazy(() => import('./pages/PostPage'));
 const MuralPage   = lazy(() => import('./pages/MuralPage'));
 const Community   = lazy(() => import('./pages/Community'));
@@ -180,6 +181,9 @@ function AppRoutes() {
           precisar criar conta para descobrir o que acontece com os dados dela
           se criar. */}
       <Route path="/privacidade" element={<Privacidade />} />
+      {/* Pública porque a tela de banimento aponta para cá: quem foi punido
+          precisa alcançar as regras sem estar logado. */}
+      <Route path="/regras" element={<Regras />} />
       <Route path="/" element={<HomeOrLanding />} />
       {/* Endereço próprio de um post. Existe para o link direto da fila de
           moderação — antes não havia para onde apontar, o feed é `/` e um post

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { BLOCOS, ATUALIZADO_EM } from '../conteudoDaPrivacidade';
+import {
+  BLOCOS, ATUALIZADO_EM, CHAVES_DECLARADAS, TERCEIROS_DECLARADOS,
+} from '../conteudoDaPrivacidade';
 import { iconeDoBloco } from '../../sobre/iconesDoSobre';
 
 /**
@@ -84,6 +86,77 @@ describe('a promessa sobre cookies continua verdadeira', () => {
       + '  texto virou promessa falsa para quem confia nele.\n\n'
       + '  Atualize components/privacidade/conteudoDaPrivacidade.js ANTES de\n'
       + '  seguir — e reveja se o cookie novo exige consentimento.\n'
+    )).toEqual([]);
+  });
+});
+
+/**
+ * ── A TRAVA DE CRESCIMENTO ──────────────────────────────────────────────────
+ *
+ * Pedido do dono em 02/09: a política precisa estar **sempre** atualizada,
+ * porque o site vai crescer.
+ *
+ * Promessa não sustenta isso — a política de ontem descrevia o site de ontem.
+ * Estes dois testes fazem a coleta NOVA reprovar o PR: quem acrescentar uma
+ * chave no navegador ou uma dependência que manda dado para fora precisa
+ * dizer, na página, o que passou a acontecer.
+ *
+ * É o mesmo desenho do `realtimeTables.js` e do `tabelasSemUpdate.js`: uma
+ * lista declarada no código, cruzada com o que o código realmente faz.
+ */
+describe('a política acompanha o crescimento do site', () => {
+  it('toda chave gravada no navegador está declarada na política', () => {
+    const arquivos = [];
+    const varrer = (dir) => {
+      for (const nome of readdirSync(dir)) {
+        const caminho = `${dir}/${nome}`;
+        if (statSync(caminho).isDirectory()) { if (nome !== '__tests__') varrer(caminho); }
+        else if (/\.(js|jsx)$/.test(nome)) arquivos.push(caminho);
+      }
+    };
+    varrer('src');
+
+    // As chaves são constantes (`const CHAVE = 'gh_...'`), então o valor é o
+    // que se procura — e o prefixo `gh_` é a convenção que as identifica.
+    const usadas = new Set();
+    for (const f of arquivos) {
+      const codigo = readFileSync(f, 'utf8');
+      if (!/(localStorage|sessionStorage)\./.test(codigo)) continue;
+      for (const m of codigo.matchAll(/'(gh_[a-z0-9_]+)'/g)) usadas.add(m[1]);
+    }
+
+    const naoDeclaradas = [...usadas].filter(k => !CHAVES_DECLARADAS.includes(k));
+    expect(naoDeclaradas, naoDeclaradas.length === 0 ? '' : (
+      `\n  ${naoDeclaradas.length} chave(s) guardadas no navegador de quem usa o site,\n`
+      + '  e que a política de privacidade NÃO menciona:\n'
+      + naoDeclaradas.map(k => `    ${k}`).join('\n')
+      + '\n\n  A página /privacidade lista o que o site guarda no navegador. Guardar\n'
+      + '  algo que ela não menciona faz a página passar a mentir por omissão.\n\n'
+      + '  Acrescente a chave na tabela do bloco "cookies" (para quem lê) E em\n'
+      + '  CHAVES_DECLARADAS (para este teste conferir).\n'
+    )).toEqual([]);
+  });
+
+  it('toda dependência que manda dado para fora está declarada na política', () => {
+    const { dependencies = {} } = JSON.parse(readFileSync('package.json', 'utf8'));
+    // Critério: manda alguma coisa para servidor de terceiro. Anima, formata ou
+    // desenha não conta — o que conta é a pessoa aparecer no registro de outra
+    // empresa.
+    const MANDAM_DADO = /sentry|supabase|analytics|speed-insights|posthog|segment|mixpanel|amplitude|hotjar|clarity|datadog|logrocket|bugsnag|rollbar/i;
+
+    const naoDeclarados = Object.keys(dependencies)
+      .filter(d => MANDAM_DADO.test(d))
+      .filter(d => !TERCEIROS_DECLARADOS.includes(d));
+
+    expect(naoDeclarados, naoDeclarados.length === 0 ? '' : (
+      `\n  ${naoDeclarados.length} dependência(s) que enviam dado para fora e que a\n`
+      + '  política de privacidade NÃO menciona:\n'
+      + naoDeclarados.map(d => `    ${d}`).join('\n')
+      + '\n\n  A página /privacidade lista quem mais recebe alguma coisa. Ligar um\n'
+      + '  serviço novo sem atualizá-la é fazer a pessoa aparecer no registro de\n'
+      + '  outra empresa sem que a página diga isso.\n\n'
+      + '  Antes de declarar: veja O QUE ele recebe, se dá para mandar menos, e\n'
+      + '  se ele usa cookie — a página afirma que nao ha nenhum.\n'
     )).toEqual([]);
   });
 });

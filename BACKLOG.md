@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**28 itens abertos** (+ 1 ideia sem compromisso)
+**27 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -371,12 +371,6 @@
 
   Depende de: policy/RPC nova para a pessoa ler o próprio caso, rota nova,
   e o link dentro da `BannedScreen`.
-
-- ⬜ `[29/08]` 🟢 **Página "Regras da comunidade" na navegação lateral.**
-  Hoje o site modera, oculta e bane sem nenhuma página que diga **qual regra**
-  foi quebrada. Isso enfraquece a moderação — punição sem regra escrita parece
-  arbitrária — e é o primeiro link que a página de banimento acima vai querer
-  apontar. Mesmo padrão da `/sobre`: conteúdo em arquivo, sem banco.
 
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
