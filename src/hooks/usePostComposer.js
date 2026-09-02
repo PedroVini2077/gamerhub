@@ -210,7 +210,10 @@ export function usePostComposer(onPost) {
       setAudio(null); setAudioName('');
       setEmbedUrl(''); setShowEmbed(false);
       setIsLive(false);
-      onPost?.();
+      // `[02/09]` O id vai junto: sem ele o feed recarrega e não tem como saber
+      // se o post recém-criado veio na resposta. Ver o `reloadPosts` do
+      // Home.jsx — leitura logo após escrita pode trazer dado anterior.
+      onPost?.(post.id);
     } catch (err) {
       toast.error('Erro: ' + err.message, { id: toastId });
     }

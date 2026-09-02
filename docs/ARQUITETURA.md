@@ -76,6 +76,10 @@ src/
 │   ├── tabelasSemUpdate.js # TRAVA: as tabelas SEM policy de UPDATE no banco.
 │   │                      # `update` nelas devolve 0 linhas e NENHUM erro — a
 │   │                      # tela diz que salvou e nada acontece
+│   ├── recarregarAteAparecer.js # Recarrega a lista até o item recém-criado
+│   │                      # aparecer. Leitura logo após escrita pode cair numa
+│   │                      # conexão do pool que ainda não vê a linha — o feed
+│   │                      # engolia o post e nada estourava (§1.5)
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
 │   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing

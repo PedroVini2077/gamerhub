@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**21 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -145,33 +145,6 @@
   segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
-
-- ⬜ `[29/08]` 🟠 **O feed não mostrou um post recém-publicado, uma vez em sete.**
-  *Achado no CI, não reproduzido ainda — está aqui para não sumir em silêncio.*
-
-  Em 29/08 às 22:21 o `fluxos.mjs` falhou no passo 15: publicou e esperou 30 s
-  o post aparecer no feed. **Ele nunca apareceu.** Na segunda execução, com o
-  mesmo commit, passou.
-
-  **O que eu confirmei no banco** (não é dedução): o post foi criado às
-  22:21:02, `deleted_at`, `hidden_at` e `expires_at` todos nulos, a conta sem
-  ban nem suspensão. A publicação funcionou inteira — o que falhou foi a tela
-  refletir. As seis execuções anteriores do mesmo dia passaram, e o PR daquele
-  momento não tocava em nada do caminho de publicação nem do feed.
-
-  **Hipótese, ainda sem prova:** `onPost()` dispara UM refetch depois do
-  insert; se aquele refetch não trouxer o post, nada refaz a busca, e o feed
-  fica parado até navegar — o que casa com a tela vazia 30 s depois.
-  Para confirmar: instrumentar o retorno do refetch (quantas linhas vieram e
-  se o id do post recém-criado estava entre elas) e rodar o fluxo umas vezes.
-
-  **Por que não é 🟢:** se a hipótese estiver certa, isto não é problema de
-  teste — é uma pessoa publicando, não vendo o próprio post, e concluindo que o
-  site comeu o que ela escreveu. O post existe; a tela mente. É §1.5.
-
-- ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
-  O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
-  agora está bom. Fica anotado para não virar decisão esquecida.
 
 - ⬜ `[01/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
   *Achado na auditoria de privacidade de 01/09. O levantamento inteiro está em

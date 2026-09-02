@@ -48,17 +48,29 @@ import { useEffect, useRef } from 'react';
  * camada em vez de um plano só deslizando.
  */
 const TRACOS = [
+  { x: '3%',  altura: 24, duracao: 21, atraso: -5,  cor: '#22d3ee', opacidade: 0.18, profundidade: 0.2 },
   { x: '6%',  altura: 34, duracao: 13, atraso: -2,  cor: '#39ff14', opacidade: 0.30, profundidade: 0.5 },
+  { x: '11%', altura: 58, duracao: 9,  atraso: -3,  cor: '#39ff14', opacidade: 0.34, profundidade: 0.9, pacote: true },
   { x: '14%', altura: 20, duracao: 19, atraso: -11, cor: '#22d3ee', opacidade: 0.20, profundidade: 0.2 },
+  { x: '19%', altura: 30, duracao: 24, atraso: -16, cor: '#a855f7', opacidade: 0.16, profundidade: 0.3 },
   { x: '23%', altura: 46, duracao: 16, atraso: -6,  cor: '#39ff14', opacidade: 0.24, profundidade: 0.8 },
+  { x: '27%', altura: 14, duracao: 18, atraso: -13, cor: '#22d3ee', opacidade: 0.20, profundidade: 0.4 },
   { x: '31%', altura: 16, duracao: 22, atraso: -17, cor: '#a855f7', opacidade: 0.18, profundidade: 0.3 },
+  { x: '37%', altura: 62, duracao: 10, atraso: -7,  cor: '#22d3ee', opacidade: 0.32, profundidade: 0.9, pacote: true },
   { x: '43%', altura: 28, duracao: 15, atraso: -9,  cor: '#39ff14', opacidade: 0.22, profundidade: 0.6 },
+  { x: '47%', altura: 38, duracao: 26, atraso: -22, cor: '#39ff14', opacidade: 0.15, profundidade: 0.2 },
   { x: '52%', altura: 40, duracao: 25, atraso: -21, cor: '#22d3ee', opacidade: 0.16, profundidade: 0.4 },
+  { x: '57%', altura: 22, duracao: 17, atraso: -10, cor: '#a855f7', opacidade: 0.20, profundidade: 0.5 },
   { x: '61%', altura: 22, duracao: 17, atraso: -4,  cor: '#39ff14', opacidade: 0.28, profundidade: 0.9 },
+  { x: '66%', altura: 54, duracao: 11, atraso: -1,  cor: '#a855f7', opacidade: 0.30, profundidade: 0.8, pacote: true },
   { x: '70%', altura: 52, duracao: 20, atraso: -14, cor: '#a855f7', opacidade: 0.20, profundidade: 0.5 },
+  { x: '75%', altura: 18, duracao: 27, atraso: -24, cor: '#22d3ee', opacidade: 0.15, profundidade: 0.2 },
   { x: '79%', altura: 18, duracao: 14, atraso: -8,  cor: '#39ff14', opacidade: 0.24, profundidade: 0.7 },
+  { x: '84%', altura: 32, duracao: 19, atraso: -15, cor: '#39ff14', opacidade: 0.19, profundidade: 0.4 },
   { x: '88%', altura: 36, duracao: 23, atraso: -19, cor: '#22d3ee', opacidade: 0.18, profundidade: 0.3 },
+  { x: '92%', altura: 60, duracao: 12, atraso: -6,  cor: '#39ff14', opacidade: 0.30, profundidade: 0.9, pacote: true },
   { x: '95%', altura: 26, duracao: 18, atraso: -12, cor: '#39ff14', opacidade: 0.22, profundidade: 0.6 },
+  { x: '98%', altura: 20, duracao: 22, atraso: -18, cor: '#a855f7', opacidade: 0.16, profundidade: 0.3 },
 ];
 
 /**
@@ -103,6 +115,40 @@ export default function FluxoDeDados() {
     return () => window.removeEventListener('pointermove', aoMover);
   }, []);
 
+  // ── `[02/09]` Parallax de ROLAGEM ─────────────────────────────────────────
+  //
+  // O dono notou que, ao rolar, o fundo "parece que para no tempo". Ele estava
+  // certo em perceber, e errado sobre a causa: medi, e a animação continua
+  // rodando durante a rolagem. O que acontece é a camada ser `fixed` — o
+  // conteúdo sobe e as peças ficam no mesmo ponto da TELA, o que lê como
+  // descolado do mundo.
+  //
+  // A correção não é tirar o `fixed` (aí as peças só existiriam no rodapé de
+  // uma página de 5.000 px): é deslocá-las um pouco CONTRA a rolagem. Elas
+  // passam a responder ao movimento da página sem sair da tela — é o que dá a
+  // sensação de profundidade em vez de adesivo colado no vidro.
+  //
+  // Mesmo desenho barato do ponteiro: um ouvinte, uma variável CSS, coalescido
+  // por quadro. Nada de laço por frame.
+  useEffect(() => {
+    const alvo = camada.current;
+    if (!alvo) return undefined;
+
+    let agendado = false;
+    const aplicar = () => {
+      agendado = false;
+      // Divisor alto de propósito: 3.000 px de rolagem viram 1 unidade. O
+      // deslocamento tem que ser sentido, não visto.
+      alvo.style.setProperty('--rolagem', String(window.scrollY / 3000));
+    };
+    const aoRolar = () => {
+      if (!agendado) { agendado = true; requestAnimationFrame(aplicar); }
+    };
+
+    window.addEventListener('scroll', aoRolar, { passive: true });
+    return () => window.removeEventListener('scroll', aoRolar);
+  }, []);
+
   return (
     <div
       ref={camada}
@@ -118,7 +164,16 @@ export default function FluxoDeDados() {
       //    pulo — ver `index.css`.
       className="camada-de-fundo fixed top-0 left-0 w-full z-0 overflow-hidden
                  pointer-events-none motion-reduce:hidden"
-      style={{ '--desvio': 0 }}
+      style={{
+        '--desvio': 0,
+        '--rolagem': 0,
+        // A rolagem move a camada INTEIRA, num elemento só e SEM transição.
+        // Um `translate` composto por quadro é o que o navegador já faz para
+        // rolar a página — some no ruído. Espalhado pelos três grupos COM
+        // transição, virava três transições reiniciadas por quadro.
+        translate: '0 calc(var(--rolagem) * 70px)',
+        willChange: 'transform',
+      }}
     >
       {/* ── Os traços vão em GRUPOS por profundidade, e isso foi medido ─────
           Na primeira versão cada traço lia `--desvio` direto. Custava +714 ms
@@ -134,6 +189,16 @@ export default function FluxoDeDados() {
           key={grupo.profundidade}
           className="absolute inset-0"
           style={{
+            // SÓ o ponteiro aqui. A rolagem foi para o elemento raiz, e a
+            // separação é medida, não estética:
+            //
+            // a `transition` existe para o ponteiro — ela suaviza saltos de um
+            // evento discreto. Mas ela era REINICIADA a cada quadro de rolagem,
+            // e rolagem é contínua: o navegador ficava recomeçando três
+            // transições por quadro enquanto a página se move. Jank durante
+            // scroll é o mais perceptível que existe.
+            //
+            // Rolagem não precisa de suavização: ela já é o movimento.
             translate: `calc(var(--desvio) * ${grupo.profundidade * 22}px) 0`,
             transition: 'translate 320ms ease-out',
             willChange: 'transform',
@@ -142,13 +207,18 @@ export default function FluxoDeDados() {
           {grupo.tracos.map((t, i) => (
             <span
               key={i}
-              className="absolute bottom-0 w-px animate-subir-dado"
+              className={`absolute bottom-0 animate-subir-dado ${t.pacote ? 'w-0.5' : 'w-px'}`}
               style={{
                 left: t.x,
                 height: `${t.altura}px`,
                 opacity: t.opacidade,
                 background: `linear-gradient(to top, transparent, ${t.cor})`,
-                boxShadow: `0 0 6px ${t.cor}`,
+                // O "pacote" é mais largo, mais brilhante e mais rápido — lê
+                // como um dado maior passando, e quebra a regularidade sem
+                // precisar de um efeito diferente. Um tipo de elemento só,
+                // dois pesos: é o que mantém a cena coerente em vez de virar
+                // coleção de truques.
+                boxShadow: `0 0 ${t.pacote ? 12 : 6}px ${t.cor}`,
                 animationDuration: `${t.duracao}s`,
                 animationDelay: `${t.atraso}s`,
               }}
