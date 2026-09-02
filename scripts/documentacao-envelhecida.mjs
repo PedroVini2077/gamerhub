@@ -31,6 +31,19 @@ const RAIZ = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 const COMMITS_ATE_AVISAR = 5;
 
 const TERRITORIO = {
+  // `[02/09]` Privacidade. O território é onde o dado pessoal ENTRA no sistema
+  // e por onde ele sai: o cadastro (que coleta data de nascimento e estado), o
+  // perfil (que decide o que é público), o cliente do banco, o monitoramento
+  // (o que o Sentry recebe) e o `App.jsx`, onde a analítica é montada. Mexer
+  // em qualquer um destes muda o que o documento afirma.
+  'docs/PRIVACIDADE.md': [
+    'src/components/auth/RegisterForm.jsx',
+    'src/components/profile',
+    'src/hooks/useProfileForm.js',
+    'src/lib/monitoring.js',
+    'src/lib/supabase.js',
+    'src/App.jsx',
+  ],
   'docs/MODERACAO.md': [
     'src/services/moderationService.js',
     'src/components/moderation',

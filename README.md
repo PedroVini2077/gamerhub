@@ -21,6 +21,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/MODERACAO-IA.md`](docs/MODERACAO-IA.md) | A moderação por IA de **mídia**: política por categoria, limiares, as medições que os produziram e o caminho de vídeo |
 | [`docs/BANCO.md`](docs/BANCO.md) | Tabelas, RPCs, RLS, storage, realtime, custo de banda |
 | [`docs/SEGURANCA.md`](docs/SEGURANCA.md) | O que protege o quê, e por quê |
+| [`docs/PRIVACIDADE.md`](docs/PRIVACIDADE.md) | **O que o site coleta de verdade**, medido na implementação — e o que fica **A DEFINIR** |
 | [`docs/OPERACAO.md`](docs/OPERACAO.md) | **Quando algo quebra.** Monitoramento, site fora do ar, CI |
 | [`docs/DESEMPENHO.md`](docs/DESEMPENHO.md) | **O histórico das medições.** O que cada rodada mediu, o que ela desmentiu, e onde o custo estava de verdade |
 | [`docs/DECISOES.md`](docs/DECISOES.md) | Por que **o site** se comporta assim — decisões de produto, com o que foi **descartado** |

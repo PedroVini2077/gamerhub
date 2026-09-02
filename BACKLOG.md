@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**27 itens abertos** (+ 1 ideia sem compromisso)
+**29 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -404,20 +404,35 @@
   regra medida: `transform`/`opacity` rodam no compositor e custam ~zero;
   qualquer coisa com laço de JS por quadro entra na conta da cena 3D.
 
-- ⬜ `[01/09]` 🟠 **Auditoria de privacidade/LGPD baseada na implementação real.**
-  *Pedido do dono no prompt de 01/09. Ainda NÃO feita.*
+- ⬜ `[02/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
+  *Achado na auditoria de privacidade de 02/09. O levantamento inteiro está em
+  [PRIVACIDADE.md](docs/PRIVACIDADE.md).*
 
-  Mapear, DADO a DADO: onde é coletado, por quê, onde fica, quem recebe, por
-  quanto tempo, se é necessário, se é opcional, e o risco. Cobrir Supabase,
-  auth, tokens, `localStorage`/`sessionStorage`, cookies, Sentry, Vercel
-  Analytics, fontes externas e logs.
+  O `RegisterForm.jsx` limita a data pelo atributo `max` do input. **O banco não
+  tem CHECK em `birth_date`** — conferido: existem CHECKs para `platform`,
+  `playstyle` e `role`, e nenhum para a data. Com a `anon key`, qualquer um
+  chama a REST API e cadastra a data que quiser (§1.3: validação no cliente não
+  vale nada sozinha).
 
-  **A regra dele, e ela importa:** não inventar coleta, não inventar obrigação
-  legal, e separar obrigação de boa prática. O que não der para determinar pelo
-  código fica escrito como **A DEFINIR** — não preenchido de palpite.
+  **Por que pesa mais que política de produto:** a LGPD trata dado de criança e
+  adolescente em artigo próprio, com consentimento específico.
 
-  **Descobrir primeiro se o projeto usa cookies de verdade** antes de cogitar
-  banner. Banner "porque todo site tem" é ruído sem função.
+  **Dimensionado:** 5 perfis, 2 com data, **nenhum** abaixo de 13 e nenhuma data
+  absurda. Um CHECK entra sem rejeitar linha existente.
+
+  **Falta a sua decisão:** qual é o piso — 13, 16 ou 18? O número é escolha de
+  produto e jurídica, não minha. Com ele eu aplico a migration e travo.
+
+- ⬜ `[02/09]` 🔵 **`login_attempts` e `admin_logs` sem política de retenção.**
+  As duas são append-only e guardam dado pessoal — e-mail numa, quem fez o quê
+  na outra. Sem prazo, crescem para sempre, e a LGPD fala em necessidade e
+  prazo. Já existe infraestrutura de retenção em `lib/logMeta.js`; falta a
+  decisão de por quanto tempo guardar.
+
+- ⬜ `[02/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
+  Único terceiro que a landing contacta (medido). Hospedar as fontes no próprio
+  site elimina isso por alguns KB de banda. **Boa prática, não obrigação
+  legal** — a distinção importa.
 
 - ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
   *Auditoria da cena 3D de 01/09. A medição inteira está em
