@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { varrerFontes } from './varrerFontes';
 import { criarRitmo, avancar, agendarProximo } from '../ritmoDoRaio';
 
 /**
@@ -56,13 +56,13 @@ describe('nenhum componente da cena depende do relógio que o R3F zera', () => {
     const dir = 'src/components/landing/scene3d';
     const infratores = [];
 
-    for (const nome of readdirSync(dir)) {
-      if (!/\.(jsx?|js)$/.test(nome)) continue;
-      const linhas = readFileSync(join(dir, nome), 'utf8').split('\n');
-      linhas.forEach((linha, i) => {
+    // `varrerFontes` estoura se a pasta sumir — sem isso, renomear `scene3d/`
+    // deixaria esta trava verde para sempre sem ler uma linha.
+    for (const arquivo of varrerFontes(dir)) {
+      readFileSync(arquivo, 'utf8').split('\n').forEach((linha, i) => {
         const semComentario = linha.replace(/\/\/.*$/, '').replace(/^\s*\*.*$/, '');
         if (semComentario.includes('clock.elapsedTime')) {
-          infratores.push(`${nome}:${i + 1}`);
+          infratores.push(`${arquivo.split('/').pop()}:${i + 1}`);
         }
       });
     }

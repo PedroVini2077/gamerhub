@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { varrerFontes } from '../../../lib/__tests__/varrerFontes';
 import {
   BLOCOS, ATUALIZADO_EM, CHAVES_DECLARADAS, TERCEIROS_DECLARADOS,
 } from '../conteudoDaPrivacidade';
@@ -59,16 +60,9 @@ describe('conteúdo da privacidade', () => {
  */
 describe('a promessa sobre cookies continua verdadeira', () => {
   it('nenhum código do site escreve cookie', () => {
-    const arquivos = [];
-    const varrer = (dir) => {
-      for (const nome of readdirSync(dir)) {
-        const caminho = `${dir}/${nome}`;
-        if (statSync(caminho).isDirectory()) {
-          if (nome !== '__tests__') varrer(caminho);
-        } else if (/\.(js|jsx)$/.test(nome)) arquivos.push(caminho);
-      }
-    };
-    varrer('src');
+    // `varrerFontes` estoura se não achar arquivo: sem essa guarda, um caminho
+    // errado deixaria a promessa sobre cookies "verificada" sem verificar nada.
+    const arquivos = varrerFontes('src');
 
     const escrevem = arquivos.filter((f) => {
       const codigo = readFileSync(f, 'utf8')
@@ -106,15 +100,9 @@ describe('a promessa sobre cookies continua verdadeira', () => {
  */
 describe('a política acompanha o crescimento do site', () => {
   it('toda chave gravada no navegador está declarada na política', () => {
-    const arquivos = [];
-    const varrer = (dir) => {
-      for (const nome of readdirSync(dir)) {
-        const caminho = `${dir}/${nome}`;
-        if (statSync(caminho).isDirectory()) { if (nome !== '__tests__') varrer(caminho); }
-        else if (/\.(js|jsx)$/.test(nome)) arquivos.push(caminho);
-      }
-    };
-    varrer('src');
+    // `varrerFontes` estoura se não achar arquivo: sem essa guarda, um caminho
+    // errado deixaria a promessa sobre cookies "verificada" sem verificar nada.
+    const arquivos = varrerFontes('src');
 
     // As chaves são constantes (`const CHAVE = 'gh_...'`), então o valor é o
     // que se procura — e o prefixo `gh_` é a convenção que as identifica.

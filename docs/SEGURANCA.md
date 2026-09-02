@@ -317,18 +317,26 @@ clique. Superfície de ataque: nenhuma — ninguém consegue chamá-las.
 A pergunta que encontra brecha não é "existe portão?" — é **"existe caminho
 para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
 
-| Área | Portão | Existe caminho sem acionar? |
-| --- | --- | --- |
-| Autenticação/autorização | `useAuth.test.js`, `roles.test.js`, `fluxos.mjs` (nega `/admin` e `/owner` a `role='user'`) | **Sim** — mudança de policy no banco não passa por nenhum deles |
-| Banco e RLS | **`portas-do-banco.mjs`** (novo) + `tabelasSemUpdate.test.js` (novo) | **Sim, parcialmente** — ver "o buraco que fica" |
-| Dado sensível | `portas-do-banco.mjs` prova que `profiles` responde 401 ao anônimo | Sim — não cobre o que um usuário **logado** alcança |
-| Admin/staff | `painel-admin.mjs` num navegador real | Sim — cobre a tela, não a permissão no banco |
-| Edge Functions | `portas-fechadas.mjs`, batendo na **produção** | Não, e é de propósito: as functions não estão no git |
-| Fluxos críticos | `fluxos.mjs` (publicar → conferir → apagar → sair) | Sim — cobre o caminho feliz de uma conta comum |
-| Testes | piso de testes no CI, `rotasE2E.test.js` | Não |
-| **Segredo/configuração** | **`segredos-vazados.mjs`** (novo) | Não, para os padrões que ele conhece |
-| CI/CD | portão de deploy da Vercel | Não |
-| Documentação | `documentacao-quebrada`, `mapa-de-arquivos`, `documentacao-envelhecida` | Não |
+| Área | Portão | **O que ele EXIGE de quem mexe** | Existe caminho sem acionar? |
+| --- | --- | --- | --- |
+| Auth/autorização | `useAuth.test.js`, `roles.test.js`, `fluxos.mjs` | que `/admin` e `/owner` continuem negados a `role='user'`, provado num navegador | **sim** — policy no banco não passa por nenhum deles |
+| Banco e RLS | `portas-do-banco.mjs`, `tabelasSemUpdate.test.js` | que porta fechada siga fechada, porta aberta siga aberta, e que ninguém escreva `update` em tabela sem policy | **sim, em parte** — ver "o buraco que fica" |
+| Dado sensível | `portas-do-banco.mjs` | que `profiles`, `posts` e `admin_logs` respondam 401 ao anônimo | sim — não vê o que um **logado** alcança |
+| Privacidade | `conteudoDaPrivacidade.test.js` | que chave nova no navegador, terceiro novo e cookie **entrem na política** antes de existirem | não, para o que ele conhece |
+| Admin/staff | `painel-admin.mjs` | que o painel liste, pagine e negue — com dado que o próprio teste cria | sim — cobre a tela, não a permissão no banco |
+| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 5 portas recusem chamada sem credencial | não, e é de propósito: as functions não estão no git |
+| Fluxos críticos | `fluxos.mjs` | publicar → conferir → apagar → sair, e nenhum lixo de teste sobrando | sim — cobre o caminho feliz de uma conta comum |
+| Testes | piso de testes, `rotasE2E.test.js`, **`varrerFontes`** | que rota nova tenha teste de navegador, e que trava que varre arquivo **prove que varreu** | não |
+| Segredo/config | `segredos-vazados.mjs` | que nenhum arquivo rastreado tenha chave privada, `service_role`, token ou senha | não, para os padrões que ele conhece |
+| CI/CD | portão de deploy da Vercel | que branch nova entre no `vercel.json` | não |
+| Documentação | `documentacao-quebrada`, `mapa-de-arquivos`, `documentacao-envelhecida` | que arquivo novo entre no `ARQUITETURA.md` e que nenhum doc cite arquivo morto | não |
+| Conteúdo visível | `conteudo-visivel.mjs` | que nada com tamanho real fique em `opacity: 0` numa janela de celular | não |
+| Navegação | `navegacao.mjs` | topo ao trocar de página, âncora funcionando das duas páginas, e voltar preservando o lugar | não |
+| Cena 3D | `cena-3d.mjs`, `ritmoDoRaio.test.js` | que o laço pare fora da tela, e que ninguém agende contra o relógio que o R3F zera | não |
+
+**A coluna do meio é a que faltava**, e o dono tinha razão em cobrá-la: sem
+dizer o que o portão **exige**, "existe portão" vira contagem — e contagem não
+orienta quem vai mexer na área.
 
 ### O que a auditoria de 01/09 mediu, e o que ela desmentiu
 
@@ -363,3 +371,33 @@ Então elas continuam sendo trabalho de **auditoria** (§6), rodadas por MCP. As
 consultas estão em [`regras/AUDITORIA.md`](regras/AUDITORIA.md) e a de policy de
 UPDATE está repetida no cabeçalho de `lib/tabelasSemUpdate.js`, junto da lista
 que ela gera.
+
+---
+
+## `[02/09]` A varredura de classe — o que ela encontrou nas minhas próprias travas
+
+A parte B da auditoria (§ do `BACKLOG.md`) manda varrer as classes de erro pelo
+código, e não tratar achado como caso isolado. A classe mais grave é **"teste
+que não consegue falhar"** — está no catálogo desde 30/08 e eu já a repeti duas
+vezes.
+
+**O que a varredura mediu:** das 9 travas que leem arquivos, **6 não conferiam
+que leram algum**. Todas com o mesmo desenho:
+
+```js
+const arquivos = varrer('src/algum/caminho');   // e se voltar vazio?
+const infratores = arquivos.filter(...);
+expect(infratores).toEqual([]);                 // passa. sempre.
+```
+
+Renomeie a pasta e a trava fica **verde para sempre**, sem nunca mais ler uma
+linha. Não é hipótese: é o mesmo mecanismo do teste de portas RPC e do de banco
+fora do ar, os dois que já me pegaram.
+
+**O conserto é de classe, não de caso:** `src/lib/__tests__/varrerFontes.js`
+**estoura** quando não encontra arquivo. A guarda mora no varredor e não em cada
+teste de propósito — guarda que depende de alguém lembrar de escrever é o mesmo
+que não ter guarda.
+
+**Provada** movendo `scene3d/` para fora: a trava do raio parou de passar e
+disse por quê, em vez de seguir verde.

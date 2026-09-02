@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { varrerFontes } from './varrerFontes';
 import { TABELAS_SEM_UPDATE } from '../tabelasSemUpdate';
 
 /**
@@ -14,15 +14,6 @@ import { TABELAS_SEM_UPDATE } from '../tabelasSemUpdate';
  * Este teste não julga se a tabela DEVERIA ter policy. Ele só garante que
  * ninguém escreva um `update` contra uma tabela que hoje não aceita nenhum.
  */
-function arquivosDeCodigo(dir) {
-  return readdirSync(dir).flatMap((nome) => {
-    const caminho = join(dir, nome);
-    if (statSync(caminho).isDirectory()) {
-      return nome === '__tests__' ? [] : arquivosDeCodigo(caminho);
-    }
-    return /\.(js|jsx)$/.test(nome) ? [caminho] : [];
-  });
-}
 
 /**
  * Procura `.from('tabela')` seguido de `.update(` na mesma cadeia.
@@ -49,7 +40,9 @@ describe('nenhum código atualiza tabela sem policy de UPDATE', () => {
     const proibidas = new Set(TABELAS_SEM_UPDATE);
     const violacoes = [];
 
-    for (const arquivo of arquivosDeCodigo('src')) {
+    // `varrerFontes` ESTOURA se não achar arquivo — sem isso, um caminho
+    // errado deixaria este teste verde para sempre sem olhar nada.
+    for (const arquivo of varrerFontes('src')) {
       const conteudo = readFileSync(arquivo, 'utf8');
       for (const tabela of atualizacoesPorTabela(conteudo)) {
         if (proibidas.has(tabela)) violacoes.push(`${arquivo} -> ${tabela}`);
