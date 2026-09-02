@@ -614,3 +614,44 @@ trás sem ninguém notar.
 casca: ela tem lema, bloco em destaque e o mural de jogos, e forçá-la aqui
 encheria o componente de opção que só uma página usa — a outra forma de errar a
 abstração.
+
+---
+
+### `[02/09]` Quem foi banido: por que NÃO existe página pública de "meu caso"
+
+O dono pediu uma aba na navegação da landing para quem foi banido ver o próprio
+caso. A aba existe — mas ela **leva ao login**, e a decisão é de segurança.
+
+**Uma página pública que aceitasse e-mail e respondesse "esta conta está
+banida" seria um oráculo de enumeração:** qualquer pessoa descobriria se um
+endereço tem conta aqui e se aquele alguém foi punido. Isso é dado de terceiro
+exposto sem consentimento — o oposto do endurecimento de LGPD que o projeto fez.
+
+**Entrar resolve sem truque:** a conta É a prova de identidade, e o login
+continua funcionando para quem está banido (só a navegação pelo site é que não).
+
+**E a tela que ela alcança já existia**, fazendo mais do que parecia: motivo,
+detalhes, status do pedido de revisão, resposta da equipe e o formulário de
+recurso. Os buracos reais eram dois, e foram fechados:
+
+| Faltava | Agora |
+| --- | --- |
+| dizer **qual regra** foi quebrada | link para [`/regras`](FUNCIONALIDADES.md), que passou a existir |
+| a pessoa se identificar ao procurar a equipe | o id da própria conta aparece, selecionável |
+
+O id não vaza nada: é o dado dela, mostrado a ela.
+
+### `[02/09]` O teste do painel passou a criar o próprio dado
+
+Ele media o **banco**, não o painel: em 30/08 reprovou porque o dono esvaziou a
+lixeira e o site ficou sem post — defeito zero, CI vermelho.
+
+O remendo da época distinguia "seletor quebrou" de "site vazio" e mantinha a
+trava viva, mas a paginação só era exercitada quando alguém por acaso tivesse
+postado. Agora o teste cria o próprio post antes de abrir o painel e o apaga no
+fim, como o `fluxos.mjs` já fazia.
+
+**E o ramo tolerante saiu junto**, de propósito: com dado garantido, zero linhas
+volta a significar uma coisa só — o seletor quebrou. Manter a tolerância seria
+deixar aberto o buraco original, em que o contador dava zero e o teste
+registrava sucesso.

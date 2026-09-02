@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**27 itens abertos** (+ 1 ideia sem compromisso)
+**25 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -345,33 +345,6 @@
   teste — é uma pessoa publicando, não vendo o próprio post, e concluindo que o
   site comeu o que ela escreveu. O post existe; a tela mente. É §1.5.
 
-- ⬜ `[29/08]` 🟠 **Aba "Fui banido / meu caso" na navegação lateral da LANDING.**
-  *Ideia do dono em 29/08. Fica registrada com a armadilha junto, porque a
-  parte difícil não é a tela — é decidir quem pode ver o quê.*
-
-  A ideia: quem foi banido tem hoje só a `BannedScreen`, uma tela que cobre
-  tudo e diz pouco. Vira uma página própria na landing, com o caso: o motivo,
-  a data, o prazo, o id da conta e a situação do recurso.
-
-  **A armadilha, e ela é de segurança.** A página é da landing, ou seja,
-  pública. Se ela aceitar um email ou um usuário e responder "esta conta está
-  banida", vira **oráculo de enumeração**: qualquer um descobre se um email
-  tem conta, e se aquela pessoa foi punida. Isso é dado de terceiro exposto
-  sem consentimento — o oposto do endurecimento de LGPD que já foi feito.
-
-  **O caminho que não tem esse problema:** a pessoa **entra** e a página lê
-  `auth.uid()`. O login continua funcionando para conta banida (ela só não
-  navega no site), então a conta dela é a prova de identidade — sem oráculo,
-  sem enumeração. O link para essa página sai de dentro da própria
-  `BannedScreen` e da landing.
-
-  **O que falta decidir antes de codar:** quais campos a pessoa vê (o motivo,
-  sim; **quem** moderou, não — isso expõe a equipe a retaliação), e se o
-  recurso passa a ser feito ali.
-
-  Depende de: policy/RPC nova para a pessoa ler o próprio caso, rota nova,
-  e o link dentro da `BannedScreen`.
-
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
@@ -469,15 +442,6 @@
   pública. Isso é consequência do filtro rodar no cliente, não descuido — mas
   entrega a quem quiser burlar o dicionário exato. Vale registrar como decisão
   consciente em `DECISOES.md`, ou mudar de abordagem.
-
-- ⬜ `[30/08]` 🟢 **Tornar o teste do painel independente de dado de produção.**
-  Em 30/08 ele reprovou porque o site ficou sem post — não por defeito nenhum.
-  O remendo de agora distingue "seletor quebrou" de "site vazio", e mantém a
-  trava viva; mas o teste continua **medindo o banco** em vez de medir o painel.
-
-  O certo é ele criar o próprio post antes de conferir a aba e apagá-lo depois,
-  como o `fluxos.mjs` já faz. Aí a paginação volta a ser exercitada sempre, e
-  não só quando alguém tiver postado.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
