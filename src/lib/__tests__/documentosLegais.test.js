@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
-import { DOCUMENTOS, DOCUMENTOS_DO_BANCO, aceitesParaGravar } from '../documentosLegais';
+import {
+  DOCUMENTOS, DOCUMENTOS_DO_BANCO, aceitesParaGravar, documentosPendentes,
+} from '../documentosLegais';
 
 /**
  * ── A deriva que esta trava impede ──────────────────────────────────────────
@@ -70,5 +72,34 @@ describe('documentos legais', () => {
       expect(l.user_id).toBe('abc-123');
       expect(DOCUMENTOS[l.documento].versao).toBe(l.versao);
     }
+  });
+});
+
+describe('documentosPendentes', () => {
+  const versao = c => DOCUMENTOS[c].versao;
+  const todos = () => Object.keys(DOCUMENTOS)
+    .map(c => ({ documento: c, versao: versao(c) }));
+
+  it('tudo aceito na versão vigente: nada pendente', () => {
+    expect(documentosPendentes(todos())).toEqual([]);
+  });
+
+  it('conta sem aceite nenhum: tudo pendente', () => {
+    // O caso das contas criadas antes de 02/09.
+    expect(documentosPendentes([])).toEqual(Object.keys(DOCUMENTOS));
+  });
+
+  it('aceitou a versão ANTIGA: aquele documento fica pendente', () => {
+    const aceites = todos().map(a => (a.documento === 'termos'
+      ? { ...a, versao: '2020-01-01' } : a));
+    expect(documentosPendentes(aceites)).toEqual(['termos']);
+  });
+
+  it('consulta que FALHOU devolve null, e não "tudo pendente"', () => {
+    // ── A distinção que evita o pior comportamento possível ───────────────
+    // Se falha virasse lista cheia, toda queda de rede pediria reaceite a
+    // quem ja aceitou tudo. Dois estados diferentes num valor so e o §4.
+    expect(documentosPendentes(null)).toBeNull();
+    expect(documentosPendentes(undefined)).toBeNull();
   });
 });

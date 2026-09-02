@@ -633,6 +633,29 @@ esquece:
 3. quando um documento mudar de forma relevante, quem já tem conta **reaceita**
    — este terceiro passo está no `BACKLOG.md`, é fluxo próprio.
 
+#### Quem já tinha conta, e quando o documento muda
+
+O aceite no cadastro cobre quem se cadastrar de 02/09 em diante. Os outros dois
+casos — as contas criadas antes, e qualquer pessoa no dia em que um documento
+mudar de versão — são o mesmo mecanismo: comparar a versão vigente com o que a
+pessoa aceitou.
+
+**Avisa, não bloqueia** (decisão do dono: *"só avisa sem bloquear"*), e a
+decisão é a correta: um modal que trava o site força a pessoa a clicar em
+"aceito" **para conseguir ler** o documento que está aceitando. Consentimento
+arrancado assim vale menos, não mais.
+
+O aviso é uma faixa na área logada, com os documentos como link em aba nova e
+dois botões: *Li e aceito* e *ver depois*. O "depois" some **por sessão** — se
+fosse permanente, o aviso deixaria de existir na prática; se voltasse a cada
+tela, viraria praga.
+
+**Três estados, e o terceiro é o que evita o alarme falso:** `[]` (tudo
+aceito, não mostra), lista com itens (mostra), e **`null`** — *não consegui
+perguntar*, com a rede caída. Nesse terceiro o aviso fica calado: cutucar quem
+já aceitou tudo por causa de uma falha de rede ensina a ignorar o canal
+(§0.2, 4ª regra).
+
 #### UMA caixinha, e não três
 
 Decisão de produto: uma marcação só, cobrindo os três documentos, com link para

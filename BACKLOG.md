@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**27 itens abertos** (+ 1 ideia sem compromisso)
+**26 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -246,22 +246,6 @@
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
-
-- ⬜ `[02/09]` 🟠 **Reaceite dos documentos para quem JÁ tem conta.**
-  *O aceite no cadastro entrou em 02/09; este é o outro lado dele.*
-
-  As contas criadas antes de 02/09 não têm linha em `policy_acceptances` —
-  conferido, são 5 perfis sem registro nenhum. E quando um documento mudar de
-  versão, quem já aceitou a versão antiga precisa aceitar a nova.
-
-  Os dois casos são o mesmo mecanismo: comparar a versão vigente em
-  `lib/documentosLegais.js` com o que a pessoa aceitou, e pedir o aceite
-  quando faltar. O desenho provável é uma faixa (não um modal bloqueante — a
-  pessoa tem que conseguir LER o documento antes de aceitar).
-
-  **Por que não foi feito junto:** é fluxo próprio, com decisão de produto no
-  meio (bloqueia o uso do site até aceitar, ou só avisa?). Fazer os dois numa
-  tacada só entregaria o segundo pela metade.
 
 
 - ⬜ `[02/09]` 🟠 **Auditoria e otimização da cena 3D + o raio que corta.**

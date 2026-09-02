@@ -63,3 +63,31 @@ export function aceitesParaGravar(userId) {
     versao,
   }));
 }
+
+/**
+ * Quais documentos esta pessoa ainda não aceitou na versão vigente.
+ *
+ * ── Três respostas, não duas ────────────────────────────────────────────────
+ *
+ * | Devolve | Quer dizer |
+ * | --- | --- |
+ * | `[]` | está tudo aceito — não avisa nada |
+ * | `['termos', …]` | falta aceitar — avisa |
+ * | **`null`** | **não deu para saber** (a consulta falhou) |
+ *
+ * O `null` é o que separa "ela não aceitou" de "eu não consegui perguntar", e
+ * misturar os dois produziria o pior comportamento possível: um aviso pedindo
+ * reaceite toda vez que a rede falhasse, para quem já tinha aceitado tudo.
+ * É a mesma lição do `preferenciaDeSom.js` — dois estados diferentes não podem
+ * virar um valor só (§4).
+ *
+ * @param {Array<{documento: string, versao: string}>|null|undefined} aceites
+ * @returns {string[]|null}
+ */
+export function documentosPendentes(aceites) {
+  if (!Array.isArray(aceites)) return null;
+  const jaAceito = new Set(aceites.map(a => `${a.documento}@${a.versao}`));
+  return Object.entries(DOCUMENTOS)
+    .filter(([chave, { versao }]) => !jaAceito.has(`${chave}@${versao}`))
+    .map(([chave]) => chave);
+}

@@ -38,6 +38,9 @@ src/
 │   ├── useCargoDecisions.js      # Decisões de indicação/estágio/rebaixamento
 │   ├── useUnbanRequests.js       # Pedidos de desbanimento pendentes
 │   ├── useMensagensDeContato.js  # Estado da aba "Contato" do painel admin
+│   ├── useAceitesPendentes.js    # Quais documentos faltam ser aceitos. Guarda
+│   │                      # de QUEM são os dados: resposta que chega depois de
+│   │                      # a sessão trocar é reconhecível como velha
 │   ├── useBlockedLogins.js       # Logins travados por excesso de tentativa
 │   ├── usePostComposer.js # Publicar: upload, moderação e limpeza do formulário
 │   ├── usePostEngagement.js # Curtidas e comentários de um post
@@ -277,6 +280,8 @@ src/
                            # AudioRecorder, GlobalBanner, FeatureGate,
                            # LinhaDoTempoDoCaso (o andamento do recurso, na
                            # tela de quem foi banido),
+                           # AvisoDeAceite (documento novo para aceitar — avisa
+                           # e NÃO bloqueia; some por sessão, não para sempre),
                            # LazyVisible, PageTransition, RolagemDeRota (decide
                            # para onde a página rola ao trocar de rota),
                            # AvisoSemBanco (faixa

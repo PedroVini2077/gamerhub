@@ -18,6 +18,7 @@ import { guardarMotivoDaPausa } from './lib/pauseReason';
 import AvisoSemBanco from './components/ui/AvisoSemBanco';
 import RolagemDeRota from './components/ui/RolagemDeRota';
 import GlobalBanner from './components/ui/GlobalBanner';
+import AvisoDeAceite from './components/ui/AvisoDeAceite';
 import FeatureGate from './components/ui/FeatureGate';
 import PageTransition from './components/ui/PageTransition';
 import SplashScreen from './components/ui/SplashScreen';
@@ -122,6 +123,12 @@ function Layout({ children }) {
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 pt-20 pb-8 px-4 md:px-6 max-w-6xl w-full mx-auto">
           <GlobalBanner />
+          {/* `[02/09]` Só na área logada, e por dois motivos: a landing é
+              vista por quem nem tem conta (não há aceite a cobrar de
+              ninguém), e é justamente ali que a pessoa vai LER os documentos
+              — cobrar aceite na mesma tela em que ela está lendo seria
+              atropelo. */}
+          <AvisoDeAceite />
           <AnimatePresence mode="wait" initial={false}>
             {showMaintenance ? (
               <PageTransition key="maintenance">
