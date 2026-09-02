@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -146,33 +146,6 @@
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 
-- ⬜ `[29/08]` 🟠 **O feed não mostrou um post recém-publicado, uma vez em sete.**
-  *Achado no CI, não reproduzido ainda — está aqui para não sumir em silêncio.*
-
-  Em 29/08 às 22:21 o `fluxos.mjs` falhou no passo 15: publicou e esperou 30 s
-  o post aparecer no feed. **Ele nunca apareceu.** Na segunda execução, com o
-  mesmo commit, passou.
-
-  **O que eu confirmei no banco** (não é dedução): o post foi criado às
-  22:21:02, `deleted_at`, `hidden_at` e `expires_at` todos nulos, a conta sem
-  ban nem suspensão. A publicação funcionou inteira — o que falhou foi a tela
-  refletir. As seis execuções anteriores do mesmo dia passaram, e o PR daquele
-  momento não tocava em nada do caminho de publicação nem do feed.
-
-  **Hipótese, ainda sem prova:** `onPost()` dispara UM refetch depois do
-  insert; se aquele refetch não trouxer o post, nada refaz a busca, e o feed
-  fica parado até navegar — o que casa com a tela vazia 30 s depois.
-  Para confirmar: instrumentar o retorno do refetch (quantas linhas vieram e
-  se o id do post recém-criado estava entre elas) e rodar o fluxo umas vezes.
-
-  **Por que não é 🟢:** se a hipótese estiver certa, isto não é problema de
-  teste — é uma pessoa publicando, não vendo o próprio post, e concluindo que o
-  site comeu o que ela escreveu. O post existe; a tela mente. É §1.5.
-
-- ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
-  O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
-  agora está bom. Fica anotado para não virar decisão esquecida.
-
 - ⬜ `[01/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
   *Achado na auditoria de privacidade de 01/09. O levantamento inteiro está em
   [PRIVACIDADE.md](docs/PRIVACIDADE.md).*
@@ -192,11 +165,21 @@
   **Falta a sua decisão:** qual é o piso — 13, 16 ou 18? O número é escolha de
   produto e jurídica, não minha. Com ele eu aplico a migration e travo.
 
-- ⬜ `[01/09]` 🔵 **`login_attempts` e `admin_logs` sem política de retenção.**
-  As duas são append-only e guardam dado pessoal — e-mail numa, quem fez o quê
-  na outra. Sem prazo, crescem para sempre, e a LGPD fala em necessidade e
-  prazo. Já existe infraestrutura de retenção em `lib/logMeta.js`; falta a
-  decisão de por quanto tempo guardar.
+- ⬜ `[01/09]` 🔵 **`login_attempts`, `admin_logs` e `contact_messages` sem
+  política de retenção.** As três são append-only e guardam dado pessoal —
+  e-mail em duas, quem fez o quê na outra. Sem prazo, crescem para sempre, e a
+  LGPD fala em necessidade e prazo. Já existe infraestrutura de retenção em
+  `lib/logMeta.js`; falta a decisão de por quanto tempo guardar.
+  *`[02/09]` `contact_messages` entrou na lista ao nascer. O prazo dela é mais
+  delicado que os outros dois: apagar conversa de moderação cedo demais
+  atrapalha a própria moderação, então o número é decisão de produto.*
+
+- ⬜ `[02/09]` 🔵 **Captcha no formulário de contato.** Os limites de vazão
+  atuais (3 por e-mail em 24 h, disjuntor de 60/hora) impedem a tabela de virar
+  depósito, mas **não** impedem um robô com muitos endereços de encher a hora e
+  fechar o canal para todo mundo. Fechar de verdade pediria Turnstile, que
+  exige Edge Function e mais uma cota. Quando o alarme `contact_flood` aparecer
+  em `admin_logs` alguma vez, é sinal de que a hora chegou.
 
 - ⬜ `[01/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
   Único terceiro que a landing contacta (medido). Hospedar as fontes no próprio
@@ -262,6 +245,36 @@
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[02/09]` 🟠 **O job "painel de admin" falhou uma vez publicando, e eu não
+  sei por quê.** *Instrumentado, não corrigido — está aqui para não sumir.*
+
+  Às 11:04:36 a conta `claudestaff` logou (há registro em `admin_logs`),
+  preencheu o formulário e clicou em Publicar. **O post nunca foi criado**:
+  conferido no banco, a linha não existe, e não há `content_post_created` na
+  trilha. No mesmo minuto a `claudetester` publicou normalmente no outro job.
+
+  **O que já foi descartado, com evidência:** não é a wordlist (rodei o
+  casamento do trigger contra o texto exato: zero palavras); não é ban nem
+  suspensão (as duas contas estão limpas); não é leitura logo após escrita
+  (nesse caso o post existiria).
+
+  **Por que não corrigi:** sem reproduzir, qualquer conserto seria chute — e
+  chute é o que consome sessão (§1.2). O que entrou foi instrumentação:
+  `e2e/publicarPost.mjs` passou a vigiar os avisos da tela enquanto espera e a
+  devolvê-los na falha, com o que cada um significa. Antes a mensagem era só
+  "waiting for locator(...)".
+
+  **O que resolve:** a próxima falha deste passo, que agora vai dizer se a tela
+  mostrou "Conteudo nao permitido", "Erro: ..." do banco, "Post publicado!"
+  (feed não releu) ou nada (o clique não chegou no botão).
+
+- ⬜ `[02/09]` **Responder a mensagem de contato por dentro do painel.** Hoje a
+  equipe lê em `/admin` → aba Contato e responde do próprio e-mail, copiando o
+  endereço da tela. Responder de dentro exigiria a `send-email`, e portanto a
+  cota do Gmail — **a mesma** do cadastro e da recuperação de senha (§0.2).
+  Depende do item de migrar o envio de e-mail, logo abaixo. *Não é urgente com
+  o volume atual; está aqui para não virar redescoberta.*
 
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o

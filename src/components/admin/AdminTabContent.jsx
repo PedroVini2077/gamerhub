@@ -7,6 +7,7 @@ import LogsPanel from './LogsPanel';
 import SuperAdminPanel from './SuperAdminPanel';
 import CargosTab from './CargosTab';
 import ModerationPanel from '../moderation/ModerationPanel';
+import ContatoPanel from './ContatoPanel';
 
 /** Despacha a aba ativa do painel admin para o painel correspondente. */
 export default function AdminTabContent({ tab, isSuperAdmin, data, filters, actions, modals }) {
@@ -39,6 +40,12 @@ export default function AdminTabContent({ tab, isSuperAdmin, data, filters, acti
 
     case 'moderation':
       return <ModerationPanel />;
+
+    // `[02/09]` Sem esta aba o formulario publico seria caixa fechada: a
+    // mensagem cairia numa tabela que ninguem abre, e "mandei e nunca
+    // responderam" ficaria indistinguivel de formulario quebrado (§1.5).
+    case 'contato':
+      return <ContatoPanel />;
 
     case 'lives':
       return (

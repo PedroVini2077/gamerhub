@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
+import { recarregarAteAparecer } from '../lib/recarregarAteAparecer';
 import { fetchFeedPosts } from '../services/postService';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
@@ -32,11 +33,39 @@ export default function Home() {
     queryFn: () => apenasData(fetchFeedPosts(30, user?.id ?? null)),
   });
 
-  // Recarrega o feed e zera o contador de "novos posts" (mesmo efeito que o
-  // antigo fetchPosts). Usado pelo botão de novos posts, pós-criar e pós-deletar.
-  const reloadPosts = useCallback(() => {
+  /**
+   * Recarrega o feed e zera o contador de "novos posts".
+   *
+   * ── `[02/09]` Por que ele CONFERE em vez de só recarregar ─────────────────
+   *
+   * O bug que estava no backlog há dias: publicar e o post não aparecer.
+   * Aconteceu de novo no CI, e desta vez sobrou evidência no banco:
+   *
+   *   post criado ....... 10:18:03, `deleted_at` nulo (existia mesmo)
+   *   feed capturado .... 10:18:33, TRINTA segundos depois, sem ele
+   *   e mostrando ....... um post que já tinha sido apagado às 10:18:10
+   *
+   * Ou seja: a leitura trouxe dado ANTERIOR à escrita. É leitura logo após
+   * escrita caindo numa conexão do pool que ainda não enxergava a linha — o
+   * `createPost` já tinha retornado com sucesso.
+   *
+   * O `refetch()` sozinho não tem como saber disso: ele recebeu uma resposta
+   * válida, só que velha. E como nada tentava de novo, o feed ficava mentindo
+   * até a pessoa navegar — do lado dela, o site comeu o que ela escreveu.
+   *
+   * Com o id em mãos dá para PERGUNTAR se a resposta já contém o post, e
+   * insistir por alguns instantes se não contiver. Sem id (deletar, botão de
+   * novos posts), o comportamento é o de antes.
+   */
+  const reloadPosts = useCallback(async (idEsperado) => {
     setNewPosts(0);
-    refetch();
+    // A decisão de insistir mora em `lib/recarregarAteAparecer.js`, separada
+    // de propósito: a corrida acontece no pool do Supabase e não se reproduz
+    // num navegador de teste. Como função pura ela é testável de verdade.
+    await recarregarAteAparecer(
+      async () => (await refetch()).data,
+      idEsperado,
+    );
   }, [refetch]);
 
   // Só INSERT e DELETE: o handler não faz nada com UPDATE, e cada UPDATE de
@@ -119,7 +148,11 @@ export default function Home() {
 
         {newPosts > 0 && (
           <button
-            onClick={reloadPosts}
+            // `() => reloadPosts()` e não `reloadPosts`: passar a função direto
+            // entregaria o EVENTO de clique como `idEsperado`, e a recarga
+            // ficaria procurando um post cujo id é um objeto de evento —
+            // insistindo quatro vezes à toa em todo clique.
+            onClick={() => reloadPosts()}
             className="w-full card p-3 flex items-center justify-center gap-1.5 text-xs font-mono text-neon-green border-neon-green/30 hover:bg-neon-green/5 transition-colors animate-fade-up"
           >
             <ArrowUp size={13} />

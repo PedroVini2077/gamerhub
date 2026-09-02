@@ -38,6 +38,7 @@ const Home        = lazy(() => import('./pages/Home'));
 const Sobre       = lazy(() => import('./pages/Sobre'));
 const Privacidade = lazy(() => import('./pages/Privacidade'));
 const Regras      = lazy(() => import('./pages/Regras'));
+const Contato     = lazy(() => import('./pages/Contato'));
 const PostPage    = lazy(() => import('./pages/PostPage'));
 const MuralPage   = lazy(() => import('./pages/MuralPage'));
 const Community   = lazy(() => import('./pages/Community'));
@@ -184,6 +185,11 @@ function AppRoutes() {
       {/* Pública porque a tela de banimento aponta para cá: quem foi punido
           precisa alcançar as regras sem estar logado. */}
       <Route path="/regras" element={<Regras />} />
+      {/* `[02/09]` Pública, e aqui "público" É o requisito, não uma
+          conveniência: quem está banido, quem perdeu o acesso e quem nunca
+          criou conta são exatamente as pessoas que mais precisam falar com a
+          equipe — e todas estão do lado de fora do `RequireAuth`. */}
+      <Route path="/contato" element={<Contato />} />
       <Route path="/" element={<HomeOrLanding />} />
       {/* Endereço próprio de um post. Existe para o link direto da fila de
           moderação — antes não havia para onde apontar, o feed é `/` e um post

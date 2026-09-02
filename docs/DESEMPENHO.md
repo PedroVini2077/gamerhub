@@ -60,6 +60,45 @@ e não uma redescoberta.
 
 ---
 
+### `[02/09]` A camada mais densa, e o parallax de ROLAGEM que ela ganhou
+
+O dono achou o efeito acima *"muito discreto"* e pediu mais — com a ressalva
+*"só não deixa feio"*. Ele também descreveu, sem saber o nome, o que faltava:
+*"quando rolo a tela, parece que para no tempo, é assim mesmo?"*. **Era assim
+mesmo, e era um defeito de percepção real:** a camada só reagia ao ponteiro.
+Rolando a página ela descia colada ao conteúdo, como um papel de parede — e
+papel de parede que não se move em relação ao texto lê-se como cenário parado.
+
+**O que mudou:** 11 → **23 traços**, quatro deles marcados `pacote: true` (mais
+largos, mais brilhantes e mais rápidos, para o olho ter onde pousar), e um
+**parallax de rolagem** aplicado no elemento raiz — deslocamento contrário ao
+scroll, de modo que o fundo anda em velocidade diferente do texto.
+
+Medido no mesmo A/B da seção anterior (CPU 1/4, dois builds em portas
+separadas, 60 movimentos de ponteiro + varredura de 3000 px de rolagem):
+
+| | parado | com ponteiro + rolagem |
+| --- | --- | --- |
+| 23 traços, sem parallax de rolagem | ≈ 0 | **+750 ms** |
+| 23 traços, **com** parallax de rolagem | ≈ 0 | **+1046 ms** |
+| **custo só do parallax de rolagem** | — | **≈ +296 ms** |
+
+**Parado continua custando zero** — dobrar a quantidade de traços não mexeu
+nisso, porque a animação inteira é CSS no compositor.
+
+**Por que aceitei os 296 ms.** Eles compram exatamente a queixa do dono, que é
+percepção de vida na página; e a regra de ouro da seção anterior continua
+valendo — o número aparece sob CPU 4× mais lenta, em varredura sintética
+contínua, e desaparece assim que a pessoa para de rolar. O `transition` **não**
+é aplicado no elemento de rolagem de propósito: reiniciar uma transição a cada
+quadro de scroll era o caminho caro, e é o que teria feito o número explodir.
+
+**O que NÃO foi medido:** aparelho real do dono. Os números aqui são de
+laboratório, no mesmo ambiente das medições anteriores — comparáveis entre si,
+não com um PageSpeed (§0.3, regra 5).
+
+---
+
 ### `[01/09]` Auditoria da cena 3D — o que medi, e o experimento que deu ZERO
 
 O dono disse *"tô percebendo que ele tá pesando"* sobre o raio, e pediu

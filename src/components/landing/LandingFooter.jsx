@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Zap, Info, LogIn, ShieldQuestion, ShieldCheck, Scale } from 'lucide-react';
+import { Zap, Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail } from 'lucide-react';
 // Marca vem do `react-icons/fa6`, não do lucide (§4 da convenção de UI) — e o
 // lucide nem tem mais `Github`, ele saiu do pacote junto com os outros ícones
 // de marca.
@@ -96,6 +96,10 @@ export default function LandingFooter() {
               que quem foi bloqueado consegue chegar. O link existe desde 29/08
               e continua genérico de propósito: ele não identifica ninguém. */}
           <ItemDeLink para="/login" icone={ShieldQuestion}>Conta bloqueada?</ItemDeLink>
+          {/* `[02/09]` O link que fecha o buraco: "conta bloqueada" leva ao
+              login, o que só serve para quem ainda CONSEGUE entrar. Quem
+              perdeu o acesso não tinha via nenhuma. */}
+          <ItemDeLink para="/contato" icone={Mail}>Falar com a administração</ItemDeLink>
         </Coluna>
       </div>
 

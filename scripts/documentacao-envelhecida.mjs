@@ -81,20 +81,73 @@ const TERRITORIO = {
   'docs/MANIFESTO.md': [],
   'README.md': [],
   'BACKLOG.md': [],
-  'CLAUDE.md': [],
+
+  // ── `[02/09]` O CLAUDE.md e os splits dele ────────────────────────────────
+  //
+  // Os cinco estavam de fora do portão: o `CLAUDE.md` com território VAZIO (na
+  // lista só para não ser acusado de não mapeado, mas nunca conferido), e os
+  // quatro `docs/regras/` invisíveis porque o varredor não entrava em
+  // subpasta. São os arquivos que comandam todo o resto, e eram os únicos sem
+  // vigilância nenhuma.
+  //
+  // O território deles não é "o código que descrevem" — é **o mecanismo que os
+  // cumpre**. Uma regra sobre banco envelhece quando o portão do banco muda;
+  // uma regra sobre documentação envelhece quando os portões de documentação
+  // mudam. É essa a ligação que interessa vigiar.
+  'CLAUDE.md': [
+    'scripts/inicio-de-sessao.sh',
+    'scripts/fim-de-sessao.mjs',
+    '.github/workflows/ci.yml',
+  ],
+  'docs/regras/POSTURA.md': [
+    'e2e/portas-fechadas.mjs',
+    'e2e/portas-do-banco.mjs',
+    'src/lib/tabelasSemUpdate.js',
+  ],
+  'docs/regras/BANCO.md': [
+    'supabase/migrations',
+    'e2e/portas-do-banco.mjs',
+    'src/lib/tabelasSemUpdate.js',
+  ],
+  'docs/regras/AUDITORIA.md': [
+    'scripts/mapa-de-arquivos.mjs',
+    'scripts/segredos-vazados.mjs',
+    'src/lib/__tests__/varrerFontes.js',
+  ],
+  'docs/regras/DOCUMENTACAO.md': [
+    'scripts/documentacao-quebrada.mjs',
+    'scripts/documentacao-envelhecida.mjs',
+    'scripts/mapa-de-arquivos.mjs',
+  ],
 };
 
 const git = (...args) =>
   execFileSync('git', args, { cwd: RAIZ, encoding: 'utf8' }).trim();
 
-/** Documentos que existem e ninguém mapeou. */
+/**
+ * Documentos que existem e ninguém mapeou.
+ *
+ * `[02/09]` Passou a entrar em SUBPASTAS, e o motivo é grave: a versão antiga
+ * lia só `docs/` no primeiro nível, então **`docs/regras/` era invisível** —
+ * e é lá que moram os splits do `CLAUDE.md`, as regras que comandam todo o
+ * resto. Os quatro arquivos mais importantes do projeto eram os únicos que o
+ * portão não enxergava.
+ *
+ * Encontrado quando o dono cobrou: *"os gatilhos têm que ser feitos para cada
+ * documentação do projeto, nenhum deles pode passar, inclusive o CLAUDE.md"*.
+ */
 function naoMapeados() {
   const dir = join(RAIZ, 'docs');
   if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter(f => f.endsWith('.md'))
-    .map(f => `docs/${f}`)
-    .filter(f => !(f in TERRITORIO));
+
+  const varrer = (relativo) => readdirSync(join(RAIZ, relativo), { withFileTypes: true })
+    .flatMap((entrada) => {
+      const caminho = `${relativo}/${entrada.name}`;
+      if (entrada.isDirectory()) return varrer(caminho);
+      return entrada.name.endsWith('.md') ? [caminho] : [];
+    });
+
+  return varrer('docs').filter(f => !(f in TERRITORIO));
 }
 
 const atrasados = [];

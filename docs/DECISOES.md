@@ -322,6 +322,36 @@ escrita.
 
 ## Código
 
+### `[02/09]` NÃO unificar `denied` e `rejected` nas tabelas de status
+
+**O que foi descartado:** padronizar o valor de "negado" nas sete tabelas de
+status. Hoje `unban_requests` e `live_reactivation_requests` usam `denied`, e
+`moderation_queue`, `role_change_requests` e `staff_nominations` usam
+`rejected` — conferido em `pg_constraint`, não deduzido.
+
+**Por que a ideia apareceu:** essa divergência causou bug real. A
+`BannedScreen` testava `rejected` para `unban_requests`, nunca batia, e quem
+teve o recurso negado via *"Em análise"* para sempre. Quem escreveu tinha visto
+`rejected` três vezes no mesmo código.
+
+**Por que não vamos fazer:** unificar é migration em cinco tabelas, com
+`UPDATE` em linhas existentes, mais mudança em toda RPC e toda tela que as lê —
+incluindo as RPCs `SECURITY DEFINER` de moderação, que são arquivo de alto
+risco (§7). Risco real, coordenado, por **ganho zero** para quem usa o site. É
+exatamente o "reorganizar sem necessidade" que o §7 proíbe.
+
+**O que foi feito no lugar**, porque o risco não some sozinho:
+
+1. a divergência está escrita em [BANCO.md](BANCO.md), com a tabela, para
+   quem for escrever a próxima tela encontrar antes de errar;
+2. o mapa de desfechos saiu do JSX para `lib/etapasDoCaso.js`, com trava que
+   compara nas duas direções — status do banco sem entrada no mapa, e entrada
+   no mapa que o banco nunca grava, que foi a forma exata do bug.
+
+**O que reabriria a decisão:** um terceiro bug da mesma família. Dois já é
+padrão; três seria sinal de que a documentação não está bastando.
+
+
 ### `[28/08]` A cena 3D FICA — não vamos aposentá-la
 
 **Decisão do dono, dita duas vezes:** *"não vamos aposentar a cena 3d não, vamos

@@ -602,6 +602,43 @@ existe mecanismo por trás dela** — não é lista de bom-tom inventada.
 Pública de propósito: a futura tela de "fui banido" vai apontar para cá, e quem
 foi punido precisa alcançá-la **sem estar logado**.
 
+### `[02/09]` A página `/contato` — falar com a administração de FORA do site
+
+Pedido do dono: *"nós precisamos de uma maneira dos usuários falarem com a
+administração de fora do site, nem que seja por formulário"*.
+
+**O buraco era real e maior do que parecia.** O que existia só atendia quem
+ainda conseguia entrar:
+
+| O que existia | Quem ele NÃO atendia |
+| --- | --- |
+| Pedido de revisão na tela de banimento | quem não consegue mais entrar |
+| "Conta bloqueada?" no rodapé → `/login` | quem perdeu o acesso ou o e-mail |
+| Botão de denúncia em cada post | quem nem tem conta |
+| — | quem quer exercer um direito de LGPD |
+
+A última é a mais séria: a política de privacidade prometia acesso, correção e
+exclusão de dados, e **não havia endereço para pedir nenhum dos três**.
+
+**O que a página faz.** Nome, e-mail, um assunto de uma lista fechada de seis, e
+o relato. Funciona sem conta e sem login. A resposta vai para o e-mail
+informado.
+
+**O que ela deliberadamente NÃO faz:** consultar coisa alguma antes de enviar.
+Nem *"esse e-mail tem conta?"*, nem *"essa pessoa está banida?"*. Um formulário
+que responde diferente conforme o endereço informado é um **oráculo de
+enumeração** — qualquer um descobriria quem tem conta aqui e quem foi punido.
+É a mesma razão pela qual a porta do banido leva ao login.
+
+**Do outro lado** existe a aba "Contato" no painel admin, com filtro por status
+e os botões de marcar como lida, respondida ou spam. Sem ela o formulário seria
+uma caixa fechada, e *"mandei e nunca responderam"* ficaria indistinguível de
+*"o formulário está quebrado"* (§1.5).
+
+Os limites de vazão, o disjuntor, o alarme de enchente e os 14 testes em
+`ROLLBACK` estão em
+[`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
+
 ### `[01/09]` A casca compartilhada das páginas de texto
 
 `components/conteudo/PaginaDeConteudo.jsx` nasceu quando a **segunda** página
@@ -735,3 +772,30 @@ fica `display: none` para quem pediu menos movimento.
 a camada usa `100lvh` (não `100vh`), senão as peças saltariam quando a barra de
 endereço do celular some; e o conteúdo fica em `relative z-10`, senão o fluxo
 passaria por cima do texto — que é a diferença entre ambientação e poluição.
+
+---
+
+### `[02/09]` O botão de som: três defeitos, e um deles eu não consegui reproduzir
+
+O dono relatou: o botão não religava depois de desligado, não tocava som nenhum,
+não havia aviso de que o site tem áudio, e o navegador não pediu permissão.
+
+| O que ele viu | O que era |
+| --- | --- |
+| clicar não religava | **inferência:** o componente registrava um `pointerdown` para retomar o som em qualquer gesto, e `pointerdown` dispara **antes** de `click` — o ouvinte ligava e o botão desligava em seguida |
+| não tocava nada | **físico:** as vozes eram 55, 82,5 e 110 Hz. Alto-falante de celular e notebook não reproduz abaixo de ~200 Hz. O sinal existia e ninguém ouvia |
+| sem aviso | verdade — eu não tinha feito |
+| navegador não pediu permissão | **não existe** essa permissão. Navegador bloqueia áudio sem gesto **em silêncio**; quem avisa que há som somos nós |
+
+**As correções:** as vozes subiram para 220 / 329,8 / 440,6 Hz (e o filtro
+passa-baixa de 420 para 900 Hz, senão ele cortaria justamente a voz nova); o
+ouvinte de retomada **saiu** — o som liga pelo botão, e só; e entrou um aviso
+discreto, uma vez por sessão, que some sozinho em 9 s.
+
+> **O que eu NÃO provei.** Reinjetei o ouvinte antigo e o teste passou mesmo
+> assim: num navegador sem cabeça o clique sintético não produz a mesma corrida
+> que um clique humano — conferido com instrumentação, o handler do botão nem
+> chegou a rodar. A causa raiz do relato segue como **inferência**, e a
+> confirmação depende do aparelho do dono. O teste que ficou trava o
+> **contrato** do botão (clicar sempre alterna, com e sem preferência salva),
+> que é trabalho real — só não é a prova desta correção.

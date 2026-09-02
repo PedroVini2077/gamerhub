@@ -37,8 +37,23 @@ let contexto = null;
 let ganho = null;
 let vozes = [];
 
-/** Hz das três vozes: uma fundamental grave e duas quintas desafinadas. */
-const FREQUENCIAS = [55, 82.5, 110.3];
+/**
+ * Hz das vozes.
+ *
+ * `[02/09]` A primeira versão usava 55, 82,5 e 110 Hz — e o dono relatou que
+ * **não tocava nada**. A causa é física, não de código: alto-falante de celular
+ * e de notebook tem centímetros de diâmetro e não reproduz abaixo de ~200 Hz.
+ * O sinal existia e ninguém conseguia ouvir.
+ *
+ * A faixa agora começa em 220 Hz (o lá abaixo do dó central) e sobe em
+ * intervalos consonantes. Continua grave o bastante para soar ambiente, e
+ * dentro do que qualquer alto-falante entrega.
+ *
+ * As duas últimas estão levemente desafinadas de propósito: a diferença faz as
+ * ondas entrarem e saírem de fase num ciclo de minutos, e é isso que dá a
+ * sensação de "respirar" sem laço nenhum.
+ */
+const FREQUENCIAS = [220, 329.8, 440.6];
 
 /**
  * Liga o som. Precisa ser chamado a partir de um gesto da pessoa — é a regra
@@ -61,7 +76,10 @@ export function ligarSom() {
       // acorde fica com aquele zumbido de sintetizador barato.
       const filtro = contexto.createBiquadFilter();
       filtro.type = 'lowpass';
-      filtro.frequency.value = 420;
+      // `[02/09]` Subiu de 420 para 900 Hz junto com as vozes. Cortando em 420
+      // o filtro atenuaria justamente a voz de 440 Hz — o acorde ficaria com
+      // uma nota faltando, e a correção das frequências não teria adiantado.
+      filtro.frequency.value = 900;
       filtro.Q.value = 0.7;
 
       ganho.connect(filtro);

@@ -27,6 +27,7 @@ todas as tabelas públicas.**
 | `live_muted`                 | Silenciamentos (registro complementar)                           |
 | `live_reactivation_requests` | Fila de reativação de lives (admin → super admin)                |
 | `unban_requests`             | Fila de desbanimento (admin → super admin/owner)                 |
+| `contact_messages`           | Mensagens do formulário público `/contato`. **Sem policy de INSERT de propósito** — a única porta é a RPC `enviar_mensagem_de_contato`. Só `is_staff()` lê e atualiza |
 | `login_attempts`             | Tentativas de login por e-mail (bloqueio) — sem acesso direto    |
 | `admin_logs`                 | Trilha de auditoria                                              |
 | `admin_notifications`        | Notificações para admins                                         |
@@ -70,6 +71,33 @@ um admin; restaurar é só voltar a `NULL`.
 não cria conteúdo (post/comentário/mural/chat) — imposto pelos `WITH CHECK` de
 INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspension`.
 
+### ⚠️ `[02/09]` "Negado" se escreve de DUAS formas neste banco
+
+Levantado com `pg_constraint` depois de um bug real, e é a armadilha mais fácil
+de cair aqui:
+
+| Tabela | O valor de "negado" |
+| --- | --- |
+| `unban_requests` | **`denied`** |
+| `live_reactivation_requests` | **`denied`** |
+| `moderation_queue` | `rejected` |
+| `role_change_requests` | `rejected` |
+| `staff_nominations` | `rejected` |
+
+**O bug que isso já causou:** a `BannedScreen` testava `rejected` para
+`unban_requests`. Nunca batia — quem teve o recurso negado via *"Em análise"*
+para sempre, e nada acusava. Quem escreveu tinha visto `rejected` três vezes no
+mesmo código.
+
+**Por que NÃO foram unificados:** seria migration em cinco tabelas, com
+`UPDATE` em linhas existentes e mudança em toda RPC e tela que as lê — risco
+real por ganho zero para quem usa o site. A decisão está em
+[DECISOES.md](DECISOES.md).
+
+**O que fazer no lugar:** ao renderizar um status, mapa explícito conferido por
+teste, como em `lib/etapasDoCaso.js`. Ternário terminando em `else` é o que
+transforma esta pegadinha em bug silencioso (§4).
+
 ### Funções (RPCs / triggers)
 
 **Chamadas pelo front (RPC):**
@@ -80,6 +108,16 @@ INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspensi
   `deny_unban_request`, `admin_unlock_login`, `get_blocked_logins`.
 - Recurso do próprio banido: `solicitar_revisao_do_proprio_ban` (um pedido por
   banimento, 20 a 1000 caracteres) e `meu_pedido_de_revisao` (o andamento).
+- Contato público `[02/09]`: `enviar_mensagem_de_contato(p_nome, p_email,
+  p_assunto, p_mensagem)`. É a **única** porta de entrada de
+  `contact_messages`, chamável por `anon`, e carrega sozinha toda a validação:
+  faixas de tamanho, lista fechada de assunto, teto de 3 por e-mail em 24 h e
+  disjuntor de 60/hora. Os dois limites de vazão devolvem a **mesma** frase, de
+  propósito — mensagens diferentes fariam dela um oráculo de enumeração. O
+  alarme de enchente mora no trigger `alertar_enchente_de_contato`, e **não**
+  dentro da RPC: um `RAISE EXCEPTION` desfaz o `INSERT` de log feito antes
+  dele, e a primeira versão gravava um alarme que nunca commitava. Ver
+  [`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
 
 > **Correção `[29/08]`:** esta lista citava `register_login_attempt`, e a função
 > **não existe mais** — conferido no `pg_proc`, não deduzido. Ela era chamada
