@@ -11,8 +11,24 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 29/08/2026, manhã ·
+**Última conferência contra o sistema:** 02/09/2026, noite ·
 **23 itens abertos** (+ 1 ideia sem compromisso)
+
+> **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
+> erradas, e nenhuma delas se corrigiria sozinha:
+>
+> | O que estava escrito | O que o sistema respondeu |
+> | --- | --- |
+> | *"`profiles` responde 401 ao anônimo, então não há como mapear UUID → pessoa"* | `select=id,username` responde **200 com as 5 linhas**. A cadeia `site_config.updated_by` → nome fecha. Item subiu de 🔵 para 🟡 |
+> | *"UUID de staff exposto em **duas** tabelas"* | `blocked_words.created_by` está **nula nas 322 linhas**. Só `site_config` vaza pessoa |
+> | as duas conferências de fila "daqui a alguns dias" | fila com **20 itens, todos resolvidos**, zero pendentes — mas **nada foi postado desde 28/08**, então o zero é falta de amostra, não veredito |
+>
+> **E um defeito meu, encontrado e corrigido na mesma passada:** o dono aceitou
+> a política de privacidade às 19:58 de 02/09, e o PR #140 reescreveu o bloco de
+> retenção depois disso **sem subir a versão**. O registro de aceite passou a
+> apontar para um texto que ele não leu. Corrigido: versão `2026-09-02-2`, o
+> `CHECK` do banco passou a aceitar revisão no mesmo dia, e entrou a trava de
+> impressão de conteúdo — ver [PRIVACIDADE.md](docs/PRIVACIDADE.md).
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -90,9 +106,11 @@
   Onde ler: painel da Supabase → Edge Functions → `moderate-image` → Logs,
   linhas `[moderate-image] ... | notas: ...`.
 
-  > Os dois itens antigos que tinham ficado na fila já foram resolvidos pelo
-  > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
-  > pendentes.
+  > **Conferido em 02/09, e o número não decide nada ainda:** a fila tem 20
+  > itens, **todos resolvidos** (15 `approved`, 5 `rejected`), **zero
+  > pendentes** — e nenhum item novo entrou desde 28/08. Fila vazia com uso
+  > parado não distingue "o piso está certo" de "ninguém postou". A conferência
+  > continua aberta porque ela depende de uso real, não de uma consulta.
 
 - ⬜ `[29/08]` 🟢 **Conferir a fila `Não analisado` daqui a alguns dias.**
   *Não é pendência de código — o caminho está fechado. É a conferência que diz
@@ -109,6 +127,10 @@
   | a fila `Não analisado` seguir vazia | o plano B está dando conta — nada a fazer |
   | aparecer um item de vez em quando | funcionando como projetado; o motivo no item diz qual navegador falhou |
   | encher | o plano B não está cobrindo o caso real, e aí o motivo (que vem com as duas metades) aponta onde |
+
+  > **Conferido em 02/09:** os 20 itens da fila são `post` (13), `chat` (6) e
+  > `comment` (1) — **nenhum `sem_analise`**. Mesma ressalva do item acima:
+  > nada foi postado desde 28/08, então o zero é falta de amostra, não prova.
 
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
@@ -157,26 +179,58 @@
   para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
   no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
 
-- ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em duas tabelas públicas.**
-  *Achado na auditoria de gatilhos de 01/09, sondando a REST API como visitante.*
+- ⬜ `[01/09]` 🟡 **Staff identificável POR NOME pelo anônimo em `site_config`.**
+  *Achado em 01/09 · **severidade corrigida em 02/09**: a justificativa do 🔵
+  original era falsa, e a correção veio de refazer a sondagem em vez de confiar
+  no que estava escrito (§1.4).*
 
-  As duas tabelas que o visitante lê de propósito carregam junto a coluna de
-  autoria: `site_config.updated_by` e `blocked_words.created_by`. Qualquer um
-  sem conta lê o UUID de quem mexeu na configuração do site e de quem cadastrou
-  cada palavra da lista.
+  **O que dizia aqui, e estava errado:** *"é UUID, não nome; `profiles` responde
+  401 ao anônimo, então não há como mapear UUID → pessoa"*. O 401 acontece com
+  `select=*` — as colunas sensíveis (`role`, `banned`, `birth_date`, `bio`,
+  `avatar_url`) são negadas mesmo. Mas `id` e `username` **passam juntos**:
 
-  **Por que 🔵 e não mais:** é UUID, não nome. `profiles` responde **401** ao
-  anônimo, então não há como mapear UUID → pessoa pela REST API. O impacto real
-  hoje é ligar mudanças de config a uma conta, sem saber qual.
+  ```
+  GET /rest/v1/profiles?select=id,username     -> 200, content-range: 0-4/5
+  ```
 
-  **É CLASSE, não caso:** a pergunta certa não é "essas duas colunas incomodam?"
-  e sim *"toda tabela legível pelo anônimo está devolvendo só o que a tela
-  precisa?"*. A landing lê `site_config` para o modo manutenção e `blocked_words`
-  para o filtro — **nenhuma das duas telas usa a coluna de autoria**.
+  Então a cadeia inteira fecha, sem conta nenhuma:
 
-  **Solução provável:** view ou `select()` explícito sem as colunas de autoria,
-  em vez de `select=*`. Antes de revogar coluna, rodar a consulta de "quem lê"
-  do [POSTURA.md](docs/regras/POSTURA.md) — revoke já derrubou o site três vezes.
+  ```
+  site_config.updated_by = 7ca78f83-…  ->  profiles?select=id,username
+                                       ->  "opedrovini"
+  ```
+
+  **10 das 14 linhas** de `site_config` carregam autor, todas o mesmo UUID.
+  Qualquer visitante descobre **qual conta administra o site**, pelo nome.
+
+  **Correção de fato, no mesmo item:** `blocked_words.created_by` é lida pelo
+  anônimo mas está **nula nas 322 linhas** — a coluna vaza estrutura, não dado.
+  Só `site_config` vaza pessoa hoje.
+
+  **O que NÃO é problema (sondado em 02/09):** escrita anônima nas duas tabelas
+  devolve **401** em `PATCH` e `POST`, e nada entrou. O privilégio de coluna
+  INSERT/UPDATE existe para `anon`, mas a RLS nega — vale fechar por defesa em
+  profundidade, não porque esteja aberto.
+
+  **A dependência já foi checada** (a consulta de "quem lê" do
+  [POSTURA.md](docs/regras/POSTURA.md), rodada em 02/09): **nenhuma policy** usa
+  `updated_by`/`created_by`, e a única função que os toca é
+  `owner_set_site_config`, que é `SECURITY DEFINER` e não passa por esses
+  privilégios. Um `REVOKE (updated_by, created_by) FROM anon, authenticated`
+  parece seguro — mas revoke de coluna já derrubou o site três vezes, então é
+  🟡 (§7: proponho e espero), não algo que eu aplique sozinho.
+
+  **O portão que deixava passar, e o que ele passou a fazer.** O
+  `portas-do-banco.mjs` sondava só `select=*`, então dava **verde honesto para a
+  pergunta errada** — e o `SEGURANCA.md` passou a afirmar, com base nesse verde,
+  que "`profiles` responde 401 ao anônimo". Desde 02/09 ele sonda **coluna a
+  coluna**: as 8 colunas pessoais precisam continuar em 401, e `id`/`username`
+  são registradas como estado conhecido. Ele **não reprova hoje** (item aberto e
+  não decidido reprovando todo PR viraria ruído, §0.2), mas reprova a **piora** —
+  provado reinjetando o bug: sai 1 nomeando a coluna que abriu.
+
+  **É CLASSE, não caso:** a pergunta certa é *"toda tabela legível pelo anônimo
+  devolve só o que a tela precisa?"*. Nenhuma das duas telas usa a autoria.
 
   **Bônus a decidir junto:** a lista inteira de 322 palavras bloqueadas é
   pública. Isso é consequência do filtro rodar no cliente, não descuido — mas

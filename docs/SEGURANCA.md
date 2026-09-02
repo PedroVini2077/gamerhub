@@ -321,7 +321,7 @@ para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
 | --- | --- | --- | --- |
 | Auth/autorização | `useAuth.test.js`, `roles.test.js`, `fluxos.mjs` | que `/admin` e `/owner` continuem negados a `role='user'`, provado num navegador | **sim** — policy no banco não passa por nenhum deles |
 | Banco e RLS | `portas-do-banco.mjs`, `tabelasSemUpdate.test.js` | que porta fechada siga fechada, porta aberta siga aberta, e que ninguém escreva `update` em tabela sem policy | **sim, em parte** — ver "o buraco que fica" |
-| Dado sensível | `portas-do-banco.mjs` | que `profiles`, `posts` e `admin_logs` respondam 401 ao anônimo | sim — não vê o que um **logado** alcança |
+| Dado sensível | `portas-do-banco.mjs` | que `posts` e `admin_logs` respondam 401 ao anônimo, e que de `profiles` o anônimo leia **exatamente `id` e `username`** — nem uma coluna a mais, nem a menos | sim — não vê o que um **logado** alcança |
 | Privacidade | `conteudoDaPrivacidade.test.js` | que chave nova no navegador, terceiro novo e cookie **entrem na política** antes de existirem | não, para o que ele conhece |
 | Admin/staff | `painel-admin.mjs` | que o painel liste, pagine e negue — com dado que o próprio teste cria | sim — cobre a tela, não a permissão no banco |
 | Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 5 portas recusem chamada sem credencial | não, e é de propósito: as functions não estão no git |
