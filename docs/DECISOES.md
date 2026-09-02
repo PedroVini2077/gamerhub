@@ -322,6 +322,58 @@ escrita.
 
 ## Código
 
+### `[02/09]` Cada seção do site logado tem animação PRÓPRIA — e isto não é regra do CLAUDE.md
+
+**Decisão do dono**, e a forma dela importa tanto quanto o conteúdo:
+
+> *"acho que pode até virar uma regra, **não uma regra pra memória**, mas que
+> toda aba (que fizer sentido) ter animações diversas, pra não ficar repetido"*
+
+Ele foi explícito sobre onde isto mora: **aqui, e não no `CLAUDE.md`**. E está
+certo — o `CLAUDE.md` é sobre como eu trabalho, não sobre como o site se veste.
+Encher aquele arquivo de preferência visual dilui as regras que existem para
+impedir bug e brecha, e regra diluída é regra que se ignora.
+
+#### O que ficou combinado
+
+Toda aba que fizer sentido tem animação de fundo própria, para não ficar
+repetido. "Que fizer sentido" é a parte que exige julgamento, e ela já tem uma
+exceção decidida: **os painéis de equipe (`/admin`, `/owner`) ficam sem nada**.
+Quem está ali lê log e decide punição — movimento atrás desse texto atrapalha
+em vez de ambientar.
+
+#### Como foi executado, em duas camadas
+
+| Camada | O que é | Por que |
+| --- | --- | --- |
+| `FluxoDeDados` | os traços, com a cor da seção | assinatura **compartilhada** com a landing — o site parece o mesmo site |
+| `PecasFlutuantes` | peças de videogame em SVG | o que **separa** o site logado do resto |
+
+E o elenco muda por aba: troféu e moeda nos ranks, chave nas keys, balão no
+mural e nas lives, fliperama no feed. Um elenco só em cinco telas seria a mesma
+cena com outra cor — o olho reconhece a repetição antes da variação.
+
+#### "Emoji" aqui quer dizer SVG, e ele deixou isso claro
+
+> *"quando falo emoji, não é literalmente emoji do teclado, é feito por svg ou
+> o jeito que vc faz"*
+
+Emoji de teclado muda de desenho em cada sistema: o mesmo caractere é uma coisa
+no Android, outra no iPhone, outra no Windows. Num fundo de cena isso é ruído —
+a identidade do site passaria a depender da fonte que o aparelho instalou.
+
+#### O custo, medido antes de aceitar
+
+Página parada, CPU a 1/4, com as **duas** camadas: **59,6 fps e zero
+bloqueio**. Tudo é `transform` e `opacity` no compositor, sem laço de
+JavaScript por quadro. Ver [DESEMPENHO.md](DESEMPENHO.md).
+
+#### O que reabriria
+
+O dono achar poluído com o uso. A saída barata já existe: as peças saem de uma
+lista, e esvaziar a lista de uma seção a deixa só com o fluxo de dados.
+
+
 ### `[02/09]` O som ambiente atravessa as páginas públicas, e PARA ao entrar
 
 **Pedido do dono:** *"essa música deve funcionar em toda landing page, então no

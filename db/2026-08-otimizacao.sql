@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_comment_likes_user
 -- 2.1 — DIMENSIONE ANTES DE APAGAR. Rode isto e confira os números:
 
 /*
-SELECT 'admin_logs > 90d'        AS alvo, count(*) FROM public.admin_logs    WHERE created_at < now() - interval '90 days'
+SELECT 'admin_logs > 365d'       AS alvo, count(*) FROM public.admin_logs    WHERE created_at < now() - interval '365 days'
 UNION ALL SELECT 'notifications lidas > 30d', count(*) FROM public.notifications WHERE read = true AND created_at < now() - interval '30 days'
 UNION ALL SELECT 'login_attempts limpos > 30d', count(*) FROM public.login_attempts
   WHERE permanent = false AND (blocked_until IS NULL OR blocked_until < now()) AND updated_at < now() - interval '30 days'
@@ -94,7 +94,10 @@ DECLARE
 BEGIN
   -- Auditoria administrativa: 90 dias é bem mais do que qualquer investigação
   -- retroativa que o painel permite consultar.
-  DELETE FROM admin_logs WHERE created_at < now() - interval '90 days';
+  -- `[02/09]` 90 -> 365 dias, decisão do dono. A trilha precisa sustentar uma
+  -- decisão de moderação questionada meses depois; 90 dias não cobria um ban
+  -- de janeiro discutido em maio.
+  DELETE FROM admin_logs WHERE created_at < now() - interval '365 days';
   GET DIAGNOSTICS v_logs = ROW_COUNT;
 
   -- Notificação já lida e velha não é mostrada em lugar nenhum.

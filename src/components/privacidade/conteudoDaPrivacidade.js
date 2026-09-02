@@ -197,10 +197,29 @@ export const BLOCOS = [
     id: 'por-quanto-tempo',
     titulo: 'Por quanto tempo a gente guarda',
     icone: 'Timer',
-    pendente: true,
-    dica: 'Falta definir o prazo de retenção do registro de tentativas de '
-      + 'login e da trilha de moderação. Ambos guardam dado pessoal e hoje '
-      + 'não têm prazo — item 🔵 no BACKLOG.md.',
+    pendente: false,
+    paragrafos: [
+      'Dado não fica guardado para sempre "porque sim". Cada coisa tem um '
+      + 'prazo, e passado esse prazo ela é apagada automaticamente — todo dia, '
+      + 'de madrugada, sem ninguém precisar mandar.',
+      'Seu perfil e o que você publica não estão nesta tabela: eles ficam '
+      + 'enquanto sua conta existir, e somem quando você apagar a conta.',
+    ],
+    tabela: {
+      titulo: 'Prazos de exclusão automática',
+      colunas: ['O que', 'Por quanto tempo', 'Por que esse prazo'],
+      linhas: [
+        ['Tentativas de login', '30 dias',
+          'servem para barrar ataque em andamento; tentativa de meses atrás não protege ninguém'],
+        ['Registro de moderação', '1 ano',
+          'precisa sustentar uma decisão questionada meses depois'],
+        ['Mensagens do formulário de contato', '2 anos',
+          'apagar cedo demais atrapalharia a própria moderação'],
+        ['Notificações já lidas', '30 dias', 'depois disso não aparecem em lugar nenhum'],
+        ['Chat de live encerrada', '7 dias', 'a live acabou; o chat dela não serve mais'],
+        ['Post na lixeira', '30 dias', 'a janela para a equipe conseguir restaurar'],
+      ],
+    },
   },
 
   {

@@ -283,3 +283,33 @@ body {
   animation: raioFundoSome 0.45s ease-out 0.82s forwards;
 }
 @keyframes raioFundoSome { to { opacity: 0; } }
+
+/* ── `[02/09]` As peças de videogame do site logado ───────────────────────
+ *
+ * Pedido do dono: o site logado deve ter "outras coisas... diferentes do
+ * resto, nem que seja controles de video game", e nao emoji de teclado —
+ * SVG desenhado.
+ *
+ * Mesma disciplina de custo do resto do projeto: SO `transform` e `opacity`,
+ * que o navegador anima no COMPOSITOR, fora da thread principal. Nenhum laco
+ * de JavaScript por quadro — foi exatamente esse laco que custou 29.441 ms de
+ * thread na cena 3D (§0.3).
+ *
+ * A deriva lenta e a rotacao suave sao de proposito: pecas girando rapido
+ * viram distracao numa tela onde a pessoa esta LENDO. Aqui elas atravessam a
+ * altura da tela em um a dois minutos.
+ */
+.peca-de-jogo {
+  position: absolute;
+  animation-name: pecaFlutua;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes pecaFlutua {
+  0%   { transform: translate3d(0, 12vh, 0) rotate(0deg);      opacity: 0; }
+  12%  {                                                        opacity: var(--pico, 0.16); }
+  88%  {                                                        opacity: var(--pico, 0.16); }
+  100% { transform: translate3d(var(--deriva, 4vw), -108vh, 0) rotate(var(--giro, 40deg)); opacity: 0; }
+}

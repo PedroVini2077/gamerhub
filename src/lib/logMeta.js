@@ -182,7 +182,10 @@ export function feedItemMeta(item) {
 // ─── Retenção ────────────────────────────────────────────────────────────────
 // Precisa bater com `cleanup_old_data()` em `db/2026-08-otimizacao.sql`.
 // Mostrado nos painéis pra ninguém achar que log sumido é bug.
-export const LOG_RETENTION_DAYS = 90;
+// `[02/09]` 90 -> 365, decisão do dono sobre os prazos de retenção. O teste
+// `logMeta.test.js` confere que este número bate com o `interval` do SQL — se
+// alguém mudar um lado, a UI passa a mentir sobre quando o log some.
+export const LOG_RETENTION_DAYS = 365;
 
 // ─── Actions geradas pelo BANCO ──────────────────────────────────────────────
 // Nenhuma delas aparece como string em `src/`, então o teste que varre o

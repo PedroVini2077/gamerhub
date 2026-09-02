@@ -83,9 +83,9 @@ src/
 │   ├── rotasComSom.js     # Onde o som ambiente toca. Lista FECHADA: rota
 │   │                      # desconhecida é silêncio, não música — a regra
 │   │                      # invertida faria toda página nova nascer tocando
-│   ├── acentoDaSecao.js   # A cor do fundo animado por seção do site logado.
-│   │                      # Sem cor padrão de propósito: tela nova sem entrada
-│   │                      # aparece SEM fundo, e alguém nota
+│   ├── acentoDaSecao.js   # Como cada seção do site logado se veste: a COR do
+│   │                      # fundo e o ELENCO de peças. Sem padrão de propósito:
+│   │                      # tela nova sem entrada aparece sem fundo e sem peças
 │   ├── documentosLegais.js # Os três documentos que a pessoa aceita, e a
 │   │                      # VERSÃO de cada um. Sem versão, mudar a política
 │   │                      # apagaria o sentido de todo aceite anterior
@@ -194,9 +194,14 @@ src/
 └── components/
     ├── ErrorBoundary.jsx
     ├── layout/            # Sidebar, Header
-    │   └── FundoDaSecao.jsx # O fundo animado do site logado: o MESMO
-    │                      # componente da landing, com cor por seção e
-    │                      # `parallax={false}` — o feed é onde mais se rola
+    │   ├── FundoDaSecao.jsx # O fundo do site logado, em DUAS camadas: o
+    │   │                  # `FluxoDeDados` da landing (assinatura de família)
+    │   │                  # mais as peças de videogame (identidade própria)
+    │   ├── PecasFlutuantes.jsx # As peças que atravessam a tela. Só CSS no
+    │   │                  # compositor — zero bloqueio medido a CPU 1/4
+    │   └── pecasDeJogo.jsx # Os SVG: controle, d-pad, moeda, vida, troféu,
+    │                      # nave, raio, balão, chave, fliperama. Desenhados
+    │                      # aqui e não emoji de teclado, que muda por sistema
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
     │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
     │                      # com links em aba nova. Três caixinhas separadas
