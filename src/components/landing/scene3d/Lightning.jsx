@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { criarRitmo, avancar, agendarProximo } from '../../../lib/ritmoDoRaio';
 
 // Eletricidade EXCLUSIVA do Hero: arcos de raio que disparam em volta da logo
 // + flashes de "trovão". Cada arco carrega sua própria luz, que acende no
@@ -25,9 +26,13 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
   const lightRef = useRef(null);
   // `delay` (constante por arco) desencontra o primeiro disparo sem usar
   // Math.random no render; a aleatoriedade real fica no useFrame.
-  const timing = useRef({ next: delay, life: 0, lightLife: 0 });
+  // O ritmo conta por DELTA e não pelo relógio da cena: o R3F ZERA o
+  // `clock.elapsedTime` toda vez que o `frameloop` muda, e ele muda a cada
+  // saída e volta da viewport. Ver lib/ritmoDoRaio.js — foi o bug do raio mudo.
+  const ritmo = useRef(criarRitmo(delay));
+  const timing = useRef({ life: 0, lightLife: 0 });
 
-  useFrame(({ clock }, delta) => {
+  useFrame((_estado, delta) => {
     const geometry = lineRef.current?.geometry;
     if (!geometry) return;
     const T = timing.current;
@@ -44,7 +49,7 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
       const p = THREE.MathUtils.clamp(1 - T.lightLife / LIGHT_LIFE, 0, 1);
       if (lightRef.current) lightRef.current.intensity = Math.sin(p * Math.PI) * 4.5;
     }
-    if (clock.elapsedTime >= T.next) {
+    if (avancar(ritmo.current, delta)) {
       const angle = Math.random() * Math.PI * 2;
       const r = reach * (0.5 + Math.random() * 0.6);
       const tx = ORIGIN.x + Math.cos(angle) * r;
@@ -73,7 +78,7 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
           THREE.MathUtils.lerp(ORIGIN.z, tz, 0.5) + 0.5,
         );
       }
-      T.next = clock.elapsedTime + gap[0] + Math.random() * (gap[1] - gap[0]);
+      agendarProximo(ritmo.current, gap[0], gap[1]);
     }
   });
 
@@ -101,17 +106,21 @@ function Arc({ color, spread = 0.5, reach = 1.4, gap = [0.6, 2.2], delay = 0 }) 
 // Flash de trovão: a luz dá um pico curto e some, de tempos em tempos.
 function ThunderFlash() {
   const ref = useRef(null);
-  const timing = useRef({ next: 2.5, life: 0 });
+  // Mesmo ritmo por delta dos arcos, e pelo mesmo motivo: o relógio da cena
+  // zera a cada mudança de `frameloop`. Este flash tinha o bug idêntico —
+  // corrigir só o Arc teria consertado o caso e deixado a classe viva.
+  const ritmo = useRef(criarRitmo(2.5));
+  const timing = useRef({ life: 0 });
 
-  useFrame(({ clock }, delta) => {
+  useFrame((_estado, delta) => {
     const T = timing.current;
     if (T.life > 0) {
       T.life -= delta;
       if (ref.current) ref.current.intensity = Math.max(0, T.life / 0.12) * 3.2;
     }
-    if (clock.elapsedTime >= T.next) {
+    if (avancar(ritmo.current, delta)) {
       T.life = 0.12;
-      T.next = clock.elapsedTime + 2 + Math.random() * 4;
+      agendarProximo(ritmo.current, 2, 6);
     }
   });
 

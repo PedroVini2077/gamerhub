@@ -33,10 +33,32 @@ function useBoltGeometry() {
   }, []);
 }
 
+/**
+ * Tempo acumulado a partir do `delta`, e NÃO `clock.elapsedTime`.
+ *
+ * O `@react-three/fiber` zera o relógio da cena a cada mudança de `frameloop`
+ * (`setFrameloop` faz `clock.elapsedTime = 0`), e ele muda toda vez que a cena
+ * sai e volta para a viewport. Ver `lib/ritmoDoRaio.js`, onde o mesmo defeito
+ * deixava o raio mudo.
+ *
+ * Cada componente acumula o seu: assim não existe ordem de execução entre
+ * `useFrame`s para dar errado. O teto de 1 s protege do salto que o navegador
+ * entrega no primeiro quadro depois de a aba ficar em segundo plano.
+ */
+function useTempoAcumulado() {
+  const t = useRef(0);
+  return { t, avanca: (delta) => { t.current += Math.min(delta, 1); } };
+}
+
 function useBob(ref, { speed = 1, amplitude = 0.18, baseY = 0, phase = 0 }) {
-  useFrame(({ clock }) => {
+  const tempo = useTempoAcumulado();
+  useFrame((_estado, delta) => {
+    tempo.avanca(delta);
     if (!ref.current) return;
-    ref.current.position.y = baseY + Math.sin(clock.elapsedTime * speed + phase) * amplitude;
+    // Com o relógio da cena, o seno saltava de fase ao voltar para a tela e os
+    // objetos davam um pulo. Com tempo acumulado, a oscilação continua de onde
+    // parou.
+    ref.current.position.y = baseY + Math.sin(tempo.t.current * speed + phase) * amplitude;
   });
 }
 
@@ -51,8 +73,13 @@ export function LogoBolt() {
   const scale = THREE.MathUtils.clamp(viewport.width / 6, 0.72, 1);
   useBob(groupRef, { speed: 0.7, amplitude: 0.1, baseY: 1.45 });
 
-  useFrame(({ clock }, delta) => {
-    const t = clock.elapsedTime;
+  const tempoDaLogo = useTempoAcumulado();
+  useFrame((_estado, delta) => {
+    tempoDaLogo.avanca(delta);
+    // O caso mais visível da classe: com o relógio da cena zerando a cada
+    // volta para a viewport, `growP` voltava a 0 e A LOGO encolhia até sumir
+    // para refazer a entrada. Tempo acumulado faz a entrada acontecer uma vez.
+    const t = tempoDaLogo.t.current;
     const growP  = THREE.MathUtils.clamp(t / LOGO_GROW_TIME,  0, 1);
     const flashP = THREE.MathUtils.clamp(t / LOGO_FLASH_TIME, 0, 1);
     const flashBurst = (1 - flashP) ** 2;
@@ -119,10 +146,12 @@ function RingModel({ color }) {
 
 function DiamondModel({ color }) {
   const ref = useRef(null);
-  useFrame(({ clock }, delta) => {
+  const tempo = useTempoAcumulado();
+  useFrame((_estado, delta) => {
+    tempo.avanca(delta);
     if (!ref.current) return;
     ref.current.rotation.y += delta * 0.7;
-    ref.current.rotation.x = Math.sin(clock.elapsedTime * 0.4) * 0.3;
+    ref.current.rotation.x = Math.sin(tempo.t.current * 0.4) * 0.3;
   });
   return (
     <group ref={ref}>
@@ -164,8 +193,14 @@ function FloatingShape({ kind, color, x, y, z, modelScale, sizeScale, speed, pha
   const Model = MODELS[kind];
   useBob(ref, { speed, amplitude: 0.28, baseY: y, phase });
 
-  useFrame(({ clock }) => {
-    const popP = THREE.MathUtils.clamp((clock.elapsedTime - delay) / SHAPE_POP_TIME, 0, 1);
+  const tempoDaEntrada = useTempoAcumulado();
+  useFrame((_estado, delta) => {
+    tempoDaEntrada.avanca(delta);
+    // Este era o caso PIOR da mesma classe: com o relógio zerando, `popP`
+    // voltava a 0, a escala ia a zero e as formas SUMIAM para refazer a
+    // animação de entrada a cada volta para a viewport. Com tempo acumulado a
+    // entrada acontece uma vez só, como sempre foi a intenção.
+    const popP = THREE.MathUtils.clamp((tempoDaEntrada.t.current - delay) / SHAPE_POP_TIME, 0, 1);
     const pop  = popP <= 0 ? 0 : easeOutBack(popP);
     if (ref.current) ref.current.scale.setScalar(sizeScale * modelScale * Math.max(pop, 0));
   });
