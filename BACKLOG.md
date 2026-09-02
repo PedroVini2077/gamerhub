@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**28 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -102,6 +102,63 @@
 
   Sem evidência nomeada, não cumpri: só acho que cumpri. Formalizar isto no
   `CLAUDE.md` é decisão da próxima sessão (§6.2 pede proposta).
+
+  ---
+
+  ### `[01/09]` PARTE C EXECUTADA — cada padrão de falha contra a proteção que existe
+
+  *Feita depois de o dono cobrar: "tô achando que vc fez essa sua auditoria muito
+  rápida, realmente estamos fazendo tudo pra evitar vc de errar?". Ele estava
+  certo. Esta é a resposta com número.*
+
+  | # | Padrão de falha meu | Existe mecanismo? |
+  | --- | --- | --- |
+  | 1 | escrevo de memória em vez de abrir o arquivo | **parcial** — o gatilho de início mostra a idade de cada doc; o mapa pega arquivo novo fora do `ARQUITETURA`. Mas **nada pega "escrevi no documento errado"**, que foi a falha real de 29/08 |
+  | 2 | apresento inferência como fato | **não** — só a pergunta no gatilho |
+  | 3 | escrevo teste que não consegue falhar | **não**, e eu **repeti hoje** |
+  | 4 | construo portão que acusa errado | **parcial** — o falso positivo aparece na primeira execução, mas só se alguém rodar |
+  | 5 | produzo verde que promete demais | **não** — o `npm run fim` foi corrigido, mas como caso, não como classe |
+  | 6 | prometo acompanhar coisa depois do turno | **não** — comportamental |
+  | 7 | tentativa e erro em vez de diagnóstico | **não** |
+  | 8 | crio dado de teste que confunde o dono | **SIM, a partir de hoje** — o `fluxos.mjs` reprova se sobrar post de teste no feed |
+  | 9 | entendo errado e não pergunto | **não** |
+
+  **Um de nove tem mecanismo. Essa é a resposta honesta à pergunta dele.**
+
+  ### O número 3 é o mais grave, e merece parágrafo próprio
+
+  *"Teste que não consegue falhar"* está no catálogo desde 30/08 — e em 01/09 eu
+  **cometi de novo**: a primeira versão da trava de banco fora do ar nunca
+  alcançava o estado que dizia testar. Só apareceu porque eu injetei o bug de
+  volta e vi a coisa passar.
+
+  Ou seja: **a disciplina de provar a trava por injeção é hoje a única defesa
+  contra o padrão, e ela depende inteiramente de eu lembrar de fazer.**
+
+  O mecanismo que pegaria isso de verdade é **teste de mutação** (mutar o código
+  e exigir que algum teste quebre). Ele existe para JS (Stryker), e é **decisão
+  de custo do dono**: adiciona minutos ao CI e uma dependência de peso. Está
+  aqui como pergunta a ele, não como coisa que eu decido sozinho.
+
+  ### Os que provavelmente NÃO têm mecanismo, e por que dizer isso importa
+
+  Os padrões 2, 6, 7 e 9 são de julgamento e de conduta na conversa. Não existe
+  script que detecte "ele afirmou sem ter provado" ou "ele entendeu errado e não
+  perguntou". Fingir que um portão cobre isso seria o padrão 5 acontecendo de
+  novo, uma camada acima.
+
+  Para eles, o que existe é a pergunta no gatilho de início e o relatório de
+  entrega — e o dono cobrando quando faltar. **É pouco, e é honesto dizer que é
+  pouco.**
+
+  ### O que ainda falta desta auditoria
+
+  - **Parte A incompleta:** a matriz saiu com `gatilho → cobertura`. Falta a
+    coluna **obrigação** — o que cada portão EXIGE de quem mexe na área — que
+    era metade do formato pedido.
+  - **Parte B não começou:** varrer as seis classes nomeadas (inferência como
+    fato, teste que não falha, validação que acusa errado, documentação não
+    consultada, diagnóstico sem evidência, conclusão prematura) pelo código.
 
   **O que este item NÃO promete:** que eu pare de errar. Prometer isso seria a
   mesma mentira do verde que prometia demais. O alvo é o mesmo do projeto —
@@ -329,6 +386,53 @@
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
+
+- ⬜ `[01/09]` 🟠 **O raio some ao sair da viewport e voltar.**
+  *Bug relatado pelo dono no prompt de 01/09. Ainda NÃO investigado.*
+
+  O esperado: abrir a landing, ver a cena, rolar para longe, voltar, e repetir
+  várias vezes — o raio funcionando todas as vezes.
+
+  Pistas a seguir, sem chutar: ciclo de vida do `createRoot`, o `frameloop`
+  ligado/desligado pelo IntersectionObserver, refs que sobrevivem ao remonte,
+  geometria e material descartados, e o `resize`. O `LandingScene` passa
+  `frameloop` na CRIAÇÃO da raiz — se ele não for atualizado ao voltar, a cena
+  reconecta sem nunca voltar a desenhar, que é o sintoma exato.
+
+  **Não vale "force rerender"** sem entender o motivo: seria trocar um sintoma
+  por outro, e o §1.2 proíbe.
+
+- ⬜ `[01/09]` 🟢 **Áudio ambiente na landing — avaliar antes de implementar.**
+  *Pedido do dono no prompt de 01/09.* Futurista, sutil, com botão manual
+  quando o autoplay for bloqueado e preferência que persiste.
+
+  **O que decidir ANTES de escrever código:** formato e compressão, quando o
+  download começa (nunca no caminho crítico), quando o áudio é instanciado, e o
+  comportamento de autoplay no celular. É recurso secundário: não pode
+  atrapalhar o carregamento da landing.
+
+- ⬜ `[01/09]` 🟢 **Elementos flutuantes novos na landing — propor antes de fazer.**
+  *Pedido do dono no prompt de 01/09.* Diferentes dos que já existem, com
+  cara de tecnologia/gamer, algum nível de interatividade, sem poluir.
+
+  O dono pediu **proposta visual antes da implementação**. E o custo já tem
+  regra medida: `transform`/`opacity` rodam no compositor e custam ~zero;
+  qualquer coisa com laço de JS por quadro entra na conta da cena 3D.
+
+- ⬜ `[01/09]` 🟠 **Auditoria de privacidade/LGPD baseada na implementação real.**
+  *Pedido do dono no prompt de 01/09. Ainda NÃO feita.*
+
+  Mapear, DADO a DADO: onde é coletado, por quê, onde fica, quem recebe, por
+  quanto tempo, se é necessário, se é opcional, e o risco. Cobrir Supabase,
+  auth, tokens, `localStorage`/`sessionStorage`, cookies, Sentry, Vercel
+  Analytics, fontes externas e logs.
+
+  **A regra dele, e ela importa:** não inventar coleta, não inventar obrigação
+  legal, e separar obrigação de boa prática. O que não der para determinar pelo
+  código fica escrito como **A DEFINIR** — não preenchido de palpite.
+
+  **Descobrir primeiro se o projeto usa cookies de verdade** antes de cogitar
+  banner. Banner "porque todo site tem" é ruído sem função.
 
 - ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
   *Auditoria da cena 3D de 01/09. A medição inteira está em
