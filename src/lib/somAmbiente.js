@@ -1,60 +1,34 @@
-/**
- * O som ambiente da landing — GERADO no navegador, sem arquivo nenhum.
- *
- * ── Por que sintetizar em vez de tocar um arquivo ───────────────────────────
- *
- * O dono perguntou se precisava baixar uma música. A resposta é não, e a
- * escolha resolve quatro problemas de uma vez:
- *
- * | Com arquivo | Sintetizado |
- * | --- | --- |
- * | 200–400 KB para baixar | **0 KB** |
- * | precisa hospedar, e egress é a cota mais apertada | nada trafega |
- * | música tem dono — licença é problema real | nada de terceiro |
- * | loop de 30 s fica óbvio na terceira volta | não repete: os osciladores derivam |
- *
- * O custo é de CPU, e é pequeno: três osciladores e dois filtros. O navegador
- * processa isso numa thread de áudio própria, fora da que desenha a página.
- *
- * ── Por que NÃO tenta tocar sozinho ────────────────────────────────────────
- *
- * Chrome, Safari e Firefox bloqueiam áudio antes de um gesto da pessoa, e
- * ninguém quer um site que começa a tocar sozinho. O `AudioContext` só nasce
- * quando alguém clica — antes disso este módulo não aloca absolutamente nada.
- *
- * ── O som ──────────────────────────────────────────────────────────────────
- *
- * Um acorde grave e sustentado, filtrado, com as vozes levemente desafinadas
- * entre si. A desafinação faz o som "respirar" sozinho, sem laço nenhum: as
- * ondas entram e saem de fase num ciclo de minutos. É o truque clássico de
- * ambiente — soa vivo sem nunca chamar atenção.
- */
-
-const VOLUME_ALVO = 0.055;   // bem baixo: é ambiente, não trilha
-const SUBIDA_S = 2.5;        // fade in/out longo, para nunca "estalar"
-
-let contexto = null;
-let ganho = null;
-let vozes = [];
+import { carregarTrilha, criarFonteEmLaco, esquecerTrilha } from './trilhaAmbiente';
+import { criarVozes } from './vozesSintetizadas';
 
 /**
- * Hz das vozes.
+ * O som ambiente da landing — quem manda no ciclo de vida do áudio.
  *
- * `[02/09]` A primeira versão usava 55, 82,5 e 110 Hz — e o dono relatou que
- * **não tocava nada**. A causa é física, não de código: alto-falante de celular
- * e de notebook tem centímetros de diâmetro e não reproduz abaixo de ~200 Hz.
- * O sinal existia e ninguém conseguia ouvir.
+ * Este arquivo NÃO sabe que som é. Ele cuida do contexto, do volume, do fade e
+ * de garantir que existe **uma instância só**. Que som toca é decidido em duas
+ * peças com um trabalho cada:
  *
- * A faixa agora começa em 220 Hz (o lá abaixo do dó central) e sobe em
- * intervalos consonantes. Continua grave o bastante para soar ambiente, e
- * dentro do que qualquer alto-falante entrega.
+ *   `trilhaAmbiente.js` ...... o arquivo real (Universe, AiTechEye, CC BY 4.0)
+ *   `vozesSintetizadas.js` ... o plano B, quando o arquivo não chega
  *
- * As duas últimas estão levemente desafinadas de propósito: a diferença faz as
- * ondas entrarem e saírem de fase num ciclo de minutos, e é isso que dá a
- * sensação de "respirar" sem laço nenhum.
+ * ── Por que NÃO tenta tocar antes de alguém pedir ──────────────────────────
+ *
+ * Chrome, Safari e Firefox bloqueiam áudio antes de um gesto, e ninguém quer
+ * um site que começa a tocar sozinho. O `AudioContext` só nasce quando alguém
+ * clica **ou** quando a tentativa pós-intro acontece — antes disso este módulo
+ * não aloca absolutamente nada, e o arquivo de 296 KB não é nem pedido.
+ *
+ * ── A ordem importa, e é a parte fácil de errar ─────────────────────────────
+ *
+ * Criar o contexto e chamar `resume()` precisa acontecer **de forma síncrona
+ * dentro do gesto**. A autorização do clique expira: se a gente esperasse o
+ * download do arquivo antes de chamar `resume()`, o navegador já teria
+ * esquecido que houve um clique e barraria. Por isso `ligarSom()` é síncrona
+ * na parte que importa e só depois dispara o carregamento.
  */
-const FREQUENCIAS = [220, 329.8, 440.6];
 
+const VOLUME_ALVO = 0.2;   // ambiente, não trilha — ver a nota de nível abaixo
+const SUBIDA_S = 2.5;      // fade in/out no clique
 /**
  * Fade mais longo para quando o som entra SOZINHO, depois da intro.
  *
@@ -64,10 +38,119 @@ const FREQUENCIAS = [220, 329.8, 440.6];
  */
 const SUBIDA_SOZINHO_S = 5;
 
+/**
+ * Por que `0.2` e não o `0.055` de antes.
+ *
+ * O sintetizado nascia em silêncio e subia; o arquivo já vem masterizado a
+ * **−14,1 LUFS** (medido), que é nível de streaming. Multiplicar por 0,2 põe a
+ * trilha por volta de −28 LUFS — camada de fundo, abaixo da fala, que é onde
+ * ambiente tem que ficar. Manter 0,055 aqui a deixaria inaudível de novo, que
+ * foi exatamente a reclamação de 02/09.
+ */
+
 /** Os três desfechos de tentar tocar. Mapa fechado — quem chama trata os três. */
 export const TOCANDO = 'tocando';
 export const BLOQUEADO = 'bloqueado';
 export const INDISPONIVEL = 'indisponivel';
+
+let contexto = null;
+let ganho = null;
+/** A fonte tocando agora: a do arquivo OU os osciladores. Nunca as duas. */
+let fonte = null;
+let vozes = [];
+/** Uma montagem em curso (o arquivo baixando). Ver `iniciarFonte`. */
+let montando = false;
+/** Invalida montagens atrasadas quando o som é desligado no meio. */
+let geracao = 0;
+
+/** Cria o contexto e o nó de ganho, se ainda não existirem. */
+function montar() {
+  const Contexto = window.AudioContext || window.webkitAudioContext;
+  if (!Contexto) return false;
+  if (contexto) return true;
+  contexto = new Contexto();
+  ganho = contexto.createGain();
+  ganho.gain.value = 0;
+  ganho.connect(contexto.destination);
+  return true;
+}
+
+/** Sobe o ganho até o volume ambiente, sem estalo. */
+function subir(segundos) {
+  ganho.gain.cancelScheduledValues(contexto.currentTime);
+  ganho.gain.setValueAtTime(ganho.gain.value, contexto.currentTime);
+  ganho.gain.linearRampToValueAtTime(VOLUME_ALVO, contexto.currentTime + segundos);
+}
+
+/**
+ * Começa a tocar alguma coisa: o arquivo se ele vier, as vozes se não vier.
+ *
+ * A guarda `fonte || vozes.length` é o que impede DUAS instâncias tocando
+ * juntas — o caso clássico deste tipo de recurso, e um pedido explícito do
+ * dono. Dois cliques rápidos, ou um clique logo depois da tentativa
+ * automática, passam por aqui e o segundo não monta nada.
+ */
+function iniciarFonte(segundos) {
+  // `montando` é a metade que faltava na primeira versão deste arquivo, e a
+  // ausência dela era um bug real: entre o clique e o arquivo terminar de
+  // baixar, `fonte` e `vozes` continuam vazios. Sem esta flag, um segundo
+  // clique nesse intervalo passava pela guarda e montava uma SEGUNDA fonte
+  // por cima da primeira — as duas tocando juntas, que é exatamente o que o
+  // dono pediu para nunca acontecer.
+  if (fonte || vozes.length || montando) { subir(segundos); return; }
+
+  montando = true;
+  // O token que diz "esta montagem ainda vale". `desligarSom` incrementa a
+  // geração, então uma montagem que estava no meio do download quando alguém
+  // desligou chega atrasada, vê que a geração mudou, e desiste em silêncio.
+  const minhaGeracao = ++geracao;
+  const meuContexto = contexto;
+
+  carregarTrilha(contexto).then((buffer) => {
+    // A ordem destas duas linhas é o conserto de um buraco achado ao PROVAR a
+    // trava (02/09). A versão anterior fazia `montando = false` incondicional,
+    // no topo. Numa sequência ligar -> desligar -> ligar, o callback ATRASADO
+    // da primeira montagem chegava e zerava a flag da SEGUNDA, que ainda
+    // estava baixando — e aí um terceiro clique montava uma fonte a mais.
+    //
+    // A geração diz de quem é a flag: só o dono dela a solta.
+    const aindaEMinha = minhaGeracao === geracao;
+    if (aindaEMinha) montando = false;
+    if (!aindaEMinha || !contexto || contexto !== meuContexto) return;
+    if (buffer) {
+      fonte = criarFonteEmLaco(contexto, ganho, buffer);
+    } else {
+      // Sem arquivo, o plano B. Ficar em silêncio aqui daria um botão
+      // marcado como ligado sem som nenhum (§1.5).
+      vozes = criarVozes(contexto, ganho);
+    }
+    subir(segundos);
+  });
+
+  // O ganho já começa a subir: quando a fonte entrar, ela entra dentro de um
+  // fade que já está em curso, e não com um degrau.
+  subir(segundos);
+}
+
+/**
+ * Liga o som. Precisa ser chamado a partir de um gesto da pessoa — é a regra
+ * do navegador, não uma escolha nossa.
+ *
+ * Devolve `false` se o navegador não tiver Web Audio; quem chama decide o que
+ * mostrar. Nunca lança: som é enfeite, e enfeite não derruba página.
+ */
+export function ligarSom() {
+  try {
+    if (!montar()) return false;
+    // Sem `await` antes daqui, de propósito: a autorização do clique expira,
+    // e esperar o download antes do `resume()` faria o navegador barrar.
+    if (contexto.state === 'suspended') contexto.resume();
+    iniciarFonte(SUBIDA_S);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Tenta tocar e diz O QUE ACONTECEU — inclusive quando o navegador barra.
@@ -78,10 +161,6 @@ export const INDISPONIVEL = 'indisponivel';
  * silêncio** e seguem todos felizes. Sem perguntar o estado depois de
  * `resume()`, o site marcaria o botão como "ligado" com nada tocando — a tela
  * mentindo, que é o §1.5 na forma mais direta.
- *
- * `resume()` devolve promessa, e é por isso que esta função é `async` enquanto
- * a `ligarSom()` continua síncrona: no caminho do clique o gesto já autoriza, e
- * transformar o clique em `await` só adicionaria um quadro de atraso.
  *
  * @param {{sozinho?: boolean}} [opcoes] `sozinho` = ninguém clicou (pós-intro)
  * @returns {Promise<'tocando'|'bloqueado'|'indisponivel'>}
@@ -99,100 +178,50 @@ export async function tentarTocar({ sozinho = false } = {}) {
     // sai som; qualquer outro estado é silêncio com cara de sucesso.
     if (contexto.state !== 'running') return BLOQUEADO;
 
-    subir(sozinho ? SUBIDA_SOZINHO_S : SUBIDA_S);
+    iniciarFonte(sozinho ? SUBIDA_SOZINHO_S : SUBIDA_S);
     return TOCANDO;
   } catch {
     return INDISPONIVEL;
   }
 }
 
-/** Sobe o ganho até o volume ambiente, sem estalo. */
-function subir(segundos) {
-  ganho.gain.cancelScheduledValues(contexto.currentTime);
-  ganho.gain.setValueAtTime(ganho.gain.value, contexto.currentTime);
-  ganho.gain.linearRampToValueAtTime(VOLUME_ALVO, contexto.currentTime + segundos);
-}
-
-/** Cria o contexto e as vozes se ainda não existirem. `false` = sem Web Audio. */
-function montar() {
-  const Contexto = window.AudioContext || window.webkitAudioContext;
-  if (!Contexto) return false;
-  if (contexto) return true;
-  criar(Contexto);
-  return true;
-}
-
-/**
- * Liga o som. Precisa ser chamado a partir de um gesto da pessoa — é a regra
- * do navegador, não uma escolha nossa.
- *
- * Devolve `false` se o navegador não tiver Web Audio; quem chama decide o que
- * mostrar. Nunca lança: som é enfeite, e enfeite não derruba página.
- */
-export function ligarSom() {
-  try {
-    if (!montar()) return false;
-    // Aba que volta do segundo plano deixa o contexto suspenso. Aqui não se
-    // espera a promessa: veio de um gesto, então o navegador autoriza — e um
-    // `await` só adicionaria atraso entre o clique e o som.
-    if (contexto.state === 'suspended') contexto.resume();
-    subir(SUBIDA_S);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Monta o grafo de áudio. Chamado uma única vez por contexto — é o `montar()`
- * que garante isso, e é o que impede duas instâncias tocando ao mesmo tempo.
- */
-function criar(Contexto) {
-  contexto = new Contexto();
-  ganho = contexto.createGain();
-  ganho.gain.value = 0;
-
-  // Filtro passa-baixa: corta o agudo e deixa só o corpo grave. Sem ele o
-  // acorde fica com aquele zumbido de sintetizador barato.
-  const filtro = contexto.createBiquadFilter();
-  filtro.type = 'lowpass';
-  // `[02/09]` Subiu de 420 para 900 Hz junto com as vozes. Cortando em 420
-  // o filtro atenuaria justamente a voz de 440 Hz — o acorde ficaria com
-  // uma nota faltando, e a correção das frequências não teria adiantado.
-  filtro.frequency.value = 900;
-  filtro.Q.value = 0.7;
-
-  ganho.connect(filtro);
-  filtro.connect(contexto.destination);
-
-  vozes = FREQUENCIAS.map((hz) => {
-    const osc = contexto.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = hz;
-    osc.connect(ganho);
-    osc.start();
-    return osc;
-  });
-}
-
 /**
  * Desliga com fade e SOLTA o áudio.
  *
- * O `close()` é o que devolve a thread de áudio ao sistema — sem ele, os
- * osciladores continuam rodando em silêncio para sempre, gastando CPU e
- * bateria de quem desligou justamente para não gastar.
+ * ── Duas coisas diferentes precisam ser soltas ──────────────────────────────
+ *
+ * O `close()` devolve a thread de áudio ao sistema. Sem ele a trilha
+ * continuaria rodando em silêncio para sempre, gastando CPU e bateria de quem
+ * desligou justamente para não gastar.
+ *
+ * **Mas o `close()` NÃO solta o buffer decodificado**, e eu escrevi o
+ * contrário aqui antes de conferir. Ele vive num módulo à parte
+ * (`trilhaAmbiente.js`), guardado de propósito para não rebaixar o arquivo a
+ * cada clique — e um `AudioBuffer` não pertence a contexto nenhum, então
+ * fechar o contexto não o alcança. Ficavam ~13,8 MB retidos pelo resto da
+ * sessão de alguém que tinha acabado de pedir silêncio.
+ *
+ * `esquecerTrilha()` fecha isso. O custo é rebaixar ao religar — 300 KB que
+ * vêm do cache do navegador, e um decode. Barato perto de segurar 13,8 MB de
+ * quem não quer o som.
  */
 export function desligarSom() {
   if (!contexto || !ganho) return;
   try {
+    // Invalida qualquer montagem que ainda esteja baixando o arquivo: sem
+    // isto ela chegaria depois e ligaria o som que a pessoa acabou de desligar.
+    geracao += 1;
+    montando = false;
+
     const fim = contexto.currentTime + SUBIDA_S;
     ganho.gain.cancelScheduledValues(contexto.currentTime);
     ganho.gain.setValueAtTime(ganho.gain.value, contexto.currentTime);
     ganho.gain.linearRampToValueAtTime(0, fim);
 
     const paraFechar = contexto;
-    const paraParar = vozes;
-    contexto = null; ganho = null; vozes = [];
+    const paraParar = [...vozes, fonte].filter(Boolean);
+    contexto = null; ganho = null; vozes = []; fonte = null;
+    esquecerTrilha();
 
     setTimeout(() => {
       try {

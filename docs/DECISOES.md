@@ -322,6 +322,37 @@ escrita.
 
 ## Código
 
+### `[02/09]` O MESMO fundo animado em todas as rotas, e não um por aba
+
+**Decisão do dono**, depois da recomendação: *"pode fazer o mesmo fundo pra
+todas as rotas então"*.
+
+**O que ele perguntou:** se cada aba da barra lateral devia ganhar um fundo
+próprio, já que gostou das animações da landing e da `/sobre`.
+
+**Por que um só, com variação de cor por seção:**
+
+1. **Cinco fundos são cinco fontes de verdade.** Cada um precisaria concordar
+   com os outros em desempenho, acessibilidade e `prefers-reduced-motion`. Eles
+   divergem — já divergiram neste projeto com ícones de log, rótulos de cargo e
+   cores de cargo (§4).
+2. **O custo mede em bytes, e ele multiplica.** O fundo da landing custa zero
+   parado *porque* é CSS no compositor. Cinco variações sobem o CSS de todo
+   mundo, inclusive de quem nunca abre aquela aba.
+3. **A razão que decide, e é de produto:** a landing e a `/sobre` são camadas 1
+   e 2 — primeira impressão, visita de 30 segundos. O feed é onde a pessoa passa
+   uma hora. Movimento atrás do texto que encanta em 30 segundos cansa em 30
+   minutos. **O site logado deve ser mais quieto que a landing de propósito**,
+   e isso é decisão de desenho, não limitação técnica.
+
+**O que fica no lugar:** um sistema de fundo só, com a cor de acento seguindo a
+seção — verde no feed, roxo no mural, vermelho nas lives, ciano nas keys.
+Reconhecível na hora, um arquivo, um teste.
+
+**O que reabriria:** o dono achar o site logado sem personalidade depois de
+pronto. Aí o caminho é aumentar a variação de cor, não multiplicar os fundos.
+
+
 ### `[02/09]` NÃO unificar `denied` e `rejected` nas tabelas de status
 
 **O que foi descartado:** padronizar o valor de "negado" nas sete tabelas de

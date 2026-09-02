@@ -63,8 +63,16 @@ src/
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
-│   ├── somAmbiente.js     # Som ambiente da landing, SINTETIZADO na Web Audio
-│   │                      # API — zero arquivo, zero download, zero licença
+│   ├── somAmbiente.js     # Som ambiente da landing: ciclo de vida do áudio,
+│   │                      # volume, fade e a garantia de UMA instância só.
+│   │                      # Não sabe QUE som toca — isso são os dois abaixo
+│   ├── trilhaAmbiente.js  # O arquivo real (Universe, AiTechEye, CC BY 4.0).
+│   │                      # Baixa sob demanda, decodifica e toca em laço. O
+│   │                      # original NÃO era loop: fade-in e cauda foram
+│   │                      # recortados e costurados com crossfade
+│   ├── vozesSintetizadas.js # O plano B, quando o arquivo não chega (rede
+│   │                      # fora, codec ausente). Silêncio aqui daria um
+│   │                      # botão "ligado" sem som — a tela mentindo
 │   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
 │   │                      # da cena a cada mudança de frameloop
 │   ├── preferenciaDeSom.js # A decisão sobre o som ambiente, com TRÊS estados
@@ -242,6 +250,9 @@ src/
     │   │                  # dono. A página só renderiza esta lista
     │   ├── iconesDoSobre.js   # Mapa explícito nome -> ícone do lucide. Sem
     │   │                  # padrão de propósito: bloco sem ícone estoura no teste
+    │   ├── CreditosDeMidia.jsx # Atribuição TASL da mídia de terceiro. NÃO é
+    │   │                  # cortesia: CC-BY exige crédito visível, e um teste
+    │   │                  # varre src/assets/som/ exigindo crédito por arquivo
     │   └── FundoAnimado.jsx   # As doze peças que atravessam a tela atrás do
     │                      # texto. Só CSS, sem laço de JS — ver DESEMPENHO.md
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
