@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ShieldOff, LogOut, Send, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShieldOff, LogOut, Send, Loader2, CheckCircle2, AlertTriangle, Scale } from 'lucide-react';
 import { solicitarRevisaoDoProprioBan, meuPedidoDeRevisao } from '../../services/banService';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const MIN_CARACTERES = 20;
 const MAX_CARACTERES = 1000;
@@ -19,6 +21,11 @@ const MAX_CARACTERES = 1000;
 const SEGUNDOS_ATE_SAIR = 20;
 
 export default function BannedScreen({ reason, details, onSignOut }) {
+  // O id da própria conta, para a pessoa conseguir se identificar ao procurar
+  // a equipe. Vem do `useAuth` e não de prop: quem monta esta tela não tinha
+  // motivo para passar isso adiante, e prop nova por dado que já está no
+  // contexto é acoplamento à toa.
+  const { user } = useAuth();
   const [countdown, setCountdown] = useState(SEGUNDOS_ATE_SAIR);
   const [recorrendo, setRecorrendo] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -113,6 +120,18 @@ export default function BannedScreen({ reason, details, onSignOut }) {
           )}
         </div>
 
+        {/* `[02/09]` O link que faltava. A pessoa via O QUE foi decidido e nunca
+            POR QUÊ — não existia lugar nenhum dizendo qual regra ela quebrou.
+            Punição sem regra escrita parece arbitrária mesmo quando é justa. */}
+        <Link
+          to="/regras"
+          className="flex items-center justify-center gap-2 text-xs font-mono
+                     text-gray-400 hover:text-neon-green transition-colors"
+        >
+          <Scale size={13} />
+          Ver as regras da comunidade
+        </Link>
+
         {pedido && !enviado && (
           <div className="bg-dark-700/60 border border-dark-400 rounded-xl p-4 space-y-2">
             <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Seu pedido de revisão</p>
@@ -131,6 +150,14 @@ export default function BannedScreen({ reason, details, onSignOut }) {
               Você pode entrar de novo quando quiser para ver se houve resposta.
             </p>
           </div>
+        )}
+
+        {/* O id da própria conta. Não vaza nada — é o dado dela, mostrado a
+            ela — e é o que a equipe pede quando alguém procura suporte. */}
+        {user?.id && (
+          <p className="text-center text-[11px] font-mono text-gray-600 select-all">
+            id da conta: {user.id}
+          </p>
         )}
 
         {enviado ? (

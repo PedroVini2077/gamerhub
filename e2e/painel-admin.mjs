@@ -107,6 +107,26 @@ try {
   await page.waitForTimeout(2500);
   await recusarSeBanido(page);
   await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
+
+  // ── `[02/09]` O TESTE PASSA A CRIAR O PRÓPRIO DADO ───────────────────────
+  //
+  // Antes ele media o BANCO, não o painel: em 30/08 reprovou porque o dono
+  // esvaziou a lixeira e o site ficou sem post nenhum — defeito zero, CI
+  // vermelho. O remendo da época distinguia "seletor quebrou" de "site vazio",
+  // e mantinha a trava viva, mas a paginação só era exercitada quando alguém
+  // por acaso tivesse postado.
+  //
+  // Criando o próprio post, a aba Posts sempre tem o que listar, e o teste
+  // volta a provar o que promete. É o mesmo padrão do `fluxos.mjs`.
+  const MARCA_PAINEL = `[painel ${Date.now()}]`;
+  await page.locator('#post-title').fill(`${MARCA_PAINEL} post do teste`);
+  await page.locator('#post-content').fill(
+    'Criado pelo teste do painel para a aba Posts ter conteudo proprio. '
+    + 'Se este post ficou no ar, o teste falhou antes da limpeza.');
+  await page.getByRole('button', { name: /^Publicar$/ }).click();
+  await page.locator('h2', { hasText: MARCA_PAINEL }).first()
+    .waitFor({ state: 'visible', timeout: 30000 });
+  ok('post próprio criado para a aba Posts ter o que listar');
   ok('login com a conta de staff (sessão + perfil)');
 
   // ── 2. O painel abre ──────────────────────────────────────────────────────
@@ -210,20 +230,22 @@ try {
   const declarados = Number(textoAba.match(/Posts ativos\s*(\d+)/)?.[1] ?? -1);
   const mostraVazio = /nenhum post ativo/i.test(textoAba);
 
-  if (linhasVisiveis === 0 && declarados <= 0 && mostraVazio) {
-    ok('aba Posts: site sem post ativo, e o painel mostra o estado vazio');
-    console.log('           (a paginacao nao pode ser exercitada sem dado — '
-      + 'a trava do seletor volta a valer assim que houver post)');
-  } else if (linhasVisiveis === 0) {
+  // `[02/09]` O ramo tolerante saiu. Ele existia porque o teste dependia de o
+  // banco ter post; agora ele CRIA o próprio, então a aba tem obrigação de
+  // listar pelo menos um. Zero linhas voltou a significar uma coisa só: o
+  // seletor quebrou.
+  //
+  // Manter a tolerância aqui seria deixar aberto o buraco original — o
+  // contador dava zero e o teste registrava sucesso.
+  if (linhasVisiveis === 0) {
     throw new Error(
-      'nenhuma linha de post encontrada com [data-post-row], e o painel NAO '
-      + `esta no estado vazio (ele declara ${declarados} post(s) ativo(s), `
-      + `estado vazio na tela: ${mostraVazio}).\n`
-      + '  Ou a aba nao carregou, ou o atributo saiu do PostsPanel — e sem ele '
-      + 'o teste de paginacao passa a contar zero e vira decoracao.');
-  } else {
-    ok(`aba Posts lista ${linhasVisiveis} post(s)`);
+      'nenhuma linha de post com [data-post-row], e este teste CRIOU um post\n'
+      + `  antes de abrir o painel (o painel declara ${declarados} ativo(s), estado\n`
+      + `  vazio na tela: ${mostraVazio}).\n`
+      + '  Ou a aba nao carregou, ou o atributo saiu do PostsPanel — e sem ele o\n'
+      + '  teste de paginacao passa a contar zero e vira decoracao.');
   }
+  ok(`aba Posts lista ${linhasVisiveis} post(s)`);
 
   // `[29/08]` MEDE O TOTAL CARREGADO, e não as linhas visíveis. Segunda
   // correção do mesmo teste, e a causa é diferente da primeira.
@@ -291,6 +313,20 @@ try {
   // O `fluxos.mjs` prova que `user` não entra no /admin. Falta a outra metade:
   // `admin` também não pode subir até o /owner. Sem isto, uma regressão que
   // desse poder de owner a qualquer staff passaria despercebida.
+  // ── Limpeza: o post do teste não pode ficar no ar ────────────────────────
+  //
+  // Vem ANTES do /owner de propósito: se o painel do dono falhar, o post já
+  // saiu. Lixo de teste em produção já confundiu o dono duas vezes, e é um
+  // padrão de falha catalogado meu.
+  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const meuPost = page.locator('h2', { hasText: MARCA_PAINEL });
+  await meuPost.first().waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('.card').filter({ has: meuPost })
+    .getByRole('button', { name: 'Deletar post' }).click();
+  await page.getByRole('button', { name: /^Deletar$/ }).click();
+  await meuPost.first().waitFor({ state: 'detached', timeout: 30000 });
+  ok('post do teste apagado');
+
   await page.goto(`${BASE}/owner`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(2500); // dá tempo do guard esvaziar a tela
   const textoOwner = await page.locator('main').innerText();
