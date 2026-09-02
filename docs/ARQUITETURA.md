@@ -67,6 +67,10 @@ src/
 │   │                      # API — zero arquivo, zero download, zero licença
 │   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
 │   │                      # da cena a cada mudança de frameloop
+│   ├── preferenciaDeSom.js # A decisão sobre o som ambiente, com TRÊS estados
+│   │                      # (ligado / desligado / nunca escolheu). Apagar a
+│   │                      # chave ao desligar tornava "desliguei" igual a
+│   │                      # "nunca escolhi" — e o autoplay religaria o som
 │   ├── introJaVista.js    # Lembra, por sessão do navegador, que a intro do
 │   │                      # raio já foi vista — e decide se ela toca
 │   ├── roles.js           # Hierarquia de cargos no cliente; espelha `role_rank()`

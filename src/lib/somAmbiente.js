@@ -56,6 +56,73 @@ let vozes = [];
 const FREQUENCIAS = [220, 329.8, 440.6];
 
 /**
+ * Fade mais longo para quando o som entra SOZINHO, depois da intro.
+ *
+ * 2,5 s é bom para um clique — a pessoa acabou de pedir e espera resposta.
+ * Para som que aparece sem ninguém pedir, a mesma subida assusta: o certo é
+ * ele emergir do silêncio devagar, junto com a página assentando.
+ */
+const SUBIDA_SOZINHO_S = 5;
+
+/** Os três desfechos de tentar tocar. Mapa fechado — quem chama trata os três. */
+export const TOCANDO = 'tocando';
+export const BLOQUEADO = 'bloqueado';
+export const INDISPONIVEL = 'indisponivel';
+
+/**
+ * Tenta tocar e diz O QUE ACONTECEU — inclusive quando o navegador barra.
+ *
+ * ── Por que isto precisa existir separado do `ligarSom()` ───────────────────
+ *
+ * Navegador nenhum avisa que bloqueou áudio: ele **suspende o contexto em
+ * silêncio** e seguem todos felizes. Sem perguntar o estado depois de
+ * `resume()`, o site marcaria o botão como "ligado" com nada tocando — a tela
+ * mentindo, que é o §1.5 na forma mais direta.
+ *
+ * `resume()` devolve promessa, e é por isso que esta função é `async` enquanto
+ * a `ligarSom()` continua síncrona: no caminho do clique o gesto já autoriza, e
+ * transformar o clique em `await` só adicionaria um quadro de atraso.
+ *
+ * @param {{sozinho?: boolean}} [opcoes] `sozinho` = ninguém clicou (pós-intro)
+ * @returns {Promise<'tocando'|'bloqueado'|'indisponivel'>}
+ */
+export async function tentarTocar({ sozinho = false } = {}) {
+  try {
+    if (!montar()) return INDISPONIVEL;
+
+    if (contexto.state === 'suspended') {
+      // `catch` e não `throw`: o Chrome REJEITA esta promessa quando não há
+      // gesto, e essa rejeição é justamente a resposta que queremos ler.
+      try { await contexto.resume(); } catch { /* barrado */ }
+    }
+    // A pergunta que desmascara o bloqueio. `running` é a única prova de que
+    // sai som; qualquer outro estado é silêncio com cara de sucesso.
+    if (contexto.state !== 'running') return BLOQUEADO;
+
+    subir(sozinho ? SUBIDA_SOZINHO_S : SUBIDA_S);
+    return TOCANDO;
+  } catch {
+    return INDISPONIVEL;
+  }
+}
+
+/** Sobe o ganho até o volume ambiente, sem estalo. */
+function subir(segundos) {
+  ganho.gain.cancelScheduledValues(contexto.currentTime);
+  ganho.gain.setValueAtTime(ganho.gain.value, contexto.currentTime);
+  ganho.gain.linearRampToValueAtTime(VOLUME_ALVO, contexto.currentTime + segundos);
+}
+
+/** Cria o contexto e as vozes se ainda não existirem. `false` = sem Web Audio. */
+function montar() {
+  const Contexto = window.AudioContext || window.webkitAudioContext;
+  if (!Contexto) return false;
+  if (contexto) return true;
+  criar(Contexto);
+  return true;
+}
+
+/**
  * Liga o som. Precisa ser chamado a partir de um gesto da pessoa — é a regra
  * do navegador, não uma escolha nossa.
  *
@@ -64,47 +131,48 @@ const FREQUENCIAS = [220, 329.8, 440.6];
  */
 export function ligarSom() {
   try {
-    const Contexto = window.AudioContext || window.webkitAudioContext;
-    if (!Contexto) return false;
-
-    if (!contexto) {
-      contexto = new Contexto();
-      ganho = contexto.createGain();
-      ganho.gain.value = 0;
-
-      // Filtro passa-baixa: corta o agudo e deixa só o corpo grave. Sem ele o
-      // acorde fica com aquele zumbido de sintetizador barato.
-      const filtro = contexto.createBiquadFilter();
-      filtro.type = 'lowpass';
-      // `[02/09]` Subiu de 420 para 900 Hz junto com as vozes. Cortando em 420
-      // o filtro atenuaria justamente a voz de 440 Hz — o acorde ficaria com
-      // uma nota faltando, e a correção das frequências não teria adiantado.
-      filtro.frequency.value = 900;
-      filtro.Q.value = 0.7;
-
-      ganho.connect(filtro);
-      filtro.connect(contexto.destination);
-
-      vozes = FREQUENCIAS.map((hz) => {
-        const osc = contexto.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.value = hz;
-        osc.connect(ganho);
-        osc.start();
-        return osc;
-      });
-    }
-
-    // Aba que volta do segundo plano deixa o contexto suspenso.
+    if (!montar()) return false;
+    // Aba que volta do segundo plano deixa o contexto suspenso. Aqui não se
+    // espera a promessa: veio de um gesto, então o navegador autoriza — e um
+    // `await` só adicionaria atraso entre o clique e o som.
     if (contexto.state === 'suspended') contexto.resume();
-
-    ganho.gain.cancelScheduledValues(contexto.currentTime);
-    ganho.gain.setValueAtTime(ganho.gain.value, contexto.currentTime);
-    ganho.gain.linearRampToValueAtTime(VOLUME_ALVO, contexto.currentTime + SUBIDA_S);
+    subir(SUBIDA_S);
     return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Monta o grafo de áudio. Chamado uma única vez por contexto — é o `montar()`
+ * que garante isso, e é o que impede duas instâncias tocando ao mesmo tempo.
+ */
+function criar(Contexto) {
+  contexto = new Contexto();
+  ganho = contexto.createGain();
+  ganho.gain.value = 0;
+
+  // Filtro passa-baixa: corta o agudo e deixa só o corpo grave. Sem ele o
+  // acorde fica com aquele zumbido de sintetizador barato.
+  const filtro = contexto.createBiquadFilter();
+  filtro.type = 'lowpass';
+  // `[02/09]` Subiu de 420 para 900 Hz junto com as vozes. Cortando em 420
+  // o filtro atenuaria justamente a voz de 440 Hz — o acorde ficaria com
+  // uma nota faltando, e a correção das frequências não teria adiantado.
+  filtro.frequency.value = 900;
+  filtro.Q.value = 0.7;
+
+  ganho.connect(filtro);
+  filtro.connect(contexto.destination);
+
+  vozes = FREQUENCIAS.map((hz) => {
+    const osc = contexto.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = hz;
+    osc.connect(ganho);
+    osc.start();
+    return osc;
+  });
 }
 
 /**

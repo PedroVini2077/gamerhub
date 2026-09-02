@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**29 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -56,6 +56,35 @@
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[02/09]` 🔴 **A música da landing NÃO PODE ENTRAR sem a licença.**
+  *Bloqueia o item do áudio real logo abaixo. É o único 🔴 da lista.*
+
+  O arquivo enviado (`universe.ogg`) tem, gravado nos próprios metadados:
+
+      TITLE   = Craqy & Sherry - Universe
+      ARTIST  = AiTechEye
+      ENCODER = FL Studio
+
+  **Não há campo de licença nenhum.** Obra com autor nomeado e sem licença é,
+  por padrão, "todos os direitos reservados" — publicar num site aberto é
+  violação de direito autoral, e você disse em 01/09: *"eu não quero lançar um
+  site que literalmente quebra as leis reais"*. A mesma frase vale aqui.
+
+  **O que eu preciso de você:** de onde veio o arquivo (link da página de
+  download) ou o print da licença. Se for CC0 / CC-BY, entra hoje — CC-BY ainda
+  exige crédito visível, e aí o crédito vai na `/sobre`.
+
+  **O que já está pronto esperando:** toda a infraestrutura de tocar arquivo
+  (carregamento tardio, loop, fade, instância única, autoplay pós-intro).
+  Trocar a fonte é uma linha.
+
+- ⬜ `[02/09]` 🟠 **Fundo próprio por rota — decisão de produto, não de código.**
+  Você perguntou se cada aba da barra lateral deve ter um fundo diferente ou
+  todas o mesmo. A recomendação está na conversa de 02/09; o que falta é a sua
+  escolha entre "um sistema de fundo com variação de cor por seção" e "fundos
+  distintos por rota". Só depois disso vale escrever código.
+
 
 - ⬜ `[01/09]` 🟡 **Decidir sobre teste de mutação — o que sobrou da auditoria.**
   *A auditoria de mim mesmo foi concluída (partes A a E). Este é o único ponto
@@ -245,6 +274,38 @@
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[02/09]` 🟠 **Trocar o som sintetizado por arquivo real na landing.**
+  *BLOQUEADO pela licença (item 🔴 acima). A infraestrutura entra antes.*
+
+  O que o arquivo enviado é, medido (não estimado): Ogg Vorbis, estéreo,
+  44,1 kHz, **41,14 s**, **980 KB**, ~195 kbps.
+
+  **980 KB é pesado demais para camada ambiente** — é mais que o chunk inicial
+  inteiro do site (702 KB). Para ambiente em volume baixo, Opus mono a 48–64
+  kbps entrega o mesmo resultado audível em ~250–330 KB. A conversão precisa de
+  `ffmpeg`, e o corte de loop precisa ser feito nos cruzamentos de zero para não
+  estalar na virada.
+
+- ⬜ `[02/09]` 🟠 **Auditoria e otimização da cena 3D + o raio que corta.**
+  *Pedido em 02/09. Precisa de baseline antes de qualquer alteração.*
+
+  Dois problemas relatados: a cena está pesada, e o raio da intro às vezes
+  corta, falha ou não aparece. O segundo é o mais grave — enfeite que some não
+  gera erro, não gera log e não quebra teste (§0.3 regra 3), então nada acusa.
+
+  Já existe medição anterior em [DESEMPENHO.md](docs/DESEMPENHO.md) para servir
+  de baseline. O que NÃO pode: reduzir qualidade visual para ganhar FPS (o dono
+  já recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md)).
+
+- ⬜ `[02/09]` 🟡 **Aceite de políticas no cadastro, e quais documentos existem.**
+  *Pergunta do dono em 02/09. A recomendação está na conversa; falta implementar
+  o registro do aceite, que é mudança de banco.*
+
+  Hoje o cadastro não pede aceite de nada. Para a LGPD o que importa não é a
+  caixinha: é **provar** que a pessoa aceitou, qual versão, e quando. Isso é
+  coluna no `profiles` (ou tabela própria) mais versão em cada documento.
+
 
 - ⬜ `[02/09]` 🟠 **O job "painel de admin" falhou uma vez publicando, e eu não
   sei por quê.** *Instrumentado, não corrigido — está aqui para não sumir.*

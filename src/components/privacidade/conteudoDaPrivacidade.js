@@ -103,7 +103,7 @@ export const BLOCOS = [
         ['Cena 3D ligada/desligada', 'respeitar a sua escolha', 'você limpar o navegador'],
         ['Motivo da pausa', 'explicar direito quando o site sai do ar', 'o site volta'],
         ['Último recarregamento', 'evitar laço de recarregamento', 'você fecha o navegador'],
-        ['Som ambiente ligado', 'lembrar que você ligou o som da landing', 'você desliga o som'],
+        ['Sua escolha sobre o som', 'lembrar se você ligou ou DESLIGOU o som da landing', 'você limpar o navegador'],
         ['Aviso de som já visto', 'não repetir o aviso a cada página', 'você fecha o navegador'],
       ],
     },

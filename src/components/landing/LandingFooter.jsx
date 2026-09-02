@@ -92,14 +92,21 @@ export default function LandingFooter() {
 
         <Coluna titulo="Sua conta">
           <ItemDeLink para="/login" icone={LogIn}>Entrar ou criar conta</ItemDeLink>
-          {/* A landing é a única página que não depende do banco, então é aqui
-              que quem foi bloqueado consegue chegar. O link existe desde 29/08
-              e continua genérico de propósito: ele não identifica ninguém. */}
-          <ItemDeLink para="/login" icone={ShieldQuestion}>Conta bloqueada?</ItemDeLink>
-          {/* `[02/09]` O link que fecha o buraco: "conta bloqueada" leva ao
-              login, o que só serve para quem ainda CONSEGUE entrar. Quem
-              perdeu o acesso não tinha via nenhuma. */}
-          <ItemDeLink para="/contato" icone={Mail}>Falar com a administração</ItemDeLink>
+          {/* `[02/09]` Estas duas linhas dividem as pessoas por uma pergunta
+              só: **você ainda consegue entrar?**
+
+              Antes elas eram duas mensagens quase iguais ("Conta bloqueada?" e
+              "Fui banido — ver meu caso") levando as duas ao MESMO lugar, o
+              login. Isso obrigava quem tinha perdido o acesso a descobrir
+              sozinho que o login não ia resolver o caso dela.
+
+              Quem CONSEGUE entrar deve ir ao login, e não ao formulário: a
+              tela de banimento mostra o motivo, a linha do tempo do caso e o
+              recurso na hora. O formulário levaria dias e chegaria ao mesmo
+              lugar. Quem NÃO consegue entrar não tem essa porta, e é para ela
+              que o /contato existe. */}
+          <ItemDeLink para="/login" icone={ShieldQuestion}>Fui banido — ver meu caso</ItemDeLink>
+          <ItemDeLink para="/contato" icone={Mail}>Não consigo entrar na conta</ItemDeLink>
         </Coluna>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Zap, ChevronDown, PauseCircle, ShieldQuestion } from 'lucide-react';
@@ -11,7 +11,7 @@ import IntroLightning from './IntroLightning';
 import { deveTocarIntroAgora, marcarIntroVista } from '../../lib/introJaVista';
 import BotaoCena3D from './BotaoCena3D';
 
-export default function Hero() {
+export default function Hero({ aoIntroTerminar }) {
   const foraDoAr = useDbOffline();
   // O raio de abertura cobre o Hero, estoura, some e então libera o conteúdo.
   //
@@ -27,10 +27,27 @@ export default function Hero() {
   const [introDone, setIntroDone] = useState(() => !deveTocarIntroAgora());
   const show = introDone ? 'animate' : 'initial';
 
+  // `[02/09]` `aoIntroTerminar` sobe para a Landing porque o som ambiente mora
+  // lá (no `BotaoDeSom`), e ele precisa saber QUANDO a intro acabou para tentar
+  // tocar. O Hero continua dono da intro; ele só passa a avisar.
+  //
+  // Um contexto ou um barramento de eventos resolveria o mesmo, e seria mais
+  // maquinário para um sinal booleano que atravessa exatamente um nível.
   function aoTerminarIntro() {
     marcarIntroVista();
     setIntroDone(true);
+    aoIntroTerminar?.();
   }
+
+  // Quem já viu a intro nesta sessão nasce com `introDone` verdadeiro e o
+  // `onComplete` NUNCA dispara — sem isto, o som jamais tentaria tocar a
+  // partir da segunda visita da sessão, que é justamente quando a pessoa mais
+  // provavelmente já decidiu que quer ouvir.
+  useEffect(() => {
+    if (introDone) aoIntroTerminar?.();
+    // Só na montagem: `aoTerminarIntro` cobre a transição.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-x-clip">
