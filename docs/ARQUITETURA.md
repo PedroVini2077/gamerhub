@@ -77,6 +77,10 @@ src/
 │   ├── tabelasSemUpdate.js # TRAVA: as tabelas SEM policy de UPDATE no banco.
 │   │                      # `update` nelas devolve 0 linhas e NENHUM erro — a
 │   │                      # tela diz que salvou e nada acontece
+│   ├── etapasDoCaso.js    # As etapas da linha do tempo de quem foi banido.
+│   │                      # TRAVA: o mapa de desfechos tem que cobrir os
+│   │                      # status que `unban_requests` aceita — a tela testava
+│   │                      # `rejected` e o banco grava `denied`
 │   ├── recarregarAteAparecer.js # Recarrega a lista até o item recém-criado
 │   │                      # aparecer. Leitura logo após escrita pode cair numa
 │   │                      # conexão do pool que ainda não vê a linha — o feed
@@ -240,6 +244,8 @@ src/
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
                            # AudioRecorder, GlobalBanner, FeatureGate,
+                           # LinhaDoTempoDoCaso (o andamento do recurso, na
+                           # tela de quem foi banido),
                            # LazyVisible, PageTransition, RolagemDeRota (decide
                            # para onde a página rola ao trocar de rota),
                            # AvisoSemBanco (faixa
