@@ -62,6 +62,8 @@ src/
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
+│   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
+│   │                      # da cena a cada mudança de frameloop
 │   ├── introJaVista.js    # Lembra, por sessão do navegador, que a intro do
 │   │                      # raio já foi vista — e decide se ela toca
 │   ├── roles.js           # Hierarquia de cargos no cliente; espelha `role_rank()`

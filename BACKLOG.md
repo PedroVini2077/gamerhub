@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**28 itens abertos** (+ 1 ideia sem compromisso)
+**27 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -386,21 +386,6 @@
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
-
-- ⬜ `[01/09]` 🟠 **O raio some ao sair da viewport e voltar.**
-  *Bug relatado pelo dono no prompt de 01/09. Ainda NÃO investigado.*
-
-  O esperado: abrir a landing, ver a cena, rolar para longe, voltar, e repetir
-  várias vezes — o raio funcionando todas as vezes.
-
-  Pistas a seguir, sem chutar: ciclo de vida do `createRoot`, o `frameloop`
-  ligado/desligado pelo IntersectionObserver, refs que sobrevivem ao remonte,
-  geometria e material descartados, e o `resize`. O `LandingScene` passa
-  `frameloop` na CRIAÇÃO da raiz — se ele não for atualizado ao voltar, a cena
-  reconecta sem nunca voltar a desenhar, que é o sintoma exato.
-
-  **Não vale "force rerender"** sem entender o motivo: seria trocar um sintoma
-  por outro, e o §1.2 proíbe.
 
 - ⬜ `[01/09]` 🟢 **Áudio ambiente na landing — avaliar antes de implementar.**
   *Pedido do dono no prompt de 01/09.* Futurista, sutil, com botão manual

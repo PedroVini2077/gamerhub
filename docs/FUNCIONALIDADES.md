@@ -507,3 +507,45 @@ lateral continuam com âncora simples: as duas só existem na landing.
 **A trava:** `e2e/navegacao.mjs`, no CI. Confere os **três** casos, não um.
 Provada removendo o `RolagemDeRota`: reprovou dizendo *"a /sobre abriu em
 4420px, vinda de 4420px na landing"* e apontando o arquivo.
+
+---
+
+### `[01/09]` O raio sumia ao voltar para a tela — e não era só o raio
+
+O dono relatou o raio ficando mudo depois de sair da viewport e voltar. A
+investigação achou **cinco** ocorrências da mesma causa, e três delas faziam
+coisas **sumirem** da tela.
+
+**A causa, lida no fonte do `@react-three/fiber`** (`setFrameloop`), não deduzida:
+
+```js
+clock.stop(); clock.elapsedTime = 0;
+if (frameloop !== 'never') { clock.start(); clock.elapsedTime = 0; }
+```
+
+**O relógio da cena zera a cada mudança de `frameloop`** — e ele muda toda vez
+que a cena sai e volta para a viewport, porque é exatamente assim que o laço é
+desligado fora da tela (otimização que fica).
+
+| Onde | O que acontecia ao voltar |
+| --- | --- |
+| arcos do raio | agendavam `proximo = elapsedTime + intervalo`; com o relógio zerado ficavam mudos **pelo tempo que a pessoa tinha ficado olhando antes** |
+| flash de trovão | idem |
+| entrada das formas | `popP` voltava a 0 → escala 0 → **sumiam e refaziam a entrada** |
+| entrada da logo | idem — **a logo encolhia até desaparecer** |
+| oscilações (`useBob`, diamante) | o seno saltava de fase e os objetos davam um pulo |
+
+**Nada estourava.** Medido: a cena seguia desenhando (185 draws antes, 185
+depois de voltar). Só o conteúdo se comportava errado — falha silenciosa.
+
+**A correção:** tempo acumulado a partir do `delta` de cada quadro. O `delta`
+não sabe nada de relógio absoluto e não tem como ser zerado por baixo. Fica em
+`lib/ritmoDoRaio.js` (agendamento) e no `useTempoAcumulado` do `SceneObjects`
+(animação). O teto de 1 s por quadro protege do salto que o navegador entrega
+quando a aba volta do segundo plano.
+
+**A trava:** `ritmoDoRaio.test.js` varre `scene3d/` e reprova qualquer
+`clock.elapsedTime` em código. Testar só o helper seria "teste que não consegue
+falhar" — alguém reescreveria a cena com o relógio e o teste seguiria verde.
+Provada reinjetando o bug na entrada da logo: reprovou apontando
+`SceneObjects.jsx:82` e explicando as duas consequências.
