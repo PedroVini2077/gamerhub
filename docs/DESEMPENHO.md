@@ -19,6 +19,47 @@
 
 ---
 
+### `[01/09]` O fluxo de dados da landing — e o A/B que mudou o desenho
+
+O pedido incluía *"algum nível de interatividade"* nos elementos flutuantes. O
+caminho óbvio — mover cada elemento no `requestAnimationFrame` — é exatamente o
+custo que encareceu a cena 3D. O desenho escolhido foi outro: **um único
+ouvinte de ponteiro escreve uma variável CSS**, coalescido por `rAF`, e o
+deslocamento acontece no compositor.
+
+**Mas isso não bastou, e só o A/B mostrou.** Medição com CPU a 1/4, comparando a
+mesma página com e sem a camada, em dois builds servidos em portas separadas:
+
+| | parado | com o ponteiro varrendo |
+| --- | --- | --- |
+| sem a camada | 3911 ms | 11264 ms |
+| com a camada (1ª versão) | 3892 ms | 11959 ms |
+| **custo atribuível** | **−19 ms** (ruído) | **+714 ms** |
+
+**Parado a camada custa zero, como projetado.** O problema estava na
+interatividade: cada atualização da variável invalidava o estilo dos **onze**
+traços e disparava onze transições.
+
+**A correção:** agrupar os traços em três planos de profundidade. Só os três
+contêineres leem a variável; os traços dentro nem sabem que ela existe.
+
+| | parado | com o ponteiro |
+| --- | --- | --- |
+| custo atribuível, agrupado | −43 ms | **+451 ms** |
+
+**714 → 451 ms, queda de 37%**, sem perder o efeito de camada.
+
+**O que sobra, dito com honestidade:** 451 ms **não é zero**. O contexto que os
+dimensiona: é sob CPU 4× mais lenta, durante 60 movimentos sintéticos em laço
+— pior que uso real —, sobre uma base de 7309 ms, e some por completo quando o
+ponteiro para. No celular o ouvinte nem é registrado (`pointer: fine`).
+
+**A alternativa, se um dia incomodar:** tirar o parallax. A camada sem
+interatividade custa zero medido. Fica registrado para a decisão ser informada,
+e não uma redescoberta.
+
+---
+
 ### `[01/09]` Auditoria da cena 3D — o que medi, e o experimento que deu ZERO
 
 O dono disse *"tô percebendo que ele tá pesando"* sobre o raio, e pediu

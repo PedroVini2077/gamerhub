@@ -707,3 +707,31 @@ Recomendação minha, e o dono decide:
 
 O terceiro item é o que decide: música de fundo por cima de uma live é conflito
 de áudio, não ambientação.
+
+---
+
+### `[01/09]` Elementos flutuantes da landing — o fluxo de dados
+
+Traços finos de luz subindo devagar atrás do conteúdo, como pacote de dado
+atravessando uma rede.
+
+**Por que ele não é "mais uma decoração":** ele lê como infraestrutura, não como
+enfeite solto. A cena 3D é o objeto em foco; o fundo da "Sobre" são formas
+grandes e lentas; este é fino, numeroso e vertical. Cada um ocupa um papel
+visual diferente, que era o pedido — *"diferentes dos elementos 3D existentes"*.
+
+**A interatividade, e o cuidado que ela exigiu:** o ponteiro desloca os planos
+em profundidades diferentes, criando parallax. O custo disso foi **medido e
+depois reduzido em 37%** agrupando os traços em três planos — os números e o
+A/B estão em [DESEMPENHO.md](DESEMPENHO.md). Parado, a camada custa zero.
+
+**Celular:** o ouvinte só é registrado com `pointer: fine`. Sem ponteiro não há
+para onde apontar, e registrar um ouvinte que nunca dispara é desperdício.
+
+**Acessibilidade:** `motion-reduce:hidden` — conferido no navegador, a camada
+fica `display: none` para quem pediu menos movimento.
+
+**Duas lições anteriores aplicadas aqui**, e vale dizer porque foi de propósito:
+a camada usa `100lvh` (não `100vh`), senão as peças saltariam quando a barra de
+endereço do celular some; e o conteúdo fica em `relative z-10`, senão o fluxo
+passaria por cima do texto — que é a diferença entre ambientação e poluição.
