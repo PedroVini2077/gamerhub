@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
-  ASSUNTOS, ASSUNTOS_DO_BANCO, assuntoDeContato, rotuloDoAssunto,
+  ASSUNTOS, ASSUNTOS_DO_BANCO, assuntoDeContato,
 } from '../assuntosDeContato';
 
 /**
@@ -80,6 +80,5 @@ describe('assuntos do contato', () => {
     // faria uma mensagem de assunto desconhecido aparecer no painel como
     // "Outro assunto", e ninguem saberia que o mapa ficou para tras.
     expect(assuntoDeContato('assunto_que_nao_existe')).toBeUndefined();
-    expect(rotuloDoAssunto('assunto_que_nao_existe')).toBeUndefined();
   });
 });

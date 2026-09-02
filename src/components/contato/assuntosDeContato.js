@@ -71,10 +71,11 @@ export function assuntoDeContato(valor) {
   return ASSUNTOS[valor];
 }
 
-/** Só o rótulo, para listas. `undefined` se o valor não é conhecido. */
-export function rotuloDoAssunto(valor) {
-  return ASSUNTOS[valor]?.rotulo;
-}
+// NÃO existe um `rotuloDoAssunto()` aqui, e a ausência é deliberada: eu tinha
+// escrito um, e a faxina (§6.1) mostrou que o único lugar que o chamava era o
+// próprio teste dele. Função viva só pelo teste é pior que código morto —
+// ela PARECE usada, e o teste vira decoração. Quem quiser o rótulo usa
+// `assuntoDeContato(x)?.rotulo`, que é o que o painel já faz.
 
 // Os mesmos números que a RPC `enviar_mensagem_de_contato` valida no banco.
 // Aqui eles servem só para a tela AVISAR antes de a pessoa mandar — a
