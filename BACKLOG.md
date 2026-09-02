@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -245,6 +245,29 @@
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[02/09]` 🟠 **O job "painel de admin" falhou uma vez publicando, e eu não
+  sei por quê.** *Instrumentado, não corrigido — está aqui para não sumir.*
+
+  Às 11:04:36 a conta `claudestaff` logou (há registro em `admin_logs`),
+  preencheu o formulário e clicou em Publicar. **O post nunca foi criado**:
+  conferido no banco, a linha não existe, e não há `content_post_created` na
+  trilha. No mesmo minuto a `claudetester` publicou normalmente no outro job.
+
+  **O que já foi descartado, com evidência:** não é a wordlist (rodei o
+  casamento do trigger contra o texto exato: zero palavras); não é ban nem
+  suspensão (as duas contas estão limpas); não é leitura logo após escrita
+  (nesse caso o post existiria).
+
+  **Por que não corrigi:** sem reproduzir, qualquer conserto seria chute — e
+  chute é o que consome sessão (§1.2). O que entrou foi instrumentação:
+  `e2e/publicarPost.mjs` passou a vigiar os avisos da tela enquanto espera e a
+  devolvê-los na falha, com o que cada um significa. Antes a mensagem era só
+  "waiting for locator(...)".
+
+  **O que resolve:** a próxima falha deste passo, que agora vai dizer se a tela
+  mostrou "Conteudo nao permitido", "Erro: ..." do banco, "Post publicado!"
+  (feed não releu) ou nada (o clique não chegou no botão).
 
 - ⬜ `[02/09]` **Responder a mensagem de contato por dentro do painel.** Hoje a
   equipe lê em `/admin` → aba Contato e responde do próprio e-mail, copiando o

@@ -71,6 +71,33 @@ um admin; restaurar é só voltar a `NULL`.
 não cria conteúdo (post/comentário/mural/chat) — imposto pelos `WITH CHECK` de
 INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspension`.
 
+### ⚠️ `[02/09]` "Negado" se escreve de DUAS formas neste banco
+
+Levantado com `pg_constraint` depois de um bug real, e é a armadilha mais fácil
+de cair aqui:
+
+| Tabela | O valor de "negado" |
+| --- | --- |
+| `unban_requests` | **`denied`** |
+| `live_reactivation_requests` | **`denied`** |
+| `moderation_queue` | `rejected` |
+| `role_change_requests` | `rejected` |
+| `staff_nominations` | `rejected` |
+
+**O bug que isso já causou:** a `BannedScreen` testava `rejected` para
+`unban_requests`. Nunca batia — quem teve o recurso negado via *"Em análise"*
+para sempre, e nada acusava. Quem escreveu tinha visto `rejected` três vezes no
+mesmo código.
+
+**Por que NÃO foram unificados:** seria migration em cinco tabelas, com
+`UPDATE` em linhas existentes e mudança em toda RPC e tela que as lê — risco
+real por ganho zero para quem usa o site. A decisão está em
+[DECISOES.md](DECISOES.md).
+
+**O que fazer no lugar:** ao renderizar um status, mapa explícito conferido por
+teste, como em `lib/etapasDoCaso.js`. Ternário terminando em `else` é o que
+transforma esta pegadinha em bug silencioso (§4).
+
 ### Funções (RPCs / triggers)
 
 **Chamadas pelo front (RPC):**

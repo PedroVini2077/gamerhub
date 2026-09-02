@@ -35,6 +35,7 @@
  * Exige E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD (conta de cargo `admin`).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
+import { publicarEEsperarNoFeed } from './publicarPost.mjs';
 
 import { MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -119,13 +120,16 @@ try {
   // Criando o próprio post, a aba Posts sempre tem o que listar, e o teste
   // volta a provar o que promete. É o mesmo padrão do `fluxos.mjs`.
   const MARCA_PAINEL = `[painel ${Date.now()}]`;
-  await page.locator('#post-title').fill(`${MARCA_PAINEL} post do teste`);
-  await page.locator('#post-content').fill(
-    'Criado pelo teste do painel para a aba Posts ter conteudo proprio. '
-    + 'Se este post ficou no ar, o teste falhou antes da limpeza.');
-  await page.getByRole('button', { name: /^Publicar$/ }).click();
-  await page.locator('h2', { hasText: MARCA_PAINEL }).first()
-    .waitFor({ state: 'visible', timeout: 30000 });
+  // `[02/09]` Passou a usar o helper compartilhado. Antes, quando este passo
+  // falhava, a mensagem era só "waiting for locator(...)" — o que nao
+  // aconteceu, e nada sobre por que. O helper vigia os avisos da tela enquanto
+  // espera e os devolve na falha.
+  await publicarEEsperarNoFeed(page, {
+    marca: MARCA_PAINEL,
+    titulo: `${MARCA_PAINEL} post do teste`,
+    corpo: 'Criado pelo teste do painel para a aba Posts ter conteudo proprio. '
+         + 'Se este post ficou no ar, o teste falhou antes da limpeza.',
+  });
   ok('post próprio criado para a aba Posts ter o que listar');
   ok('login com a conta de staff (sessão + perfil)');
 

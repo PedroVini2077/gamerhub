@@ -22,6 +22,7 @@
  * Exige E2E_EMAIL e E2E_PASSWORD (conta comum, nunca de staff — ver passo 3).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
+import { publicarEEsperarNoFeed } from './publicarPost.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
 const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
@@ -112,15 +113,14 @@ try {
 
   // ── 4. Publicar → conferir → apagar ─────────────────────────────────────
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
-  await page.locator('#post-title').fill(TITULO);
-  await page.locator('#post-content').fill(CORPO);
-  await page.getByRole('button', { name: /^Publicar$/ }).click();
-
   // O post aparecendo no feed prova a ida INTEIRA: o INSERT passou pela RLS,
   // os triggers rodaram sem estourar, e o feed releu.
+  //
+  // `[02/09]` O passo virou helper compartilhado com o `painel-admin.mjs` — as
+  // duas copias eram identicas, e as duas precisavam da mesma melhoria: dizer
+  // O QUE A TELA DISSE quando o post nao aparece.
+  await publicarEEsperarNoFeed(page, { marca: MARCA, titulo: TITULO, corpo: CORPO });
   const tituloNoFeed = page.locator('h2', { hasText: MARCA });
-  await tituloNoFeed.first().waitFor({ state: 'visible', timeout: 30000 });
   ok('post publicado e visível no feed');
 
   // `.card` é a raiz do PostCard: garante que o botão é o do post desta

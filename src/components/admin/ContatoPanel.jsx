@@ -3,6 +3,20 @@ import { RefreshCw, Mail, CheckCircle2, Ban, Clock } from 'lucide-react';
 import { assuntoDeContato } from '../contato/assuntosDeContato';
 import { useMensagensDeContato } from '../../hooks/useMensagensDeContato';
 
+// Mapa EXPLÍCITO, e não `answered ? ... : spam ? ... : 'Lida'`.
+//
+// A varredura de classe de 02/09 — feita depois de achar o `rejected`/`denied`
+// da tela de banimento — pegou esta linha, escrita por mim minutos antes, com
+// a MESMA forma. O `else` engolia `new`, e só não mentia por um acaso: `new`
+// nunca tem `handled_by_username`, então a linha não renderizava. Proteção por
+// efeito colateral de outra regra é sorte esperando expirar (§1.3) — bastaria
+// alguém criar um "desmarcar" que voltasse o status mantendo quem tratou.
+const COMO_FOI_TRATADA = {
+  read:     'Lida',
+  answered: 'Respondida',
+  spam:     'Marcada como spam',
+};
+
 const FILTROS = [
   { id: 'new',      rotulo: 'Novas' },
   { id: 'read',     rotulo: 'Lidas' },
@@ -118,7 +132,7 @@ function Cartao({ m, marcar }) {
 
       {m.handled_by_username && (
         <p className="text-[11px] font-mono text-gray-600">
-          {m.status === 'answered' ? 'Respondida' : m.status === 'spam' ? 'Marcada como spam' : 'Lida'}
+          {COMO_FOI_TRATADA[m.status] ?? `status desconhecido: ${m.status}`}
           {' por @'}{m.handled_by_username}
           {m.handled_at && ` em ${new Date(m.handled_at).toLocaleString('pt-BR')}`}
         </p>
