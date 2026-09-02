@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**26 itens abertos** (+ 1 ideia sem compromisso)
+**25 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -299,20 +299,6 @@
 
 
 ## 🟢 Recomendado
-
-- ⬜ `[02/09]` 🟢 **Tirar a intro do raio do chunk da landing.**
-  *A metade que a correção de 02/09 não resolveu. Medição em
-  [DESEMPENHO.md](docs/DESEMPENHO.md).*
-
-  O traço agora é desenhado de verdade (CSS em vez de rAF), mas ele só existe
-  no DOM às **485 ms** (CPU 1×) e **919 ms** (4×), porque a intro mora dentro
-  do chunk da landing. Meio segundo de tela preta antes de o raio começar
-  continua sendo meio segundo de tela preta.
-
-  **A troca:** mover a intro para o pacote inicial adiciona bytes ao
-  carregamento de TODO MUNDO — inclusive de quem já viu a intro nesta sessão e
-  não vai vê-la de novo. É decisão de número, e o número (quantos KB) precisa
-  ser medido antes.
 
 
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**

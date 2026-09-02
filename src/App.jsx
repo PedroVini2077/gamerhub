@@ -27,6 +27,8 @@ import GuestOnly from './components/auth/GuestOnly';
 import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
+import IntroLightning from './components/landing/IntroLightning';
+import { deveTocarIntroAgora, marcarIntroVista } from './lib/introJaVista';
 import Login from './pages/Login';
 import AuthConfirm from './pages/AuthConfirm';
 import NotFound from './pages/NotFound';
@@ -155,13 +157,39 @@ function Layout({ children }) {
 function HomeOrLanding() {
   const { user } = useAuth();
   const semBanco = useDbOffline();
+  // `[02/09]` A intro do raio é montada AQUI, e não dentro do Hero.
+  //
+  // Ela morava no Hero, que vive no chunk lazy da landing. Consequência
+  // medida: o raio só existia na tela depois de aquele chunk baixar e
+  // executar — 1320 ms a 6x de CPU, 1820 ms a 8x. Todo esse tempo é tela
+  // preta, e era metade do "às vezes não aparece" que o dono relatou.
+  //
+  // Aqui ela está no pacote inicial, e por isso pode aparecer enquanto a
+  // landing ainda baixa. Custa quase nada em bytes porque, desde a mesma
+  // sessão, a intro é CSS puro — ela não arrasta o Framer Motion junto.
+  //
+  // O hook fica ANTES do `return` do feed de propósito: hooks não podem ficar
+  // atrás de saída condicional (Rules of Hooks).
+  const [introDone, setIntroDone] = useState(() => !deveTocarIntroAgora());
+
+  function aoTerminarIntro() {
+    marcarIntroVista();
+    setIntroDone(true);
+  }
+
   // Sem banco o feed não tem o que mostrar — ele é consulta pura. A landing é
   // estática e continua de pé, então é ela que atende a raiz até o banco voltar.
   if (user && !semBanco) return <Layout><Home /></Layout>;
   return (
-    <Suspense fallback={<SplashScreen />}>
-      <Landing />
-    </Suspense>
+    <>
+      {!introDone && <IntroLightning onComplete={aoTerminarIntro} />}
+      {/* A intro cobre a tela inteira, então ela TAMBÉM serve de fallback:
+          enquanto o chunk da landing baixa, quem está olhando vê o raio em vez
+          do splash. Os dois nunca aparecem juntos. */}
+      <Suspense fallback={introDone ? <SplashScreen /> : null}>
+        <Landing introDone={introDone} />
+      </Suspense>
+    </>
   );
 }
 

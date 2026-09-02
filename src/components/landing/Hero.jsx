@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Zap, ChevronDown, PauseCircle, ShieldQuestion } from 'lucide-react';
 import { useDbOffline } from '../../hooks/useDbOffline';
@@ -7,54 +6,24 @@ import { motivoDaPausa } from '../../lib/pauseReason';
 import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
-import IntroLightning from './IntroLightning';
-import { deveTocarIntroAgora, marcarIntroVista } from '../../lib/introJaVista';
 import BotaoCena3D from './BotaoCena3D';
 
-export default function Hero({ aoIntroTerminar }) {
+export default function Hero({ introDone = true }) {
   const foraDoAr = useDbOffline();
-  // O raio de abertura cobre o Hero, estoura, some e então libera o conteúdo.
+  // `[02/09]` A intro NÃO mora mais aqui, e a razão é medida.
   //
-  // `[29/08]` Ele toca UMA VEZ por sessão do navegador. Antes tocava a cada
-  // recarga, a cada volta do login e a cada nova montagem — o dono descreveu
-  // exatamente isso, e a intro segura o conteúdo do Hero enquanto roda, então
-  // cada repetição é ~1,3 s de espera para ver a mesma coisa.
+  // Ela era montada pelo Hero, que vive dentro do chunk lazy da landing.
+  // Consequência: o raio só existia na tela depois de aquele chunk baixar e
+  // executar — **1320 ms a 6x de CPU, 1820 ms a 8x**. Todo esse tempo é tela
+  // preta, e foi metade do "às vezes não aparece" que o dono relatou.
   //
-  // `useState(fn)` decide na montagem: quem já viu entra direto com o Hero
-  // pronto (`introDone` nasce `true`), sem um quadro sequer de tela preta.
-  // Ver `lib/introJaVista.js` para o porquê de `sessionStorage` e não
-  // `localStorage`.
-  const [introDone, setIntroDone] = useState(() => !deveTocarIntroAgora());
+  // Hoje quem monta a intro é o `HomeOrLanding` (App.jsx), que está no pacote
+  // inicial. O Hero só recebe o resultado: `introDone` diz se já pode revelar
+  // o conteúdo. Ele continua sem saber o que é um raio.
   const show = introDone ? 'animate' : 'initial';
-
-  // `[02/09]` `aoIntroTerminar` sobe para a Landing porque o som ambiente mora
-  // lá (no `BotaoDeSom`), e ele precisa saber QUANDO a intro acabou para tentar
-  // tocar. O Hero continua dono da intro; ele só passa a avisar.
-  //
-  // Um contexto ou um barramento de eventos resolveria o mesmo, e seria mais
-  // maquinário para um sinal booleano que atravessa exatamente um nível.
-  function aoTerminarIntro() {
-    marcarIntroVista();
-    setIntroDone(true);
-    aoIntroTerminar?.();
-  }
-
-  // Quem já viu a intro nesta sessão nasce com `introDone` verdadeiro e o
-  // `onComplete` NUNCA dispara — sem isto, o som jamais tentaria tocar a
-  // partir da segunda visita da sessão, que é justamente quando a pessoa mais
-  // provavelmente já decidiu que quer ouvir.
-  useEffect(() => {
-    if (introDone) aoIntroTerminar?.();
-    // Só na montagem: `aoTerminarIntro` cobre a transição.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-x-clip">
-      <AnimatePresence>
-        {!introDone && <IntroLightning key="intro" onComplete={aoTerminarIntro} />}
-      </AnimatePresence>
-
       {/* Glows flutuantes — assinatura exclusiva da landing, não existem no resto do site */}
       <motion.div
         aria-hidden

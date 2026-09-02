@@ -114,18 +114,37 @@ volta.
 
 O traço passou a ser desenhado de verdade nas duas velocidades.
 
-#### O que sobra, dito com honestidade
+#### A metade que faltava: a intro saiu do chunk da landing
 
-**A 6× a medição é inconclusiva, não positiva.** O traço aparece às 1285 ms
-ainda em `1px` (ou seja, começando certo, em vez de saltar), mas a janela de
-amostragem terminou antes de eu ver o resto. Não sei dizer se ele completa.
+**Primeiro, uma correção do que eu escrevi acima.** Eu tinha registrado que a
+6× a medição era "inconclusiva". Remedindo com uma janela maior, ela é
+**positiva**: o traço desenha a 6× e a 8× também. A janela de 1,5 s é que
+acabava antes — era limitação do meu teste, não do código.
 
-E existe um segundo problema que esta correção **não** resolve: o traço só
-existe no DOM às 485 ms (1×) / 919 ms (4×), porque a intro mora dentro do chunk
-da landing. Meio segundo de tela preta antes de o raio começar continua sendo
-meio segundo de tela preta. Tirar a intro do chunk resolveria — é troca de
-bytes no carregamento inicial por tempo até o primeiro quadro, e está no
-`BACKLOG.md` para ser decidida com número, não no susto.
+O que sobrava era outra coisa, e essa era real: **o traço só existia no DOM às
+1320 ms a 6× e 1820 ms a 8×**, porque a intro morava no Hero, que vive dentro
+do chunk lazy da landing. Todo esse tempo é tela preta.
+
+A intro passou a ser montada pelo `HomeOrLanding` (`App.jsx`), que está no
+pacote inicial — e ela **também serve de fallback** do `Suspense`: enquanto o
+chunk da landing baixa, quem está olhando vê o raio em vez do splash.
+
+| CPU | Traço aparece — antes | depois | Valores distintos |
+| --- | --- | --- | --- |
+| 6× | 1320 ms | **911 ms** | 3 → 4 |
+| 8× | 1820 ms | **1433 ms** | 3 → **6** |
+
+A 8× o desenho ficou visivelmente mais completo: `1 → 0,994 → 0,844 → 0,488 →
+0,091 → 0`, ou seja, a animação progride de verdade em vez de dar dois saltos.
+
+**O que isso custou, medido:** o pacote inicial foi de 702,5 kB para 712,1 kB
+(**+9,6 kB**; +3,0 kB gzip), dentro do teto de 740 kB. Só foi barato porque, na
+mesma leva, a intro deixou de depender do Framer Motion — mover a versão antiga
+teria arrastado a biblioteca junto.
+
+**Por que valeu:** 400 ms a menos de tela preta no aparelho fraco, que é
+exatamente onde o problema aparecia. Num aparelho rápido a diferença é
+imperceptível — e é assim que tem que ser.
 
 ---
 
