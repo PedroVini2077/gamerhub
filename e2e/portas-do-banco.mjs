@@ -178,11 +178,75 @@ for (const [funcao, estrago] of RPCS_FECHADAS) {
   }
 }
 
+// ── 4. A porta que estava ENTREABERTA, e o teste não via ───────────────────
+//
+// Em 02/09 a sondagem manual desmentiu o verde deste próprio arquivo. O bloco
+// 1 acima pergunta `select=*`, e `profiles` responde 401 a isso — então a linha
+// dava OK e o SEGURANCA.md passou a afirmar que "profiles responde 401 ao
+// anônimo". A afirmação é falsa por coluna:
+//
+//     GET /rest/v1/profiles?select=*            -> 401
+//     GET /rest/v1/profiles?select=id,username  -> 200, as 5 linhas
+//
+// Privilégio no Postgres é POR COLUNA. Um `select=*` negado prova só que
+// ALGUMA coluna está fechada — nunca que a tabela está.
+//
+// Por que isto NÃO reprova hoje: a exposição de `id`+`username` é item 🟡 em
+// aberto no BACKLOG.md, esperando decisão do dono sobre o revoke (revoke de
+// coluna já derrubou este site três vezes). Portão vermelho por item conhecido
+// e não decidido bloquearia todo PR e viraria ruído (§0.2, 4ª regra).
+//
+// O que ele trava é a PIORA: a superfície é exatamente estas duas colunas, e
+// qualquer coluna a mais reprova.
+const SUPERFICIE_ANONIMA = {
+  profiles: {
+    pode: ['id', 'username'],
+    naoPode: ['avatar_url', 'role', 'banned', 'banned_at', 'suspended_until',
+      'birth_date', 'bio', 'created_at'],
+    estrago: 'cargo, estado de ban, data de nascimento e bio de todo mundo',
+  },
+};
+
+for (const [tabela, { pode, naoPode, estrago }] of Object.entries(SUPERFICIE_ANONIMA)) {
+  for (const coluna of naoPode) {
+    const { status } = await pegar(`/rest/v1/${tabela}?select=${coluna}&limit=1`);
+    if (status === 401 || status === 403) {
+      ok(`${tabela}.${coluna.padEnd(18)} continua negada (HTTP ${status})`);
+    } else {
+      falhou(`${tabela}.${coluna.padEnd(18)} ABRIU PARA O ANÔNIMO (HTTP ${status})`,
+        `A coluna \`${tabela}.${coluna}\` passou a ser legível SEM CONTA.\n`
+        + `    O que a tabela entrega quando isso acontece: ${estrago}.\n`
+        + '    Um `select=*` negado NAO prova tabela fechada — o privilegio do\n'
+        + '    Postgres e por COLUNA, e foi exatamente assim que a exposicao de\n'
+        + '    id+username passou meses invisivel para este portao.\n'
+        + '    Conferir: GRANT SELECT (coluna) ON profiles TO anon.');
+    }
+  }
+
+  // A inversa. Sem ela, um revoke amplo fecharia as duas colunas e o teste
+  // ficaria VERDE — que é a queda silenciosa descrita no bloco ABERTAS.
+  for (const coluna of pode) {
+    const { status } = await pegar(`/rest/v1/${tabela}?select=${coluna}&limit=1`);
+    if (status === 200) {
+      ok(`${tabela}.${coluna.padEnd(18)} legível (estado conhecido, item 🟡)`);
+    } else {
+      falhou(`${tabela}.${coluna.padEnd(18)} FECHOU (HTTP ${status})`,
+        `\`${tabela}.${coluna}\` deixou de ser legivel pelo anonimo.\n`
+        + '    Isso pode ser BOM — e o revoke do item 🟡 do BACKLOG.md. Se foi\n'
+        + '    proposital, tire a coluna de `pode` aqui e feche o item.\n'
+        + '    Se NAO foi, um revoke amplo pegou junto o que nao devia: veja as\n'
+        + '    tres quedas do site por essa causa em docs/regras/POSTURA.md.');
+    }
+  }
+}
+
 // ── Veredicto ──────────────────────────────────────────────────────────────
 if (falhas.length > 0) {
   console.error(`\n  ${falhas.length} porta(s) do banco fora do lugar:\n`);
   falhas.forEach(f => console.error(`  ─ ${f}\n`));
   process.exit(1);
 }
-console.log(`\n  ${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length}/`
-  + `${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length} portas do banco no lugar.\n`);
+const colunas = Object.values(SUPERFICIE_ANONIMA)
+  .reduce((n, s) => n + s.pode.length + s.naoPode.length, 0);
+console.log(`\n  ${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length + colunas}/`
+  + `${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length + colunas} portas do banco no lugar.\n`);

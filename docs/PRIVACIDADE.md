@@ -59,6 +59,39 @@ O critério de "terceiro" é **manda alguma coisa para servidor de outra empresa
 não "é biblioteca externa": o que anima ou formata não entra; o que faz uma
 pessoa aparecer no registro de outra empresa, sim.
 
+### `[02/09]` A quarta trava: o texto não pode mudar por baixo de quem já aceitou
+
+As três travas acima vigiam se a política **conta a verdade sobre o código**.
+Nenhuma vigiava se o **registro de aceite** continua verdadeiro — e foi por aí
+que passou o defeito.
+
+**O que aconteceu, com hora.** O dono aceitou os três documentos às **19:58:52
+UTC de 02/09**, a política na versão `2026-09-02`. Horas depois, no PR #140, o
+bloco *"por quanto tempo guardamos seu dado"* foi reescrito de *"falta definir"*
+para uma tabela com seis prazos — e **a versão não se moveu**. O registro passou
+a afirmar que ele concordou com um texto que nunca leu, que é exatamente o que
+versionar o aceite existe para impedir.
+
+A regra *"suba a versão quando o conteúdo mudar"* já estava escrita em
+`documentosLegais.js`. Ela falhou porque **nada percebia que o texto tinha
+mudado** — responder a isso com mais uma frase seria repetir o que não
+funcionou (§2: comentário é a mais fraca das cinco travas).
+
+| O que entrou | O que faz |
+| --- | --- |
+| `impressao` em `DOCUMENTOS` | o sha256 do arquivo de conteúdo de cada documento |
+| teste em `documentosLegais.test.js` | reprova quando o arquivo muda e a impressão não acompanha |
+| `CHECK` do banco widened para `^\d{4}-\d{2}-\d{2}(-\d+)?$` | deixa a **segunda revisão do mesmo dia** ser dita; antes era inexprimível |
+
+**Ela cobra decisão, não versão nova.** Exigir reaceite a cada vírgula treinaria
+todo mundo a clicar sem ler — o dano oposto e igualmente real. Ao falhar, o
+teste apresenta as duas saídas: mudança relevante sobe `versao` **e**
+`impressao`; mudança cosmética sobe **só** a `impressao`.
+
+**Consequência já em produção:** a política está em `2026-09-02-2`, e o aviso
+não bloqueante de reaceite aparece para quem aceitou a versão anterior — hoje,
+uma pessoa.
+
 ---
 
 ## O mapa dos dados
@@ -151,8 +184,22 @@ Auditoria só com achado ruim dá a impressão errada do estado real.
 
 - **`profiles` não tem coluna de e-mail.** Ele mora no `auth`, fora do alcance
   da REST API pública.
-- **O anônimo leva 401 em `profiles`, `posts`, `admin_logs` e
-  `moderation_queue`** — verificado pelo portão `portas-do-banco.mjs`.
+- **O anônimo leva 401 em `posts`, `admin_logs` e `moderation_queue`** —
+  verificado pelo portão `portas-do-banco.mjs`.
+- **Em `profiles`, o anônimo leva 401 em tudo que é pessoal** — `role`,
+  `banned`, `suspended_until`, `birth_date`, `bio`, `avatar_url` e `created_at`,
+  cada coluna sondada uma a uma pelo portão.
+
+  > **Correção de 02/09, com a evidência.** Esta linha dizia *"o anônimo leva
+  > 401 em `profiles`"*, sem ressalva, e isso era **falso**. O 401 vale para
+  > `select=*`; `select=id,username` responde **200 com as 5 linhas**.
+  > Privilégio no Postgres é **por coluna**, e um `select=*` negado prova apenas
+  > que *alguma* coluna está fechada. O portão sondava só `select=*` — dava
+  > verde honesto para uma pergunta que não era a certa.
+  >
+  > A exposição de `id`+`username` está no `BACKLOG.md` como item 🟡, esperando
+  > decisão sobre o revoke. O portão passou a sondar **coluna a coluna** e
+  > reprova se qualquer outra abrir.
 - **O Sentry recebe `id` e `username`, nunca e-mail.**
 - **A data de nascimento não é exposta**: o perfil público mostra a idade
   calculada no banco, não a data.

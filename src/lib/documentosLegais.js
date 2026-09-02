@@ -10,7 +10,12 @@
  *
  * A versão é a data da última mudança de conteúdo do documento. Ela é gravada
  * junto do aceite em `policy_acceptances`, e o banco recusa qualquer coisa que
- * não seja uma data (`CHECK (versao ~ '^\d{4}-\d{2}-\d{2}$')`).
+ * não seja uma data com sufixo opcional de revisão
+ * (`CHECK (versao ~ '^\d{4}-\d{2}-\d{2}(-\d+)?$')`).
+ *
+ * O sufixo `-2` existe porque um documento pode mudar **duas vezes no mesmo
+ * dia**, e sem ele a segunda mudança seria inexprimível — foi exatamente o que
+ * aconteceu com a política de privacidade em 02/09.
  *
  * ── Quando mexer nestas datas ───────────────────────────────────────────────
  *
@@ -18,6 +23,28 @@
  * gente coleta, o que a pessoa pode ou não fazer, o que acontece com a conta.
  * Corrigir uma vírgula não é mudança relevante, e subir a versão por vírgula
  * treina todo mundo a ignorar o pedido de reaceite.
+ *
+ * ── A `impressao`, e o buraco real que ela fecha ────────────────────────────
+ *
+ * A regra acima já existia, estava certa, e **falhou mesmo assim**. Em 02/09 o
+ * dono aceitou a política na versão `2026-09-02` às 19:58; horas depois o bloco
+ * *"por quanto tempo guardamos seu dado"* foi reescrito de "falta definir" para
+ * uma tabela com seis prazos — e a versão não se moveu. O registro passou a
+ * dizer que ele concordou com um texto que nunca viu, que é precisamente o que
+ * versionar o aceite existe para impedir.
+ *
+ * Não faltava regra: faltava **alguém percebendo que o texto mudou**. A
+ * `impressao` é o sha256 do arquivo de conteúdo do documento, e o teste de
+ * contrato compara os dois. Mudou o arquivo e não mexeu aqui? O teste falha.
+ *
+ * **Ela obriga a DECISÃO, não a subir versão** — essa distinção é o ponto.
+ * Forçar versão nova a cada vírgula produziria o dano que o parágrafo de cima
+ * descreve. Ao falhar, o teste apresenta as duas saídas:
+ *
+ * | A mudança foi… | O que fazer |
+ * | --- | --- |
+ * | relevante para quem lê | subir `versao` **e** `impressao` — todo mundo reaceita |
+ * | cosmética (vírgula, acento) | subir **só** a `impressao` — ninguém é incomodado |
  *
  * ── UMA caixinha, e não três ────────────────────────────────────────────────
  *
@@ -27,22 +54,36 @@
  * não melhor.
  */
 
-/** Os três documentos, com a versão vigente de cada. */
+/**
+ * Os três documentos, com a versão vigente e a impressão do conteúdo.
+ *
+ * `conteudo` é o arquivo que o teste de contrato lê para calcular a impressão.
+ * Ele está aqui, e não no teste, porque o teste precisa poder dizer QUAL
+ * arquivo mudou — e porque documento novo sem entrada aqui deve falhar em vez
+ * de passar despercebido.
+ */
 export const DOCUMENTOS = {
   privacidade: {
     rotulo: 'Política de Privacidade',
     caminho: '/privacidade',
-    versao: '2026-09-02',
+    // `-2`: os prazos de retenção entraram depois do primeiro aceite do dia.
+    versao: '2026-09-02-2',
+    conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
+    impressao: '5574b3eb31566851',
   },
   regras: {
     rotulo: 'Regras da Comunidade',
     caminho: '/regras',
     versao: '2026-09-01',
+    conteudo: 'src/components/regras/conteudoDasRegras.js',
+    impressao: '88f4042d95a218cb',
   },
   termos: {
     rotulo: 'Termos de Uso',
     caminho: '/termos',
     versao: '2026-09-02',
+    conteudo: 'src/components/termos/conteudoDosTermos.js',
+    impressao: 'd2240fc92349715c',
   },
 };
 
