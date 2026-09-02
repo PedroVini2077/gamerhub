@@ -29,6 +29,14 @@ git log --oneline -5 2>/dev/null
 echo
 echo "── Backlog ──"
 grep -m1 'itens abertos' BACKLOG.md 2>/dev/null
+echo
+echo "  Os de maior prioridade (🔴 e 🟠) — o resto está no BACKLOG.md:"
+grep -E '^- ⬜.*(🔴|🟠)' BACKLOG.md 2>/dev/null \
+  | sed 's/\*\*//g; s/^- ⬜ /    /' | cut -c1-96
+echo
+echo "  Só o número não bastava: em 01/09 QUATRO pedidos do dono ficaram só na"
+echo "  conversa e eu não percebi, porque nada os punha na minha frente."
+echo "  TUDO o que vamos fazer entra aqui — auditoria, feature, bug, decisão."
 echo "  (a fila inteira precisa ser relida antes de FECHAR um bloco — §6.2)"
 
 echo

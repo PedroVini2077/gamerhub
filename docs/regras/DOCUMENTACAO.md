@@ -96,6 +96,35 @@ informação que envelheceu.
 O que sempre pede proposta: mexer numa **regra**, remover conteúdo, mudar a
 estrutura de um documento, ou criar documento novo.
 
+### `[01/09]` TUDO entra no backlog — inclusive o que ainda nem começou
+
+> Ordem do dono em 01/09: *"tudo oq vamos fazer e realizar, tanto de auditoria
+> como features, bugs e etc, devem ser colocados no backlog e verificados a todo
+> momento"*, com a ressalva dele mesmo: *"óbvio que vc deve filtrar"*.
+
+**O que mudou.** A regra antiga mandava atualizar o backlog *"se resolveu ou
+descobriu pendência"* — ou seja, **depois**. Por isso quatro pedidos dele
+(o raio sumindo ao voltar à viewport, o áudio ambiente, os elementos flutuantes
+e a auditoria de LGPD) ficaram vivendo só na conversa: nenhum tinha sido
+resolvido nem descoberto por mim, então nenhum se encaixava no gatilho da regra.
+
+**A regra agora:** pedido recebido é item escrito, **antes** de começar. O
+momento de registrar é quando ele chega, não quando termina.
+
+**O filtro, porque "tudo" sem filtro vira lista ilegível:**
+
+| Entra no backlog | Não entra |
+| --- | --- |
+| feature, bug, auditoria, decisão pendente | passo intermediário do que já está em execução |
+| achado que eu decidi não tratar agora | correção trivial que já vai no mesmo PR |
+| o que depende do dono ou de outra sessão | conversa sobre algo que já é item |
+
+**Por que uma regra a mais não bastava, e o que entrou junto.** A regra de
+manter o backlog já existia e não impediu a falha — porque nada punha a fila na
+minha frente. O `scripts/inicio-de-sessao.sh` passou a listar os itens 🔴 e 🟠
+por extenso a cada sessão, em vez de só o número. Um contador não se confere;
+uma lista, sim.
+
 ### Antes de fechar qualquer bloco de trabalho
 
 Reler **A FILA** do backlog inteira e marcar o que mudou. Não confiar na
