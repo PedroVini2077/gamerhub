@@ -666,9 +666,18 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 
 | Mecanismo | Quando roda | O que ele pega |
 | --- | --- | --- |
-| `scripts/inicio-de-sessao.sh` | **sozinho**, no `SessionStart` | põe na minha frente o estado real: pendência não commitada, backlog, e há quantos dias cada documento não é tocado |
-| `scripts/mapa-de-arquivos.mjs` | CI, **reprova o PR** | arquivo em `src/` que o `ARQUITETURA.md` não conhece |
+| `scripts/inicio-de-sessao.sh` | **sozinho**, no `SessionStart` | põe na minha frente o estado real: pendência não commitada, os itens 🔴/🟠 do backlog **por extenso**, e há quantos dias cada documento não é tocado |
 | `scripts/fim-de-sessao.mjs` (`npm run fim`) | **eu rodo antes de encerrar** | o que o CI nunca viu: trabalho não commitado, commit não empurrado, arquivo acima de 300 linhas, contador do backlog mentindo |
+| `scripts/mapa-de-arquivos.mjs` | CI, **reprova** | arquivo em `src/` que o `ARQUITETURA.md` não conhece |
+| `scripts/segredos-vazados.mjs` | CI, **reprova** | chave privada, `service_role`, token ou senha em arquivo rastreado |
+| `scripts/documentacao-quebrada.mjs` | CI, **reprova** | documento citando arquivo que não existe mais |
+| `scripts/documentacao-envelhecida.mjs` | dia 1º, **abre issue** | documento atrás do código — **inclusive `CLAUDE.md` e os `docs/regras/`**, que até 02/09 eram os únicos sem vigilância |
+| `e2e/portas-do-banco.mjs` | CI, **reprova** | porta do banco que abriu — **e porta que fechou**, que já derrubou o site 3× |
+| `e2e/conteudo-visivel.mjs` | CI, **reprova** | conteúdo no DOM e invisível na tela, em janela de celular |
+| `e2e/navegacao.mjs` | CI, **reprova** | página abrindo no lugar errado, âncora morta, botão voltar atropelado |
+| `e2e/sem-banco.mjs` | CI, **reprova** | banco fora do ar derrubando o que **não** depende dele |
+| `src/lib/tabelasSemUpdate.js` | `npm test`, **reprova** | `update` em tabela sem policy — 0 linhas e **nenhum erro** |
+| `src/lib/__tests__/varrerFontes.js` | usado pelas travas | trava que varre pasta e **não leu arquivo nenhum**: sem ele, renomear a pasta deixa o teste verde para sempre |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 

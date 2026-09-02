@@ -294,6 +294,15 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[02/09]` O contrato do botão de som: clicar SEMPRE alterna, com e sem
+      # preferência salva. O teste antigo só cobria o primeiro acesso — ou
+      # seja, o caminho de quem nunca voltou —, e por isso deu verde num botão
+      # que o dono relatou como travado.
+      - name: O botão de som ambiente alterna sempre
+        run: npm run test:e2e:som
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # `[01/09]` Com o banco fora, o site inteiro ficava inacessível: um
       # `return <OfflineGate />` acima do <Routes> matava até /sobre e /login,
       # que não dependem do banco. A regra que ficou: fora do ar bloqueia SÓ o

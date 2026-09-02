@@ -510,3 +510,28 @@ Isso invalidou a primeira versão da trava: ela nunca alcançava o estado que
 dizia testar, e passava **mesmo com o bug reinjetado**. Hoje `e2e/sem-banco.mjs`
 força o estado de verdade com quatro tentativas de login contra o host
 bloqueado, e reprova nomeando a causa.
+
+---
+
+## `[02/09]` O portão de documentação passou a ver TODOS os documentos
+
+Cobrança do dono: *"os gatilhos têm que ser feitos para cada documentação do
+projeto, nenhum deles pode passar, inclusive o `CLAUDE.md`"*.
+
+Ele estava certo, e havia **dois** buracos:
+
+| Buraco | O que significava |
+| --- | --- |
+| `CLAUDE.md` e `BACKLOG.md` tinham território **vazio** | estavam na lista só para não serem acusados de "não mapeados" — **nunca eram conferidos** |
+| o varredor lia só `docs/` no primeiro nível | **`docs/regras/` era invisível** — e é lá que moram os splits do `CLAUDE.md` |
+
+Ou seja: os cinco arquivos que **comandam todo o resto** eram exatamente os que
+ninguém vigiava.
+
+**O território deles não é "o código que descrevem"** — é o **mecanismo que os
+cumpre**. Uma regra sobre banco envelhece quando o portão do banco muda; uma
+regra sobre documentação envelhece quando os portões de documentação mudam.
+
+**Achou na primeira execução:** o `CLAUDE.md` estava **7 commits de código**
+atrás, e a tabela de mecanismos do §6.3 listava **3** dos **10** que existem
+hoje. Corrigida no mesmo PR.
