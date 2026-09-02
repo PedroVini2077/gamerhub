@@ -151,14 +151,24 @@
   entrega — e o dono cobrando quando faltar. **É pouco, e é honesto dizer que é
   pouco.**
 
-  ### O que ainda falta desta auditoria
+  ### `[02/09]` Partes A e B CONCLUÍDAS
 
-  - **Parte A incompleta:** a matriz saiu com `gatilho → cobertura`. Falta a
-    coluna **obrigação** — o que cada portão EXIGE de quem mexe na área — que
-    era metade do formato pedido.
-  - **Parte B não começou:** varrer as seis classes nomeadas (inferência como
-    fato, teste que não falha, validação que acusa errado, documentação não
-    consultada, diagnóstico sem evidência, conclusão prematura) pelo código.
+  - **Parte A:** a matriz ganhou a coluna **obrigação** — o que cada um dos 14
+    portões exige de quem mexe na área. Está em [SEGURANCA.md](docs/SEGURANCA.md).
+    Sem ela, "existe portão" era contagem, e contagem não orienta ninguém.
+  - **Parte B:** a varredura achou a classe mais grave nas MINHAS PRÓPRIAS
+    travas — **6 das 9** que leem arquivos não conferiam que leram algum.
+    Renomeie a pasta e elas ficam verdes para sempre. Corrigido por classe com
+    `varrerFontes`, que estoura quando não acha nada; provado movendo `scene3d/`.
+
+  ### O que ainda falta
+
+  - **Teste de mutação** (padrão nº 3): continua sem mecanismo, e é decisão de
+    custo do dono. O `varrerFontes` fecha um caso importante da classe, não a
+    classe inteira — ele garante que a trava LEU o código, não que ela
+    detectaria a mudança errada.
+  - Os padrões 2, 6, 7 e 9 seguem sem mecanismo, e a razão está escrita: são de
+    julgamento e conduta. Fingir portão sobre eles seria o padrão nº 5.
 
   **O que este item NÃO promete:** que eu pare de errar. Prometer isso seria a
   mesma mentira do verde que prometia demais. O alvo é o mesmo do projeto —
