@@ -720,6 +720,36 @@ Os limites de vazão, o disjuntor, o alarme de enchente e os 14 testes em
 `ROLLBACK` estão em
 [`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
 
+### `[02/09]` O fundo animado em TODAS as abas da barra lateral
+
+Pedido do dono, e uma correção de rota minha. Ele tinha perguntado em 02/09 se
+cada aba devia ter fundo próprio; eu registrei a decisão ("o mesmo para todas,
+variando a cor") e **entendi errado de qual barra lateral se tratava** — fui
+implementar no site logado. Ele corrigiu: *"não foi para o site logado que
+pedi, eu pedi para as rotas da barra lateral... eu queria que todas as abas
+assim como o sobre tivessem"*.
+
+A barra lateral da **landing** leva a `/sobre`, `/privacidade`, `/regras`,
+`/termos` e `/contato`. Só a primeira tinha fundo.
+
+**Onde ele foi posto, e por quê.** Na **casca** (`PaginaDeConteudo`), não em
+cada página. Posto em cada uma seriam quatro linhas iguais — e a quinta página
+nasceria sem, porque quem a escrevesse não saberia que precisa. Na casca, toda
+página que a usa ganha por construção.
+
+O componente saiu de `components/sobre/` para `components/conteudo/`: um
+arquivo chamado `sobre/FundoAnimado` usado por cinco páginas é um nome que
+mente, e nome que mente é o começo da duplicação.
+
+**A trava** (`PaginaDeConteudo.test.jsx`) cobre o fundo e as três regras que o
+enfeite não pode perder — não roubar clique, sumir com `prefers-reduced-motion`
+e não ser anunciado por leitor de tela. As quatro são **invisíveis quando
+quebram**: ninguém percebe que o fundo roubou um clique até tentar clicar num
+link por baixo dele, e ninguém reporta enfeite ausente como bug.
+
+Conferido nas cinco rotas num navegador: 24 elementos por camada,
+`pointer-events: none`, e o conteúdo acima.
+
 ### `[01/09]` A casca compartilhada das páginas de texto
 
 `components/conteudo/PaginaDeConteudo.jsx` nasceu quando a **segunda** página

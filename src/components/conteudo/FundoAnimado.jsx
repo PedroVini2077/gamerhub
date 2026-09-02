@@ -1,5 +1,17 @@
 /**
- * A camada que se mexe atrás do texto da página "Sobre".
+ * A camada que se mexe atrás do texto das páginas públicas.
+ *
+ * ── `[02/09]` Por que ele saiu de `components/sobre/` ───────────────────────
+ *
+ * Ele nasceu para a "Sobre" e ficou só lá. O dono cobrou: *"eu queria que
+ * todas as abas assim como o sobre tivessem"* — as abas da barra lateral da
+ * landing, que são `/privacidade`, `/regras`, `/termos` e `/contato`.
+ *
+ * Um arquivo chamado `sobre/FundoAnimado` usado por cinco páginas é um nome
+ * que mente, e nome que mente é o começo da duplicação: a próxima pessoa que
+ * precisar de fundo numa página nova não vai procurar dentro de `sobre/`, vai
+ * escrever outro. Por isso ele mora agora ao lado do `PaginaDeConteudo`, que é
+ * quem o usa.
  *
  * ── Por que NÃO tem física ──────────────────────────────────────────────────
  *
