@@ -136,6 +136,30 @@ try {
   await tituloNoFeed.first().waitFor({ state: 'detached', timeout: 30000 });
   ok('post apagado e fora do feed depois da contagem');
 
+  // ── 4b. NENHUM post de teste sobrando de execuções anteriores ────────────
+  //
+  // `[01/09]` Padrão de falha meu, catalogado: "crio dado de teste que confunde
+  // o dono". Já aconteceu duas vezes — uma fila de moderação com itens falsos
+  // marcados como se a IA tivesse detectado, e um post de e2e que ficou no ar
+  // porque o teste morreu antes do passo que apaga.
+  //
+  // Até agora a única defesa era eu lembrar de conferir. Isto passa a olhar
+  // sozinho: se o feed tiver marca `[e2e` que não seja a desta execução, é
+  // lixo de uma rodada que quebrou no meio.
+  //
+  // Por que aqui e não num script próprio: só uma conta LOGADA enxerga o feed
+  // (o anônimo leva 401), e este é o único teste que tem sessão.
+  const sobras = await main.locator('h2').filter({ hasText: /\[e2e / })
+    .filter({ hasNotText: MARCA }).count();
+  if (sobras > 0) {
+    throw new Error(
+      `${sobras} post(s) de teste sobrando no feed de execucoes anteriores.\n`
+      + '  Alguma rodada morreu antes do passo que apaga, e o lixo ficou no ar\n'
+      + '  para quem usa o site. Apague pelo painel admin (aba Posts) e veja\n'
+      + '  POR QUE aquela rodada quebrou — o post sobrando e o sintoma, nao a causa.');
+  }
+  ok('nenhum post de teste sobrando de execuções anteriores');
+
   // ── 5. Sair ─────────────────────────────────────────────────────────────
   await page.getByRole('button', { name: /^Sair$/i }).click();
   // Sem sessão, a rota `/` volta a ser a Landing — que não tem `#post-title`.
