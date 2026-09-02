@@ -1,5 +1,6 @@
 import { Newspaper, Users, Tv, Trophy, Key } from 'lucide-react';
 import LandingNav from '../components/landing/LandingNav';
+import BotaoDeSom from '../components/landing/BotaoDeSom';
 import Hero from '../components/landing/Hero';
 import FeatureSection from '../components/landing/FeatureSection';
 import LandingShot from '../components/landing/LandingShot';
@@ -88,6 +89,7 @@ export default function Landing() {
       </div>
 
       <LandingFooter />
+      <BotaoDeSom />
     </div>
   );
 }

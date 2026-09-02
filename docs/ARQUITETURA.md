@@ -62,6 +62,8 @@ src/
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
+│   ├── somAmbiente.js     # Som ambiente da landing, SINTETIZADO na Web Audio
+│   │                      # API — zero arquivo, zero download, zero licença
 │   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
 │   │                      # da cena a cada mudança de frameloop
 │   ├── introJaVista.js    # Lembra, por sessão do navegador, que a intro do
@@ -171,6 +173,9 @@ src/
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
+    │   ├── BotaoDeSom.jsx # Liga/desliga o som ambiente. Desligado por padrão:
+    │   │                  # navegador bloqueia autoplay, e site que toca
+    │   │                  # sozinho faz fechar a aba
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
     │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing

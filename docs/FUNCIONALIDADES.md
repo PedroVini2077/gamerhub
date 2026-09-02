@@ -552,7 +552,7 @@ Provada reinjetando o bug na entrada da logo: reprovou apontando
 
 ---
 
-### `[02/09]` A página `/privacidade` — política escrita do sistema, não de modelo
+### `[01/09]` A página `/privacidade` — política escrita do sistema, não de modelo
 
 O dono deixou claro que isto é **requisito de lançamento**, não enfeite: *"não
 quero lançar um site que literalmente quebra as leis reais"*.
@@ -587,7 +587,7 @@ consegue ler o que acontece com os dados dela **antes** de decidir criar conta.
 
 ---
 
-### `[02/09]` A página `/regras` — a moderação ganhou onde se explicar
+### `[01/09]` A página `/regras` — a moderação ganhou onde se explicar
 
 O site oculta conteúdo, suspende e bane desde antes desta página. Até agora
 **não havia lugar nenhum dizendo qual regra foi quebrada**. Punição sem regra
@@ -602,7 +602,7 @@ existe mecanismo por trás dela** — não é lista de bom-tom inventada.
 Pública de propósito: a futura tela de "fui banido" vai apontar para cá, e quem
 foi punido precisa alcançá-la **sem estar logado**.
 
-### `[02/09]` A casca compartilhada das páginas de texto
+### `[01/09]` A casca compartilhada das páginas de texto
 
 `components/conteudo/PaginaDeConteudo.jsx` nasceu quando a **segunda** página
 com essa estrutura ia existir. O §4 manda extrair a partir de duas, e o motivo é
@@ -617,7 +617,7 @@ abstração.
 
 ---
 
-### `[02/09]` Quem foi banido: por que NÃO existe página pública de "meu caso"
+### `[01/09]` Quem foi banido: por que NÃO existe página pública de "meu caso"
 
 O dono pediu uma aba na navegação da landing para quem foi banido ver o próprio
 caso. A aba existe — mas ela **leva ao login**, e a decisão é de segurança.
@@ -641,7 +641,7 @@ recurso. Os buracos reais eram dois, e foram fechados:
 
 O id não vaza nada: é o dado dela, mostrado a ela.
 
-### `[02/09]` O teste do painel passou a criar o próprio dado
+### `[01/09]` O teste do painel passou a criar o próprio dado
 
 Ele media o **banco**, não o painel: em 30/08 reprovou porque o dono esvaziou a
 lixeira e o site ficou sem post — defeito zero, CI vermelho.
@@ -655,3 +655,55 @@ fim, como o `fluxos.mjs` já fazia.
 volta a significar uma coisa só — o seletor quebrou. Manter a tolerância seria
 deixar aberto o buraco original, em que o contador dava zero e o teste
 registrava sucesso.
+
+---
+
+### `[01/09]` Som ambiente da landing — sintetizado, sem arquivo nenhum
+
+O dono perguntou se precisava baixar uma música. **Não precisa.** O som é gerado
+no próprio navegador pela Web Audio API, e a escolha resolve quatro problemas de
+uma vez:
+
+| Com arquivo de música | Sintetizado |
+| --- | --- |
+| 200–400 KB para baixar | **0 KB** |
+| precisa hospedar, e egress é a cota mais apertada | nada trafega |
+| música tem dono — licença é problema real | nada de terceiro |
+| loop de 30 s fica óbvio na terceira volta | não repete: as vozes derivam de fase |
+
+**O som:** um acorde grave sustentado, filtrado em passa-baixa, com três vozes
+levemente desafinadas entre si. A desafinação faz ele "respirar" sozinho num
+ciclo de minutos — é o truque clássico de ambiente: soa vivo sem chamar atenção.
+
+**Três decisões que valem registro:**
+
+1. **Desligado por padrão, e sem tentar autoplay.** Não é limitação
+   contornável: Chrome, Safari e Firefox bloqueiam áudio antes de um gesto. E
+   site que toca sozinho faz fechar a aba — o pedido era "sutil".
+2. **A preferência é lembrada só para quem LIGOU.** Quem nunca ligou continua
+   no silêncio; quem ligou tem o som de volta no primeiro gesto seguinte.
+3. **Nada é alocado antes do clique.** Nenhum `AudioContext` nasce enquanto
+   ninguém pedir — o custo de o botão existir é o próprio botão. E desligar
+   chama `close()`, que devolve a thread de áudio: sem isso os osciladores
+   seguiriam rodando em silêncio, gastando bateria de quem desligou para
+   economizar.
+
+**Verificado num navegador real:** antes do clique, zero contexto de áudio e
+nada no armazenamento; depois, `aria-pressed="true"` e a preferência gravada.
+
+**E a trava de privacidade pegou isto na hora.** A chave nova (`gh_som_ambiente`)
+reprovou a suíte até entrar na política — exatamente o mecanismo pedido em
+01/09, funcionando na primeira coisa criada depois dele.
+
+### `[01/09]` Por que o som NÃO entra no site logado
+
+Recomendação minha, e o dono decide:
+
+| Landing | Site logado |
+| --- | --- |
+| visita de 30 s a 2 min | sessão de 20 min ou mais |
+| ambiente cria impressão | ambiente vira irritação |
+| nada mais toca | **as lives têm áudio próprio** |
+
+O terceiro item é o que decide: música de fundo por cima de uma live é conflito
+de áudio, não ambientação.
