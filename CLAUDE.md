@@ -678,6 +678,10 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `e2e/sem-banco.mjs` | CI, **reprova** | banco fora do ar derrubando o que **não** depende dele |
 | `src/lib/tabelasSemUpdate.js` | `npm test`, **reprova** | `update` em tabela sem policy — 0 linhas e **nenhum erro** |
 | `src/lib/__tests__/varrerFontes.js` | usado pelas travas | trava que varre pasta e **não leu arquivo nenhum**: sem ele, renomear a pasta deixa o teste verde para sempre |
+| `e2e/publicarPost.mjs` | CI, **reprova** | publicar que não aparece — e ele diz **o que a tela disse** em vez de um `waiting for locator` mudo |
+| `conteudoDoSobre.test.js` | `npm test`, **reprova** | mídia de terceiro em `src/assets/som/` **sem crédito visível**: licença CC-BY exige atribuição, e sem ela o site usa a obra sem licença |
+| `documentosLegais.test.js` | `npm test`, **reprova** | documento público que ninguém aceita, e versão fora do formato que o `CHECK` do banco exige |
+| `src/lib/somAmbiente.js` (teste) | `npm test`, **reprova** | duas instâncias de áudio tocando juntas — a janela entre o clique e o download terminar |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 

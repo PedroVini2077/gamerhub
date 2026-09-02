@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**25 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -147,24 +147,6 @@
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 
-- ⬜ `[01/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
-  *Achado na auditoria de privacidade de 01/09. O levantamento inteiro está em
-  [PRIVACIDADE.md](docs/PRIVACIDADE.md).*
-
-  O `RegisterForm.jsx` limita a data pelo atributo `max` do input. **O banco não
-  tem CHECK em `birth_date`** — conferido: existem CHECKs para `platform`,
-  `playstyle` e `role`, e nenhum para a data. Com a `anon key`, qualquer um
-  chama a REST API e cadastra a data que quiser (§1.3: validação no cliente não
-  vale nada sozinha).
-
-  **Por que pesa mais que política de produto:** a LGPD trata dado de criança e
-  adolescente em artigo próprio, com consentimento específico.
-
-  **Dimensionado:** 5 perfis, 2 com data, **nenhum** abaixo de 13 e nenhuma data
-  absurda. Um CHECK entra sem rejeitar linha existente.
-
-  **Falta a sua decisão:** qual é o piso — 13, 16 ou 18? O número é escolha de
-  produto e jurídica, não minha. Com ele eu aplico a migration e travo.
 
 - ⬜ `[01/09]` 🔵 **`login_attempts`, `admin_logs` e `contact_messages` sem
   política de retenção.** As três são append-only e guardam dado pessoal —
@@ -248,16 +230,23 @@
 ## 🟠 Importante — dá para fazer
 
 
-- ⬜ `[02/09]` 🟠 **Auditoria e otimização da cena 3D + o raio que corta.**
-  *Pedido em 02/09. Precisa de baseline antes de qualquer alteração.*
+- ⬜ `[02/09]` 🟠 **A cena 3D "está pesada" — a parte que NÃO foi medida.**
+  *O raio da intro, que vinha junto neste item, foi resolvido em 02/09 — a
+  medição inteira está em [DESEMPENHO.md](docs/DESEMPENHO.md). Sobrou a outra
+  metade, e ela continua sem número.*
 
-  Dois problemas relatados: a cena está pesada, e o raio da intro às vezes
-  corta, falha ou não aparece. O segundo é o mais grave — enfeite que some não
-  gera erro, não gera log e não quebra teste (§0.3 regra 3), então nada acusa.
+  **O que já se sabe, e desmente a suspeita óbvia:** a cena 3D **não** era a
+  causa do raio falhar. A/B com ela ligada e desligada deu 602 ms contra 594 ms
+  de bloqueio durante a intro — ruído. A investigação de 02/09 acabou provando
+  o que a cena 3D **não** faz, não o que ela custa.
 
-  Já existe medição anterior em [DESEMPENHO.md](docs/DESEMPENHO.md) para servir
-  de baseline. O que NÃO pode: reduzir qualidade visual para ganhar FPS (o dono
-  já recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md)).
+  **O que falta medir**, porque "está pesada" ainda é impressão sem número:
+  quanto do quadro ela consome com a página parada e visível, quantas draw
+  calls, e se o custo mora em CPU ou GPU. A medição de 01/09 mediu carga, não
+  regime permanente.
+
+  **O que NÃO pode:** reduzir qualidade visual para ganhar FPS. O dono já
+  recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md).
 
 
 - ⬜ `[02/09]` 🟠 **O job "painel de admin" falhou uma vez publicando, e eu não
