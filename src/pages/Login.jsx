@@ -22,6 +22,9 @@ export default function Login() {
   const [birthDate, setBirthDate]           = useState('');
   const [uf, setUf]                         = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('');
+  // `[02/09]` O aceite dos documentos. A caixinha é como a pessoa expressa a
+  // escolha; a PROVA é a linha em `policy_acceptances`, gravada no `signUp`.
+  const [aceitouDocumentos, setAceitouDocumentos] = useState(false);
   const [loading, setLoading]               = useState(false);
   const [block, setBlock]                   = useState(null); // { permanent, blocked_until } | null
   const [registeredEmail, setRegisteredEmail] = useState(null); // email pendente de confirmação (mostra tela "verifique seu email")
@@ -126,6 +129,14 @@ export default function Login() {
       if (!birthDate) { toast.error('Informe sua data de nascimento'); setLoading(false); return; }
       const age = calcAge(birthDate);
       if (age < MIN_SIGNUP_AGE) { toast.error(`Você precisa ter pelo menos ${MIN_SIGNUP_AGE} anos para se cadastrar`); setLoading(false); return; }
+      // O botão já fica desabilitado sem o aceite; esta checagem existe porque
+      // `disabled` é enfeite de tela — a tecla Enter e a REST API não passam
+      // por ele. Regra que só existe no cliente não vale nada (§1.3), e a que
+      // vale de verdade é a RLS: só `auth.uid()` grava o próprio aceite.
+      if (!aceitouDocumentos) {
+        toast.error('É preciso aceitar os documentos para criar a conta');
+        setLoading(false); return;
+      }
 
       const extraFields = {};
       if (birthDate)        extraFields.birth_date = birthDate;
@@ -179,6 +190,7 @@ export default function Login() {
                 confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
                 username={username} setUsername={setUsername}
                 birthDate={birthDate} setBirthDate={setBirthDate}
+                aceitouDocumentos={aceitouDocumentos} setAceitouDocumentos={setAceitouDocumentos}
                 uf={uf} setUf={setUf}
                 selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform}
                 loading={loading}

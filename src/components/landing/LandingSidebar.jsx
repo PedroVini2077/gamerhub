@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail } from 'lucide-react';
+import { X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail, FileText } from 'lucide-react';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
 
 /**
@@ -107,6 +107,14 @@ export default function LandingSidebar({ aberta, aoFechar }) {
           >
             <Scale size={16} className="text-neon-purple" />
             Regras da comunidade
+          </Link>
+          <Link
+            to="/termos"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <FileText size={16} className="text-gray-400" />
+            Termos de uso
           </Link>
           {/* `[02/09]` A porta de entrada de quem foi banido, e ela leva ao
               LOGIN de propósito.

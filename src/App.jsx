@@ -39,6 +39,7 @@ const Sobre       = lazy(() => import('./pages/Sobre'));
 const Privacidade = lazy(() => import('./pages/Privacidade'));
 const Regras      = lazy(() => import('./pages/Regras'));
 const Contato     = lazy(() => import('./pages/Contato'));
+const Termos      = lazy(() => import('./pages/Termos'));
 const PostPage    = lazy(() => import('./pages/PostPage'));
 const MuralPage   = lazy(() => import('./pages/MuralPage'));
 const Community   = lazy(() => import('./pages/Community'));
@@ -190,6 +191,9 @@ function AppRoutes() {
           criou conta são exatamente as pessoas que mais precisam falar com a
           equipe — e todas estão do lado de fora do `RequireAuth`. */}
       <Route path="/contato" element={<Contato />} />
+      {/* `[02/09]` Pública pela razão mais direta de todas: ninguém deveria
+          precisar criar conta para ler o que está aceitando AO criar conta. */}
+      <Route path="/termos" element={<Termos />} />
       <Route path="/" element={<HomeOrLanding />} />
       {/* Endereço próprio de um post. Existe para o link direto da fila de
           moderação — antes não havia para onde apontar, o feed é `/` e um post

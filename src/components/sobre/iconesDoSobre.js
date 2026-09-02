@@ -14,6 +14,7 @@
 import {
   Gamepad2, Sprout, User, HeartHandshake, ShieldCheck, Bot, Rocket,
   Cookie, Database, Share2, UserCheck, CalendarClock, Timer, Mail,
+  Scale, FileText, AlertTriangle,
 } from 'lucide-react';
 
 // `[02/09]` A página `/privacidade` usa o mesmo mapa. Manter DOIS mapas de
@@ -22,6 +23,7 @@ import {
 export const ICONES = {
   Gamepad2, Sprout, User, HeartHandshake, ShieldCheck, Bot, Rocket,
   Cookie, Database, Share2, UserCheck, CalendarClock, Timer, Mail,
+  Scale, FileText, AlertTriangle,
 };
 
 /** Devolve o componente, ou `undefined` — nunca um palpite. */

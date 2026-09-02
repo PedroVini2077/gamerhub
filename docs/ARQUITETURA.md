@@ -75,6 +75,9 @@ src/
 │   │                      # botão "ligado" sem som — a tela mentindo
 │   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
 │   │                      # da cena a cada mudança de frameloop
+│   ├── documentosLegais.js # Os três documentos que a pessoa aceita, e a
+│   │                      # VERSÃO de cada um. Sem versão, mudar a política
+│   │                      # apagaria o sentido de todo aceite anterior
 │   ├── preferenciaDeSom.js # A decisão sobre o som ambiente, com TRÊS estados
 │   │                      # (ligado / desligado / nunca escolheu). Apagar a
 │   │                      # chave ao desligar tornava "desliguei" igual a
@@ -132,6 +135,9 @@ src/
 │   │                      # PRÓPRIA pessoa banida
 │   ├── contatoService.js  # O canal público `/contato`: envio pela RPC (única
 │   │                      # porta de entrada da tabela) e a leitura da equipe
+│   ├── aceiteService.js   # Grava a PROVA do aceite dos documentos: quem, qual
+│   │                      # documento, qual versão, quando. A caixinha do
+│   │                      # formulário não prova nada sozinha
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
@@ -156,6 +162,9 @@ src/
 │   │                      # direto da fila de moderação; mostra conteúdo oculto
 │   │                      # para quem é da equipe (a RLS decide)
 │   ├── Sobre.jsx          # `/sobre` — pública, para ler antes de criar conta
+│   ├── Termos.jsx         # `/termos` — o terceiro documento, e o único que
+│   │                      # fala de CONTRATO: de quem é o conteúdo, quando a
+│   │                      # conta é encerrada, que garantia não existe
 │   ├── Contato.jsx        # `/contato` — falar com a administração de FORA do
 │   │                      # site. Pública porque quem está banido, quem perdeu
 │   │                      # o acesso e quem nem tem conta são exatamente as
@@ -174,6 +183,9 @@ src/
 └── components/
     ├── ErrorBoundary.jsx
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
+    │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
+    │                      # com links em aba nova. Três caixinhas separadas
+    │                      # treinam a pessoa a clicar sem ler
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
@@ -234,6 +246,10 @@ src/
     ├── regras/            # As regras da comunidade (`/regras`), públicas
     │   └── conteudoDasRegras.js # O texto, tirado do que a moderação REALMENTE
     │                      # faz — se uma regra está lá, há mecanismo por trás
+    ├── termos/            # Os Termos de Uso (`/termos`), públicos
+    │   └── conteudoDosTermos.js # O texto, escrito a partir do que o sistema
+    │                      # faz — termo que promete o que o site não faz é
+    │                      # pior do que termo nenhum
     ├── contato/           # O canal público para falar com a administração
     │   ├── assuntosDeContato.js # Mapa EXPLÍCITO dos assuntos. A lista existe
     │   │                  # também no CHECK do banco, e um teste compara as

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Zap, Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail } from 'lucide-react';
+import { Zap, Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail, FileText } from 'lucide-react';
 // Marca vem do `react-icons/fa6`, não do lucide (§4 da convenção de UI) — e o
 // lucide nem tem mais `Github`, ele saiu do pacote junto com os outros ícones
 // de marca.
@@ -82,6 +82,7 @@ export default function LandingFooter() {
           <ItemDeLink para="/sobre" icone={Info}>Sobre o GamerHub</ItemDeLink>
           <ItemDeLink para="/privacidade" icone={ShieldCheck}>Privacidade</ItemDeLink>
           <ItemDeLink para="/regras" icone={Scale}>Regras da comunidade</ItemDeLink>
+          <ItemDeLink para="/termos" icone={FileText}>Termos de uso</ItemDeLink>
           <ItemDeLink
             href="https://github.com/PedroVini2077/gamerhub"
             icone={FaGithub}

@@ -247,6 +247,23 @@
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[02/09]` 🟠 **Reaceite dos documentos para quem JÁ tem conta.**
+  *O aceite no cadastro entrou em 02/09; este é o outro lado dele.*
+
+  As contas criadas antes de 02/09 não têm linha em `policy_acceptances` —
+  conferido, são 5 perfis sem registro nenhum. E quando um documento mudar de
+  versão, quem já aceitou a versão antiga precisa aceitar a nova.
+
+  Os dois casos são o mesmo mecanismo: comparar a versão vigente em
+  `lib/documentosLegais.js` com o que a pessoa aceitou, e pedir o aceite
+  quando faltar. O desenho provável é uma faixa (não um modal bloqueante — a
+  pessoa tem que conseguir LER o documento antes de aceitar).
+
+  **Por que não foi feito junto:** é fluxo próprio, com decisão de produto no
+  meio (bloqueia o uso do site até aceitar, ou só avisa?). Fazer os dois numa
+  tacada só entregaria o segundo pela metade.
+
+
 - ⬜ `[02/09]` 🟠 **Auditoria e otimização da cena 3D + o raio que corta.**
   *Pedido em 02/09. Precisa de baseline antes de qualquer alteração.*
 
@@ -257,14 +274,6 @@
   Já existe medição anterior em [DESEMPENHO.md](docs/DESEMPENHO.md) para servir
   de baseline. O que NÃO pode: reduzir qualidade visual para ganhar FPS (o dono
   já recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md)).
-
-- ⬜ `[02/09]` 🟡 **Aceite de políticas no cadastro, e quais documentos existem.**
-  *Pergunta do dono em 02/09. A recomendação está na conversa; falta implementar
-  o registro do aceite, que é mudança de banco.*
-
-  Hoje o cadastro não pede aceite de nada. Para a LGPD o que importa não é a
-  caixinha: é **provar** que a pessoa aceitou, qual versão, e quando. Isso é
-  coluna no `profiles` (ou tabela própria) mais versão em cada documento.
 
 
 - ⬜ `[02/09]` 🟠 **O job "painel de admin" falhou uma vez publicando, e eu não
