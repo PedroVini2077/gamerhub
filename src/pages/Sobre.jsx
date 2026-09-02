@@ -5,7 +5,7 @@ import { ArrowLeft, PencilLine, Zap, ArrowRight, Gamepad2 } from 'lucide-react';
 import { BLOCOS } from '../components/sobre/conteudoDoSobre';
 import { iconeDoBloco } from '../components/sobre/iconesDoSobre';
 import LandingFooter from '../components/landing/LandingFooter';
-import FundoAnimado from '../components/sobre/FundoAnimado';
+import FundoAnimado from '../components/conteudo/FundoAnimado';
 import CreditosDeMidia from '../components/sobre/CreditosDeMidia';
 import { fadeUpReveal, VIEWPORT } from '../lib/landingMotion';
 

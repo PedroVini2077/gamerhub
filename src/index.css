@@ -201,7 +201,7 @@ body {
 }
 
 /*
- * A camada decorativa da página "Sobre" (`sobre/FundoAnimado.jsx`).
+ * A camada decorativa das páginas públicas (`conteudo/FundoAnimado.jsx`).
  *
  * As duas linhas de `height` são de propósito: é o padrão de fallback do CSS.
  * Navegador que não conhece `lvh` ignora a segunda linha e fica com `100vh`;

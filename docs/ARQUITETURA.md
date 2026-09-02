@@ -255,9 +255,14 @@ src/
     ├── profile/           # ProfileIdentityCard, PersonalInfoCard, GamingCard,
     │                      # SocialLinksCard, PlayerStatsCard, AvatarModal,
     │                      # AdminApplicationCard
-    ├── conteudo/          # PaginaDeConteudo — a casca das páginas públicas de
-    │                      # texto (/privacidade, /regras). Extraída quando a
-    │                      # SEGUNDA ia nascer: cópia diverge (§4)
+    ├── conteudo/          # A casca das páginas públicas de texto
+    │   ├── PaginaDeConteudo.jsx # Extraída quando a SEGUNDA ia nascer: cópia
+    │   │                  # diverge (§4). Hoje serve /privacidade, /regras,
+    │   │                  # /termos e /contato
+    │   └── FundoAnimado.jsx # As peças que atravessam a tela atrás do texto.
+    │                      # Mora na CASCA, não em cada página: assim toda aba
+    │                      # nova ganha por construção, e ninguém precisa
+    │                      # lembrar de acrescentar uma linha
     ├── regras/            # As regras da comunidade (`/regras`), públicas
     │   └── conteudoDasRegras.js # O texto, tirado do que a moderação REALMENTE
     │                      # faz — se uma regra está lá, há mecanismo por trás
@@ -284,8 +289,6 @@ src/
     │   ├── CreditosDeMidia.jsx # Atribuição TASL da mídia de terceiro. NÃO é
     │   │                  # cortesia: CC-BY exige crédito visível, e um teste
     │   │                  # varre src/assets/som/ exigindo crédito por arquivo
-    │   └── FundoAnimado.jsx   # As doze peças que atravessam a tela atrás do
-    │                      # texto. Só CSS, sem laço de JS — ver DESEMPENHO.md
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
