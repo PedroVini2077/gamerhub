@@ -44,6 +44,9 @@ export const ROTAS_VISITANTE = [
   // `[02/09]` Pública pelo mesmo motivo, e um mais forte: ninguém deveria
   // precisar criar conta para descobrir o que acontece com os dados dela.
   { path: '/privacidade', nome: 'Privacidade', destino: '/privacidade', esperado: /cookies/i },
+  // Pública porque a tela de banimento aponta para cá: quem foi punido precisa
+  // alcançar as regras sem estar logado.
+  { path: '/regras', nome: 'Regras', destino: '/regras', esperado: /não cabe aqui/i },
   { path: '/rota-que-nao-existe', nome: '404',            destino: null,     esperado: /404|não encontrad/i },
 ];
 

@@ -190,6 +190,12 @@ src/
     ├── profile/           # ProfileIdentityCard, PersonalInfoCard, GamingCard,
     │                      # SocialLinksCard, PlayerStatsCard, AvatarModal,
     │                      # AdminApplicationCard
+    ├── conteudo/          # PaginaDeConteudo — a casca das páginas públicas de
+    │                      # texto (/privacidade, /regras). Extraída quando a
+    │                      # SEGUNDA ia nascer: cópia diverge (§4)
+    ├── regras/            # As regras da comunidade (`/regras`), públicas
+    │   └── conteudoDasRegras.js # O texto, tirado do que a moderação REALMENTE
+    │                      # faz — se uma regra está lá, há mecanismo por trás
     ├── privacidade/       # A política de privacidade (`/privacidade`), pública
     │   └── conteudoDaPrivacidade.js # O texto, escrito a partir do
     │                      # levantamento medido em docs/PRIVACIDADE.md. Bloco

@@ -584,3 +584,33 @@ dizendo que o texto virou promessa falsa.
 
 O link está na navegação lateral **antes** do "Entrar", e no rodapé — a pessoa
 consegue ler o que acontece com os dados dela **antes** de decidir criar conta.
+
+---
+
+### `[02/09]` A página `/regras` — a moderação ganhou onde se explicar
+
+O site oculta conteúdo, suspende e bane desde antes desta página. Até agora
+**não havia lugar nenhum dizendo qual regra foi quebrada**. Punição sem regra
+escrita parece arbitrária mesmo quando é justa — e quem foi punido não tem como
+corrigir o próprio comportamento se ninguém disse qual era o esperado.
+
+**O conteúdo veio do que o sistema faz** ([MODERACAO.md](MODERACAO.md) e
+[MODERACAO-IA.md](MODERACAO-IA.md)): o que a checagem automática bloqueia, o que
+vai para fila humana, e como funciona o recurso. **Se uma regra está escrita lá,
+existe mecanismo por trás dela** — não é lista de bom-tom inventada.
+
+Pública de propósito: a futura tela de "fui banido" vai apontar para cá, e quem
+foi punido precisa alcançá-la **sem estar logado**.
+
+### `[02/09]` A casca compartilhada das páginas de texto
+
+`components/conteudo/PaginaDeConteudo.jsx` nasceu quando a **segunda** página
+com essa estrutura ia existir. O §4 manda extrair a partir de duas, e o motivo é
+concreto: cópias divergem. Com três cascas iguais, a correção do `whileInView`
+ou do scroll de âncora precisaria ser feita em três lugares — e uma ficaria para
+trás sem ninguém notar.
+
+`Privacidade.jsx` caiu de **132 para 24 linhas**. A `/sobre` **não** usa a
+casca: ela tem lema, bloco em destaque e o mural de jogos, e forçá-la aqui
+encheria o componente de opção que só uma página usa — a outra forma de errar a
+abstração.

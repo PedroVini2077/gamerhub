@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { X, Info, LogIn, ShieldCheck } from 'lucide-react';
+import { X, Info, LogIn, ShieldCheck, Scale } from 'lucide-react';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
 
 /**
@@ -99,6 +99,14 @@ export default function LandingSidebar({ aberta, aoFechar }) {
           >
             <ShieldCheck size={16} className="text-neon-green" />
             Privacidade
+          </Link>
+          <Link
+            to="/regras"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <Scale size={16} className="text-neon-purple" />
+            Regras da comunidade
           </Link>
           <Link
             to="/login"

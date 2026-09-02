@@ -36,6 +36,31 @@ acontece — ruído sem função, e ruído ensina a ignorar avisos que importam.
 
 ---
 
+## Como esta página não envelhece — a trava de crescimento
+
+> Pedido do dono em 02/09: *"o site vai crescer mais, então a gente precisa que
+> essa aba de políticas esteja sempre atualizada, sempre mesmo"*.
+
+Promessa não sustenta isso: a política de ontem descreve o site de ontem. Duas
+listas em `conteudoDaPrivacidade.js` são a versão **conferível** do que a página
+afirma, e o teste as cruza com o código:
+
+| Trava | Reprova quando |
+| --- | --- |
+| `CHAVES_DECLARADAS` | o código grava uma chave nova no navegador que a política não menciona |
+| `TERCEIROS_DECLARADOS` | entra uma dependência que manda dado para fora sem a política dizer |
+| varredura de `document.cookie` | alguém passa a usar cookie, e a página afirma que não há nenhum |
+
+**Provadas por injeção:** uma chave `gh_rastreador_novo`, uma dependência
+`posthog-js` e um `document.cookie =` — as três reprovaram nomeando o problema e
+o que fazer antes de seguir.
+
+O critério de "terceiro" é **manda alguma coisa para servidor de outra empresa**,
+não "é biblioteca externa": o que anima ou formata não entra; o que faz uma
+pessoa aparecer no registro de outra empresa, sim.
+
+---
+
 ## O mapa dos dados
 
 ### O que fica no NAVEGADOR de quem usa
