@@ -473,3 +473,40 @@ zero de graça reabriria esse buraco.
 
 Assim a trava continua pegando regressão de seletor sempre que houver dado, e
 deixa de gritar à toa quando não houver (§0.2, 4ª regra).
+
+---
+
+## `[01/09]` Banco fora do ar: o que continua de pé, e o que para
+
+O desenho antigo **sequestrava o app**: `if (semBanco) return <OfflineGate />`
+acima do `<Routes>`. Três defeitos saíam daí, e o dono relatou os três:
+
+| Sintoma | Causa |
+| --- | --- |
+| não dava para ir em "Sobre" nem "Login" | sem `<Routes>` montado, nenhuma rota existia — e as duas **não precisam do banco** |
+| "vai redirecionar" e não redirecionava | o `navigate('/')` já tinha rodado no primeiro efeito; a contagem descrevia algo que **já havia acontecido** |
+| tela cheia a cada reload | aviso ocupando tudo vira estorvo, não informação |
+
+**A regra que ficou:** fora do ar bloqueia **só o que depende do banco**.
+
+| Parte | Sem banco |
+| --- | --- |
+| Landing, `/sobre` | de pé — conferido: não importam o cliente Supabase |
+| `/login` | aparece e explica, em vez de sumir |
+| Rotas internas | barradas pelo `RequireAuth`, que já existia para isso |
+| Raiz com sessão | mostra a landing: o feed é consulta pura |
+
+O aviso virou faixa fina (`ui/AvisoSemBanco.jsx`), sem contagem mentirosa. Ela
+some sozinha quando o `dbHealth` reconecta (tentativa a cada 20 s).
+
+### O que a investigação mediu, e mudou o teste
+
+**Um visitante na landing faz ZERO requisições ao Supabase.** A página é
+estática e, sem sessão salva, nem a resolução de auth vai à rede. Consequência
+prática: para quem só está lendo, **a faixa não aparece — e está certo**, porque
+nada está quebrado para essa pessoa.
+
+Isso invalidou a primeira versão da trava: ela nunca alcançava o estado que
+dizia testar, e passava **mesmo com o bug reinjetado**. Hoje `e2e/sem-banco.mjs`
+força o estado de verdade com quatro tentativas de login contra o host
+bloqueado, e reprova nomeando a causa.

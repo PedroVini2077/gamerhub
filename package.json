@@ -21,7 +21,8 @@
     "fim": "node scripts/fim-de-sessao.mjs",
     "test:banco": "node e2e/portas-do-banco.mjs",
     "segredos": "node scripts/segredos-vazados.mjs",
-    "test:e2e:navegacao": "node e2e/navegacao.mjs"
+    "test:e2e:navegacao": "node e2e/navegacao.mjs",
+    "test:e2e:sembanco": "node e2e/sem-banco.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

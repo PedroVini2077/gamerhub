@@ -201,8 +201,10 @@ src/
                            # AudioRecorder, GlobalBanner, FeatureGate,
                            # LazyVisible, PageTransition, RolagemDeRota (decide
                            # para onde a página rola ao trocar de rota),
+                           # AvisoSemBanco (faixa
+                           # de banco fora do ar — não sequestra o app),
                            # SplashScreen (só durante
-                           # a resolução inicial da sessão) e OfflineGate
+                           # a resolução inicial da sessão)
 ```
 
 **Fora de `src/`** — atualizado em 28/08, porque esta nota só citava `db/`:
