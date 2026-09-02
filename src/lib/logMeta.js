@@ -100,6 +100,10 @@ export const ACTION_META = {
   // quebrada em 26 de 26 chamadas por semanas (§1.5).
   edge_function_error:       A(Siren,         'text-red-400',     '#ef4444'),
   wordlist_flag:             A(Filter,       'text-orange-400',  '#fb923c'),
+  // `[02/09]` O disjuntor do formulário público de contato fechou a porta:
+  // passou de 60 mensagens numa hora. Uma linha por episódio, não por
+  // tentativa — o trigger `alertar_enchente_de_contato` cuida disso.
+  contact_flood:             A(Siren,        'text-orange-400',  '#fb923c'),
   moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
   // conteúdo — posts (o trigger `log_post_event` grava os `content_*`)
@@ -157,6 +161,10 @@ export const NOTIF_META = {
   role_changed:         A(Crown,       'text-yellow-400',  '#facc15'),
   banned_login_attempt: A(ShieldAlert, 'text-red-400',     '#f87171'),
   staff_alert:          A(Siren,       'text-red-400',     '#ef4444'),
+  // `[02/09]` Alguém escreveu pelo formulário público `/contato`. Sem este
+  // aviso a mensagem cairia numa tabela que ninguém tem motivo para abrir, e
+  // "mandei e nunca responderam" seria indistinguível de formulário quebrado.
+  contact_message:      A(Mail,        'text-neon-cyan',   '#22d3ee'),
 };
 
 export const DEFAULT_NOTIF_META = A(Bell, 'text-gray-500', '#6b7280');
@@ -197,4 +205,6 @@ export const ACTIONS_DO_BANCO = [
   // (`solicitar_revisao_do_proprio_ban`). Diferente de `admin_unban_requested`,
   // que é o pedido aberto por um membro da equipe em nome de alguém.
   'user_unban_requested',
+  // `[02/09]` Trigger `alertar_enchente_de_contato` em `contact_messages`.
+  'contact_flood',
 ];

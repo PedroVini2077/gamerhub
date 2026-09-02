@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { X, Info, LogIn, ShieldCheck, Scale, ShieldOff } from 'lucide-react';
+import { X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail } from 'lucide-react';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
 
 /**
@@ -124,6 +124,19 @@ export default function LandingSidebar({ aberta, aoFechar }) {
           >
             <ShieldOff size={16} className="text-red-400" />
             Fui banido — ver meu caso
+          </Link>
+          {/* `[02/09]` O canal que faltava. A porta do banido acima leva ao
+              login — e não resolve o caso de quem PERDEU o acesso, de quem
+              nunca criou conta, ou de quem quer exercer um direito de LGPD.
+              Para essas pessoas não havia nenhuma via: nem e-mail, nem
+              formulário, nem endereço. */}
+          <Link
+            to="/contato"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <Mail size={16} className="text-neon-cyan" />
+            Falar com a administração
           </Link>
           <Link
             to="/login"

@@ -37,6 +37,7 @@ src/
 │   ├── useOwnerUserActions.js    # As mesmas ações, no painel do fundador
 │   ├── useCargoDecisions.js      # Decisões de indicação/estágio/rebaixamento
 │   ├── useUnbanRequests.js       # Pedidos de desbanimento pendentes
+│   ├── useMensagensDeContato.js  # Estado da aba "Contato" do painel admin
 │   ├── useBlockedLogins.js       # Logins travados por excesso de tentativa
 │   ├── usePostComposer.js # Publicar: upload, moderação e limpeza do formulário
 │   ├── usePostEngagement.js # Curtidas e comentários de um post
@@ -113,6 +114,8 @@ src/
 │   │                      # a sua convenção (um chegou a lançar exceção)
 │   ├── banService.js      # Ban, desban e o pedido de revisão aberto pela
 │   │                      # PRÓPRIA pessoa banida
+│   ├── contatoService.js  # O canal público `/contato`: envio pela RPC (única
+│   │                      # porta de entrada da tabela) e a leitura da equipe
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
@@ -137,6 +140,10 @@ src/
 │   │                      # direto da fila de moderação; mostra conteúdo oculto
 │   │                      # para quem é da equipe (a RLS decide)
 │   ├── Sobre.jsx          # `/sobre` — pública, para ler antes de criar conta
+│   ├── Contato.jsx        # `/contato` — falar com a administração de FORA do
+│   │                      # site. Pública porque quem está banido, quem perdeu
+│   │                      # o acesso e quem nem tem conta são exatamente as
+│   │                      # pessoas que mais precisam dela
 │   ├── MuralPage.jsx      # Uma mensagem do mural, em `/mural/:id`
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
@@ -158,6 +165,9 @@ src/
     ├── admin/             # UsersPanel, PostsPanel, LivesPanel, KeysPanel,
     │                      # NotifsPanel, LogsPanel, SuperAdminPanel, StatCard,
     │                      # AdminTabs, AdminTabContent, AdminModals
+    │   ├── ContatoPanel.jsx # As mensagens do formulário público. É o outro
+    │   │                  # lado do canal: sem ele a mensagem cairia numa
+    │   │                  # tabela que ninguém abre (§1.5)
     │   ├── UnlockLoginModal.jsx / UnlockCountdownBtn.jsx # Desbloqueio de login,
     │   │                  # com espera forçada de 10 s — o tom é pesado de propósito
     │   ├── UnbanRequestModal.jsx / ReactivationModal.jsx # Análise de pedidos
@@ -208,6 +218,13 @@ src/
     ├── regras/            # As regras da comunidade (`/regras`), públicas
     │   └── conteudoDasRegras.js # O texto, tirado do que a moderação REALMENTE
     │                      # faz — se uma regra está lá, há mecanismo por trás
+    ├── contato/           # O canal público para falar com a administração
+    │   ├── assuntosDeContato.js # Mapa EXPLÍCITO dos assuntos. A lista existe
+    │   │                  # também no CHECK do banco, e um teste compara as
+    │   │                  # duas contra o SQL aplicado em db/
+    │   └── FormularioDeContato.jsx # O formulário. Não consulta NADA antes de
+    │                      # enviar — responder diferente conforme o e-mail
+    │                      # informado seria oráculo de enumeração
     ├── privacidade/       # A política de privacidade (`/privacidade`), pública
     │   └── conteudoDaPrivacidade.js # O texto, escrito a partir do
     │                      # levantamento medido em docs/PRIVACIDADE.md. Bloco

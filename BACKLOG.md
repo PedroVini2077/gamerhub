@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**21 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -165,11 +165,21 @@
   **Falta a sua decisão:** qual é o piso — 13, 16 ou 18? O número é escolha de
   produto e jurídica, não minha. Com ele eu aplico a migration e travo.
 
-- ⬜ `[01/09]` 🔵 **`login_attempts` e `admin_logs` sem política de retenção.**
-  As duas são append-only e guardam dado pessoal — e-mail numa, quem fez o quê
-  na outra. Sem prazo, crescem para sempre, e a LGPD fala em necessidade e
-  prazo. Já existe infraestrutura de retenção em `lib/logMeta.js`; falta a
-  decisão de por quanto tempo guardar.
+- ⬜ `[01/09]` 🔵 **`login_attempts`, `admin_logs` e `contact_messages` sem
+  política de retenção.** As três são append-only e guardam dado pessoal —
+  e-mail em duas, quem fez o quê na outra. Sem prazo, crescem para sempre, e a
+  LGPD fala em necessidade e prazo. Já existe infraestrutura de retenção em
+  `lib/logMeta.js`; falta a decisão de por quanto tempo guardar.
+  *`[02/09]` `contact_messages` entrou na lista ao nascer. O prazo dela é mais
+  delicado que os outros dois: apagar conversa de moderação cedo demais
+  atrapalha a própria moderação, então o número é decisão de produto.*
+
+- ⬜ `[02/09]` 🔵 **Captcha no formulário de contato.** Os limites de vazão
+  atuais (3 por e-mail em 24 h, disjuntor de 60/hora) impedem a tabela de virar
+  depósito, mas **não** impedem um robô com muitos endereços de encher a hora e
+  fechar o canal para todo mundo. Fechar de verdade pediria Turnstile, que
+  exige Edge Function e mais uma cota. Quando o alarme `contact_flood` aparecer
+  em `admin_logs` alguma vez, é sinal de que a hora chegou.
 
 - ⬜ `[01/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
   Único terceiro que a landing contacta (medido). Hospedar as fontes no próprio
@@ -235,6 +245,13 @@
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[02/09]` **Responder a mensagem de contato por dentro do painel.** Hoje a
+  equipe lê em `/admin` → aba Contato e responde do próprio e-mail, copiando o
+  endereço da tela. Responder de dentro exigiria a `send-email`, e portanto a
+  cota do Gmail — **a mesma** do cadastro e da recuperação de senha (§0.2).
+  Depende do item de migrar o envio de e-mail, logo abaixo. *Não é urgente com
+  o volume atual; está aqui para não virar redescoberta.*
 
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o

@@ -602,6 +602,43 @@ existe mecanismo por trás dela** — não é lista de bom-tom inventada.
 Pública de propósito: a futura tela de "fui banido" vai apontar para cá, e quem
 foi punido precisa alcançá-la **sem estar logado**.
 
+### `[02/09]` A página `/contato` — falar com a administração de FORA do site
+
+Pedido do dono: *"nós precisamos de uma maneira dos usuários falarem com a
+administração de fora do site, nem que seja por formulário"*.
+
+**O buraco era real e maior do que parecia.** O que existia só atendia quem
+ainda conseguia entrar:
+
+| O que existia | Quem ele NÃO atendia |
+| --- | --- |
+| Pedido de revisão na tela de banimento | quem não consegue mais entrar |
+| "Conta bloqueada?" no rodapé → `/login` | quem perdeu o acesso ou o e-mail |
+| Botão de denúncia em cada post | quem nem tem conta |
+| — | quem quer exercer um direito de LGPD |
+
+A última é a mais séria: a política de privacidade prometia acesso, correção e
+exclusão de dados, e **não havia endereço para pedir nenhum dos três**.
+
+**O que a página faz.** Nome, e-mail, um assunto de uma lista fechada de seis, e
+o relato. Funciona sem conta e sem login. A resposta vai para o e-mail
+informado.
+
+**O que ela deliberadamente NÃO faz:** consultar coisa alguma antes de enviar.
+Nem *"esse e-mail tem conta?"*, nem *"essa pessoa está banida?"*. Um formulário
+que responde diferente conforme o endereço informado é um **oráculo de
+enumeração** — qualquer um descobriria quem tem conta aqui e quem foi punido.
+É a mesma razão pela qual a porta do banido leva ao login.
+
+**Do outro lado** existe a aba "Contato" no painel admin, com filtro por status
+e os botões de marcar como lida, respondida ou spam. Sem ela o formulário seria
+uma caixa fechada, e *"mandei e nunca responderam"* ficaria indistinguível de
+*"o formulário está quebrado"* (§1.5).
+
+Os limites de vazão, o disjuntor, o alarme de enchente e os 14 testes em
+`ROLLBACK` estão em
+[`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
+
 ### `[01/09]` A casca compartilhada das páginas de texto
 
 `components/conteudo/PaginaDeConteudo.jsx` nasceu quando a **segunda** página

@@ -22,7 +22,7 @@
  * `pendente: true` faz o bloco aparecer com o aviso, igual à página "Sobre".
  */
 
-export const ATUALIZADO_EM = '01/09/2026';
+export const ATUALIZADO_EM = '02/09/2026';
 
 /**
  * ── AS LISTAS QUE O SITE NÃO PODE CRESCER SEM ATUALIZAR ─────────────────────
@@ -131,6 +131,10 @@ export const BLOCOS = [
         ['Discord, Twitch, YouTube', 'links que você quiser mostrar', 'opcional'],
         ['O que você publica', 'é o conteúdo do site', 'seu, e você apaga quando quiser'],
         ['Registro de moderação', 'trilha de auditoria de punições e recursos', 'sim, quando houver'],
+        // `[02/09]` O formulário `/contato` coleta dado de gente que pode nem
+        // ter conta aqui. É a única coleta do site que acontece SEM cadastro —
+        // omitir isso seria a política descrevendo um site que não é este.
+        ['Mensagem no formulário de contato', 'seu nome, e-mail e o relato, para a equipe conseguir responder', 'só se você escrever para a gente'],
       ],
     },
   },
@@ -199,11 +203,29 @@ export const BLOCOS = [
 
   {
     id: 'contato',
-    titulo: 'Quem responde por isso, e como falar com a gente',
+    titulo: 'Como falar com a gente sobre os seus dados',
     icone: 'Mail',
+    pendente: false,
+    paragrafos: [
+      'Existe um formulário em /contato, com uma opção chamada "Meus dados '
+      + 'pessoais". Ele funciona sem conta e sem login — inclusive para quem '
+      + 'foi banido, que é justamente quem mais precisa falar com a equipe.',
+      'A resposta chega no e-mail que você informar. Não temos atendimento em '
+      + 'tempo real: é um time pequeno, e pode levar alguns dias.',
+      'Guardamos o que você escrever ali, junto do nome e do e-mail, porque '
+      + 'sem isso não há como responder. Nada disso vai para anúncio nem para '
+      + 'terceiro.',
+    ],
+  },
+
+  {
+    id: 'controlador',
+    titulo: 'Quem responde juridicamente por isso',
+    icone: 'UserCheck',
     pendente: true,
-    dica: 'Falta o dono definir quem é o controlador dos dados e qual o canal '
-      + 'de contato para pedidos de privacidade. É dado pessoal dele — só ele '
-      + 'decide o que expor.',
+    dica: 'Falta o dono decidir como se identificar como controlador dos '
+      + 'dados. É dado pessoal DELE — só ele decide o que expor. O canal de '
+      + 'contato, que era a outra metade deste bloco, já existe desde 02/09 e '
+      + 'está na seção acima.',
   },
 ];
