@@ -60,6 +60,75 @@ e não uma redescoberta.
 
 ---
 
+### `[02/09]` O raio da intro nunca era desenhado — e a culpa NÃO era da cena 3D
+
+Relato do dono: *"o raio/efeito visual da intro às vezes corta, falha ou
+simplesmente não aparece"*. Medido, o resultado é pior do que "às vezes".
+
+**O teste:** amostrar o `stroke-dashoffset` do traço a cada quadro. Se o raio
+desenha, o valor passa por estados intermediários entre 1 (nada desenhado) e 0
+(completo). Se ele só aparece pronto, o desenho nunca aconteceu na tela.
+
+| CPU | Valores distintos de `stroke-dashoffset` | Leitura |
+| --- | --- | --- |
+| 1× | **1** (`0px` desde a primeira amostra, às 496 ms) | nunca desenhou |
+| 4× | **1** (`0px` desde as 894 ms) | nunca desenhou |
+| 6× | 0 amostras em 1,5 s | nem apareceu |
+
+**Em nenhuma medição o traço chegou a ser desenhado.** Ele pulava direto para o
+estado final — o desenho, que é a graça inteira da animação, nunca acontecia.
+
+#### O palpite que a medição derrubou
+
+A suspeita óbvia era a cena 3D disputando a thread principal com a intro. O A/B
+diz que não:
+
+| | bloqueio durante a intro (0–1300 ms), CPU 4× |
+| --- | --- |
+| com a cena 3D | 602 ms em 4 tarefas |
+| **sem** a cena 3D | **594 ms em 4 tarefas** |
+
+Oito milissegundos de diferença é ruído. **Mexer na cena 3D não teria
+adiantado nada** — e essa era a otimização que eu ia fazer. É a terceira vez
+neste arquivo que uma medição corrige o alvo de um plano bem fundamentado.
+
+#### O mecanismo de verdade
+
+O Framer Motion calcula cada quadro dentro de `requestAnimationFrame`. Durante
+o boot da landing a thread principal fica ocupada (os 602 ms acima), o rAF não
+roda, e quando volta a rodar **a animação já passou do fim**: ela salta em vez
+de correr. Não é lentidão — é a animação inteira sendo pulada.
+
+#### A correção, e o depois
+
+A intro passou a ser **CSS puro**: `stroke-dashoffset` em `@keyframes`, com
+`pathLength="1"` no SVG para normalizar o comprimento sem medir nada em JS. O
+relógio de uma animação CSS é do navegador e corre independente do JavaScript —
+com a thread travada ela perde quadros, mas continua na posição certa quando
+volta.
+
+| CPU | Antes | Depois |
+| --- | --- | --- |
+| 1× | 1 valor | **5 valores** — `1 → 0,994 → 0,795 → 0,340 → 0` |
+| 4× | 1 valor | **4 valores** |
+
+O traço passou a ser desenhado de verdade nas duas velocidades.
+
+#### O que sobra, dito com honestidade
+
+**A 6× a medição é inconclusiva, não positiva.** O traço aparece às 1285 ms
+ainda em `1px` (ou seja, começando certo, em vez de saltar), mas a janela de
+amostragem terminou antes de eu ver o resto. Não sei dizer se ele completa.
+
+E existe um segundo problema que esta correção **não** resolve: o traço só
+existe no DOM às 485 ms (1×) / 919 ms (4×), porque a intro mora dentro do chunk
+da landing. Meio segundo de tela preta antes de o raio começar continua sendo
+meio segundo de tela preta. Tirar a intro do chunk resolveria — é troca de
+bytes no carregamento inicial por tempo até o primeiro quadro, e está no
+`BACKLOG.md` para ser decidida com número, não no susto.
+
+---
+
 ### `[02/09]` A trilha da landing: o que ela custa, e o que NÃO custa
 
 O som ambiente deixou de ser sintetizado e passou a ser um arquivo real
