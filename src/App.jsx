@@ -36,6 +36,7 @@ import NotFound from './pages/NotFound';
 const Landing     = lazy(() => import('./pages/Landing'));
 const Home        = lazy(() => import('./pages/Home'));
 const Sobre       = lazy(() => import('./pages/Sobre'));
+const Privacidade = lazy(() => import('./pages/Privacidade'));
 const PostPage    = lazy(() => import('./pages/PostPage'));
 const MuralPage   = lazy(() => import('./pages/MuralPage'));
 const Community   = lazy(() => import('./pages/Community'));
@@ -175,6 +176,10 @@ function AppRoutes() {
           de decidir criar conta. Fica fora do `Layout` porque a landing também
           fica — as duas são as páginas de quem ainda não entrou. */}
       <Route path="/sobre" element={<Sobre />} />
+      {/* Pública pelo mesmo motivo da Sobre, e um mais forte: ninguém deveria
+          precisar criar conta para descobrir o que acontece com os dados dela
+          se criar. */}
+      <Route path="/privacidade" element={<Privacidade />} />
       <Route path="/" element={<HomeOrLanding />} />
       {/* Endereço próprio de um post. Existe para o link direto da fila de
           moderação — antes não havia para onde apontar, o feed é `/` e um post

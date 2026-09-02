@@ -549,3 +549,38 @@ quando a aba volta do segundo plano.
 falhar" — alguém reescreveria a cena com o relógio e o teste seguiria verde.
 Provada reinjetando o bug na entrada da logo: reprovou apontando
 `SceneObjects.jsx:82` e explicando as duas consequências.
+
+---
+
+### `[02/09]` A página `/privacidade` — política escrita do sistema, não de modelo
+
+O dono deixou claro que isto é **requisito de lançamento**, não enfeite: *"não
+quero lançar um site que literalmente quebra as leis reais"*.
+
+**De onde veio o texto:** do levantamento em [PRIVACIDADE.md](PRIVACIDADE.md),
+feito medindo a implementação — navegador aberto para ver cookie e
+armazenamento, consultas ao banco para ver colunas, leitura do código para ver o
+que sai para terceiros.
+
+**Nada de modelo copiado.** Política copiada descreve um site que não é este, e
+política que descreve errado é pior do que nenhuma: ela promete o que o sistema
+não faz.
+
+**O que a página diz, com tabela:** que não há cookie nenhum (e por isso não há
+faixa de consentimento), o que fica guardado no navegador, que dado existe no
+banco e se é obrigatório ou opcional, quem mais recebe alguma coisa, e como
+exercer cada direito da LGPD — que aqui é botão, não formulário.
+
+**Três blocos aparecem MARCADOS como pendentes**, e é escolha deliberada: idade
+mínima, prazo de retenção e quem é o controlador dependem de decisão do dono.
+Preencher de palpite seria prometer o que ninguém prometeu.
+
+**A trava é diferente da de conteúdo comum.** Uma política **promete** coisas
+sobre o sistema; se o sistema mudar e o texto ficar, a página passa a afirmar
+algo falso e ninguém vê pela tela. A afirmação mais frágil é a dos cookies, então
+`conteudoDaPrivacidade.test.js` varre `src/` atrás de escrita de cookie e
+reprova. Provada criando um arquivo que escreve `document.cookie`: reprovou
+dizendo que o texto virou promessa falsa.
+
+O link está na navegação lateral **antes** do "Entrar", e no rodapé — a pessoa
+consegue ler o que acontece com os dados dela **antes** de decidir criar conta.

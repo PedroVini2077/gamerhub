@@ -41,6 +41,9 @@ export const ROTAS_VISITANTE = [
   // ler sobre o GamerHub antes de decidir criar conta — então ela tem que
   // funcionar para o VISITANTE, e é aqui que isso fica travado.
   { path: '/sobre', nome: 'Sobre', destino: '/sobre', esperado: /O GamerHub/i },
+  // `[02/09]` Pública pelo mesmo motivo, e um mais forte: ninguém deveria
+  // precisar criar conta para descobrir o que acontece com os dados dela.
+  { path: '/privacidade', nome: 'Privacidade', destino: '/privacidade', esperado: /cookies/i },
   { path: '/rota-que-nao-existe', nome: '404',            destino: null,     esperado: /404|não encontrad/i },
 ];
 
