@@ -374,7 +374,7 @@ que ela gera.
 
 ---
 
-## `[02/09]` A varredura de classe — o que ela encontrou nas minhas próprias travas
+## `[01/09]` A varredura de classe — o que ela encontrou nas minhas próprias travas
 
 A parte B da auditoria (§ do `BACKLOG.md`) manda varrer as classes de erro pelo
 código, e não tratar achado como caso isolado. A classe mais grave é **"teste

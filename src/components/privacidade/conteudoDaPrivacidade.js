@@ -22,12 +22,12 @@
  * `pendente: true` faz o bloco aparecer com o aviso, igual à página "Sobre".
  */
 
-export const ATUALIZADO_EM = '02/09/2026';
+export const ATUALIZADO_EM = '01/09/2026';
 
 /**
  * ── AS LISTAS QUE O SITE NÃO PODE CRESCER SEM ATUALIZAR ─────────────────────
  *
- * Pedido do dono em 02/09: *"o site vai crescer mais, então a gente precisa que
+ * Pedido do dono em 01/09: *"o site vai crescer mais, então a gente precisa que
  * essa aba de políticas de privacidade esteja sempre atualizada, sempre mesmo"*.
  *
  * Promessa não serve para isso. Estas duas listas são a versão CONFERÍVEL do
@@ -45,6 +45,7 @@ export const CHAVES_DECLARADAS = [
   'gh_landing_3d',
   'gh_pause_reason',
   'gh_chunk_reload_at',
+  'gh_som_ambiente',
 ];
 
 /**
@@ -101,6 +102,7 @@ export const BLOCOS = [
         ['Cena 3D ligada/desligada', 'respeitar a sua escolha', 'você limpar o navegador'],
         ['Motivo da pausa', 'explicar direito quando o site sai do ar', 'o site volta'],
         ['Último recarregamento', 'evitar laço de recarregamento', 'você fecha o navegador'],
+        ['Som ambiente ligado', 'lembrar que você ligou o som da landing', 'você desliga o som'],
       ],
     },
   },

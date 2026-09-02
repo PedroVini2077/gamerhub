@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**25 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -57,217 +57,31 @@
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[30/08]` 🔴 **PRIMEIRO ITEM DA PRÓXIMA SESSÃO — auditoria de mim mesmo.**
-  *Pedido do dono em 30/08: "o primeiro item do backlog literalmente vai ser vc
-  como IA... oq vc quase sempre falha, oq ficamos quebrando cabeça por sua
-  causa". Marcado 🔴 porque é o item que decide a qualidade de todos os outros.*
+- ⬜ `[01/09]` 🟡 **Decidir sobre teste de mutação — o que sobrou da auditoria.**
+  *A auditoria de mim mesmo foi concluída (partes A a E). Este é o único ponto
+  dela que depende de decisão sua, então virou item próprio em vez de manter o
+  item inteiro aberto.*
 
-  **O objetivo:** o mesmo tratamento que o projeto recebe — achar as brechas,
-  fechar o que der, e travar o que não der — aplicado a **mim**. Não é
-  autocrítica: é varredura de classe (§1.3) sobre o meu próprio comportamento.
+  **O problema:** o padrão de falha nº 3 — *"escrevo teste que não consegue
+  falhar"* — é o único do catálogo que continua **sem mecanismo**, e eu o
+  repeti duas vezes em 01/09 (a trava de portas RPC e a de banco fora do ar).
 
-  **O catálogo já começa aqui, com evidência.** Não custa nada agora e a
-  próxima sessão não tem como reconstruir isto de memória:
+  O `varrerFontes` fechou um caso importante: agora a trava estoura se não ler
+  arquivo nenhum. Mas ele garante que ela **leu** o código, não que ela
+  **detectaria** a mudança errada.
 
-  | Padrão de falha | Evidência |
-  | --- | --- |
-  | Escrevo de memória em vez de abrir o arquivo | 3 casos em 28/08 (§6.2) + 2 em 29/08: medição no `FUNCIONALIDADES` e 6 arquivos fora do `ARQUITETURA` |
-  | Afirmo **inferência** como **fato** | 23/08, duas vezes, eu mesmo tive que corrigir (§1.1) |
-  | Escrevo teste que **não pode falhar** | o teste de portas RPC em `portas-fechadas.mjs` — PostgREST nunca expõe função `trigger` |
-  | Construo portão que acusa **errado** | `mapa-de-arquivos.mjs` acusou 145 arquivos na 1ª execução; comparava com a extensão |
-  | Produzo **verde que promete demais** | `npm run fim` dizia "sessão pode ser fechada" cobrindo 6 de 13 itens |
-  | Prometo acompanhar coisa **depois do turno** | 2 vezes em 29/08; o turno acaba e a sessão para — não existe "eu aviso depois" |
-  | Tentativa e erro em vez de diagnóstico | 3 rodadas na cena 3D, cada uma com justificativa própria e alvo errado (§1.2) |
-  | Crio dado de teste que **confunde o dono** | fila de moderação com itens falsos marcados `trigger_type: ai` |
-  | Entendo errado e **não pergunto** | a aba de banimento: eu li "site logado", ele quis "landing" |
+  **O mecanismo que pegaria de verdade é teste de mutação** (Stryker): ele muta
+  o código e exige que algum teste quebre. O que ele custa: alguns minutos a
+  mais no CI e uma dependência de peso.
 
-  **O método proposto** (a decidir com ele):
-  1. Ler o `CLAUDE.md` e os `docs/regras/` inteiros procurando **regra que já
-     falhou** — cada uma existe porque eu errei, e o histórico está escrito lá.
-  2. Varrer `git log` e os corpos de PR atrás de "corrigi o que eu mesmo fiz".
-  3. Para cada padrão: existe mecanismo que o pega? Se não, dá para criar um?
-     Se não der, ele vira pergunta nos gatilhos — que é o mais fraco, e por
-     isso o último recurso (§2).
-  4. **Estender os gatilhos ao resto do projeto**, que foi o outro pedido: hoje
-     eles cobrem documentação e fechamento. Faltam banco, moderação e
-     segurança.
+  **É decisão de custo sua**, não minha — por isso está escrito aqui em vez de
+  já ter sido feito.
 
-  **A pergunta que ele pediu, na forma que não deixa escapar.** A versão
-  original — *"estou fazendo tudo o que preciso?"* — é respondível com um "sim"
-  preguiçoso, e teria deixado passar todas as falhas de 29/08. A versão que
-  obriga a nomear:
-
-  > **Quais regras deste projeto se aplicam ao que acabei de fazer — e para
-  > cada uma, onde está a evidência de que cumpri?**
-
-  Sem evidência nomeada, não cumpri: só acho que cumpri. Formalizar isto no
-  `CLAUDE.md` é decisão da próxima sessão (§6.2 pede proposta).
-
-  ---
-
-  ### `[01/09]` PARTE C EXECUTADA — cada padrão de falha contra a proteção que existe
-
-  *Feita depois de o dono cobrar: "tô achando que vc fez essa sua auditoria muito
-  rápida, realmente estamos fazendo tudo pra evitar vc de errar?". Ele estava
-  certo. Esta é a resposta com número.*
-
-  | # | Padrão de falha meu | Existe mecanismo? |
-  | --- | --- | --- |
-  | 1 | escrevo de memória em vez de abrir o arquivo | **parcial** — o gatilho de início mostra a idade de cada doc; o mapa pega arquivo novo fora do `ARQUITETURA`. Mas **nada pega "escrevi no documento errado"**, que foi a falha real de 29/08 |
-  | 2 | apresento inferência como fato | **não** — só a pergunta no gatilho |
-  | 3 | escrevo teste que não consegue falhar | **não**, e eu **repeti hoje** |
-  | 4 | construo portão que acusa errado | **parcial** — o falso positivo aparece na primeira execução, mas só se alguém rodar |
-  | 5 | produzo verde que promete demais | **não** — o `npm run fim` foi corrigido, mas como caso, não como classe |
-  | 6 | prometo acompanhar coisa depois do turno | **não** — comportamental |
-  | 7 | tentativa e erro em vez de diagnóstico | **não** |
-  | 8 | crio dado de teste que confunde o dono | **SIM, a partir de hoje** — o `fluxos.mjs` reprova se sobrar post de teste no feed |
-  | 9 | entendo errado e não pergunto | **não** |
-
-  **Um de nove tem mecanismo. Essa é a resposta honesta à pergunta dele.**
-
-  ### O número 3 é o mais grave, e merece parágrafo próprio
-
-  *"Teste que não consegue falhar"* está no catálogo desde 30/08 — e em 01/09 eu
-  **cometi de novo**: a primeira versão da trava de banco fora do ar nunca
-  alcançava o estado que dizia testar. Só apareceu porque eu injetei o bug de
-  volta e vi a coisa passar.
-
-  Ou seja: **a disciplina de provar a trava por injeção é hoje a única defesa
-  contra o padrão, e ela depende inteiramente de eu lembrar de fazer.**
-
-  O mecanismo que pegaria isso de verdade é **teste de mutação** (mutar o código
-  e exigir que algum teste quebre). Ele existe para JS (Stryker), e é **decisão
-  de custo do dono**: adiciona minutos ao CI e uma dependência de peso. Está
-  aqui como pergunta a ele, não como coisa que eu decido sozinho.
-
-  ### Os que provavelmente NÃO têm mecanismo, e por que dizer isso importa
-
-  Os padrões 2, 6, 7 e 9 são de julgamento e de conduta na conversa. Não existe
-  script que detecte "ele afirmou sem ter provado" ou "ele entendeu errado e não
-  perguntou". Fingir que um portão cobre isso seria o padrão 5 acontecendo de
-  novo, uma camada acima.
-
-  Para eles, o que existe é a pergunta no gatilho de início e o relatório de
-  entrega — e o dono cobrando quando faltar. **É pouco, e é honesto dizer que é
-  pouco.**
-
-  ### `[02/09]` Partes A e B CONCLUÍDAS
-
-  - **Parte A:** a matriz ganhou a coluna **obrigação** — o que cada um dos 14
-    portões exige de quem mexe na área. Está em [SEGURANCA.md](docs/SEGURANCA.md).
-    Sem ela, "existe portão" era contagem, e contagem não orienta ninguém.
-  - **Parte B:** a varredura achou a classe mais grave nas MINHAS PRÓPRIAS
-    travas — **6 das 9** que leem arquivos não conferiam que leram algum.
-    Renomeie a pasta e elas ficam verdes para sempre. Corrigido por classe com
-    `varrerFontes`, que estoura quando não acha nada; provado movendo `scene3d/`.
-
-  ### O que ainda falta
-
-  - **Teste de mutação** (padrão nº 3): continua sem mecanismo, e é decisão de
-    custo do dono. O `varrerFontes` fecha um caso importante da classe, não a
-    classe inteira — ele garante que a trava LEU o código, não que ela
-    detectaria a mudança errada.
-  - Os padrões 2, 6, 7 e 9 seguem sem mecanismo, e a razão está escrita: são de
-    julgamento e conduta. Fingir portão sobre eles seria o padrão nº 5.
-
-  **O que este item NÃO promete:** que eu pare de errar. Prometer isso seria a
-  mesma mentira do verde que prometia demais. O alvo é o mesmo do projeto —
-  **o mínimo possível**, e cada erro que acontecer virando trava para não
-  acontecer de novo.
-  ---
-
-  ### `[30/08]` Complemento do dono — a pergunta muda de "onde errei" para
-  ### "por que consegui errar"
-
-  > *"Não quero apenas descobrir onde o Claude errou, mas entender **por que ele
-  > conseguiu errar e por que o projeto permitiu que o erro passasse**."*
-
-  Isto reenquadra o item inteiro. O catálogo acima vira **entrada**, não
-  resultado: cada linha dele passa a ser uma pergunta sobre **cobertura**, e não
-  um troféu de erro encontrado.
-
-  #### A. Gatilho por área — a matriz que ainda não existe
-
-  Hoje os gatilhos cobrem documentação e fechamento de sessão. **Nenhuma outra
-  área tem gatilho nenhum**, e isso nunca foi olhado de frente.
-
-  Mapear, uma linha por área: autenticação/autorização · Supabase, banco e RLS ·
-  usuários e dado sensível · admin/staff · APIs e Edge Functions · fluxos
-  críticos · testes e auditoria · configuração e segredo · CI/CD · documentação.
-
-  E para **cada** uma, responder as cinco:
-
-  | Pergunta | Por que ela importa |
-  | --- | --- |
-  | Qual gatilho **deveria** disparar? | sem isto, "está protegido" é opinião |
-  | O que ele **exige** de quem mexe ali? | obrigação vaga não se cumpre nem se cobra |
-  | Quais arquivos/fluxos ele **realmente** cobre? | cobertura declarada ≠ cobertura real (§1.5, fonte nº 6) |
-  | Existe caminho para **alterar a área sem acioná-lo**? | é a pergunta que encontra a brecha; as outras quatro só descrevem |
-  | Ele pode dar **falso positivo ou negativo**? | falso negativo cega; falso positivo ensina a ignorar (§0.2, 4ª regra) |
-
-  **A forma que o dono deu, e que vale como critério de aceite do item:**
-
-  > **gatilho → obrigação → evidência.** Não "confiar que a IA vai lembrar".
-
-  Já há prova de que os dois últimos itens da matriz não são teóricos: o
-  `mapa-de-arquivos.mjs` nasceu dando **145 falsos positivos**, e o teste do
-  painel gritou com o site legitimamente vazio. Os dois eram gatilhos novos.
-
-  #### B. Erro é CLASSE, nunca caso
-
-  Isto já é regra do projeto (§1.3, *"varredura de classe, não de caso"*), mas
-  aqui ela se aplica **a mim**. Ao achar uma falha minha, a pergunta obrigatória
-  é *"onde mais esse mesmo padrão está?"*.
-
-  As classes a varrer, nomeadas pelo dono: inferência apresentada como fato ·
-  teste que não consegue falhar · validação que acusa errado · documentação não
-  consultada · diagnóstico sem evidência · conclusão prematura.
-
-  > Corrigir só o caso encontrado deixa os outros no site — foi exatamente assim
-  > que 14 policies ficaram sem `owner` três vezes seguidas.
-
-  #### C. Causa → prevenção, e a proteção NÃO é sempre uma regra
-
-  Para cada falha relevante, percorrer os quatro degraus:
-
-  > **erro → causa → padrão → proteção possível**
-
-  E então **escolher o tipo de proteção**, em vez de escrever regra por reflexo:
-  regra, gatilho, teste, script, documentação, ou mudança de código que torne o
-  erro impossível.
-
-  **Este é o ponto mais fácil de errar do item inteiro, e o dono já o marcou:**
-  *"não transforme tudo automaticamente em mais uma regra no CLAUDE.md"*. A
-  tabela do §2 concorda — regra escrita é a **mais fraca** das cinco travas, e a
-  falha de 29/08 foi precisamente uma regra escrita, certa, e não cumprida.
-  Responder a isso com mais regra é repetir o que não funcionou.
-
-  #### D. As duas perguntas obrigatórias durante a auditoria
-
-  A primeira já está no gatilho de início. A segunda é nova, e cobre o buraco
-  que a primeira não vê — afirmar sem ter provado:
-
-  > **1.** Quais regras se aplicam ao que acabei de fazer — e, para cada uma,
-  > **onde está a evidência** de que cumpri?
-  >
-  > **2.** **O que estou afirmando agora que ainda não provei?**
-
-  A segunda ataca a minha falha mais registrada: apresentar **inferência como
-  fato** (§1.1). Ela deve entrar no gatilho de início junto com a primeira — e
-  isso é execução, não decisão nova.
-
-  #### E. A regra que fecha o item
-
-  > **Não assumir que algo está protegido só porque existe uma regra para isso.
-  > Verificar cobertura, acionamento e evidência.**
-
-  Aplicável inclusive a esta auditoria: se ela terminar com uma lista de
-  proteções que ninguém acionou nem viu falhar, ela não provou nada — provou
-  apenas que eu sei escrever proteção.
-
-  **Critério de aceite do item, então:** cada proteção proposta sai com (a) o
-  que ela cobre, (b) como foi **acionada** para provar que funciona, e (c) o que
-  ela explicitamente **não** cobre. As três, ou ela não entrou.
+  **O resultado da auditoria fica registrado**, e é desconfortável de propósito:
+  dos 9 padrões de falha meus, **2 têm mecanismo** (dado de teste sobrando, e a
+  varredura que prova que leu). Os padrões 2, 6, 7 e 9 são de julgamento e
+  conduta — não existe script que detecte "afirmou sem provar", e fingir que
+  existe seria o padrão nº 5 acontecendo uma camada acima.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -359,15 +173,6 @@
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
 
-- ⬜ `[01/09]` 🟢 **Áudio ambiente na landing — avaliar antes de implementar.**
-  *Pedido do dono no prompt de 01/09.* Futurista, sutil, com botão manual
-  quando o autoplay for bloqueado e preferência que persiste.
-
-  **O que decidir ANTES de escrever código:** formato e compressão, quando o
-  download começa (nunca no caminho crítico), quando o áudio é instanciado, e o
-  comportamento de autoplay no celular. É recurso secundário: não pode
-  atrapalhar o carregamento da landing.
-
 - ⬜ `[01/09]` 🟢 **Elementos flutuantes novos na landing — propor antes de fazer.**
   *Pedido do dono no prompt de 01/09.* Diferentes dos que já existem, com
   cara de tecnologia/gamer, algum nível de interatividade, sem poluir.
@@ -376,8 +181,8 @@
   regra medida: `transform`/`opacity` rodam no compositor e custam ~zero;
   qualquer coisa com laço de JS por quadro entra na conta da cena 3D.
 
-- ⬜ `[02/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
-  *Achado na auditoria de privacidade de 02/09. O levantamento inteiro está em
+- ⬜ `[01/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
+  *Achado na auditoria de privacidade de 01/09. O levantamento inteiro está em
   [PRIVACIDADE.md](docs/PRIVACIDADE.md).*
 
   O `RegisterForm.jsx` limita a data pelo atributo `max` do input. **O banco não
@@ -395,13 +200,13 @@
   **Falta a sua decisão:** qual é o piso — 13, 16 ou 18? O número é escolha de
   produto e jurídica, não minha. Com ele eu aplico a migration e travo.
 
-- ⬜ `[02/09]` 🔵 **`login_attempts` e `admin_logs` sem política de retenção.**
+- ⬜ `[01/09]` 🔵 **`login_attempts` e `admin_logs` sem política de retenção.**
   As duas são append-only e guardam dado pessoal — e-mail numa, quem fez o quê
   na outra. Sem prazo, crescem para sempre, e a LGPD fala em necessidade e
   prazo. Já existe infraestrutura de retenção em `lib/logMeta.js`; falta a
   decisão de por quanto tempo guardar.
 
-- ⬜ `[02/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
+- ⬜ `[01/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
   Único terceiro que a landing contacta (medido). Hospedar as fontes no próprio
   site elimina isso por alguns KB de banda. **Boa prática, não obrigação
   legal** — a distinção importa.

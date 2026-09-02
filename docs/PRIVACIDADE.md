@@ -38,7 +38,7 @@ acontece — ruído sem função, e ruído ensina a ignorar avisos que importam.
 
 ## Como esta página não envelhece — a trava de crescimento
 
-> Pedido do dono em 02/09: *"o site vai crescer mais, então a gente precisa que
+> Pedido do dono em 01/09: *"o site vai crescer mais, então a gente precisa que
 > essa aba de políticas esteja sempre atualizada, sempre mesmo"*.
 
 Promessa não sustenta isso: a política de ontem descreve o site de ontem. Duas
