@@ -322,6 +322,38 @@ escrita.
 
 ## Código
 
+### `[02/09]` O som ambiente atravessa as páginas públicas, e PARA ao entrar
+
+**Pedido do dono:** *"essa música deve funcionar em toda landing page, então no
+sobre deve funcionar, regras e tals, até mesmo no login, chegando no site em si
+que não é mais pra reproduzir"*.
+
+**Onde a decisão mora no código:** `BotaoDeSom` subiu para o `App.jsx`, **fora
+do `<Routes>`**. Essa posição é o mecanismo inteiro — navegar entre rotas não
+desmonta o que está fora do `<Routes>`, então a trilha continua tocando de uma
+página para a outra. Quando a rota deixa de ter som, o componente desmonta e o
+`desligarSom()` do cleanup solta o áudio: **parar é consequência de sair**, e
+não uma segunda regra que alguém precisa lembrar de manter em dia.
+
+**Por que uma lista fechada, e não "tudo que não é privado":** a regra
+invertida erra sozinha. `!ehRotaPrivada(x)` faria toda rota **nova** nascer com
+música — sem ninguém decidir. Aqui o desconhecido é silêncio, que é o padrão
+seguro: uma página nova que devesse tocar aparece muda, alguém nota e
+acrescenta. O contrário ninguém reporta como bug — a pessoa só acha o site
+estranho.
+
+**O caso ambíguo, e ele é único no site:** `/` é a landing para o visitante e o
+feed para quem entrou. Mesma URL, duas telas. Por isso `deveTocarSom` recebe
+também se há sessão.
+
+**Provado num navegador de verdade, por CLIQUE e não por `goto`:** a primeira
+versão do meu teste usava `page.goto()`, que é recarga completa — ela derrubaria
+o áudio de qualquer jeito e teria passado mesmo com o botão dentro de cada
+página. Só o clique exercita o roteamento do app. Com cliques: o som atravessa
+as seis páginas e o arquivo é baixado **uma vez só**.
+
+---
+
 ### `[02/09]` O MESMO fundo animado em todas as rotas, e não um por aba
 
 **Decisão do dono**, depois da recomendação: *"pode fazer o mesmo fundo pra
@@ -348,6 +380,22 @@ próprio, já que gostou das animações da landing e da `/sobre`.
 **O que fica no lugar:** um sistema de fundo só, com a cor de acento seguindo a
 seção — verde no feed, roxo no mural, vermelho nas lives, ciano nas keys.
 Reconhecível na hora, um arquivo, um teste.
+
+> **`[02/09]` Implementado, e o dono teve que cobrar.** Eu registrei esta
+> decisão e **não a executei** — ele perguntou *"vc não falou que já ia
+> utilizar o mesmo fundo animado pra todas as abas da barra lateral?"*, e
+> estava certo. Decisão escrita e não feita é pior do que decisão não tomada:
+> ela cria a impressão de que o assunto está resolvido.
+>
+> O que entrou: o site logado usa o **mesmo `FluxoDeDados` da landing**, com
+> `acento` por seção (`lib/acentoDaSecao.js`) e **`parallax={false}`**. Este
+> último não é economia à toa — ponteiro e rolagem custam +451 ms e +296 ms
+> medidos durante movimento contínuo, e o feed é a tela onde mais se rola. Sem
+> eles a camada custa **zero** medido, que é exatamente o "mais quieto que a
+> landing" desta decisão.
+>
+> Os painéis de equipe (`/admin`, `/owner`) ficam **sem fundo**: quem está ali
+> lê log e decide punição, e movimento atrás desse texto atrapalha.
 
 **O que reabriria:** o dono achar o site logado sem personalidade depois de
 pronto. Aí o caminho é aumentar a variação de cor, não multiplicar os fundos.

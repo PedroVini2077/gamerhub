@@ -86,11 +86,28 @@ const GRUPOS = [
   { profundidade: 0.9,  tracos: TRACOS.filter(t => t.profundidade > 0.65) },
 ];
 
-export default function FluxoDeDados() {
+/**
+ * @param {object} props
+ * @param {string|null} [props.acento] Cor única, no lugar das três da landing.
+ *   Usada pelo site logado, onde cada seção tem a sua — ver `acentoDaSecao`.
+ * @param {boolean} [props.parallax] Ligar o deslocamento por ponteiro e por
+ *   rolagem. **Desligado no site logado de propósito**: os dois custam +296 ms
+ *   e +451 ms medidos durante movimento contínuo (ver DESEMPENHO.md), e o feed
+ *   é a tela onde mais se rola. Sem eles a camada custa **zero** medido.
+ *
+ * ── `[02/09]` Por que o site logado reusa ESTE componente ───────────────────
+ *
+ * Decisão do dono: o mesmo fundo em todas as abas, variando só a cor. Fazer um
+ * segundo componente "parecido" seria criar a segunda fonte de verdade que o §4
+ * proíbe — e ela divergiria em desempenho, `prefers-reduced-motion` e no
+ * conserto do `100lvh`, que já custou um bug de salto no celular.
+ */
+export default function FluxoDeDados({ acento = null, parallax = true }) {
   const camada = useRef(null);
 
   useEffect(() => {
     const alvo = camada.current;
+    if (!parallax) return undefined;
     // Sem ponteiro fino (celular) o parallax não faz sentido: não há para onde
     // apontar. Não registrar o ouvinte é melhor do que registrá-lo e nunca usar.
     if (!alvo || !window.matchMedia?.('(pointer: fine)').matches) return undefined;
@@ -113,7 +130,7 @@ export default function FluxoDeDados() {
 
     window.addEventListener('pointermove', aoMover, { passive: true });
     return () => window.removeEventListener('pointermove', aoMover);
-  }, []);
+  }, [parallax]);
 
   // ── `[02/09]` Parallax de ROLAGEM ─────────────────────────────────────────
   //
@@ -132,7 +149,7 @@ export default function FluxoDeDados() {
   // por quadro. Nada de laço por frame.
   useEffect(() => {
     const alvo = camada.current;
-    if (!alvo) return undefined;
+    if (!alvo || !parallax) return undefined;
 
     let agendado = false;
     const aplicar = () => {
@@ -147,7 +164,7 @@ export default function FluxoDeDados() {
 
     window.addEventListener('scroll', aoRolar, { passive: true });
     return () => window.removeEventListener('scroll', aoRolar);
-  }, []);
+  }, [parallax]);
 
   return (
     <div
@@ -212,13 +229,13 @@ export default function FluxoDeDados() {
                 left: t.x,
                 height: `${t.altura}px`,
                 opacity: t.opacidade,
-                background: `linear-gradient(to top, transparent, ${t.cor})`,
+                background: `linear-gradient(to top, transparent, ${acento ?? t.cor})`,
                 // O "pacote" é mais largo, mais brilhante e mais rápido — lê
                 // como um dado maior passando, e quebra a regularidade sem
                 // precisar de um efeito diferente. Um tipo de elemento só,
                 // dois pesos: é o que mantém a cena coerente em vez de virar
                 // coleção de truques.
-                boxShadow: `0 0 ${t.pacote ? 12 : 6}px ${t.cor}`,
+                boxShadow: `0 0 ${t.pacote ? 12 : 6}px ${acento ?? t.cor}`,
                 animationDuration: `${t.duracao}s`,
                 animationDelay: `${t.atraso}s`,
               }}

@@ -107,6 +107,32 @@ export function usePostComposer(onPost) {
       toast.error('Conteúdo não permitido: contém termo bloqueado.');
       return;
     }
+    // ── `[02/09]` A guarda que faltava, e que custou um CI vermelho ─────────
+    //
+    // O `PostForm` aparece assim que existe SESSÃO (`if (!user) return null`),
+    // mas o perfil chega depois, numa segunda consulta. Entre os dois existe
+    // uma janela em que o formulário está na tela e `profile` ainda é nulo.
+    //
+    // Publicar nessa janela mandava `user_id: undefined`. O supabase-js omite
+    // a chave, a coluna fica nula, e a policy `auth.uid() = user_id AND
+    // pode_publicar()` recusa. Reproduzido no banco:
+    //
+    //   ERRO: new row violates row-level security policy for table "posts"
+    //
+    // Esse texto ia direto para o toast. Ele é verdadeiro e não ensina nada —
+    // quem lesse procuraria um problema de permissão que não existe (§1.5).
+    //
+    // Foi assim que o job "painel de admin" reprovou uma vez: ele publica
+    // IMEDIATAMENTE depois do login, enquanto o `fluxos.mjs` visita dez rotas
+    // antes e chega com o perfil já carregado. Mesmo código, janelas
+    // diferentes — e por isso só um dos dois falhava.
+    //
+    // Não é brecha: o servidor recusou corretamente. É a tela deixando alguém
+    // apertar um botão que ainda não podia funcionar.
+    if (!profile?.id) {
+      toast.error('Seu perfil ainda está carregando. Tente de novo em um instante.');
+      return;
+    }
 
     setLoading(true);
     const toastId = toast.loading('Processando post...');

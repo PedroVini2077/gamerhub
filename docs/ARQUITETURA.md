@@ -10,6 +10,8 @@
 ```
 src/
 ├── App.jsx                # Rotas, layout, HomeOrLanding, modo manutenção, feature gates
+├── paginasLazy.js         # As páginas sob demanda, só declaração. Saíram do
+│                          # App.jsx quando ele passou de 300 linhas (§4)
 ├── main.jsx               # Bootstrap React
 ├── index.css              # Tema (cores neon, classes .card/.btn/.tag/.input)
 ├── assets/
@@ -78,6 +80,12 @@ src/
 │   │                      # botão "ligado" sem som — a tela mentindo
 │   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
 │   │                      # da cena a cada mudança de frameloop
+│   ├── rotasComSom.js     # Onde o som ambiente toca. Lista FECHADA: rota
+│   │                      # desconhecida é silêncio, não música — a regra
+│   │                      # invertida faria toda página nova nascer tocando
+│   ├── acentoDaSecao.js   # A cor do fundo animado por seção do site logado.
+│   │                      # Sem cor padrão de propósito: tela nova sem entrada
+│   │                      # aparece SEM fundo, e alguém nota
 │   ├── documentosLegais.js # Os três documentos que a pessoa aceita, e a
 │   │                      # VERSÃO de cada um. Sem versão, mudar a política
 │   │                      # apagaria o sentido de todo aceite anterior
@@ -185,6 +193,10 @@ src/
 │   └── NotFound.jsx       # 404
 └── components/
     ├── ErrorBoundary.jsx
+    ├── layout/            # Sidebar, Header
+    │   └── FundoDaSecao.jsx # O fundo animado do site logado: o MESMO
+    │                      # componente da landing, com cor por seção e
+    │                      # `parallax={false}` — o feed é onde mais se rola
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
     │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
     │                      # com links em aba nova. Três caixinhas separadas
@@ -297,6 +309,7 @@ src/
 | `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
 | `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, **segredos vazados**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
+| `stryker.config.json` | Configuração do teste de mutação (`npm run mutacao`). Escopo deliberadamente pequeno: só a lógica pura de `src/lib/` |
 | `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, **portas do banco** (`portas-do-banco.mjs`, o único que fala com o Postgres), o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
 | `.claude/` | `settings.json` com o hook `SessionStart` — o gatilho que injeta o estado real do projeto no começo de toda sessão |
 | `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |

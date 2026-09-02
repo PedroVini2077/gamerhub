@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -58,31 +58,6 @@
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 
-- ⬜ `[01/09]` 🟡 **Decidir sobre teste de mutação — o que sobrou da auditoria.**
-  *A auditoria de mim mesmo foi concluída (partes A a E). Este é o único ponto
-  dela que depende de decisão sua, então virou item próprio em vez de manter o
-  item inteiro aberto.*
-
-  **O problema:** o padrão de falha nº 3 — *"escrevo teste que não consegue
-  falhar"* — é o único do catálogo que continua **sem mecanismo**, e eu o
-  repeti duas vezes em 01/09 (a trava de portas RPC e a de banco fora do ar).
-
-  O `varrerFontes` fechou um caso importante: agora a trava estoura se não ler
-  arquivo nenhum. Mas ele garante que ela **leu** o código, não que ela
-  **detectaria** a mudança errada.
-
-  **O mecanismo que pegaria de verdade é teste de mutação** (Stryker): ele muta
-  o código e exige que algum teste quebre. O que ele custa: alguns minutos a
-  mais no CI e uma dependência de peso.
-
-  **É decisão de custo sua**, não minha — por isso está escrito aqui em vez de
-  já ter sido feito.
-
-  **O resultado da auditoria fica registrado**, e é desconfortável de propósito:
-  dos 9 padrões de falha meus, **2 têm mecanismo** (dado de teste sobrando, e a
-  varredura que prova que leu). Os padrões 2, 6, 7 e 9 são de julgamento e
-  conduta — não existe script que detecte "afirmou sem provar", e fingir que
-  existe seria o padrão nº 5 acontecendo uma camada acima.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -230,47 +205,32 @@
 ## 🟠 Importante — dá para fazer
 
 
-- ⬜ `[02/09]` 🟠 **A cena 3D "está pesada" — a parte que NÃO foi medida.**
-  *O raio da intro, que vinha junto neste item, foi resolvido em 02/09 — a
-  medição inteira está em [DESEMPENHO.md](docs/DESEMPENHO.md). Sobrou a outra
-  metade, e ela continua sem número.*
+- ⬜ `[02/09]` 🟠 **A cena 3D: o custo é por PIXEL, e a próxima medição é no
+  aparelho do dono.** *Primeira medição de regime permanente feita em 02/09 —
+  ver [DESEMPENHO.md](docs/DESEMPENHO.md).*
 
-  **O que já se sabe, e desmente a suspeita óbvia:** a cena 3D **não** era a
-  causa do raio falhar. A/B com ela ligada e desligada deu 602 ms contra 594 ms
-  de bloqueio durante a intro — ruído. A investigação de 02/09 acabou provando
-  o que a cena 3D **não** faz, não o que ela custa.
+  **O que já se sabe, medido:** o custo da cena escala com **pixels**, não com
+  JavaScript. Com 4× menos pixels o bloqueio cai de 5583 ms para **zero** — um
+  penhasco, não uma ladeira. E o lado JS é pequeno: a 0,256 Mpx a cena roda
+  6 s sem uma única tarefa longa.
 
-  **O que falta medir**, porque "está pesada" ainda é impressão sem número:
-  quanto do quadro ela consome com a página parada e visível, quantas draw
-  calls, e se o custo mora em CPU ou GPU. A medição de 01/09 mediu carga, não
-  regime permanente.
+  **Por que isso não fecha o assunto:** a medição é num Chromium **sem GPU**,
+  onde a CPU faz o trabalho da placa. Num PC de verdade quem paga esse custo é
+  a GPU, e eu não meço isso daqui. Usar esse número para julgar o aparelho do
+  dono seria artefato de ambiente vendido como fato (§1.1).
+
+  **O que resolve:** abrir o painel de desempenho do navegador **na máquina
+  dele**, com a landing aberta, e olhar o tempo de GPU por quadro. Depende dele.
+
+  **Para onde olhar depois disso**, se confirmar: resolução (`dpr` adaptativo,
+  que já existe), **overdraw** (camadas transparentes pintadas umas sobre as
+  outras) e custo de shader. **Não** é "menos objetos" nem "menos JavaScript" —
+  era para lá que eu ia, e a medição desviou.
 
   **O que NÃO pode:** reduzir qualidade visual para ganhar FPS. O dono já
   recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md).
 
 
-- ⬜ `[02/09]` 🟠 **O job "painel de admin" falhou uma vez publicando, e eu não
-  sei por quê.** *Instrumentado, não corrigido — está aqui para não sumir.*
-
-  Às 11:04:36 a conta `claudestaff` logou (há registro em `admin_logs`),
-  preencheu o formulário e clicou em Publicar. **O post nunca foi criado**:
-  conferido no banco, a linha não existe, e não há `content_post_created` na
-  trilha. No mesmo minuto a `claudetester` publicou normalmente no outro job.
-
-  **O que já foi descartado, com evidência:** não é a wordlist (rodei o
-  casamento do trigger contra o texto exato: zero palavras); não é ban nem
-  suspensão (as duas contas estão limpas); não é leitura logo após escrita
-  (nesse caso o post existiria).
-
-  **Por que não corrigi:** sem reproduzir, qualquer conserto seria chute — e
-  chute é o que consome sessão (§1.2). O que entrou foi instrumentação:
-  `e2e/publicarPost.mjs` passou a vigiar os avisos da tela enquanto espera e a
-  devolvê-los na falha, com o que cada um significa. Antes a mensagem era só
-  "waiting for locator(...)".
-
-  **O que resolve:** a próxima falha deste passo, que agora vai dizer se a tela
-  mostrou "Conteudo nao permitido", "Erro: ..." do banco, "Post publicado!"
-  (feed não releu) ou nada (o clique não chegou no botão).
 
 - ⬜ `[02/09]` **Responder a mensagem de contato por dentro do painel.** Hoje a
   equipe lê em `/admin` → aba Contato e responde do próprio e-mail, copiando o
@@ -325,6 +285,15 @@
   dois mil, não uma porcentagem.
 
 ## 🔵 Só quando o volume crescer
+
+- ⬜ `[02/09]` 🔵 **`date.js` e `roles.js` têm regiões que nenhum teste toca.**
+  *Achado pelo teste de mutação — coluna `# no cov`, 65 mutantes.*
+
+  Não é bug: é código sem rede. `roles.js` marca 92,31% no que os testes
+  alcançam e 30% no total — ou seja, o que é testado é testado bem, e há uma
+  parte que ninguém exercita. Vale olhar quando sobrar fôlego; nenhum dos dois
+  é caminho crítico hoje.
+
 
 > Nenhum destes é dívida. São decisões **corretas para 3 usuários** que deixam
 > de ser corretas em outra escala. Registrados para não serem redescobertos

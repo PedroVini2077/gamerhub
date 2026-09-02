@@ -12,3 +12,5 @@ e2e-evidencia/
 
 # Lixo do `npx supabase` — versão da CLI em cache, não é do projeto.
 supabase/.temp/
+.stryker-tmp/
+reports/

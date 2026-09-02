@@ -60,6 +60,61 @@ e não uma redescoberta.
 
 ---
 
+### `[02/09]` A cena 3D em regime permanente — e por que o número NÃO serve para julgá-la
+
+O item do backlog dizia que a cena "está pesada", e isso era impressão sem
+número: todas as medições anteriores mediram **carga** (montar a cena), nunca
+**permanência** (ela rodando com a página parada).
+
+Medido: página parada, cena visível, 6 segundos.
+
+| | fps | bloqueio em 6 s |
+| --- | --- | --- |
+| com a cena 3D | 15,5 | **5877 ms** em 92 tarefas |
+| sem a cena (2D) | 60,0 | 0 ms |
+
+**E é aqui que eu quase escrevi uma bobagem.** Esse número parece dizer "a cena
+3D come 45 fps". Ele não diz — porque este navegador **não tem GPU**. É
+Chromium sem placa, com WebGL em software: a CPU faz o trabalho da placa de
+vídeo. Reportar isso como custo real seria apresentar artefato de ambiente como
+fato sobre o aparelho do dono (§1.1).
+
+#### O experimento que separa uma coisa da outra
+
+Se o custo **escala com pixels**, é rasterização — trabalho que num PC de
+verdade é da GPU. Se fica **constante**, é JavaScript/three.js — e esse custa
+igual em todo lugar.
+
+| Janela | Canvas | Bloqueio em 6 s |
+| --- | --- | --- |
+| 1280×800 | 1,024 Mpx | **5583 ms** |
+| 640×400 | 0,256 Mpx | **0 ms** |
+| 320×240 | 0,116 Mpx | **0 ms** |
+
+Não é proporcional — é um **penhasco**. Com 4× menos pixels o bloqueio não cai
+para um quarto: cai para **zero**. Abaixo de certo ponto o rasterizador de
+software cabe no orçamento do quadro, e nenhuma tarefa passa dos 50 ms.
+
+#### O que isso permite afirmar, e o que não permite
+
+**Permite:** o custo da cena é dominado por **rasterização por pixel**. E o
+lado JavaScript dela é **pequeno** — a 0,256 Mpx a cena roda 6 segundos sem
+produzir uma única tarefa longa.
+
+**Não permite:** dizer quanto ela pesa na máquina do dono. Lá quem faz esse
+trabalho é a GPU, e eu não tenho como medir isso daqui.
+
+**Para onde a próxima investigação aponta:** se o custo é por pixel, as
+alavancas são resolução (o `dpr` adaptativo que já existe), **overdraw** —
+quantas camadas transparentes são pintadas por cima umas das outras — e custo
+de shader. **Não** são "menos objetos" nem "menos JavaScript", que era para
+onde eu ia olhar.
+
+O que fecha isso de verdade é uma medição no aparelho dele, com o painel de
+desempenho do navegador aberto — e essa eu não consigo fazer sozinho.
+
+---
+
 ### `[02/09]` O raio da intro nunca era desenhado — e a culpa NÃO era da cena 3D
 
 Relato do dono: *"o raio/efeito visual da intro às vezes corta, falha ou
