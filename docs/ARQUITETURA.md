@@ -173,6 +173,9 @@ src/
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
+    │   ├── FluxoDeDados.jsx # Traços de dados subindo atrás da landing.
+    │   │                  # Parallax por variável CSS + UM ouvinte de ponteiro,
+    │   │                  # agrupado em 3 planos por custo medido
     │   ├── BotaoDeSom.jsx # Liga/desliga o som ambiente. Desligado por padrão:
     │   │                  # navegador bloqueia autoplay, e site que toca
     │   │                  # sozinho faz fechar a aba

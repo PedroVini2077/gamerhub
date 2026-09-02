@@ -1,6 +1,7 @@
 import { Newspaper, Users, Tv, Trophy, Key } from 'lucide-react';
 import LandingNav from '../components/landing/LandingNav';
 import BotaoDeSom from '../components/landing/BotaoDeSom';
+import FluxoDeDados from '../components/landing/FluxoDeDados';
 import Hero from '../components/landing/Hero';
 import FeatureSection from '../components/landing/FeatureSection';
 import LandingShot from '../components/landing/LandingShot';
@@ -21,7 +22,13 @@ import ranksShot from '../assets/landing/ranks.jpg';
 // borrados por privacidade).
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay">
+    <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay relative">
+      <FluxoDeDados />
+
+      {/* `relative z-10`: o conteúdo inteiro fica ACIMA da camada de dados.
+          Sem isto o fluxo passaria por cima do texto — que é a diferença entre
+          ambientação e poluição. */}
+      <div className="relative z-10">
       <LandingNav />
       <Hero />
 
@@ -89,6 +96,8 @@ export default function Landing() {
       </div>
 
       <LandingFooter />
+      </div>
+
       <BotaoDeSom />
     </div>
   );

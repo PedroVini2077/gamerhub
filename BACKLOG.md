@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 29/08/2026, manhã ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -172,14 +172,6 @@
 - ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
   O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
   agora está bom. Fica anotado para não virar decisão esquecida.
-
-- ⬜ `[01/09]` 🟢 **Elementos flutuantes novos na landing — propor antes de fazer.**
-  *Pedido do dono no prompt de 01/09.* Diferentes dos que já existem, com
-  cara de tecnologia/gamer, algum nível de interatividade, sem poluir.
-
-  O dono pediu **proposta visual antes da implementação**. E o custo já tem
-  regra medida: `transform`/`opacity` rodam no compositor e custam ~zero;
-  qualquer coisa com laço de JS por quadro entra na conta da cena 3D.
 
 - ⬜ `[01/09]` 🟡 **A idade mínima de 13 anos existe SÓ no navegador.**
   *Achado na auditoria de privacidade de 01/09. O levantamento inteiro está em

@@ -46,6 +46,9 @@ export default {
         // é isso que separa "enfeite de graça" de "laço queimando CPU numa
         // página de LEITURA", onde a pessoa fica parada minutos.
         travessia: "travessia 24s linear infinite",
+        // `[01/09]` Fluxo de dados da landing (`landing/FluxoDeDados.jsx`).
+        // Sobe da base até o topo. Só `transform` e `opacity` — compositor.
+        "subir-dado": "subirDado 1s linear infinite",
       },
       keyframes: {
         pulseNeon: {
@@ -105,6 +108,13 @@ export default {
         // Entra por um lado, cruza a tela e sai pelo outro, girando devagar.
         // A opacidade abre e fecha nas pontas para a forma não "aparecer do
         // nada" nem sumir cortada na borda.
+        // Um traço de dado subindo: entra por baixo, atravessa e some no topo.
+        // A opacidade abre e fecha nas pontas para nada "aparecer do nada".
+        subirDado: {
+          "0%":       { transform: "translate3d(0, 0, 0) scaleY(0.4)", opacity: 0 },
+          "10%, 80%": { opacity: 1 },
+          "100%":     { transform: "translate3d(0, -102vh, 0) scaleY(1)", opacity: 0 },
+        },
         travessia: {
           "0%":        { transform: "translate3d(-12vw, 0, 0) rotate(0deg)", opacity: 0 },
           "12%, 88%":  { opacity: 1 },
