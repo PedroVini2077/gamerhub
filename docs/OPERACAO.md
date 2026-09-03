@@ -345,9 +345,20 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
 
 - `lint` (0 erros) · `npm test` · `build` · `npm audit --audit-level=high`
-- **piso de 168 testes** — o CI quebrando é o caso fácil, fica vermelho e
-  alguém olha; o perigoso é ele **passar sem testar nada** (arquivo renomeado,
-  `describe.skip` esquecido). Ao adicionar testes, subir o piso junto.
+- **piso de <!--n:testes.piso-->443<!--/n--> testes** — o CI quebrando é o caso
+  fácil, fica vermelho e alguém olha; o perigoso é ele **passar sem testar
+  nada** (arquivo renomeado, `describe.skip` esquecido). Ao adicionar testes,
+  subir o piso junto.
+
+  > **`[02/09]` Três números para a mesma coisa, e nenhum conferia o outro.**
+  > Este parágrafo dizia **168**, o `ci.yml` exigia **222** e a suíte tinha
+  > **437**. Nenhum estava errado sozinho — o piso simplesmente parou de ser
+  > subido, e o portão passou a tolerar que **215 testes sumissem em silêncio**,
+  > que é exatamente o que ele existe para impedir.
+  >
+  > Os dois foram corrigidos, e o número acima agora é **lido do `ci.yml`** pelo
+  > `npm run numeros`. Divergência entre o portão e o texto virou build vermelho
+  > em vez de coisa que alguém precisa lembrar de comparar.
 - job de **fumaça** (`e2e/smoke.mjs`) — as rotas num Chromium real, **como
   visitante**: cada uma monta sem exceção de JS e o `RequireAuth` redireciona
   para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
@@ -369,8 +380,15 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 
   | Direção | O que pega |
   | --- | --- |
-  | fechado continua fechado | `admin_logs`, `profiles`, `posts`, `moderation_queue`… e 8 RPCs privilegiadas |
+  | fechado continua fechado | `admin_logs`, `posts`, `moderation_queue`… e 8 RPCs privilegiadas |
   | **aberto continua aberto** | `site_config` e `blocked_words`, que a landing lê antes de qualquer login |
+  | **`[02/09]` coluna a coluna, em `profiles`** | as 8 colunas pessoais em 401, e `id`/`username` legíveis — as duas direções, por coluna |
+
+  A terceira linha entrou porque a primeira **dava verde honesto para a pergunta
+  errada**: ela sondava `select=*`, `profiles` responde 401 a isso, e daí este
+  documento e o `SEGURANCA.md` passaram a afirmar que "`profiles` responde 401 ao
+  anônimo". Privilégio no Postgres é **por coluna** — `select=id,username`
+  devolve as 5 linhas. Ver [SEGURANCA.md](SEGURANCA.md).
 
   A segunda existe porque [POSTURA.md](regras/POSTURA.md) registra **três quedas
   do site** causadas por correção de segurança legítima — revogar colunas de
@@ -548,3 +566,64 @@ regra sobre documentação envelhece quando os portões de documentação mudam.
 **Achou na primeira execução:** o `CLAUDE.md` estava **7 commits de código**
 atrás, e a tabela de mecanismos do §6.3 listava **3** dos **10** que existem
 hoje. Corrigida no mesmo PR.
+
+---
+
+## `[02/09]` A pergunta que os três portões de documentação não faziam
+
+Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
+algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
+de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
+linhas"* num projeto de <!--n:src.arquivos-->303<!--/n--> arquivos e
+<!--n:src.linhas-->28.995<!--/n--> linhas.
+
+**Os três portões existentes aprovaram aquilo, e cada um por um motivo
+diferente** — o que prova que não era descuido de nenhum deles, e sim uma
+pergunta que ninguém fazia:
+
+| Portão | Por que passou |
+| --- | --- |
+| "o PR tocou documentação?" | tocou, sempre — só nunca a linha errada |
+| `documentacao-quebrada` | os arquivos citados **existiam**; o número é que não |
+| `documentacao-envelhecida` | conta **commits**, não confere afirmação |
+
+Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
+
+### Os quatro mecanismos que entraram
+
+| Comando / portão | Pergunta que ele faz | Reprova? |
+| --- | --- | --- |
+| `npm run numeros` (`--check` no CI) | os números escritos batem com o projeto? | **sim** |
+| `scripts/territorio-coberto.mjs` (CI) | toda parte do sistema tem documento responsável? | **sim** |
+| `npm run docs` | que documento **esta sessão** tornou suspeito? | não — é lista de leitura |
+| `npm run docs -- --tudo` | o estado de todos, por idade | não |
+
+**Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
+comentário HTML — `<!--n:src.arquivos-->303<!--/n-->` —, invisível no markdown
+renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
+reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
+número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
+
+**Por que marcador explícito e não varredura de "N linhas".** Porque o
+histórico legítimo — *"918 → 197 linhas"* — precisa continuar congelado.
+Portão que grita no lugar certo pelo motivo errado vira ruído (§0.2, 4ª regra).
+
+### O que a cobertura de território achou na primeira execução
+
+Três caminhos apontando para arquivos que não existem mais, e o pior deles é
+instrutivo: `src/lib/resolucaoDaCena.js` foi **apagado no PR #105** e a entrada
+sobreviveu ao arquivo. Como o relatório pula caminho inexistente, o
+`DESEMPENHO.md` ficou **meio vigiado** desde então, sem nada acusar.
+
+E o buraco que originou o portão: `src/components/privacidade/` — onde mora o
+**texto da política de privacidade** — não tinha dono. O PR #140 reescreveu o
+bloco de retenção e os três portões aprovaram uma mudança em documento legal
+sem pedir que a documentação acompanhasse.
+
+### O que estes quatro NÃO fazem
+
+Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
+continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
+mandar reler <!--n:docs.linhas-->9.456<!--/n--> linhas por precaução — o que
+custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
+**o que mudou embaixo de cada um**.

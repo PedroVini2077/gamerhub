@@ -31,7 +31,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
 | [`docs/MANIFESTO.md`](docs/MANIFESTO.md) | Como o dono e o Claude trabalham **juntos** — papéis, quando explicar mais, continuidade |
 | [`supabase/functions/`](supabase/functions/README.md) | As Edge Functions em produção, e por que este espelho pode mentir |
-| [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — 136 migrations que recriam o banco |
+| [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — <!--n:migrations-->153<!--/n--> migrations que recriam o banco |
 | `db/AAAA-MM-DD-*.md` | Relatórios de auditoria, com o que foi achado e como foi provado |
 
 ---
@@ -112,13 +112,14 @@ npm install
 criar o `.env` na raiz com a URL e a anon key do seu projeto Supabase.
 
 **4. Recriar o banco** (se for um projeto Supabase novo): aplicar as
-**[migrations](supabase/migrations/)** em ordem — são 136, e elas reconstroem o
+**[migrations](supabase/migrations/)** em ordem — são <!--n:migrations-->153<!--/n-->, e elas reconstroem o
 schema inteiro. O passo a passo e o que elas *não* cobrem (buckets, secrets,
 Auth Hook) estão no [README daquela pasta](supabase/migrations/README.md).
 
-> O `DATABASE_SCHEMA_BACKUP.sql` na raiz é de **11/06/2026** e ficou **48
-> migrations atrás** — conhece 52 funções contra as 71 de hoje. Está mantido só
-> como referência histórica; **não use para recriar o banco.**
+> O `DATABASE_SCHEMA_BACKUP.sql` na raiz é de **11/06/2026**: conhece 52
+> funções contra as **73 `SECURITY DEFINER` de hoje** (medido em 02/09 no
+> `pg_proc`, não estimado). Está mantido só como referência histórica;
+> **não use para recriar o banco.**
 
 **5. Rodar**
 
@@ -129,6 +130,19 @@ npm run preview   # serve o build localmente
 npm run lint      # ESLint
 npm test          # Vitest — testes unitários da lógica pura (run único)
 npm run test:watch# Vitest em modo watch
+```
+
+**Os portões** — o que o CI roda, e que dá para rodar antes de abrir PR:
+
+```bash
+npm run fim       # fechamento de sessão: build, lint, testes, arquivo > 300 linhas,
+                  # trabalho não commitado, contador do backlog
+npm run numeros   # os números escritos na documentação × o projeto de verdade
+npm run docs      # que documentação ESTA sessão tornou suspeita (--tudo lista todos)
+npm run mapa      # todo arquivo de src/ está no ARQUITETURA.md
+npm run segredos  # nenhuma chave privada em arquivo rastreado
+npm run test:banco  # o que um estranho sem conta alcança no Postgres
+npm run test:migrations  # o espelho de migrations bate com o banco
 ```
 
 > **Testes:** a lógica pura crítica (XP/ranks, força de senha, idade, parsing de

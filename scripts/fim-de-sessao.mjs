@@ -57,6 +57,11 @@ passa('testes',               'npx vitest run');
 passa('mapa de arquivos',     'node scripts/mapa-de-arquivos.mjs');
 passa('documentação quebrada','node scripts/documentacao-quebrada.mjs');
 passa('orçamento de bytes',   'node scripts/orcamento-de-bytes.mjs');
+// `[02/09]` Os dois portões que perguntam o que os outros não perguntavam: o
+// número escrito bate com o projeto, e toda pasta tem documento responsável.
+// Rodam aqui além do CI porque descobrir no CI custa um ciclo inteiro de PR.
+passa('números da documentação', 'node scripts/numeros-do-projeto.mjs --check');
+passa('território coberto',      'node scripts/territorio-coberto.mjs');
 
 // ── 2. O que SÓ este script vê ─────────────────────────────────────────────
 

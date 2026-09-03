@@ -17,137 +17,60 @@
  *
  * ── Como manter o mapa ──────────────────────────────────────────────────────
  *
- * `TERRITORIO` é fonte única: cada documento com os caminhos de código que ele
- * descreve. Documento novo sem entrada aqui é reportado como **não mapeado** —
- * senão a lista envelheceria em silêncio, que é o problema que ela resolve.
+ * `TERRITORIO` saiu daqui em 02/09 para `scripts/territorio.mjs`: três coisas
+ * passaram a precisar dele — este relatório, o portão de cobertura e a lista de
+ * leitura por sessão — e mapa copiado em três lugares diverge (§4).
+ *
+ * Documento novo sem entrada lá é reportado como **não mapeado**; pasta de
+ * código sem dono é reprovada por `territorio-coberto.mjs`.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { TERRITORIO } from './territorio.mjs';
 
 const RAIZ = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 
 /** Quantos commits de código sem o documento acompanhar já merecem um olhar. */
 const COMMITS_ATE_AVISAR = 5;
 
-const TERRITORIO = {
-  // `[02/09]` Privacidade. O território é onde o dado pessoal ENTRA no sistema
-  // e por onde ele sai: o cadastro (que coleta data de nascimento e estado), o
-  // perfil (que decide o que é público), o cliente do banco, o monitoramento
-  // (o que o Sentry recebe) e o `App.jsx`, onde a analítica é montada. Mexer
-  // em qualquer um destes muda o que o documento afirma.
-  'docs/PRIVACIDADE.md': [
-    'src/components/auth/RegisterForm.jsx',
-    'src/components/profile',
-    'src/hooks/useProfileForm.js',
-    'src/lib/monitoring.js',
-    'src/lib/supabase.js',
-    'src/App.jsx',
-  ],
-  'docs/MODERACAO.md': [
-    'src/services/moderationService.js',
-    'src/components/moderation',
-    'supabase/functions/moderate-links',
-  ],
-  // A política por categoria e os limiares moram nas Edge Functions de mídia —
-  // é lá que um piso muda de valor sem ninguém lembrar do documento.
-  'docs/MODERACAO-IA.md': [
-    'supabase/functions/moderate-image',
-    'supabase/functions/moderate-text',
-    'src/lib/framesDeVideo.js',
-    // O cliente das Edge Functions de IA saiu do `moderationService` em 29/08.
-    // É por ele que o relato de falha de vídeo chega ao `admin_logs`.
-    'src/services/moderationAiService.js',
-  ],
-  'docs/BANCO.md': ['supabase/migrations'],
-  'docs/SEGURANCA.md': ['supabase/functions', 'src/hooks/useAuth.jsx', 'src/lib/roles.js'],
-  'docs/ARQUITETURA.md': ['src/App.jsx', 'src/services', 'src/hooks'],
-  'docs/FUNCIONALIDADES.md': ['src/pages', 'src/components/landing', 'src/components/feed'],
-  // O que a equipe opera. O território dele são os painéis e o caminho de ban.
-  'docs/PAINEIS.md': ['src/pages/Admin.jsx', 'src/pages/Owner.jsx', 'src/components/admin'],
-  'docs/OPERACAO.md': ['.github/workflows', 'scripts'],
-  // Investigação de desempenho: envelhece quando o que ela mede muda de forma —
-  // a cena 3D, o orçamento de bytes e o build.
-  'docs/DESEMPENHO.md': [
-    'src/components/landing/scene3d',
-    'src/lib/resolucaoDaCena.js',
-    'scripts/orcamento-de-bytes.mjs',
-    'vite.config.js',
-  ],
-  // Decisão não envelhece por commit; envelhece por reversão — e reversão é
-  // coisa que uma pessoa registra, não que um script detecta.
-  'docs/DECISOES.md': [],
-  'docs/DECISOES-FERRAMENTAL.md': [],
-  'docs/MANIFESTO.md': [],
-  'README.md': [],
-  'BACKLOG.md': [],
-
-  // ── `[02/09]` O CLAUDE.md e os splits dele ────────────────────────────────
-  //
-  // Os cinco estavam de fora do portão: o `CLAUDE.md` com território VAZIO (na
-  // lista só para não ser acusado de não mapeado, mas nunca conferido), e os
-  // quatro `docs/regras/` invisíveis porque o varredor não entrava em
-  // subpasta. São os arquivos que comandam todo o resto, e eram os únicos sem
-  // vigilância nenhuma.
-  //
-  // O território deles não é "o código que descrevem" — é **o mecanismo que os
-  // cumpre**. Uma regra sobre banco envelhece quando o portão do banco muda;
-  // uma regra sobre documentação envelhece quando os portões de documentação
-  // mudam. É essa a ligação que interessa vigiar.
-  'CLAUDE.md': [
-    'scripts/inicio-de-sessao.sh',
-    'scripts/fim-de-sessao.mjs',
-    '.github/workflows/ci.yml',
-  ],
-  'docs/regras/POSTURA.md': [
-    'e2e/portas-fechadas.mjs',
-    'e2e/portas-do-banco.mjs',
-    'src/lib/tabelasSemUpdate.js',
-  ],
-  'docs/regras/BANCO.md': [
-    'supabase/migrations',
-    'e2e/portas-do-banco.mjs',
-    'src/lib/tabelasSemUpdate.js',
-  ],
-  'docs/regras/AUDITORIA.md': [
-    'scripts/mapa-de-arquivos.mjs',
-    'scripts/segredos-vazados.mjs',
-    'src/lib/__tests__/varrerFontes.js',
-  ],
-  'docs/regras/DOCUMENTACAO.md': [
-    'scripts/documentacao-quebrada.mjs',
-    'scripts/documentacao-envelhecida.mjs',
-    'scripts/mapa-de-arquivos.mjs',
-  ],
-};
 
 const git = (...args) =>
   execFileSync('git', args, { cwd: RAIZ, encoding: 'utf8' }).trim();
 
 /**
+ * RELATÓRIO HISTÓRICO — documento que descreve um dia, não o sistema de hoje.
+ *
+ * `[02/09]` A distinção que faltava. Um `db/2026-08-21-auditoria.md` conta o
+ * que foi encontrado NAQUELE dia; atualizá-lo para o estado atual destruiria a
+ * única coisa que ele serve para provar. Ele **deve** envelhecer.
+ *
+ * Sem esta linha, a cobrança do dono — *"TODAS devem estar atualizadas"* — se
+ * aplicaria a eles também, e a resposta certa ali é o contrário.
+ */
+const HISTORICOS = /^db\/\d{4}-\d{2}-\d{2}-/;
+
+/**
  * Documentos que existem e ninguém mapeou.
  *
- * `[02/09]` Passou a entrar em SUBPASTAS, e o motivo é grave: a versão antiga
- * lia só `docs/` no primeiro nível, então **`docs/regras/` era invisível** —
- * e é lá que moram os splits do `CLAUDE.md`, as regras que comandam todo o
- * resto. Os quatro arquivos mais importantes do projeto eram os únicos que o
- * portão não enxergava.
+ * `[02/09]` Passou a varrer **todo `.md` rastreado pelo git**, e não só
+ * `docs/`. Duas correções na mesma linha:
  *
- * Encontrado quando o dono cobrou: *"os gatilhos têm que ser feitos para cada
- * documentação do projeto, nenhum deles pode passar, inclusive o CLAUDE.md"*.
+ * - a versão de antes lia `docs/` no primeiro nível, então `docs/regras/` era
+ *   invisível — e é lá que moram os splits do `CLAUDE.md`;
+ * - depois de corrigido isso, ainda ficavam de fora os READMEs de
+ *   `supabase/functions/` e `supabase/migrations/`, que descrevem sistema vivo
+ *   e podem apodrecer igual.
+ *
+ * Encontrado quando o dono cobrou, duas vezes: *"os gatilhos têm que ser feitos
+ * para cada documentação do projeto, nenhum deles pode passar"* e, em 02/09,
+ * *"toda a documentação do projeto, não falo algumas, todas!"*.
  */
 function naoMapeados() {
-  const dir = join(RAIZ, 'docs');
-  if (!existsSync(dir)) return [];
-
-  const varrer = (relativo) => readdirSync(join(RAIZ, relativo), { withFileTypes: true })
-    .flatMap((entrada) => {
-      const caminho = `${relativo}/${entrada.name}`;
-      if (entrada.isDirectory()) return varrer(caminho);
-      return entrada.name.endsWith('.md') ? [caminho] : [];
-    });
-
-  return varrer('docs').filter(f => !(f in TERRITORIO));
+  return git('ls-files', '*.md').split('\n')
+    .filter(Boolean)
+    .filter(f => !HISTORICOS.test(f))
+    .filter(f => !(f in TERRITORIO));
 }
 
 const atrasados = [];

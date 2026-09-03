@@ -36,14 +36,40 @@ import * as PECAS from './pecasDeJogo';
  * dá a sensação de aleatório aqui é cada peça ter duração, atraso e deriva
  * próprios: os ciclos nunca fecham juntos, então o conjunto não se repete de
  * forma visível.
+ *
+ * ── `[03/09]` A primeira calibragem estava invisível, e foi MEDIDA ──────────
+ *
+ * Relato do dono: *"não tô vendo os itens animados ao fundo que vc disse que
+ * fez, acho que não subiu o commit"*. O commit tinha subido e o componente
+ * renderizava — o defeito era de calibragem, não de código, e é pior por isso:
+ * nada quebra, nenhum teste falha, e a entrega simplesmente **não existe** para
+ * quem olha.
+ *
+ * Medido num Chromium de verdade, desenhando a mesma peça em cada opacidade
+ * sobre `#0a0a0a`: a 0,09–0,17 o contorno de 1,4 px some no fundo; a partir de
+ * ~0,30 ele lê. Três coisas mudaram juntas, porque as três somavam para o
+ * mesmo efeito:
+ *
+ * | | Antes | Agora | Por quê |
+ * | --- | --- | --- | --- |
+ * | opacidade | 0,09–0,17 | **0,21–0,34** | era a causa principal — contorno fino a 10% não existe |
+ * | tamanho | 28–56 px | **38–76 px** | peça pequena some junto com o traço |
+ * | duração | 68–112 s | **46–80 s** | a 78 s a peça anda ~1,3 tela; em 10 s de olhada ela mal se move, e o que não se move não é notado |
+ * | quantidade | 6 | **8** | tudo no compositor, então o custo continua o mesmo |
+ *
+ * **O teto continua sendo o texto.** O objetivo é ambientar, não competir — o
+ * dono pediu *"só não deixa feio"*. Por isso parou em ~0,34 e não em 0,45, que
+ * já disputa atenção com o conteúdo do feed.
  */
 const POSICOES = [
-  { x: '8%',  tamanho: 46, duracao: 78, atraso: -12, deriva: '5vw',  giro: '38deg',  pico: 0.15 },
-  { x: '23%', tamanho: 30, duracao: 96, atraso: -48, deriva: '-4vw', giro: '-26deg', pico: 0.11 },
-  { x: '41%', tamanho: 56, duracao: 68, atraso: -30, deriva: '3vw',  giro: '52deg',  pico: 0.17 },
-  { x: '58%', tamanho: 34, duracao: 104, atraso: -70, deriva: '-6vw', giro: '30deg', pico: 0.10 },
-  { x: '74%', tamanho: 48, duracao: 84, atraso: -20, deriva: '4vw',  giro: '-44deg', pico: 0.14 },
-  { x: '90%', tamanho: 28, duracao: 112, atraso: -88, deriva: '-3vw', giro: '22deg', pico: 0.09 },
+  { x: '6%',  tamanho: 62, duracao: 54, atraso: -8,  deriva: '5vw',  giro: '38deg',  pico: 0.30 },
+  { x: '19%', tamanho: 40, duracao: 68, atraso: -34, deriva: '-4vw', giro: '-26deg', pico: 0.24 },
+  { x: '32%', tamanho: 76, duracao: 46, atraso: -20, deriva: '3vw',  giro: '52deg',  pico: 0.34 },
+  { x: '45%', tamanho: 46, duracao: 74, atraso: -50, deriva: '-6vw', giro: '30deg',  pico: 0.22 },
+  { x: '58%', tamanho: 66, duracao: 58, atraso: -14, deriva: '4vw',  giro: '-44deg', pico: 0.31 },
+  { x: '70%', tamanho: 38, duracao: 80, atraso: -62, deriva: '-3vw', giro: '22deg',  pico: 0.21 },
+  { x: '82%', tamanho: 70, duracao: 50, atraso: -28, deriva: '6vw',  giro: '-34deg', pico: 0.33 },
+  { x: '93%', tamanho: 44, duracao: 66, atraso: -44, deriva: '-5vw', giro: '46deg',  pico: 0.25 },
 ];
 
 export default function PecasFlutuantes({ elenco = [], acento }) {

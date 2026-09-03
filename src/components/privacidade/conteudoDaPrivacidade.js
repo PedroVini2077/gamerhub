@@ -243,10 +243,19 @@ export const BLOCOS = [
     id: 'controlador',
     titulo: 'Quem responde juridicamente por isso',
     icone: 'UserCheck',
-    pendente: true,
-    dica: 'Falta o dono decidir como se identificar como controlador dos '
-      + 'dados. É dado pessoal DELE — só ele decide o que expor. O canal de '
-      + 'contato, que era a outra metade deste bloco, já existe desde 02/09 e '
-      + 'está na seção acima.',
+    pendente: false,
+    paragrafos: [
+      'O GamerHub é um projeto pessoal, mantido por uma pessoa física — não há '
+      + 'empresa por trás. Quem responde pelos dados tratados aqui é quem '
+      + 'mantém o site, e o canal para falar com essa pessoa é o formulário '
+      + 'em /contato, na opção "Meus dados pessoais".',
+      'É por ali que você pede acesso, correção ou exclusão dos seus dados, e '
+      + 'é por ali que a resposta volta, no e-mail que você informar. Não '
+      + 'existe um segundo canal escondido: o formulário é o caminho, e ele '
+      + 'funciona sem conta e sem login.',
+      'Se um dia o projeto deixar de ser pessoal, esta seção muda e você será '
+      + 'avisado para aceitar a política de novo — é o mesmo mecanismo que '
+      + 'avisou quando os prazos de retenção entraram.',
+    ],
   },
 ];

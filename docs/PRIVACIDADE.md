@@ -137,25 +137,52 @@ autentica, e por isso existe.
 
 ## Os achados, com severidade
 
-### 🟡 A idade mínima de 13 anos existe SÓ no navegador
+### ✅ `[03/09]` RESOLVIDO — a idade mínima de 13 anos passou a ser imposta
 
-`RegisterForm.jsx` limita a data pelo atributo `max` do input. **O banco não
-tem CHECK nenhum em `birth_date`** — conferido: existem CHECKs para `platform`,
-`playstyle` e `role`, e nenhum para a data.
+> **Achado original (01/09):** o limite existia só no atributo `max` do input.
+> O site usa a `anon key`, então qualquer um chamava a REST API direto com a
+> data que quisesse — o caso clássico do §1.3.
+>
+> **A LGPD trata dado de criança e adolescente em artigo próprio**, com
+> exigência de consentimento específico. O piso de idade não é só política do
+> site.
 
-O site usa a `anon key`, então qualquer pessoa chama a REST API direto e
-cadastra a data que quiser. É o caso clássico do §1.3: *validação no cliente não
-vale nada sozinha*.
+O dono decidiu **13 anos** em 02/09, e entrou o trigger `guard_idade_minima`
+(não um `CHECK`: expressão de CHECK precisa ser IMMUTABLE, e `current_date` é
+STABLE — idade é relativa a hoje).
 
-**Por que isso pesa mais do que uma regra de produto:** a LGPD trata dado de
-criança e adolescente em artigo próprio, com exigência de consentimento
-específico. O piso de idade deixa de ser só política do site.
+#### `[03/09]` E aí veio a parte que quase passou: o trigger nunca disparava
 
-**Estado hoje, medido:** 5 perfis, 2 com data preenchida, **nenhum** abaixo de
-13 anos e nenhuma data absurda. Um CHECK entraria sem rejeitar linha existente.
+Colocar a regra no banco **não bastou**, e a descoberta veio de puxar outro fio
+— o revoke do `SELECT` de `profiles`.
 
-**Não implementei** porque o número (13? 16? 18?) é decisão de produto e
-jurídica, não minha. Está no backlog com a consulta de dimensionamento pronta.
+`useAuth.jsx` gravava `birth_date` com um `UPDATE` feito **logo depois** do
+`signUp`. Com confirmação de e-mail ligada o `signUp` não devolve sessão, então
+aquele UPDATE rodava como **`anon`** — e a única policy de UPDATE de `profiles`
+é `TO authenticated`.
+
+Medido em `ROLLBACK`: **0 linhas afetadas e nenhum erro.** O código checava
+`error`, que vinha nulo, e seguia em frente.
+
+| A regra existia em | E era imposta? |
+| --- | --- |
+| formulário (`Login.jsx`) | sim, mas só no navegador |
+| banco (`guard_idade_minima`) | **não** — dispara em `INSERT OR UPDATE OF birth_date`, e o valor nunca chegava |
+| política de privacidade | afirmava um piso que o sistema não aplicava |
+
+**A prova de que era real, e não teoria:** 3 dos 5 perfis estavam com
+`birth_date` **nulo**, incluindo os criados pelo formulário.
+
+**A correção:** os campos extras passaram a viajar no `options.data` do
+`signUp`, e o `handle_new_user` (que é `SECURITY DEFINER`, sem RLS no caminho)
+os escreve no próprio INSERT do perfil. Aí o trigger de idade dispara de
+verdade. Confirmado em `ROLLBACK`: menor de 13 é **barrado**, com a mensagem em
+português.
+
+> **O que continua verdade, e é honesto dizer:** nada impede alguém de **mentir**
+> a data. Verificação de idade de verdade exige documento, e isso é
+> desproporcional para este site. O que mudou é que o piso declarado passou a
+> ser real no sistema, em vez de existir só no formulário e no texto.
 
 ### 🔵 `login_attempts` e `admin_logs` não têm política de retenção
 

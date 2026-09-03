@@ -149,6 +149,13 @@ src/
 │   ├── aceiteService.js   # Grava a PROVA do aceite dos documentos: quem, qual
 │   │                      # documento, qual versão, quando. A caixinha do
 │   │                      # formulário não prova nada sozinha
+│   ├── cadastroService.js # Criar conta, do zero até a prova do aceite. Saiu do
+│   │                      # `useAuth.jsx` em 03/09: aquele é o arquivo de maior
+│   │                      # risco do projeto e cuida de SESSÃO — cadastro
+│   │                      # acontece ANTES de existir sessão, e foi por isso que
+│   │                      # dois bugs se esconderam lá dentro (o UPDATE que
+│   │                      # rodava como `anon` e afetava 0 linhas em silêncio,
+│   │                      # e o `select` que mantinha `profiles` aberto)
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências

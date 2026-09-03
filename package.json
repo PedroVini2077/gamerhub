@@ -24,7 +24,10 @@
     "test:e2e:navegacao": "node e2e/navegacao.mjs",
     "test:e2e:sembanco": "node e2e/sem-banco.mjs",
     "test:e2e:som": "node e2e/som-ambiente.mjs",
-    "mutacao": "stryker run"
+    "mutacao": "stryker run",
+    "numeros": "node scripts/numeros-do-projeto.mjs",
+    "docs": "node scripts/documentacao-a-revisar.mjs",
+    "test:migrations": "node scripts/espelho-de-migrations.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

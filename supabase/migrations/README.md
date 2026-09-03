@@ -1,7 +1,7 @@
 # Migrations
 
-**Esta pasta é a verdade sobre o schema.** As 136 migrations aqui, aplicadas em
-ordem de nome, reconstroem o banco do zero.
+**Esta pasta é a verdade sobre o schema.** As <!--n:migrations-->153<!--/n-->
+migrations aqui, aplicadas em ordem de nome, reconstroem o banco do zero.
 
 ## Por que ela existe
 
@@ -48,11 +48,34 @@ histórico, e como todo espelho, pode ficar para trás.
 Ao aplicar uma migration nova, acrescente o arquivo aqui **no mesmo PR**. O
 nome segue o mesmo padrão: `<version>_<name>.sql`.
 
-> **Não existe teste comparando esta pasta com o Supabase.** Compará-los
-> exigiria um token de gestão guardado no CI — a mesma conta ruim que já
-> recusamos no `portas-fechadas.mjs` e no alerta de cota do Sentry. O que
-> protege aqui é o hábito, e o fato de o arquivo estar no mesmo PR que a
-> migration.
+### `[02/09]` O hábito não bastou — e o estrago era exatamente o previsto
+
+O parágrafo que estava aqui dizia: *"não existe teste comparando esta pasta com
+o Supabase… o que protege aqui é o hábito"*. **O hábito falhou.** Em 02/09 o
+banco tinha **151** migrations e esta pasta tinha **142**: nove nunca viraram
+arquivo — o canal de contato inteiro, a idade mínima de 13 anos, a tabela de
+aceite das políticas e os prazos de retenção.
+
+Ou seja: durante quatro dias, recriar o banco a partir daqui produziria um
+schema **sem nada de 29/08 em diante**, enquanto a primeira linha deste arquivo
+prometia o contrário. É a mesma falha silenciosa que motivou a pasta a existir,
+de volta — e ninguém teria como saber antes do dia em que precisasse.
+
+**O que mudou, e por que agora dá para travar.** A objeção antiga era real, mas
+específica demais: comparar **conteúdo** exige um token de gestão no CI — a
+troca ruim já recusada no `portas-fechadas.mjs` e no alerta de cota do Sentry.
+Comparar a **contagem**, não. A RPC `contagem_de_migrations()` devolve um
+inteiro e é chamável com a anon key; o SQL das migrations já está num
+repositório público, então o número não revela nada.
+
+`scripts/espelho-de-migrations.mjs` roda no CI e **reprova** quando os dois
+números divergem. Ele pegou a própria migration que o criou, na primeira
+execução.
+
+> **O que ele não pega, dito antes que alguém confie demais:** trocar um arquivo
+> por outro mantém a contagem. Ele responde uma pergunta só — *o espelho tem o
+> mesmo NÚMERO de migrations que o banco?* — e é a pergunta que teria evitado
+> este caso.
 
 ## Como foram exportadas
 

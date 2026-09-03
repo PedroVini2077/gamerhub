@@ -73,8 +73,6 @@
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-
-
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
   `violence` foi aposentada e `violence/graphic` subiu de 0.80 para 0.95. O
@@ -212,13 +210,31 @@
   INSERT/UPDATE existe para `anon`, mas a RLS nega — vale fechar por defesa em
   profundidade, não porque esteja aberto.
 
-  **A dependência já foi checada** (a consulta de "quem lê" do
-  [POSTURA.md](docs/regras/POSTURA.md), rodada em 02/09): **nenhuma policy** usa
-  `updated_by`/`created_by`, e a única função que os toca é
-  `owner_set_site_config`, que é `SECURITY DEFINER` e não passa por esses
-  privilégios. Um `REVOKE (updated_by, created_by) FROM anon, authenticated`
-  parece seguro — mas revoke de coluna já derrubou o site três vezes, então é
-  🟡 (§7: proponho e espero), não algo que eu aplique sozinho.
+  **A dependência de `site_config`/`blocked_words` foi checada** (a consulta de
+  "quem lê" do [POSTURA.md](docs/regras/POSTURA.md), 02/09): **nenhuma policy**
+  usa `updated_by`/`created_by`, e a única função que os toca é
+  `owner_set_site_config`, `SECURITY DEFINER`, que não passa por esses
+  privilégios. Ali o `REVOKE` das duas colunas é seguro.
+
+  > **`[02/09]` ⚠️ Correção de uma proposta minha que estava ERRADA, e o motivo
+  > vale mais do que o item.** Eu propus ao dono revogar também `id`/`username`
+  > de `profiles`, dizendo que a dependência estava checada. Estava — só que a
+  > consulta de "quem lê" procura **policy e função no banco**, e quem lê essas
+  > duas colunas é **o cadastro, no cliente**: `useAuth.jsx` faz
+  > `select('id').eq('username', …)` antes do `signUp` para recusar username
+  > repetido. O revoke teria quebrado o cadastro do site inteiro — a **quarta**
+  > queda por revoke bem-intencionado.
+  >
+  > E o `docs/SEGURANCA.md` **já dizia isso**, na linha certa, desde sempre:
+  > *"`anon` só enxerga `(id, username)` — o suficiente para a checagem de
+  > username duplicado"*. Eu li a linha errada do mesmo arquivo.
+  >
+  > **O que resta, e é menor do que eu disse:** não é o acesso, é a
+  > **enumeração**. O cadastro precisa perguntar por **um** username;
+  > `select=id,username` devolve **todos**. A saída certa é a que o projeto já
+  > usa em `get_public_profile`: uma RPC `username_disponivel(p_username)`
+  > `SECURITY DEFINER` devolvendo booleano, e aí o `SELECT` de `anon` em
+  > `profiles` pode ser revogado **sem** quebrar nada.
 
   **O portão que deixava passar, e o que ele passou a fazer.** O
   `portas-do-banco.mjs` sondava só `select=*`, então dava **verde honesto para a
@@ -368,8 +384,11 @@
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, 44 arq · 2.899 linhas; `src/services/`, 9 arq · 994
-  linhas) são 22% do código e concentram quase todo o benefício — é onde mora
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->84<!--/n--> arq ·
+  <!--n:src.lib.linhas-->6.943<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->16<!--/n--> arq ·
+  <!--n:src.services.linhas-->1.620<!--/n--> linhas) concentram quase todo o
+  benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
 - ⬜ `[21/08]` **2FA no login.**

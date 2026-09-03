@@ -57,8 +57,36 @@
   `community_post_media.url`) — a anon key permite chamar a REST API direto,
   então validação só no frontend não vale nada.
 - **`anon` só enxerga `(id, username)` de `profiles`** — o suficiente para a
-  checagem de username duplicado no cadastro. RLS é por linha, não por coluna;
-  a restrição correta aqui é privilégio de coluna.
+  checagem de username duplicado no cadastro (`useAuth.jsx`:
+  `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por
+  coluna; a restrição correta aqui é privilégio de coluna.
+
+  > **`[02/09]` Este parágrafo estava certo, e outros dois documentos o
+  > contradiziam.** O `BACKLOG.md` afirmava que *"`profiles` responde 401 ao
+  > anônimo"* e a matriz de gatilhos deste mesmo arquivo repetia. Os dois
+  > tinham lido um `select=*` negado — que prova só que **alguma** coluna está
+  > fechada, porque privilégio no Postgres é por coluna.
+  >
+  > **A consequência quase foi um estrago.** Eu cheguei a propor ao dono
+  > revogar `id`/`username` de `anon`, com a checagem de dependência feita
+  > "corretamente" — nenhuma policy usa. Só que **quem lê não era uma policy: é
+  > o cadastro**. Revogar ali quebraria a checagem de username duplicado e seria
+  > a **quarta** queda do site por revoke bem-intencionado
+  > ([POSTURA.md](regras/POSTURA.md) registra as três primeiras). A consulta de
+  > "quem lê" daquele arquivo procura policy e função — e este caso mostra que
+  > ela precisa incluir o **código do cliente**, que é o que `e2e/portas-do-banco.mjs`
+  > agora vigia coluna a coluna, nas duas direções.
+  >
+  > **O que continua em aberto é outra coisa, e menor:** `anon` consegue
+  > **enumerar** — `select=id,username` devolve as 5 linhas, quando o cadastro
+  > só precisa perguntar por **um** username. Somado a `site_config.updated_by`,
+  > isso liga um UUID de staff a um nome.
+  >
+  > **A solução certa não é revoke, é RPC** — o padrão que este projeto já usa
+  > em `get_public_profile` e `admin_list_users` para exatamente este problema:
+  > uma `username_disponivel(p_username)` `SECURITY DEFINER` devolvendo booleano
+  > deixa revogar o `SELECT` de `anon` **sem** quebrar o cadastro. Está no
+  > `BACKLOG.md` como 🟡, esperando decisão.
 - **Guards de coluna privilegiada** em `profiles`
   (`guard_profile_privileged_cols`) e `posts` (`guard_post_privileged_cols`):
   usuário comum não altera `role`/`banned` nem `hidden_at`/`deleted_at`/

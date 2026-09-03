@@ -200,10 +200,15 @@ for (const [funcao, estrago] of RPCS_FECHADAS) {
 // qualquer coluna a mais reprova.
 const SUPERFICIE_ANONIMA = {
   profiles: {
-    pode: ['id', 'username'],
-    naoPode: ['avatar_url', 'role', 'banned', 'banned_at', 'suspended_until',
-      'birth_date', 'bio', 'created_at'],
-    estrago: 'cargo, estado de ban, data de nascimento e bio de todo mundo',
+    // `[03/09]` `id` e `username` saíram de `pode` e entraram aqui: o item 🟡
+    // foi fechado. O que os mantinha abertos era a checagem de username
+    // duplicado no cadastro, que virou a RPC `username_disponivel` — ela
+    // responde a mesma pergunta sem devolver a lista de perfis.
+    pode: [],
+    naoPode: ['id', 'username', 'avatar_url', 'role', 'banned', 'banned_at',
+      'suspended_until', 'birth_date', 'bio', 'created_at'],
+    estrago: 'a lista de todos os usuarios, com o UUID e o nome de cada um — o '
+      + 'que liga site_config.updated_by a uma pessoa',
   },
 };
 

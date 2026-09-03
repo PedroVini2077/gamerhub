@@ -1,16 +1,13 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import toast from 'react-hot-toast';
-import { registrarAceiteDosDocumentos } from '../services/aceiteService';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
 import { usePresenca } from './usePresenca';
+import { criarConta } from '../services/cadastroService';
 import BannedScreen from '../components/ui/BannedScreen';
 
 const AuthContext = createContext(null);
 
-const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
-const MIN_PASSWORD_LENGTH = 8;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -132,68 +129,10 @@ export function AuthProvider({ children }) {
     return result;
   }
 
-  async function signUpWithEmail(email, password, username, extraFields = {}) {
-    if (!email?.trim()) {
-      return { error: { message: 'Informe um email válido.' } };
-    }
-    if (!USERNAME_REGEX.test(username)) {
-      return { error: { message: 'Username: 3-20 caracteres, apenas letras minúsculas, números e _' } };
-    }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      return { error: { message: `Senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` } };
-    }
-
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (existing) {
-      return { error: { message: 'Este username já está em uso. Escolha outro.' } };
-    }
-
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: { data: { username } },
-    });
-    if (error) return { error };
-
-    // Salva campos extras (birth_date, state, platform) — o trigger já criou o perfil
-    if (data?.user?.id) {
-      const allowed = ['birth_date', 'state', 'platform'];
-      const updates = Object.fromEntries(
-        Object.entries(extraFields).filter(([k, v]) => allowed.includes(k) && v)
-      );
-      if (Object.keys(updates).length > 0) {
-        const { error: extraErr } = await supabase.from('profiles').update(updates).eq('id', data.user.id);
-        if (extraErr) console.warn('[GamerHub] Erro ao salvar campos extras do perfil:', extraErr.message);
-      }
-    }
-
-    // `[02/09]` A PROVA do consentimento. A caixinha do formulário é como a
-    // pessoa expressa a escolha; esta linha é o que sobra dela — com qual
-    // VERSÃO de cada documento, e quando.
-    //
-    // Não derruba o cadastro se falhar, e não fica em silêncio se falhar. Os
-    // dois extremos são ruins: estourar deixaria a pessoa com uma conta pela
-    // metade (o `auth.users` já existe neste ponto) por causa de uma linha de
-    // auditoria; engolir deixaria uma conta sem registro de aceite, que é a
-    // única coisa que prova o consentimento (§1.5).
-    //
-    // O aviso vai para a tela porque é o único canal disponível: `admin_logs`
-    // só aceita `service_role`, e o console não é tratamento.
-    if (data?.user?.id) {
-      const { error: aceiteErro } = await registrarAceiteDosDocumentos(data.user.id);
-      if (aceiteErro) {
-        toast.error('Sua conta foi criada, mas o registro do aceite dos '
-          + 'documentos falhou. Avise a equipe pelo /contato.', { duration: 10000 });
-      }
-    }
-
-    return { data };
-  }
+  // O cadastro mora em `services/cadastroService.js` desde 03/09 — ver o
+  // cabeçalho de lá. O `useAuth` cuida de SESSÃO; criar conta acontece antes de
+  // existir sessão, e é outro assunto.
+  const signUpWithEmail = criarConta;
 
   async function signOut() {
     if (profile?.username) {
