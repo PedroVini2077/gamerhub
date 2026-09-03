@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Wrench } from 'lucide-react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
 import { queryClient } from './lib/queryClient';
@@ -16,6 +15,7 @@ import { identificarUsuario } from './lib/monitoring';
 import { useDbOffline } from './hooks/useDbOffline';
 import { guardarMotivoDaPausa } from './lib/pauseReason';
 import AvisoSemBanco from './components/ui/AvisoSemBanco';
+import MaintenancePage from './components/ui/MaintenancePage';
 import RolagemDeRota from './components/ui/RolagemDeRota';
 import GlobalBanner from './components/ui/GlobalBanner';
 import AvisoDeAceite from './components/ui/AvisoDeAceite';
@@ -45,20 +45,6 @@ function PageLoader() {
   return (
     <div className="flex items-center justify-center py-24">
       <div className="w-6 h-6 border-2 border-neon-green border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-}
-
-function MaintenancePage() {
-  return (
-    <div className="flex items-center justify-center min-h-64 py-20">
-      <div className="card p-10 text-center max-w-sm space-y-3">
-        <Wrench size={36} className="text-neon-green mx-auto" />
-        <p className="font-display text-lg text-gray-200">Em Manutenção</p>
-        <p className="text-xs font-mono text-gray-500 leading-relaxed">
-          O GamerHub está temporariamente em manutenção. Voltamos em breve!
-        </p>
-      </div>
     </div>
   );
 }

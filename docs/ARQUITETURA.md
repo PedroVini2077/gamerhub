@@ -118,6 +118,11 @@ src/
 │   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
 │   ├── pauseReason.js     # Motivo da pausa, guardado no navegador
+│   ├── ehFalhaDeRede.js   # `[03/09]` Este erro é queda de REDE ou defeito do
+│   │                      # site? O `ErrorBoundary` chamava Wi-Fi caindo de
+│   │                      # "algo deu errado", e a mensagem falsa mandava
+│   │                      # procurar bug onde não havia. Trava os DOIS lados:
+│   │                      # confundir bug com rede o esconderia do Sentry
 │   ├── objectUrls.js      # Controle de blob URLs — sem revoke, o arquivo fica na RAM
 │   ├── monitoring.js      # Sentry sob demanda
 │   ├── capturaAntecipada.js # Rede de captura que existe ANTES de o Sentry chegar
@@ -324,6 +329,11 @@ src/
                            # para onde a página rola ao trocar de rota),
                            # AvisoSemBanco (faixa
                            # de banco fora do ar — não sequestra o app),
+                           # MaintenancePage (`[03/09]` a tela de pausa, e ela
+                           # mostra o MOTIVO que o dono escreveu no painel —
+                           # antes o texto era cravado e o `pause_reason`
+                           # morria sem aparecer; saiu do App.jsx quando ele
+                           # passou de 300 linhas),
                            # SplashScreen (só durante
                            # a resolução inicial da sessão)
 ```

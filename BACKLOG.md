@@ -35,9 +35,9 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — a política pública que ainda dizia que a idade mínima
-estava pendente — fechou em 03/09: bloco reescrito, política em `2026-09-03-3`,
-e o `inicio-de-sessao.sh` passou a listar bloco pendente de documento público.
+*Vazia.* A última tarefa — os três bugs de pausa/offline — fechou em 03/09:
+bug 1 já estava resolvido (#126), bug 2 corrigido, bug 3 corrigido na parte que
+era mentira. A parte que sobra é decisão do dono, e virou item abaixo.
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -47,7 +47,7 @@ e o `inicio-de-sessao.sh` passou a listar bloco pendente de documento público.
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**22 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -107,6 +107,34 @@ e o `inicio-de-sessao.sh` passou a listar bloco pendente de documento público.
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
+  offline.** *É o terceiro elo da corrente que o dono relatou, e o único que
+  não deu para consertar.*
+
+  **A corrente que ele viu, com o aparelho offline:**
+
+  | O que aparecia | Estado |
+  | --- | --- |
+  | "sem acesso ao banco" | ✅ correto, e continua |
+  | "Algo deu errado" | ✅ **corrigido em 03/09** — virou "Sem conexão", e não vai mais para o Sentry |
+  | página de offline do navegador | ⬜ **este item** |
+
+  **Por que o terceiro é diferente:** ele acontece quando a pessoa **recarrega**
+  estando offline. Não é mensagem errada nossa — é o navegador não ter como
+  carregar o app, porque nada está guardado localmente. Só um Service Worker
+  resolve, servindo o app do cache.
+
+  **O que ele custaria, dito antes:** um SW é código que fica *entre* o site e
+  a rede, e erra caro — cache velho servido para sempre é o defeito clássico,
+  e o conserto exige a pessoa limpar o navegador. Ele também muda como o deploy
+  chega: o §0.2 já registra que **a Vercel conta deploy**, e um SW mal
+  configurado faz o visitante continuar na versão antiga sem saber.
+
+  **Minha recomendação: não agora.** O ganho é uma tela melhor num caso raro
+  (recarregar offline); o risco é servir versão velha em todos os casos. Com 5
+  usuários não paga. Registrado para quando houver volume — e para não ser
+  redescoberto como bug.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -385,8 +413,8 @@ e o `inicio-de-sessao.sh` passou a listar bloco pendente de documento público.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->84<!--/n--> arq ·
-  <!--n:src.lib.linhas-->6.977<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->86<!--/n--> arq ·
+  <!--n:src.lib.linhas-->7.152<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->16<!--/n--> arq ·
   <!--n:src.services.linhas-->1.620<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

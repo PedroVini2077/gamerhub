@@ -184,6 +184,73 @@ O motivo da pausa (`site_config.pause_reason`, editável na aba Site) é lido
 não pode vir de lá. Pausa planejada mostra o motivo real; queda inesperada, ou
 primeira visita, mostra texto genérico.
 
+
+### `[03/09]` Os três bugs de pausa/offline — o estado de cada um
+
+O dono pediu para conferir três coisas que ele relatou antes e não tinha
+testado. O levantamento foi feito no código e nos commits, não de memória:
+
+| O que ele relatou | Estado | Onde |
+| --- | --- | --- |
+| redirecionado antes do contador chegar a zero | ✅ **resolvido** | PR #126 |
+| a mensagem personalizada não funcionava | ✅ **corrigido em 03/09** | `MaintenancePage` |
+| "banco fora do ar" → "algo deu errado" → tela do navegador | ⚠️ **2 de 3** | `ErrorBoundary` |
+
+#### O contador: resolvido por REMOÇÃO, e a distinção importa
+
+Ele não passou a contar direito — ele **deixou de existir**. A mensagem
+prometia um redirecionamento que o `navigate('/')` do primeiro efeito já tinha
+feito; a contagem descrevia o passado e no fim só sumia.
+
+#### A mensagem personalizada: o campo existia e morria na tela
+
+`MaintenancePage` tinha o texto **cravado**. O `pause_reason` era escrito no
+painel do owner, salvo no `site_config`, lido pelo `Layout` e guardado no
+navegador — e a tela nunca o consultava.
+
+**Nada quebrava**, e é isso que fez o bug durar: a pausa funcionava, a tela
+aparecia, o texto era razoável. Só era o texto errado. É a classe de falha que
+produz um resultado **plausível**, e por isso ninguém desconfia.
+
+Agora ela chama `motivoDaPausa()`, que resolve os dois cenários — pausa
+deliberada lê do banco, queda inesperada lê a cópia do navegador — e nunca
+devolve vazio.
+
+#### A corrente de três mensagens: a do meio era mentira
+
+| O que aparecia | Quem mostrava | Era verdade? |
+| --- | --- | --- |
+| "sem acesso ao banco" | `AvisoSemBanco`, via `dbHealth` | **sim** |
+| "Algo deu errado" | `ErrorBoundary` | **não** — nada deu errado no site |
+| página de offline | o navegador | sim, mas é outro assunto |
+
+A segunda é o §1.5 na letra: *"toda mensagem de erro tem que ser verdadeira"*.
+Ela manda a pessoa achar que o site quebrou, e manda quem investigar procurar
+bug onde não há nenhum. O Wi-Fi caiu.
+
+O `ErrorBoundary` passou a classificar, por `lib/ehFalhaDeRede.js`, e a mostrar
+**"Sem conexão"** — com o conselho certo: esperar a conexão e tentar de novo
+**sem recarregar**, porque recarregar offline é o que produz o terceiro elo.
+
+**E queda de rede deixou de ir para o Sentry.** Não é economia de cota — é
+qualidade do sinal: o Sentry existe para dizer que o SITE quebrou, e Wi-Fi
+caindo no celular de quem usa não é defeito nosso. Mesma lição do
+`edge_function_error` de 27/08, onde 68 de 68 linhas eram ruído.
+
+> **A trava vigia os DOIS lados, e o segundo é o que mais importa.** Um bug de
+> verdade classificado como "sem conexão" deixaria de ir para o Sentry e a tela
+> mandaria a pessoa esperar a internet — o bug ficaria invisível dos dois lados.
+> `TypeError` é o que o `fetch` lança **e** o que um `undefined.map()` lança, e
+> por isso o tipo sozinho não decide nada: seis mensagens de bug real estão
+> travadas como NÃO-rede.
+>
+> `navigator.onLine` entra como **reforço, não resposta**: `false` prova
+> offline, mas `true` continua verdadeiro com Wi-Fi ligado num roteador sem
+> internet.
+
+**O terceiro elo continua aberto**, e está no `BACKLOG.md` como decisão: só um
+Service Worker resolve, e ele erra caro (cache velho servido para sempre).
+Minha recomendação registrada é não fazer agora.
 ## Quando a Vercel recusa o deploy
 
 > `Resource is limited - try again in 24 hours (more than 100, code:
@@ -635,8 +702,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->304<!--/n--> arquivos e
-<!--n:src.linhas-->29.277<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->308<!--/n--> arquivos e
+<!--n:src.linhas-->29.612<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -660,7 +727,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->304<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->308<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -685,6 +752,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->9.923<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->10.028<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
