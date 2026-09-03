@@ -522,3 +522,21 @@ body {
   12%  { transform: scale(1);    opacity: 0; }
   100% { transform: scale(1);    opacity: 0; }
 }
+
+/* `[03/09]` O aviso de banco fora do ar EMPURRA a página, em vez de cobrir.
+ *
+ * A faixa era `sticky`, e `sticky` empurra irmãos no fluxo — mas os cabeçalhos
+ * da landing e do site logado são `fixed`, e `fixed` é posicionado pela JANELA.
+ * Os dois ficavam debaixo dela. Medido no celular do dono: faixa de 65 px em
+ * `top: 0`, botão de menu em `top: 14` — o menu existia e não dava para tocar.
+ *
+ * Agora a faixa é `fixed` e publica a própria altura em `--altura-do-aviso`.
+ * Quem está fixo no topo lê a variável no `top`; e esta regra empurra todo o
+ * resto do app, para o conteúdo não começar embaixo dela.
+ *
+ * O padrão `0px` é o que garante que, sem faixa, nada muda — era o risco
+ * declarado: descer os fixos sem a faixa na tela abriria um buraco no topo.
+ */
+#root {
+  padding-top: var(--altura-do-aviso, 0px);
+}

@@ -13,7 +13,7 @@ import Header from './components/layout/Header';
 import ErrorBoundary from './components/ErrorBoundary';
 import { identificarUsuario } from './lib/monitoring';
 import { useDbOffline } from './hooks/useDbOffline';
-import { guardarMotivoDaPausa } from './lib/pauseReason';
+import { useConfigDoSite, ProvedorDaConfigDoSite } from './hooks/useConfigDoSite.jsx';
 import AvisoSemBanco from './components/ui/AvisoSemBanco';
 import MaintenancePage from './components/ui/MaintenancePage';
 import RolagemDeRota from './components/ui/RolagemDeRota';
@@ -27,7 +27,6 @@ import PageTransition from './components/ui/PageTransition';
 import SplashScreen from './components/ui/SplashScreen';
 import RequireAuth from './components/auth/RequireAuth';
 import GuestOnly from './components/auth/GuestOnly';
-import { supabase } from './lib/supabase';
 
 // Carregamento imediato — páginas acessadas antes do login
 import IntroLightning from './components/landing/IntroLightning';
@@ -51,33 +50,17 @@ function PageLoader() {
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen]   = useState(false);
-  const [maintenance, setMaintenance]   = useState(false);
-  const [configLoaded, setConfigLoaded] = useState(false);
   const location  = useLocation();
   const { user, profile } = useAuth();
   const { isOwner } = useRole();
 
-  useEffect(() => {
-    // As duas chaves na MESMA consulta: `pause_reason` precisa ser guardada
-    // enquanto ainda há banco, porque quando ele cair não dá pra lê-la mais
-    // (ver `lib/pauseReason.js`). Ler junto não custa requisição extra.
-    supabase.from('site_config').select('key, value').in('key', ['maintenance_mode', 'pause_reason'])
-      .then(({ data }) => {
-        const porChave = Object.fromEntries((data || []).map(r => [r.key, r.value]));
-        setMaintenance(porChave.maintenance_mode === 'true');
-        guardarMotivoDaPausa(porChave.pause_reason);
-        setConfigLoaded(true);
-      });
-
-    const ch = supabase.channel('layout_maint')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_config' }, payload => {
-        if (payload.new?.key === 'maintenance_mode') {
-          setMaintenance(payload.new.value === 'true');
-        }
-      }).subscribe();
-
-    return () => supabase.removeChannel(ch);
-  }, []);
+  // `[03/09]` A busca do `site_config` saiu daqui para o `AppRoutes`.
+  //
+  // Ela vivia neste efeito, e o `Layout` **nunca monta na landing** — então
+  // quem chegava pela landing jamais aprendia o `pause_reason`, nem com o banco
+  // de pé. Era por isso que o dono via a mensagem genérica no celular depois de
+  // escrever uma personalizada no painel. Ver `usaConfigDoSite`.
+  const { maintenance, configLoaded } = useConfigDoSite();
 
   // Carimba quem está usando nos relatórios de erro. Só `id` e `username` — as
   // mesmas coisas que qualquer visitante já vê num perfil público. Fica aqui, e
@@ -263,7 +246,14 @@ export default function App() {
             success: { iconTheme: { primary: '#39ff14', secondary: '#060608' } },
           }}
         />
-        <AppRoutes />
+        {/* `[03/09]` UMA leitura do `site_config`, no topo — e é o que faz a
+            landing aprender o `pause_reason`. Antes ela vivia dentro do
+            `Layout`, que nunca monta na landing: quem chegava por ali via a
+            mensagem genérica mesmo com o banco de pé, e foi o que o dono
+            relatou. Ver `hooks/useConfigDoSite.jsx`. */}
+        <ProvedorDaConfigDoSite>
+          <AppRoutes />
+        </ProvedorDaConfigDoSite>
         <SpeedInsights />
         <Analytics />
       </AuthProvider>

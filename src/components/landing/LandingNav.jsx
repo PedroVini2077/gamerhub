@@ -20,7 +20,11 @@ export default function LandingNav() {
       <motion.nav
         initial={{ y: -56, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="fixed top-0 inset-x-0 z-40 backdrop-blur-md bg-dark-900/70 border-b border-dark-600"
+        className="fixed inset-x-0 z-40 backdrop-blur-md bg-dark-900/70 border-b border-dark-600"
+        // `[03/09]` `top` vem da variável que o `AvisoSemBanco` publica: sem
+        // banco a faixa ocupa o topo, e sem isto ela COBRIA este cabeçalho —
+        // o menu existia e não dava para tocar. Padrão `0px`: sem faixa, nada muda.
+        style={{ top: 'var(--altura-do-aviso, 0px)' }}
       >
         <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
