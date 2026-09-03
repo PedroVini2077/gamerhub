@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**25 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -72,76 +72,6 @@
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[02/09]` 🟠 **Decidir o que a auditoria completa passa a significar, agora
-  que o projeto dobrou.** *Proposta pedida pelo dono em 02/09, depois de o
-  `AUDITORIA.md` ser flagrado afirmando "131 arquivos / 14.362 linhas".*
-
-  **O fato que muda a conta:** a regra manda **ler 100%** de `src/` e o corpo de
-  **100%** das funções `SECURITY DEFINER`. Quando ela foi escrita eram ~14 mil
-  linhas e 52 funções; hoje são <!--n:src.arquivos-->301<!--/n--> arquivos,
-  <!--n:src.linhas-->28.804<!--/n--> linhas e **73** `SECURITY DEFINER`. A
-  frase que sustentava a regra — *"isso é lível por inteiro"* — deixou de ser
-  verdade sem ninguém decidir nada.
-
-  **As duas saídas, e eu recomendo a B.**
-
-  **A — manter 100%, e assumir que auditoria é multi-sessão.** Nada muda no
-  rigor; muda a expectativa. A válvula que já existe ("registrar onde parei no
-  `BACKLOG.md`") deixa de ser exceção e vira o caminho normal, com um ponto de
-  parada obrigatório no fim de cada sessão.
-  *Custo:* uma auditoria completa passa a consumir 3–4 sessões, e quem paga o
-  token é o dono. *Risco:* auditoria que nunca termina é auditoria que não
-  acontece — foi assim que a de 90 dias virou lembrete automático.
-
-  **B — 100% no que é RISCO, amostra declarada no resto.** O piso obrigatório
-  vira lista fechada, escrita, e não julgamento meu na hora:
-
-  | Sempre 100% | Por quê |
-  | --- | --- |
-  | corpo das <!--n:src.arquivos-->301<!--/n--> funções `SECURITY DEFINER` | 6 falhas reais já passaram pelos metadados "certos" |
-  | toda policy, FK, índice e trigger | a Fase 3 inteira já é enumeração |
-  | tudo que `anon` alcança | é a superfície de quem não tem conta |
-  | `hooks/useAuth*`, `lib/roles.js`, `lib/url.js`, `services/*`, `components/moderation`, `components/admin`, `components/owner` | auth, permissão, moderação e painel |
-  | tudo que mudou desde a última auditoria (`git diff`) | é onde bug novo nasce |
-
-  O resto — componente de apresentação, página, animação — entra por **amostra
-  declarada**: "li 40 de 143 de `components/`, escolhidos por X". A regra da
-  honestidade (§ "Honestidade sobre o método") já obriga a dizer o número; ela
-  passa a ser o mecanismo em vez de uma nota de rodapé.
-
-  *Por que eu recomendo B:* o risco não está distribuído por igual, e tratar
-  `PecasFlutuantes.jsx` com o mesmo peso de `ban_user` gasta a sessão no lugar
-  errado. As 6 falhas reais que a auditoria já achou estavam **todas** dentro do
-  piso proposto. *O que se perde, dito claro:* algo pode se esconder na parte
-  amostrada — e por isso o piso é lista escrita, não "o que me parecer
-  arriscado".
-
-  **Enquanto você não decidir, vale o que está escrito hoje (A).**
-
-- ⬜ `[02/09]` 🟠 **Preencher o controlador de dados na política de privacidade —
-  depende de você.** *É a única ação da LGPD que eu não consigo fazer sozinho.*
-
-  A política precisa dizer **quem responde** pelos dados e **como falar com
-  essa pessoa**. Hoje ela não diz, porque a informação é sua e você já pediu
-  para *"tirar tudo o que é realmente meu desse site"*.
-
-  | O que a lei pede | O que dá para usar sem expor você |
-  | --- | --- |
-  | quem é o controlador | *"o GamerHub, projeto pessoal mantido por uma pessoa física"* — sem nome completo, sem CPF |
-  | como falar com ele | **o `/contato` que já existe**, assunto "privacidade" |
-  | onde o titular exerce os direitos | mesma página + a exclusão de conta que já funciona |
-
-  **Minha recomendação:** não colocar nome, e-mail pessoal nem endereço. O
-  formulário de contato já cumpre o papel do canal, e é rastreável — o
-  `mailto:` seria o oposto do endurecimento que a gente fez. Se um dia o site
-  crescer a ponto de precisar de identificação formal, aí a decisão muda de
-  natureza (e provavelmente vira CNPJ).
-
-  **O que eu preciso de você:** só a confirmação de que posso escrever nesse
-  formato. Nenhum dado seu passa por aqui.
-
-
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
