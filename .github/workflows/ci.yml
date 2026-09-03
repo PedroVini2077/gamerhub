@@ -65,7 +65,7 @@ jobs:
       - name: Guarda — a suíte não pode encolher em silêncio
         run: |
           total=$(node -p "require('./vitest-report.json').numTotalTests")
-          piso=222
+          piso=437
           echo "testes executados: $total (piso: $piso)"
           if [ "$total" -lt "$piso" ]; then
             echo "::error::A suite caiu para $total testes, abaixo do piso de $piso."
@@ -181,6 +181,32 @@ jobs:
       # e marca-la como vazamento seria alarme falso em todo PR.
       - name: nenhum segredo no repositório
         run: npm run segredos
+
+      # `[02/09]` A terceira pergunta, e nenhum dos dois de cima a fazia.
+      #
+      # O primeiro pega documento que cita arquivo INEXISTENTE. O segundo pega
+      # arquivo que existe e nenhum documento cita. Os dois olham NOMES DE
+      # ARQUIVO — e por isso os dois deram verde enquanto o AUDITORIA.md
+      # afirmava "131 arquivos / 14.362 linhas" num projeto de 301 arquivos e
+      # 28.679 linhas. Nenhum arquivo tinha sumido; o NÚMERO é que estava velho.
+      #
+      # E o número não era enfeite: a frase "~14 mil linhas, lível por inteiro"
+      # é a premissa da regra que manda ler 100% do código numa auditoria.
+      - name: os números escritos na documentação batem com o projeto
+        run: npm run numeros -- --check
+
+      # `[02/09]` A quarta, e ela vigia o próprio mapa.
+      #
+      # O relatório mensal só enxerga o que está no mapa de territórios, que é
+      # escrito à mão. Pasta fora do mapa não fica "atrasada" — fica invisível,
+      # e o verde passa a significar "não olhei ali".
+      #
+      # O caso: `src/components/privacidade/`, onde mora o TEXTO DA POLÍTICA DE
+      # PRIVACIDADE, não tinha dono. O PR #140 reescreveu o bloco de retenção e
+      # os três portões aprovaram uma mudança em documento legal sem pedir que
+      # a documentação acompanhasse.
+      - name: toda parte do sistema tem documento responsável
+        run: node scripts/territorio-coberto.mjs
 
   deploys:
     name: a branch não gasta deploy da Vercel
@@ -381,6 +407,24 @@ jobs:
       # com prazer o revoke que derruba tudo.
       - name: As portas do banco continuam no lugar
         run: npm run test:banco
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      # `[02/09]` O espelho de migrations ficou 9 migrations para tras — o canal
+      # de contato inteiro, a idade minima e a tabela de aceite das politicas
+      # existiam no banco e nao no repositorio. O README daquela pasta promete
+      # que ela recria o banco do zero, e a promessa estava falsa.
+      #
+      # Falha silenciosa (§1.5) aplicada a recuperacao de desastre: so
+      # apareceria no dia em que alguem precisasse recuperar o banco.
+      #
+      # O README dizia que comparar exigiria um token de gestao no CI — verdade
+      # para comparar CONTEUDO, falso para comparar a CONTAGEM. A RPC
+      # `contagem_de_migrations()` devolve um inteiro e roda com a anon key.
+      # Nenhum segredo novo entrou.
+      - name: O espelho de migrations acompanha o banco
+        run: node scripts/espelho-de-migrations.mjs
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}

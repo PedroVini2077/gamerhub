@@ -40,14 +40,34 @@ select proname, prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronames
 select tablename, policyname, cmd from pg_policies where schemaname='public';
 ```
 
-Anotar os totais (ex.: "131 arquivos / 14.362 linhas · 27 tabelas · 52 funções
-`SECURITY DEFINER`"). **Esses números são a meta de cobertura** e vão no
-relatório final como `lidos X de Y`.
+Anotar os totais. **Esses números são a meta de cobertura** e vão no relatório
+final como `lidos X de Y`.
+
+O tamanho de hoje, medido pelo `npm run numeros` e **atualizado por ele**, não
+digitado à mão:
+
+| | |
+| --- | --- |
+| código em `src/` | <!--n:src.arquivos-->301<!--/n--> arquivos · <!--n:src.linhas-->28.679<!--/n--> linhas |
+| dividido em | `lib` <!--n:src.lib.arquivos-->84<!--/n--> · `components` <!--n:src.components.arquivos-->143<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->36<!--/n--> · `pages` <!--n:src.pages.arquivos-->21<!--/n--> · `services` <!--n:src.services.arquivos-->14<!--/n--> |
+| rede de testes | <!--n:testes.arquivos-->51<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->14<!--/n--> roteiros de navegador |
+| Edge Functions | <!--n:edge.funcoes-->6<!--/n--> |
+| banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
+
+> **Por que os números do banco NÃO estão nesta tabela.** Tabela, policy e
+> função vivem no Postgres, e este arquivo não alcança o Postgres. Um número
+> copiado para cá viraria exatamente o que originou o portão: afirmação que
+> ninguém confere. As consultas de cima levam 5 segundos.
 
 ### Cobertura: o padrão é LER TUDO
 
-Este projeto tem ~14 mil linhas. **Isso é lível por inteiro** — não é grande o
-bastante pra justificar amostragem. O padrão passa a ser:
+`[02/09]` **A premissa desta seção mudou, e está escrito o que mudou.** Ela
+dizia *"este projeto tem ~14 mil linhas, isso é lível por inteiro"*. Era
+verdade quando foi escrita; o projeto **dobrou** e a frase sobreviveu ao fato.
+Foi esse caso que produziu o portão `numeros-do-projeto.mjs` — ver
+[DOCUMENTACAO.md](DOCUMENTACAO.md).
+
+O padrão continua sendo ler tudo:
 
 - **Ler 100% do código** de `src/`, arquivo por arquivo, percorrendo a lista da
   Fase 0. Grep serve para *achar* rápido, **nunca** para substituir a leitura.
@@ -62,10 +82,19 @@ Se por algum motivo não der pra ler tudo numa sessão, **registrar onde parei**
 (no `BACKLOG.md`) e retomar dali — nunca declarar a fase concluída com leitura
 parcial.
 
+> **O que o dobro de tamanho fez com esta regra, dito sem enfeite.** A
+> ~<!--n:src.linhas-->28.679<!--/n--> linhas, "ler tudo numa sessão" deixou de
+> ser realista, e a válvula de escape acima ("registrar onde parei") passa a ser
+> o caminho **normal** em vez da exceção. A regra não foi afrouxada — mas fingir
+> que uma auditoria completa cabe numa sessão seria planejar para descobrir no
+> meio que não cabe. Há uma proposta de mudança em aberto para o dono decidir;
+> até ele decidir, vale o que está escrito aqui.
+
 ### Honestidade sobre o método
 
 **Ao relatar, dizer qual método foi usado e o número real de cobertura** —
-"li 131 de 131 arquivos" ou "li 40 de 131, parei em X". Nunca deixar parecer
+"li <!--n:src.arquivos-->301<!--/n--> de <!--n:src.arquivos-->301<!--/n-->
+arquivos" ou "li 40 de <!--n:src.arquivos-->301<!--/n-->, parei em X". Nunca deixar parecer
 que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
 não concluída.
 

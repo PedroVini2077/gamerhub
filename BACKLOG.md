@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**25 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -72,6 +72,74 @@
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[02/09]` 🟠 **Decidir o que a auditoria completa passa a significar, agora
+  que o projeto dobrou.** *Proposta pedida pelo dono em 02/09, depois de o
+  `AUDITORIA.md` ser flagrado afirmando "131 arquivos / 14.362 linhas".*
+
+  **O fato que muda a conta:** a regra manda **ler 100%** de `src/` e o corpo de
+  **100%** das funções `SECURITY DEFINER`. Quando ela foi escrita eram ~14 mil
+  linhas e 52 funções; hoje são <!--n:src.arquivos-->301<!--/n--> arquivos,
+  <!--n:src.linhas-->28.679<!--/n--> linhas e **73** `SECURITY DEFINER`. A
+  frase que sustentava a regra — *"isso é lível por inteiro"* — deixou de ser
+  verdade sem ninguém decidir nada.
+
+  **As duas saídas, e eu recomendo a B.**
+
+  **A — manter 100%, e assumir que auditoria é multi-sessão.** Nada muda no
+  rigor; muda a expectativa. A válvula que já existe ("registrar onde parei no
+  `BACKLOG.md`") deixa de ser exceção e vira o caminho normal, com um ponto de
+  parada obrigatório no fim de cada sessão.
+  *Custo:* uma auditoria completa passa a consumir 3–4 sessões, e quem paga o
+  token é o dono. *Risco:* auditoria que nunca termina é auditoria que não
+  acontece — foi assim que a de 90 dias virou lembrete automático.
+
+  **B — 100% no que é RISCO, amostra declarada no resto.** O piso obrigatório
+  vira lista fechada, escrita, e não julgamento meu na hora:
+
+  | Sempre 100% | Por quê |
+  | --- | --- |
+  | corpo das <!--n:src.arquivos-->301<!--/n--> funções `SECURITY DEFINER` | 6 falhas reais já passaram pelos metadados "certos" |
+  | toda policy, FK, índice e trigger | a Fase 3 inteira já é enumeração |
+  | tudo que `anon` alcança | é a superfície de quem não tem conta |
+  | `hooks/useAuth*`, `lib/roles.js`, `lib/url.js`, `services/*`, `components/moderation`, `components/admin`, `components/owner` | auth, permissão, moderação e painel |
+  | tudo que mudou desde a última auditoria (`git diff`) | é onde bug novo nasce |
+
+  O resto — componente de apresentação, página, animação — entra por **amostra
+  declarada**: "li 40 de 143 de `components/`, escolhidos por X". A regra da
+  honestidade (§ "Honestidade sobre o método") já obriga a dizer o número; ela
+  passa a ser o mecanismo em vez de uma nota de rodapé.
+
+  *Por que eu recomendo B:* o risco não está distribuído por igual, e tratar
+  `PecasFlutuantes.jsx` com o mesmo peso de `ban_user` gasta a sessão no lugar
+  errado. As 6 falhas reais que a auditoria já achou estavam **todas** dentro do
+  piso proposto. *O que se perde, dito claro:* algo pode se esconder na parte
+  amostrada — e por isso o piso é lista escrita, não "o que me parecer
+  arriscado".
+
+  **Enquanto você não decidir, vale o que está escrito hoje (A).**
+
+- ⬜ `[02/09]` 🟠 **Preencher o controlador de dados na política de privacidade —
+  depende de você.** *É a única ação da LGPD que eu não consigo fazer sozinho.*
+
+  A política precisa dizer **quem responde** pelos dados e **como falar com
+  essa pessoa**. Hoje ela não diz, porque a informação é sua e você já pediu
+  para *"tirar tudo o que é realmente meu desse site"*.
+
+  | O que a lei pede | O que dá para usar sem expor você |
+  | --- | --- |
+  | quem é o controlador | *"o GamerHub, projeto pessoal mantido por uma pessoa física"* — sem nome completo, sem CPF |
+  | como falar com ele | **o `/contato` que já existe**, assunto "privacidade" |
+  | onde o titular exerce os direitos | mesma página + a exclusão de conta que já funciona |
+
+  **Minha recomendação:** não colocar nome, e-mail pessoal nem endereço. O
+  formulário de contato já cumpre o papel do canal, e é rastreável — o
+  `mailto:` seria o oposto do endurecimento que a gente fez. Se um dia o site
+  crescer a ponto de precisar de identificação formal, aí a decisão muda de
+  natureza (e provavelmente vira CNPJ).
+
+  **O que eu preciso de você:** só a confirmação de que posso escrever nesse
+  formato. Nenhum dado seu passa por aqui.
 
 
 
@@ -212,13 +280,31 @@
   INSERT/UPDATE existe para `anon`, mas a RLS nega — vale fechar por defesa em
   profundidade, não porque esteja aberto.
 
-  **A dependência já foi checada** (a consulta de "quem lê" do
-  [POSTURA.md](docs/regras/POSTURA.md), rodada em 02/09): **nenhuma policy** usa
-  `updated_by`/`created_by`, e a única função que os toca é
-  `owner_set_site_config`, que é `SECURITY DEFINER` e não passa por esses
-  privilégios. Um `REVOKE (updated_by, created_by) FROM anon, authenticated`
-  parece seguro — mas revoke de coluna já derrubou o site três vezes, então é
-  🟡 (§7: proponho e espero), não algo que eu aplique sozinho.
+  **A dependência de `site_config`/`blocked_words` foi checada** (a consulta de
+  "quem lê" do [POSTURA.md](docs/regras/POSTURA.md), 02/09): **nenhuma policy**
+  usa `updated_by`/`created_by`, e a única função que os toca é
+  `owner_set_site_config`, `SECURITY DEFINER`, que não passa por esses
+  privilégios. Ali o `REVOKE` das duas colunas é seguro.
+
+  > **`[02/09]` ⚠️ Correção de uma proposta minha que estava ERRADA, e o motivo
+  > vale mais do que o item.** Eu propus ao dono revogar também `id`/`username`
+  > de `profiles`, dizendo que a dependência estava checada. Estava — só que a
+  > consulta de "quem lê" procura **policy e função no banco**, e quem lê essas
+  > duas colunas é **o cadastro, no cliente**: `useAuth.jsx` faz
+  > `select('id').eq('username', …)` antes do `signUp` para recusar username
+  > repetido. O revoke teria quebrado o cadastro do site inteiro — a **quarta**
+  > queda por revoke bem-intencionado.
+  >
+  > E o `docs/SEGURANCA.md` **já dizia isso**, na linha certa, desde sempre:
+  > *"`anon` só enxerga `(id, username)` — o suficiente para a checagem de
+  > username duplicado"*. Eu li a linha errada do mesmo arquivo.
+  >
+  > **O que resta, e é menor do que eu disse:** não é o acesso, é a
+  > **enumeração**. O cadastro precisa perguntar por **um** username;
+  > `select=id,username` devolve **todos**. A saída certa é a que o projeto já
+  > usa em `get_public_profile`: uma RPC `username_disponivel(p_username)`
+  > `SECURITY DEFINER` devolvendo booleano, e aí o `SELECT` de `anon` em
+  > `profiles` pode ser revogado **sem** quebrar nada.
 
   **O portão que deixava passar, e o que ele passou a fazer.** O
   `portas-do-banco.mjs` sondava só `select=*`, então dava **verde honesto para a
@@ -368,8 +454,11 @@
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, 44 arq · 2.899 linhas; `src/services/`, 9 arq · 994
-  linhas) são 22% do código e concentram quase todo o benefício — é onde mora
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->84<!--/n--> arq ·
+  <!--n:src.lib.linhas-->6.928<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->14<!--/n--> arq ·
+  <!--n:src.services.linhas-->1.368<!--/n--> linhas) concentram quase todo o
+  benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
 - ⬜ `[21/08]` **2FA no login.**

@@ -109,6 +109,7 @@ tem como lembrar de tudo; o arquivo é que tem.
 
 | Roda sozinho, sempre | Onde está a regra |
 | --- | --- |
+| **Rodar `npm run docs` antes de fechar bloco, e abrir o que ele apontar** | §6.2 |
 | Dividir arquivo que passou de 300 linhas | §4 |
 | Fechar falha de segurança explorável | §1.3 |
 | Diagnosticar e matar bug | §1.2 |
@@ -671,6 +672,9 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `scripts/mapa-de-arquivos.mjs` | CI, **reprova** | arquivo em `src/` que o `ARQUITETURA.md` não conhece |
 | `scripts/segredos-vazados.mjs` | CI, **reprova** | chave privada, `service_role`, token ou senha em arquivo rastreado |
 | `scripts/documentacao-quebrada.mjs` | CI, **reprova** | documento citando arquivo que não existe mais |
+| `scripts/numeros-do-projeto.mjs` (`npm run numeros`) | CI, **reprova** | **número escrito num documento que não bate com o projeto** — o AUDITORIA dizia "14.362 linhas" com 28.679 |
+| `scripts/territorio-coberto.mjs` | CI, **reprova** | pasta do sistema que **nenhum documento** se considera dono — era o caso da pasta do texto da política de privacidade |
+| `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **eu rodo antes de fechar** | quais documentos **esta sessão** tornou suspeitos, e o que mudou embaixo de cada um |
 | `scripts/documentacao-envelhecida.mjs` | dia 1º, **abre issue** | documento atrás do código — **inclusive `CLAUDE.md` e os `docs/regras/`**, que até 02/09 eram os únicos sem vigilância |
 | `e2e/portas-do-banco.mjs` | CI, **reprova** | porta do banco que abriu — **e porta que fechou**, que já derrubou o site 3× |
 | `e2e/conteudo-visivel.mjs` | CI, **reprova** | conteúdo no DOM e invisível na tela, em janela de celular |

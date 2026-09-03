@@ -58,6 +58,16 @@ const CITACOES_HISTORICAS = new Map([
   // exceção escrita "por garantia" é o lugar onde a verificação morre. Antes de
   // acrescentar QUALQUER linha aqui, rode `ls` no arquivo. Se ele existe, o
   // portão dá conta — a exceção não é necessária.
+
+  // `[02/09]` A primeira entrada legítima, e ela é conferida: `ls` confirma que
+  // o arquivo NÃO existe. Foi apagado no PR #105 ("desfaz a otimização de
+  // resolução da cena 3D"), e o `OPERACAO.md` o cita justamente para contar que
+  // a entrada dele no mapa de territórios sobreviveu ao arquivo — deixando o
+  // `DESEMPENHO.md` meio vigiado sem nada acusar. Reescrever o trecho para tirar
+  // o nome destruiria o exemplo: ele é sobre ESTE arquivo ter sumido.
+  ['resolucaoDaCena.js',
+    'apagado no PR #105; citado em OPERACAO.md como o caso que motivou o portao '
+    + 'de cobertura de territorio (scripts/territorio-coberto.mjs)'],
 ]);
 
 /** Extensões que valem a pena conferir. Documento cita muito nome solto. */
