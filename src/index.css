@@ -470,20 +470,55 @@ body {
   50%       { transform: translate3d(4vw, 3vh, 0) scale(1.18); }
 }
 
-/* A linha de horizonte: e ela que faz a tela ler como "chao de fliperama" em
- * vez de um borrao colorido. Estatica de proposito — nao entra na conta de
- * movimento. */
-.horizonte-da-arena {
+
+
+/* ── `[03/09]` As mini explosões ───────────────────────────────────────────
+ *
+ * Pedido do dono: *"fazer mini explosões com as cores do site enquanto os
+ * objetos sobem, não precisa ser algo muito exagerado, como se tivesse algo
+ * explodindo ao fundo"*.
+ *
+ * ── Por que elas usam as cores do SITE, e não a da seção ───────────────────
+ *
+ * Todo o resto do fundo é monocromático — a luz e as peças herdam o acento da
+ * aba. Se a explosão também herdasse, ela sumiria dentro da própria cor. As
+ * três cores da marca (verde, roxo, ciano) são o que faz o estouro LER como
+ * estouro, e é literalmente o que ele pediu: "com as cores do site".
+ *
+ * ── Anel, e não bolha ──────────────────────────────────────────────────────
+ *
+ * Um círculo cheio que cresce parece uma mancha. O `radial-gradient` com o
+ * miolo transparente e a borda acesa desenha um ANEL de choque — o mesmo
+ * desenho que a gente reconhece de explosão em jogo, e que sai muito mais
+ * barato do que partículas.
+ *
+ * ── O ritmo: 12% de trabalho, 88% de espera ───────────────────────────────
+ *
+ * O keyframe estoura nos primeiros 12% e fica invisível o resto do ciclo. Com
+ * ciclos de 17 a 29 s e atrasos diferentes, aparece um estouro a cada poucos
+ * segundos, em lugar diferente — sem nunca haver dois ao mesmo tempo por
+ * acidente de sincronia. "Não exagerado" era o pedido, e a espera é o que
+ * entrega isso.
+ *
+ * `transform` e `opacity` apenas: compositor, mesmo custo de zero.
+ */
+.explosao-de-fundo {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 22%;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--cor) 30%, transparent) 30%,
-    color-mix(in srgb, var(--cor) 45%, transparent) 50%,
-    color-mix(in srgb, var(--cor) 30%, transparent) 70%,
-    transparent 100%);
-  opacity: 0.5;
+  border-radius: 50%;
+  opacity: 0;
+  will-change: transform, opacity;
+  background: radial-gradient(circle,
+    transparent 38%,
+    color-mix(in srgb, var(--cor) 55%, transparent) 52%,
+    transparent 68%);
+  animation-name: explodeAoFundo;
+  animation-timing-function: cubic-bezier(0.15, 0.7, 0.3, 1);
+  animation-iteration-count: infinite;
+}
+
+@keyframes explodeAoFundo {
+  0%   { transform: scale(0.15); opacity: 0; }
+  3%   {                         opacity: 0.55; }
+  12%  { transform: scale(1);    opacity: 0; }
+  100% { transform: scale(1);    opacity: 0; }
 }

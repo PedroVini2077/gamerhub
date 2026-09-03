@@ -751,6 +751,69 @@ forte: o gateway aceitaria qualquer JWT do projeto, inclusive a própria anon ke
 
 [← voltar para o README](../README.md)
 
+## `[03/09]` O fundo do site logado é PRÓPRIO, e não o da landing
+
+**A decisão anterior estava registrada errada — por interpretação minha.** Em
+02/09 o dono disse *"pode fazer o mesmo fundo pra todas as rotas então"*, e eu
+li como "o mesmo da landing também no site logado". Em 03/09 ele corrigiu:
+*"eu quero que o fundo do site logado seja diferente do resto… não quero o
+fluxo de dados no site logado"*.
+
+O "mesmo para todas as rotas" era **entre as abas do site logado** — feed,
+mural, lives, keys, ranks. Não entre o site e a landing.
+
+### As camadas, e por que cada uma tem um papel
+
+| Camada | Papel | Onde |
+| --- | --- | --- |
+| `FluxoDeDados` | a assinatura da landing | **só** landing e páginas públicas |
+| `LuzesDaArena` | atmosfera: luz que respira, quase parada | site logado |
+| `PecasFlutuantes` | o movimento: as peças de videogame | site logado |
+
+**Duas camadas se mexendo é o que não pode.** Elas disputariam atenção uma com
+a outra e com o conteúdo — e o site logado é onde se lê e se rola, não onde se
+contempla. Por isso a luz é lenta e as peças são o que se move.
+
+### O que saiu, e por que
+
+A **linha de horizonte** foi removida. Ela era minha ideia de "chão de
+fliperama", e o dono perguntou direto: *"existe uma linha ali embaixo, uma cor
+pra cada aba do site logado, pq isso existe?"*. Quando o próprio dono do site
+não entende o que um elemento comunica, ele não comunica nada — estava ali por
+gosto meu, não por função. Enfeite que precisa de explicação não se defende.
+
+### O que entrou: as mini explosões
+
+Pedido dele: *"mini explosões com as cores do site enquanto os objetos sobem,
+não precisa ser algo muito exagerado, como se tivesse algo explodindo ao
+fundo"*.
+
+Cinco anéis de choque, e **nas cores da MARCA (verde, roxo, ciano), não no
+acento da aba** — todo o resto do fundo já é monocromático, então uma explosão
+na cor da seção sumiria dentro da própria cor. É o contraste que faz o estouro
+ler como estouro.
+
+**Anel e não bolha:** um círculo cheio crescendo parece mancha; o
+`radial-gradient` com miolo transparente desenha a onda de choque que a gente
+reconhece de jogo — e sai muito mais barato do que partículas.
+
+**O ritmo entrega o "não exagerado":** cada estouro ocupa 12% do ciclo e fica
+invisível nos outros 88%. Com ciclos primos entre si (17, 19, 23, 27, 29 s),
+aparece um a cada poucos segundos, em lugar diferente, e dois nunca caem juntos
+por acidente de sincronia.
+
+### A calibragem, ajustada pelo dono
+
+| | Antes | Agora | Motivo |
+| --- | --- | --- | --- |
+| espessura do traço | 2 px | **1,6 px** | *"tá meio espesso demais"* |
+| duração | 46–80 s | **30–52 s** | *"poderia aumentar um pouco a velocidade"* |
+
+Tudo continua sendo `transform` e `opacity` no compositor — mais peças e mais
+estouros não mudam a conta de desempenho.
+
+---
+
 ## `[29/08]` Sem capa de jogo na página "Sobre" — chips no lugar
 
 **Recusado:** buscar imagem dos jogos na internet para enfeitar o bloco "Quem

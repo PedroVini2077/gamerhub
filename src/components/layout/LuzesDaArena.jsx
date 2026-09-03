@@ -39,6 +39,27 @@
  *    sensibilidade vestibular;
  * 3. `aria-hidden` — leitor de tela não anuncia decoração.
  */
+/**
+ * Onde cada estouro acontece, e quando.
+ *
+ * Posições fixas pelo mesmo motivo das peças: `Math.random()` no render faria
+ * o estouro trocar de lugar a cada atualização de estado.
+ *
+ * As durações são **primas entre si** (17, 23, 29 s) e os atrasos são
+ * diferentes: assim dois estouros nunca caem juntos por acidente de sincronia,
+ * e o conjunto não fecha ciclo de forma perceptível.
+ *
+ * Cada keyframe estoura em 12% do tempo e fica invisível no resto — é a espera
+ * que entrega o *"não precisa ser algo muito exagerado"* do pedido.
+ */
+const ESTOUROS = [
+  { x: '18%', y: '28%', tamanho: 180, duracao: 17, atraso: -3,  cor: '#39ff14' },
+  { x: '72%', y: '62%', tamanho: 240, duracao: 23, atraso: -11, cor: '#bf00ff' },
+  { x: '46%', y: '15%', tamanho: 150, duracao: 29, atraso: -19, cor: '#00ffff' },
+  { x: '86%', y: '34%', tamanho: 200, duracao: 19, atraso: -7,  cor: '#39ff14' },
+  { x: '28%', y: '78%', tamanho: 170, duracao: 27, atraso: -22, cor: '#00ffff' },
+];
+
 export default function LuzesDaArena({ acento }) {
   if (!acento) return null;
 
@@ -59,10 +80,28 @@ export default function LuzesDaArena({ acento }) {
         className="luz-da-arena luz-da-arena--baixa"
         style={{ '--cor': acento }}
       />
-      {/* A linha de horizonte. Ela é o que faz a tela ler como "chão de
-          fliperama" em vez de só um borrão colorido — e é estática, então não
-          entra na conta de movimento. */}
-      <span className="horizonte-da-arena" style={{ '--cor': acento }} />
+      {/* `[03/09]` As mini explosões, com as CORES DO SITE e não a da seção.
+          O dono pediu *"mini explosões com as cores do site enquanto os objetos
+          sobem… como se tivesse algo explodindo ao fundo"*.
+
+          Se elas herdassem o acento da aba sumiriam dentro da própria cor —
+          todo o resto do fundo já é monocromático. É o contraste com o verde /
+          roxo / ciano da marca que faz o estouro LER como estouro. */}
+      {ESTOUROS.map((e, i) => (
+        <span
+          key={i}
+          className="explosao-de-fundo"
+          style={{
+            left: e.x,
+            top: e.y,
+            width: e.tamanho,
+            height: e.tamanho,
+            animationDuration: `${e.duracao}s`,
+            animationDelay: `${e.atraso}s`,
+            '--cor': e.cor,
+          }}
+        />
+      ))}
     </div>
   );
 }

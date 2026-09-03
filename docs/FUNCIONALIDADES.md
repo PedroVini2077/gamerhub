@@ -271,6 +271,20 @@ blocos estão preenchidos.
 | Como a comunidade é cuidada | a moderação por IA + fila humana, em linguagem de visitante |
 | Este site foi construído com inteligência artificial | dito na cara, a pedido dele |
 | Para onde o GamerHub vai | o que ele quer que o site seja |
+| **Créditos** | a mídia de terceiro que o site usa, com autor, origem e licença |
+
+**O bloco de Créditos existe por obrigação, não por cortesia** — e a trava que
+o protege é de classe. A trilha da landing em 03/09 é *"Lofi Coffee Shop"*
+(Alex Morgan, Pixabay Content License), e essa licença **não exige**
+atribuição. O crédito ficou de qualquer forma: é o que o próprio Pixabay pede
+como boa prática, e afrouxar a trava para acomodar uma licença permissiva
+enfraqueceria a proteção da **próxima** mídia, que pode muito bem ser CC-BY —
+onde crédito visível é a diferença entre usar com e sem licença.
+
+`conteudoDoSobre.test.js` varre `src/assets/som/` e exige crédito declarado para
+**cada arquivo**. Provada nas duas direções: arquivo sem crédito reprova, e a
+pasta renomeada também — senão a varredura devolveria vazio e o teste passaria
+verde para sempre sem olhar nada.
 
 **Como ela é enfeitada** `[29/08]`: cada bloco abre com um ícone num quadrado
 na identidade do site, e os jogos que o dono citou viram **chips** com nome e

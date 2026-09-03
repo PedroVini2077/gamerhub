@@ -232,9 +232,40 @@ imperceptível — e é assim que tem que ser.
 
 ### `[02/09]` A trilha da landing: o que ela custa, e o que NÃO custa
 
-O som ambiente deixou de ser sintetizado e passou a ser um arquivo real
-("Universe", AiTechEye, CC BY 4.0). Arquivo tem peso; o desenho existe para
-esse peso não cair em quem não pediu.
+O som ambiente deixou de ser sintetizado e passou a ser um arquivo real.
+Arquivo tem peso; o desenho existe para esse peso não cair em quem não pediu.
+
+> **`[03/09]` A faixa mudou** — o dono pediu a troca por "Lofi Coffee Shop"
+> (Alex Morgan, Pixabay Content License), e a pergunta dele foi direta: *"agora
+> o arquivo é um .mp3 ao invés de ser um .ogg pequeno, isso afeta muito?"*.
+>
+> **Afeta, e o número diz o quanto:**
+>
+> | | Tamanho | Duração |
+> | --- | --- | --- |
+> | trilha anterior (`.opus`) | 304 KB | 36 s |
+> | o `.mp3` que ele mandou, cru | **3.644 KB** | 114 s |
+> | recodificado em Opus 64 kbps | **807 KB** | 88 s |
+>
+> O mp3 cru seria **12×** o arquivo anterior. Em Opus fica em 2,7× — e a
+> diferença que decide é **onde** esse peso cai: a trilha só é baixada quando
+> alguém LIGA o som, e é servida pela Vercel, não pelo Supabase, então não
+> encosta na cota de egress (§0.2). O portão de bytes continua passando com a
+> mesma margem, porque o áudio nunca esteve no carregamento inicial.
+>
+> O que ela custa de verdade é a espera de quem clica: **807 KB é ~2 s no 4G;
+> 3,6 MB seriam ~9 s** de silêncio depois do clique.
+>
+> **O ponto de corte do laço foi medido, não escolhido a olho.** O original tem
+> fade-out (−14,2 dB no início contra −30,6 dB no fim: 16,4 dB de salto em
+> laço). Cinco regiões candidatas foram medidas, e a que começa em 4 s casou com
+> **1,0 dB** de diferença entre as pontas — menos do que a variação natural
+> dentro da própria música.
+>
+> **O custo que ninguém vê:** o PCM descompactado subiu de ~13,8 MB para
+> **~33,8 MB** de RAM enquanto o som está ligado, porque a faixa é mais longa.
+> É o preço de um laço que demora mais a se repetir, e ele só existe para quem
+> ligou o som.
 
 **O que ele custa a quem NÃO liga o som: zero.** Medido num navegador de
 verdade, contando as requisições:
