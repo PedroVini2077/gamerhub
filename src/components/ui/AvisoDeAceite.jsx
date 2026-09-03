@@ -40,7 +40,13 @@ export default function AvisoDeAceite() {
   // `null` = ainda não sei. `[]` = está tudo aceito. Nos dois casos, nada na tela.
   if (!pendentes || pendentes.length === 0 || adiado) return null;
 
-  const nomes = pendentes.map(c => DOCUMENTOS[c]?.rotulo).filter(Boolean);
+  // Tudo pendente = conta que nunca aceitou nada. Qualquer coisa a menos que
+  // isso é reaceite: alguém que já aceitou e viu um documento mudar.
+  const primeiroAceite = pendentes.length === Object.keys(DOCUMENTOS).length;
+
+  const mudancas = pendentes
+    .map(chave => ({ chave, texto: DOCUMENTOS[chave]?.mudou }))
+    .filter(m => m.texto);
 
   function adiar() {
     setAdiado(true);
@@ -65,10 +71,26 @@ export default function AvisoDeAceite() {
 
       <div className="flex-1 min-w-[14rem] space-y-1">
         <p className="text-xs font-mono text-gray-300">
-          {nomes.length === Object.keys(DOCUMENTOS).length
+          {primeiroAceite
             ? 'Temos documentos para você ler e aceitar.'
-            : 'Atualizamos um documento e precisamos do seu aceite.'}
+            : 'Atualizamos um documento e precisamos do seu aceite de novo.'}
         </p>
+
+        {/* `[03/09]` O QUE mudou, e não só QUE mudou.
+            O dono reportou o segundo aviso como bug — *"apareceu duas vezes,
+            sendo que aceitei uma vez já"* —, e ele estava certo em estranhar:
+            um pedido idêntico ao primeiro é indistinguível de sistema quebrado.
+            O comportamento estava certo; a tela é que não contava o
+            suficiente para ser entendida. */}
+        {!primeiroAceite && mudancas.length > 0 && (
+          <ul className="text-[11px] font-mono text-gray-400 space-y-0.5">
+            {mudancas.map(({ chave, texto }) => (
+              <li key={chave}>
+                <span className="text-gray-500">{DOCUMENTOS[chave].rotulo}:</span> {texto}
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="text-[11px] font-mono text-gray-500">
           {/* Os links vêm ANTES do botão de aceitar, e isso é de propósito:
               a ordem na tela sugere a ordem da ação. Botão primeiro convidaria

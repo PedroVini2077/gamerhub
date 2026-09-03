@@ -34,6 +34,7 @@ vi.mock('react-hot-toast', () => ({
 }));
 
 const { default: AvisoDeAceite } = await import('../AvisoDeAceite');
+const { DOCUMENTOS } = await import('../../../lib/documentosLegais');
 
 function montar() {
   return render(<MemoryRouter><AvisoDeAceite /></MemoryRouter>);
@@ -45,6 +46,58 @@ describe('AvisoDeAceite', () => {
     try { window.sessionStorage.clear(); } catch { /* jsdom sem storage */ }
   });
   afterEach(cleanup);
+
+  // ── A trava do REACEITE ─────────────────────────────────────────────────
+  //
+  // O bug que ela impede ja aconteceu, e o relato foi: *"apareceu duas vezes
+  // pra mim, sendo que aceitei uma vez ja"*. As duas aparicoes estavam certas —
+  // a segunda porque a versao da politica subiu. O que estava errado era a
+  // TELA: um segundo pedido identico ao primeiro e indistinguivel de sistema
+  // quebrado, e quem le conclui a coisa errada.
+  //
+  // Sem esta trava, alguem "simplifica" o texto de volta para um so e o aviso
+  // volta a parecer defeito — sem nada quebrar.
+  it('no REACEITE, diz o que mudou e não repete o texto de primeira vez', () => {
+    mockUseAceites.mockReturnValue({
+      pendentes: ['privacidade'], aceitar: vi.fn(), enviando: false,
+    });
+    const { container } = montar();
+    const texto = container.textContent;
+
+    expect(texto,
+      'reaceite nao pode usar o texto de quem nunca aceitou: para o dono,\n'
+      + '  os dois pedidos ficam identicos e o segundo parece bug')
+      .not.toContain('Temos documentos para você ler e aceitar');
+
+    // Compara com o `mudou` de DOCUMENTOS em vez de com a frase literal.
+    // A primeira versao deste teste cravava a palavra "prazos" e quebrou na
+    // primeira vez que o texto do resumo mudou — teste preso a copia acusa
+    // edicao de texto como se fosse regressao, e vira ruido (§0.2, 4a regra).
+    expect(DOCUMENTOS.privacidade.mudou,
+      'a politica precisa dizer o que mudou na ultima versao, senao o aviso\n'
+      + '  de reaceite nao tem o que mostrar')
+      .toBeTruthy();
+    expect(texto,
+      'o aviso de reaceite precisa dizer O QUE mudou, e nao so QUE mudou.\n'
+      + '  Sem isso a pessoa teria que reler o documento inteiro para achar\n'
+      + '  a diferenca — e na pratica ninguem relê: aceita sem ler.')
+      .toContain(DOCUMENTOS.privacidade.mudou);
+  });
+
+  it('no PRIMEIRO aceite, não fala em mudança nenhuma', () => {
+    // O espelho do teste acima. Sem ele, um `mudou` sempre visivel diria a
+    // quem acabou de criar conta que "atualizamos" algo que ela nunca viu.
+    mockUseAceites.mockReturnValue({
+      pendentes: ['privacidade', 'regras', 'termos'], aceitar: vi.fn(), enviando: false,
+    });
+    const { container } = montar();
+
+    expect(container.textContent,
+      'quem nunca aceitou nada nao teve nada "atualizado" — dizer que teve e\n'
+      + '  mensagem falsa (§1.5)')
+      .toContain('Temos documentos para você ler e aceitar');
+    expect(container.textContent).not.toContain(DOCUMENTOS.privacidade.mudou);
+  });
 
   it('NÃO aparece quando a consulta falhou (pendentes = null)', () => {
     mockUseAceites.mockReturnValue({ pendentes: null, aceitar: vi.fn(), enviando: false });

@@ -80,7 +80,7 @@
   **O fato que muda a conta:** a regra manda **ler 100%** de `src/` e o corpo de
   **100%** das funções `SECURITY DEFINER`. Quando ela foi escrita eram ~14 mil
   linhas e 52 funções; hoje são <!--n:src.arquivos-->301<!--/n--> arquivos,
-  <!--n:src.linhas-->28.679<!--/n--> linhas e **73** `SECURITY DEFINER`. A
+  <!--n:src.linhas-->28.804<!--/n--> linhas e **73** `SECURITY DEFINER`. A
   frase que sustentava a regra — *"isso é lível por inteiro"* — deixou de ser
   verdade sem ninguém decidir nada.
 
@@ -455,7 +455,7 @@
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->84<!--/n--> arq ·
-  <!--n:src.lib.linhas-->6.928<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->6.943<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->14<!--/n--> arq ·
   <!--n:src.services.linhas-->1.368<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

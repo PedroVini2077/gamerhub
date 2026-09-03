@@ -345,7 +345,7 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
 
 - `lint` (0 erros) · `npm test` · `build` · `npm audit --audit-level=high`
-- **piso de <!--n:testes.piso-->437<!--/n--> testes** — o CI quebrando é o caso
+- **piso de <!--n:testes.piso-->439<!--/n--> testes** — o CI quebrando é o caso
   fácil, fica vermelho e alguém olha; o perigoso é ele **passar sem testar
   nada** (arquivo renomeado, `describe.skip` esquecido). Ao adicionar testes,
   subir o piso junto.
@@ -575,7 +575,7 @@ Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
 linhas"* num projeto de <!--n:src.arquivos-->301<!--/n--> arquivos e
-<!--n:src.linhas-->28.679<!--/n--> linhas.
+<!--n:src.linhas-->28.804<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -624,6 +624,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->9.470<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->9.492<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

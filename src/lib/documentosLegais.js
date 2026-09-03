@@ -61,15 +61,30 @@
  * Ele está aqui, e não no teste, porque o teste precisa poder dizer QUAL
  * arquivo mudou — e porque documento novo sem entrada aqui deve falhar em vez
  * de passar despercebido.
+ *
+ * ── `mudou`: o que a última versão mudou, em uma linha ──────────────────────
+ *
+ * `[03/09]` O dono viu o aviso de reaceite e reportou como bug: *"apareceu duas
+ * vezes pra mim, sendo que aceitei uma vez já"*. O banco mostra que as duas
+ * aparições estavam certas — a primeira porque ele nunca tinha aceitado, a
+ * segunda porque a versão da política subiu horas depois.
+ *
+ * **O comportamento estava certo e a tela não explicava isso.** Um segundo
+ * pedido idêntico ao primeiro é indistinguível de um sistema quebrado, e quem
+ * lê conclui a coisa errada — que é o §1.5 do lado da mensagem: a tela não
+ * mentia, mas também não contava o suficiente para ser entendida.
+ *
+ * O texto tem que ser curto e concreto ("o que mudou para MIM"), não jurídico.
+ * Ausente é aceitável: primeiro aceite não tem "o que mudou".
  */
 export const DOCUMENTOS = {
   privacidade: {
     rotulo: 'Política de Privacidade',
     caminho: '/privacidade',
-    // `-2`: os prazos de retenção entraram depois do primeiro aceite do dia.
-    versao: '2026-09-02-2',
+    versao: '2026-09-03',
     conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: '5574b3eb31566851',
+    impressao: '8e7b39ecffc8f9db',
+    mudou: 'passou a dizer quem responde pelos dados e por onde falar com essa pessoa',
   },
   regras: {
     rotulo: 'Regras da Comunidade',

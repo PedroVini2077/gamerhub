@@ -48,7 +48,7 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->301<!--/n--> arquivos · <!--n:src.linhas-->28.679<!--/n--> linhas |
+| código em `src/` | <!--n:src.arquivos-->301<!--/n--> arquivos · <!--n:src.linhas-->28.804<!--/n--> linhas |
 | dividido em | `lib` <!--n:src.lib.arquivos-->84<!--/n--> · `components` <!--n:src.components.arquivos-->143<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->36<!--/n--> · `pages` <!--n:src.pages.arquivos-->21<!--/n--> · `services` <!--n:src.services.arquivos-->14<!--/n--> |
 | rede de testes | <!--n:testes.arquivos-->51<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->14<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->6<!--/n--> |
@@ -59,36 +59,58 @@ digitado à mão:
 > copiado para cá viraria exatamente o que originou o portão: afirmação que
 > ninguém confere. As consultas de cima levam 5 segundos.
 
-### Cobertura: o padrão é LER TUDO
+### Cobertura: 100% no que é RISCO, amostra DECLARADA no resto
 
-`[02/09]` **A premissa desta seção mudou, e está escrito o que mudou.** Ela
-dizia *"este projeto tem ~14 mil linhas, isso é lível por inteiro"*. Era
-verdade quando foi escrita; o projeto **dobrou** e a frase sobreviveu ao fato.
-Foi esse caso que produziu o portão `numeros-do-projeto.mjs` — ver
-[DOCUMENTACAO.md](DOCUMENTACAO.md).
+> `[03/09]` **Esta seção mudou, e a mudança foi aprovada pelo dono.** Ela dizia
+> *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
+> linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
+> **dobrou** — <!--n:src.arquivos-->301<!--/n--> arquivos,
+> <!--n:src.linhas-->28.804<!--/n--> linhas, 73 funções `SECURITY DEFINER` — e a
+> frase sobreviveu ao fato. Foi esse caso que produziu o portão
+> `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
+>
+> **Por que não bastava manter o 100% e aceitar várias sessões.** Essa era a
+> outra opção, e ela é honesta — mas auditoria que nunca termina é auditoria que
+> não acontece, e o risco não está distribuído por igual: tratar
+> `PecasFlutuantes.jsx` com o mesmo peso de `ban_user` gasta a sessão no lugar
+> errado. **As 6 falhas reais que a auditoria já achou estavam todas dentro do
+> piso abaixo.**
 
-O padrão continua sendo ler tudo:
+#### O PISO — sempre 100%, e é lista fechada
 
-- **Ler 100% do código** de `src/`, arquivo por arquivo, percorrendo a lista da
-  Fase 0. Grep serve para *achar* rápido, **nunca** para substituir a leitura.
-- **Ler 100% do corpo** das funções `SECURITY DEFINER`. Metadados (quem
-  executa, tem `search_path`, checa role) provam **cobertura**, não
-  **corretude**: 6 falhas reais já passaram por eles com os guards "certos" e
-  erro no meio do código — `admin_unlock_login` que barrava o próprio fundador,
-  `soft_delete_post` sem hierarquia, `total_xp` nunca preenchido.
-- **Enumerar 100%** de tabelas, policies, FKs, índices e triggers.
+É lista escrita justamente para não ser julgamento meu no calor do momento.
+"O que me parecer arriscado" é como a cobertura escorrega.
 
-Se por algum motivo não der pra ler tudo numa sessão, **registrar onde parei**
-(no `BACKLOG.md`) e retomar dali — nunca declarar a fase concluída com leitura
-parcial.
+| Sempre 100% | Por quê |
+| --- | --- |
+| **corpo** das funções `SECURITY DEFINER` (73 hoje) | metadados provam cobertura, não corretude: 6 falhas reais passaram por eles com os guards "certos" — `admin_unlock_login` barrando o próprio fundador, `soft_delete_post` sem hierarquia, `total_xp` nunca preenchido |
+| **enumeração** de tabelas, policies, FKs, índices e triggers | é a Fase 3 inteira, e já era enumeração |
+| **tudo que `anon` alcança** | é a superfície de quem não tem conta |
+| `hooks/useAuth*`, `lib/roles.js`, `lib/url.js`, `services/*` | auth, permissão, hierarquia e toda conversa com o banco |
+| `components/moderation`, `components/admin`, `components/owner` | moderação e painéis — onde a moderação de comentário ficou quebrada por meses |
+| `lib/documentosLegais.js` e `components/privacidade` | documento legal e a prova do aceite |
+| **tudo que mudou desde a última auditoria** (`git diff <sha>..HEAD`) | é onde bug novo nasce |
 
-> **O que o dobro de tamanho fez com esta regra, dito sem enfeite.** A
-> ~<!--n:src.linhas-->28.679<!--/n--> linhas, "ler tudo numa sessão" deixou de
-> ser realista, e a válvula de escape acima ("registrar onde parei") passa a ser
-> o caminho **normal** em vez da exceção. A regra não foi afrouxada — mas fingir
-> que uma auditoria completa cabe numa sessão seria planejar para descobrir no
-> meio que não cabe. Há uma proposta de mudança em aberto para o dono decidir;
-> até ele decidir, vale o que está escrito aqui.
+#### O RESTO — amostra, e ela é declarada
+
+Componente de apresentação, página, animação, enfeite. A regra é uma só:
+**dizer o número e o critério**, sempre. *"Li 40 de
+<!--n:src.components.arquivos-->143<!--/n--> de `components/`, escolhidos pelos
+que mudaram nos últimos 30 dias"* é aceitável; *"revisei os componentes"* não é.
+
+A seção "Honestidade sobre o método", logo abaixo, deixa de ser nota de rodapé
+e passa a ser **o mecanismo** desta regra.
+
+#### O que se perde, dito com todas as letras
+
+**Alguma coisa pode se esconder na parte amostrada.** Essa é a troca, e ela é
+real — não vou fingir que a mudança é de graça. O que a limita é o piso ser
+lista fechada e escrita: enquanto o que mata o site estiver nela, o que sobra
+para a amostra é o que, se quebrar, aparece na tela de quem usa.
+
+**Se a auditoria não couber mesmo assim**, vale o que sempre valeu: **registrar
+onde parei** (no `BACKLOG.md`) e retomar dali — nunca declarar a fase concluída
+com leitura parcial.
 
 ### Honestidade sobre o método
 
