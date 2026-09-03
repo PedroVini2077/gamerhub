@@ -111,6 +111,52 @@ try {
     ok(`${rota.nome.padEnd(15)} ${rota.path} negado para conta comum`);
   }
 
+  // ── `[03/09]` O fundo do site logado está mesmo NA TELA ─────────────────
+  //
+  // A trava existe por uma falha de três rodadas. O dono relatou três vezes
+  // "não estou vendo as peças de videogame". As duas primeiras respostas minhas
+  // foram calibragem de opacidade — erradas —, porque eu conferia num recorte
+  // HTML meu que usava `animation: none` para fotografar as peças paradas.
+  // Eu testava a aparência DESLIGANDO exatamente o que estava quebrado.
+  //
+  // A causa real: `.peca-de-jogo` não tinha `top`, então cada peça nascia no
+  // TOPO do container e a animação a empurrava para fora por cima. Medido:
+  // 3 de 4 fora da tela no instante zero, as quatro em 3 segundos.
+  //
+  // Nada acusava. Não é erro de JS, não é rota fora do ar, não é texto ausente
+  // — é decoração que existe no DOM e não está onde alguém possa ver. É a mesma
+  // família do `conteudo-visivel.mjs` (§1.5), só que na área logada, que aquele
+  // não alcança porque exige sessão.
+  //
+  // A pergunta que ela faz é a única que importa aqui: **quantas peças estão
+  // dentro da janela?**
+  const pecasNaTela = await page.evaluate(() => {
+    const todas = [...document.querySelectorAll('.peca-de-jogo')];
+    const dentro = todas.filter((e) => {
+      const r = e.getBoundingClientRect();
+      return r.bottom > 0 && r.top < window.innerHeight
+          && r.right > 0 && r.left < window.innerWidth;
+    });
+    return { total: todas.length, dentro: dentro.length };
+  });
+
+  if (pecasNaTela.total === 0) {
+    throw new Error(
+      'nenhuma `.peca-de-jogo` no DOM do site logado.\n'
+      + '    O `FundoDaSecao` parou de montar as pecas — ou o elenco da rota\n'
+      + '    ficou vazio (ver `elencoDaSecao` em src/lib/acentoDaSecao.js).');
+  }
+  if (pecasNaTela.dentro === 0) {
+    throw new Error(
+      `as ${pecasNaTela.total} pecas existem no DOM e NENHUMA esta dentro da janela.\n`
+      + '    Foi exatamente este o bug de 01-03/09: sem `top`, a peca nasce no\n'
+      + '    topo do container e a animacao a empurra para fora por cima.\n'
+      + '    Decoracao invisivel nao estoura, nao loga e nao quebra teste nenhum —\n'
+      + '    o dono precisou relatar tres vezes. Confira `.peca-de-jogo` no\n'
+      + '    src/index.css e o keyframe `pecaFlutua`.');
+  }
+  ok(`fundo do site logado  ${pecasNaTela.dentro}/${pecasNaTela.total} pecas na tela`);
+
   // ── 4. Publicar → conferir → apagar ─────────────────────────────────────
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   // O post aparecendo no feed prova a ida INTEIRA: o INSERT passou pela RLS,

@@ -194,16 +194,48 @@ tentativa de login de dois anos atrás é difícil de justificar. Já existe
 infraestrutura de retenção em `lib/logMeta.js` para outras categorias — o que
 falta é a decisão de prazo.
 
-### 🔵 O Google Fonts entrega o IP do visitante ao Google
+### ✅ `[03/09]` RESOLVIDO — o Google Fonts saiu
 
-É o único terceiro que a landing contacta. Baixar fonte de servidor alheio
-manda o IP junto, sempre.
+> **Achado original (01/09):** o Google Fonts era o **único terceiro que a
+> landing contactava**, medido. Todo visitante — inclusive quem só abre a
+> página e vai embora, sem conta e sem clicar em nada — entregava o IP ao
+> Google.
+>
+> Registrado na época como **boa prática, não obrigação legal**, e essa
+> distinção continua correta. O que mudou é que o custo de resolver era pequeno.
 
-**Alternativa que elimina isso:** hospedar as fontes no próprio site. Custa
-alguns KB de banda e tira um terceiro do caminho. É boa prática, **não**
-obrigação legal — e a distinção está aqui de propósito.
+As fontes passaram a ser servidas do próprio site: **96 KB** em
+`public/fonts/`, com o `@font-face` no `src/index.css`.
 
----
+| | Antes | Agora |
+| --- | --- | --- |
+| terceiros que a landing contacta | **1** (Google) | **nenhum** |
+| domínios na cadeia da fonte | 2 (`googleapis` → `gstatic`) | 0 |
+| viagens antes do primeiro glifo | baixar CSS → descobrir URL → baixar woff2 | o arquivo, direto |
+
+**Duas economias que apareceram no caminho:**
+
+- **Só o subconjunto `latin`.** O Google servia também cirílico, grego e
+  vietnamita — um site em português não usa nenhum. O `unicode-range` continua
+  declarado, que é o que faz o navegador nem buscar a fonte fora da faixa.
+- **O Orbitron é uma fonte variável.** Os quatro pesos que o site usa
+  (400/600/700/900) vinham do **mesmo arquivo** — conferido por md5, os quatro
+  downloads eram byte a byte iguais. Servir um arquivo com `font-weight: 400
+  900` no lugar de quatro cópias economiza 35 KB.
+
+**O que sumiu do `index.html`:** os dois `preconnect`, o `preload` do CSS, o
+truque `media="print" + onload` e o `<noscript>` que existia porque o truque
+depende de JavaScript. Nada disso faz sentido quando o arquivo mora no mesmo
+domínio.
+
+**A trava** (`conteudoDaPrivacidade.test.js`): nenhum host de fonte de terceiro
+pode aparecer em `index.html` nem em `index.css` — e ela ignora comentários de
+propósito, porque os dois arquivos **contam** por que as fontes saíram de lá.
+Provada: repus um `<link>` do Google e ela falhou nomeando o problema.
+
+Uma segunda trava confere que todo `@font-face` aponta para um arquivo que
+existe — sem ela, renomear um `.woff2` daria queda silenciosa para a fonte do
+sistema: nada quebra, nada avisa, o site só fica com outra cara (§4).
 
 ## O que está BEM feito, e merece registro
 

@@ -81,10 +81,10 @@ export const DOCUMENTOS = {
   privacidade: {
     rotulo: 'Política de Privacidade',
     caminho: '/privacidade',
-    versao: '2026-09-03',
+    versao: '2026-09-03-2',
     conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: '8e7b39ecffc8f9db',
-    mudou: 'passou a dizer quem responde pelos dados e por onde falar com essa pessoa',
+    impressao: '08baa7c2485cf472',
+    mudou: 'o Google Fonts saiu — as fontes agora vêm do próprio site, e nenhum terceiro recebe seu IP por causa delas',
   },
   regras: {
     rotulo: 'Regras da Comunidade',

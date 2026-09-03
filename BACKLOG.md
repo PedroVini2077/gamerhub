@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -151,11 +151,6 @@
   exige Edge Function e mais uma cota. Quando o alarme `contact_flood` aparecer
   em `admin_logs` alguma vez, é sinal de que a hora chegou.
 
-- ⬜ `[01/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
-  Único terceiro que a landing contacta (medido). Hospedar as fontes no próprio
-  site elimina isso por alguns KB de banda. **Boa prática, não obrigação
-  legal** — a distinção importa.
-
 - ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
   *Auditoria da cena 3D de 01/09. A medição inteira está em
   [DESEMPENHO.md](docs/DESEMPENHO.md); aqui fica só a decisão que falta.*
@@ -177,81 +172,52 @@
   para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
   no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
 
-- ⬜ `[01/09]` 🟡 **Staff identificável POR NOME pelo anônimo em `site_config`.**
-  *Achado em 01/09 · **severidade corrigida em 02/09**: a justificativa do 🔵
-  original era falsa, e a correção veio de refazer a sondagem em vez de confiar
-  no que estava escrito (§1.4).*
+- ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em `site_config.updated_by`.**
+  *`[03/09]` **Rebaixado de 🟡 para 🔵** — a metade grave foi fechada, e o que
+  sobrou é o item original, agora com a justificativa CERTA.*
 
-  **O que dizia aqui, e estava errado:** *"é UUID, não nome; `profiles` responde
-  401 ao anônimo, então não há como mapear UUID → pessoa"*. O 401 acontece com
-  `select=*` — as colunas sensíveis (`role`, `banned`, `birth_date`, `bio`,
-  `avatar_url`) são negadas mesmo. Mas `id` e `username` **passam juntos**:
+  **O que foi fechado em 03/09:** a cadeia que ligava o UUID a uma pessoa.
+  `profiles?select=id,username` devolvia as 5 linhas e transformava
+  `site_config.updated_by` num nome. Hoje responde **401** — a checagem de
+  username do cadastro virou a RPC `username_disponivel`, e o `SELECT` de `anon`
+  em `profiles` foi revogado. Conferido na produção, depois do merge.
 
-  ```
-  GET /rest/v1/profiles?select=id,username     -> 200, content-range: 0-4/5
-  ```
+  **O que sobra:** `site_config.updated_by` continua legível, e agora é
+  **de fato** só um UUID sem nome — que era o que o item dizia em 01/09, só que
+  na época era falso. Impacto real: ligar mudanças de config a *uma* conta, sem
+  saber qual.
 
-  Então a cadeia inteira fecha, sem conta nenhuma:
+  > **Por que a justificativa antiga era falsa, e vale guardar.** Ela dizia
+  > *"`profiles` responde 401 ao anônimo"*. O 401 valia para `select=*` —
+  > privilégio no Postgres é **por coluna**, e um `select=*` negado prova apenas
+  > que *alguma* coluna está fechada. O portão `portas-do-banco.mjs` cometia o
+  > mesmo erro e por isso dava verde; desde 02/09 ele sonda **coluna a coluna**.
 
-  ```
-  site_config.updated_by = 7ca78f83-…  ->  profiles?select=id,username
-                                       ->  "opedrovini"
-  ```
+  **`blocked_words.created_by`** é lida pelo anônimo mas está **nula nas 322
+  linhas** — vaza estrutura, não dado.
 
-  **10 das 14 linhas** de `site_config` carregam autor, todas o mesmo UUID.
-  Qualquer visitante descobre **qual conta administra o site**, pelo nome.
-
-  **Correção de fato, no mesmo item:** `blocked_words.created_by` é lida pelo
-  anônimo mas está **nula nas 322 linhas** — a coluna vaza estrutura, não dado.
-  Só `site_config` vaza pessoa hoje.
-
-  **O que NÃO é problema (sondado em 02/09):** escrita anônima nas duas tabelas
-  devolve **401** em `PATCH` e `POST`, e nada entrou. O privilégio de coluna
-  INSERT/UPDATE existe para `anon`, mas a RLS nega — vale fechar por defesa em
-  profundidade, não porque esteja aberto.
-
-  **A dependência de `site_config`/`blocked_words` foi checada** (a consulta de
-  "quem lê" do [POSTURA.md](docs/regras/POSTURA.md), 02/09): **nenhuma policy**
-  usa `updated_by`/`created_by`, e a única função que os toca é
+  **A dependência já está checada** (a consulta de "quem lê" do
+  [POSTURA.md](docs/regras/POSTURA.md)): **nenhuma policy** usa
+  `updated_by`/`created_by`, e a única função que os toca é
   `owner_set_site_config`, `SECURITY DEFINER`, que não passa por esses
-  privilégios. Ali o `REVOKE` das duas colunas é seguro.
+  privilégios. O `REVOKE` das duas colunas é seguro — só não é urgente.
 
-  > **`[02/09]` ⚠️ Correção de uma proposta minha que estava ERRADA, e o motivo
-  > vale mais do que o item.** Eu propus ao dono revogar também `id`/`username`
-  > de `profiles`, dizendo que a dependência estava checada. Estava — só que a
-  > consulta de "quem lê" procura **policy e função no banco**, e quem lê essas
-  > duas colunas é **o cadastro, no cliente**: `useAuth.jsx` faz
-  > `select('id').eq('username', …)` antes do `signUp` para recusar username
-  > repetido. O revoke teria quebrado o cadastro do site inteiro — a **quarta**
-  > queda por revoke bem-intencionado.
-  >
-  > E o `docs/SEGURANCA.md` **já dizia isso**, na linha certa, desde sempre:
-  > *"`anon` só enxerga `(id, username)` — o suficiente para a checagem de
-  > username duplicado"*. Eu li a linha errada do mesmo arquivo.
-  >
-  > **O que resta, e é menor do que eu disse:** não é o acesso, é a
-  > **enumeração**. O cadastro precisa perguntar por **um** username;
-  > `select=id,username` devolve **todos**. A saída certa é a que o projeto já
-  > usa em `get_public_profile`: uma RPC `username_disponivel(p_username)`
-  > `SECURITY DEFINER` devolvendo booleano, e aí o `SELECT` de `anon` em
-  > `profiles` pode ser revogado **sem** quebrar nada.
-
-  **O portão que deixava passar, e o que ele passou a fazer.** O
-  `portas-do-banco.mjs` sondava só `select=*`, então dava **verde honesto para a
-  pergunta errada** — e o `SEGURANCA.md` passou a afirmar, com base nesse verde,
-  que "`profiles` responde 401 ao anônimo". Desde 02/09 ele sonda **coluna a
-  coluna**: as 8 colunas pessoais precisam continuar em 401, e `id`/`username`
-  são registradas como estado conhecido. Ele **não reprova hoje** (item aberto e
-  não decidido reprovando todo PR viraria ruído, §0.2), mas reprova a **piora** —
-  provado reinjetando o bug: sai 1 nomeando a coluna que abriu.
-
-  **É CLASSE, não caso:** a pergunta certa é *"toda tabela legível pelo anônimo
-  devolve só o que a tela precisa?"*. Nenhuma das duas telas usa a autoria.
+  > **A lição que ficou, e é a mais cara desta rodada.** Eu propus revogar
+  > `id`/`username` dizendo que a dependência estava checada. Estava — mas a
+  > consulta de "quem lê" procura **policy e função no banco**, e quem lia era
+  > **o cliente**: o cadastro. O revoke teria sido a **quarta** queda do site
+  > por revoke bem-intencionado. A consulta do POSTURA.md precisa incluir
+  > `grep` no `src/`, e não só o Postgres.
 
   **Bônus a decidir junto:** a lista inteira de 322 palavras bloqueadas é
-  pública. Isso é consequência do filtro rodar no cliente, não descuido — mas
-  entrega a quem quiser burlar o dicionário exato. Vale registrar como decisão
-  consciente em `DECISOES.md`, ou mudar de abordagem.
+  pública. É consequência do filtro rodar no cliente, não descuido — mas entrega
+  o dicionário exato a quem quiser burlar. Vale registrar como decisão em
+  `DECISOES.md`, ou mudar de abordagem.
+
+  **Defesa em profundidade, sem pressa:** `anon` tem privilégio de INSERT/UPDATE
+  em quase toda coluna de `profiles`, `site_config` e `blocked_words`. A RLS
+  nega tudo (sondado: 0 linhas afetadas, e nada entrou), então não está aberto —
+  mas privilégio que ninguém usa é superfície que ninguém revisa.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não

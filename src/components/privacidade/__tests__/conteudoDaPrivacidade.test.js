@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { varrerFontes } from '../../../lib/__tests__/varrerFontes';
 import {
   BLOCOS, ATUALIZADO_EM, CHAVES_DECLARADAS, TERCEIROS_DECLARADOS,
@@ -146,5 +146,81 @@ describe('a política acompanha o crescimento do site', () => {
       + '  Antes de declarar: veja O QUE ele recebe, se dá para mandar menos, e\n'
       + '  se ele usa cookie — a página afirma que nao ha nenhum.\n'
     )).toEqual([]);
+  });
+});
+
+/**
+ * `[03/09]` As fontes não podem voltar a ser de terceiro sem ninguém decidir.
+ *
+ * O Google Fonts era o **único terceiro que a landing contactava**: todo
+ * visitante entregava o IP ao Google só por abrir a página. As fontes passaram
+ * a ser servidas do próprio site (`public/fonts/`, `@font-face` no
+ * `index.css`), e a linha saiu da tabela de terceiros da política.
+ *
+ * O risco agora é o inverso do de antes: alguém acrescenta uma fonte nova
+ * copiando um `<link>` do Google — que é o caminho natural, porque é o que a
+ * página deles manda fazer — e o terceiro volta **sem** a política dizer.
+ *
+ * As duas travas existentes não pegam isso: `TERCEIROS_DECLARADOS` varre
+ * `package.json` (e um `<link>` não é dependência), e a de cookies varre o
+ * código-fonte JS.
+ */
+describe('nenhuma fonte vem de terceiro', () => {
+  const HOSTS = [
+    ['fonts.googleapis.com', 'Google Fonts (CSS)'],
+    ['fonts.gstatic.com', 'Google Fonts (arquivos)'],
+    ['use.typekit.net', 'Adobe Fonts'],
+    ['fonts.bunny.net', 'Bunny Fonts'],
+    ['cdn.jsdelivr.net/npm/@fontsource', 'Fontsource via CDN'],
+  ];
+
+  const alvos = ['index.html', 'src/index.css'];
+
+  it('nem o index.html nem o index.css buscam fonte de fora', () => {
+    for (const alvo of alvos) {
+      const bruto = readFileSync(alvo, 'utf8');
+      // Prova que leu de verdade: sem isto, renomear o arquivo deixaria a
+      // trava verde para sempre.
+      expect(bruto.length, `${alvo} veio vazio`).toBeGreaterThan(200);
+
+      // A mencao em COMENTARIO e legitima e existe de proposito nos dois
+      // arquivos: eles contam por que as fontes sairam de la. O que nao pode
+      // voltar e uma URL de verdade — entao a busca e feita no arquivo SEM
+      // comentario, que e mais simples e mais dificil de errar do que tentar
+      // reconhecer `href`/`src`/`url()` por expressao regular.
+      const semComentario = bruto
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '');
+
+      for (const [host, nome] of HOSTS) {
+        expect(semComentario,
+          `${alvo} voltou a buscar fonte do ${nome}.\n`
+          + '  Isso entrega o IP de TODO visitante a um terceiro, inclusive de\n'
+          + '  quem so abre a landing e vai embora — era o unico terceiro que a\n'
+          + '  landing contactava, e foi removido em 03/09.\n'
+          + '  Se a fonte nova e mesmo necessaria: baixe o woff2 para\n'
+          + '  public/fonts/, declare o @font-face no src/index.css, e SO entao\n'
+          + '  esta trava fica verde. Se o terceiro for proposital, ele precisa\n'
+          + '  entrar na tabela de terceiros da politica de privacidade.')
+          .not.toContain(host);
+      }
+    }
+  });
+
+  it('os arquivos de fonte que o CSS declara existem mesmo', () => {
+    // Sem isto, renomear um woff2 daria fallback silencioso para a fonte do
+    // sistema: nada quebra, nada avisa, e o site so fica com outra cara (§4).
+    const css = readFileSync('src/index.css', 'utf8');
+    const declarados = [...css.matchAll(/url\('(\/fonts\/[^']+)'\)/g)].map(m => m[1]);
+
+    expect(declarados.length,
+      'nenhum @font-face local encontrado no index.css — as fontes voltaram\n'
+      + '  a vir de fora, ou o bloco foi removido').toBeGreaterThanOrEqual(5);
+
+    for (const caminho of declarados) {
+      expect(existsSync(`public${caminho}`),
+        `o @font-face aponta para public${caminho}, que NAO existe.\n`
+        + '  O navegador cairia na fonte do sistema em silencio.').toBe(true);
+    }
   });
 });

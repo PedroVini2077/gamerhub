@@ -1,10 +1,94 @@
-/* As fontes NÃO são carregadas aqui de propósito — ver `index.html`.
+/* ── `[03/09]` As fontes moram AQUI, e não no Google ───────────────────────
  *
- * Um `@import` dentro do CSS cria uma cadeia serial: o navegador precisa
- * baixar e parsear ESTE arquivo antes de descobrir que existe um CSS de fonte
- * para buscar. O `preconnect` do `index.html` não salva disso — ele abre a
- * conexão cedo, mas ninguém a usa até a descoberta acontecer. O Lighthouse
- * mediu 1.126 ms de cadeia por causa disto. */
+ * Achado da auditoria de privacidade de 01/09: o Google Fonts era o **único
+ * terceiro que a landing contactava**, e todo visitante — inclusive quem só
+ * abre a página e vai embora — entregava o IP ao Google sem ter escolhido nada.
+ *
+ * Era boa prática, não obrigação legal, e a distinção continua valendo. O que
+ * mudou é que o custo de resolver ficou pequeno: são 96 KB de fonte,
+ * servidos do mesmo domínio.
+ *
+ * ── O que se ganha além da privacidade ─────────────────────────────────────
+ *
+ * Some uma cadeia de rede inteira. Antes: `preconnect` -> baixar o CSS do
+ * Google -> descobrir a URL do woff2 -> baixar do `fonts.gstatic.com`. Eram
+ * DOIS domínios e duas viagens antes do primeiro glifo. Agora o `@font-face`
+ * já está neste arquivo e o navegador vai direto ao arquivo, no mesmo host.
+ *
+ * ── Só o subconjunto `latin` ───────────────────────────────────────────────
+ *
+ * O Google servia também cirílico, grego e vietnamita. Um site em português
+ * não usa nenhum, e cada um é um arquivo a mais. Baixar tudo seria pagar banda
+ * por glifo que ninguém vai ver.
+ *
+ * O `unicode-range` continua declarado: é ele que faz o navegador nem buscar a
+ * fonte quando a página não tem nenhum caractere daquela faixa.
+ *
+ * ── `font-display: swap` ───────────────────────────────────────────────────
+ *
+ * O texto aparece na fonte do sistema e troca quando a fonte chega. A
+ * alternativa (`block`) esconderia o texto por até 3 s — texto invisível é
+ * pior do que texto na fonte errada.
+ */
+
+
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  /* Arquivo VARIAVEL: os quatro pesos que o site usa (400/600/700/900) vinham
+   * do MESMO woff2 — conferido por md5, os quatro downloads eram byte a byte
+   * iguais. Declarar a faixa evita servir quatro copias do mesmo arquivo. */
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('/fonts/orbitron-variavel.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/rajdhani-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/rajdhani-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/rajdhani-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/rajdhani-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Share Tech Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/share-tech-mono-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -299,8 +383,28 @@ body {
  * viram distracao numa tela onde a pessoa esta LENDO. Aqui elas atravessam a
  * altura da tela em um a dois minutos.
  */
+/* `[03/09]` `top: 100%` é o conserto do bug que deixou as peças invisíveis por
+ * dois dias — e ele mora aqui, não no componente, porque é a mesma correção
+ * para toda peça.
+ *
+ * Sem `top`, um elemento `position: absolute` fica na posição estática: o TOPO
+ * do container. A animação então empurrava a peça de `12vh` para `-108vh`, ou
+ * seja, ela nascia na borda de cima e saía da tela em segundos, passando o
+ * ciclo inteiro acima da janela.
+ *
+ * Medido num navegador de verdade, com a animação RODANDO — que foi o que
+ * faltou da primeira vez, quando eu conferi a aparência com `animation: none`
+ * e portanto desliguei justamente o que estava quebrado:
+ *
+ *   t=0s   top: -42px, -258px, -112px, -346px   (3 de 4 fora da tela)
+ *   t=3s   as quatro fora da tela
+ *
+ * Agora a peça nasce logo ABAIXO da borda de baixo e sobe cruzando a tela
+ * inteira, que é o movimento que o `translate` sempre descreveu.
+ */
 .peca-de-jogo {
   position: absolute;
+  top: 100%;
   animation-name: pecaFlutua;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
@@ -308,8 +412,78 @@ body {
 }
 
 @keyframes pecaFlutua {
-  0%   { transform: translate3d(0, 12vh, 0) rotate(0deg);      opacity: 0; }
-  12%  {                                                        opacity: var(--pico, 0.16); }
-  88%  {                                                        opacity: var(--pico, 0.16); }
-  100% { transform: translate3d(var(--deriva, 4vw), -108vh, 0) rotate(var(--giro, 40deg)); opacity: 0; }
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg);          opacity: 0; }
+  6%   {                                                        opacity: var(--pico, 0.16); }
+  94%  {                                                        opacity: var(--pico, 0.16); }
+  100% { transform: translate3d(var(--deriva, 4vw), -118vh, 0) rotate(var(--giro, 40deg)); opacity: 0; }
+}
+
+/* ── `[03/09]` O fundo do SITE LOGADO — luz de arena ───────────────────────
+ *
+ * O dono corrigiu o que eu tinha entendido errado: *"quero que o fundo do site
+ * logado seja diferente do resto… não quero o fluxo de dados no site logado"*.
+ * O "mesmo fundo pra todas as rotas" era entre as ABAS do site logado, não
+ * entre o site e a landing.
+ *
+ * Os papéis ficam separados de propósito: esta camada é ATMOSFERA (luz que
+ * respira, quase parada) e as peças de videogame são o MOVIMENTO. Duas coisas
+ * se mexendo disputariam atenção com o conteúdo — e o site logado é onde se lê.
+ *
+ * Só `transform` e `opacity`: compositor, sem laço de JavaScript por quadro.
+ */
+.luz-da-arena {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  will-change: transform, opacity;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--cor) 60%, transparent) 0%,
+    transparent 70%);
+}
+
+.luz-da-arena--alta {
+  width: 60vw;
+  height: 60vw;
+  max-width: 900px;
+  max-height: 900px;
+  left: -10vw;
+  top: -18vh;
+  opacity: 0.38;
+  animation: luzRespira 37s ease-in-out infinite;
+}
+
+.luz-da-arena--baixa {
+  width: 46vw;
+  height: 46vw;
+  max-width: 700px;
+  max-height: 700px;
+  right: -8vw;
+  bottom: -14vh;
+  opacity: 0.30;
+  /* 53 s contra 37 s: os dois ciclos sao primos entre si, entao as duas luzes
+   * nunca voltam a mesma posicao relativa e o olho nao acha a repeticao. */
+  animation: luzRespira 53s ease-in-out infinite reverse;
+}
+
+@keyframes luzRespira {
+  0%,  100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%       { transform: translate3d(4vw, 3vh, 0) scale(1.18); }
+}
+
+/* A linha de horizonte: e ela que faz a tela ler como "chao de fliperama" em
+ * vez de um borrao colorido. Estatica de proposito — nao entra na conta de
+ * movimento. */
+.horizonte-da-arena {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 22%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--cor) 30%, transparent) 30%,
+    color-mix(in srgb, var(--cor) 45%, transparent) 50%,
+    color-mix(in srgb, var(--cor) 30%, transparent) 70%,
+    transparent 100%);
+  opacity: 0.5;
 }
