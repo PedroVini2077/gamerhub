@@ -118,6 +118,41 @@ if (naoEmpurrado) {
   console.log('  OK      nada por empurrar');
 }
 
+// `[03/09]` O TERCEIRO estado, e foi ele que custou mais caro.
+//
+// Os dois de cima cobrem "commitei?" e "empurrei?". Faltava a unica que o dono
+// enxerga: **chegou na main?**
+//
+// O caso: o conserto do fundo do site logado ficou pronto, commitado e
+// empurrado — e o PR nunca foi mergeado. O dono relatou TRES vezes que nao via
+// a mudanca, e nas tres eu olhei o meu diff (certo) em vez da producao, que
+// seguia com a versao antiga. Commitado e empurrado NAO e entregue.
+//
+// `npm run fim` dava verde nos dois checks e em todo o resto: nada acusava,
+// porque ninguem fazia a pergunta. E o §8 e explicito — abrir o PR E MERGEAR
+// sao obrigacao minha, e "nada fica para a proxima sessao".
+//
+// `--is-ancestor` responde exatamente isso, e sem API nem token: o HEAD desta
+// branch ja esta contido na main?
+let foraDaMain = '';
+try {
+  git('git fetch origin main --quiet');
+  execSync('git merge-base --is-ancestor HEAD origin/main', { stdio: 'ignore' });
+} catch {
+  try { foraDaMain = git('git log origin/main..HEAD --oneline'); } catch { /* sem origin/main */ }
+}
+if (foraDaMain) {
+  console.log('  FALHOU  nada por mergear');
+  falhas.push('há commit que NUNCA CHEGOU NA MAIN:\n'
+    + foraDaMain.split('\n').map(l => '    ' + l).join('\n')
+    + '\n  Commitado e empurrado NAO e entregue: a producao continua com a versao\n'
+    + '  antiga, e quem olha o site ve o bug que voce acha que consertou.\n'
+    + '  Ja aconteceu — o dono relatou 3x que nao via a mudanca enquanto o PR\n'
+    + '  ficava aberto. Mergeie (§8) ou diga por que o PR fica aberto.');
+} else {
+  console.log('  OK      nada por mergear');
+}
+
 // Aviso, não falha: divergir da main é normal com PR aberto. Vira falha só se
 // o dono confirmar que o ciclo do §8 estava fechado.
 try {
