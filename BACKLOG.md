@@ -386,8 +386,8 @@
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->84<!--/n--> arq ·
   <!--n:src.lib.linhas-->6.943<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->14<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.368<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.arquivos-->16<!--/n--> arq ·
+  <!--n:src.services.linhas-->1.620<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
