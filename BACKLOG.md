@@ -11,6 +11,41 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
+> ### `[03/09]` E também é MEMÓRIA OPERACIONAL da execução
+>
+> Ordem do dono em 03/09: *"quero que o BACKLOG seja utilizado como memória
+> operacional da execução… não dependa apenas do contexto da conversa para
+> lembrar o que precisa ser feito"*.
+>
+> Isso dá ao arquivo um **segundo trabalho**, e ele é diferente do primeiro: a
+> seção **EM EXECUÇÃO** abaixo guarda o plano da tarefa em curso — objetivo,
+> etapas, estado, o que foi validado e o que travou. A fila de itens continua
+> sendo o que falta fazer.
+>
+> A diferença prática: quando eu perder o fio, o certo é **voltar aqui**, não
+> carregar mais contexto. Nas três falhas de 02–03/09 meu reflexo foi ler mais
+> e tentar de novo — foi assim que passei de duas tentativas, testei
+> desligando o que estava quebrado, e declarei entregue o que nunca saiu do
+> lugar.
+>
+> **A seção EM EXECUÇÃO esvazia quando a tarefa fecha.** Ela é estado, não
+> histórico — mesma regra do resto do arquivo.
+
+---
+
+## 🔄 EM EXECUÇÃO
+
+*Vazia.* A última tarefa registrada aqui — implementar o PROTOCOLO DE OPERAÇÃO —
+foi concluída em 03/09: `docs/regras/EXECUCAO.md` (§9), ligado ao `CLAUDE.md`,
+mapeado no território e com os 12 portões do `npm run fim` verdes.
+
+> **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
+> etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
+> Ao fechar, esvazie — isto é estado, não histórico. A regra inteira está em
+> [EXECUCAO.md §9.5](docs/regras/EXECUCAO.md).
+
+---
+
 **Última conferência contra o sistema:** 02/09/2026, noite ·
 **22 itens abertos** (+ 1 ideia sem compromisso)
 

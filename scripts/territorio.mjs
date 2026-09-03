@@ -169,6 +169,14 @@ export const TERRITORIO = {
     'scripts/numeros-do-projeto.mjs',
     'src/lib/__tests__/varrerFontes.js',
   ],
+  // `[03/09]` O território dele é o mecanismo que o cumpre: o BACKLOG virou
+  // memória operacional, e o mapa de territórios é a ferramenta que o §9.4
+  // manda consultar. Mexer nos dois muda o que o arquivo afirma.
+  'docs/regras/EXECUCAO.md': [
+    'scripts/territorio.mjs',
+    'scripts/fim-de-sessao.mjs',
+    'scripts/inicio-de-sessao.sh',
+  ],
   'docs/regras/DOCUMENTACAO.md': [
     'scripts/documentacao-quebrada.mjs',
     'scripts/documentacao-envelhecida.mjs',

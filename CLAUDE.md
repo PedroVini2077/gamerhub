@@ -823,3 +823,21 @@ fix, fase de auditoria), eu fecho o ciclo inteiro:
 **Só mergear com a definição de pronto (§2) cumprida** — build, lint, testes e
 validação no banco. Se algo estiver falhando, o PR fica aberto e eu aviso; não
 mergear "pra não deixar pendente".
+
+---
+
+## 9. Execução — gestão de contexto
+
+> Protocolo do dono, 03/09: *"depois de tanta regras, gatilhos e tudo mais, vc
+> está tendo que pensar em 400 coisas ao mesmo tempo e isso tá te levando a uma
+> exaustão de memória"*.
+
+A sequência antes de mexer em arquivo, a classificação da tarefa, o território
+como recorte de contexto, o BACKLOG como memória operacional, e o que fazer
+quando eu perder o fio (**voltar ao estado registrado, não carregar mais
+contexto**).
+
+**Ele não dispensa documentação nenhuma** — muda *quando* cada uma é
+consultada.
+
+@docs/regras/EXECUCAO.md
