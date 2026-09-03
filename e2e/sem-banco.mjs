@@ -112,6 +112,83 @@ try {
   }
   ok('4 logins falhos -> o aviso de banco fora aparece');
 
+  // ── `[03/09]` A faixa não pode COBRIR o que está fixo no topo ─────────────
+  //
+  // O dono relatou, com print: *"não consigo acessar a side bar, pq a msg lá em
+  // cima tá tampando"*. Medido no celular dele: faixa `sticky top-0` de 65 px,
+  // botão de menu em `top: 14`.
+  //
+  // `sticky` empurra irmãos no FLUXO — mas os cabeçalhos da landing e do site
+  // logado são `fixed`, e `fixed` é posicionado pela JANELA. Ficavam debaixo
+  // dela. O elemento existia no DOM e não dava para tocar.
+  //
+  // A pergunta aqui é a REGRA, não um botão específico: **enquanto a faixa
+  // estiver na tela, nenhum elemento fixo no topo pode ser coberto por ela.**
+  // Assim a trava continua valendo quando surgir um cabeçalho novo.
+  // Para a faixa E um cabecalho fixo coexistirem, e preciso estar na LANDING —
+  // e a landing so fala com o Supabase quando ha sessao (um visitante puro faz
+  // ZERO requisicoes, o que este proprio arquivo ja documenta). Entao a sessao
+  // e forjada aqui: e a condicao do print do dono, e sem ela o teste passaria
+  // no vazio, sobre uma pagina que nao tem cabecalho fixo nenhum.
+  const ref = new URL(SUPABASE).host.split('.')[0];
+  await page.addInitScript((r) => {
+    localStorage.setItem(`sb-${r}-auth-token`, JSON.stringify({
+      access_token: 'e2e', refresh_token: 'e2e',
+      expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'e2e' },
+    }));
+  }, ref);
+  await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForTimeout(4000);
+
+  const cobertos = await page.evaluate(() => {
+    const faixa = document.querySelector('[role=status]');
+    if (!faixa) return { semFaixa: true };
+    const rf = faixa.getBoundingClientRect();
+
+    const presos = [...document.querySelectorAll('header, nav')]
+      .filter((e) => getComputedStyle(e).position === 'fixed')
+      .filter((e) => e !== faixa && !faixa.contains(e));
+
+    return {
+      semFaixa: false,
+      alturaDaFaixa: Math.round(rf.height),
+      fixosNoTopo: presos.length,
+      sobrepostos: presos
+        .map((e) => ({ tag: e.tagName, top: Math.round(e.getBoundingClientRect().top) }))
+        .filter((x) => x.top < rf.bottom - 1),
+    };
+  });
+
+  if (cobertos.semFaixa) {
+    throw new Error(
+      'a faixa de "sem banco" NAO esta na tela depois das tentativas de login.\n'
+      + '    Sem ela, quem esta com o site aberto nao tem como saber por que\n'
+      + '    entrar e publicar pararam de funcionar.');
+  }
+  if (cobertos.sobrepostos.length > 0) {
+    throw new Error(
+      'a faixa de "sem banco" esta COBRINDO cabecalho fixo.\n'
+      + `    faixa: ${cobertos.alturaDaFaixa}px · cobertos: `
+      + `${JSON.stringify(cobertos.sobrepostos)}\n`
+      + '    Foi o bug de 03/09: a faixa era `sticky` e os cabecalhos sao\n'
+      + '    `fixed`, entao ela ficava POR CIMA. O menu existia no DOM e nao\n'
+      + '    dava para tocar — nenhum teste de "o link existe?" pega isso.\n'
+      + '    O contrato e a variavel `--altura-do-aviso`, publicada pelo\n'
+      + '    AvisoSemBanco e lida no `top` de cada cabecalho fixo.');
+  }
+  // A guarda contra passar no VAZIO: sem cabecalho fixo na tela, a checagem
+  // acima nao verifica nada e daria verde para sempre. Ja aconteceu nesta
+  // mesma sessao — a primeira versao rodava no /login, que nao tem cabecalho
+  // fixo, e dizia "0 cabecalhos fixos" com ar de aprovada.
+  if (cobertos.fixosNoTopo === 0) {
+    throw new Error(
+      'nenhum cabecalho FIXO na tela — esta checagem nao verificou nada.\n'
+      + '    Ela precisa rodar onde a faixa E um cabecalho fixo coexistem (a\n'
+      + '    landing com sessao). Se o layout mudou e o cabecalho deixou de ser\n'
+      + '    `fixed`, atualize o seletor; nao deixe a trava passar no vazio.');
+  }
+  ok(`faixa de ${cobertos.alturaDaFaixa}px nao cobre nenhum dos ${cobertos.fixosNoTopo} cabecalhos fixos`);
+
   // ── 3. /sobre CONTINUA alcançável — o coração do bug ─────────────────────
   await page.goto(`${BASE}/sobre`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -132,6 +209,7 @@ try {
       + 'banco para autenticar, mas tem que aparecer e explicar — nao sumir.');
   }
   ok('/login renderiza e pode explicar, em vez de sumir');
+
 } catch (e) {
   console.error(`\n  FALHOU no passo ${passo + 1}: ${e.message}\n`);
   await salvarEvidencia(page);

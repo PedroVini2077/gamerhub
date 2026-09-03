@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { DatabaseZap } from 'lucide-react';
 
 /**
@@ -37,10 +38,50 @@ import { DatabaseZap } from 'lucide-react';
  * responde, o estado volta e a faixa sai.
  */
 export default function AvisoSemBanco() {
+  const ref = useRef(null);
+
+  // `[03/09]` A faixa EMPURRA o que está fixo no topo, em vez de cobrir.
+  //
+  // O bug: ela é `sticky`, e `sticky` empurra irmãos no fluxo — mas o cabeçalho
+  // da landing e o do site logado são `fixed`, e `fixed` é posicionado pela
+  // JANELA. Os dois ficavam debaixo da faixa. Medido no celular do dono: faixa
+  // de 65 px em `top: 0`, botão de menu em `top: 14`; `elementFromPoint` no
+  // centro do botão devolvia a faixa. **O menu existia e não dava para tocar.**
+  //
+  // A variável é o contrato entre a faixa e quem está fixo: ela publica a
+  // própria altura, e os cabeçalhos leem `top: var(--altura-do-aviso, 0px)`. O
+  // padrão `0px` é o que impede o buraco no topo quando a faixa não existe —
+  // era o risco declarado no plano.
+  //
+  // `ResizeObserver` e não um número fixo: a frase quebra em duas linhas no
+  // celular e em uma no desktop, então a altura muda com a largura.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+
+    const publicar = () => {
+      document.documentElement.style.setProperty(
+        '--altura-do-aviso', `${Math.round(el.getBoundingClientRect().height)}px`,
+      );
+    };
+    publicar();
+
+    const obs = new ResizeObserver(publicar);
+    obs.observe(el);
+
+    return () => {
+      obs.disconnect();
+      // Some junto com a faixa: deixar o valor para trás manteria os
+      // cabeçalhos deslocados depois de o banco voltar.
+      document.documentElement.style.removeProperty('--altura-do-aviso');
+    };
+  }, []);
+
   return (
     <div
+      ref={ref}
       role="status"
-      className="sticky top-0 z-[9998] w-full border-b border-yellow-500/30
+      className="fixed top-0 left-0 right-0 z-[9998] border-b border-yellow-500/30
                  bg-yellow-500/10 backdrop-blur px-4 py-2"
     >
       <p className="flex items-center justify-center gap-2 text-center

@@ -54,6 +54,13 @@ src/
 │   ├── useUserXP.js       # XP e rank do usuário
 │   ├── useAvatarUpload.js # Envio da foto de perfil
 │   ├── useDeleteCountdown.js # Contagem antes de ação destrutiva, com cancelar
+│   ├── useConfigDoSite.jsx # `[03/09]` A config global (manutenção + motivo da
+│   │                      # pausa), lida UMA vez no topo da árvore. Vivia
+│   │                      # dentro do `Layout`, que nunca monta na landing —
+│   │                      # por isso quem chegava por ela via a mensagem
+│   │                      # genérica mesmo com o banco de pé. É contexto, e
+│   │                      # não hook solto: duas chamadas criavam o MESMO
+│   │                      # canal de realtime e derrubavam o site
 │   ├── useDbOffline.js    # `true` enquanto o site está sem banco (ver lib/dbHealth)
 │   └── useVisiblePoll.js  # Repete uma chamada, mas SÓ com a aba visível
 ├── lib/
