@@ -416,11 +416,43 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   de conferir aquela.
 - job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
-  `/admin` e `/owner` **negados** para `role = 'user'`, publicar → conferir no
-  feed → apagar, e logout. Exige `E2E_EMAIL` e `E2E_PASSWORD` nos **Secrets**
+  `/admin` e `/owner` **negados** para `role = 'user'`, **o fundo decorativo
+  estando dentro da janela**, publicar → conferir no feed → apagar, e logout. Exige `E2E_EMAIL` e `E2E_PASSWORD` nos **Secrets**
   (senha é segredo, ao contrário da anon key). Só em PR: ele escreve no banco
   de produção. Quando falha, sobe `e2e-evidencia/` como artefato — screenshot,
   texto da tela e URL, senão o log diria só "timeout".
+
+#### `[03/09]` A decoração precisa estar DENTRO DA JANELA, não só no DOM
+
+Esta trava nasceu de uma falha de três rodadas, e ela é sobre **método**, não
+sobre CSS.
+
+O dono relatou **três vezes** *"não estou vendo as peças de videogame"*. As duas
+primeiras respostas minhas foram calibragem de opacidade — as duas erradas.
+A causa real era outra: `.peca-de-jogo` não tinha `top`, então cada peça nascia
+no topo do container e a animação a empurrava para fora por cima. Medido depois:
+**3 de 4 fora da tela no instante zero, as quatro em 3 segundos**.
+
+**Por que eu não vi nas duas primeiras:** eu conferia num recorte HTML meu que
+usava `animation: none` para fotografar as peças paradas. Eu testava a aparência
+**desligando exatamente o que estava quebrado**. O `CLAUDE.md` §1.2 manda parar
+depois de duas tentativas e **instrumentar** — eu não parei.
+
+**Por que nenhum portão pegou.** Não é erro de JavaScript, não é rota fora do
+ar, não é texto ausente, não é byte a mais. É decoração que **existe no DOM** e
+não está onde alguém possa ver — o §1.5 na forma mais silenciosa que há. O
+`conteudo-visivel.mjs` faz a pergunta parecida (*algo com tamanho real está em
+`opacity: 0`?*), mas só nas páginas públicas: ele não tem sessão.
+
+A trava roda dentro do `fluxos.mjs`, que já está logado, e faz a única pergunta
+que importa: **quantas `.peca-de-jogo` estão dentro da janela?** Zero reprova, e
+a mensagem conta a história para quem esbarrar nela daqui a seis meses.
+
+> **O que ela não cobre, dito antes que alguém confie demais:** ela prova que a
+> peça está na janela, não que está *visível a olho nu*. Uma peça a
+> `opacity: 0.01` passaria. Para isso o critério continua sendo humano — e é
+> justamente por isso que o número de opacidade agora está medido e escrito no
+> `PecasFlutuantes.jsx`.
 
 ### A trava das Edge Functions bate na produção, e é de propósito
 
@@ -624,6 +656,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->9.460<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->9.492<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
