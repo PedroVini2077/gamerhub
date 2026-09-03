@@ -25,7 +25,7 @@
  */
 
 /** Todos desenhados numa caixa 24×24, para poderem ser trocados entre si. */
-const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
+const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' };
 
 /** Controle de videogame — o símbolo mais direto do que este site é. */
 export function Controle() {

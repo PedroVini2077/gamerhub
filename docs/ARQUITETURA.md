@@ -71,10 +71,13 @@ src/
 │   ├── somAmbiente.js     # Som ambiente da landing: ciclo de vida do áudio,
 │   │                      # volume, fade e a garantia de UMA instância só.
 │   │                      # Não sabe QUE som toca — isso são os dois abaixo
-│   ├── trilhaAmbiente.js  # O arquivo real (Universe, AiTechEye, CC BY 4.0).
-│   │                      # Baixa sob demanda, decodifica e toca em laço. O
-│   │                      # original NÃO era loop: fade-in e cauda foram
-│   │                      # recortados e costurados com crossfade
+│   ├── trilhaAmbiente.js  # O arquivo real. `[03/09]` Trocado a pedido do dono
+│   │                      # para "Lofi Coffee Shop" (Alex Morgan, Pixabay
+│   │                      # Content License). Baixa sob demanda, decodifica e
+│   │                      # toca em laço. O original NÃO era loop: tinha
+│   │                      # fade-out no fim, e a região foi recortada e
+│   │                      # costurada com crossfade — o ponto de corte saiu de
+│   │                      # medir 5 candidatos, não de escolher a olho
 │   ├── vozesSintetizadas.js # O plano B, quando o arquivo não chega (rede
 │   │                      # fora, codec ausente). Silêncio aqui daria um
 │   │                      # botão "ligado" sem som — a tela mentindo
@@ -208,8 +211,10 @@ src/
     │   ├── LuzesDaArena.jsx # `[03/09]` A camada de baixo, e ela NÃO é a da
     │   │                  # landing: o dono corrigiu que o site logado tem que
     │   │                  # ser diferente. Duas luzes que respiram em ciclos
-    │   │                  # primos entre si (37 s e 53 s, nunca coincidem) mais
-    │   │                  # uma linha de horizonte estática
+    │   │                  # primos entre si (37 s e 53 s, nunca coincidem) e
+    │   │                  # cinco mini explosões em anel, nas cores da MARCA e
+    │   │                  # não da seção — se herdassem o acento da aba,
+    │   │                  # sumiriam dentro da própria cor
     │   ├── PecasFlutuantes.jsx # As peças que atravessam a tela. Só CSS no
     │   │                  # compositor — zero bloqueio medido a CPU 1/4
     │   └── pecasDeJogo.jsx # Os SVG: controle, d-pad, moeda, vida, troféu,
