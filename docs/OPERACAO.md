@@ -539,6 +539,35 @@ deixa de gritar à toa quando não houver (§0.2, 4ª regra).
 
 ---
 
+
+### `[03/09]` O terceiro estado: commitado, empurrado — e **nunca mergeado**
+
+Os dois checks de git respondiam *"commitei?"* e *"empurrei?"*. Faltava a
+terceira, que é a única que o dono enxerga: **chegou na main?**
+
+**O caso.** O conserto do fundo do site logado ficou pronto, commitado e
+empurrado — e o PR ficou aberto. O dono relatou **três vezes** que não via a
+mudança, e nas três eu olhei o meu diff (certo) em vez da produção (com a versão
+antiga). Só na terceira eu li o CSS que estava no ar:
+
+```
+.peca-de-jogo{ … position:absolute }   <- a versao bugada, no ar
+luz-da-arena          0 ocorrencias
+```
+
+`npm run fim` dava **verde** nos dois checks e em todo o resto. Nada acusava,
+porque ninguém fazia a pergunta — e o §8 é explícito: abrir o PR **e mergear**
+são obrigação minha.
+
+**Como ele responde sem API nem token:** `git merge-base --is-ancestor HEAD
+origin/main`. Se o HEAD ainda não está contido na main, sobrou entrega.
+
+> **Commitado e empurrado NÃO é entregue.** É a mesma família do §1.5, aplicada
+> ao meu próprio processo: o trabalho existia, estava correto, e o mundo lá fora
+> continuava com o bug — sem nada gritar de nenhum lado.
+
+Provada: com um commit fora da main ele reprova nomeando o commit; sem, dá
+verde.
 ## `[01/09]` Banco fora do ar: o que continua de pé, e o que para
 
 O desenho antigo **sequestrava o app**: `if (semBanco) return <OfflineGate />`
@@ -656,6 +685,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->9.492<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->9.521<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
