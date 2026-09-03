@@ -130,6 +130,33 @@ for (const caso of CASOS) {
     process.exit(2);
   }
 
+  // `[03/09]` PROJETO PAUSADO NÃO É PORTA ABERTA.
+  //
+  // Com o projeto Supabase em `INACTIVE`, o gateway responde **HTTP 540** a
+  // tudo — e como 540 não está em nenhuma lista de `esperado`, esta trava
+  // acusava as 5 portas de uma vez e escrevia *"alguem reimplantou uma Edge
+  // Function sem a checagem de quem chama"*. Nada disso tinha acontecido: as
+  // funções nem chegaram a rodar.
+  //
+  // Alarme que grita a coisa errada é o defeito do §0.2 (4ª regra) — ele ensina
+  // a ignorar exatamente o canal onde a falha real vai aparecer. E era pior aqui
+  // do que em outros lugares: uma acusação de porta de segurança reaberta é a
+  // que mais merece ser levada a sério quando aparecer de verdade.
+  //
+  // A saída é a MESMA que este arquivo já usava para rede caindo, logo acima:
+  // sair com 2 (ambiente). O CI continua vermelho — não dá para afirmar que as
+  // portas estão fechadas sem conseguir bater nelas —, mas o motivo passa a ser
+  // verdadeiro: **não foi verificado**, e não "foi verificado e está aberto".
+  if (status >= 500) {
+    console.error(`\n  Nao consegui conferir ${caso.caminho}: HTTP ${status}.`);
+    console.error('  5xx aqui vem do GATEWAY, nao da funcao — 540 e o que a');
+    console.error('  Supabase responde com o PROJETO PAUSADO. As funcoes nem');
+    console.error('  chegaram a rodar, entao isto NAO prova nada sobre elas:');
+    console.error('  nem que estao fechadas, nem que estao abertas.');
+    console.error('\n  Para conferir de verdade, o projeto precisa estar ativo.\n');
+    process.exit(2);
+  }
+
   const ok = caso.esperado.includes(status);
   if (!ok) falhas++;
   const rotulo = ok ? 'OK    ' : (caso.apagada ? 'VOLTOU' : 'ABERTA');

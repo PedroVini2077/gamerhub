@@ -792,6 +792,40 @@ quando o banco responde.
 > exatamente o que deveria medir. Foi por isso que este defeito sobreviveu ao PR
 > #148, onde eu o registrei como *"não reproduzi"*.
 
+### `[03/09]` Com o projeto PAUSADO, o CI fica vermelho — e o que isso quer dizer
+
+**Três jobs não têm como passar com o Supabase em `INACTIVE`**, e é bom saber
+qual é qual antes de sair procurando bug no código:
+
+| Job | Por quê | Dá para consertar em código? |
+| --- | --- | --- |
+| `fluxos autenticados` | precisa **entrar** no site; o servidor de auth está fora | não — precisa do projeto ativo |
+| `painel de admin num navegador` | idem, com a conta de staff | não |
+| `rotas num navegador de verdade` | as duas travas de porta batem no gateway | **a mensagem, sim** — e estava errada |
+
+**O alarme que mentia, e era o pior lugar possível para isso.** Com o projeto
+pausado o gateway responde **HTTP 540** a tudo. Como 540 não estava em nenhuma
+lista de status esperados, `e2e/portas-fechadas.mjs` acusava **as cinco portas
+de uma vez** e escrevia *"alguém reimplantou uma Edge Function sem a checagem de
+quem chama"*. Nada disso tinha acontecido: as funções nem chegaram a rodar.
+
+Uma acusação de porta de segurança reaberta é justamente a que mais precisa ser
+levada a sério quando aparecer de verdade — gastá-la num falso positivo é o
+defeito do §0.2 (4ª regra) no lugar mais caro.
+
+`e2e/portas-do-banco.mjs` tinha a mesma classe de defeito, em dois disfarces: o
+`fetch` estourando subia como `TypeError: fetch failed` cru, e um 540 num
+`select` que deveria dar 401 seria relatado como **"LEITURA ABERTA"**.
+
+**Os dois passaram a sair com código 2 (ambiente), como este arquivo já fazia
+para queda de rede.** O CI continua **vermelho** — não dá para afirmar que as
+portas estão fechadas sem conseguir bater nelas —, mas o motivo passa a ser
+*"não foi verificado"*, e não *"foi verificado e está aberto"*.
+
+> **Quando o CI reprovar assim, a primeira conferência é o estado do projeto**,
+> não o código: `status` do projeto no painel da Supabase, ou pela MCP. Se
+> estiver `INACTIVE`, reativar e repetir o CI é o caminho inteiro.
+
 ---
 
 ## `[02/09]` O portão de documentação passou a ver TODOS os documentos
@@ -874,6 +908,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->10.162<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->10.196<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
