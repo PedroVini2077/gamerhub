@@ -35,12 +35,54 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — `/login` inalcançável com sessão salva e o banco
-pausado — fechou em 03/09. Era deriva entre três portões de rota, e o defeito
-que o PR #148 registrou como *"não reproduzi"* era este: a sessão que eu tinha
-forjado não era um JWT válido, então o teste rodava como visitante e desligava
-exatamente o que deveria medir. O relato está em
-[OPERACAO.md](docs/OPERACAO.md).
+### `[03/09]` Captcha (Turnstile) no formulário de contato — ESPERANDO APROVAÇÃO
+
+**Tipo:** feature/segurança · **Território:** `supabase/functions/`,
+`services/contatoService.js`, `components/contato/` · **Doc governante:**
+[SEGURANCA.md](docs/SEGURANCA.md) · **§7: 🟡** (Edge Function nova + revoke de
+`EXECUTE` em RPC pública que está no ar)
+
+**O que o dono trouxe:** fez o processo no Cloudflare, guardou a
+`TURNSTILE_SECRET_KEY` em *Edge Functions → Secrets* e passou a chave pública
+`0x4AAAAAAEmSuW6upq2OeC4X`. Escolheu proteger **o formulário de contato**, que é
+o que o item 🔵 de 02/09 previa.
+
+**O buraco que isto fecha, e ele está escrito no SQL:** os limites de hoje
+(3 por e-mail em 24 h, disjuntor de 60/hora) impedem a tabela de virar depósito,
+mas **não** impedem um robô com muitos endereços de encher a hora e fechar o
+canal para todo mundo.
+
+**O passo que exige aprovação, e é um só:** `enviar_mensagem_de_contato` hoje
+tem `GRANT EXECUTE ... TO anon`. Se ela continuar assim, o captcha é decoração —
+qualquer um posta direto em `/rest/v1/rpc/` e pula a verificação (§1.3). Fechar
+de verdade exige **revogar `anon`** e deixar a Edge Function (com
+`service_role`) como única porta. É o padrão de revoke que já derrubou o site
+três vezes; conferido que **só o `contatoService.js` chama a RPC**.
+
+**Etapas:**
+
+- [ ] 0. **Aguardando o dono** (§7 🟡)
+- [ ] 1. Edge Function `verify-contact`: valida o token no Cloudflare e chama a
+      RPC com `service_role`
+- [ ] 2. Migration: revoga `anon`/`authenticated` da RPC, com o porquê no SQL
+- [ ] 3. Widget na tela + a chave pública no `.env`/Vercel
+- [ ] 4. Travas: porta fechada sem token (`portas-fechadas.mjs`), e o e2e do
+      `/contato` continuando de pé
+- [ ] 5. Documentar em SEGURANCA.md e OPERACAO.md
+
+**Decisões que eu já tomei, e o motivo (para o dono discordar se quiser):**
+
+- **Cloudflare fora do ar → a mensagem PASSA, e a falha vai para `admin_logs`.**
+  O `/contato` é o canal de quem está banido ou trancado para fora — barrar
+  todo mundo por causa de uma indisponibilidade do Cloudflare cortaria
+  justamente quem mais precisa. Token que o Cloudflare **recusa** continua sendo
+  recusado; só a queda do serviço é que passa, e os limites de vazão do banco
+  continuam por baixo.
+- **Token malformado é recusado ANTES de falar com o Cloudflare**, para um robô
+  não conseguir gastar a cota de verificação com lixo (§0.2, regra 2).
+
+**Risco declarado:** entre o revoke e o deploy da função, o formulário fica sem
+porta. A ordem tem que ser: função no ar e conferida → só então a migration.
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -50,7 +92,7 @@ exatamente o que deveria medir. O relato está em
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -209,13 +251,6 @@ exatamente o que deveria medir. O relato está em
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 
 
-
-- ⬜ `[02/09]` 🔵 **Captcha no formulário de contato.** Os limites de vazão
-  atuais (3 por e-mail em 24 h, disjuntor de 60/hora) impedem a tabela de virar
-  depósito, mas **não** impedem um robô com muitos endereços de encher a hora e
-  fechar o canal para todo mundo. Fechar de verdade pediria Turnstile, que
-  exige Edge Function e mais uma cota. Quando o alarme `contact_flood` aparecer
-  em `admin_logs` alguma vez, é sinal de que a hora chegou.
 
 - ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
   *Auditoria da cena 3D de 01/09. A medição inteira está em
