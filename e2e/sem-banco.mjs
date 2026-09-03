@@ -81,24 +81,31 @@ try {
       + '  <Routes>. A /login precisa aparecer e explicar — nao sumir.');
   }
 
-  // O `try` envolve o LAÇO, e não só a espera inicial: numa carga nova o
-  // estado começa "com banco", o formulário aparece normalmente, e o app só
-  // seria sequestrado DEPOIS das falhas se acumularem. Foi assim que a
-  // primeira versão desta trava deu um timeout cru em vez de explicar.
-  try {
-    for (let i = 0; i < 4; i++) {
-      await page.locator('#email').fill(`sem-banco-${i}@example.com`);
-      await page.locator('#password').fill('naoImportaSenhaNenhuma1');
-      await page.getByRole('button', { name: '// ENTRAR' }).click();
-      await page.waitForTimeout(1800);
+  // O laço PARA quando o estado é alcançado, e essa saída não é economia de
+  // tempo — é a única forma correta desde 03/09. Enquanto o `dbHealth` não
+  // declarou queda, a tela mostra o formulário; assim que declara, ela troca
+  // pelo `LoginSemBanco` e o campo de email deixa de existir. Um laço que
+  // insistisse no campo falharia no próprio sucesso.
+  //
+  // O que continua sendo erro é o formulário sumir SEM a explicação no lugar:
+  // isso é o app sendo sequestrado de novo, como o antigo OfflineGate fazia
+  // com um `return` acima do `<Routes>`.
+  const jaExplicou = async () => /entrar est[aá] indispon[ií]vel/i.test(await texto());
+
+  for (let i = 0; i < 5; i++) {
+    if (await jaExplicou()) break;
+    if ((await page.locator('#email').count()) === 0) {
+      throw new Error(
+        'o formulário de login sumiu e NADA explicou o motivo.\n'
+        + `  O que ficou na tela: "${(await texto()).slice(0, 120).replace(/\s+/g, ' ')}"\n`
+        + `  Endereço: "${new URL(page.url()).pathname}" (esperado "/login")\n`
+        + '  Causa quase certa: algo voltou a SEQUESTRAR o app quando o banco\n'
+        + '  cai. A /login precisa continuar na tela e explicar — nao sumir.');
     }
-  } catch {
-    throw new Error(
-      'o formulário de login DESAPARECEU no meio das tentativas.\n'
-      + `  O que ficou na tela: "${(await texto()).slice(0, 120).replace(/\s+/g, ' ')}"\n`
-      + '  Causa quase certa: algo voltou a SEQUESTRAR o app quando o banco\n'
-      + '  cai, como o antigo OfflineGate fazia com um `return` acima do\n'
-      + '  <Routes>. A /login precisa continuar na tela e explicar — nao sumir.');
+    await page.locator('#email').fill(`sem-banco-${i}@example.com`);
+    await page.locator('#password').fill('naoImportaSenhaNenhuma1');
+    await page.getByRole('button', { name: '// ENTRAR' }).click();
+    await page.waitForTimeout(1800);
   }
   await page.waitForTimeout(4000);   // margem para a sondagem de confirmação
 
@@ -130,11 +137,35 @@ try {
   // ZERO requisicoes, o que este proprio arquivo ja documenta). Entao a sessao
   // e forjada aqui: e a condicao do print do dono, e sem ela o teste passaria
   // no vazio, sobre uma pagina que nao tem cabecalho fixo nenhum.
+  //
+  // `[03/09]` O TOKEN PRECISA SER UM JWT BEM FORMADO, e isto não é capricho.
+  //
+  // A primeira versão gravava `access_token: 'e2e'`. O cliente Supabase decodifica
+  // o token ao restaurar a sessão; uma string qualquer é descartada, `user` fica
+  // NULO, e o teste passava a rodar como visitante puro — que é justamente o
+  // caso que ele não queria testar. Foi assim que o defeito do `GuestOnly`
+  // (passo 4) sobreviveu a esta trava.
+  //
+  // A assinatura é falsa de propósito: o cliente não verifica assinatura, e o
+  // servidor está bloqueado neste teste. O que importa é o FORMATO.
   const ref = new URL(SUPABASE).host.split('.')[0];
   await page.addInitScript((r) => {
+    const b64 = (o) => btoa(JSON.stringify(o))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const agora = Math.floor(Date.now() / 1000);
+    const id = '00000000-0000-0000-0000-0000000000e2';
+    const jwt = [
+      b64({ alg: 'HS256', typ: 'JWT' }),
+      b64({ sub: id, aud: 'authenticated', role: 'authenticated',
+            email: 'e2e@example.com', iat: agora, exp: agora + 3600 }),
+      'assinatura_falsa',
+    ].join('.');
     localStorage.setItem(`sb-${r}-auth-token`, JSON.stringify({
-      access_token: 'e2e', refresh_token: 'e2e',
-      expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'e2e' },
+      access_token: jwt, refresh_token: 'e2e', token_type: 'bearer',
+      expires_in: 3600, expires_at: agora + 3600,
+      user: { id, aud: 'authenticated', role: 'authenticated',
+              email: 'e2e@example.com', app_metadata: {}, user_metadata: {},
+              created_at: new Date().toISOString() },
     }));
   }, ref);
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -201,14 +232,52 @@ try {
   }
   ok('/sobre continua alcançável sem banco');
 
-  // ── 4. /login renderiza (falhar ao entrar é outra história) ──────────────
-  await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForTimeout(2500);
-  if (!/entrar|senha/i.test(await texto())) {
-    throw new Error('a /login nao renderizou com o banco fora. Ela PRECISA do '
-      + 'banco para autenticar, mas tem que aparecer e explicar — nao sumir.');
+  // ── 4. `[03/09]` /login É ALCANÇÁVEL MESMO COM SESSÃO SALVA ──────────────
+  //
+  // ESTA CHECAGEM APROVAVA O BUG, e vale registrar como, porque a forma se
+  // repete. Ela era `if (!/entrar|senha/i.test(texto))`. Com sessão salva o
+  // `GuestOnly` mandava `/login` de volta para `/`, a landing aparecia — e a
+  // landing tem um botão escrito **ENTRAR**. A expressão casava, o teste dava
+  // verde, e o dono não conseguia entrar no site. Um teste de "a palavra existe
+  // na tela" não distingue a página certa da página errada.
+  //
+  // O que substituiu: o CAMINHO de quem usa (clicar no botão da landing) e uma
+  // pergunta que só a página certa responde (o endereço mudou? o conteúdo é o
+  // da tela de login?).
+  await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForTimeout(3000);
+  await page.locator('a[href="/login"]').first().click();
+  await page.waitForTimeout(3000);
+
+  const noLogin = await page.evaluate(() => ({
+    caminho: location.pathname,
+    ehTelaDeLogin: !!document.querySelector('input[type=password]')
+      || /entrar est[aá] indispon[ií]vel/i.test(document.body.innerText),
+  }));
+
+  if (noLogin.caminho !== '/login' || !noLogin.ehTelaDeLogin) {
+    throw new Error(
+      'clicar em "Entrar" com sessao salva NAO leva a tela de login.\n'
+      + `    endereco depois do clique: "${noLogin.caminho}" (esperado "/login")\n`
+      + '    Foi o bug de 03/09, relatado com o projeto PAUSADO: a sessao fica\n'
+      + '    no localStorage e `getSession()` a restaura SEM rede, entao o\n'
+      + '    `GuestOnly` via `user` e mandava de volta para `/` — onde a landing\n'
+      + '    oferece "Entrar" de novo. Laco sem saida, e do lado de quem usa\n'
+      + '    parece que o site recarregou sozinho.\n'
+      + '    A regra: os TRES portoes concordam — HomeOrLanding, RequireAuth e\n'
+      + '    GuestOnly. Sem banco, o site trata todo mundo como visitante.');
   }
-  ok('/login renderiza e pode explicar, em vez de sumir');
+  ok('com sessão salva, "Entrar" leva à tela de login em vez de voltar para /');
+
+  // ── 5. E essa tela DIZ A VERDADE em vez de deixar tentar contra o vazio ───
+  if (!/entrar est[aá] indispon[ií]vel/i.test(await texto())) {
+    throw new Error(
+      'a /login com o banco fora nao explica por que nao da para entrar.\n'
+      + '    Sem isso ela oferece um botao que nao pode funcionar, e o erro de\n'
+      + '    um fetch que nao completa nao distingue "senha errada" de "site\n'
+      + '    fora do ar" — a mensagem falsa que o §1.5 proibe.');
+  }
+  ok('a tela explica que entrar está indisponível, em vez de culpar a senha');
 
 } catch (e) {
   console.error(`\n  FALHOU no passo ${passo + 1}: ${e.message}\n`);
@@ -218,4 +287,4 @@ try {
 }
 
 await navegador.close();
-console.log(`\n  ${passo}/4 comportamentos corretos com o banco fora.\n`);
+console.log(`\n  ${passo}/6 comportamentos corretos com o banco fora.\n`);

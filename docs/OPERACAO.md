@@ -740,6 +740,92 @@ dizia testar, e passava **mesmo com o bug reinjetado**. Hoje `e2e/sem-banco.mjs`
 força o estado de verdade com quatro tentativas de login contra o host
 bloqueado, e reprova nomeando a causa.
 
+### `[03/09]` Com o projeto PAUSADO, quem tinha sessão salva ficava preso
+
+Relato do dono com o projeto em `INACTIVE` (conferido): *"ainda não consigo
+entrar na área de login e cadastro, vc fez isso de propósito?"*. A resposta
+honesta é **em parte**: barrar rota interna é deliberado; prender fora do login
+não era.
+
+**O mecanismo, reproduzido com controle.** `supabase.auth.getSession()` lê a
+sessão do `localStorage` **sem tocar na rede**, então `user` fica preenchido
+mesmo com o projeto pausado:
+
+    clica em "Entrar" -> /login -> GuestOnly vê `user` -> manda para /
+    em / o HomeOrLanding vê `semBanco` -> mostra a landing
+    a landing oferece "Entrar" ------------------------> volta ao começo
+
+| | com sessão salva | sem sessão salva |
+| --- | --- | --- |
+| clicar em "Entrar" | fica em `/`, sem formulário | vai para `/login` |
+| `/login` direto | volta para `/` | abre normal |
+
+**É deriva entre portões que precisam concordar** (§6 FASE 4) — dois sabiam do
+banco e um não:
+
+    HomeOrLanding ... user && !semBanco -> área logada
+    RequireAuth ..... !user || semBanco -> manda para /
+    GuestOnly ....... user             -> manda para /   <- não sabia
+
+A regra em uma frase: **sem banco, o site trata todo mundo como visitante.** Uma
+sessão que não pode ser conferida e não abre nenhuma página interna não é um
+login utilizável — é um dado velho no navegador.
+
+**E a tela de login passou a dizer a verdade** (`auth/LoginSemBanco.jsx`). Sem
+banco, o formulário sai e entra a explicação: entrar e cadastrar dependem do
+servidor de autenticação, que cai junto. Deixar o botão ali seria oferecer algo
+que não pode funcionar, e o erro de um `fetch` que não completa não distingue
+"senha errada" de "site fora do ar" — a mensagem falsa que o §1.5 proíbe. O
+estado do formulário fica no `Login.jsx`, então o que já foi digitado volta
+quando o banco responde.
+
+> **A trava anterior APROVAVA este bug, e a forma se repete.** O passo do
+> `e2e/sem-banco.mjs` era `if (!/entrar|senha/i.test(texto))`. Com sessão salva
+> o `GuestOnly` mandava `/login` de volta para `/`, a landing aparecia — e a
+> landing tem um botão escrito **ENTRAR**. A expressão casava e o teste dava
+> verde. Hoje ele clica no botão como uma pessoa faria e confere o **endereço**
+> depois do clique.
+>
+> **E a sessão forjada precisava ser um JWT bem formado.** A primeira gravava
+> `access_token: 'e2e'`; o cliente Supabase descarta um token que não decodifica,
+> `user` ficava nulo, e o teste rodava como visitante puro — desligando
+> exatamente o que deveria medir. Foi por isso que este defeito sobreviveu ao PR
+> #148, onde eu o registrei como *"não reproduzi"*.
+
+### `[03/09]` Com o projeto PAUSADO, o CI fica vermelho — e o que isso quer dizer
+
+**Três jobs não têm como passar com o Supabase em `INACTIVE`**, e é bom saber
+qual é qual antes de sair procurando bug no código:
+
+| Job | Por quê | Dá para consertar em código? |
+| --- | --- | --- |
+| `fluxos autenticados` | precisa **entrar** no site; o servidor de auth está fora | não — precisa do projeto ativo |
+| `painel de admin num navegador` | idem, com a conta de staff | não |
+| `rotas num navegador de verdade` | as duas travas de porta batem no gateway | **a mensagem, sim** — e estava errada |
+
+**O alarme que mentia, e era o pior lugar possível para isso.** Com o projeto
+pausado o gateway responde **HTTP 540** a tudo. Como 540 não estava em nenhuma
+lista de status esperados, `e2e/portas-fechadas.mjs` acusava **as cinco portas
+de uma vez** e escrevia *"alguém reimplantou uma Edge Function sem a checagem de
+quem chama"*. Nada disso tinha acontecido: as funções nem chegaram a rodar.
+
+Uma acusação de porta de segurança reaberta é justamente a que mais precisa ser
+levada a sério quando aparecer de verdade — gastá-la num falso positivo é o
+defeito do §0.2 (4ª regra) no lugar mais caro.
+
+`e2e/portas-do-banco.mjs` tinha a mesma classe de defeito, em dois disfarces: o
+`fetch` estourando subia como `TypeError: fetch failed` cru, e um 540 num
+`select` que deveria dar 401 seria relatado como **"LEITURA ABERTA"**.
+
+**Os dois passaram a sair com código 2 (ambiente), como este arquivo já fazia
+para queda de rede.** O CI continua **vermelho** — não dá para afirmar que as
+portas estão fechadas sem conseguir bater nelas —, mas o motivo passa a ser
+*"não foi verificado"*, e não *"foi verificado e está aberto"*.
+
+> **Quando o CI reprovar assim, a primeira conferência é o estado do projeto**,
+> não o código: `status` do projeto no painel da Supabase, ou pela MCP. Se
+> estiver `INACTIVE`, reativar e repetir o CI é o caminho inteiro.
+
 ---
 
 ## `[02/09]` O portão de documentação passou a ver TODOS os documentos
@@ -772,8 +858,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->309<!--/n--> arquivos e
-<!--n:src.linhas-->29.766<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->311<!--/n--> arquivos e
+<!--n:src.linhas-->29.932<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -797,7 +883,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->309<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->311<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -822,6 +908,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->10.130<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->10.196<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

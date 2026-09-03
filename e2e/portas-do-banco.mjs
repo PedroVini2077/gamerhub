@@ -107,13 +107,47 @@ const falhas = [];
 const ok = (m) => console.log(`  OK      ${m}`);
 const falhou = (m, detalhe) => { console.log(`  FALHOU  ${m}`); falhas.push(detalhe); };
 
+/**
+ * `[03/09]` Banco inalcançável não é veredito sobre porta nenhuma.
+ *
+ * Duas coisas eram tratadas errado aqui, e as duas apareceram no mesmo dia em
+ * que o projeto foi pausado:
+ *
+ * 1. **O `fetch` estourando** subia como `TypeError: fetch failed` cru, com
+ *    pilha de `undici` e nenhuma frase em português. Quem esbarrasse nisso teria
+ *    que ler o código para descobrir que o problema não era o banco estar
+ *    aberto — era não dar para perguntar.
+ * 2. **HTTP 5xx** — o gateway da Supabase responde **540** com o projeto
+ *    pausado. Um 540 num `select` que deveria dar 401 cairia no `else` e seria
+ *    relatado como *"LEITURA ABERTA"*, que é uma acusação grave e falsa.
+ *
+ * Nos dois casos a saída é 2 (ambiente), não 1 (porta aberta): o CI continua
+ * vermelho, porque não dá para afirmar que as portas estão fechadas sem bater
+ * nelas — mas o motivo passa a ser **não verificado**, e não um alarme mentindo
+ * (`CLAUDE.md` §0.2, 4ª regra).
+ */
+function desistir(motivo) {
+  console.error(`\n  Nao consegui falar com o banco: ${motivo}`);
+  console.error('  Isto NAO prova nada sobre as portas — nem que estao');
+  console.error('  fechadas, nem que estao abertas. Causa mais comum: o');
+  console.error('  projeto Supabase esta PAUSADO (o gateway responde 540).');
+  console.error('\n  Para conferir de verdade, o projeto precisa estar ativo.\n');
+  process.exit(2);
+}
+
 async function pegar(caminho, opcoes = {}) {
-  const r = await fetch(`${URL_BASE}${caminho}`, {
-    headers: { ...cabecalhos, ...(opcoes.headers ?? {}) },
-    method: opcoes.method ?? 'GET',
-    body: opcoes.body,
-    signal: AbortSignal.timeout(15000),
-  });
+  let r;
+  try {
+    r = await fetch(`${URL_BASE}${caminho}`, {
+      headers: { ...cabecalhos, ...(opcoes.headers ?? {}) },
+      method: opcoes.method ?? 'GET',
+      body: opcoes.body,
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (e) {
+    desistir(`${e.message}${e.cause?.code ? ` (${e.cause.code})` : ''}`);
+  }
+  if (r.status >= 500) desistir(`HTTP ${r.status} em ${caminho}`);
   let corpo = null;
   try { corpo = await r.json(); } catch { /* 204, ou corpo não-JSON */ }
   return { status: r.status, corpo };

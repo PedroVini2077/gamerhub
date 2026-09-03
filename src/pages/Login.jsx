@@ -9,11 +9,17 @@ import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
 import RegisterSuccess from '../components/auth/RegisterSuccess';
 import ForgotForm from '../components/auth/ForgotForm';
+import LoginSemBanco from '../components/auth/LoginSemBanco';
 import { isLoginBlocked } from '../lib/loginBlock';
+import { useDbOffline } from '../hooks/useDbOffline';
 
 export default function Login() {
   const { signInWithEmail, signUpWithEmail } = useAuth();
   const navigate = useNavigate();
+  // Login e cadastro passam pelo servidor de autenticação, que cai junto com o
+  // resto do projeto. Ver `LoginSemBanco` para o porquê de explicar em vez de
+  // deixar tentar.
+  const semBanco = useDbOffline();
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
   const [email, setEmail]                   = useState('');
   const [password, setPassword]             = useState('');
@@ -170,7 +176,8 @@ export default function Login() {
         </div>
 
         <div className="card p-7">
-          {mode === 'login' && (
+          {semBanco && <LoginSemBanco />}
+          {!semBanco && mode === 'login' && (
             <LoginForm
               email={email} setEmail={setEmail}
               password={password} setPassword={setPassword}
@@ -180,7 +187,7 @@ export default function Login() {
               onSwitchToRegister={() => switchMode('register')}
             />
           )}
-          {mode === 'register' && (
+          {!semBanco && mode === 'register' && (
             registeredEmail ? (
               <RegisterSuccess email={registeredEmail} onBackToLogin={() => switchMode('login')} />
             ) : (
@@ -199,7 +206,7 @@ export default function Login() {
               />
             )
           )}
-          {mode === 'forgot' && (
+          {!semBanco && mode === 'forgot' && (
             <ForgotForm
               email={email} setEmail={setEmail}
               loading={loading}

@@ -277,8 +277,10 @@ src/
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
     │                      # SceneObjects (LogoBolt/FloatingShapes)
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
-    │                      # InputWrap, e os dois porteiros de rota:
-    │                      # RequireAuth (barra visitante) e GuestOnly (barra logado)
+    │                      # InputWrap, LoginSemBanco (o que a tela de login diz
+    │                      # quando o banco está fora), e os dois porteiros de
+    │                      # rota: RequireAuth (barra visitante) e GuestOnly
+    │                      # (barra logado — só com o banco de pé, ver OPERACAO)
     ├── layout/            # Header e RightPanel do site logado
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard,
     │                      # CommentComposer, EditCountdown (janela de edição)

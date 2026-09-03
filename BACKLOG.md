@@ -35,11 +35,12 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — o modo "sem banco" na landing — fechou em 03/09: dois
-defeitos provados e corrigidos (o motivo personalizado que não chegava à landing,
-e a faixa que cobria o menu), um terceiro que a reprodução **desmentiu**, e um
-quarto que **não consegui reproduzir** e virou item da fila abaixo. O relato está
-por extenso em [OPERACAO.md](docs/OPERACAO.md).
+*Vazia.* A última tarefa — `/login` inalcançável com sessão salva e o banco
+pausado — fechou em 03/09. Era deriva entre três portões de rota, e o defeito
+que o PR #148 registrou como *"não reproduzi"* era este: a sessão que eu tinha
+forjado não era um JWT válido, então o teste rodava como visitante e desligava
+exatamente o que deveria medir. O relato está em
+[OPERACAO.md](docs/OPERACAO.md).
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -49,7 +50,7 @@ por extenso em [OPERACAO.md](docs/OPERACAO.md).
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -283,29 +284,6 @@ por extenso em [OPERACAO.md](docs/OPERACAO.md).
   em quase toda coluna de `profiles`, `site_config` e `blocked_words`. A RLS
   nega tudo (sondado: 0 linhas afetadas, e nada entrou), então não está aberto —
   mas privilégio que ninguém usa é superfície que ninguém revisa.
-
-- ⬜ `[03/09]` 🟠 **Clicar em "ENTRAR" com o banco fora recarregou o site — NÃO
-  reproduzi, e por isso não corrigi.** O dono viu isso no celular dele, com o
-  Supabase fora do ar. Aqui, com o host do Supabase bloqueado no navegador e a
-  sessão forjada igual à dele, o `/login` **abriu normal** em todas as
-  tentativas.
-
-  **O que eu tinha e descartei:** a tela "Algo deu errado" que apareceu na minha
-  primeira reprodução era regressão **minha** (dois `useConfigDoSite()` criando o
-  mesmo canal de realtime), provada comparando com um clone da `main`. Corrigida
-  no mesmo PR — mas ela é posterior ao print dele, então **não** explica o que
-  ele viu.
-
-  **A hipótese que sobra**, sem evidência: `vite:preloadError`. Quando um chunk
-  de rota não baixa, o `main.jsx` recarrega a página uma vez a cada 10 s
-  assumindo "deploy novo mudou o hash". Com a rede ruim — e o print dele é de um
-  cenário de rede ruim — o chunk do `/login` pode falhar e virar exatamente
-  "cliquei e o site recarregou".
-
-  **O que resolve, e depende do dono:** repetir com o banco fora e me dizer se o
-  endereço muda para `/login` antes de recarregar, ou fica em `/`. Se ficar em
-  `/`, é o `preloadError` e a correção é distinguir "chunk não baixou por falta
-  de rede" de "hash mudou" — a primeira não deve recarregar, deve avisar.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
