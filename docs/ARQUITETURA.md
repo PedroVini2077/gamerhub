@@ -201,9 +201,15 @@ src/
 └── components/
     ├── ErrorBoundary.jsx
     ├── layout/            # Sidebar, Header
-    │   ├── FundoDaSecao.jsx # O fundo do site logado, em DUAS camadas: o
-    │   │                  # `FluxoDeDados` da landing (assinatura de família)
-    │   │                  # mais as peças de videogame (identidade própria)
+    │   ├── FundoDaSecao.jsx # O fundo do site logado, em DUAS camadas com
+    │   │                  # papéis separados: `LuzesDaArena` é atmosfera (quase
+    │   │                  # parada) e `PecasFlutuantes` é o movimento. Duas
+    │   │                  # camadas se mexendo disputariam atenção com o texto
+    │   ├── LuzesDaArena.jsx # `[03/09]` A camada de baixo, e ela NÃO é a da
+    │   │                  # landing: o dono corrigiu que o site logado tem que
+    │   │                  # ser diferente. Duas luzes que respiram em ciclos
+    │   │                  # primos entre si (37 s e 53 s, nunca coincidem) mais
+    │   │                  # uma linha de horizonte estática
     │   ├── PecasFlutuantes.jsx # As peças que atravessam a tela. Só CSS no
     │   │                  # compositor — zero bloqueio medido a CPU 1/4
     │   └── pecasDeJogo.jsx # Os SVG: controle, d-pad, moeda, vida, troféu,

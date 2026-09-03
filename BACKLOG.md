@@ -12,7 +12,7 @@
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -150,11 +150,6 @@
   fechar o canal para todo mundo. Fechar de verdade pediria Turnstile, que
   exige Edge Function e mais uma cota. Quando o alarme `contact_flood` aparecer
   em `admin_logs` alguma vez, é sinal de que a hora chegou.
-
-- ⬜ `[01/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
-  Único terceiro que a landing contacta (medido). Hospedar as fontes no próprio
-  site elimina isso por alguns KB de banda. **Boa prática, não obrigação
-  legal** — a distinção importa.
 
 - ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
   *Auditoria da cena 3D de 01/09. A medição inteira está em

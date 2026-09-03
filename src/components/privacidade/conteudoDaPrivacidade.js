@@ -158,7 +158,6 @@ export const BLOCOS = [
         ['Vercel', 'hospeda o site; recebe seu IP no registro de acesso, como qualquer servidor'],
         ['Vercel Analytics', 'quantas visitas cada página teve, sem cookie e sem identificar você'],
         ['Sentry', 'erros do site. Recebe seu id e seu nome de usuário — nunca seu e-mail'],
-        ['Google Fonts', 'as fontes do site vêm de lá, e isso entrega seu IP ao Google'],
       ],
     },
   },
