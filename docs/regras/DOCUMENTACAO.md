@@ -51,7 +51,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `BACKLOG.md` | **DOIS trabalhos** (`[03/09]`): a fila do que falta, e a seção **EM EXECUÇÃO**, que é a memória operacional da tarefa em curso | Decisão, histórico, item já feito, pensamento solto |
 | `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado. **Retrato de um dia — deve envelhecer**, e o varredor o ignora de propósito | Estado atual do sistema |
 
-> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->26<!--/n-->
+> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->27<!--/n-->
 > documentos.** Os que faltavam não eram menores — eram `PRIVACIDADE.md`,
 > `PAINEIS.md` e os próprios `docs/regras/`, que são regra executável. Tabela de
 > "onde cada coisa mora" incompleta é pior do que tabela nenhuma: ela responde
@@ -258,12 +258,12 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->9.688<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->9.923<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
 **o que mudou embaixo de cada um**. `npm run docs -- --tudo` lista os
-<!--n:docs.arquivos-->26<!--/n--> por idade, para varredura completa.
+<!--n:docs.arquivos-->27<!--/n--> por idade, para varredura completa.
 
 **A regra prática, e ela é curta:** rodar `npm run docs` **antes de fechar
 qualquer bloco de trabalho**, e abrir o que ele apontar. Um documento marcado

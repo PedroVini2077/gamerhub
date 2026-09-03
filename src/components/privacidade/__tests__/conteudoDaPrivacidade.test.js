@@ -224,3 +224,53 @@ describe('nenhuma fonte vem de terceiro', () => {
     }
   });
 });
+
+/**
+ * `[03/09]` Bloco PENDENTE — o que dá para travar, e o que NÃO dá.
+ *
+ * O caso: a `/privacidade` continuou mostrando *"Esta parte ainda depende de
+ * uma decisão… falta a decisão do dono sobre o piso de idade"* **depois** de a
+ * idade mínima ter sido decidida (13 anos, 02/09) e passado a ser imposta pelo
+ * banco (03/09). O dono viu no celular.
+ *
+ * ── A trava que eu tentei, e por que ela foi DESCARTADA ────────────────────
+ *
+ * A primeira versão perguntava: *"um bloco `pendente` cuja dica cita o
+ * `BACKLOG.md` tem item lá?"*. Eu a provei reinjetando o bug exato — e **ela
+ * não disparou**.
+ *
+ * O motivo é estrutural, não um ajuste de regex: o `BACKLOG.md` passou a ser
+ * memória operacional (§9.5), então o plano da própria tarefa mencionava
+ * "idade mínima" e satisfazia a busca. A trava passava pelo motivo errado.
+ *
+ * Ela foi removida em vez de remendada. Trava que dá verde sem sustentar nada
+ * é pior do que trava nenhuma — ensina a confiar num sinal que não segura
+ * (§2: se passa com o bug presente, é decoração).
+ *
+ * ── O que ficou no lugar ───────────────────────────────────────────────────
+ *
+ * 1. **O teste abaixo**, que é determinístico: bloco pendente sem dica, ou com
+ *    dica curta demais, mostra o aviso amarelo e não explica o buraco.
+ * 2. **O `scripts/inicio-de-sessao.sh`**, que passou a listar os blocos
+ *    pendentes dos documentos públicos a cada sessão. É a mesma classe de
+ *    mecanismo que funcionou para os itens 🔴/🟠 do backlog (§6.3): não tenta
+ *    julgar, só põe na frente.
+ *
+ * **Por que não uma terceira regra:** o §9.8 manda perguntar por que a
+ * existente falhou. O `npm run docs` funciona numa direção — código mudou,
+ * confira o documento. A direção que faltava é *"o documento diz RESOLVIDO; o
+ * texto do usuário acompanhou?"*, e essa é julgamento. O que dá para mecanizar
+ * é a lembrança, não o veredito.
+ */
+describe('bloco pendente precisa explicar o que falta', () => {
+  it('todo bloco pendente tem dica, e ela diz o que falta', () => {
+    // Um bloco pendente SEM dica mostra o aviso amarelo e nao explica nada —
+    // o leitor fica sabendo que ha um buraco e nao sabe qual.
+    for (const b of BLOCOS.filter(x => x.pendente)) {
+      expect(b.dica, `o bloco "${b.titulo}" esta pendente e nao tem dica`).toBeTruthy();
+      expect(b.dica.length,
+        `a dica de "${b.titulo}" e curta demais para explicar o que falta`)
+        .toBeGreaterThan(40);
+    }
+  });
+});

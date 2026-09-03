@@ -35,9 +35,9 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa registrada aqui — implementar o PROTOCOLO DE OPERAÇÃO —
-foi concluída em 03/09: `docs/regras/EXECUCAO.md` (§9), ligado ao `CLAUDE.md`,
-mapeado no território e com os 12 portões do `npm run fim` verdes.
+*Vazia.* A última tarefa — a política pública que ainda dizia que a idade mínima
+estava pendente — fechou em 03/09: bloco reescrito, política em `2026-09-03-3`,
+e o `inicio-de-sessao.sh` passou a listar bloco pendente de documento público.
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
