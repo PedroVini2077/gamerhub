@@ -46,11 +46,12 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/DECISOES-FERRAMENTAL.md` | O mesmo, para a **esteira**: CI, Vercel, Sentry, email | Decisão de produto |
 | `docs/MANIFESTO.md` | Como o dono e o Claude trabalham **juntos** — papéis, continuidade | Regra executável (vai no `CLAUDE.md`) |
 | `docs/regras/*.md` | Partes do `CLAUDE.md` puxadas por `@import` — instrução de trabalho | Documentação do produto |
+| `docs/regras/EXECUCAO.md` | **Como executar** (`[03/09]`): sequência antes de mexer em arquivo, classificação da tarefa, território como recorte de contexto, e o que fazer ao perder o fio | Regra sobre o produto |
 | `supabase/*/README.md` | Como publicar Edge Function e versionar migration | Comportamento do site |
-| `BACKLOG.md` | **Checklist.** Só o que falta | Decisão, histórico, item já feito |
+| `BACKLOG.md` | **DOIS trabalhos** (`[03/09]`): a fila do que falta, e a seção **EM EXECUÇÃO**, que é a memória operacional da tarefa em curso | Decisão, histórico, item já feito, pensamento solto |
 | `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado. **Retrato de um dia — deve envelhecer**, e o varredor o ignora de propósito | Estado atual do sistema |
 
-> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->26<!--/n-->
+> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->27<!--/n-->
 > documentos.** Os que faltavam não eram menores — eram `PRIVACIDADE.md`,
 > `PAINEIS.md` e os próprios `docs/regras/`, que são regra executável. Tabela de
 > "onde cada coisa mora" incompleta é pior do que tabela nenhuma: ela responde
@@ -234,7 +235,7 @@ Duas partes da camada 3 são mecanizáveis, e viraram portão:
 | `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **que documento ESTA sessão tornou suspeito?** | não — é lista de leitura |
 
 **O número deixa de ser digitado.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->304<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->308<!--/n-->` —, invisível no markdown
 renderizado. O script mede e reescreve; o CI confere. **Chave desconhecida é
 erro, não silêncio**: um typo faria aquele número nunca mais ser atualizado, com
 o agravante de parecer vigiado.
@@ -257,12 +258,12 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->9.634<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->10.028<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
 **o que mudou embaixo de cada um**. `npm run docs -- --tudo` lista os
-<!--n:docs.arquivos-->26<!--/n--> por idade, para varredura completa.
+<!--n:docs.arquivos-->27<!--/n--> por idade, para varredura completa.
 
 **A regra prática, e ela é curta:** rodar `npm run docs` **antes de fechar
 qualquer bloco de trabalho**, e abrir o que ele apontar. Um documento marcado

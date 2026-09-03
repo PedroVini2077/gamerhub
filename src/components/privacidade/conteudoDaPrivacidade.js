@@ -185,11 +185,23 @@ export const BLOCOS = [
     id: 'menores',
     titulo: 'Idade mínima',
     icone: 'CalendarClock',
-    pendente: true,
-    dica: 'Falta a decisão do dono sobre o piso de idade (13, 16 ou 18 anos). '
-      + 'Hoje o cadastro exige 13 no formulário, mas o banco ainda não impõe '
-      + 'esse limite — está no BACKLOG.md como item 🟡, com a consulta de '
-      + 'dimensionamento pronta.',
+    pendente: false,
+    paragrafos: [
+      'É preciso ter pelo menos 13 anos para usar o GamerHub. A data de '
+      + 'nascimento é pedida no cadastro, e quem informar menos de 13 anos '
+      + 'não consegue criar a conta — isso é recusado pelo banco de dados, '
+      + 'não só pelo formulário.',
+      'A diferença importa: o site inteiro roda com uma chave pública, então '
+      + 'uma regra que existisse só na tela seria contornável por quem '
+      + 'soubesse falar direto com o servidor. Esta não é.',
+      'O que a gente NÃO faz é verificar documento. Nada em software impede '
+      + 'alguém de digitar uma data falsa, e conferir de verdade exigiria '
+      + 'pedir RG — desproporcional para um site como este. O que garantimos é '
+      + 'que o limite que está escrito aqui é o mesmo que o sistema aplica.',
+      'Se você é responsável por alguém com menos de 13 anos e acha que existe '
+      + 'uma conta dessa pessoa aqui, fale com a gente pelo formulário de '
+      + 'contato, na opção "Meus dados pessoais".',
+    ],
   },
 
   {

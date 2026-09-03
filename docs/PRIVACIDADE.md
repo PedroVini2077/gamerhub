@@ -184,6 +184,42 @@ português.
 > desproporcional para este site. O que mudou é que o piso declarado passou a
 > ser real no sistema, em vez de existir só no formulário e no texto.
 
+#### `[03/09]` E a página pública continuou dizendo que estava pendente
+
+O dono abriu a `/privacidade` no celular e viu o bloco **Idade mínima** com o
+aviso *"Esta parte ainda depende de uma decisão… falta a decisão do dono sobre o
+piso de idade"* — **um dia depois** de a regra estar de pé no banco.
+
+**Por que nenhum portão pegou, e a razão importa:**
+
+| Portão | Por que passou |
+| --- | --- |
+| a trava de impressão do conteúdo | ela vigia o arquivo **mudar**; o problema era ele NÃO ter mudado |
+| `numeros-do-projeto` | não há número naquele texto |
+| `documentacao-envelhecida` | compara commits, e o arquivo tinha commits |
+
+**E o pior detalhe:** este mesmo documento foi atualizado com "✅ RESOLVIDO" no
+dia. A documentação do **desenvolvedor** andou; a do **usuário** não. Documento
+legal afirmando pendência falsa a quem se cadastra é pior do que `docs/` velho.
+
+**A trava que eu tentei, e descartei.** A primeira ideia foi cruzar bloco
+pendente com item no `BACKLOG.md`. Provei reinjetando o bug exato e **ela não
+disparou** — o `BACKLOG.md` virou memória operacional, então o plano da própria
+tarefa mencionava "idade mínima" e satisfazia a busca. Removida em vez de
+remendada: trava que dá verde sem sustentar nada ensina a confiar num sinal que
+não segura (§2).
+
+**O que ficou:** o `scripts/inicio-de-sessao.sh` passa a listar, a cada sessão,
+todo bloco `pendente` de documento **público**. Não julga se a pendência é
+real — só põe na frente, que é a classe de mecanismo que funcionou para os itens
+🔴/🟠 do backlog (§6.3).
+
+> A primeira versão dele acusou dois falsos positivos: os arquivos **explicam**
+> o campo `pendente: true` num comentário, e o grep pegou a explicação. Alarme
+> que grita à toa é o §0.2, 4ª regra — e ele nasceu no código escrito para não
+> deixar nada passar em silêncio. Consertado ancorando o padrão em linha de
+> código, e provado nas duas direções: fala com bloco real, cala sem.
+
 ### 🔵 `login_attempts` e `admin_logs` não têm política de retenção
 
 As duas são append-only e guardam dado pessoal — e-mail numa, quem fez o quê na

@@ -81,10 +81,10 @@ export const DOCUMENTOS = {
   privacidade: {
     rotulo: 'Política de Privacidade',
     caminho: '/privacidade',
-    versao: '2026-09-03-2',
+    versao: '2026-09-03-3',
     conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: '08baa7c2485cf472',
-    mudou: 'o Google Fonts saiu — as fontes agora vêm do próprio site, e nenhum terceiro recebe seu IP por causa delas',
+    impressao: 'd79117c3d3979c65',
+    mudou: 'a idade mínima de 13 anos deixou de estar "a definir" — ela está decidida e é o banco que a recusa, não só o formulário',
   },
   regras: {
     rotulo: 'Regras da Comunidade',
