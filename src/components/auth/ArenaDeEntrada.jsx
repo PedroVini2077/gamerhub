@@ -164,10 +164,23 @@ export default function ArenaDeEntrada({ modo = 'login' }) {
  * Não usa `Math.random()`: o mesmo fundo em duas abas ficaria diferente sem
  * motivo, e um `useMemo` com random ainda mudaria a cada montagem. O passo é
  * um número primo para os pontos não caírem em coluna.
+ *
+ * ── `--x` é FRAÇÃO DO LADO, não posição na tela ─────────────────────────────
+ *
+ * Achado do dono em 04/09: *"quando a parte de fogo pega o lado do gelo, as
+ * partículas de gelo ficam caindo no fogo"*. A causa não era a posição de
+ * nenhuma partícula: era `--x` ser uma porcentagem **da tela**, enquanto a
+ * fronteira entre os dois lados é o `--eixo`, que no cadastro vai para 68%.
+ *
+ * Corrigido pela CLASSE: `--x` saiu de "3%..42% da tela" para "0,06..0,84 do
+ * meu lado", e o CSS multiplica pela largura do lado. Assim funciona em
+ * QUALQUER eixo — inclusive num terceiro modo que ainda não existe.
  */
 function semente(quantos, passo) {
   return Array.from({ length: quantos }, (_, i) => ({
-    '--x': `${((i * passo) % 40) + 3}%`,
+    // 50 é a largura do lado quando o eixo está no meio: mantém exatamente as
+    // posições de antes no login, e passa a acompanhar o eixo no cadastro.
+    '--x': (((i * passo) % 40) + 3) / 50,
     '--atraso': `${(i * 1.7) % 9}s`,
     '--duracao': `${11 + ((i * 3) % 7)}s`,
     '--deriva': `${((i % 3) - 1) * 2.5}vw`,

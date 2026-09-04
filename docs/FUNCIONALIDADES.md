@@ -141,6 +141,10 @@ transições discretas das páginas internas.
   e avisa que pedir reenvio invalida o link anterior.
 - **Email de confirmação** resistente a dark mode — template em Edge Function
   com cores explícitas (não herda tema escuro do cliente de email).
+- **`[04/09]` A troca entre "Entrar" e "Registrar" tem transição.** O conteúdo
+  entra em fade e **o card acompanha a altura** — o formulário de cadastro é
+  2,5× mais alto que o de login, e sem isso ele saltava de tamanho. A primeira
+  pintura da página não anima: o formulário aparece pronto.
 - **Login** com detecção de bloqueio por tentativas (ver
   [bloqueio de login](#bloqueio-de-login-por-tentativas)) e contagem regressiva
   ao vivo quando bloqueado.

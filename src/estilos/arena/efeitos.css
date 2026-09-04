@@ -1,0 +1,157 @@
+/* Os EFEITOS: a moldura das bordas e as partículas (faíscas e flocos).
+ *
+ * Parte 3 de 4 — ver `../arena.css`.
+ *
+ * ── Atenção ao `url()` daqui ────────────────────────────────────────────────
+ *
+ * Ele é relativo a ESTE arquivo, não ao `index.css`. Ao mover este bloco uma
+ * pasta para dentro, os dois `url('../assets/...')` deixaram de resolver e o
+ * Vite emitiu o caminho **cru** — a moldura daria 404 em produção, e nada
+ * quebraria no build. Só apareceu porque o CSS emitido foi comparado com o de
+ * antes, byte a byte. É o tipo de falha muda do §1.5: build verde, imagem
+ * faltando. */
+
+/* ── A MOLDURA: lava numa borda, cristal na outra ────────────────────────────
+ *
+ * `[04/09]` Substituiu as labaredas e os cristais que eu desenhava em CSS.
+ * Pedido do dono, com a arte junto: *"tira os efeitos de labareda e tbm os
+ * cristais que vc fez a mão, coloca essa moldura nos cantos"*.
+ *
+ * ── Por que `mix-blend-mode: screen` ────────────────────────────────────────
+ *
+ * A arte tem o centro PRETO e as bordas acesas. Em `screen`, preto é
+ * transparente e claro soma — então a moldura acende as bordas e desaparece
+ * sozinha em direção ao meio, sem máscara nenhuma e sem uma reta de fim. Colada
+ * por cima do jeito normal, o centro preto escureceria o gradiente da arena
+ * exatamente onde o formulário mora.
+ *
+ * ── Estática, e isso é escolha ──────────────────────────────────────────────
+ *
+ * Ela não anima. O que se mexe continua sendo faísca e floco (as partículas
+ * abaixo), que rodam em `transform`/`opacity` no compositor. Moldura de tela
+ * cheia animada seria repintura de tela cheia por quadro — o custo que o §0.3
+ * deste projeto já cobrou caro uma vez.
+ */
+.arena-moldura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.arena-moldura-lado {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 30vw e opacidade baixa: é MOLDURA, não papel de parede. Na primeira
+   * tentativa ela entrou com 42vw e 0.85 e engoliu os dois lutadores — a
+   * lava tinha mais presença que o personagem, que é o contrário do que a
+   * tela precisa contar. */
+  width: 30vw;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  /* Entra depois dos lutadores: a arena monta de dentro para fora. */
+  animation: arenaMolduraAcende 900ms ease-out 420ms both;
+}
+
+/* A máscara é obrigatória, não enfeite. `background-size: cover` numa caixa
+ * alta e estreita corta a arte na horizontal, e o esvanecimento que ela traz
+ * para o centro morre no corte — sobra uma RETA vertical no meio da tela. É o
+ * mesmo defeito do recorte dos lutadores, na outra direção. */
+.arena-moldura-fogo {
+  left: 0;
+  background-image: url('../../assets/auth/moldura-fogo.webp');
+  background-position: left center;
+  -webkit-mask-image: linear-gradient(to right, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 38%, transparent 100%);
+}
+
+.arena-moldura-gelo {
+  right: 0;
+  background-image: url('../../assets/auth/moldura-gelo.webp');
+  background-position: right center;
+  -webkit-mask-image: linear-gradient(to left, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to left, #000 38%, transparent 100%);
+}
+
+/* SEM `to`. Com `to { opacity: .85 }` e `fill-mode: both`, o quadro final
+ * venceria a `opacity` declarada — inclusive a de dentro do `@media` do
+ * celular, que ficaria sem efeito. Foi exatamente o defeito encontrado hoje no
+ * `.arena-lutador`. Sem o `to`, o alvo é o valor computado do elemento, e cada
+ * tela mantém o seu. */
+@keyframes arenaMolduraAcende {
+  from { opacity: 0; }
+}
+
+/* CADASTRO: moldura SÓ na borda do fogo. A direita fica limpa.
+ *
+ * Pedido do dono — *"a do cadastro pode ser só a de fogo"*. A primeira versão
+ * espelhava a arte de fogo para a borda direita, para fechar a moldura dos dois
+ * lados; ele viu e questionou: *"o fogo tá tomando conta do gelo aqui?"*.
+ *
+ * Ele tem razão, e o certo era a leitura literal: com o gelo de costas e
+ * recuado, lava passando por cima dele conta que o fogo invadiu o outro lado —
+ * história diferente de "o fogo venceu". Borda direita vazia deixa o gelo na
+ * penumbra, que é exatamente o que a cena quer dizer. */
+.arena-selecionado .arena-moldura-gelo {
+  display: none;
+}
+
+/* ── As partículas ───────────────────────────────────────────────────────── */
+.arena-particula {
+  position: absolute;
+  bottom: -4vh;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation-name: arenaSobe;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-delay: var(--atraso, 0s);
+  animation-duration: var(--duracao, 13s);
+  will-change: transform, opacity;
+}
+
+/* Brasa sobe pela esquerda; lasca de gelo desce pela direita. Duas direções,
+ * porque fogo que cai e gelo que sobe seria a leitura invertida.
+ *
+ * `--x` é FRAÇÃO do lado (0..1), e a conta usa o `--eixo`. Antes era
+ * porcentagem da tela, e no cadastro — onde o eixo vai para 68% — as lascas de
+ * gelo caíam dentro do lado do fogo. Era o dono quem tinha que ver: *"não é
+ * algo que incomoda, só é falta de capricho"*.
+ *
+ * A folga para a deriva lateral (`--deriva`, até 2,5vw) já vem do próprio
+ * `--x`, que para em 0,84 do lado — sobram 16% de margem antes da fenda. */
+.arena-brasa {
+  left: calc(var(--x, 0.2) * var(--eixo, 50%));
+  background: #ffa14d;
+  box-shadow: 0 0 10px 2px #ff5a1e99;
+}
+
+/* Lasca, não ponto: gelo tem aresta. */
+.arena-lasca {
+  right: calc(var(--x, 0.2) * (100% - var(--eixo, 50%)));
+  top: -4vh;
+  bottom: auto;
+  width: 2px;
+  height: 9px;
+  border-radius: 1px;
+  background: #cffafe;
+  box-shadow: 0 0 8px 1px #22d3ee88;
+  animation-name: arenaDesce;
+}
+
+@keyframes arenaSobe {
+  0%   { transform: translate3d(0, 0, 0);                     opacity: 0; }
+  10%  {                                                      opacity: 0.85; }
+  90%  {                                                      opacity: 0.85; }
+  100% { transform: translate3d(var(--deriva, 0), -108vh, 0); opacity: 0; }
+}
+
+@keyframes arenaDesce {
+  0%   { transform: translate3d(0, 0, 0) rotate(8deg);                     opacity: 0; }
+  10%  {                                                                   opacity: 0.75; }
+  90%  {                                                                   opacity: 0.75; }
+  100% { transform: translate3d(var(--deriva, 0), 108vh, 0) rotate(22deg); opacity: 0; }
+}

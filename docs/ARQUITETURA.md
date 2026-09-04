@@ -14,11 +14,26 @@ src/
 │                          # App.jsx quando ele passou de 300 linhas (§4)
 ├── main.jsx               # Bootstrap React
 ├── index.css              # Tema (cores neon, classes .card/.btn/.tag/.input)
-├── estilos/
-│   └── arena.css          # `[04/09]` O fundo do login e do cadastro: lados,
-│                          # fenda, VS, lutadores, labaredas, cristais e
-│                          # partículas. Saiu do index.css quando o bloco
-│                          # passou de 400 linhas (§4); entra por @import
+├── estilos/               # `[04/09]` O CSS do site, em partes. A ORDEM dos
+│   │                      # @import no index.css é comportamento, não gosto:
+│   │                      # CSS resolve empate de especificidade por ordem
+│   ├── fontes.css         # @font-face das três famílias, servidas do domínio
+│   ├── tailwind.css       # as três diretivas @tailwind, isoladas para o
+│   │                      # index.css poder ser só imports
+│   ├── base.css           # reset, variáveis de cor, body — DEPOIS do preflight
+│   ├── componentes.css    # card, input, botões, tags, nav, texto neon,
+│   │                      # animações compartilhadas, celular, avatar.
+│   │                      # DEPOIS das utilitárias do Tailwind, de propósito
+│   ├── decoracao.css      # fundo das páginas públicas, intro do raio, peças
+│   │                      # de videogame, luzes de arena, explosões, aviso
+│   ├── arena.css          # só os 4 @import da arena, e a ordem deles
+│   └── arena/             # o fundo do login e do cadastro, em 4 partes
+│       ├── cena.css       # os dois lados, a fenda e o VS
+│       ├── lutadores.css  # as artes, a entrada de cada uma, o cadastro
+│       ├── efeitos.css    # a moldura das bordas e as partículas.
+│       │                  # ATENÇÃO: o url() aqui é relativo a ESTA pasta
+│       └── celular.css    # a composição do telefone e a de quem pediu menos
+│                          # movimento — por último, porque sobrescreve
 ├── assets/
 │   ├── landing/           # Prints reais do site usados na landing (feed, mural, lives,
 │   │                      # ranks, keys) — nomes de usuários censados por privacidade
@@ -256,10 +271,15 @@ src/
     │   │                  # dois lutadores, fogo de um lado, gelo do outro,
     │   │                  # fenda e VS no meio. Os personagens são ARTE do
     │   │                  # dono (fundo transparente de verdade, conferido no
-    │   │                  # canal alfa); o resto — gradiente, labareda,
-    │   │                  # cristal, partícula, entrada — é CSS que só anima
-    │   │                  # transform/opacity. Celular e PC têm composições
-    │   │                  # diferentes, por @media e não por JS
+    │   │                  # canal alfa); a moldura das bordas também. O resto
+    │   │                  # — gradiente, faísca, floco, entrada — é CSS que só
+    │   │                  # anima transform/opacity. Celular e PC têm
+    │   │                  # composições diferentes, por @media e não por JS
+    │   ├── CardQueAcompanhaAltura.jsx # `[04/09]` O card do login com a altura
+    │   │                  # animada na troca de aba. Mede o conteúdo por
+    │   │                  # ResizeObserver e só anima quando a `chave` muda —
+    │   │                  # senão animaria a cada tecla digitada. Existe porque
+    │   │                  # o `layout` do Framer foi medido e não animou nada
     │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
     │                      # com links em aba nova. Três caixinhas separadas
     │                      # treinam a pessoa a clicar sem ler
@@ -523,9 +543,11 @@ Detalhadas no `CLAUDE.md`. Resumo:
   Transição de página global com `PageTransition` + `AnimatePresence`.
 - **Ícones**: Lucide para UI; `react-icons/fa6` para marcas.
 - **Modais** estilizados via `createPortal` (sem `window.prompt/confirm`).
-- Tema em `src/index.css` (classes `.card`, `.btn-neon/.btn-solid/.btn-purple`,
-  `.tag-*`, `.input-gamer`). Bloco visual grande e de uma tela só mora em
-  `src/estilos/` e entra por `@import` — hoje só `arena.css`.
+- Tema em `src/estilos/componentes.css` (classes `.card`,
+  `.btn-neon/.btn-solid/.btn-purple`, `.tag-*`, `.input-gamer`). O `index.css`
+  é **só a lista de `@import`**, e a ordem dela é comportamento: `.card` só
+  vence uma utilitária do Tailwind de mesma propriedade porque vem depois de
+  `@tailwind utilities`.
 - **Arquivos pequenos**: ~300 linhas como guia; extrair UI repetida em
   componentes, lógica em hooks/utils, acesso a dados em services.
 - **Testes** unitários da lógica pura em `src/lib/__tests__/` (Vitest).

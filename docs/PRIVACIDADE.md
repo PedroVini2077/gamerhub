@@ -256,7 +256,8 @@ falta é a decisão de prazo.
 > distinção continua correta. O que mudou é que o custo de resolver era pequeno.
 
 As fontes passaram a ser servidas do próprio site: **96 KB** em
-`public/fonts/`, com o `@font-face` no `src/index.css`.
+`public/fonts/`, com o `@font-face` em `src/estilos/fontes.css`. *(`[04/09]`
+Estava no `src/index.css` até o CSS ser dividido; o arquivo mudou, o fato não.)*
 
 | | Antes | Agora |
 | --- | --- | --- |
@@ -280,8 +281,16 @@ depende de JavaScript. Nada disso faz sentido quando o arquivo mora no mesmo
 domínio.
 
 **A trava** (`conteudoDaPrivacidade.test.js`): nenhum host de fonte de terceiro
-pode aparecer em `index.html` nem em `index.css` — e ela ignora comentários de
-propósito, porque os dois arquivos **contam** por que as fontes saíram de lá.
+pode aparecer no `index.html` nem em **nenhuma folha de estilo de `src/`** — e
+ela ignora comentários de propósito, porque os arquivos **contam** por que as
+fontes saíram de lá.
+
+> **`[04/09]` A trava passou a varrer todo o CSS, e não um nome cravado.** Ela
+> lia `src/index.css`; o split do CSS moveu o bloco de `@font-face` e ela
+> **reprovou** — fez o trabalho dela. O conserto não foi trocar um nome fixo por
+> outro: agora ela varre `src/estilos/*.css` inteiro, então vale para arquivo de
+> CSS que ainda não existe. Provado criando um arquivo novo com um `@import` do
+> Google Fonts e vendo a trava acusá-lo pelo nome.
 Provada: repus um `<link>` do Google e ela falhou nomeando o problema.
 
 Uma segunda trava confere que todo `@font-face` aponta para um arquivo que

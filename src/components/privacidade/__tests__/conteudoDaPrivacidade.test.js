@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { varrerFontes } from '../../../lib/__tests__/varrerFontes';
 import {
   BLOCOS, ATUALIZADO_EM, CHAVES_DECLARADAS, TERCEIROS_DECLARADOS,
@@ -174,13 +174,34 @@ describe('nenhuma fonte vem de terceiro', () => {
     ['cdn.jsdelivr.net/npm/@fontsource', 'Fontsource via CDN'],
   ];
 
-  const alvos = ['index.html', 'src/index.css'];
+  /**
+   * `[04/09]` Todo o CSS, e não só o `index.css`.
+   *
+   * A trava lia um arquivo com nome cravado, e o split do CSS a quebrou — o
+   * bloco de `@font-face` mudou para `src/estilos/fontes.css`. Ela **fez o
+   * trabalho dela**: reprovou em vez de passar sobre um arquivo sem fontes.
+   *
+   * O conserto não foi trocar um nome cravado por outro: agora ela varre toda
+   * folha de estilo de `src/`. Assim vale para arquivo de CSS que ainda não
+   * existe, e é impossível esconder um terceiro criando um arquivo novo.
+   */
+  const folhasDeEstilo = () => [
+    'src/index.css',
+    ...readdirSync('src/estilos').filter(f => f.endsWith('.css')).map(f => `src/estilos/${f}`),
+  ];
 
-  it('nem o index.html nem o index.css buscam fonte de fora', () => {
-    for (const alvo of alvos) {
+  const alvos = () => ['index.html', ...folhasDeEstilo()];
+
+  it('nem o index.html nem NENHUMA folha de estilo buscam fonte de fora', () => {
+    const lista = alvos();
+    // Prova que leu de verdade: se a pasta `src/estilos` mudar de lugar, a
+    // varredura ficaria sobre uma lista curta e verde para sempre.
+    expect(lista.length,
+      'a lista de folhas de estilo encolheu — src/estilos/ mudou de lugar?\n'
+      + '  Sem os arquivos, esta trava nao verifica nada.').toBeGreaterThanOrEqual(6);
+
+    for (const alvo of lista) {
       const bruto = readFileSync(alvo, 'utf8');
-      // Prova que leu de verdade: sem isto, renomear o arquivo deixaria a
-      // trava verde para sempre.
       expect(bruto.length, `${alvo} veio vazio`).toBeGreaterThan(200);
 
       // A mencao em COMENTARIO e legitima e existe de proposito nos dois
@@ -199,7 +220,8 @@ describe('nenhuma fonte vem de terceiro', () => {
           + '  quem so abre a landing e vai embora — era o unico terceiro que a\n'
           + '  landing contactava, e foi removido em 03/09.\n'
           + '  Se a fonte nova e mesmo necessaria: baixe o woff2 para\n'
-          + '  public/fonts/, declare o @font-face no src/index.css, e SO entao\n'
+          + '  public/fonts/, declare o @font-face em src/estilos/fontes.css, e\n'
+          + '  SO entao\n'
           + '  esta trava fica verde. Se o terceiro for proposital, ele precisa\n'
           + '  entrar na tabela de terceiros da politica de privacidade.')
           .not.toContain(host);
@@ -210,11 +232,11 @@ describe('nenhuma fonte vem de terceiro', () => {
   it('os arquivos de fonte que o CSS declara existem mesmo', () => {
     // Sem isto, renomear um woff2 daria fallback silencioso para a fonte do
     // sistema: nada quebra, nada avisa, e o site so fica com outra cara (§4).
-    const css = readFileSync('src/index.css', 'utf8');
+    const css = folhasDeEstilo().map(f => readFileSync(f, 'utf8')).join('\n');
     const declarados = [...css.matchAll(/url\('(\/fonts\/[^']+)'\)/g)].map(m => m[1]);
 
     expect(declarados.length,
-      'nenhum @font-face local encontrado no index.css — as fontes voltaram\n'
+      'nenhum @font-face local encontrado no CSS de src/ — as fontes voltaram\n'
       + '  a vir de fora, ou o bloco foi removido').toBeGreaterThanOrEqual(5);
 
     for (const caminho of declarados) {
