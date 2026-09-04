@@ -1257,3 +1257,38 @@ ver. Medido depois: 0,90 → 0,29 → 0,08 → 0.
 
 O `animation: none` que existia na regra do VS **saiu** — era ele que reiniciava
 a entrada ao voltar para o login, o mesmo defeito que os lutadores tinham.
+
+
+## `[04/09]` A tela de boas-vindas: a fenda contava a história errada
+
+A primeira versão eram duas metades com uma **fenda visível no meio desde o
+primeiro quadro**. O dono reprovou: *"não queria que ela tivesse essa fenda, eu
+queria que fosse estilo portão futurista, que tem uma tranca no meio que rodasse
+'destrancando' a porta e carregando o site"*.
+
+**A diferença não é decorativa, e vale escrever por quê.** Fenda no primeiro
+quadro conta *"isto vai abrir"* — a porta já está entregue, só falta o
+movimento. Porta inteira com tranca girando conta *"isto está sendo aberto para
+você"*, que é exatamente o que a tela existe para dizer enquanto o site carrega.
+A primeira mostra o resultado; a segunda mostra o trabalho.
+
+**Daí os três estados, e o do meio é o que dá CAUSA à abertura:**
+
+| estado | o que está na tela | duração |
+| --- | --- | --- |
+| trancado | superfície única, tranca de três anéis girando | do piso (700 ms) ao teto (2500 ms) |
+| destrancado | a tranca para, trava e acende; a linha vira "acesso liberado" | 420 ms |
+| abrindo | as folhas se separam | 560 ms |
+
+Sem o estado do meio a porta abriria sozinha, e a tranca no meio não teria feito
+nada — seria enfeite em cima de enfeite.
+
+**As duas folhas continuam existindo** (é o único jeito de a porta abrir), mas
+com o **mesmo fundo e sem borda**: a divisão só passa a existir no instante em
+que elas se separam.
+
+### O que ficou igual, e é o que importa
+
+O teto de 2,5 s. A tranca gira enquanto o perfil carrega, mas se ele não chegar
+ela trava e a porta abre do mesmo jeito. Animação bonita não vira porta trancada
+(§0.3).

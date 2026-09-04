@@ -124,11 +124,19 @@
   transform: translateX(4vw);
 }
 
-/* O roxo RECUA PARA O LADO enquanto o verde toma conta — pedido do dono:
- * *"pode fazer ela sumir pro lado enquanto o outro personagem toma conta"*.
- * 8vw para a direita e opacidade menor, nos mesmos 900 ms da fenda: ele sai de
- * cena andando, em vez de apagar no lugar. */
+/* O roxo RECUA enquanto o verde toma conta — pedido do dono: *"pode fazer ela
+ * sumir pro lado enquanto o outro personagem toma conta"*.
+ *
+ * `[04/09]` Ele recua com ESCALA, não só andando para o lado, e a correção veio
+ * do dono: *"o boneco roxo está muito cortado no PC, você olhou a aba errada"*.
+ * Estava certo — eu conferi o login e o defeito era no cadastro: os 8vw de
+ * translação empurravam a caixa 4,5vw PARA FORA da tela, então metade dele
+ * ficava do lado de fora.
+ *
+ * Encolher lê como "afastou" tão bem quanto deslizar, e não tem borda para
+ * atravessar. Sobraram 2vw de translação só para dar a direção do movimento. */
 .arena-selecionado .arena-lutador-roxo {
-  transform: translateX(8vw);
+  transform: translateX(2vw) scale(0.86);
+  transform-origin: right bottom;
   opacity: 0.5;
 }
