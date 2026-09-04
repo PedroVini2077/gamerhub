@@ -146,6 +146,18 @@ transições discretas das páginas internas.
   ao vivo quando bloqueado.
 - Botão **"Voltar para a página inicial"** na tela de login (leva para a
   Landing sem precisar de conta).
+- **`[04/09]` A arena de fundo** — a tela de entrada tem dois lutadores, um de
+  fogo e um de gelo, separados por uma fenda com o "VS". Quem chega no **login**
+  os vê se encarando; ao trocar para **registrar**, o de fogo dá um passo à
+  frente e vira para quem olha, e o de gelo recua de costas — é o
+  *character selected* que a tela inteira está contando. As bordas da tela são
+  emolduradas por lava de um lado e cristal do outro — no cadastro as duas são
+  de fogo, porque ali o gelo já está de costas. No celular eles ocupam
+  o terço de cima da tela, se encontrando no meio e saindo pelas laterais, e
+  dissolvem antes do formulário — o card cobre quase a largura toda, então
+  figura na lateral ficaria escondida atrás dele. O peso e o recorte estão em
+  [DESEMPENHO.md](DESEMPENHO.md); a origem das artes e a escolha de cortar em
+  vez de esticar, em [DECISOES.md](DECISOES.md).
 - **Recuperação de senha** por e-mail; indicador de força de senha.
 - **Configurações** (`Settings`): trocar senha, trocar e-mail (com confirmação),
   preferências de notificação (likes/comentários) e **deletar a própria conta**

@@ -19,6 +19,98 @@
 
 ---
 
+### `[04/09]` As artes da arena: 5 MB de PNG viraram 60–282 KB, e o portão que faltava
+
+**O que foi medido.** O dono gerou duas artes com fundo transparente para o
+login e o cadastro. Do jeito que chegaram, elas eram **PNG de ~2,5 MB cada** —
+na camada 2 (§0.4), que é por onde passa todo mundo que decide ficar, e boa
+parte no celular.
+
+**O tratamento, em duas etapas, e cada uma tem um motivo diferente:**
+
+| Etapa | O que fez | Por quê |
+| --- | --- | --- |
+| **Recorte** | achar a caixa real de cada corpo no canal alfa e cortar ali | metade de cada PNG era transparência pura, que ocupa byte e não aparece |
+| **WebP em dois tamanhos** | 340 px e 720 px, `q:v 70` | o celular exibe ~150 px de largura; baixar 720 px para isso é o desperdício mais comum de imagem responsiva |
+
+**O resultado, por tela — só um par carrega por vez:**
+
+| Tela | Par de 340 px | Par de 720 px |
+| --- | --- | --- |
+| `/login` (fogo em guarda + gelo em guarda) | **83 KB** | **279 KB** |
+| cadastro (fogo de frente + gelo de costas) | **62 KB** | **215 KB** |
+
+Os oito arquivos somam **639 KB** no repositório, mas nenhum visitante baixa os
+oito: o `srcset`/`sizes` escolhe um tamanho, e o modo escolhe o par.
+
+> **A coluna NÃO é "celular × desktop", e essa correção é minha.** Eu escrevi
+> aqui e no código que o celular pagava 83 KB. **Não paga.** Medido em 390×844
+> com DPR 3, o navegador escolhe `fogo-guarda-720`: a conta que ele faz é
+> `largura em CSS × densidade`, e 3 pixels físicos por CSS jogam qualquer
+> telefone moderno no arquivo grande. O par de 340 só serve tela 1x.
+>
+> É a escolha certa dele — em tela 3x o arquivo pequeno apareceria borrado. O
+> que estava errado era a **frase**, não o `srcset`: eu tinha inferido "celular
+> = arquivo pequeno" e apresentado como fato (§1.1).
+
+**E foi essa medição que liberou dobrar o tamanho no celular de graça.** O dono
+reclamou que as figuras estavam pequenas no telefone. Como o aparelho dele já
+baixava o arquivo de 720 px para exibir 119 px de largura, crescer para 252 px
+**não mudou byte nenhum** — mudou só quanto daquele arquivo aparece na tela.
+Antes: 16vh de altura, 135 px. Depois: 34vh, 287 px. Mesmo download, o dobro de
+presença.
+
+**O recorte foi onde eu errei duas vezes, e as duas o dono viu antes de mim.**
+
+| A tentativa | O que ele viu | O que a medição mostrou |
+| --- | --- | --- |
+| corte no meio da imagem (x=768), por simetria | *"o personagem de fogo tá passando para o lado do de gelo"* (cadastro) | o corpo do fogo vai até x=890 e o do gelo só começa em x=1070 — o meio caía dentro das labaredas |
+| corte por reta, agora nos limites medidos | *"o fogo tá aparecendo um pouco na parte de gelo, não ficou um corte muito limpo"* (login) | **os dois se sobrepõem por 75 colunas**: o fogo do golpe vai até 808 e o gelo já começa em 734 |
+
+**A segunda é a que ensina, porque nenhuma reta resolveria.** Onde os dois
+efeitos se cruzam não existe coluna vazia — a mais vazia da faixa ainda tinha 95
+pixels. Qualquer corte vertical ali corta um golpe pela metade **e** leva um
+pedaço do outro junto. Foi exatamente o que apareceu no celular dele: uma lasca
+laranja na borda da arte do gelo e um caco azul na do fogo.
+
+**O que resolveu:** na faixa disputada a fronteira passou a ser a **cor** do
+pixel, não a posição — o lado do fogo descarta o que é nitidamente frio, o do
+gelo o que é nitidamente quente, o núcleo branco do golpe (que não tem cor, e
+por isso escapava das duas regras) vai para o dono da metade em que está, e o
+alfa cai por rampa nos últimos 30 px, para o halo residual não terminar numa
+reta. Depois disso cada arte é recortada na caixa real do que sobrou.
+
+Resultado medido nas artes servidas pelo site: **0** pixels da cor do adversário
+na borda de cada uma. Com o corte antigo eram **638** na arte do gelo.
+
+> Duas lições, e a segunda é nova aqui: **simetria aparente não é medição** — e
+> **quando dois elementos se sobrepõem, o eixo do corte não existe.** Procurar
+> "o melhor lugar para cortar" era a pergunta errada; a certa era "o que decide
+> a quem cada pixel pertence".
+
+**`[04/09]` A moldura das bordas, que entrou depois: +148 KB, e estáticos.**
+As labaredas e os cristais desenhados em CSS saíram e viraram arte
+(`moldura-fogo.webp` 72 KB + `moldura-gelo.webp` 76 KB, 448 px de largura). A
+troca **reduz** trabalho de quadro: saíram seis elementos animando em laço
+infinito; entraram duas camadas paradas, que compõem uma vez. A resolução é
+baixa de propósito — é textura difusa sob `mix-blend-mode: screen` e opacidade
+0,55, onde detalhe não se vê e byte se paga.
+
+Com ela, a pasta `src/assets/auth` foi a **783 KB**, e o teto da trava de peso
+subiu de 800 para 900 KB **com o motivo escrito no próprio teste**: a pasta
+passou a guardar duas categorias de arte, e o teto antigo tinha sido
+dimensionado só para os lutadores.
+
+**O que o orçamento de bytes do CI diz, e o que ele NÃO vê.** O
+`orcamento-de-bytes.mjs` continua em 219,7 de 222 KB gzip — inalterado, porque
+ele mede **JavaScript e CSS**, e imagem não passa por ele. Ou seja: trocar estas
+artes por um PNG de 2,5 MB deixaria o CI **verde**. Daí as duas travas novas:
+`pesoDaArena.test.js` (180 KB por arquivo, 800 KB no conjunto, provada copiando
+um dos PNG originais para a pasta) e `e2e/artes-da-arena.mjs` (a contagem de cor
+acima, provada reinjetando o recorte antigo e vendo o CI acusar 638).
+
+---
+
 ### `[01/09]` O fluxo de dados da landing — e o A/B que mudou o desenho
 
 O pedido incluía *"algum nível de interatividade"* nos elementos flutuantes. O

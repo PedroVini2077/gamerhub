@@ -1,0 +1,433 @@
+/* Os estilos da ARENA DE ENTRADA — o fundo do login e do cadastro.
+ *
+ * Saiu do `index.css` em 04/09 por causa do §4: o bloco cresceu 272 linhas
+ * nesta sessão e a regra é que arquivo que eu toco não passa de 300. Aqui ele
+ * mora sozinho, do lado do componente que o usa (`components/auth/
+ * ArenaDeEntrada.jsx`), e o `index.css` volta a ser só o alicerce do site.
+ *
+ * A ordem do `@import` no `index.css` é a MESMA em que o bloco estava — regra
+ * de CSS depende de ordem, e mover sem preservar ordem não é extração
+ * mecânica, é mudança de comportamento disfarçada.
+ */
+
+/* ── `[04/09]` A ARENA DE ENTRADA — o fundo do login e do cadastro ─────────
+ *
+ * Pedido do dono, com uma arte de luta como referência. A v1 tinha só a
+ * composição (dois campos de cor e a fratura) e ele achou o furo que eu não
+ * vi: *"eu sei o contexto dessa tela, e o resto do povo não… o que raios
+ * significa esse vermelho e azul com algumas partículas?"*.
+ *
+ * Duelo sem os dois duelistas é gradiente. Entraram os lutadores, fogo e gelo
+ * de verdade, e o **VS** — que é o elemento mais barato que responde "o que é
+ * isso?" sem uma palavra.
+ *
+ * ── A regra de desempenho, e ela não é negociável aqui ─────────────────────
+ *
+ * Esta é a camada 2 (§0.4): todo mundo que decide ficar passa por ela. Então
+ * **só `transform` e `opacity` animam**. Nada de animar `filter: blur()` nem
+ * `box-shadow` — não rodam no compositor, e a landing já cobrou caro por isso
+ * quando o `text-shadow` do título estava animado (ver docs/DESEMPENHO.md).
+ *
+ * A moldura das bordas é ESTÁTICA pelo mesmo motivo: ela compõe uma vez e fica
+ * parada. O que se mexe são as faíscas e os flocos, que são `transform` puro.
+ */
+.arena {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  background: #06060a;
+  pointer-events: none;
+}
+
+.arena-lado {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              right 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 900ms ease;
+}
+
+/* As opacidades saíram de OLHAR a tela, não de escolher número bonito: a
+ * primeira versão ficou quase invisível no desktop. O calor mais forte fica
+ * ENCOSTADO na fenda — é lá que os dois lados se encontram. */
+.arena-fogo {
+  left: -10%;
+  right: calc(100% - var(--eixo, 50%));
+  background:
+    radial-gradient(52% 60% at 92% 50%, #ff6a2088, transparent 72%),
+    radial-gradient(70% 60% at 35% 40%, #ff5a1e3a, transparent 70%),
+    radial-gradient(95% 75% at 5% 85%, #ff2d0026, transparent 75%),
+    linear-gradient(100deg, #2a1206 0%, #150a06 60%, #0a0709 100%);
+}
+
+.arena-gelo {
+  left: var(--eixo, 50%);
+  right: -10%;
+  background:
+    radial-gradient(52% 60% at 8% 50%, #22d3ee7a, transparent 72%),
+    radial-gradient(70% 60% at 65% 40%, #38bdf836, transparent 70%),
+    radial-gradient(95% 75% at 95% 85%, #0ea5e926, transparent 75%),
+    linear-gradient(260deg, #06202c 0%, #06121c 60%, #0a0709 100%);
+}
+
+/* No cadastro o fogo VENCE: o lado do gelo esfria e recua. */
+.arena-selecionado .arena-gelo { opacity: 0.45; }
+
+/* ── A fenda ─────────────────────────────────────────────────────────────── */
+.arena-fenda {
+  position: absolute;
+  top: -5%;
+  bottom: -5%;
+  left: var(--eixo, 50%);
+  width: 3px;
+  margin-left: -1.5px;
+  background: linear-gradient(180deg,
+    transparent, #ffffff26 10%, #ffffffcc 50%, #ffffff26 90%, transparent);
+  /* Duas sombras, uma de cada temperatura: é o encontro dos dois lados, não
+   * uma luz só. Elas são ESTÁTICAS — quem respira é a opacidade. */
+  box-shadow: 0 0 22px 3px #7dd3fc55, 0 0 60px 14px #fb923c33;
+  animation: arenaFendaRespira 7s ease-in-out infinite,
+             arenaFendaAcende 700ms ease-out both;
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes arenaFendaRespira {
+  0%, 100% { opacity: 0.55; transform: scaleX(1); }
+  50%      { opacity: 0.9;  transform: scaleX(1.6); }
+}
+
+/* A entrada: a fenda acende antes de todo mundo — é o corte que abre a arena. */
+@keyframes arenaFendaAcende {
+  0%   { transform: scaleY(0); opacity: 0; }
+  60%  { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); }
+}
+
+/* ── O VS ────────────────────────────────────────────────────────────────── */
+/* O VS fica EMBAIXO, entre os pés dos dois — e a posição saiu de medir, não
+ * de gosto: no meio da tela ele fica atrás do card, e no alto ele caiu em cima
+ * do logo "GAMER HUB" na primeira tentativa. A faixa livre é a de baixo, e ali
+ * ele lê como emblema de chão de arena. */
+.arena-vs {
+  position: absolute;
+  left: var(--eixo, 50%);
+  top: 86%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: clamp(2.2rem, 7vw, 4.6rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+  opacity: 0.9;
+  animation: arenaVsEstala 520ms cubic-bezier(0.2, 1.4, 0.4, 1) 620ms both;
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.arena-vs-fogo { color: #ff7a2f; text-shadow: 0 0 26px #ff5a1e66; }
+.arena-vs-gelo { color: #67e8f9; text-shadow: 0 0 26px #22d3ee66; }
+
+@keyframes arenaVsEstala {
+  0%   { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1);   opacity: 0.9; }
+}
+
+/* No cadastro o VS some: não há duelo, há um escolhido.
+ *
+ * `animation: none` junto e NÃO por acaso: a animação de entrada tem
+ * `fill-mode: both`, e o estado final dela (`opacity: 0.9`) vencia este
+ * `opacity: 0`. O VS continuava na tela do cadastro — visto na captura, não
+ * deduzido. Regra que vale além daqui: propriedade animada com `both` ignora
+ * declaração de outra regra. */
+.arena-selecionado .arena-vs { opacity: 0; animation: none; }
+
+/* ── Os lutadores ────────────────────────────────────────────────────────── */
+.arena-lutador {
+  position: absolute;
+  bottom: 0;
+  height: 58vh;
+  opacity: 0.9;
+  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 900ms ease, height 900ms ease;
+}
+
+/* `object-fit: contain` + `bottom`: o lutador fica de pé no chão da arena,
+ * não esticado. A imagem já vem recortada no limite do alfa, então "bottom"
+ * é o pé dele de verdade. */
+/* A opacidade e a máscara moram na IMAGEM, não no `.arena-lutador`.
+ *
+ * Motivo medido, e é a mesma armadilha que já mordeu o VS: a entrada é uma
+ * `animation` com `fill-mode: both`, e o quadro final dela (`opacity: .9`)
+ * **vence** qualquer `opacity` declarada no mesmo elemento — inclusive a de
+ * dentro de um `@media`. O `opacity: 0.65` do celular nunca teve efeito nenhum
+ * depois que a entrada terminava. Na imagem, que não é animada, o valor manda. */
+.arena-figura {
+  height: 100%;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  object-position: bottom;
+}
+
+.arena-lutador-fogo {
+  left: 2vw;
+  animation: arenaEntraDaEsquerda 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms both;
+}
+
+/* `[04/09]` SEM espelho, e isso mudou quando as artes chegaram.
+ *
+ * O `scaleX(-1)` existia porque as duas silhuetas que eu desenhava eram o mesmo
+ * arquivo servindo os dois lados. As artes do dono já vêm **uma de frente para
+ * a outra** — espelhar de novo virava o de gelo para fora da tela, e era isso
+ * que cortava 51 px dele na borda direita (medido, não deduzido). */
+.arena-lutador-gelo {
+  right: 2vw;
+  animation: arenaEntraDaDireita 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 260ms both;
+}
+
+@keyframes arenaEntraDaEsquerda {
+  from { transform: translateX(-14vw); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 0.92; }
+}
+
+@keyframes arenaEntraDaDireita {
+  from { transform: translateX(14vw); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 0.9; }
+}
+
+/* CADASTRO: o de fogo dá um passo à frente e vira de frente para quem olha
+ * (o `scaleX(-1)` some, então ele deixa de mirar o oponente); o de gelo recua
+ * para a penumbra. É o "character selected" da referência. */
+.arena-selecionado .arena-lutador-fogo {
+  height: 66vh;
+  animation: none;
+  transform: translateX(4vw);
+}
+
+/* No cadastro o de gelo JA vem de costas na arte — espelhar de novo o viraria
+ * para fora da tela. Por isso aqui o `scaleX(-1)` sai. */
+.arena-selecionado .arena-lutador-gelo {
+  animation: none;
+  transform: translateX(3vw);
+  opacity: 0.55;
+}
+
+/* ── A MOLDURA: lava numa borda, cristal na outra ────────────────────────────
+ *
+ * `[04/09]` Substituiu as labaredas e os cristais que eu desenhava em CSS.
+ * Pedido do dono, com a arte junto: *"tira os efeitos de labareda e tbm os
+ * cristais que vc fez a mão, coloca essa moldura nos cantos"*.
+ *
+ * ── Por que `mix-blend-mode: screen` ────────────────────────────────────────
+ *
+ * A arte tem o centro PRETO e as bordas acesas. Em `screen`, preto é
+ * transparente e claro soma — então a moldura acende as bordas e desaparece
+ * sozinha em direção ao meio, sem máscara nenhuma e sem uma reta de fim. Colada
+ * por cima do jeito normal, o centro preto escureceria o gradiente da arena
+ * exatamente onde o formulário mora.
+ *
+ * ── Estática, e isso é escolha ──────────────────────────────────────────────
+ *
+ * Ela não anima. O que se mexe continua sendo faísca e floco (as partículas
+ * abaixo), que rodam em `transform`/`opacity` no compositor. Moldura de tela
+ * cheia animada seria repintura de tela cheia por quadro — o custo que o §0.3
+ * deste projeto já cobrou caro uma vez.
+ */
+.arena-moldura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.arena-moldura-lado {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 30vw e opacidade baixa: é MOLDURA, não papel de parede. Na primeira
+   * tentativa ela entrou com 42vw e 0.85 e engoliu os dois lutadores — a
+   * lava tinha mais presença que o personagem, que é o contrário do que a
+   * tela precisa contar. */
+  width: 30vw;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  /* Entra depois dos lutadores: a arena monta de dentro para fora. */
+  animation: arenaMolduraAcende 900ms ease-out 420ms both;
+}
+
+/* A máscara é obrigatória, não enfeite. `background-size: cover` numa caixa
+ * alta e estreita corta a arte na horizontal, e o esvanecimento que ela traz
+ * para o centro morre no corte — sobra uma RETA vertical no meio da tela. É o
+ * mesmo defeito do recorte dos lutadores, na outra direção. */
+.arena-moldura-fogo {
+  left: 0;
+  background-image: url('../assets/auth/moldura-fogo.webp');
+  background-position: left center;
+  -webkit-mask-image: linear-gradient(to right, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 38%, transparent 100%);
+}
+
+.arena-moldura-gelo {
+  right: 0;
+  background-image: url('../assets/auth/moldura-gelo.webp');
+  background-position: right center;
+  -webkit-mask-image: linear-gradient(to left, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to left, #000 38%, transparent 100%);
+}
+
+/* SEM `to`. Com `to { opacity: .85 }` e `fill-mode: both`, o quadro final
+ * venceria a `opacity` declarada — inclusive a de dentro do `@media` do
+ * celular, que ficaria sem efeito. Foi exatamente o defeito encontrado hoje no
+ * `.arena-lutador`. Sem o `to`, o alvo é o valor computado do elemento, e cada
+ * tela mantém o seu. */
+@keyframes arenaMolduraAcende {
+  from { opacity: 0; }
+}
+
+/* CADASTRO: moldura SÓ na borda do fogo. A direita fica limpa.
+ *
+ * Pedido do dono — *"a do cadastro pode ser só a de fogo"*. A primeira versão
+ * espelhava a arte de fogo para a borda direita, para fechar a moldura dos dois
+ * lados; ele viu e questionou: *"o fogo tá tomando conta do gelo aqui?"*.
+ *
+ * Ele tem razão, e o certo era a leitura literal: com o gelo de costas e
+ * recuado, lava passando por cima dele conta que o fogo invadiu o outro lado —
+ * história diferente de "o fogo venceu". Borda direita vazia deixa o gelo na
+ * penumbra, que é exatamente o que a cena quer dizer. */
+.arena-selecionado .arena-moldura-gelo {
+  display: none;
+}
+
+/* ── As partículas ───────────────────────────────────────────────────────── */
+.arena-particula {
+  position: absolute;
+  bottom: -4vh;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation-name: arenaSobe;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-delay: var(--atraso, 0s);
+  animation-duration: var(--duracao, 13s);
+  will-change: transform, opacity;
+}
+
+/* Brasa sobe pela esquerda; lasca de gelo desce pela direita. Duas direções,
+ * porque fogo que cai e gelo que sobe seria a leitura invertida. */
+.arena-brasa {
+  left: var(--x, 10%);
+  background: #ffa14d;
+  box-shadow: 0 0 10px 2px #ff5a1e99;
+}
+
+/* Lasca, não ponto: gelo tem aresta. */
+.arena-lasca {
+  right: var(--x, 10%);
+  top: -4vh;
+  bottom: auto;
+  width: 2px;
+  height: 9px;
+  border-radius: 1px;
+  background: #cffafe;
+  box-shadow: 0 0 8px 1px #22d3ee88;
+  animation-name: arenaDesce;
+}
+
+@keyframes arenaSobe {
+  0%   { transform: translate3d(0, 0, 0);                     opacity: 0; }
+  10%  {                                                      opacity: 0.85; }
+  90%  {                                                      opacity: 0.85; }
+  100% { transform: translate3d(var(--deriva, 0), -108vh, 0); opacity: 0; }
+}
+
+@keyframes arenaDesce {
+  0%   { transform: translate3d(0, 0, 0) rotate(8deg);                     opacity: 0; }
+  10%  {                                                                   opacity: 0.75; }
+  90%  {                                                                   opacity: 0.75; }
+  100% { transform: translate3d(var(--deriva, 0), 108vh, 0) rotate(22deg); opacity: 0; }
+}
+
+/* ── CELULAR: outra composição, e é o pedido do dono ─────────────────────────
+ *
+ * *"eu percebi que no celular fica bem curto o espaço, então tem que funcionar
+ * dos dois lados"*. E é verdade: com o card ocupando quase toda a largura,
+ * lutador na lateral fica ATRÁS dele — invisível.
+ *
+ * Aqui eles sobem para o topo, menores, ladeando o logo: o único lugar da tela
+ * do cadastro que o formulário não cobre. */
+@media (max-width: 767px) {
+  /* `[04/09]` Os lutadores DOBRARAM de tamanho, e a troca é declarada.
+   *
+   * Reclamação do dono, com o print junto: *"tô achando muito pequeno as
+   * imagens"*, e a pergunta que veio junto — *"vai ficar muito feio esticar a
+   * imagem?"*. Esticar, sim: personagem com proporção errada não lê como
+   * estilo, lê como defeito. Cortar, não — figura sangrando pela borda é
+   * composição normal. Então eles crescem e **saem pela lateral**.
+   *
+   * Medido em 390×844 (o print dele): link "Voltar" em 162 px, logo em 202,
+   * card em 298. Com 16vh os vultos tinham 135 px de altura e paravam antes
+   * do link. Com 34vh eles ocupam 0..287 px e passam POR TRÁS dos dois textos
+   * — o que só é aceitável porque a máscara abaixo apaga justamente a metade
+   * de baixo, que é onde o texto cai. Cabeça e tronco ficam nítidos; pernas
+   * dissolvem no fundo em vez de terminarem num corte reto.
+   *
+   * **Não custa byte:** com DPR 2 ou 3 o navegador já escolhia o arquivo de
+   * 720 px mesmo com os vultos pequenos (medido: `fogo-guarda-720` em 390×844,
+   * DPR 3). Aumentar mudou o tamanho na tela, não o arquivo baixado. */
+  .arena-lutador {
+    height: 34vh;
+    bottom: auto;
+    /* 1,5vh e não 0: com `top: 0` a cabeça do lutador encosta na borda de cima
+     * da tela e lê como "cortado", mesmo sem estar. */
+    top: 1.5vh;
+  }
+  /* Largura de 34vh dá ~265 px em cada um — os dois somam mais que a tela.
+   * Puxar para fora é o que faz eles se encontrarem no MEIO, que é a cena, em
+   * vez de espremer os dois inteiros num espaço que não existe. */
+  .arena-lutador-fogo { left: -16vw; }
+  .arena-lutador-gelo { right: -16vw; }
+
+  .arena-figura {
+    /* 0.6 e não 0.5: com a moldura por trás, o fundo ficou mais movimentado, e
+     * o lutador precisa de mais corpo para não sumir dentro dele. */
+    opacity: 0.6;
+    /* Some de baixo para cima. Sem isto, crescer significaria "personagem
+     * cortado na canela por uma reta invisível" — e reta invisível cortando
+     * corpo é exatamente o defeito que o dono achou no recorte das artes. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
+  }
+
+  /* 88vh e não 82: medido em 390×844, o card termina em 652 px (77vh) e a linha
+   * "// GamerHub v1.0" logo abaixo dele ia até ~680 px — o VS encostava nela.
+   * Rodapé e emblema disputando o mesmo pixel viram sujeira, não composição. */
+  .arena-vs { top: 88vh; font-size: clamp(1.8rem, 9vw, 2.8rem); }
+
+  /* Mais ESTREITA e mais fraca no celular, não mais larga. A tela é estreita:
+   * com 46vw de cada lado a moldura cobria quase tudo e virava papel de
+   * parede — os lutadores, que são o assunto, ficavam lavados por trás dela. */
+  .arena-moldura-lado { width: 34vw; opacity: 0.38; }
+
+  /* No cadastro o fogo "venceu": ele cresce mais e vem para o centro; o gelo
+   * recua para a penumbra em vez de sumir. */
+  .arena-selecionado .arena-lutador-fogo { height: 40vh; transform: translateX(6vw); }
+  .arena-selecionado .arena-lutador-gelo { transform: translateX(6vw); }
+  .arena-selecionado .arena-lutador-gelo .arena-figura { opacity: 0.32; }
+}
+
+/* Quem pediu menos movimento recebe a cena MONTADA — sem entrada e sem faísca
+ * subindo. A cor, os lutadores, a moldura, a fenda e o VS ficam: eles são a
+ * informação; o movimento é o enfeite. */
+@media (prefers-reduced-motion: reduce) {
+  .arena-particula { display: none; }
+  .arena-fenda,
+  .arena-vs,
+  .arena-lutador,
+  .arena-moldura-lado { animation: none; }
+  .arena-lado, .arena-fenda, .arena-vs, .arena-lutador { transition: none; }
+}
+

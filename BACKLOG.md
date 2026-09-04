@@ -35,20 +35,19 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — o captcha no formulário de contato — fechou em 03/09,
-com a aprovação do dono para o revoke. A Edge Function `verify-contact` é a
-única porta, `enviar_mensagem_de_contato` deixou de ser chamável por `anon`
-(provado em produção: HTTP 401), e o captcha está mesmo sendo conferido (token
-falso -> HTTP 403, que é o que prova que a secret existe e é usada). O relato
-está em [SEGURANCA.md](docs/SEGURANCA.md) e as escolhas em
-[DECISOES.md](docs/DECISOES.md).
+*Vazia.* A última tarefa — a arena de entrada com os personagens — fechou em
+04/09. As seis etapas foram entregues, e as duas últimas correções vieram do
+dono olhando a tela: o recorte do cadastro que deixava labareda no lado do gelo,
+e o do login, que levava uma lasca laranja para a arte do gelo e um caco azul
+para a do fogo.
 
-**O caminho feliz também está confirmado, e foi o dono quem fechou:** ele enviou
-uma mensagem pela `/contato` em 03/09 às 22:10, o widget resolveu sozinho
-("Sucesso!") e a linha chegou em `contact_messages`. Era a única ponta que eu não
-conseguia provar daqui — o navegador deste ambiente não alcança o
-`challenges.cloudflare.com`. **O `Hostname Management` da chave também está
-certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
+**A causa raiz das duas era a mesma, e não era descuido de recorte:** as artes
+trazem os dois lutadores numa imagem só, e **eles se sobrepõem por 75 colunas** —
+não existe reta vertical que separe. A fronteira passou a ser a **cor** do pixel
+na faixa disputada, com rampa de alfa para o halo não terminar num corte.
+Medição, receita e números em [DESEMPENHO.md](docs/DESEMPENHO.md); a trava é
+`e2e/artes-da-arena.mjs`, que conta 0 pixels invasores hoje e **638** com o
+recorte antigo reinjetado.
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -118,17 +117,6 @@ certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[04/09]` 🟢 **Decidir se a arena de entrada ganha silhueta.** *A v1 foi
-  entregue sem figura nenhuma, com a aprovação do dono ("pode fazer do jeito que
-  vc sugeriu e vemos como vai ficar").*
-
-  A composição — fogo × gelo com a fenda no meio — está no ar em `/login`. Se
-  bater o olho e sentir que ainda falta presença, o passo seguinte é **silhueta
-  nossa em SVG**, sem rosto, entrando numa camada por cima. Nunca personagem de
-  jogo: tem dono, e é a porta de entrada do site (ver
-  [DECISOES.md](docs/DECISOES.md)).
-
 
 - ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
   offline.** *É o terceiro elo da corrente que o dono relatou, e o único que
@@ -352,6 +340,21 @@ certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
 
 
 ## 🟢 Recomendado
+
+- ⬜ `[04/09]` 🟢 **Dividir o resto do `src/index.css` (550 linhas).** *Metade da
+  dívida foi paga hoje; esta é a outra metade, e ela precisa da sua aprovação.*
+
+  Ao entregar a arena eu tinha inflado o `index.css` de 676 para 948 linhas. O
+  bloco que **eu** criei saiu para `src/estilos/arena.css` (§4: sujeira minha,
+  eu limpo, sem perguntar) e o arquivo voltou a 550.
+
+  **Continua acima das 300**, e as 550 que restam são anteriores a esta sessão:
+  fontes, base, `.card`, botões, tags, inputs, animações e a luz do site logado.
+  Separá-las é mecânico — mesmos arquivos, mesma ordem de `@import` —, **mas
+  encostaria em toda tela do site de uma vez**, e misturar isso num PR visual é
+  exatamente o que a receita do §4 desaconselha ("uma extração por commit").
+
+  Então fica registrado com o motivo, como manda a regra, em vez de sumir.
 
 
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**

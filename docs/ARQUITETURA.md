@@ -14,9 +14,23 @@ src/
 │                          # App.jsx quando ele passou de 300 linhas (§4)
 ├── main.jsx               # Bootstrap React
 ├── index.css              # Tema (cores neon, classes .card/.btn/.tag/.input)
+├── estilos/
+│   └── arena.css          # `[04/09]` O fundo do login e do cadastro: lados,
+│                          # fenda, VS, lutadores, labaredas, cristais e
+│                          # partículas. Saiu do index.css quando o bloco
+│                          # passou de 400 linhas (§4); entra por @import
 ├── assets/
-│   └── landing/           # Prints reais do site usados na landing (feed, mural, lives,
-│                          # ranks, keys) — nomes de usuários censados por privacidade
+│   ├── landing/           # Prints reais do site usados na landing (feed, mural, lives,
+│   │                      # ranks, keys) — nomes de usuários censados por privacidade
+│   └── auth/              # `[04/09]` As artes da tela de entrada: os dois
+│                          # lutadores + `moldura-fogo/gelo`, a borda de lava e
+│                          # cristal que substituiu as labaredas e os cristais
+│                          # que eram desenhados em CSS. As dos lutadores:
+│                          # entrada, geradas pelo dono. WebP em DOIS tamanhos
+│                          # (340 e 720 de altura) — o celular renderiza a
+│                          # ~150 px e não deve baixar 720. Os PNG originais
+│                          # tinham 2,5 MB cada; há trava de peso em
+│                          # components/auth/__tests__/pesoDaArena.test.js
 ├── hooks/
 │   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
 │   │                      # árvore e o arquivo de maior risco do projeto (§7)
@@ -239,12 +253,13 @@ src/
     │                      # aqui e não emoji de teclado, que muda por sistema
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
     │   ├── ArenaDeEntrada.jsx # `[04/09]` O fundo do login e do cadastro:
-    │   │                  # fogo de um lado, gelo do outro, fenda no meio.
-    │   │                  # SEM personagem — a composição é o que faz a
-    │   │                  # referência funcionar, e personagem de jogo tem
-    │   │                  # dono (ver DECISOES.md). Só gradiente e
-    │   │                  # transform/opacity: camada 2 não pode custar como
-    │   │                  # a landing custa
+    │   │                  # dois lutadores, fogo de um lado, gelo do outro,
+    │   │                  # fenda e VS no meio. Os personagens são ARTE do
+    │   │                  # dono (fundo transparente de verdade, conferido no
+    │   │                  # canal alfa); o resto — gradiente, labareda,
+    │   │                  # cristal, partícula, entrada — é CSS que só anima
+    │   │                  # transform/opacity. Celular e PC têm composições
+    │   │                  # diferentes, por @media e não por JS
     │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
     │                      # com links em aba nova. Três caixinhas separadas
     │                      # treinam a pessoa a clicar sem ler
@@ -509,7 +524,8 @@ Detalhadas no `CLAUDE.md`. Resumo:
 - **Ícones**: Lucide para UI; `react-icons/fa6` para marcas.
 - **Modais** estilizados via `createPortal` (sem `window.prompt/confirm`).
 - Tema em `src/index.css` (classes `.card`, `.btn-neon/.btn-solid/.btn-purple`,
-  `.tag-*`, `.input-gamer`).
+  `.tag-*`, `.input-gamer`). Bloco visual grande e de uma tela só mora em
+  `src/estilos/` e entra por `@import` — hoje só `arena.css`.
 - **Arquivos pequenos**: ~300 linhas como guia; extrair UI repetida em
   componentes, lógica em hooks/utils, acesso a dados em services.
 - **Testes** unitários da lógica pura em `src/lib/__tests__/` (Vitest).

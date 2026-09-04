@@ -482,7 +482,7 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
 
 - `lint` (0 erros) · `npm test` · `build` · `npm audit --audit-level=high`
-- **piso de <!--n:testes.piso-->445<!--/n--> testes** — o CI quebrando é o caso
+- **piso de <!--n:testes.piso-->470<!--/n--> testes** — o CI quebrando é o caso
   fácil, fica vermelho e alguém olha; o perigoso é ele **passar sem testar
   nada** (arquivo renomeado, `describe.skip` esquecido). Ao adicionar testes,
   subir o piso junto.
@@ -551,6 +551,21 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   cobria (§1.5). A causa era de classe — `whileInView` com `amount: 0.25` num
   container mais alto que 4x a janela —, então a trava varre as páginas em vez
   de conferir aquela.
+- **`[04/09]` artes da tela de entrada** (`e2e/artes-da-arena.mjs`, dentro do job
+  de fumaça) — desenha cada lutador do login num canvas e conta pixels da cor do
+  adversário na borda que encosta na fenda. Zero é o esperado; o limite é 30,
+  para ruído de croma do WebP.
+
+  Existe porque as duas artes chegam como **uma imagem com os dois lutadores** e
+  precisam ser recortadas — e eles se sobrepõem por 75 colunas, então corte em
+  reta sempre leva um pedaço do outro junto. Quem viu o defeito foi o dono, no
+  celular; nenhum portão via, porque o orçamento de bytes mede JS e CSS e não
+  olha imagem. Reinjetando o recorte antigo, ele acusa 638 pixels invasores.
+
+  Roda num navegador de propósito: assim mede **a arte que o site serve**, a que
+  o `srcset` escolheu, e não o arquivo da pasta. O terceiro passo confere que
+  login e cadastro servem pares **diferentes** — se o `modo` parar de chegar no
+  componente, as contagens continuariam zeradas e ninguém notaria.
 - job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
   `/admin` e `/owner` **negados** para `role = 'user'`, **o fundo decorativo
@@ -858,8 +873,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->318<!--/n--> arquivos e
-<!--n:src.linhas-->30.685<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->319<!--/n--> arquivos e
+<!--n:src.linhas-->30.850<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -883,7 +898,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->318<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->319<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -908,6 +923,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->10.525<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->10.832<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
