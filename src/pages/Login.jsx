@@ -10,8 +10,22 @@ import RegisterForm from '../components/auth/RegisterForm';
 import RegisterSuccess from '../components/auth/RegisterSuccess';
 import ForgotForm from '../components/auth/ForgotForm';
 import LoginSemBanco from '../components/auth/LoginSemBanco';
+import ArenaDeEntrada from '../components/auth/ArenaDeEntrada';
 import { isLoginBlocked } from '../lib/loginBlock';
 import { useDbOffline } from '../hooks/useDbOffline';
+
+/**
+ * A frase abaixo do logo, por modo.
+ *
+ * Lista fechada: se um modo novo aparecer sem frase, a linha some — e some é
+ * visível. O `else` que herdasse a frase do login seria fallback silencioso
+ * (§4), a família de bug que este projeto mais registrou.
+ */
+const LINHA_DO_MODO = {
+  login:    'Sua base de operações gamer',
+  register: '// Escolha seu personagem',
+  forgot:   '// Recuperar acesso',
+};
 
 export default function Login() {
   const { signInWithEmail, signUpWithEmail } = useAuth();
@@ -159,6 +173,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
+      {/* `[04/09]` O fundo. Fica FORA do `max-w-md` e é `fixed`, então o
+          formulário de cadastro — bem mais alto que o de login — rola por cima
+          sem esticar nada. Ele recebe o modo porque a composição muda: no login
+          a fenda fica no meio (duelo), no cadastro ela sai do eixo e um lado
+          domina (escolha de personagem). Ver `ArenaDeEntrada`. */}
+      <ArenaDeEntrada modo={mode} />
       <div className="w-full max-w-md">
         <Link
           to="/"
@@ -172,7 +192,16 @@ export default function Login() {
             <span className="font-display font-bold text-3xl text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-3xl text-white tracking-wider">HUB</span>
           </div>
-          <p className="text-gray-500 font-mono text-xs">Sua base de operações gamer</p>
+          {/* `[04/09]` A linha muda com o modo, e é o "character selected" que o
+              dono descreveu — em palavra, não em arte licenciada. No celular o
+              formulário de cadastro cobre quase a tela inteira e a arena mal
+              aparece; é aqui, no topo, que o cadastro ganha identidade própria.
+
+              Mapa EXPLÍCITO e não `mode === 'register' ? ... : ...`: modo novo
+              sem frase aparece como `undefined` em vez de herdar a errada (§4). */}
+          <p className="text-gray-500 font-mono text-xs">
+            {LINHA_DO_MODO[mode]}
+          </p>
         </div>
 
         <div className="card p-7">

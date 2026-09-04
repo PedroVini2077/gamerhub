@@ -86,10 +86,16 @@ Deno.serve(async (req: Request) => {
   const id = typeof body.id === "string" ? body.id.trim() : "";
   const texto = typeof body.texto === "string" ? body.texto.trim() : "";
   if (!id) return responder({ error: "Informe qual mensagem esta sendo respondida." }, 400);
-  // O banco confere a faixa de novo — esta checagem existe só para não gastar
-  // uma ida ao banco com o caso óbvio, não como a regra (§1.3).
-  if (texto.length < 10) {
-    return responder({ error: "A resposta precisa ter pelo menos 10 caracteres." }, 400);
+  // A FAIXA INTEIRA, e o teto importa mais do que o piso — descoberto quando o
+  // dono perguntou se texto muito grande quebrava alguma coisa.
+  //
+  // O `CHECK` da coluna recusa acima de 4000. Sem conferir aqui, um texto de
+  // 5000 passaria pelas etapas 1 e 2 — ou seja, **o e-mail sairia** — e só a
+  // etapa 3 recusaria, caindo no pior caminho que esta função tem: "enviado mas
+  // não registrado". O `maxLength` do textarea não conta como proteção: a função
+  // é chamável direto (§1.3).
+  if (texto.length < 10 || texto.length > 4000) {
+    return responder({ error: "A resposta precisa ter entre 10 e 4000 caracteres." }, 400);
   }
 
   // Cliente COM a credencial de quem pediu: é o que faz o `is_staff()` das RPCs

@@ -89,8 +89,30 @@ jobs:
       - name: Orçamento de bytes do carregamento
         run: node scripts/orcamento-de-bytes.mjs
 
+      # `[04/09]` Queda do registro do npm NAO e vulnerabilidade encontrada.
+      #
+      # O `npm audit` sai com 1 nos DOIS casos: quando acha vulnerabilidade e
+      # quando o endpoint dele responde 503 — e foi o 503 que reprovou o PR #154,
+      # com build, lint e testes ja verdes. Portao que grita a coisa errada
+      # ensina a ignorar o canal onde a falha real vai aparecer (§0.2, 4a regra),
+      # e aqui isso e caro: e o unico portao que olha vulnerabilidade conhecida.
+      #
+      # Entao a saida e a mesma das travas de porta: distinguir "nao consegui
+      # verificar" de "verifiquei e esta ruim". O primeiro AVISA e segue; o
+      # segundo continua reprovando.
       - name: Auditoria de dependências
-        run: npm audit --audit-level=high
+        run: |
+          set +e
+          saida=$(npm audit --audit-level=high 2>&1)
+          codigo=$?
+          echo "$saida"
+          if [ $codigo -eq 0 ]; then exit 0; fi
+          if echo "$saida" | grep -qiE 'audit endpoint returned an error|service unavailable|ENOTFOUND|ETIMEDOUT|socket hang up'; then
+            echo "::warning::npm audit NAO RODOU — o registro do npm nao respondeu."
+            echo "::warning::Isto nao diz nada sobre as dependencias. Rode de novo mais tarde."
+            exit 0
+          fi
+          exit $codigo
 
       # Job que se pula sozinho e verde que nao testou nada (§1.5). Enquanto a
       # conta de staff nao existir, o painel de admin segue SEM cobertura de
