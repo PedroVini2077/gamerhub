@@ -354,6 +354,11 @@ As duas estão na tabela do bloco "o que fica guardado no seu navegador" e em
 `CHAVES_DECLARADAS` — foi a trava dessa lista que reprovou o commit antes de eu
 lembrar de declará-las.
 
+> **`gh_entrando` vive segundos.** Ela é escrita no login e apagada na primeira
+> leitura da tela de boas-vindas; se a tela não abrir, ela morre ao fechar a
+> aba. Não é rastreamento — é o sinalizador que impede a saudação de voltar a
+> cada recarregamento.
+
 **A `versao` do documento NÃO subiu; só a `impressao`.** Isso é decisão, e o
 motivo está escrito também em `lib/documentosLegais.js`: as duas linhas novas
 são da mesma natureza das sete que já estavam ali — sinalizador local de

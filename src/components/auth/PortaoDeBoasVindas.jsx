@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { useAuth } from '../../hooks/useAuth.jsx';
-import { consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou } from '../../lib/boasVindas';
+import {
+  consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou, EVENTO_ENTROU,
+} from '../../lib/boasVindas';
 
 /**
  * O portão que abre depois do login.
@@ -56,6 +58,16 @@ export default function PortaoDeBoasVindas() {
   const [saindo, setSaindo] = useState(false);
   const [estreia, setEstreia] = useState(false);
   const desde = useRef(0);
+  // Muda quando o login avisa que marcou. Serve só para o efeito abaixo
+  // reconferir — ver `EVENTO_ENTROU` em `lib/boasVindas.js` para a corrida que
+  // isto resolve.
+  const [tique, setTique] = useState(0);
+
+  useEffect(() => {
+    const aviso = () => setTique((t) => t + 1);
+    window.addEventListener(EVENTO_ENTROU, aviso);
+    return () => window.removeEventListener(EVENTO_ENTROU, aviso);
+  }, []);
 
   // Abre SÓ quando a marca de "acabou de entrar" existe. Sem ela, recarregar a
   // página com sessão salva reabriria a tela em todo F5.
@@ -76,7 +88,7 @@ export default function PortaoDeBoasVindas() {
 
     const t = setTimeout(() => { setEstreia(estreou); setVisivel(true); }, 0);
     return () => clearTimeout(t);
-  }, [user, visivel]);
+  }, [user, visivel, tique]);
 
   // Fecha: pelo perfil que chegou (respeitando o piso) ou pelo teto.
   useEffect(() => {

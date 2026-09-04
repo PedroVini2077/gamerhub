@@ -42,6 +42,23 @@
  */
 
 const CHAVE_ENTRANDO = 'gh_entrando';
+
+/**
+ * O aviso de que a marca acabou de ser escrita.
+ *
+ * ── Por que um evento, e não só a chave ─────────────────────────────────────
+ *
+ * Sem ele existe uma CORRIDA, e ela derrubou o e2e na primeira execução: o
+ * `onAuthStateChange` do Supabase preenche o `user` **antes** de
+ * `signInWithPassword` devolver, então a tela de boas-vindas conferia o
+ * `sessionStorage` num instante em que a marca ainda não existia — e, como o
+ * `user` não muda de novo, ela nunca mais reconferia.
+ *
+ * O evento tira o resultado do acaso da ordem: quem marca AVISA. Se o aviso
+ * chegar antes de o `user` existir, a conferência acontece de novo quando ele
+ * chega; se chegar depois, o aviso reconfere na hora. As duas ordens funcionam.
+ */
+export const EVENTO_ENTROU = 'gh:entrou';
 const PREFIXO_JA_ENTROU = 'gh_ja_entrou:';
 
 /** Chamado no instante em que o login dá certo. */
@@ -50,6 +67,13 @@ export function marcarEntradaAgora() {
     sessionStorage.setItem(CHAVE_ENTRANDO, '1');
   } catch {
     // Sem armazenamento, a tela de boas-vindas simplesmente não aparece.
+  }
+  // O aviso vai FORA do try: mesmo sem armazenamento, avisar não custa nada e
+  // mantém o comportamento previsível.
+  try {
+    window.dispatchEvent(new Event(EVENTO_ENTROU));
+  } catch {
+    // Ambiente sem `window` (teste de nó puro): nada a avisar.
   }
 }
 

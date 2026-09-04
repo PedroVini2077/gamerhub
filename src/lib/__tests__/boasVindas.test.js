@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import {
   marcarEntradaAgora, consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou,
+  EVENTO_ENTROU,
 } from '../boasVindas';
 
 /**
@@ -43,6 +44,25 @@ describe('a marca de "acabou de entrar"', () => {
       + '  existir, todo recarregamento de página reabre o portão de\n'
       + '  boas-vindas para quem já está logado (§1.5 — ninguém vai reportar\n'
       + '  isso como bug, vai só achar o site chato).').toBe(false);
+  });
+
+  it('AVISA quem estiver ouvindo — e é isso que resolve a corrida', () => {
+    // O `user` do Supabase é preenchido ANTES de `signInWithPassword` devolver.
+    // Sem este aviso, a tela confere o armazenamento cedo demais, não acha a
+    // marca, e nunca mais reconfere — foi assim que o e2e reprovou na primeira
+    // execução, com o login funcionando e a tela sem aparecer.
+    let avisos = 0;
+    const ouvinte = () => { avisos += 1; };
+    window.addEventListener(EVENTO_ENTROU, ouvinte);
+    try {
+      marcarEntradaAgora();
+      expect(avisos,
+        `marcar a entrada não disparou "${EVENTO_ENTROU}".\n`
+        + '  Sem o aviso, a tela de boas-vindas depende da ORDEM em que o\n'
+        + '  Supabase preenche o `user` — e essa ordem não é nossa.').toBe(1);
+    } finally {
+      window.removeEventListener(EVENTO_ENTROU, ouvinte);
+    }
   });
 
   it('sem marca nenhuma, responde false — não inventa entrada', () => {
