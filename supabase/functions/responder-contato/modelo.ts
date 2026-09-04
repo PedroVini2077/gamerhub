@@ -47,11 +47,11 @@ export function montarEmailDeResposta({
           <h1 style="margin:0 0 24px;font-size:22px;color:#ffffff;font-weight:bold;">Oi, ${seguro(nome)}</h1>
           <div style="height:1px;background:linear-gradient(90deg,#39ff1430,#39ff1410,transparent);margin-bottom:24px;"></div>
 
-          <p style="margin:0 0 28px;font-size:14px;color:#c8c8dc;line-height:1.8;">${comQuebras(resposta)}</p>
+          <p style="margin:0 0 28px;font-size:14px;color:#c8c8dc;line-height:1.8;word-break:break-word;overflow-wrap:break-word;">${comQuebras(resposta)}</p>
 
           <p style="margin:0 0 8px;font-size:10px;color:#3a3a5c;letter-spacing:2px;text-transform:uppercase;">// O que voce escreveu</p>
           <div style="border-left:2px solid #1a1a2e;padding:2px 0 2px 14px;">
-            <p style="margin:0;font-size:12px;color:#6b6b85;line-height:1.7;font-style:italic;">${comQuebras(mensagemOriginal)}</p>
+            <p style="margin:0;font-size:12px;color:#6b6b85;line-height:1.7;font-style:italic;word-break:break-word;overflow-wrap:break-word;">${comQuebras(mensagemOriginal)}</p>
           </div>
         </td></tr>
 

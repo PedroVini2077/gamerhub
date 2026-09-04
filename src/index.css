@@ -540,3 +540,137 @@ body {
 #root {
   padding-top: var(--altura-do-aviso, 0px);
 }
+
+/* ── `[04/09]` A ARENA DE ENTRADA — o fundo do login e do cadastro ─────────
+ *
+ * Pedido do dono, com uma arte de luta como referência: *"dois personagens um
+ * de frente pro outro, divididos pelo VS, gelo e fogo… é só pra tirar essa
+ * ambientação seca do login e cadastro"*.
+ *
+ * O que ficou da referência foi a COMPOSIÇÃO, não as figuras: dois campos de
+ * cor opostos que se encontram numa fratura, com o formulário em cima dela.
+ * O porquê de não haver personagem está em `components/auth/ArenaDeEntrada.jsx`.
+ *
+ * Tudo aqui anima só `transform` e `opacity` — as duas que rodam no compositor.
+ * Esta tela é camada 2 (§0.4): todo mundo que decide ficar passa por ela, e ela
+ * não pode custar como a landing custa.
+ */
+.arena {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  background: #06060a;
+  pointer-events: none;
+}
+
+.arena-lado {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  /* A transição é o que faz a composição ANDAR ao trocar login <-> cadastro,
+   * em vez de piscar. 900 ms é lento o suficiente para se perceber e rápido o
+   * suficiente para não atrasar quem só quer entrar. */
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              right 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* As opacidades saíram de OLHAR a tela, não de escolher número bonito: a
+ * primeira versão ficou quase invisível no desktop, que é o oposto do pedido
+ * ("tirar a ambientação seca"). O calor mais forte fica ENCOSTADO na fenda —
+ * é lá que os dois lados se encontram, e é o que dá a leitura de duelo. */
+.arena-fogo {
+  left: -10%;
+  right: calc(100% - var(--eixo, 50%));
+  background:
+    radial-gradient(52% 60% at 92% 50%, #ff6a2088, transparent 72%),
+    radial-gradient(70% 60% at 35% 40%, #ff5a1e3a, transparent 70%),
+    radial-gradient(95% 75% at 5% 85%, #ff2d0026, transparent 75%),
+    linear-gradient(100deg, #2a1206 0%, #150a06 60%, #0a0709 100%);
+}
+
+.arena-gelo {
+  left: var(--eixo, 50%);
+  right: -10%;
+  background:
+    radial-gradient(52% 60% at 8% 50%, #22d3ee7a, transparent 72%),
+    radial-gradient(70% 60% at 65% 40%, #38bdf836, transparent 70%),
+    radial-gradient(95% 75% at 95% 85%, #0ea5e926, transparent 75%),
+    linear-gradient(260deg, #06202c 0%, #06121c 60%, #0a0709 100%);
+}
+
+/* A fenda. Fina, e o brilho respira em vez de piscar — piscar em tela de login
+ * cansa, e quem chega aqui já está a caminho de outra coisa. */
+.arena-fenda {
+  position: absolute;
+  top: -5%;
+  bottom: -5%;
+  left: var(--eixo, 50%);
+  width: 3px;
+  margin-left: -1.5px;
+  background: linear-gradient(180deg,
+    transparent, #ffffff26 10%, #ffffffcc 50%, #ffffff26 90%, transparent);
+  /* Duas sombras, uma de cada temperatura: é o encontro dos dois lados, não
+   * uma luz só. A laranja é mais aberta porque brasa espalha mais que gelo. */
+  box-shadow: 0 0 22px 3px #7dd3fc55, 0 0 60px 14px #fb923c33;
+  animation: arenaFendaRespira 7s ease-in-out infinite;
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes arenaFendaRespira {
+  0%, 100% { opacity: 0.55; transform: scaleX(1); }
+  50%      { opacity: 0.9;  transform: scaleX(1.6); }
+}
+
+.arena-particula {
+  position: absolute;
+  bottom: -4vh;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation-name: arenaSobe;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-delay: var(--atraso, 0s);
+  animation-duration: var(--duracao, 13s);
+  will-change: transform, opacity;
+}
+
+/* Brasa sobe pela esquerda; cristal desce pela direita. Duas direções, porque
+ * fogo que cai e gelo que sobe seria a leitura invertida. */
+.arena-brasa {
+  left: var(--x, 10%);
+  background: #ffa14d;
+  box-shadow: 0 0 10px 2px #ff5a1e99;
+}
+
+.arena-cristal {
+  right: var(--x, 10%);
+  top: -4vh;
+  bottom: auto;
+  background: #cffafe;
+  box-shadow: 0 0 10px 2px #22d3ee88;
+  animation-name: arenaDesce;
+}
+
+@keyframes arenaSobe {
+  0%   { transform: translate3d(0, 0, 0);                          opacity: 0; }
+  10%  {                                                           opacity: 0.85; }
+  90%  {                                                           opacity: 0.85; }
+  100% { transform: translate3d(var(--deriva, 0), -108vh, 0);      opacity: 0; }
+}
+
+@keyframes arenaDesce {
+  0%   { transform: translate3d(0, 0, 0);                          opacity: 0; }
+  10%  {                                                           opacity: 0.75; }
+  90%  {                                                           opacity: 0.75; }
+  100% { transform: translate3d(var(--deriva, 0), 108vh, 0);       opacity: 0; }
+}
+
+/* Quem pediu menos movimento recebe a composição parada — as cores e a fratura
+ * continuam, que é o que tira o "seco". Movimento é o enfeite; a atmosfera não. */
+@media (prefers-reduced-motion: reduce) {
+  .arena-particula { display: none; }
+  .arena-fenda { animation: none; opacity: 0.7; }
+  .arena-lado, .arena-fenda { transition: none; }
+}

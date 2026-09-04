@@ -82,7 +82,7 @@ export default function CartaoDeContato({ m, marcar, responder }) {
         <p className="select-all break-all">{m.email}</p>
       </div>
 
-      <p className="text-sm font-body text-gray-300 leading-relaxed whitespace-pre-wrap">
+      <p className="text-sm font-body text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
         {m.message}
       </p>
 
@@ -95,7 +95,7 @@ export default function CartaoDeContato({ m, marcar, responder }) {
             {m.handled_by_username && ` por @${m.handled_by_username}`}
             {m.handled_at && ` em ${new Date(m.handled_at).toLocaleString('pt-BR')}`}
           </p>
-          <p className="text-sm font-body text-gray-400 leading-relaxed whitespace-pre-wrap">
+          <p className="text-sm font-body text-gray-400 leading-relaxed whitespace-pre-wrap break-words">
             {m.reply_text}
           </p>
         </div>
@@ -119,7 +119,7 @@ export default function CartaoDeContato({ m, marcar, responder }) {
             maxLength={4000}
             autoFocus
             placeholder="A resposta chega no e-mail de quem escreveu, com a identidade do site."
-            className="input w-full text-sm resize-y"
+            className="input-gamer w-full text-sm resize-y"
           />
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className="font-mono text-[11px] text-gray-600">

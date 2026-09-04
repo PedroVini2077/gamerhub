@@ -878,3 +878,45 @@ registrado para o DSN do Sentry: ela é pública por construção, e depender da
 Vercel significaria que esquecer de configurá-la num deploy futuro apagaria o
 captcha **sem ninguém notar** — construindo a falha silenciosa que ele existe
 para evitar.
+
+---
+
+## `[04/09]` O login e o cadastro ganharam fogo × gelo — e NENHUM personagem
+
+**Pedido do dono**, com uma arte de luta como referência: *"dois personagens um
+de frente pro outro, divididos pelo 🆚, gelo e fogo, com uma animação leve… é só
+pra tirar essa ambientação seca do login e cadastro"*.
+
+**O que foi aproveitado da referência, e não são as figuras.** O que faz aquela
+imagem funcionar é a **composição**: dois campos de cor opostos que se encontram
+numa fratura carregada, com o formulário em cima dela. Tapando as duas figuras
+com a mão, ela continua de pé — e é essa parte que veio.
+
+**Por que personagem ficou de fora, e é decisão, não preguiça:**
+
+1. **Tem dono.** Scorpion e Sub-Zero são da NetherRealm/Warner. O projeto já
+   recusou capa de jogo na página "Sobre" pelo mesmo motivo, e ali o risco era
+   menor — aqui seria na porta de entrada do site.
+2. **Custa onde não pode custar.** Login e cadastro são a **camada 2** (§0.4):
+   todo mundo que decide ficar passa por ali. A landing já paga uma cena 3D;
+   arte de personagem em duas telas de formulário seria pagar duas vezes.
+3. **A composição sozinha resolveu o pedido.** O objetivo declarado era tirar o
+   "seco" — e isso a cor e a fratura entregam.
+
+**O caminho se um dia quisermos figura:** silhueta **nossa**, em SVG, sem rosto.
+Barata, sem dono, e entra numa camada por cima sem refazer nada do que existe.
+
+**O que a composição faz de diferente em cada modo**, e isso não é enfeite: no
+login a fenda fica no **meio** (dois lados, você decide entrar); no cadastro ela
+**sai do eixo** e o fogo domina — é escolha de personagem, um lado só. A frase
+abaixo do logo acompanha (`// Escolha seu personagem`), que é o *"character
+selected"* da referência em palavra em vez de arte licenciada.
+
+**O custo, medido:** 3,7 KB de componente e **1,7 KB gzip** de CSS. Nenhuma
+imagem, nenhuma biblioteca, e só `transform`/`opacity` animando — as duas que
+rodam no compositor. O orçamento de bytes do CI continua com folga (218,5 de 222
+KB gzip).
+
+**E quem pediu menos movimento recebe a composição parada:** com
+`prefers-reduced-motion`, as partículas somem e a fenda para de respirar. A cor
+e a fratura ficam — elas são a atmosfera, o movimento é o enfeite.

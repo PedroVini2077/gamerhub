@@ -58,7 +58,7 @@ certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**21 itens abertos** (+ 1 ideia sem compromisso)
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -118,6 +118,17 @@ certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[04/09]` 🟢 **Decidir se a arena de entrada ganha silhueta.** *A v1 foi
+  entregue sem figura nenhuma, com a aprovação do dono ("pode fazer do jeito que
+  vc sugeriu e vemos como vai ficar").*
+
+  A composição — fogo × gelo com a fenda no meio — está no ar em `/login`. Se
+  bater o olho e sentir que ainda falta presença, o passo seguinte é **silhueta
+  nossa em SVG**, sem rosto, entrando numa camada por cima. Nunca personagem de
+  jogo: tem dono, e é a porta de entrada do site (ver
+  [DECISOES.md](docs/DECISOES.md)).
+
 
 - ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
   offline.** *É o terceiro elo da corrente que o dono relatou, e o único que

@@ -238,6 +238,13 @@ src/
     │                      # nave, raio, balão, chave, fliperama. Desenhados
     │                      # aqui e não emoji de teclado, que muda por sistema
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
+    │   ├── ArenaDeEntrada.jsx # `[04/09]` O fundo do login e do cadastro:
+    │   │                  # fogo de um lado, gelo do outro, fenda no meio.
+    │   │                  # SEM personagem — a composição é o que faz a
+    │   │                  # referência funcionar, e personagem de jogo tem
+    │   │                  # dono (ver DECISOES.md). Só gradiente e
+    │   │                  # transform/opacity: camada 2 não pode custar como
+    │   │                  # a landing custa
     │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
     │                      # com links em aba nova. Três caixinhas separadas
     │                      # treinam a pessoa a clicar sem ler
