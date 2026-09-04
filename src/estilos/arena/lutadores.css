@@ -21,8 +21,13 @@
    * antes — conferido nas quatro combinações. */
   aspect-ratio: 1 / 1;
   opacity: 0.9;
+  /* `left`/`right` entram na lista por causa do CELULAR: lá o recuo do roxo no
+   * cadastro é feito movendo a borda (`right: -16vw` -> `-4vw`), e sem isto
+   * esses 12vw eram um salto. */
   transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 900ms ease, height 900ms ease;
+              opacity 900ms ease, height 900ms ease,
+              left 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              right 900ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* `object-fit: contain` + `bottom`: o lutador fica de pé no chão da arena,
@@ -56,48 +61,69 @@
 
 /* Cada lado encosta a arte na SUA borda. Sem isto, `contain` centraliza a
  * imagem na caixa quadrada e os dois lutadores andariam para o meio da tela. */
-.arena-lutador-fogo .arena-figura { object-position: left bottom; }
-.arena-lutador-gelo .arena-figura { object-position: right bottom; }
+.arena-lutador-verde .arena-figura { object-position: left bottom; }
+.arena-lutador-roxo .arena-figura { object-position: right bottom; }
 
-.arena-lutador-fogo {
+.arena-lutador-verde {
   left: 2vw;
-  animation: arenaEntraDaEsquerda 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms both;
+  animation: arenaEntraDaEsquerda 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms backwards;
 }
 
 /* `[04/09]` SEM espelho, e isso mudou quando as artes chegaram.
  *
  * O `scaleX(-1)` existia porque as duas silhuetas que eu desenhava eram o mesmo
  * arquivo servindo os dois lados. As artes do dono já vêm **uma de frente para
- * a outra** — espelhar de novo virava o de gelo para fora da tela, e era isso
- * que cortava 51 px dele na borda direita (medido, não deduzido). */
-.arena-lutador-gelo {
+ * a outra** — espelhar de novo viraria o lutador para fora da tela. */
+.arena-lutador-roxo {
   right: 2vw;
-  animation: arenaEntraDaDireita 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 260ms both;
+  animation: arenaEntraDaDireita 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 260ms backwards;
 }
 
+/* ── `[04/09]` `backwards`, e SEM `to`. Os dois detalhes são o mesmo conserto ──
+ *
+ * O que o dono viu: *"voltando pra aba login existe um corte feio, os
+ * personagens somem do nada e aparece a animação de entrada"*.
+ *
+ * A causa: as regras do cadastro traziam `animation: none`. Trocar de aba
+ * **mudava a propriedade `animation`** — e mudar `animation` REINICIA a
+ * animação. Voltando para o login, a entrada rodava de novo do zero
+ * (`opacity: 0`), que é o sumiço seguido do deslize.
+ *
+ * Por que o `animation: none` existia: com `fill-mode: both`, o último quadro
+ * (`transform: translateX(0)`) vence a `transform` declarada, então o passo à
+ * frente do cadastro não acontecia. Desligar a animação era a saída errada
+ * para um problema real.
+ *
+ * A saída certa são duas coisas juntas:
+ *
+ * - **sem `to`**: o alvo passa a ser o valor COMPUTADO do elemento, então cada
+ *   modo mantém o seu (é o mesmo truque da moldura);
+ * - **`backwards` no lugar de `both`**: durante o atraso vale o `from`; depois
+ *   que a animação termina, quem manda é o valor declarado — e aí a
+ *   `transition` de 900 ms leva o lutador ao lugar novo.
+ *
+ * Com as duas, a propriedade `animation` NUNCA muda, a entrada roda uma vez só,
+ * e ir e voltar entre as abas é transição em vez de corte. */
 @keyframes arenaEntraDaEsquerda {
   from { transform: translateX(-14vw); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 0.92; }
 }
 
 @keyframes arenaEntraDaDireita {
   from { transform: translateX(14vw); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 0.9; }
 }
 
-/* CADASTRO: o de fogo dá um passo à frente e vira de frente para quem olha
- * (o `scaleX(-1)` some, então ele deixa de mirar o oponente); o de gelo recua
- * para a penumbra. É o "character selected" da referência. */
-.arena-selecionado .arena-lutador-fogo {
+/* CADASTRO: o verde dá um passo à frente e vira de frente para quem olha; o
+ * roxo recua para a penumbra. É o "character selected" da referência. */
+.arena-selecionado .arena-lutador-verde {
   height: 66vh;
-  animation: none;
   transform: translateX(4vw);
 }
 
-/* No cadastro o de gelo JA vem de costas na arte — espelhar de novo o viraria
- * para fora da tela. Por isso aqui o `scaleX(-1)` sai. */
-.arena-selecionado .arena-lutador-gelo {
-  animation: none;
-  transform: translateX(3vw);
-  opacity: 0.55;
+/* O roxo RECUA PARA O LADO enquanto o verde toma conta — pedido do dono:
+ * *"pode fazer ela sumir pro lado enquanto o outro personagem toma conta"*.
+ * 8vw para a direita e opacidade menor, nos mesmos 900 ms da fenda: ele sai de
+ * cena andando, em vez de apagar no lugar. */
+.arena-selecionado .arena-lutador-roxo {
+  transform: translateX(8vw);
+  opacity: 0.5;
 }

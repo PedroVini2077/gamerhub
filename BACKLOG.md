@@ -35,11 +35,12 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — o fade cruzado dos lutadores e as partículas andando
-junto com a fenda — fechou em 04/09. Os dois achados eram o mesmo defeito:
-metade da cena mudando em 900 ms e a outra de estalo. Junto caiu uma pré-carga
-que eu tinha escrito e a medição derrubou (+215 KB na camada 2, e o "ocioso"
-chegava junto com a tela). Tudo em [DECISOES.md](docs/DECISOES.md).
+*Vazia.* A última tarefa — refazer a tela de entrada na paleta do site — fechou
+em 04/09. O dono cortou a direção anterior (*"personagem de gelo e fogo não tem
+nada a ver com o site"*) e cobrou, com razão, que eu tinha que ter avisado. As
+artes, a moldura, os gradientes, a fenda, o VS, as partículas e **os nomes no
+código** passaram para verde × roxo. O VS ganhou saída animada. Tudo em
+[DECISOES.md](docs/DECISOES.md).
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -49,7 +50,7 @@ chegava junto com a tela). Tudo em [DECISOES.md](docs/DECISOES.md).
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**21 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -109,6 +110,43 @@ chegava junto com a tela). Tudo em [DECISOES.md](docs/DECISOES.md).
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[04/09]` 🟡 **Tela de boas-vindas depois do login e do cadastro.** *Ideia do
+  dono; a análise inteira está em
+  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
+
+  **O que ele descreveu:** em vez do redirecionamento seco, uma tela rápida —
+  *"seja bem-vindo (nome), preparando tudo pra você"* na primeira vez, *"bem-vindo
+  de volta"* nas seguintes — com um portão se abrindo.
+
+  **A pergunta dele:** *"só não sei se isso pra todo login ou cadastro"*.
+
+  **Minha recomendação:** sim, mas **amarrada a trabalho real** — ela aparece
+  enquanto o perfil e o feed carregam e sai quando terminam, com teto absoluto.
+  Animação que segura quem já está pronto vira pedágio na décima vez. E não
+  precisa de banco: quem acabou de se cadastrar é primeira vez por construção.
+
+- ⬜ `[04/09]` 🟡 **O "cofre" do painel do Fundador.** *Ideia do dono. **Só vale a
+  pena se a checagem for no BANCO** — ver a análise em
+  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
+
+  **O que ele descreveu:** ao clicar na aba do Fundador, um cofre com campo de
+  senha; acertando, animação de abertura e acesso liberado por um tempo.
+
+  **O que eu preciso que ele decida antes:** cofre **cenográfico** (bonito, e
+  eu digo em todo lugar que é enfeite) ou **tranca de verdade** (RPC que confere
+  um hash e libera por tempo, com as RPCs do owner exigindo o desbloqueio).
+  Senha conferida no navegador não protege nada — o site usa a `anon key`, e
+  quem tiver a sessão chama a RPC direto (§1.3).
+
+- ⬜ `[04/09]` 🟢 **Música no painel do Fundador.** *Ideia do dono; as três saídas
+  que ele imaginou têm impedimento — ver
+  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
+
+  Ler a biblioteca do celular dele pelo site não é possível (não existe API para
+  isso). Spotify e YouTube esbarram em conta paga, regra de uso e privacidade.
+  O caminho limpo é o mesmo do som ambiente que já existe: **um arquivo curto,
+  hospedado por nós, com licença clara**.
 
 - ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
   offline.** *É o terceiro elo da corrente que o dono relatou, e o único que

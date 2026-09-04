@@ -3,38 +3,39 @@
  *
  * ── O bug que esta trava impede ─────────────────────────────────────────────
  *
- * As duas artes chegam como UMA imagem com os dois lutadores. Para virarem fundo
- * de tela, cada uma é recortada em duas. Na primeira versão eu cortei na metade
- * da imagem — número redondo, escolhido por simetria aparente e não por medição.
+ * As artes chegam como UMA imagem com os dois lutadores. Para virarem fundo de
+ * tela, cada uma é recortada em duas — e a primeira versão cortou na metade da
+ * imagem, número redondo escolhido por simetria aparente e não por medição.
  *
- * O dono viu o resultado antes de mim: *"o fogo tá aparecendo um pouco na parte
- * de gelo, não ficou um corte muito limpo"*. Ele estava certo nas duas metades
- * da frase, e a medição explicou as duas: na arte do login o fogo do golpe vai
- * até a coluna 808 e o gelo já começa na 734, então **os dois se sobrepõem por
- * 75 colunas**. Qualquer reta vertical ali corta um e leva um pedaço do outro.
+ * O dono viu o resultado antes de mim: *"o de um lado tá aparecendo um pouco na
+ * parte do outro, não ficou um corte muito limpo"*. A medição explicou: naquela
+ * arte os dois se sobrepunham por **75 colunas**, e qualquer reta vertical ali
+ * cortava um e levava um pedaço do outro.
  *
- * ── Por que a fronteira passou a ser COR, e não uma reta ────────────────────
+ * ── Por que a fronteira é COR, e não uma reta ───────────────────────────────
  *
- * Na faixa disputada, o que decide é a cor do pixel: o lado do fogo descarta o
- * que é nitidamente frio, o do gelo descarta o que é nitidamente quente, e o
- * alfa vai a zero por rampa nos últimos 30 px — sem a rampa, o halo residual
- * termina numa reta, que era a segunda metade da queixa.
+ * Na faixa disputada quem decide é a cor do pixel: o lado verde descarta o que
+ * é nitidamente roxo, o roxo descarta o que é nitidamente verde, e o alfa vai a
+ * zero por rampa nas últimas colunas — sem a rampa, o halo residual termina
+ * numa reta, que era a segunda metade da queixa.
+ *
+ * Nas artes de hoje existe folga de verdade (6 colunas no login, 120 no
+ * cadastro), então a regra quase não precisa opinar. **Ela fica mesmo assim**:
+ * a próxima arte pode não ter folga nenhuma, e foi exatamente esse o caso que
+ * produziu o defeito.
  *
  * ── O que este teste mede, e por que num NAVEGADOR ──────────────────────────
  *
- * Ele conta pixels da cor errada na borda que encosta na fenda: no lutador de
- * fogo, a borda DIREITA; no de gelo, a ESQUERDA. Zero é o esperado.
+ * Conta pixels da cor errada na borda que encosta na fenda: no lutador verde, a
+ * borda DIREITA; no roxo, a ESQUERDA. Zero é o esperado.
  *
  * É num navegador porque WebP não se decodifica em Node sem dependência nova, e
  * porque assim o teste mede **a imagem que o site serve de verdade** — a que o
  * `srcset` escolheu, no caminho que o Vite gerou. Um teste que lesse o arquivo
  * da pasta não perceberia se o componente passasse a apontar para outra arte.
  *
- * ── Provada reinjetando o bug (§2) ──────────────────────────────────────────
- *
- * Com os recortes antigos (reta em x=768), a contagem dá **868** pixels quentes
- * na borda esquerda do gelo e **220** frios na borda direita do fogo. Com os
- * novos, dá 0 e 0. A tolerância de 30 fica entre as duas coisas de longe.
+ * O eixo de cor é G contra B. Ele mudou junto com a paleta: era R contra B
+ * quando a cena era fogo × gelo.
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia } from './util.mjs';
 
@@ -61,8 +62,8 @@ const ok = (m) => console.log(`  ${String(++passo).padStart(2)}. OK   ${m}`);
 const medir = () => page.evaluate(({ BORDA, DIFERENCA }) => {
   const saida = [];
   for (const img of document.querySelectorAll('img.arena-figura')) {
-    const lado = img.closest('.arena-lutador-fogo') ? 'fogo'
-      : img.closest('.arena-lutador-gelo') ? 'gelo' : 'desconhecido';
+    const lado = img.closest('.arena-lutador-verde') ? 'verde'
+      : img.closest('.arena-lutador-roxo') ? 'roxo' : 'desconhecido';
     const w = img.naturalWidth, h = img.naturalHeight;
     if (!w || !h) { saida.push({ lado, erro: 'imagem não carregou' }); continue; }
 
@@ -77,10 +78,10 @@ const medir = () => page.evaluate(({ BORDA, DIFERENCA }) => {
       for (let x = 0; x < w; x++) {
         const i = (y * w + x) * 4;
         if (d[i + 3] < 40) continue;
-        const R = d[i], B = d[i + 2];
-        // fogo: a borda que encosta na fenda é a DIREITA; gelo: a ESQUERDA.
-        if (lado === 'fogo' && x >= w - faixa && B > R + DIFERENCA) invasores++;
-        if (lado === 'gelo' && x < faixa && R > B + DIFERENCA) invasores++;
+        const G = d[i + 1], B = d[i + 2];
+        // verde: a borda que encosta na fenda é a DIREITA; roxo: a ESQUERDA.
+        if (lado === 'verde' && x >= w - faixa && B > G + DIFERENCA) invasores++;
+        if (lado === 'roxo' && x < faixa && G > B + DIFERENCA) invasores++;
       }
     }
     saida.push({ lado, arquivo: img.currentSrc.split('/').pop(), w, h, invasores });
@@ -100,17 +101,17 @@ const noMeioDaTroca = () => page.evaluate(() => {
     document.querySelectorAll(`.arena-lutador-${lado} .arena-troca`).length;
   const borda = (sel) => getComputedStyle(document.querySelector(sel)).left;
   return {
-    artesFogo: artes('fogo'),
-    artesGelo: artes('gelo'),
+    artesVerde: artes('verde'),
+    artesRoxo: artes('roxo'),
     fenda: borda('.arena-fenda'),
-    particulas: borda('.arena-particulas-gelo'),
+    particulas: borda('.arena-particulas-roxo'),
   };
 });
 
 /** O que a moldura da borda DIREITA está mostrando, pelo estilo computado. */
 const molduraDaDireita = () => page.evaluate(() => {
-  const el = document.querySelector('.arena-moldura-gelo');
-  if (!el) return 'elemento .arena-moldura-gelo nao existe';
+  const el = document.querySelector('.arena-moldura-roxo');
+  if (!el) return 'elemento .arena-moldura-roxo nao existe';
   const e = getComputedStyle(el);
   return e.display === 'none' ? 'oculta' : e.backgroundImage;
 });
@@ -147,7 +148,7 @@ const conferir = async (rota) => {
     if (m.erro) throw new Error(`${rota}: o lutador de ${m.lado} ${m.erro}`);
     if (m.lado === 'desconhecido') {
       throw new Error(
-        `${rota}: achei uma arte fora de .arena-lutador-fogo/-gelo.\n`
+        `${rota}: achei uma arte fora de .arena-lutador-verde/-roxo.\n`
         + '  Sem saber de que lado ela está, não dá para saber qual borda\n'
         + '  encosta na fenda — e o teste passaria a não verificar nada.');
     }
@@ -198,20 +199,20 @@ try {
   // A moldura da borda DIREITA muda de arte entre as duas telas, e isso é
   // pedido explícito do dono: *"a do cadastro pode ser só a de fogo, pq o
   // personagem de fogo é oq tá mais a mostra"*. Sem esta conferência, alguém
-  // apagando a regra `.arena-selecionado .arena-moldura-gelo` traria a borda de
+  // apagando a regra `.arena-selecionado .arena-moldura-roxo` traria a borda de
   // gelo de volta para uma tela onde o gelo está de costas — e nada acusaria.
-  if (!/moldura-gelo/.test(molduraNoLogin)) {
+  if (!/moldura-roxo/.test(molduraNoLogin)) {
     throw new Error(
-      `no /login a borda direita deveria ser a de GELO, e é: ${molduraNoLogin}`);
+      `no /login a borda direita deveria ser a ROXA, e é: ${molduraNoLogin}`);
   }
-  if (/moldura-gelo/.test(molduraNoCadastro)) {
+  if (/moldura-roxo/.test(molduraNoCadastro)) {
     throw new Error(
-      `no cadastro a borda direita voltou a ser a de GELO: ${molduraNoCadastro}\n`
-      + '  A regra `.arena-selecionado .arena-moldura-gelo` sumiu do\n'
-      + '  src/estilos/arena.css. Ali o gelo está de costas e recuado — o pedido\n'
-      + '  do dono foi moldura SÓ de fogo, e a borda direita fica limpa.');
+      `no cadastro a borda direita voltou a ser a ROXA: ${molduraNoCadastro}\n`
+      + '  A regra `.arena-selecionado .arena-moldura-roxo` sumiu do\n'
+      + '  src/estilos/arena/efeitos.css. Ali o roxo está de costas e recuado —\n'
+      + '  o pedido do dono foi moldura SÓ do vencedor, e a direita fica limpa.');
   }
-  ok(`a moldura do cadastro não tem gelo (direita: ${molduraNoCadastro})`);
+  ok(`a moldura do cadastro não tem roxo (direita: ${molduraNoCadastro})`);
 
   // ── A troca de aba, medida NO MEIO dela ──────────────────────────────────
   //
@@ -226,7 +227,7 @@ try {
   await page.waitForTimeout(220);
   const meio = await noMeioDaTroca();
 
-  for (const [lado, quantas] of [['fogo', meio.artesFogo], ['gelo', meio.artesGelo]]) {
+  for (const [lado, quantas] of [['verde', meio.artesVerde], ['roxo', meio.artesRoxo]]) {
     if (quantas !== 2) {
       throw new Error(
         `no meio da troca de aba existe ${quantas} arte(s) do lado do ${lado}, esperava 2.\n`

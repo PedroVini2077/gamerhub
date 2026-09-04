@@ -28,13 +28,12 @@ import { join } from 'node:path';
  */
 describe('as artes da arena de entrada cabem no que a camada 2 pode pagar', () => {
   const PASTA = 'src/assets/auth';
-  const TETO_POR_ARQUIVO = 180 * 1024;   // maior hoje: 150 KB (gelo-guarda-720)
+  const TETO_POR_ARQUIVO = 180 * 1024;   // maior hoje: 140 KB (verde-guarda-720)
   /* `[04/09]` 800 -> 900 KB, e a razão está escrita porque subir teto é o
    * caminho errado quando é para caber uma arte descuidada. Aqui não é: a pasta
-   * passou a guardar DUAS categorias — os quatro lutadores (639 KB) e a moldura
-   * das bordas, que entrou depois a pedido do dono (148 KB). O teto antigo foi
-   * dimensionado só para a primeira, e com ela sozinha ele continua valendo. */
-  const TETO_TOTAL       = 900 * 1024;   // hoje: 783 KB (639 lutadores + 148 moldura)
+   * guarda DUAS categorias — os quatro lutadores e a moldura das bordas —, e o
+   * teto antigo tinha sido dimensionado só para a primeira. */
+  const TETO_TOTAL       = 900 * 1024;   // hoje: 719 KB (648 lutadores + 71 moldura)
 
   const arquivos = readdirSync(PASTA).filter((f) => /\.(webp|png|jpe?g|avif)$/i.test(f));
 

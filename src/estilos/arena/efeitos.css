@@ -11,11 +11,12 @@
  * antes, byte a byte. É o tipo de falha muda do §1.5: build verde, imagem
  * faltando. */
 
-/* ── A MOLDURA: lava numa borda, cristal na outra ────────────────────────────
+/* ── A MOLDURA: circuito verde numa borda, roxo na outra ─────────────────────
  *
- * `[04/09]` Substituiu as labaredas e os cristais que eu desenhava em CSS.
- * Pedido do dono, com a arte junto: *"tira os efeitos de labareda e tbm os
- * cristais que vc fez a mão, coloca essa moldura nos cantos"*.
+ * `[04/09]` Substituiu efeitos que eu desenhava em CSS. Pedido do dono, com a
+ * arte junto: *"tira os efeitos que vc fez a mão, coloca essa moldura nos
+ * cantos"*. A arte foi trocada de novo no fim do dia, quando a cena inteira
+ * passou de fogo × gelo para a paleta do site.
  *
  * ── Por que `mix-blend-mode: screen` ────────────────────────────────────────
  *
@@ -44,7 +45,7 @@
   bottom: 0;
   /* 30vw e opacidade baixa: é MOLDURA, não papel de parede. Na primeira
    * tentativa ela entrou com 42vw e 0.85 e engoliu os dois lutadores — a
-   * lava tinha mais presença que o personagem, que é o contrário do que a
+   * moldura tinha mais presença que o personagem, o contrário do que a
    * tela precisa contar. */
   width: 30vw;
   background-repeat: no-repeat;
@@ -59,17 +60,17 @@
  * alta e estreita corta a arte na horizontal, e o esvanecimento que ela traz
  * para o centro morre no corte — sobra uma RETA vertical no meio da tela. É o
  * mesmo defeito do recorte dos lutadores, na outra direção. */
-.arena-moldura-fogo {
+.arena-moldura-verde {
   left: 0;
-  background-image: url('../../assets/auth/moldura-fogo.webp');
+  background-image: url('../../assets/auth/moldura-verde.webp');
   background-position: left center;
   -webkit-mask-image: linear-gradient(to right, #000 38%, transparent 100%);
   mask-image: linear-gradient(to right, #000 38%, transparent 100%);
 }
 
-.arena-moldura-gelo {
+.arena-moldura-roxo {
   right: 0;
-  background-image: url('../../assets/auth/moldura-gelo.webp');
+  background-image: url('../../assets/auth/moldura-roxo.webp');
   background-position: right center;
   -webkit-mask-image: linear-gradient(to left, #000 38%, transparent 100%);
   mask-image: linear-gradient(to left, #000 38%, transparent 100%);
@@ -84,17 +85,18 @@
   from { opacity: 0; }
 }
 
-/* CADASTRO: moldura SÓ na borda do fogo. A direita fica limpa.
+/* CADASTRO: moldura SÓ na borda do verde. A direita fica limpa.
  *
- * Pedido do dono — *"a do cadastro pode ser só a de fogo"*. A primeira versão
- * espelhava a arte de fogo para a borda direita, para fechar a moldura dos dois
- * lados; ele viu e questionou: *"o fogo tá tomando conta do gelo aqui?"*.
+ * Pedido do dono — *"a do cadastro pode ser só a de um lado"*. A primeira
+ * versão espelhava a arte vencedora para a borda direita, para fechar a moldura
+ * dos dois lados; ele viu e questionou se um lado não estava *"tomando conta"*
+ * do outro.
  *
- * Ele tem razão, e o certo era a leitura literal: com o gelo de costas e
- * recuado, lava passando por cima dele conta que o fogo invadiu o outro lado —
- * história diferente de "o fogo venceu". Borda direita vazia deixa o gelo na
+ * Ele tem razão, e o certo era a leitura literal: com o perdedor de costas e
+ * recuado, moldura acesa por cima dele conta que o vencedor invadiu o lado —
+ * história diferente de "ele venceu". Borda direita vazia deixa o perdedor na
  * penumbra, que é exatamente o que a cena quer dizer. */
-.arena-selecionado .arena-moldura-gelo {
+.arena-selecionado .arena-moldura-roxo {
   display: none;
 }
 
@@ -104,16 +106,16 @@
  * que só aparecia na VOLTA do cadastro para o login.
  *
  * O que o dono viu: *"quando volto do cadastro pro login, as partículas azuis
- * estão caindo na área do fogo na hora de voltar"*.
+ * estão caindo na área do outro na hora de voltar"*.
  *
  * A causa: metade da cena mudava em 900 ms e a outra metade de estalo. A fenda
  * e os lados têm `transition` no `left`/`right`; a posição de cada partícula era
  * calculada do `--eixo` **sem transição nenhuma**. Voltando de 68% para 50%, o
- * lado do gelo alargava no mesmo quadro e a fenda ainda estava lá atrás — por
- * 900 ms havia partícula azul em cima do vermelho.
+ * lado roxo alargava no mesmo quadro e a fenda ainda estava lá atrás — por
+ * 900 ms havia partícula roxa em cima do verde.
  *
- * **Só acontecia na volta**, e isso é a assinatura do defeito: na ida o lado do
- * gelo ENCOLHE, então as partículas se afastam da fenda em vez de cruzá-la.
+ * **Só acontecia na volta**, e isso é a assinatura do defeito: na ida o lado
+ * roxo ENCOLHE, então as partículas se afastam da fenda em vez de cruzá-la.
  *
  * Por que contêiner e não `transition` em cada partícula: são 24 delas, e
  * `left`/`right` não roda no compositor (§0.3). Com o contêiner, **dois**
@@ -131,12 +133,12 @@
               right 900ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.arena-particulas-fogo {
+.arena-particulas-verde {
   left: 0;
   right: calc(100% - var(--eixo, 50%));
 }
 
-.arena-particulas-gelo {
+.arena-particulas-roxo {
   left: var(--eixo, 50%);
   right: 0;
 }
@@ -155,34 +157,34 @@
   will-change: transform, opacity;
 }
 
-/* Brasa sobe pela esquerda; lasca de gelo desce pela direita. Duas direções,
- * porque fogo que cai e gelo que sobe seria a leitura invertida.
+/* Faísca sobe pela esquerda; estilhaço desce pela direita. Duas direções,
+ * porque as duas subindo seria a mesma coisa em dobro, não um duelo.
  *
  * `--x` é FRAÇÃO do lado (0..1), e a conta usa o `--eixo`. Antes era
  * porcentagem da tela, e no cadastro — onde o eixo vai para 68% — as lascas de
- * gelo caíam dentro do lado do fogo. Era o dono quem tinha que ver: *"não é
+ * um lado caíam dentro do outro. Era o dono quem tinha que ver: *"não é
  * algo que incomoda, só é falta de capricho"*.
  *
  * A folga para a deriva lateral (`--deriva`, até 2,5vw) já vem do próprio
  * `--x`, que para em 0,84 do lado — sobram 16% de margem antes da fenda. */
-.arena-brasa {
+.arena-faisca {
   /* `--x` é fração do LADO, e o lado agora é o contêiner — então a conta é
    * direta, sem `--eixo` no meio. */
   left: calc(var(--x, 0.2) * 100%);
-  background: #ffa14d;
-  box-shadow: 0 0 10px 2px #ff5a1e99;
+  background: #39ff14;
+  box-shadow: 0 0 10px 2px #39ff1499;
 }
 
-/* Lasca, não ponto: gelo tem aresta. */
-.arena-lasca {
+/* Estilhaço, não ponto: o lado roxo é feito de arestas. */
+.arena-estilhaco {
   right: calc(var(--x, 0.2) * 100%);
   top: -4vh;
   bottom: auto;
   width: 2px;
   height: 9px;
   border-radius: 1px;
-  background: #cffafe;
-  box-shadow: 0 0 8px 1px #22d3ee88;
+  background: #e9d5ff;
+  box-shadow: 0 0 8px 1px #bf00ff99;
   animation-name: arenaDesce;
 }
 
