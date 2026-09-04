@@ -143,10 +143,27 @@ const METRICAS = {
     .reduce((n, d) => n + readFileSync(join(RAIZ, d), 'utf8').split('\n').length - 1, 0),
 };
 
-/** Todo `.md` rastreado pelo git — o que não está versionado não é documentação. */
+/**
+ * Todo `.md` versionado OU pronto para ser — o que o git ignora não é
+ * documentação.
+ *
+ * `[03/09]` O `--others --exclude-standard` foi acrescentado depois de este
+ * portão dar VERDE no `npm run fim` e VERMELHO no CI, no mesmo commit.
+ *
+ * A causa: `git ls-files` sozinho lista só o que já está no índice. Um documento
+ * recém-escrito e ainda não adicionado não era contado aqui — mas era contado no
+ * CI, onde ele já tinha entrado pelo commit. Ou seja, **o portão local mentia
+ * exatamente no caso em que ele mais precisa acertar**: quando um documento
+ * NOVO nasce.
+ *
+ * Verde que não sustenta nada é o defeito que este projeto mais persegue, e
+ * aqui ele estava dentro do próprio verificador.
+ */
 function documentos() {
-  return execFileSync('git', ['ls-files', '*.md'], { cwd: RAIZ, encoding: 'utf8' })
-    .trim().split('\n').filter(Boolean);
+  return execFileSync(
+    'git', ['ls-files', '--cached', '--others', '--exclude-standard', '*.md'],
+    { cwd: RAIZ, encoding: 'utf8' },
+  ).trim().split('\n').filter(Boolean);
 }
 
 /** 28679 -> "28.679", que é como o número aparece escrito nos documentos. */

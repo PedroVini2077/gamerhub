@@ -26,6 +26,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/DESEMPENHO.md`](docs/DESEMPENHO.md) | **O histórico das medições.** O que cada rodada mediu, o que ela desmentiu, e onde o custo estava de verdade |
 | [`docs/DECISOES.md`](docs/DECISOES.md) | Por que **o site** se comporta assim — decisões de produto, com o que foi **descartado** |
 | [`docs/DECISOES-FERRAMENTAL.md`](docs/DECISOES-FERRAMENTAL.md) | Por que **a esteira** é assim — CI, Vercel, Sentry, Dependabot, Edge Functions, email |
+| [`docs/VISAO-DE-FUTURO.md`](docs/VISAO-DE-FUTURO.md) | **Onde o site pode chegar.** Mapa de possibilidades, sem compromisso e sem data — não é fila |
 | [`BACKLOG.md`](BACKLOG.md) | O que falta fazer — só isso, é um checklist |
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |
 | [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
