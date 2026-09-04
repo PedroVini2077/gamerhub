@@ -35,19 +35,12 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — a arena de entrada com os personagens — fechou em
-04/09. As seis etapas foram entregues, e as duas últimas correções vieram do
-dono olhando a tela: o recorte do cadastro que deixava labareda no lado do gelo,
-e o do login, que levava uma lasca laranja para a arte do gelo e um caco azul
-para a do fogo.
-
-**A causa raiz das duas era a mesma, e não era descuido de recorte:** as artes
-trazem os dois lutadores numa imagem só, e **eles se sobrepõem por 75 colunas** —
-não existe reta vertical que separe. A fronteira passou a ser a **cor** do pixel
-na faixa disputada, com rampa de alfa para o halo não terminar num corte.
-Medição, receita e números em [DESEMPENHO.md](docs/DESEMPENHO.md); a trava é
-`e2e/artes-da-arena.mjs`, que conta 0 pixels invasores hoje e **638** com o
-recorte antigo reinjetado.
+*Vazia.* A última tarefa — os três acabamentos da arena e o split do
+`index.css` — fechou em 04/09. Os três achados vieram do dono testando a tela:
+partícula de gelo caindo no lado do fogo (era `--x` em % da tela, e a fronteira
+é o `--eixo`), a troca de aba sem transição, e o gelo saindo da tela no cadastro
+do celular. O split do CSS foi provado por **saída**: o build emite as mesmas
+862 regras. Tudo em [DECISOES.md](docs/DECISOES.md).
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -57,7 +50,7 @@ recorte antigo reinjetado.
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**22 itens abertos** (+ 1 ideia sem compromisso)
+**21 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -340,22 +333,6 @@ recorte antigo reinjetado.
 
 
 ## 🟢 Recomendado
-
-- ⬜ `[04/09]` 🟢 **Dividir o resto do `src/index.css` (550 linhas).** *Metade da
-  dívida foi paga hoje; esta é a outra metade, e ela precisa da sua aprovação.*
-
-  Ao entregar a arena eu tinha inflado o `index.css` de 676 para 948 linhas. O
-  bloco que **eu** criei saiu para `src/estilos/arena.css` (§4: sujeira minha,
-  eu limpo, sem perguntar) e o arquivo voltou a 550.
-
-  **Continua acima das 300**, e as 550 que restam são anteriores a esta sessão:
-  fontes, base, `.card`, botões, tags, inputs, animações e a luz do site logado.
-  Separá-las é mecânico — mesmos arquivos, mesma ordem de `@import` —, **mas
-  encostaria em toda tela do site de uma vez**, e misturar isso num PR visual é
-  exatamente o que a receita do §4 desaconselha ("uma extração por commit").
-
-  Então fica registrado com o motivo, como manda a regra, em vez de sumir.
-
 
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
   *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*

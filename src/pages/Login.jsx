@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { useNavigate, Link } from 'react-router-dom';
@@ -11,6 +12,8 @@ import RegisterSuccess from '../components/auth/RegisterSuccess';
 import ForgotForm from '../components/auth/ForgotForm';
 import LoginSemBanco from '../components/auth/LoginSemBanco';
 import ArenaDeEntrada from '../components/auth/ArenaDeEntrada';
+import CardQueAcompanhaAltura from '../components/auth/CardQueAcompanhaAltura';
+import { fadeTab } from '../lib/motion';
 import { isLoginBlocked } from '../lib/loginBlock';
 import { useDbOffline } from '../hooks/useDbOffline';
 
@@ -62,6 +65,12 @@ export default function Login() {
     }, 8000);
     return () => clearInterval(t);
   }, [isBlocked, email]);
+
+  // Uma chave só para as duas coisas que precisam dela: o `AnimatePresence`
+  // (que conteúdo está na tela) e o card (quando animar a altura). Duas
+  // expressões separadas divergiriam — e divergir aqui significaria o card
+  // animar numa troca em que o conteúdo não trocou, ou o contrário.
+  const chaveDoConteudo = `${mode}${registeredEmail ? '-enviado' : ''}`;
 
   function switchMode(m) {
     setMode(m);
@@ -204,46 +213,73 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="card p-7">
+        {/* `[04/09]` A troca de aba passou a ter TRANSIÇÃO.
+            Pedido do dono: *"podia fazer uma transição melhor da aba de login e
+            cadastro, pq quando fazemos essa troca, simplesmente corta de um pro
+            outro"*. Ele está certo — era um corte seco.
+
+            `mode="wait"` e não sobreposição: os dois formulários têm alturas
+            muito diferentes, e deixar os dois montados ao mesmo tempo faria o
+            card pular de tamanho no meio da animação.
+
+            `initial={false}`: a primeira pintura NÃO anima. O formulário é o que
+            a pessoa veio fazer; ele aparece pronto, e quem se apresenta com
+            animação é o fundo.
+
+            `fadeTab` é a variante que o resto do site já usa em aba (Admin,
+            Owner, ModerationPanel) — mesma linguagem, uma fonte só (§4). */}
+        <CardQueAcompanhaAltura className="card p-7" chave={chaveDoConteudo}>
           {semBanco && <LoginSemBanco />}
-          {!semBanco && mode === 'login' && (
-            <LoginForm
-              email={email} setEmail={setEmail}
-              password={password} setPassword={setPassword}
-              loading={loading} block={block} setBlock={setBlock}
-              onSubmit={handleSubmit}
-              onForgot={() => switchMode('forgot')}
-              onSwitchToRegister={() => switchMode('register')}
-            />
+          {!semBanco && (
+            <AnimatePresence mode="wait" initial={false}>
+              {/* A chave inclui o `registeredEmail`: sair do formulário para a
+                  tela de "confirme seu e-mail" é troca de conteúdo tanto quanto
+                  trocar de aba, e sem isso ela apareceria de estalo. */}
+              <motion.div
+                key={chaveDoConteudo}
+                variants={fadeTab} initial="initial" animate="animate" exit="exit"
+              >
+                {mode === 'login' && (
+                  <LoginForm
+                    email={email} setEmail={setEmail}
+                    password={password} setPassword={setPassword}
+                    loading={loading} block={block} setBlock={setBlock}
+                    onSubmit={handleSubmit}
+                    onForgot={() => switchMode('forgot')}
+                    onSwitchToRegister={() => switchMode('register')}
+                  />
+                )}
+                {mode === 'register' && (
+                  registeredEmail ? (
+                    <RegisterSuccess email={registeredEmail} onBackToLogin={() => switchMode('login')} />
+                  ) : (
+                    <RegisterForm
+                      email={email} setEmail={setEmail}
+                      password={password} setPassword={setPassword}
+                      confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+                      username={username} setUsername={setUsername}
+                      birthDate={birthDate} setBirthDate={setBirthDate}
+                      aceitouDocumentos={aceitouDocumentos} setAceitouDocumentos={setAceitouDocumentos}
+                      uf={uf} setUf={setUf}
+                      selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform}
+                      loading={loading}
+                      onSubmit={handleSubmit}
+                      onSwitchToLogin={() => switchMode('login')}
+                    />
+                  )
+                )}
+                {mode === 'forgot' && (
+                  <ForgotForm
+                    email={email} setEmail={setEmail}
+                    loading={loading}
+                    onSubmit={handleSubmit}
+                    onBack={() => switchMode('login')}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           )}
-          {!semBanco && mode === 'register' && (
-            registeredEmail ? (
-              <RegisterSuccess email={registeredEmail} onBackToLogin={() => switchMode('login')} />
-            ) : (
-              <RegisterForm
-                email={email} setEmail={setEmail}
-                password={password} setPassword={setPassword}
-                confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
-                username={username} setUsername={setUsername}
-                birthDate={birthDate} setBirthDate={setBirthDate}
-                aceitouDocumentos={aceitouDocumentos} setAceitouDocumentos={setAceitouDocumentos}
-                uf={uf} setUf={setUf}
-                selectedPlatform={selectedPlatform} setSelectedPlatform={setSelectedPlatform}
-                loading={loading}
-                onSubmit={handleSubmit}
-                onSwitchToLogin={() => switchMode('login')}
-              />
-            )
-          )}
-          {!semBanco && mode === 'forgot' && (
-            <ForgotForm
-              email={email} setEmail={setEmail}
-              loading={loading}
-              onSubmit={handleSubmit}
-              onBack={() => switchMode('login')}
-            />
-          )}
-        </div>
+        </CardQueAcompanhaAltura>
 
         <p className="text-center text-xs text-gray-600 font-mono mt-4">
           // GamerHub v1.0 — Powered by Supabase

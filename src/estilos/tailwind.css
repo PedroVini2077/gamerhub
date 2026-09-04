@@ -1,0 +1,16 @@
+/* As três diretivas do Tailwind, em arquivo próprio.
+ *
+ * Elas ficam num arquivo só para o `index.css` poder ser uma LISTA DE IMPORTS e
+ * mais nada. CSS exige que todo `@import` venha antes de qualquer regra — se as
+ * diretivas continuassem no `index.css`, tudo o que hoje vem depois delas
+ * (`.card`, `.btn-*`, `.tag-*`) teria que ser importado ANTES, e passaria a
+ * perder para as utilitárias do Tailwind em empate de especificidade.
+ *
+ * Isso não é teoria: é o que mudaria a aparência de qualquer elemento que usa
+ * `.card` junto de uma utilitária da mesma propriedade. Manter a ORDEM é o que
+ * faz esta extração ser mecânica, e a prova está no build — o CSS gerado é
+ * idêntico ao de antes, byte a byte. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

@@ -1088,3 +1088,71 @@ direita nas duas telas; provado apagando a regra e vendo o passo 4 reprovar.
 
 **Custo:** 148 KB nos dois arquivos (72 + 76), estáticos, sem animação de
 tela cheia. Ver [DESEMPENHO.md](DESEMPENHO.md).
+
+### `[04/09]` Três acabamentos da arena, e o que cada um ensinou
+
+**1. A partícula não sabia onde ficava a fronteira.** Achado do dono: *"quando a
+parte de fogo pega o lado do gelo, as partículas de gelo ficam caindo no fogo…
+não é algo que incomoda, só é falta de capricho"*.
+
+A causa não era a posição de nenhuma partícula: `--x` era porcentagem **da
+tela**, e a fronteira entre os dois lados é o `--eixo`, que no cadastro vai para
+68%. Corrigido pela **classe**, não pelo caso: `--x` virou fração do próprio
+lado (0,06 a 0,84) e o CSS multiplica pela largura dele. Passa a valer em
+qualquer eixo — inclusive num terceiro modo que ainda não existe.
+
+**2. A transição de aba, e o `layout` do Framer que NÃO funcionou.** Pedido:
+*"podia fazer uma transição melhor da aba de login e cadastro, pq quando fazemos
+essa troca, simplesmente corta de um pro outro"*.
+
+O conteúdo entrou em `AnimatePresence mode="wait"` com a variante `fadeTab` que
+o resto do site já usa. Faltava a altura: o cadastro é **2,5× mais alto** que o
+login (354 → 877 px, medido em 1280 px de largura), e o card saltava de tamanho
+com o conteúdo ainda transparente.
+
+A saída de uma linha seria `<motion.div layout>`. **Ela não funcionou, e isso é
+medição:** com ela no card, a altura pulava de 354 para 877 px entre dois
+quadros e o `transform` computado ficava em `none` o tempo todo — nenhuma
+animação de projeção chegou a rodar. Em vez de insistir (§1.2), a altura passou
+a ser medida por `ResizeObserver` e animada em `CardQueAcompanhaAltura`.
+
+> **A animação é condicional à `chave` de propósito.** O `ResizeObserver`
+> dispara a cada mudança de altura, inclusive as de digitação (medidor de força
+> da senha, mensagem de erro). Animar 280 ms a cada tecla deixaria o formulário
+> com cara de travado.
+
+**3. "Recuar" tinha virado "sumir".** *"a área de cadastro no celular, o
+personagem de gelo mal aparece"*. A causa era acumulada e nenhuma das partes
+estava errada sozinha: a base do celular joga o gelo para `right: -16vw`, e a
+regra do cadastro somava mais 6vw de translação **para a direita**. Somados,
+22vw dele ficavam fora da tela. Ele voltou para dentro e ganhou opacidade —
+continua atrás e mais apagado, que é o ponto, mas agora dá para ver que está lá.
+
+### `[04/09]` O `index.css` virou lista de imports — e a ORDEM é o comportamento
+
+O arquivo tinha 948 linhas com a arena dentro, e 550 depois que ela saiu. As 550
+restantes eram anteriores e encostam em toda tela do site, então a divisão
+esperou o dono liberar (*"vai com calma arrumando o css e fazendo o split"*).
+
+**O que decidiu o desenho:** CSS resolve empate de especificidade por **ordem**.
+`.card` só vence uma utilitária do Tailwind de mesma propriedade porque está
+depois de `@tailwind utilities`. E `@import` tem que vir antes de qualquer
+regra. As duas coisas juntas obrigam a solução: as diretivas `@tailwind` saíram
+para um arquivo próprio, e o `index.css` virou **só a lista de imports**, na
+mesma sequência em que os blocos estavam.
+
+**Como foi provado que nada mudou:** o CSS emitido pelo build tem as **mesmas
+862 regras**, antes e depois. A única diferença de ordem é o bloco da arena, que
+voltou para o fim — que é onde ele estava antes de eu extraí-lo no PR #155.
+Prova de saída, não opinião sobre o processo.
+
+**E a prova pegou um bug de verdade.** O `arena.css` também passou de 300 linhas
+(455) e virou quatro partes dentro de `estilos/arena/`. Ao descer uma pasta, os
+dois `url('../assets/auth/moldura-*.webp')` deixaram de resolver: o Vite emitiu
+o **caminho cru**, e a moldura daria **404 em produção** — com build verde, lint
+verde e testes verdes. Nenhum portão via, porque nenhum deles compara a saída.
+
+Só apareceu porque o CSS emitido foi comparado byte a byte com o de antes. É a
+lição do §1.5 aplicada a refactor: *"extraí sem mudar comportamento"* é
+afirmação, e afirmação precisa de evidência. A evidência aqui é o arquivo de
+saída, e ela custa um `cmp`.

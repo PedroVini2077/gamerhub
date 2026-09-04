@@ -1,0 +1,101 @@
+/* A composição do CELULAR, e a de quem pediu menos movimento.
+ *
+ * Parte 4 de 4, e vem por último de propósito: as duas são sobrescritas, e
+ * sobrescrita que vem antes do que sobrescreve não sobrescreve nada.
+ *
+ * Estar num arquivo só é a razão de a divisão ter valido a pena: a composição
+ * do celular deixa de estar espalhada por quatro seções e passa a ser um lugar
+ * onde dá para ler a tela inteira do telefone de uma vez. */
+
+/* ── CELULAR: outra composição, e é o pedido do dono ─────────────────────────
+ *
+ * *"eu percebi que no celular fica bem curto o espaço, então tem que funcionar
+ * dos dois lados"*. E é verdade: com o card ocupando quase toda a largura,
+ * lutador na lateral fica ATRÁS dele — invisível.
+ *
+ * Aqui eles sobem para o topo, menores, ladeando o logo: o único lugar da tela
+ * do cadastro que o formulário não cobre. */
+@media (max-width: 767px) {
+  /* `[04/09]` Os lutadores DOBRARAM de tamanho, e a troca é declarada.
+   *
+   * Reclamação do dono, com o print junto: *"tô achando muito pequeno as
+   * imagens"*, e a pergunta que veio junto — *"vai ficar muito feio esticar a
+   * imagem?"*. Esticar, sim: personagem com proporção errada não lê como
+   * estilo, lê como defeito. Cortar, não — figura sangrando pela borda é
+   * composição normal. Então eles crescem e **saem pela lateral**.
+   *
+   * Medido em 390×844 (o print dele): link "Voltar" em 162 px, logo em 202,
+   * card em 298. Com 16vh os vultos tinham 135 px de altura e paravam antes
+   * do link. Com 34vh eles ocupam 0..287 px e passam POR TRÁS dos dois textos
+   * — o que só é aceitável porque a máscara abaixo apaga justamente a metade
+   * de baixo, que é onde o texto cai. Cabeça e tronco ficam nítidos; pernas
+   * dissolvem no fundo em vez de terminarem num corte reto.
+   *
+   * **Não custa byte:** com DPR 2 ou 3 o navegador já escolhia o arquivo de
+   * 720 px mesmo com os vultos pequenos (medido: `fogo-guarda-720` em 390×844,
+   * DPR 3). Aumentar mudou o tamanho na tela, não o arquivo baixado. */
+  .arena-lutador {
+    height: 34vh;
+    bottom: auto;
+    /* 1,5vh e não 0: com `top: 0` a cabeça do lutador encosta na borda de cima
+     * da tela e lê como "cortado", mesmo sem estar. */
+    top: 1.5vh;
+  }
+  /* Largura de 34vh dá ~265 px em cada um — os dois somam mais que a tela.
+   * Puxar para fora é o que faz eles se encontrarem no MEIO, que é a cena, em
+   * vez de espremer os dois inteiros num espaço que não existe. */
+  .arena-lutador-fogo { left: -16vw; }
+  .arena-lutador-gelo { right: -16vw; }
+
+  .arena-figura {
+    /* 0.6 e não 0.5: com a moldura por trás, o fundo ficou mais movimentado, e
+     * o lutador precisa de mais corpo para não sumir dentro dele. */
+    opacity: 0.6;
+    /* Some de baixo para cima. Sem isto, crescer significaria "personagem
+     * cortado na canela por uma reta invisível" — e reta invisível cortando
+     * corpo é exatamente o defeito que o dono achou no recorte das artes. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 88%);
+  }
+
+  /* 88vh e não 82: medido em 390×844, o card termina em 652 px (77vh) e a linha
+   * "// GamerHub v1.0" logo abaixo dele ia até ~680 px — o VS encostava nela.
+   * Rodapé e emblema disputando o mesmo pixel viram sujeira, não composição. */
+  .arena-vs { top: 88vh; font-size: clamp(1.8rem, 9vw, 2.8rem); }
+
+  /* Mais ESTREITA e mais fraca no celular, não mais larga. A tela é estreita:
+   * com 46vw de cada lado a moldura cobria quase tudo e virava papel de
+   * parede — os lutadores, que são o assunto, ficavam lavados por trás dela. */
+  .arena-moldura-lado { width: 34vw; opacity: 0.38; }
+
+  /* No cadastro o fogo "venceu": ele cresce mais e vem para o centro; o gelo
+   * recua para a penumbra em vez de sumir.
+   *
+   * `[04/09]` "Recuar" tinha virado "sumir", e o dono viu: *"o personagem de
+   * gelo mal aparece"*. A causa era acumulada — a base do celular já joga o
+   * gelo para `right: -16vw`, e o cadastro somava mais 6vw de translação para a
+   * direita. Somados, 22vw dele ficavam fora da tela.
+   *
+   * Agora ele volta para dentro (`right` menor, sem translação a mais) e ganha
+   * opacidade. Continua atrás e mais apagado que o fogo — que é o ponto —, mas
+   * agora dá para ver que ele está lá. */
+  .arena-selecionado .arena-lutador-fogo { height: 40vh; transform: translateX(2vw); }
+  .arena-selecionado .arena-lutador-gelo {
+    right: -4vw;
+    height: 30vh;
+    transform: none;
+  }
+  .arena-selecionado .arena-lutador-gelo .arena-figura { opacity: 0.46; }
+}
+
+/* Quem pediu menos movimento recebe a cena MONTADA — sem entrada e sem faísca
+ * subindo. A cor, os lutadores, a moldura, a fenda e o VS ficam: eles são a
+ * informação; o movimento é o enfeite. */
+@media (prefers-reduced-motion: reduce) {
+  .arena-particula { display: none; }
+  .arena-fenda,
+  .arena-vs,
+  .arena-lutador,
+  .arena-moldura-lado { animation: none; }
+  .arena-lado, .arena-fenda, .arena-vs, .arena-lutador { transition: none; }
+}

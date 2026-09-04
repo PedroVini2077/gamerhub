@@ -1,0 +1,74 @@
+/* Os LUTADORES: as duas artes, a entrada de cada uma e o que muda no cadastro.
+ *
+ * Parte 2 de 4 — ver `../arena.css`. */
+
+/* ── Os lutadores ────────────────────────────────────────────────────────── */
+.arena-lutador {
+  position: absolute;
+  bottom: 0;
+  height: 58vh;
+  opacity: 0.9;
+  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 900ms ease, height 900ms ease;
+}
+
+/* `object-fit: contain` + `bottom`: o lutador fica de pé no chão da arena,
+ * não esticado. A imagem já vem recortada no limite do alfa, então "bottom"
+ * é o pé dele de verdade. */
+/* A opacidade e a máscara moram na IMAGEM, não no `.arena-lutador`.
+ *
+ * Motivo medido, e é a mesma armadilha que já mordeu o VS: a entrada é uma
+ * `animation` com `fill-mode: both`, e o quadro final dela (`opacity: .9`)
+ * **vence** qualquer `opacity` declarada no mesmo elemento — inclusive a de
+ * dentro de um `@media`. O `opacity: 0.65` do celular nunca teve efeito nenhum
+ * depois que a entrada terminava. Na imagem, que não é animada, o valor manda. */
+.arena-figura {
+  height: 100%;
+  width: auto;
+  display: block;
+  object-fit: contain;
+  object-position: bottom;
+}
+
+.arena-lutador-fogo {
+  left: 2vw;
+  animation: arenaEntraDaEsquerda 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms both;
+}
+
+/* `[04/09]` SEM espelho, e isso mudou quando as artes chegaram.
+ *
+ * O `scaleX(-1)` existia porque as duas silhuetas que eu desenhava eram o mesmo
+ * arquivo servindo os dois lados. As artes do dono já vêm **uma de frente para
+ * a outra** — espelhar de novo virava o de gelo para fora da tela, e era isso
+ * que cortava 51 px dele na borda direita (medido, não deduzido). */
+.arena-lutador-gelo {
+  right: 2vw;
+  animation: arenaEntraDaDireita 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 260ms both;
+}
+
+@keyframes arenaEntraDaEsquerda {
+  from { transform: translateX(-14vw); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 0.92; }
+}
+
+@keyframes arenaEntraDaDireita {
+  from { transform: translateX(14vw); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 0.9; }
+}
+
+/* CADASTRO: o de fogo dá um passo à frente e vira de frente para quem olha
+ * (o `scaleX(-1)` some, então ele deixa de mirar o oponente); o de gelo recua
+ * para a penumbra. É o "character selected" da referência. */
+.arena-selecionado .arena-lutador-fogo {
+  height: 66vh;
+  animation: none;
+  transform: translateX(4vw);
+}
+
+/* No cadastro o de gelo JA vem de costas na arte — espelhar de novo o viraria
+ * para fora da tela. Por isso aqui o `scaleX(-1)` sai. */
+.arena-selecionado .arena-lutador-gelo {
+  animation: none;
+  transform: translateX(3vw);
+  opacity: 0.55;
+}
