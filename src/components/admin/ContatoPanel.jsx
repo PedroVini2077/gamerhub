@@ -1,21 +1,7 @@
 import { useEffect } from 'react';
-import { RefreshCw, Mail, CheckCircle2, Ban, Clock } from 'lucide-react';
-import { assuntoDeContato } from '../contato/assuntosDeContato';
+import { RefreshCw, Mail } from 'lucide-react';
+import CartaoDeContato from './CartaoDeContato';
 import { useMensagensDeContato } from '../../hooks/useMensagensDeContato';
-
-// Mapa EXPLÍCITO, e não `answered ? ... : spam ? ... : 'Lida'`.
-//
-// A varredura de classe de 02/09 — feita depois de achar o `rejected`/`denied`
-// da tela de banimento — pegou esta linha, escrita por mim minutos antes, com
-// a MESMA forma. O `else` engolia `new`, e só não mentia por um acaso: `new`
-// nunca tem `handled_by_username`, então a linha não renderizava. Proteção por
-// efeito colateral de outra regra é sorte esperando expirar (§1.3) — bastaria
-// alguém criar um "desmarcar" que voltasse o status mantendo quem tratou.
-const COMO_FOI_TRATADA = {
-  read:     'Lida',
-  answered: 'Respondida',
-  spam:     'Marcada como spam',
-};
 
 const FILTROS = [
   { id: 'new',      rotulo: 'Novas' },
@@ -39,7 +25,7 @@ const FILTROS = [
  * esta aba mostra, e o alarme de enchente grita em `admin_logs`.
  */
 export default function ContatoPanel() {
-  const { mensagens, carregando, filtro, setFiltro, carregar, marcar } = useMensagensDeContato();
+  const { mensagens, carregando, filtro, setFiltro, carregar, marcar, responder } = useMensagensDeContato();
 
   useEffect(() => { carregar(filtro); }, [carregar, filtro]);
 
@@ -88,77 +74,11 @@ export default function ContatoPanel() {
         </div>
       ) : (
         <div className="space-y-3">
-          {mensagens.map(m => <Cartao key={m.id} m={m} marcar={marcar} />)}
+          {mensagens.map(m => (
+            <CartaoDeContato key={m.id} m={m} marcar={marcar} responder={responder} />
+          ))}
         </div>
       )}
     </div>
-  );
-}
-
-function Cartao({ m, marcar }) {
-  const assunto = assuntoDeContato(m.subject);
-  // `assuntoDeContato` devolve `undefined` para valor desconhecido, de
-  // propósito — e aqui isso APARECE, em vez de virar um rótulo qualquer. Um
-  // assunto que o banco produz e o mapa não conhece é deriva, e deriva
-  // silenciosa foi o que deixou a fila de moderação girando para sempre (§4).
-  const Icone = assunto?.icone;
-
-  return (
-    <div className="card p-4 space-y-3">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 min-w-0">
-          {Icone && <Icone size={15} className={assunto.cor} />}
-          <span className="font-mono text-xs text-white truncate">
-            {assunto?.rotulo ?? `assunto desconhecido: ${m.subject}`}
-          </span>
-        </div>
-        <span className="font-mono text-[11px] text-gray-600 shrink-0">
-          {new Date(m.created_at).toLocaleString('pt-BR')}
-        </span>
-      </div>
-
-      <div className="text-xs font-mono text-gray-500 space-y-0.5">
-        <p className="text-gray-300">{m.name}</p>
-        {/* `select-all` para a equipe copiar o endereço e responder do próprio
-            e-mail. Não vira `mailto:` porque o valor vem de quem preencheu o
-            formulário — texto de usuário não entra em `href` sem passar pelo
-            `safeExternalUrl`, e `mailto:` não é `http`/`https` (§4). */}
-        <p className="select-all break-all">{m.email}</p>
-      </div>
-
-      <p className="text-sm font-body text-gray-300 leading-relaxed whitespace-pre-wrap">
-        {m.message}
-      </p>
-
-      {m.handled_by_username && (
-        <p className="text-[11px] font-mono text-gray-600">
-          {COMO_FOI_TRATADA[m.status] ?? `status desconhecido: ${m.status}`}
-          {' por @'}{m.handled_by_username}
-          {m.handled_at && ` em ${new Date(m.handled_at).toLocaleString('pt-BR')}`}
-        </p>
-      )}
-
-      <div className="flex gap-2 flex-wrap pt-1">
-        <Acao icone={Clock} rotulo="Lida" cor="text-yellow-400 border-yellow-400/30"
-              ativo={m.status !== 'read'} aoClicar={() => marcar(m.id, 'read')} />
-        <Acao icone={CheckCircle2} rotulo="Respondida" cor="text-neon-green border-neon-green/30"
-              ativo={m.status !== 'answered'} aoClicar={() => marcar(m.id, 'answered')} />
-        <Acao icone={Ban} rotulo="Spam" cor="text-red-400 border-red-400/30"
-              ativo={m.status !== 'spam'} aoClicar={() => marcar(m.id, 'spam')} />
-      </div>
-    </div>
-  );
-}
-
-function Acao({ icone: Icone, rotulo, cor, ativo, aoClicar }) {
-  if (!ativo) return null;
-  return (
-    <button
-      onClick={aoClicar}
-      className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono
-                  border rounded transition-all hover:bg-white/5 ${cor}`}
-    >
-      <Icone size={12} /> {rotulo}
-    </button>
   );
 }

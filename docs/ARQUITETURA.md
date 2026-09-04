@@ -246,6 +246,10 @@ src/
     ├── keys/              # KeyEditor
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal
     ├── admin/             # UsersPanel, PostsPanel, LivesPanel, KeysPanel,
+    │   ├── CartaoDeContato.jsx # Uma mensagem do formulário público na visão
+    │   │                  # da equipe, com a caixa de resposta. Cada estado só
+    │   │                  # oferece o que faz sentido — e todo estado tem a
+    │   │                  # INVERSA (reabrir, não é spam), que antes faltava
     │                      # NotifsPanel, LogsPanel, SuperAdminPanel, StatCard,
     │                      # AdminTabs, AdminTabContent, AdminModals
     │   ├── ContatoPanel.jsx # As mensagens do formulário público. É o outro

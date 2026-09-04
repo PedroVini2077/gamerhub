@@ -23,6 +23,7 @@ tempo. Um PR teria mostrado as duas linhas.
 | `moderate-text/` | não* | Modera texto de post, comentário, mural e chat pela OpenAI (reserva: HuggingFace) |
 | `moderate-image/` | não* | Modera imagem pela OpenAI. Gore **enfileira**, nunca oculta — ver `docs/MODERACAO.md` |
 | `moderate-links/` | não* | Checa link contra o Google Safe Browsing |
+| `responder-contato/` | não* | `[03/09]` A equipe responde uma mensagem do formulário de contato, e o e-mail sai com a cara do site. A checagem de equipe é do BANCO (`is_staff()` nas duas RPCs), chamadas com a credencial de quem pediu |
 | `verify-contact/` | não* | `[03/09]` A única porta do formulário público de contato: confere o token do Cloudflare Turnstile e só então chama a RPC com `service_role` |
 | `delete-user/` | sim | Exclusão da própria conta |
 | `cleanup-orphans/` | sim | Aposentada — limpeza de órfãos do storage, já executada em 06/2026 |
@@ -37,7 +38,7 @@ querer.
 > O secret `HUGGINGFACE_API_KEY` **não** foi apagado junto, e não deve ser: ele
 > ainda é o fallback de texto dentro da `moderate-text`.
 
-\* `verify_jwt` desligado nas cinco de cima **de propósito**: o gateway
+\* `verify_jwt` desligado nas seis de cima **de propósito**: o gateway
 rejeitaria o preflight `OPTIONS` e quebraria o CORS (e, no caso do auth hook,
 o GoTrue não manda JWT nenhum). A validação real é feita **dentro** da função —
 `auth.getUser()` nas de moderação, assinatura do webhook na `send-email` — o que
