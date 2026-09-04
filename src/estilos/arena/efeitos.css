@@ -98,7 +98,49 @@
   display: none;
 }
 
-/* ── As partículas ───────────────────────────────────────────────────────── */
+/* ── As partículas ───────────────────────────────────────────────────────────
+ *
+ * `[04/09]` Elas moram num CONTÊINER POR LADO, e isso é o conserto de um bug
+ * que só aparecia na VOLTA do cadastro para o login.
+ *
+ * O que o dono viu: *"quando volto do cadastro pro login, as partículas azuis
+ * estão caindo na área do fogo na hora de voltar"*.
+ *
+ * A causa: metade da cena mudava em 900 ms e a outra metade de estalo. A fenda
+ * e os lados têm `transition` no `left`/`right`; a posição de cada partícula era
+ * calculada do `--eixo` **sem transição nenhuma**. Voltando de 68% para 50%, o
+ * lado do gelo alargava no mesmo quadro e a fenda ainda estava lá atrás — por
+ * 900 ms havia partícula azul em cima do vermelho.
+ *
+ * **Só acontecia na volta**, e isso é a assinatura do defeito: na ida o lado do
+ * gelo ENCOLHE, então as partículas se afastam da fenda em vez de cruzá-la.
+ *
+ * Por que contêiner e não `transition` em cada partícula: são 24 delas, e
+ * `left`/`right` não roda no compositor (§0.3). Com o contêiner, **dois**
+ * elementos transicionam e as 24 seguem de graça, porque a posição delas é
+ * porcentagem do contêiner. É o mesmo mecanismo do `.arena-lado`, e é de
+ * propósito: quem tem que andar junto anda pela mesma regra.
+ */
+.arena-particulas {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* A MESMA curva e a mesma duração de `.arena-lado` e `.arena-fenda`. Se estes
+   * três números divergirem, o bug volta em câmera lenta. */
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              right 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.arena-particulas-fogo {
+  left: 0;
+  right: calc(100% - var(--eixo, 50%));
+}
+
+.arena-particulas-gelo {
+  left: var(--eixo, 50%);
+  right: 0;
+}
+
 .arena-particula {
   position: absolute;
   bottom: -4vh;
@@ -124,14 +166,16 @@
  * A folga para a deriva lateral (`--deriva`, até 2,5vw) já vem do próprio
  * `--x`, que para em 0,84 do lado — sobram 16% de margem antes da fenda. */
 .arena-brasa {
-  left: calc(var(--x, 0.2) * var(--eixo, 50%));
+  /* `--x` é fração do LADO, e o lado agora é o contêiner — então a conta é
+   * direta, sem `--eixo` no meio. */
+  left: calc(var(--x, 0.2) * 100%);
   background: #ffa14d;
   box-shadow: 0 0 10px 2px #ff5a1e99;
 }
 
 /* Lasca, não ponto: gelo tem aresta. */
 .arena-lasca {
-  right: calc(var(--x, 0.2) * (100% - var(--eixo, 50%)));
+  right: calc(var(--x, 0.2) * 100%);
   top: -4vh;
   bottom: auto;
   width: 2px;
