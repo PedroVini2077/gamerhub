@@ -22,7 +22,10 @@ src/
 ├── assets/
 │   ├── landing/           # Prints reais do site usados na landing (feed, mural, lives,
 │   │                      # ranks, keys) — nomes de usuários censados por privacidade
-│   └── auth/              # `[04/09]` As artes dos dois lutadores da tela de
+│   └── auth/              # `[04/09]` As artes da tela de entrada: os dois
+│                          # lutadores + `moldura-fogo/gelo`, a borda de lava e
+│                          # cristal que substituiu as labaredas e os cristais
+│                          # que eram desenhados em CSS. As dos lutadores:
 │                          # entrada, geradas pelo dono. WebP em DOIS tamanhos
 │                          # (340 e 720 de altura) — o celular renderiza a
 │                          # ~150 px e não deve baixar 720. Os PNG originais

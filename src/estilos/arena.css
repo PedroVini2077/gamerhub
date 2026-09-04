@@ -28,8 +28,8 @@
  * `box-shadow` — não rodam no compositor, e a landing já cobrou caro por isso
  * quando o `text-shadow` do título estava animado (ver docs/DESEMPENHO.md).
  *
- * O desfoque das labaredas é ESTÁTICO: o `filter` fica parado e quem se mexe é
- * o `transform` por cima dele. Custa a composição uma vez, não a cada quadro.
+ * A moldura das bordas é ESTÁTICA pelo mesmo motivo: ela compõe uma vez e fica
+ * parada. O que se mexe são as faíscas e os flocos, que são `transform` puro.
  */
 .arena {
   position: fixed;
@@ -214,74 +214,91 @@
   opacity: 0.55;
 }
 
-/* ── Fogo de verdade: labaredas em laço no pé do lado esquerdo ───────────── */
-.arena-labaredas {
+/* ── A MOLDURA: lava numa borda, cristal na outra ────────────────────────────
+ *
+ * `[04/09]` Substituiu as labaredas e os cristais que eu desenhava em CSS.
+ * Pedido do dono, com a arte junto: *"tira os efeitos de labareda e tbm os
+ * cristais que vc fez a mão, coloca essa moldura nos cantos"*.
+ *
+ * ── Por que `mix-blend-mode: screen` ────────────────────────────────────────
+ *
+ * A arte tem o centro PRETO e as bordas acesas. Em `screen`, preto é
+ * transparente e claro soma — então a moldura acende as bordas e desaparece
+ * sozinha em direção ao meio, sem máscara nenhuma e sem uma reta de fim. Colada
+ * por cima do jeito normal, o centro preto escureceria o gradiente da arena
+ * exatamente onde o formulário mora.
+ *
+ * ── Estática, e isso é escolha ──────────────────────────────────────────────
+ *
+ * Ela não anima. O que se mexe continua sendo faísca e floco (as partículas
+ * abaixo), que rodam em `transform`/`opacity` no compositor. Moldura de tela
+ * cheia animada seria repintura de tela cheia por quadro — o custo que o §0.3
+ * deste projeto já cobrou caro uma vez.
+ */
+.arena-moldura {
   position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.arena-moldura-lado {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 30vw e opacidade baixa: é MOLDURA, não papel de parede. Na primeira
+   * tentativa ela entrou com 42vw e 0.85 e engoliu os dois lutadores — a
+   * lava tinha mais presença que o personagem, que é o contrário do que a
+   * tela precisa contar. */
+  width: 30vw;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  /* Entra depois dos lutadores: a arena monta de dentro para fora. */
+  animation: arenaMolduraAcende 900ms ease-out 420ms both;
+}
+
+/* A máscara é obrigatória, não enfeite. `background-size: cover` numa caixa
+ * alta e estreita corta a arte na horizontal, e o esvanecimento que ela traz
+ * para o centro morre no corte — sobra uma RETA vertical no meio da tela. É o
+ * mesmo defeito do recorte dos lutadores, na outra direção. */
+.arena-moldura-fogo {
   left: 0;
-  bottom: -6vh;
-  width: min(46vw, var(--eixo, 50%));
-  height: 34vh;
-  /* Desfoque ESTÁTICO. Ele compõe uma vez; o que anima é o transform dos
-   * filhos, que roda no compositor. */
-  filter: blur(14px);
-  opacity: 0.8;
+  background-image: url('../assets/auth/moldura-fogo.webp');
+  background-position: left center;
+  -webkit-mask-image: linear-gradient(to right, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 38%, transparent 100%);
 }
 
-.arena-labareda {
-  position: absolute;
-  bottom: 0;
-  width: 22vw;
-  height: 26vh;
-  border-radius: 50% 50% 44% 44% / 62% 62% 38% 38%;
-  background: radial-gradient(60% 70% at 50% 85%, #ffb057cc, #ff5a1e66 55%, transparent 78%);
-  transform-origin: 50% 100%;
-  animation-name: arenaLabareda;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-  will-change: transform;
-}
-
-/* Durações primas entre si: as três nunca voltam à mesma fase, e o olho não
- * acha a repetição. Mesma técnica das luzes do fundo do site logado. */
-.arena-labareda-1 { left: 2vw;  animation-duration: 3.1s; }
-.arena-labareda-2 { left: 13vw; animation-duration: 4.3s; height: 20vh; }
-.arena-labareda-3 { left: 24vw; animation-duration: 5.7s; height: 15vh; }
-
-@keyframes arenaLabareda {
-  0%, 100% { transform: scale(1, 1)       skewX(0deg); }
-  35%      { transform: scale(0.9, 1.18)  skewX(5deg); }
-  70%      { transform: scale(1.06, 0.92) skewX(-4deg); }
-}
-
-/* ── Gelo de verdade: cristais crescendo da borda direita ────────────────── */
-.arena-cristais {
-  position: absolute;
+.arena-moldura-gelo {
   right: 0;
-  bottom: 0;
-  width: 40vw;
-  height: 30vh;
-  opacity: 0.75;
+  background-image: url('../assets/auth/moldura-gelo.webp');
+  background-position: right center;
+  -webkit-mask-image: linear-gradient(to left, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to left, #000 38%, transparent 100%);
 }
 
-.arena-cristal-fixo {
-  position: absolute;
-  bottom: -2vh;
-  width: 0;
-  height: 0;
-  border-left: 3.2vw solid transparent;
-  border-right: 3.2vw solid transparent;
-  border-bottom: 18vh solid #67e8f93d;
-  transform-origin: 50% 100%;
-  animation: arenaCristalBrilha 9s ease-in-out infinite;
+/* SEM `to`. Com `to { opacity: .85 }` e `fill-mode: both`, o quadro final
+ * venceria a `opacity` declarada — inclusive a de dentro do `@media` do
+ * celular, que ficaria sem efeito. Foi exatamente o defeito encontrado hoje no
+ * `.arena-lutador`. Sem o `to`, o alvo é o valor computado do elemento, e cada
+ * tela mantém o seu. */
+@keyframes arenaMolduraAcende {
+  from { opacity: 0; }
 }
 
-.arena-cristal-1 { right: 2vw;  transform: rotate(4deg)  scaleY(1.15); }
-.arena-cristal-2 { right: 11vw; transform: rotate(-7deg) scaleY(0.8);  animation-delay: 2.5s; }
-.arena-cristal-3 { right: 19vw; transform: rotate(9deg)  scaleY(0.6);  animation-delay: 5s; }
-
-@keyframes arenaCristalBrilha {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 1; }
+/* CADASTRO: moldura SÓ na borda do fogo. A direita fica limpa.
+ *
+ * Pedido do dono — *"a do cadastro pode ser só a de fogo"*. A primeira versão
+ * espelhava a arte de fogo para a borda direita, para fechar a moldura dos dois
+ * lados; ele viu e questionou: *"o fogo tá tomando conta do gelo aqui?"*.
+ *
+ * Ele tem razão, e o certo era a leitura literal: com o gelo de costas e
+ * recuado, lava passando por cima dele conta que o fogo invadiu o outro lado —
+ * história diferente de "o fogo venceu". Borda direita vazia deixa o gelo na
+ * penumbra, que é exatamente o que a cena quer dizer. */
+.arena-selecionado .arena-moldura-gelo {
+  display: none;
 }
 
 /* ── As partículas ───────────────────────────────────────────────────────── */
@@ -375,7 +392,9 @@
   .arena-lutador-gelo { right: -16vw; }
 
   .arena-figura {
-    opacity: 0.5;
+    /* 0.6 e não 0.5: com a moldura por trás, o fundo ficou mais movimentado, e
+     * o lutador precisa de mais corpo para não sumir dentro dele. */
+    opacity: 0.6;
     /* Some de baixo para cima. Sem isto, crescer significaria "personagem
      * cortado na canela por uma reta invisível" — e reta invisível cortando
      * corpo é exatamente o defeito que o dono achou no recorte das artes. */
@@ -388,12 +407,10 @@
    * Rodapé e emblema disputando o mesmo pixel viram sujeira, não composição. */
   .arena-vs { top: 88vh; font-size: clamp(1.8rem, 9vw, 2.8rem); }
 
-  /* O fogo e o gelo do chão continuam, menores: eles são o que dá temperatura
-   * à metade de baixo, onde o formulário está. */
-  .arena-labaredas { height: 22vh; width: 60vw; filter: blur(10px); }
-  .arena-labareda  { width: 30vw; }
-  .arena-cristais  { width: 55vw; height: 20vh; }
-  .arena-cristal-fixo { border-bottom-width: 12vh; }
+  /* Mais ESTREITA e mais fraca no celular, não mais larga. A tela é estreita:
+   * com 46vw de cada lado a moldura cobria quase tudo e virava papel de
+   * parede — os lutadores, que são o assunto, ficavam lavados por trás dela. */
+  .arena-moldura-lado { width: 34vw; opacity: 0.38; }
 
   /* No cadastro o fogo "venceu": ele cresce mais e vem para o centro; o gelo
    * recua para a penumbra em vez de sumir. */
@@ -402,16 +419,15 @@
   .arena-selecionado .arena-lutador-gelo .arena-figura { opacity: 0.32; }
 }
 
-/* Quem pediu menos movimento recebe a cena MONTADA — sem entrada, sem
- * partícula, sem labareda tremendo. A cor, os lutadores, a fenda e o VS ficam:
- * eles são a informação; o movimento é o enfeite. */
+/* Quem pediu menos movimento recebe a cena MONTADA — sem entrada e sem faísca
+ * subindo. A cor, os lutadores, a moldura, a fenda e o VS ficam: eles são a
+ * informação; o movimento é o enfeite. */
 @media (prefers-reduced-motion: reduce) {
   .arena-particula { display: none; }
   .arena-fenda,
   .arena-vs,
   .arena-lutador,
-  .arena-labareda,
-  .arena-cristal-fixo { animation: none; }
+  .arena-moldura-lado { animation: none; }
   .arena-lado, .arena-fenda, .arena-vs, .arena-lutador { transition: none; }
 }
 

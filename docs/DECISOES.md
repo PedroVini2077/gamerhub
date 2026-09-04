@@ -1036,3 +1036,55 @@ impossível: a arte é quase quadrada, e duas delas lado a lado não cabem.
 medidos em 390×844), se encontram no meio da tela em vez de ladear o logo, saem
 pelas laterais, e a metade de baixo dissolve antes do formulário. Custo em
 bytes: **zero** — ver [DESEMPENHO.md](DESEMPENHO.md).
+
+### `[04/09]` A moldura de arte substituiu as labaredas e os cristais que eu desenhava
+
+**O pedido:** *"tira os efeitos de labareda e tbm os cristais que vc fez a mão,
+coloca essa moldura nos cantos, mas deixa os efeitos de fogo e gelo presentes,
+faíscas, flocos de gelo"*.
+
+**O que saiu:** `.arena-labaredas` (três formas em gradiente radial pulsando) e
+`.arena-cristais` (três triângulos em `border` com brilho em laço). Eram a
+tentativa de fazer fogo e gelo **em CSS**, e sofriam do mesmo problema das
+silhuetas: forma geométrica não vira elemento.
+
+**O que ficou:** as faíscas e os flocos (`.arena-brasa` e `.arena-lasca`)
+continuam, porque são partícula, não desenho de objeto — ali a forma simples é
+a leitura certa, e elas são o que dá movimento à cena.
+
+**Como a moldura entra, e por que `mix-blend-mode: screen`.** A arte tem o
+centro **preto** e as bordas acesas. Em `screen`, preto é transparente e claro
+soma: a moldura acende as bordas e desaparece sozinha em direção ao meio, sem
+máscara e sem uma reta de fim. Colada do jeito normal, o centro preto
+escureceria o gradiente da arena exatamente onde o formulário mora.
+
+**A máscara horizontal é obrigatória, e o motivo já é conhecido.**
+`background-size: cover` numa caixa alta e estreita corta a arte na horizontal,
+e o esvanecimento que ela traz para o centro morre no corte — sobra uma **reta
+vertical** no meio da tela. É o mesmo defeito do recorte dos lutadores, virado
+90°, e a solução também é a mesma: gradiente no lugar de corte.
+
+**Duas rodadas de calibragem, e a primeira estava errada.** Entrou com 42vw e
+opacidade 0.85 e **engoliu os dois lutadores** — a lava tinha mais presença que
+o personagem, o oposto do que a tela precisa contar. Ficou em 30vw / 0.55 no
+desktop e 34vw / 0.38 no celular, e passou para **trás** dos lutadores no DOM.
+
+**No cadastro ela é só de fogo, e a borda direita fica VAZIA** — e aqui eu errei
+uma vez antes de acertar. A primeira versão espelhava a arte de fogo para a
+direita, para "fechar" a moldura dos dois lados; o dono viu e questionou na
+hora: *"o fogo tá tomando conta do gelo aqui?"*.
+
+Ele tem razão, e a leitura literal do pedido dele já era a certa. Com o gelo de
+costas e recuado, lava passando por cima dele conta que **o fogo invadiu o outro
+lado** — história diferente de "o fogo venceu". Borda direita limpa deixa o gelo
+na penumbra, que é o que a cena quer dizer.
+
+> **O padrão, porque foi a segunda vez hoje:** quando ele descreve o que quer,
+> a versão literal é a que ele quer. Meu instinto de "completar" a ideia —
+> espelhar para fechar a moldura — trocou a intenção dele pela minha.
+
+Travado por `e2e/artes-da-arena.mjs`, que confere o estilo computado da borda
+direita nas duas telas; provado apagando a regra e vendo o passo 4 reprovar.
+
+**Custo:** 148 KB nos dois arquivos (72 + 76), estáticos, sem animação de
+tela cheia. Ver [DESEMPENHO.md](DESEMPENHO.md).

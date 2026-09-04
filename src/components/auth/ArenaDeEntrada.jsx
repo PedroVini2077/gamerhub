@@ -23,8 +23,8 @@ import geloCostas720 from '../../assets/auth/gelo-costas-720.webp';
  *
  * Ele gerou as artes e mandou. Elas vêm com **fundo transparente de verdade**
  * (conferido no canal alfa, não suposto), então entram como camada por cima da
- * cena que já existia — gradiente, fenda, labaredas, cristais, partículas e VS
- * continuam sendo CSS.
+ * cena que já existia — gradiente, moldura, fenda, faíscas, flocos e VS
+ * continuam sendo camada de fundo.
  *
  * ── Cada arte vem com os DOIS lutadores, e separá-los não é cortar ao meio ──
  *
@@ -99,21 +99,21 @@ export default function ArenaDeEntrada({ modo = 'login' }) {
       <div className="arena-lado arena-fogo" />
       <div className="arena-lado arena-gelo" />
 
-      {/* ── As labaredas, no pé do lado do fogo ──────────────────────────────
-          Elas ancoram o lutador no chão — sem isso ele flutua. Só `transform`
-          anima; o desfoque é estático, porque `filter: blur()` animado é o tipo
-          de custo que a landing já cobrou caro deste projeto. */}
-      <div className="arena-labaredas">
-        <span className="arena-labareda arena-labareda-1" />
-        <span className="arena-labareda arena-labareda-2" />
-        <span className="arena-labareda arena-labareda-3" />
-      </div>
+      {/* ── A moldura: lava numa borda, cristal na outra ──────────────────────
 
-      {/* ── Os cristais, crescendo da borda do lado do gelo ─────────────────── */}
-      <div className="arena-cristais">
-        <span className="arena-cristal-fixo arena-cristal-1" />
-        <span className="arena-cristal-fixo arena-cristal-2" />
-        <span className="arena-cristal-fixo arena-cristal-3" />
+          Substituiu as labaredas e os cristais que eu desenhava em CSS. O dono
+          mandou a arte e o pedido: *"tira os efeitos de labareda e tbm os
+          cristais que vc fez a mão, coloca essa moldura nos cantos"*.
+
+          No CADASTRO ela é **só de fogo, com a borda direita vazia**. Eu tinha
+          espelhado a arte de fogo para a direita, para fechar a moldura; ele viu
+          e questionou: *"o fogo tá tomando conta do gelo aqui?"*. Estava certo —
+          lava por cima do gelo conta que o fogo INVADIU o outro lado, e a cena
+          quer dizer que ele venceu. Ver `.arena-selecionado .arena-moldura-gelo`
+          no CSS, e o porquê inteiro em docs/DECISOES.md. */}
+      <div className="arena-moldura">
+        <span className="arena-moldura-lado arena-moldura-fogo" />
+        <span className="arena-moldura-lado arena-moldura-gelo" />
       </div>
 
       {brasas.map((p, i) => (

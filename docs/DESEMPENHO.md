@@ -88,6 +88,19 @@ na borda de cada uma. Com o corte antigo eram **638** na arte do gelo.
 > "o melhor lugar para cortar" era a pergunta errada; a certa era "o que decide
 > a quem cada pixel pertence".
 
+**`[04/09]` A moldura das bordas, que entrou depois: +148 KB, e estáticos.**
+As labaredas e os cristais desenhados em CSS saíram e viraram arte
+(`moldura-fogo.webp` 72 KB + `moldura-gelo.webp` 76 KB, 448 px de largura). A
+troca **reduz** trabalho de quadro: saíram seis elementos animando em laço
+infinito; entraram duas camadas paradas, que compõem uma vez. A resolução é
+baixa de propósito — é textura difusa sob `mix-blend-mode: screen` e opacidade
+0,55, onde detalhe não se vê e byte se paga.
+
+Com ela, a pasta `src/assets/auth` foi a **783 KB**, e o teto da trava de peso
+subiu de 800 para 900 KB **com o motivo escrito no próprio teste**: a pasta
+passou a guardar duas categorias de arte, e o teto antigo tinha sido
+dimensionado só para os lutadores.
+
 **O que o orçamento de bytes do CI diz, e o que ele NÃO vê.** O
 `orcamento-de-bytes.mjs` continua em 219,7 de 222 KB gzip — inalterado, porque
 ele mede **JavaScript e CSS**, e imagem não passa por ele. Ou seja: trocar estas

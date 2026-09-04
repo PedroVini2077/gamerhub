@@ -29,7 +29,12 @@ import { join } from 'node:path';
 describe('as artes da arena de entrada cabem no que a camada 2 pode pagar', () => {
   const PASTA = 'src/assets/auth';
   const TETO_POR_ARQUIVO = 180 * 1024;   // maior hoje: 150 KB (gelo-guarda-720)
-  const TETO_TOTAL       = 800 * 1024;   // hoje: 639 KB, com os dois tamanhos
+  /* `[04/09]` 800 -> 900 KB, e a razão está escrita porque subir teto é o
+   * caminho errado quando é para caber uma arte descuidada. Aqui não é: a pasta
+   * passou a guardar DUAS categorias — os quatro lutadores (639 KB) e a moldura
+   * das bordas, que entrou depois a pedido do dono (148 KB). O teto antigo foi
+   * dimensionado só para a primeira, e com ela sozinha ele continua valendo. */
+  const TETO_TOTAL       = 900 * 1024;   // hoje: 783 KB (639 lutadores + 148 moldura)
 
   const arquivos = readdirSync(PASTA).filter((f) => /\.(webp|png|jpe?g|avif)$/i.test(f));
 
@@ -38,7 +43,7 @@ describe('as artes da arena de entrada cabem no que a camada 2 pode pagar', () =
     // testes abaixo verdes para sempre, sobre uma lista vazia.
     expect(arquivos.length,
       `nenhuma imagem em ${PASTA} — a pasta mudou de lugar? Sem isto os tetos\n`
-      + '  abaixo não verificam nada.').toBeGreaterThanOrEqual(8);
+      + '  abaixo não verificam nada.').toBeGreaterThanOrEqual(10);
   });
 
   it('nenhuma arte sozinha passa do teto', () => {

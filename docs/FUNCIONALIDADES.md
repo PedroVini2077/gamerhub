@@ -150,7 +150,9 @@ transições discretas das páginas internas.
   fogo e um de gelo, separados por uma fenda com o "VS". Quem chega no **login**
   os vê se encarando; ao trocar para **registrar**, o de fogo dá um passo à
   frente e vira para quem olha, e o de gelo recua de costas — é o
-  *character selected* que a tela inteira está contando. No celular eles ocupam
+  *character selected* que a tela inteira está contando. As bordas da tela são
+  emolduradas por lava de um lado e cristal do outro — no cadastro as duas são
+  de fogo, porque ali o gelo já está de costas. No celular eles ocupam
   o terço de cima da tela, se encontrando no meio e saindo pelas laterais, e
   dissolvem antes do formulário — o card cobre quase a largura toda, então
   figura na lateral ficaria escondida atrás dele. O peso e o recorte estão em

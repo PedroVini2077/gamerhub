@@ -88,6 +88,14 @@ const medir = () => page.evaluate(({ BORDA, DIFERENCA }) => {
   return saida;
 }, { BORDA, DIFERENCA });
 
+/** O que a moldura da borda DIREITA está mostrando, pelo estilo computado. */
+const molduraDaDireita = () => page.evaluate(() => {
+  const el = document.querySelector('.arena-moldura-gelo');
+  if (!el) return 'elemento .arena-moldura-gelo nao existe';
+  const e = getComputedStyle(el);
+  return e.display === 'none' ? 'oculta' : e.backgroundImage;
+});
+
 const esperarArtes = async () => {
   await page.waitForSelector('img.arena-figura', { timeout: 15000 });
   // Deixa a troca de `src` começar: logo depois do clique na aba o navegador
@@ -137,6 +145,7 @@ try {
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await esperarArtes();
   const noLogin = await conferir('login');
+  const molduraNoLogin = await molduraDaDireita();
 
   // O cadastro é ABA, não rota: `mode` é estado do Login.jsx. Ir por URL não
   // alcançaria a segunda composição, e o teste passaria medindo duas vezes a
@@ -144,6 +153,7 @@ try {
   await page.getByRole('button', { name: /^Registrar$/i }).click();
   await esperarArtes();
   const noCadastro = await conferir('cadastro');
+  const molduraNoCadastro = await molduraDaDireita();
 
   // As duas telas precisam de artes DIFERENTES: no login eles se encaram, no
   // cadastro o fogo vira de frente e o gelo dá as costas. Se um dia o `modo`
@@ -157,6 +167,24 @@ try {
       + '  tem que estar de frente e o gelo de costas.');
   }
   ok('login e cadastro servem pares de artes diferentes');
+
+  // A moldura da borda DIREITA muda de arte entre as duas telas, e isso é
+  // pedido explícito do dono: *"a do cadastro pode ser só a de fogo, pq o
+  // personagem de fogo é oq tá mais a mostra"*. Sem esta conferência, alguém
+  // apagando a regra `.arena-selecionado .arena-moldura-gelo` traria a borda de
+  // gelo de volta para uma tela onde o gelo está de costas — e nada acusaria.
+  if (!/moldura-gelo/.test(molduraNoLogin)) {
+    throw new Error(
+      `no /login a borda direita deveria ser a de GELO, e é: ${molduraNoLogin}`);
+  }
+  if (/moldura-gelo/.test(molduraNoCadastro)) {
+    throw new Error(
+      `no cadastro a borda direita voltou a ser a de GELO: ${molduraNoCadastro}\n`
+      + '  A regra `.arena-selecionado .arena-moldura-gelo` sumiu do\n'
+      + '  src/estilos/arena.css. Ali o gelo está de costas e recuado — o pedido\n'
+      + '  do dono foi moldura SÓ de fogo, e a borda direita fica limpa.');
+  }
+  ok(`a moldura do cadastro não tem gelo (direita: ${molduraNoCadastro})`);
 } catch (e) {
   console.error(`\n  FALHOU no passo ${passo + 1}: ${e.message}\n`);
   await salvarEvidencia(page);
