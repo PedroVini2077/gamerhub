@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import fogoGuarda340 from '../../assets/auth/fogo-guarda-340.webp';
 import fogoGuarda720 from '../../assets/auth/fogo-guarda-720.webp';
@@ -72,6 +73,18 @@ import geloCostas720 from '../../assets/auth/gelo-costas-720.webp';
  * `window.innerWidth` lido no render erra na primeira pintura e não acompanha o
  * giro do aparelho.
  */
+/**
+ * O `sizes` do `srcset`, num lugar só — os dois lados usam o mesmo.
+ *
+ * Duas cópias divergindo fariam um lado escolher um arquivo e o outro escolher
+ * outro, na mesma tela, sem nada acusar.
+ */
+const TAMANHOS = '(max-width: 767px) 68vw, 620px';
+
+/** O cruzamento das artes. Mais lento que a troca do formulário de propósito:
+ *  o fundo é o que dá a sensação de cena mudando, e cena não corta. */
+const CRUZAMENTO = { duration: 0.55, ease: [0.4, 0, 0.2, 1] };
+
 export default function ArenaDeEntrada({ modo = 'login' }) {
   // Posições fixas, calculadas uma vez. `Math.random()` a cada render faria as
   // partículas saltarem de lugar a cada tecla digitada no formulário.
@@ -89,6 +102,7 @@ export default function ArenaDeEntrada({ modo = 'login' }) {
   const gelo = cadastro
     ? { p: geloCostas340, g: geloCostas720 }
     : { p: geloGuarda340, g: geloGuarda720 };
+
 
   return (
     <div
@@ -116,34 +130,38 @@ export default function ArenaDeEntrada({ modo = 'login' }) {
         <span className="arena-moldura-lado arena-moldura-gelo" />
       </div>
 
-      {brasas.map((p, i) => (
-        <span key={`b${i}`} className="arena-particula arena-brasa" style={p} />
-      ))}
-      {cristais.map((p, i) => (
-        <span key={`c${i}`} className="arena-particula arena-lasca" style={p} />
-      ))}
+      {/* Cada lado tem o SEU contêiner de partículas, e ele anda junto com a
+          fenda. Antes as partículas liam o `--eixo` direto e pulavam para a
+          posição nova enquanto a fenda ainda estava viajando — na volta do
+          cadastro, isso punha floco de gelo em cima do lado do fogo por 900 ms.
+          O porquê inteiro está em `estilos/arena/efeitos.css`. */}
+      <div className="arena-particulas arena-particulas-fogo">
+        {brasas.map((p, i) => (
+          <span key={`b${i}`} className="arena-particula arena-brasa" style={p} />
+        ))}
+      </div>
+      <div className="arena-particulas arena-particulas-gelo">
+        {cristais.map((p, i) => (
+          <span key={`c${i}`} className="arena-particula arena-lasca" style={p} />
+        ))}
+      </div>
 
       {/* ── Os lutadores ─────────────────────────────────────────────────────
           `fetchPriority="low"`: é enfeite. O que precisa chegar primeiro é o
-          formulário, e o navegador só sabe disso se alguém disser. */}
-      <div className="arena-lutador arena-lutador-fogo">
-        <img
-          className="arena-figura"
-          src={fogo.g}
-          srcSet={`${fogo.p} 340w, ${fogo.g} 720w`}
-          sizes="(max-width: 767px) 68vw, 620px"
-          alt="" aria-hidden="true" decoding="async" fetchPriority="low"
-        />
-      </div>
-      <div className="arena-lutador arena-lutador-gelo">
-        <img
-          className="arena-figura"
-          src={gelo.g}
-          srcSet={`${gelo.p} 340w, ${gelo.g} 720w`}
-          sizes="(max-width: 767px) 68vw, 620px"
-          alt="" aria-hidden="true" decoding="async" fetchPriority="low"
-        />
-      </div>
+          formulário, e o navegador só sabe disso se alguém disser.
+
+          A troca de arte é um FADE CRUZADO, não uma troca de `src`. Achado do
+          dono: *"os personagens simplesmente aparecem, sem nenhum fade in ou
+          fade out, tanto na ida e volta, eles simplesmente brotam"*. Trocar o
+          `src` do mesmo `<img>` não tem transição nenhuma — o navegador pinta
+          a imagem nova no quadro em que ela chega.
+
+          A opacidade do cruzamento fica no ENVOLTÓRIO, não na imagem: a imagem
+          já carrega a opacidade de desenho (0,5 no celular; 0,32 no gelo do
+          cadastro), e as duas precisam se multiplicar. Se o Framer escrevesse
+          `opacity` na própria imagem, ele apagaria a de desenho. */}
+      <Lutador lado="fogo" arte={fogo} />
+      <Lutador lado="gelo" arte={gelo} />
 
       {/* A fenda vem depois das partículas para ficar por cima delas. */}
       <div className="arena-fenda" />
@@ -155,6 +173,76 @@ export default function ArenaDeEntrada({ modo = 'login' }) {
         <span className="arena-vs-gelo">S</span>
       </div>
     </div>
+  );
+}
+
+/**
+ * Um lutador, com fade cruzado quando a arte troca.
+ *
+ * `AnimatePresence` sem `mode="wait"`: as duas artes precisam existir ao mesmo
+ * tempo para se cruzarem. Com `wait`, a que sai termina antes de a que entra
+ * começar — e aí não é cruzamento, é piscada.
+ */
+function Lutador({ lado, arte }) {
+  return (
+    <div className={`arena-lutador arena-lutador-${lado}`}>
+      <AnimatePresence initial={false}>
+        <ArteCruzada key={arte.g} arte={arte} />
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * Uma arte, que só COMEÇA a aparecer quando terminou de carregar.
+ *
+ * ── Por que não basta o fade ────────────────────────────────────────────────
+ *
+ * Na primeira troca de aba a arte nova ainda está vindo pela rede. Um fade que
+ * começa na hora do clique desvaneceria para uma caixa vazia e a figura
+ * apareceria de estalo quando chegasse — que é exatamente o defeito relatado,
+ * só que mais tarde.
+ *
+ * ── E por que NÃO pré-carregar o outro par ──────────────────────────────────
+ *
+ * Foi a primeira solução que eu escrevi, e a medição a derrubou: buscar o par
+ * que não está na tela custa **215 KB** e, medido em 390×844, ele chegou junto
+ * com a tela em vez de depois — a tela de entrada passaria de 423 para 638 KB
+ * de imagem. Camada 2 (§0.4) é por onde todo mundo passa, e metade dessa gente
+ * nunca abre a outra aba.
+ *
+ * Esperar o `load` custa **zero byte** e resolve o mesmo caso: em rede boa a
+ * arte chega dentro da janela do fade e ninguém percebe diferença; em rede
+ * ruim, a entrada só começa mais tarde — nunca é um estalo.
+ */
+function ArteCruzada({ arte }) {
+  const [carregada, setCarregada] = useState(false);
+  const img = useRef(null);
+
+  // Imagem que já está no cache do navegador pode terminar ANTES de o ouvinte
+  // existir, e aí o `onLoad` não vem nunca. `complete` é a pergunta direta.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth > 0) setCarregada(true);
+  }, []);
+
+  return (
+    <motion.span
+      className="arena-troca"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: carregada ? 1 : 0 }}
+      exit={{ opacity: 0 }}
+      transition={CRUZAMENTO}
+    >
+      <img
+        ref={img}
+        className="arena-figura"
+        src={arte.g}
+        srcSet={`${arte.p} 340w, ${arte.g} 720w`}
+        sizes={TAMANHOS}
+        onLoad={() => setCarregada(true)}
+        alt="" aria-hidden="true" decoding="async" fetchPriority="low"
+      />
+    </motion.span>
   );
 }
 

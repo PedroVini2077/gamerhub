@@ -1156,3 +1156,55 @@ Só apareceu porque o CSS emitido foi comparado byte a byte com o de antes. É a
 lição do §1.5 aplicada a refactor: *"extraí sem mudar comportamento"* é
 afirmação, e afirmação precisa de evidência. A evidência aqui é o arquivo de
 saída, e ela custa um `cmp`.
+
+### `[04/09]` A troca de aba: metade da cena mudava em 900 ms e a outra de estalo
+
+Dois achados do dono na mesma mensagem, e **a mesma raiz nos dois**.
+
+**1. *"os personagens simplesmente aparecem, sem nenhum fade in ou fade out"*.**
+Era o mesmo `<img>` recebendo um `src` novo — o navegador pinta a imagem nova no
+quadro em que ela chega, e troca de arquivo não tem transição. Virou fade
+cruzado: as duas artes coexistem por 550 ms, com `AnimatePresence` **sem**
+`mode="wait"` (com `wait` a que sai termina antes de a que entra começar, e aí
+não é cruzamento, é piscada).
+
+**2. *"quando volto do cadastro pro login, as partículas azuis estão caindo na
+área do fogo"*.** A posição delas vinha do `--eixo` **sem transição**, enquanto
+a fenda e os lados levam 900 ms para andar. Voltando de 68% para 50%, o lado do
+gelo alargava no mesmo quadro e a fenda ainda estava lá atrás.
+
+> **Só na volta**, e essa assimetria é a assinatura do defeito: na ida o lado do
+> gelo encolhe, então as partículas se afastam da fenda em vez de cruzá-la. Um
+> bug que só acontece num sentido quase sempre é "duas coisas que deviam andar
+> juntas andando em velocidades diferentes".
+
+O conserto foi **contêiner por lado**, com a mesma `transition` de
+`.arena-lado`. Dois elementos transicionam e as 24 partículas seguem de graça,
+porque a posição delas passou a ser porcentagem do contêiner. Fazer cada
+partícula transicionar seria animar `left`/`right` em 24 nós, que não roda no
+compositor (§0.3).
+
+#### A pré-carga que eu escrevi e a medição derrubou
+
+Para o cruzamento da PRIMEIRA troca não desvanecer para uma imagem ainda
+chegando, minha primeira solução foi **pré-carregar o outro par** em
+`requestIdleCallback`. Medi antes de entregar, e ela caiu por dois motivos:
+
+| | |
+| --- | --- |
+| custo | **+215 KB** — a tela de entrada ia de 423 para **638 KB** de imagem |
+| "ocioso" | os 6 arquivos chegaram **dentro de 2 s**, junto com a tela. O `requestIdleCallback` disparou cedo porque a página fica ociosa rápido — "ocioso" não quer dizer "depois" |
+
+**O que ficou custa zero:** a arte que entra só **começa** a aparecer quando o
+`load` dela dispara. Em rede boa ela chega dentro da janela do fade e ninguém
+percebe diferença; em rede ruim, a entrada começa mais tarde — nunca é um
+estalo. Camada 2 é por onde todo mundo passa, e metade dessa gente nunca abre a
+outra aba: 215 KB de enfeite por isso não se paga.
+
+#### A caixa do lutador colapsou, e o e2e pegou na hora
+
+Com as duas artes fora de fluxo (para se sobreporem), o `.arena-lutador` ficou
+sem conteúdo que o dimensionasse e **colapsou para 0 px de largura**. Corrigido
+com `aspect-ratio: 1` na caixa e `object-fit: contain` + `object-position` por
+lado — a largura passa a acompanhar a altura sozinha, em toda tela e em todo
+modo, e a arte encosta na borda certa. Conferido nas quatro combinações.

@@ -88,6 +88,25 @@ const medir = () => page.evaluate(({ BORDA, DIFERENCA }) => {
   return saida;
 }, { BORDA, DIFERENCA });
 
+/**
+ * Tira uma foto do MEIO da troca de aba: quantas artes existem de cada lado, e
+ * se a faixa das partículas está no mesmo lugar que a fenda.
+ *
+ * As duas coisas são o mesmo defeito visto de dois ângulos — metade da cena
+ * mudando de estalo enquanto a outra metade leva 900 ms.
+ */
+const noMeioDaTroca = () => page.evaluate(() => {
+  const artes = (lado) =>
+    document.querySelectorAll(`.arena-lutador-${lado} .arena-troca`).length;
+  const borda = (sel) => getComputedStyle(document.querySelector(sel)).left;
+  return {
+    artesFogo: artes('fogo'),
+    artesGelo: artes('gelo'),
+    fenda: borda('.arena-fenda'),
+    particulas: borda('.arena-particulas-gelo'),
+  };
+});
+
 /** O que a moldura da borda DIREITA está mostrando, pelo estilo computado. */
 const molduraDaDireita = () => page.evaluate(() => {
   const el = document.querySelector('.arena-moldura-gelo');
@@ -96,14 +115,22 @@ const molduraDaDireita = () => page.evaluate(() => {
   return e.display === 'none' ? 'oculta' : e.backgroundImage;
 });
 
+/**
+ * Espera a cena ASSENTAR: o fade cruzado terminou e as duas artes que ficaram
+ * estão carregadas.
+ *
+ * A condição de "terminou" é haver **uma** `.arena-troca` por lado. Durante o
+ * cruzamento existem duas de cada — e foi isso que reprovou a contagem quando o
+ * cruzamento entrou: o teste media no meio da troca sem querer. Esperar um
+ * tempo fixo seria adivinhação; esperar o número certo de artes é o fato.
+ */
 const esperarArtes = async () => {
-  await page.waitForSelector('img.arena-figura', { timeout: 15000 });
-  // Deixa a troca de `src` começar: logo depois do clique na aba o navegador
-  // ainda reporta `complete` da imagem ANTERIOR.
-  await page.waitForTimeout(400);
+  await page.waitForSelector('.arena-troca', { timeout: 15000 });
   await page.waitForFunction(() => {
+    const trocas = document.querySelectorAll('.arena-troca');
+    if (trocas.length !== 2) return false;
     const imgs = [...document.querySelectorAll('img.arena-figura')];
-    return imgs.length >= 2 && imgs.every((i) => i.complete && i.naturalWidth > 0);
+    return imgs.length === 2 && imgs.every((i) => i.complete && i.naturalWidth > 0);
   }, null, { timeout: 15000 });
 };
 
@@ -185,6 +212,43 @@ try {
       + '  do dono foi moldura SÓ de fogo, e a borda direita fica limpa.');
   }
   ok(`a moldura do cadastro não tem gelo (direita: ${molduraNoCadastro})`);
+
+  // ── A troca de aba, medida NO MEIO dela ──────────────────────────────────
+  //
+  // Dois achados do dono em 04/09, e a mesma raiz: metade da cena mudava em
+  // 900 ms e a outra metade de estalo.
+  //
+  // Sobre o instante da amostra: 220 ms cai dentro do cruzamento (550 ms) e da
+  // viagem da fenda (900 ms), com folga dos dois lados. E a segunda asserção
+  // não depende de instante nenhum — as duas se movem pela MESMA transição,
+  // então são iguais em todo momento, não só neste.
+  await page.getByRole('button', { name: /^Entrar$/i }).click();
+  await page.waitForTimeout(220);
+  const meio = await noMeioDaTroca();
+
+  for (const [lado, quantas] of [['fogo', meio.artesFogo], ['gelo', meio.artesGelo]]) {
+    if (quantas !== 2) {
+      throw new Error(
+        `no meio da troca de aba existe ${quantas} arte(s) do lado do ${lado}, esperava 2.\n`
+        + '  Com uma só, não há fade cruzado: a arte nova SUBSTITUI a velha no\n'
+        + '  quadro em que chega. Foi o que o dono relatou — *"os personagens\n'
+        + '  simplesmente aparecem, sem nenhum fade in ou fade out"*.\n'
+        + '  Ver o componente `Lutador` em ArenaDeEntrada.jsx.');
+    }
+  }
+
+  const distancia = Math.abs(parseFloat(meio.fenda) - parseFloat(meio.particulas));
+  if (!(distancia <= 1)) {
+    throw new Error(
+      `no meio da troca, a fenda está em ${meio.fenda} e a faixa das partículas\n`
+      + `  em ${meio.particulas} — ${distancia.toFixed(1)} px de diferença.\n`
+      + '  Elas têm que andar JUNTAS. Quando a faixa pula para a posição final e\n'
+      + '  a fenda ainda está viajando, sobra floco de gelo em cima do lado do\n'
+      + '  fogo pelo tempo da viagem — foi o que o dono viu voltando do cadastro.\n'
+      + '  Confira se `.arena-particulas` ainda tem a MESMA `transition` de\n'
+      + '  `.arena-lado` e `.arena-fenda` (900ms, mesma curva).');
+  }
+  ok(`no meio da troca: 2 artes por lado, e a faixa a ${distancia.toFixed(1)}px da fenda`);
 } catch (e) {
   console.error(`\n  FALHOU no passo ${passo + 1}: ${e.message}\n`);
   await salvarEvidencia(page);

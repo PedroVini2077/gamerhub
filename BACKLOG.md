@@ -35,12 +35,11 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — os três acabamentos da arena e o split do
-`index.css` — fechou em 04/09. Os três achados vieram do dono testando a tela:
-partícula de gelo caindo no lado do fogo (era `--x` em % da tela, e a fronteira
-é o `--eixo`), a troca de aba sem transição, e o gelo saindo da tela no cadastro
-do celular. O split do CSS foi provado por **saída**: o build emite as mesmas
-862 regras. Tudo em [DECISOES.md](docs/DECISOES.md).
+*Vazia.* A última tarefa — o fade cruzado dos lutadores e as partículas andando
+junto com a fenda — fechou em 04/09. Os dois achados eram o mesmo defeito:
+metade da cena mudando em 900 ms e a outra de estalo. Junto caiu uma pré-carga
+que eu tinha escrito e a medição derrubou (+215 KB na camada 2, e o "ocioso"
+chegava junto com a tela). Tudo em [DECISOES.md](docs/DECISOES.md).
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
