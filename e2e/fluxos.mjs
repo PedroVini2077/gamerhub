@@ -74,6 +74,34 @@ try {
   // /entrar/i, e o Playwright recusa seletor ambíguo (ainda bem).
   await page.getByRole('button', { name: '// ENTRAR' }).click();
 
+  // ── O PORTÃO DE BOAS-VINDAS ─────────────────────────────────────────────
+  //
+  // Ele é o único canal que prova que a tela de boas-vindas funciona: se ela
+  // parar de aparecer, nada quebra, nada loga, e o site continua entrando
+  // normalmente (§1.5 — as três respostas seriam "nada").
+  //
+  // A espera é por SELETOR, não por tempo: ele fica na tela entre 700 ms e
+  // 2,5 s dependendo de quanto o perfil demora, e cravar um número aqui seria
+  // adivinhar o tempo do banco.
+  //
+  // Se ele NÃO aparecer, a mensagem tem que dizer o que investigar — a marca
+  // de "acabou de entrar" é `sessionStorage`, e ela é o elo que mais some.
+  try {
+    await page.locator('.portao').waitFor({ state: 'visible', timeout: 4000 });
+    ok('o portão de boas-vindas cobriu a entrada');
+  } catch {
+    throw new Error(
+      'o portão de boas-vindas NAO apareceu depois do login.\n'
+      + '  Ele deveria cobrir a tela entre 700 ms e 2,5 s enquanto o perfil\n'
+      + '  carrega. Confira, nesta ordem:\n'
+      + '   1. `marcarEntradaAgora()` ainda é chamado no sucesso do login\n'
+      + '      (src/hooks/useAuth.jsx, DEPOIS da checagem de ban);\n'
+      + '   2. `<PortaoDeBoasVindas />` continua montado no App.jsx, FORA do\n'
+      + '      <Routes> — dentro de uma rota ele desmonta com a tela de login;\n'
+      + '   3. o navegador nao esta bloqueando `sessionStorage`.\n'
+      + '  Nada disso quebra o login: some so a tela.');
+  }
+
   // O composer só monta depois de a sessão resolver, o perfil carregar e o
   // chunk do feed baixar. Ele aparecer prova três coisas de uma vez: sessão
   // válida, perfil existe, conta não suspensa (se estivesse, o

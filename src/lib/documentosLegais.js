@@ -81,9 +81,23 @@ export const DOCUMENTOS = {
   privacidade: {
     rotulo: 'Política de Privacidade',
     caminho: '/privacidade',
+    /* `[04/09]` Só a IMPRESSÃO subiu, e a versão NÃO — decisão consciente.
+     *
+     * O que mudou no texto: a tabela "o que fica guardado no seu navegador"
+     * ganhou duas linhas, as duas marcas da tela de boas-vindas
+     * (`lib/boasVindas.js`).
+     *
+     * Por que cosmética e não relevante: elas são da MESMA natureza das sete
+     * que já estavam ali — sinalizador local de preferência, nada sai do
+     * aparelho, nada é pessoal. "Lembramos que você acabou de entrar para não
+     * repetir uma saudação" não muda o que o site coleta sobre a pessoa.
+     *
+     * **Se o dono discordar, é uma linha:** subir esta `versao` para
+     * `2026-09-04` faz todo mundo reaceitar. O julgamento é dele; o meu está
+     * escrito aqui para poder ser revisto. */
     versao: '2026-09-03-4',
     conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: 'b056b70ca13ba61a',
+    impressao: '080d5f8ee5532088',
     mudou: 'a página de contato passou a usar o Cloudflare Turnstile (a verificação de "não sou um robô"), e ele recebe seu IP — entrou na lista de quem vê alguma coisa',
   },
   regras: {

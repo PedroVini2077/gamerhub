@@ -35,7 +35,7 @@
    * 720 px mesmo com os vultos pequenos (medido: `verde-guarda-720` em 390×844,
    * DPR 3). Aumentar mudou o tamanho na tela, não o arquivo baixado. */
   .arena-lutador {
-    height: 34vh;
+    height: 29vh;
     bottom: auto;
     /* 1,5vh e não 0: com `top: 0` a cabeça do lutador encosta na borda de cima
      * da tela e lê como "cortado", mesmo sem estar. */
@@ -44,8 +44,12 @@
   /* Largura de 34vh dá ~265 px em cada um — os dois somam mais que a tela.
    * Puxar para fora é o que faz eles se encontrarem no MEIO, que é a cena, em
    * vez de espremer os dois inteiros num espaço que não existe. */
-  .arena-lutador-verde { left: -16vw; }
-  .arena-lutador-roxo { right: -16vw; }
+  /* `[04/09]` -16vw era SANGRIA DE PROPÓSITO, e virou defeito quando a arte
+   * mudou: nas figuras novas o corpo ocupa a largura toda do recorte, então o
+   * que saía da tela era o braço do personagem, não o halo. O dono viu no
+   * cadastro: *"o personagem verde tá cortado"*. Agora eles ficam inteiros. */
+  .arena-lutador-verde { left: -1vw; }
+  .arena-lutador-roxo { right: -1vw; }
 
   .arena-figura {
     /* 0.6 e não 0.5: com a moldura por trás, o fundo ficou mais movimentado, e
@@ -66,7 +70,19 @@
   /* Mais ESTREITA e mais fraca no celular, não mais larga. A tela é estreita:
    * com 46vw de cada lado a moldura cobria quase tudo e virava papel de
    * parede — os lutadores, que são o assunto, ficavam lavados por trás dela. */
-  .arena-moldura-lado { width: 34vw; opacity: 0.38; }
+  /* `[04/09]` Mais para o CANTO e mais fraca. Pedido do dono: *"as molduras
+   * estão cobrindo muito os personagens, tem como colocar elas um pouco mais
+   * pro canto? e deixar os personagens um pouco mais visíveis?"*. Duas coisas
+   * mudam juntas — a largura, e a máscara, que passa a apagar bem antes. */
+  .arena-moldura-lado { width: 24vw; opacity: 0.3; }
+  .arena-moldura-verde {
+    -webkit-mask-image: linear-gradient(to right, #000 18%, transparent 82%);
+    mask-image: linear-gradient(to right, #000 18%, transparent 82%);
+  }
+  .arena-moldura-roxo {
+    -webkit-mask-image: linear-gradient(to left, #000 18%, transparent 82%);
+    mask-image: linear-gradient(to left, #000 18%, transparent 82%);
+  }
 
   /* No cadastro o verde "venceu": ele cresce mais e vem para o centro; o roxo
    * recua para a penumbra em vez de sumir.
@@ -79,10 +95,10 @@
    * Agora ele volta para dentro (`right` menor, sem translação a mais) e ganha
    * opacidade. Continua atrás e mais apagado que o vencedor — que é o ponto —,
    * agora dá para ver que ele está lá. */
-  .arena-selecionado .arena-lutador-verde { height: 40vh; transform: translateX(2vw); }
+  .arena-selecionado .arena-lutador-verde { height: 34vh; transform: translateX(1vw); }
   .arena-selecionado .arena-lutador-roxo {
-    right: -4vw;
-    height: 30vh;
+    right: -1vw;
+    height: 26vh;
     transform: none;
   }
   .arena-selecionado .arena-lutador-roxo .arena-figura { opacity: 0.46; }

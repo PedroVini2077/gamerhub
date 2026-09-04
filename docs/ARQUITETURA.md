@@ -26,6 +26,8 @@ src/
 │   │                      # DEPOIS das utilitárias do Tailwind, de propósito
 │   ├── decoracao.css      # fundo das páginas públicas, intro do raio, peças
 │   │                      # de videogame, luzes de arena, explosões, aviso
+│   ├── portao.css         # `[04/09]` A tela de boas-vindas do login: as duas
+│   │                      # folhas que abrem e o texto entre elas
 │   ├── arena.css          # só os 4 @import da arena, e a ordem deles
 │   └── arena/             # o fundo do login e do cadastro, em 4 partes
 │       ├── cena.css       # os dois lados, a fenda e o VS
@@ -152,6 +154,12 @@ src/
 │   │                      # conexão do pool que ainda não vê a linha — o feed
 │   │                      # engolia o post e nada estourava (§1.5)
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
+│   ├── boasVindas.js      # `[04/09]` As duas marcas da tela de boas-vindas:
+│   │                      # "acabou de entrar" (sessionStorage — morre ao
+│   │                      # fechar a aba, e é isso que impede a tela de voltar
+│   │                      # a cada F5) e "já entrou antes" (localStorage).
+│   │                      # Todo acesso em try: armazenamento LANÇA em aba
+│   │                      # anônima, e enfeite não pode derrubar o login
 │   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
 │   ├── pauseReason.js     # Motivo da pausa, guardado no navegador
@@ -271,6 +279,11 @@ src/
     │   │                  # entrada e o fade cruzado — é CSS/Framer que só
     │   │                  # anima transform/opacity. Celular e PC têm
     │   │                  # composições diferentes, por @media e não por JS
+    │   ├── PortaoDeBoasVindas.jsx # `[04/09]` A tela que cobre a entrada
+    │   │                  # depois do login: duas folhas que abrem, com a
+    │   │                  # saudação. Não inventa espera — cobre a que já
+    │   │                  # existe (perfil + feed carregando). PISO 700 ms,
+    │   │                  # TETO 2500 ms, e o teto é regra (§0.3)
     │   ├── CardQueAcompanhaAltura.jsx # `[04/09]` O card do login com a altura
     │   │                  # animada na troca de aba. Mede o conteúdo por
     │   │                  # ResizeObserver e só anima quando a `chave` muda —

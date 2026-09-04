@@ -5,8 +5,13 @@
 /* ── Os lutadores ────────────────────────────────────────────────────────── */
 .arena-lutador {
   position: absolute;
-  bottom: 0;
-  height: 58vh;
+  /* `[04/09]` FOLGA das bordas, e ela é o conserto de um "cortado" que não era
+   * corte: com `bottom: 0` e 58vh, a arte encostava no rodapé da tela e a ponta
+   * da capa parava a 29 px da borda direita. Nada era clipado pelo CSS — mas
+   * arte que TERMINA colada na borda lê como arte cortada, que foi o que o dono
+   * viu no PC. Agora ela respira nos dois eixos. */
+  bottom: 3vh;
+  height: 53vh;
   /* `[04/09]` A caixa passou a ter LARGURA própria, e isto não é detalhe.
    *
    * Antes ela tirava a largura da imagem em fluxo normal. Com o fade cruzado as
@@ -65,7 +70,7 @@
 .arena-lutador-roxo .arena-figura { object-position: right bottom; }
 
 .arena-lutador-verde {
-  left: 2vw;
+  left: 3.5vw;
   animation: arenaEntraDaEsquerda 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms backwards;
 }
 
@@ -75,7 +80,7 @@
  * arquivo servindo os dois lados. As artes do dono já vêm **uma de frente para
  * a outra** — espelhar de novo viraria o lutador para fora da tela. */
 .arena-lutador-roxo {
-  right: 2vw;
+  right: 3.5vw;
   animation: arenaEntraDaDireita 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 260ms backwards;
 }
 
@@ -119,11 +124,19 @@
   transform: translateX(4vw);
 }
 
-/* O roxo RECUA PARA O LADO enquanto o verde toma conta — pedido do dono:
- * *"pode fazer ela sumir pro lado enquanto o outro personagem toma conta"*.
- * 8vw para a direita e opacidade menor, nos mesmos 900 ms da fenda: ele sai de
- * cena andando, em vez de apagar no lugar. */
+/* O roxo RECUA enquanto o verde toma conta — pedido do dono: *"pode fazer ela
+ * sumir pro lado enquanto o outro personagem toma conta"*.
+ *
+ * `[04/09]` Ele recua com ESCALA, não só andando para o lado, e a correção veio
+ * do dono: *"o boneco roxo está muito cortado no PC, você olhou a aba errada"*.
+ * Estava certo — eu conferi o login e o defeito era no cadastro: os 8vw de
+ * translação empurravam a caixa 4,5vw PARA FORA da tela, então metade dele
+ * ficava do lado de fora.
+ *
+ * Encolher lê como "afastou" tão bem quanto deslizar, e não tem borda para
+ * atravessar. Sobraram 2vw de translação só para dar a direção do movimento. */
 .arena-selecionado .arena-lutador-roxo {
-  transform: translateX(8vw);
+  transform: translateX(2vw) scale(0.86);
+  transform-origin: right bottom;
   opacity: 0.5;
 }

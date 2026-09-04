@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
+import { marcarEntradaAgora } from '../lib/boasVindas';
 import { logAudit } from '../lib/auditLog';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
 import { usePresenca } from './usePresenca';
@@ -124,6 +125,12 @@ export function AuthProvider({ children }) {
         `@${p?.username || email.trim()} fez login`,
         { category: 'auth', severity: 'info', metadata: { email: email.trim() } }
       );
+
+      // A marca de "acabou de entrar AGORA" — é ela que separa login de
+      // recarregamento de página, e sem ela a tela de boas-vindas apareceria a
+      // cada F5. Fica DEPOIS da checagem de ban de propósito: quem foi barrado
+      // não é recebido com festa. Ver `lib/boasVindas.js`.
+      marcarEntradaAgora();
     }
 
     return result;

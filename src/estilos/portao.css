@@ -1,0 +1,215 @@
+/* O PORTÃO de boas-vindas: uma porta de cofre com TRANCA no meio.
+ *
+ * Ver `components/auth/PortaoDeBoasVindas.jsx` para os tempos e o porquê.
+ *
+ * ── `[04/09]` A primeira versão foi REPROVADA, e o motivo ensina ────────────
+ *
+ * Ela era duas metades com uma fenda visível no meio desde o primeiro quadro. O
+ * dono cortou: *"não queria que ela tivesse essa fenda, eu queria que fosse
+ * estilo portão futurista, que tem uma tranca no meio que rodasse
+ * 'destrancando' a porta e carregando o site"*.
+ *
+ * A diferença não é decorativa. Fenda no primeiro quadro conta "isto vai abrir";
+ * porta inteira com tranca girando conta "isto está sendo aberto para você",
+ * que é o que a tela existe para dizer enquanto o site carrega.
+ *
+ * **A porta continua sendo duas folhas** — é o único jeito de ela abrir —, mas
+ * as duas têm o MESMO fundo e nenhuma borda, então a divisão só existe a partir
+ * do instante em que elas se separam.
+ *
+ * ── O que anima, e o que não ────────────────────────────────────────────────
+ *
+ * Só `transform` e `opacity`, como no resto do site. A tranca gira
+ * (`rotate`), o miolo pulsa (`scale`), as folhas deslizam (`translateX`). Nada
+ * aqui repinta a tela por quadro.
+ */
+
+.portao {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  /* Enfeite não recebe clique: se ele demorar a sair, a pessoa continua
+   * conseguindo usar o site por baixo. */
+  pointer-events: none;
+}
+
+/* ── As duas folhas ─────────────────────────────────────────────────────────
+ *
+ * Fundo IDÊNTICO e SEM borda: fechadas, elas são uma superfície só. A `width`
+ * passa de 50% para não deixar um fio do site aparecendo entre elas por
+ * arredondamento de subpixel. */
+.portao-folha {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50.5%;
+  background:
+    radial-gradient(120% 90% at 50% 45%, #10331a 0%, #0a1a10 45%, #06060a 100%);
+  transition: transform 560ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.portao-folha-a { left: 0; }
+.portao-folha-b { right: 0; }
+
+/* A textura de circuito, na porta inteira. Ela é um gradiente repetido — não é
+ * imagem, não custa download, e some junto com as folhas. */
+.portao-textura {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image:
+    repeating-linear-gradient(90deg, #39ff1409 0 1px, transparent 1px 74px),
+    repeating-linear-gradient(0deg, #39ff1409 0 1px, transparent 1px 74px);
+  transition: opacity 300ms ease;
+}
+
+/* ── A TRANCA ───────────────────────────────────────────────────────────────
+ *
+ * Três anéis concêntricos girando em sentidos e velocidades diferentes, com o
+ * raio da marca no miolo. Enquanto o site carrega, ela gira; ao terminar, ela
+ * trava de uma vez e acende. */
+.portao-nucleo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 2.2rem;
+  padding: 0 6vw;
+  transition: opacity 240ms ease;
+}
+
+.tranca {
+  position: relative;
+  width: clamp(108px, 26vw, 168px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.tranca-anel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #39ff1433;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+/* Cada anel é um pedaço de círculo, não um círculo inteiro: é a borda
+ * TRANSPARENTE em três lados que faz o giro ser visível. */
+.tranca-anel-externo {
+  border-color: #39ff14 transparent #39ff1466 transparent;
+  animation-name: trancaGira;
+  animation-duration: 2.6s;
+}
+
+.tranca-anel-medio {
+  inset: 16%;
+  border-color: transparent #bf00ff transparent #bf00ff55;
+  animation-name: trancaGiraAoContrario;
+  animation-duration: 1.9s;
+}
+
+.tranca-anel-interno {
+  inset: 32%;
+  border-color: #00ffff88 transparent transparent #00ffff33;
+  animation-name: trancaGira;
+  animation-duration: 3.4s;
+}
+
+@keyframes trancaGira {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes trancaGiraAoContrario {
+  to { transform: rotate(-360deg); }
+}
+
+/* O miolo: o raio da marca, respirando enquanto a tranca trabalha. */
+.tranca-miolo {
+  position: relative;
+  color: #39ff14;
+  filter: drop-shadow(0 0 12px #39ff1466);
+  animation: trancaPulsa 1.8s ease-in-out infinite;
+  transition: color 300ms ease, filter 300ms ease, transform 420ms
+              cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes trancaPulsa {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.12); }
+}
+
+/* ── O texto ────────────────────────────────────────────────────────────── */
+.portao-texto { text-align: center; }
+
+.portao-titulo {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: clamp(1.2rem, 4.6vw, 2.1rem);
+  color: #e7ffe2;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 26px #39ff1455;
+}
+
+.portao-nome {
+  display: block;
+  margin-top: 0.35em;
+  color: #39ff14;
+  text-shadow: 0 0 22px #39ff1466;
+}
+
+.portao-linha {
+  margin-top: 1em;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(0.72rem, 2.4vw, 0.9rem);
+  color: #7b8b7b;
+  transition: color 240ms ease;
+}
+
+/* ── DESTRANCADO: a tranca para, acende e some ──────────────────────────────
+ *
+ * Este é o estado do meio, e ele existe para a abertura ter CAUSA. Sem ele a
+ * porta abriria sozinha, e a tranca no meio não teria feito nada. */
+.portao-destrancado .tranca-anel {
+  animation-play-state: paused;
+  border-color: #39ff14aa;
+  transition: border-color 240ms ease, transform 420ms
+              cubic-bezier(0.2, 1.4, 0.4, 1);
+  transform: rotate(0deg) scale(1.08);
+}
+
+.portao-destrancado .tranca-miolo {
+  animation: none;
+  color: #d9ffd2;
+  filter: drop-shadow(0 0 26px #39ff14);
+  transform: scale(1.25);
+}
+
+.portao-destrancado .portao-linha { color: #39ff14; }
+
+/* ── ABRINDO: as folhas se separam ──────────────────────────────────────────
+ *
+ * `101%` e não `100%`: um arredondamento de subpixel deixava uma linha da folha
+ * visível na borda no fim do movimento. */
+.portao-abrindo .portao-folha-a { transform: translateX(-101%); }
+.portao-abrindo .portao-folha-b { transform: translateX(101%); }
+
+/* O núcleo sai ANTES das folhas (240 ms contra 560 ms) e sem se mexer junto:
+ * texto deslizando com a porta vira borrão, e o que se quer ler é o nome. */
+.portao-abrindo .portao-nucleo,
+.portao-abrindo .portao-textura { opacity: 0; }
+
+/* ── Menos movimento ────────────────────────────────────────────────────────
+ *
+ * Quem pediu recebe a mensagem sem porta e sem giro: os anéis ficam parados e a
+ * tela apaga no lugar. A informação fica; o movimento sai. */
+@media (prefers-reduced-motion: reduce) {
+  .tranca-anel, .tranca-miolo { animation: none; }
+  .portao-folha { transition: opacity 300ms ease; }
+  .portao-abrindo .portao-folha-a,
+  .portao-abrindo .portao-folha-b { transform: none; opacity: 0; }
+}
