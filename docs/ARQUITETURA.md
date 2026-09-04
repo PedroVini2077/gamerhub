@@ -279,6 +279,13 @@ src/
     │   │                  # entrada e o fade cruzado — é CSS/Framer que só
     │   │                  # anima transform/opacity. Celular e PC têm
     │   │                  # composições diferentes, por @media e não por JS
+    │   ├── PortaDeAcesso.jsx # `[04/09]` O DESENHO da porta, em SVG feito à
+    │   │                  # mão: chapa, painéis, neon da paleta, ferrolho e a
+    │   │                  # tranca partida ao meio. A geometria é espelhada em
+    │   │                  # x=600, então a folha direita é a esquerda com
+    │   │                  # scale(-1,1) — simetria exata na emenda.
+    │   │                  # NÃO ESTÁ PRONTO: falta virar a TELA INTEIRA, que é
+    │   │                  # o que o dono pediu. Ver BACKLOG, EM EXECUÇÃO
     │   ├── PortaoDeBoasVindas.jsx # `[04/09]` A tela que cobre a entrada
     │   │                  # depois do login: duas folhas que abrem, com a
     │   │                  # saudação. Não inventa espera — cobre a que já

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Zap } from 'lucide-react';
+
+import PortaDeAcesso from './PortaDeAcesso';
 
 import { useAuth } from '../../hooks/useAuth.jsx';
 import {
@@ -158,33 +159,20 @@ export default function PortaoDeBoasVindas() {
 
   return createPortal(
     <div className={classes} role="status" aria-live="polite">
-      {/* As duas folhas têm o MESMO fundo e nenhuma borda: fechadas, elas são
-          uma superfície só. A divisão só existe a partir do instante em que
-          elas se separam — foi essa fenda prematura que o dono reprovou. */}
-      <div className="portao-folha portao-folha-a" />
-      <div className="portao-folha portao-folha-b" />
-      <div className="portao-textura" />
+      {/* A porta é desenhada em SVG, à MÃO. O dono mandou um render como
+          REFERÊNCIA e foi explícito: *"eu mandei pra você usar como exemplo e
+          criar à mão"* — antes disso eu tinha recortado a própria ilustração em
+          quatro pedaços, e ele cortou com razão. Ver `PortaDeAcesso.jsx`. */}
+      <PortaDeAcesso />
 
-      <div className="portao-nucleo">
-        {/* A tranca: três anéis girando em sentidos e velocidades diferentes,
-            com o raio da marca no miolo. Ela para e acende quando o site fica
-            pronto — é o "destrancou" que dá causa à porta abrir. */}
-        <div className="tranca">
-          <span className="tranca-anel tranca-anel-externo" />
-          <span className="tranca-anel tranca-anel-medio" />
-          <span className="tranca-anel tranca-anel-interno" />
-          <Zap className="tranca-miolo" size={34} strokeWidth={2.5} aria-hidden="true" />
-        </div>
-
-        <div className="portao-texto">
-          <p className="portao-titulo">
-            {titulo}
-            {nome && <span className="portao-nome">{nome}</span>}
-          </p>
-          <p className="portao-linha">
-            {destrancado ? '// acesso liberado' : '// destrancando'}
-          </p>
-        </div>
+      <div className="portao-texto">
+        <p className="portao-titulo">
+          {titulo}
+          {nome && <span className="portao-nome">{nome}</span>}
+        </p>
+        <p className="portao-linha">
+          {destrancado ? '// acesso liberado' : '// destrancando'}
+        </p>
       </div>
     </div>,
     document.body,
