@@ -32,7 +32,7 @@
    * dissolvem no fundo em vez de terminarem num corte reto.
    *
    * **Não custa byte:** com DPR 2 ou 3 o navegador já escolhia o arquivo de
-   * 720 px mesmo com os vultos pequenos (medido: `fogo-guarda-720` em 390×844,
+   * 720 px mesmo com os vultos pequenos (medido: `verde-guarda-720` em 390×844,
    * DPR 3). Aumentar mudou o tamanho na tela, não o arquivo baixado. */
   .arena-lutador {
     height: 34vh;
@@ -44,8 +44,8 @@
   /* Largura de 34vh dá ~265 px em cada um — os dois somam mais que a tela.
    * Puxar para fora é o que faz eles se encontrarem no MEIO, que é a cena, em
    * vez de espremer os dois inteiros num espaço que não existe. */
-  .arena-lutador-fogo { left: -16vw; }
-  .arena-lutador-gelo { right: -16vw; }
+  .arena-lutador-verde { left: -16vw; }
+  .arena-lutador-roxo { right: -16vw; }
 
   .arena-figura {
     /* 0.6 e não 0.5: com a moldura por trás, o fundo ficou mais movimentado, e
@@ -68,24 +68,24 @@
    * parede — os lutadores, que são o assunto, ficavam lavados por trás dela. */
   .arena-moldura-lado { width: 34vw; opacity: 0.38; }
 
-  /* No cadastro o fogo "venceu": ele cresce mais e vem para o centro; o gelo
+  /* No cadastro o verde "venceu": ele cresce mais e vem para o centro; o roxo
    * recua para a penumbra em vez de sumir.
    *
    * `[04/09]` "Recuar" tinha virado "sumir", e o dono viu: *"o personagem de
-   * gelo mal aparece"*. A causa era acumulada — a base do celular já joga o
-   * gelo para `right: -16vw`, e o cadastro somava mais 6vw de translação para a
+   * que recua mal aparece"*. A causa era acumulada — a base do celular joga o
+   * roxo para `right: -16vw`, e o cadastro somava mais 6vw de translação para a
    * direita. Somados, 22vw dele ficavam fora da tela.
    *
    * Agora ele volta para dentro (`right` menor, sem translação a mais) e ganha
-   * opacidade. Continua atrás e mais apagado que o fogo — que é o ponto —, mas
+   * opacidade. Continua atrás e mais apagado que o vencedor — que é o ponto —,
    * agora dá para ver que ele está lá. */
-  .arena-selecionado .arena-lutador-fogo { height: 40vh; transform: translateX(2vw); }
-  .arena-selecionado .arena-lutador-gelo {
+  .arena-selecionado .arena-lutador-verde { height: 40vh; transform: translateX(2vw); }
+  .arena-selecionado .arena-lutador-roxo {
     right: -4vw;
     height: 30vh;
     transform: none;
   }
-  .arena-selecionado .arena-lutador-gelo .arena-figura { opacity: 0.46; }
+  .arena-selecionado .arena-lutador-roxo .arena-figura { opacity: 0.46; }
 }
 
 /* Quem pediu menos movimento recebe a cena MONTADA — sem entrada e sem faísca

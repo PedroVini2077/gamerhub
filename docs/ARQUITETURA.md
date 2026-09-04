@@ -37,15 +37,11 @@ src/
 ├── assets/
 │   ├── landing/           # Prints reais do site usados na landing (feed, mural, lives,
 │   │                      # ranks, keys) — nomes de usuários censados por privacidade
-│   └── auth/              # `[04/09]` As artes da tela de entrada: os dois
-│                          # lutadores + `moldura-fogo/gelo`, a borda de lava e
-│                          # cristal que substituiu as labaredas e os cristais
-│                          # que eram desenhados em CSS. As dos lutadores:
-│                          # entrada, geradas pelo dono. WebP em DOIS tamanhos
-│                          # (340 e 720 de altura) — o celular renderiza a
-│                          # ~150 px e não deve baixar 720. Os PNG originais
-│                          # tinham 2,5 MB cada; há trava de peso em
-│                          # components/auth/__tests__/pesoDaArena.test.js
+│   └── auth/              # `[04/09]` As artes da tela de entrada, NA PALETA DO
+│                          # SITE (verde neon x roxo): os dois lutadores em
+│                          # `verde-*`/`roxo-*` (WebP, 340 e 720 de altura) e a
+│                          # moldura de circuito das bordas. A cor NÃO é escolha
+│                          # livre — é a identidade do site (ver DECISOES.md)
 ├── hooks/
 │   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
 │   │                      # árvore e o arquivo de maior risco do projeto (§7)
@@ -268,11 +264,11 @@ src/
     │                      # aqui e não emoji de teclado, que muda por sistema
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
     │   ├── ArenaDeEntrada.jsx # `[04/09]` O fundo do login e do cadastro:
-    │   │                  # dois lutadores, fogo de um lado, gelo do outro,
-    │   │                  # fenda e VS no meio. Os personagens são ARTE do
-    │   │                  # dono (fundo transparente de verdade, conferido no
-    │   │                  # canal alfa); a moldura das bordas também. O resto
-    │   │                  # — gradiente, faísca, floco, entrada — é CSS que só
+    │   │                  # dois lutadores NA PALETA DO SITE (verde x roxo),
+    │   │                  # fenda e VS no meio. Os personagens e a moldura são
+    │   │                  # ARTE do dono (transparência conferida no canal
+    │   │                  # alfa); o resto — gradiente, faísca, estilhaço,
+    │   │                  # entrada e o fade cruzado — é CSS/Framer que só
     │   │                  # anima transform/opacity. Celular e PC têm
     │   │                  # composições diferentes, por @media e não por JS
     │   ├── CardQueAcompanhaAltura.jsx # `[04/09]` O card do login com a altura

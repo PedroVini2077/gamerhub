@@ -1208,3 +1208,52 @@ sem conteúdo que o dimensionasse e **colapsou para 0 px de largura**. Corrigido
 com `aspect-ratio: 1` na caixa e `object-fit: contain` + `object-position` por
 lado — a largura passa a acompanhar a altura sozinha, em toda tela e em todo
 modo, e a arte encosta na borda certa. Conferido nas quatro combinações.
+
+### `[04/09]` A tela de entrada voltou para a PALETA DO SITE — e eu devia ter avisado
+
+**O corte do dono, e ele está certo:** *"eu não sei o que tava passando na minha
+cabeça de fazer personagem de gelo e fogo, não tem nada a ver com o site"*. E a
+cobrança que veio junto: *"você tinha que ter me avisado isso, né?"*.
+
+**Tinha.** A paleta está em `estilos/base.css` desde o começo — `--neon: #39ff14`,
+`--purple: #bf00ff`, `--cyan: #00ffff` — e manda em toda a interface. Laranja de
+lava e azul de gelo são outra linguagem visual. Eu construí **três rodadas**
+inteiras em cima da referência dele sem levantar isso uma vez.
+
+> **O §7 é explícito:** *"se eu discordar de uma ideia do dono, eu digo antes de
+> executar. Concordar por educação com uma abordagem pior é o pior serviço que
+> eu posso prestar"*. A regra existia, estava certa, e eu não a apliquei — não
+> por discordar em silêncio, mas por **não ter percebido que havia do que
+> discordar**. Identidade visual não estava na minha lista de coisas a conferir
+> antes de começar; passa a estar.
+
+**O que mudou, item a item:**
+
+| | antes | agora |
+| --- | --- | --- |
+| lutadores | fogo × gelo | verde neon × roxo, com o raio da marca no peito |
+| moldura | lava e cristal | circuito neon, verde de um lado e roxo do outro |
+| gradiente dos lados | laranja / ciano-gelo | `#39ff14` / `#bf00ff` |
+| fenda | sombra quente + fria | sombra verde + roxa |
+| VS | laranja / ciano | verde / roxo |
+| partículas | brasa e lasca de gelo | faísca verde e estilhaço roxo |
+| nomes no código | `fogo`/`gelo`/`brasa`/`lasca` | `verde`/`roxo`/`faisca`/`estilhaco` |
+
+**Os nomes foram renomeados junto, e isso não é capricho.** `.arena-lutador-fogo`
+apontando para uma arte verde é a definição de nome que mente — o §4 chama isso
+de fonte de bug, e a próxima pessoa a abrir o arquivo procuraria fogo.
+
+#### O VS passou a animar na SAÍDA também
+
+Pedido do dono: *"preciso que você anime tanto a entrada como a saída dele
+também, ele só está animado para a entrada"*. Ele encolhe e apaga ao ir para o
+cadastro, e volta com o mesmo estalo elástico.
+
+**Duas curvas diferentes, e o número decidiu.** Com a curva elástica nas duas
+propriedades, a opacidade caía para **0,02 em 140 ms** — animação no papel,
+estalo na tela. A elástica ficou no `transform`, onde o exagero é o efeito; a
+opacidade ganhou uma curva calma de 420 ms, onde o que importa é dar tempo de
+ver. Medido depois: 0,90 → 0,29 → 0,08 → 0.
+
+O `animation: none` que existia na regra do VS **saiu** — era ele que reiniciava
+a entrada ao voltar para o login, o mesmo defeito que os lutadores tinham.
