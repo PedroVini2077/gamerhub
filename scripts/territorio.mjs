@@ -131,6 +131,10 @@ export const TERRITORIO = {
   'supabase/migrations/README.md': ['supabase/migrations'],
 
   // ── Território vazio DE PROPÓSITO (ver o cabeçalho) ───────────────────────
+  // Mapa de possibilidades, nao de codigo: nenhuma pasta o torna velho. Ele
+  // envelhece por DECISAO (uma ideia sai daqui e vira item), e isso e coisa que
+  // uma pessoa registra e nenhum script detecta — mesma razao do DECISOES.md.
+  'docs/VISAO-DE-FUTURO.md': [],
   'docs/DECISOES.md': [],
   'docs/DECISOES-FERRAMENTAL.md': [],
   'docs/MANIFESTO.md': [],

@@ -43,11 +43,12 @@ falso -> HTTP 403, que é o que prova que a secret existe e é usada). O relato
 está em [SEGURANCA.md](docs/SEGURANCA.md) e as escolhas em
 [DECISOES.md](docs/DECISOES.md).
 
-**O que ficou por confirmar, e depende do dono:** o caminho FELIZ — resolver o
-captcha de verdade e a mensagem chegar. Daqui eu provei todas as recusas, mas
-não consigo resolver um desafio do Cloudflare (o navegador deste ambiente não
-alcança o `challenges.cloudflare.com`). Uma mensagem de teste pela `/contato`
-fecha essa ponta.
+**O caminho feliz também está confirmado, e foi o dono quem fechou:** ele enviou
+uma mensagem pela `/contato` em 03/09 às 22:10, o widget resolveu sozinho
+("Sucesso!") e a linha chegou em `contact_messages`. Era a única ponta que eu não
+conseguia provar daqui — o navegador deste ambiente não alcança o
+`challenges.cloudflare.com`. **O `Hostname Management` da chave também está
+certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -57,7 +58,7 @@ fecha essa ponta.
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -117,39 +118,6 @@ fecha essa ponta.
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[03/09]` 🟠 **Mandar UMA mensagem de teste pela `/contato`.** *É a única
-  ponta do captcha que eu não consigo fechar daqui.*
-
-  Provei todas as RECUSAS em produção: `anon` não chama mais a RPC (HTTP 401),
-  e token de captcha falso é barrado (HTTP 403). O que falta é o caminho
-  **feliz** — resolver o desafio de verdade e a mensagem aparecer no painel.
-  O navegador deste ambiente não alcança o `challenges.cloudflare.com`, então
-  não tenho como produzir um token válido.
-
-  **Por que isso não pode ficar sem confirmação:** o canal recebe ~0 mensagens
-  por dia. Se ele estiver quebrado, ninguém vai reclamar — o silêncio é
-  indistinguível do normal (§1.5). Uma mensagem sua fecha a dúvida em 1 minuto.
-
-  **E confira uma coisa no Cloudflare junto:** o CI mediu que, em `127.0.0.1`, o
-  script do Turnstile carrega mas o desafio **não renderiza** — comportamento
-  esperado quando o hostname não está na lista da chave. Se o widget também não
-  aparecer no site publicado, é essa lista: **Turnstile → sua chave → Hostname
-  Management** precisa conter `gamerhub-nine.vercel.app` (e o domínio próprio, se
-  um dia existir).
-
-- ⬜ `[03/09]` 🟢 **Escrever `docs/VISAO-DE-FUTURO.md`** — mapa de possibilidades
-  do produto, pedido do dono em 03/09 com prompt próprio (conquistas, jogos,
-  comunidades, clips, eventos, torneios, salas de voz, amigos/presença, notícias,
-  busca global; e as expansões maiores: guildas, competitivo, matchmaking,
-  economia, marketplace).
-
-  **Não é backlog e não é compromisso de implementação** — é referência para
-  responder *"e agora, o que faz mais sentido construir?"* quando uma tarefa
-  fechar, com a ordem de prioridade que ele definiu (impacto × custo ×
-  complexidade × poder evoluir × aproveitar o que já existe). Inclui o direito
-  de dizer *"essa ideia é legal, mas ainda não vale a pena"*.
-
 
 - ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
   offline.** *É o terceiro elo da corrente que o dono relatou, e o único que
@@ -359,12 +327,38 @@ fecha essa ponta.
 
 
 
-- ⬜ `[02/09]` **Responder a mensagem de contato por dentro do painel.** Hoje a
-  equipe lê em `/admin` → aba Contato e responde do próprio e-mail, copiando o
-  endereço da tela. Responder de dentro exigiria a `send-email`, e portanto a
-  cota do Gmail — **a mesma** do cadastro e da recuperação de senha (§0.2).
-  Depende do item de migrar o envio de e-mail, logo abaixo. *Não é urgente com
-  o volume atual; está aqui para não virar redescoberta.*
+- ⬜ `[03/09]` 🟠 **Responder a mensagem de contato por dentro do painel, com
+  e-mail no tema do site.** *Pedido direto do dono em 03/09, ao testar o canal:
+  "como vou clicar no respondido sendo que não tem como responder nada?".*
+
+  **Ele está certo, e o defeito é de honestidade.** O status `answered` existe
+  desde 02/09, mas nada no sistema envia resposta nenhuma — o botão registra um
+  ato que não aconteceu. Hoje o caminho real é a equipe copiar o endereço da
+  tela e responder do próprio e-mail; quem olhar o painel depois não distingue
+  "respondi por fora" de "cliquei sem responder".
+
+  **O que ele quer:** escrever a resposta no painel e ela chegar por e-mail,
+  com a identidade visual do site.
+
+  **A conta que precisa ser feita ANTES (§0.2, regra 2):** o envio passaria pela
+  `send-email`, e portanto pela cota do Gmail — **a mesma** do cadastro e da
+  recuperação de senha, ~500/dia. Resposta de contato é rara, então o volume não
+  é o risco; o risco é a conta do Google travar por envio automatizado e
+  **derrubar o cadastro do site junto**. Vale decidir se isto entra antes ou
+  depois de sair do Gmail (item logo abaixo).
+
+  **Some junto, quando entrar:** guardar o texto da resposta na própria linha,
+  para o painel mostrar o que foi respondido — senão o histórico continua sendo
+  só um carimbo.
+
+- ⬜ `[03/09]` 🟢 **O painel de contato oferece andar para trás.** Depois de
+  marcar "Respondida", o botão "Lida" reaparece — e "Lida" depois de
+  "Respondida" não é um passo que faça sentido. O dono notou testando.
+
+  Não é bug de estado (o `Acao` some quando o status já é o dele; é desenho de
+  "mover para"), mas é confuso na tela. Decidir a forma certa: ou os três viram
+  um caminho só de ida, ou vira um seletor de estado explícito em vez de três
+  botões que parecem ações.
 
 - ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
   nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o

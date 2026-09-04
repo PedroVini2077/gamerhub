@@ -42,6 +42,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/MODERACAO-IA.md` | A moderação por IA de mídia: política por categoria, limiares e as medições que os produziram | Moderação humana |
 | `docs/PAINEIS.md` | O que **a equipe** opera: painéis, banimento, config, trilha | O que o usuário comum vê |
 | `docs/PRIVACIDADE.md` | O que o site coleta **de verdade**, medido na implementação | Promessa não verificada |
+| `docs/VISAO-DE-FUTURO.md` | **Onde o produto pode chegar** — possibilidades, sem data e sem compromisso, com a menor versão de cada uma | Fila, prazo, especificação |
 | `docs/DECISOES.md` | O que foi decidido e **descartado** no PRODUTO, com data e motivo | Item a fazer |
 | `docs/DECISOES-FERRAMENTAL.md` | O mesmo, para a **esteira**: CI, Vercel, Sentry, email | Decisão de produto |
 | `docs/MANIFESTO.md` | Como o dono e o Claude trabalham **juntos** — papéis, continuidade | Regra executável (vai no `CLAUDE.md`) |
@@ -258,7 +259,7 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->10.352<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->10.348<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
