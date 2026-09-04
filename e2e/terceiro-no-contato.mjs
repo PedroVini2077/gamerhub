@@ -26,8 +26,15 @@ const BASE = process.env.SMOKE_BASE ?? 'http://localhost:4173';
 
 // Hosts que a página PODE contactar. Qualquer outro é terceiro novo e a
 // política precisa saber.
+//
+// `[03/09]` O Supabase estava faltando aqui na primeira versão, e o CI reprovou
+// por causa disso — corretamente do ponto de vista da regra, e errado do ponto
+// de vista do fato: ele É declarado na política, é o banco e o autenticador do
+// site. A lista tem que espelhar a TABELA da política, não a minha memória do
+// que a página faz.
 const PERMITIDOS = [
-  'challenges.cloudflare.com',   // o captcha, declarado na política
+  'challenges.cloudflare.com',   // o captcha
+  '.supabase.co',                // banco e autenticador (inclui functions/realtime)
 ];
 
 const navegador = await abrirNavegador();
@@ -56,6 +63,12 @@ try {
     avisouFalha: /não carregou|nao carregou/i.test(document.body.innerText),
   }));
 
+  // O que este portao NAO alcanca, e o CI provou de um jeito util: numa maquina
+  // cujo hostname nao esta na lista da chave do Cloudflare (127.0.0.1, no CI), o
+  // script carrega mas o `render` chama o `error-callback` — o desafio nunca
+  // completa. Entao aqui se mede o que a PAGINA entrega (terceiros, cookie), e
+  // NAO o comportamento de um desafio resolvido. Dizer o contrario seria vender
+  // uma cobertura que nao existe.
   if (!carregou.temApi && !carregou.temIframe) {
     console.error('\n  O script do Turnstile nao carregou neste ambiente.');
     console.error(`  (a tela ${carregou.avisouFalha ? 'AVISOU' : 'nao avisou'} a falha)`);
@@ -67,7 +80,12 @@ try {
 
   // ── 1. A tela avisa quando o desafio falha? (§1.5) ───────────────────────
   // Se ele carregou, nao deve haver aviso de falha.
-  console.log(`   1. OK   o desafio carregou (api: ${carregou.temApi}, iframe: ${carregou.temIframe})`);
+  console.log(`   1. OK   o script do captcha carregou (api: ${carregou.temApi}, iframe: ${carregou.temIframe})`);
+  if (!carregou.temIframe) {
+    console.log('           (sem iframe: o hostname deste ambiente nao esta na');
+    console.log('            lista da chave no Cloudflare. Esperado fora do dominio');
+    console.log('            de producao — nao e defeito do site.)');
+  }
 
   // ── 2. Nenhum cookie — é o que a política afirma no resumo ────────────────
   const cookies = await contexto.cookies();
@@ -84,7 +102,7 @@ try {
 
   // ── 3. Nenhum terceiro além do declarado ─────────────────────────────────
   const naoDeclarados = [...hosts].filter(
-    (h) => !PERMITIDOS.some((p) => h === p || h.endsWith(`.${p}`)));
+    (h) => !PERMITIDOS.some((p) => (p.startsWith('.') ? h.endsWith(p) : h === p)));
   if (naoDeclarados.length > 0) {
     throw new Error(
       'a /contato contactou terceiro que a politica nao lista:\n'

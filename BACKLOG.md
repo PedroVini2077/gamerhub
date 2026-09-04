@@ -131,6 +131,13 @@ fecha essa ponta.
   por dia. Se ele estiver quebrado, ninguém vai reclamar — o silêncio é
   indistinguível do normal (§1.5). Uma mensagem sua fecha a dúvida em 1 minuto.
 
+  **E confira uma coisa no Cloudflare junto:** o CI mediu que, em `127.0.0.1`, o
+  script do Turnstile carrega mas o desafio **não renderiza** — comportamento
+  esperado quando o hostname não está na lista da chave. Se o widget também não
+  aparecer no site publicado, é essa lista: **Turnstile → sua chave → Hostname
+  Management** precisa conter `gamerhub-nine.vercel.app` (e o domínio próprio, se
+  um dia existir).
+
 - ⬜ `[03/09]` 🟢 **Escrever `docs/VISAO-DE-FUTURO.md`** — mapa de possibilidades
   do produto, pedido do dono em 03/09 com prompt próprio (conquistas, jogos,
   comunidades, clips, eventos, torneios, salas de voz, amigos/presença, notícias,
