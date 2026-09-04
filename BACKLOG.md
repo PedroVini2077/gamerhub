@@ -35,54 +35,19 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[03/09]` Captcha (Turnstile) no formulário de contato — ESPERANDO APROVAÇÃO
+*Vazia.* A última tarefa — o captcha no formulário de contato — fechou em 03/09,
+com a aprovação do dono para o revoke. A Edge Function `verify-contact` é a
+única porta, `enviar_mensagem_de_contato` deixou de ser chamável por `anon`
+(provado em produção: HTTP 401), e o captcha está mesmo sendo conferido (token
+falso -> HTTP 403, que é o que prova que a secret existe e é usada). O relato
+está em [SEGURANCA.md](docs/SEGURANCA.md) e as escolhas em
+[DECISOES.md](docs/DECISOES.md).
 
-**Tipo:** feature/segurança · **Território:** `supabase/functions/`,
-`services/contatoService.js`, `components/contato/` · **Doc governante:**
-[SEGURANCA.md](docs/SEGURANCA.md) · **§7: 🟡** (Edge Function nova + revoke de
-`EXECUTE` em RPC pública que está no ar)
-
-**O que o dono trouxe:** fez o processo no Cloudflare, guardou a
-`TURNSTILE_SECRET_KEY` em *Edge Functions → Secrets* e passou a chave pública
-`0x4AAAAAAEmSuW6upq2OeC4X`. Escolheu proteger **o formulário de contato**, que é
-o que o item 🔵 de 02/09 previa.
-
-**O buraco que isto fecha, e ele está escrito no SQL:** os limites de hoje
-(3 por e-mail em 24 h, disjuntor de 60/hora) impedem a tabela de virar depósito,
-mas **não** impedem um robô com muitos endereços de encher a hora e fechar o
-canal para todo mundo.
-
-**O passo que exige aprovação, e é um só:** `enviar_mensagem_de_contato` hoje
-tem `GRANT EXECUTE ... TO anon`. Se ela continuar assim, o captcha é decoração —
-qualquer um posta direto em `/rest/v1/rpc/` e pula a verificação (§1.3). Fechar
-de verdade exige **revogar `anon`** e deixar a Edge Function (com
-`service_role`) como única porta. É o padrão de revoke que já derrubou o site
-três vezes; conferido que **só o `contatoService.js` chama a RPC**.
-
-**Etapas:**
-
-- [ ] 0. **Aguardando o dono** (§7 🟡)
-- [ ] 1. Edge Function `verify-contact`: valida o token no Cloudflare e chama a
-      RPC com `service_role`
-- [ ] 2. Migration: revoga `anon`/`authenticated` da RPC, com o porquê no SQL
-- [ ] 3. Widget na tela + a chave pública no `.env`/Vercel
-- [ ] 4. Travas: porta fechada sem token (`portas-fechadas.mjs`), e o e2e do
-      `/contato` continuando de pé
-- [ ] 5. Documentar em SEGURANCA.md e OPERACAO.md
-
-**Decisões que eu já tomei, e o motivo (para o dono discordar se quiser):**
-
-- **Cloudflare fora do ar → a mensagem PASSA, e a falha vai para `admin_logs`.**
-  O `/contato` é o canal de quem está banido ou trancado para fora — barrar
-  todo mundo por causa de uma indisponibilidade do Cloudflare cortaria
-  justamente quem mais precisa. Token que o Cloudflare **recusa** continua sendo
-  recusado; só a queda do serviço é que passa, e os limites de vazão do banco
-  continuam por baixo.
-- **Token malformado é recusado ANTES de falar com o Cloudflare**, para um robô
-  não conseguir gastar a cota de verificação com lixo (§0.2, regra 2).
-
-**Risco declarado:** entre o revoke e o deploy da função, o formulário fica sem
-porta. A ordem tem que ser: função no ar e conferida → só então a migration.
+**O que ficou por confirmar, e depende do dono:** o caminho FELIZ — resolver o
+captcha de verdade e a mensagem chegar. Daqui eu provei todas as recusas, mas
+não consigo resolver um desafio do Cloudflare (o navegador deste ambiente não
+alcança o `challenges.cloudflare.com`). Uma mensagem de teste pela `/contato`
+fecha essa ponta.
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -92,7 +57,7 @@ porta. A ordem tem que ser: função no ar e conferida → só então a migratio
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**22 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -152,6 +117,39 @@ porta. A ordem tem que ser: função no ar e conferida → só então a migratio
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[03/09]` 🟠 **Mandar UMA mensagem de teste pela `/contato`.** *É a única
+  ponta do captcha que eu não consigo fechar daqui.*
+
+  Provei todas as RECUSAS em produção: `anon` não chama mais a RPC (HTTP 401),
+  e token de captcha falso é barrado (HTTP 403). O que falta é o caminho
+  **feliz** — resolver o desafio de verdade e a mensagem aparecer no painel.
+  O navegador deste ambiente não alcança o `challenges.cloudflare.com`, então
+  não tenho como produzir um token válido.
+
+  **Por que isso não pode ficar sem confirmação:** o canal recebe ~0 mensagens
+  por dia. Se ele estiver quebrado, ninguém vai reclamar — o silêncio é
+  indistinguível do normal (§1.5). Uma mensagem sua fecha a dúvida em 1 minuto.
+
+  **E confira uma coisa no Cloudflare junto:** o CI mediu que, em `127.0.0.1`, o
+  script do Turnstile carrega mas o desafio **não renderiza** — comportamento
+  esperado quando o hostname não está na lista da chave. Se o widget também não
+  aparecer no site publicado, é essa lista: **Turnstile → sua chave → Hostname
+  Management** precisa conter `gamerhub-nine.vercel.app` (e o domínio próprio, se
+  um dia existir).
+
+- ⬜ `[03/09]` 🟢 **Escrever `docs/VISAO-DE-FUTURO.md`** — mapa de possibilidades
+  do produto, pedido do dono em 03/09 com prompt próprio (conquistas, jogos,
+  comunidades, clips, eventos, torneios, salas de voz, amigos/presença, notícias,
+  busca global; e as expansões maiores: guildas, competitivo, matchmaking,
+  economia, marketplace).
+
+  **Não é backlog e não é compromisso de implementação** — é referência para
+  responder *"e agora, o que faz mais sentido construir?"* quando uma tarefa
+  fechar, com a ordem de prioridade que ele definiu (impacto × custo ×
+  complexidade × poder evoluir × aproveitar o que já existe). Inclui o direito
+  de dizer *"essa ideia é legal, mas ainda não vale a pena"*.
+
 
 - ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
   offline.** *É o terceiro elo da corrente que o dono relatou, e o único que
@@ -451,10 +449,10 @@ porta. A ordem tem que ser: função no ar e conferida → só então a migratio
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->86<!--/n--> arq ·
-  <!--n:src.lib.linhas-->7.152<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->16<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.620<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->87<!--/n--> arq ·
+  <!--n:src.lib.linhas-->7.229<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->17<!--/n--> arq ·
+  <!--n:src.services.linhas-->1.752<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

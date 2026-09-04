@@ -27,7 +27,8 @@
     "mutacao": "stryker run",
     "numeros": "node scripts/numeros-do-projeto.mjs",
     "docs": "node scripts/documentacao-a-revisar.mjs",
-    "test:migrations": "node scripts/espelho-de-migrations.mjs"
+    "test:migrations": "node scripts/espelho-de-migrations.mjs",
+    "test:e2e:terceiro": "node e2e/terceiro-no-contato.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.7.0",

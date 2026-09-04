@@ -343,6 +343,19 @@ jobs:
           SMOKE_BASE: http://127.0.0.1:4173
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
 
+      # `[03/09]` A /contato passou a carregar o captcha do Cloudflare, e isso
+      # coloca o navegador de quem abre a pagina no registro de mais uma
+      # empresa. A politica de privacidade AFIRMA quem recebe o que, e afirma
+      # que o site nao usa cookie — este passo MEDE as duas coisas em vez de
+      # confiar no texto.
+      #
+      # Ele sai com 2 (ambiente) quando o Cloudflare esta inalcancavel: "nao
+      # consegui medir" e "medi e esta limpo" sao respostas diferentes.
+      - name: A /contato entrega para fora so o que a politica declara
+        run: npm run test:e2e:terceiro
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
       # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
       # animação) contra 789 ms de execução de script — ou seja, o custo nunca
