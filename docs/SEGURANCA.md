@@ -173,6 +173,55 @@ configurar `HUGGINGFACE_API_KEY` para a moderação por IA, que usa **OpenAI**
 desde a troca de provedor. Mensagem errada custa mais tempo do dono do que
 mensagem nenhuma (§1.5).
 
+## `[03/09]` Captcha no formulário de contato — e por que o REVOKE é a parte que importa
+
+**O buraco que ele fecha, e estava escrito no SQL desde 02/09:** os limites do
+canal de contato (3 mensagens por e-mail em 24 h, disjuntor de 60/hora) impedem
+a tabela de virar depósito, mas **não** impedem um robô com muitos endereços de
+encher a hora e **fechar o canal para todo mundo**.
+
+**O widget não era a parte difícil.** Enquanto `enviar_mensagem_de_contato`
+tivesse `GRANT EXECUTE ... TO anon`, o captcha seria decoração: qualquer um
+posta em `/rest/v1/rpc/` e pula a verificação inteira. O site entrega a anon key
+por construção — regra que só existe no cliente não existe (§1.3).
+
+Por isso a mudança de verdade é o revoke:
+
+| Antes | Depois |
+| --- | --- |
+| `anon` e `authenticated` chamavam a RPC direto | só `service_role`, e a única porta é a Edge Function `verify-contact` |
+| `author_id` vinha de `auth.uid()` | vem por parâmetro, derivado de um JWT que o Supabase valida — não é forjável, e a função só é executável por `service_role` |
+
+**Antes de revogar, procurei quem lê** (POSTURA.md §1.3 — revoke
+bem-intencionado já derrubou este site três vezes): `grep` no `src/` (só o
+`contatoService.js`), `pg_policies`, `pg_proc` e triggers. Nenhum outro
+dependente. Testado em `ROLLBACK` antes de aplicar: `anon` bloqueado,
+`authenticated` bloqueado, `service_role` passa, `author_id` chega, as
+validações de conteúdo continuam valendo, e não sobrou overload da versão antiga.
+
+**Provado em produção, com a anon key real:**
+
+    POST /rest/v1/rpc/enviar_mensagem_de_contato
+      -> HTTP 401 "permission denied for function enviar_mensagem_de_contato"
+    POST /functions/v1/verify-contact  (token de captcha inventado)
+      -> HTTP 403 "Nao foi possivel confirmar o captcha"
+
+> O 403 do segundo é o que prova que a `TURNSTILE_SECRET_KEY` está configurada
+> **e** sendo usada: sem ela a função seguiria adiante (ver a decisão de falhar
+> aberto, abaixo) e o erro teria sido 400, vindo da RPC.
+
+**Falhar aberto, e o quanto isso é estreito.** Se o Cloudflare estiver fora do
+ar, a mensagem passa e a falha vai para `admin_logs`. O `/contato` é o canal de
+quem está banido ou trancado para fora; barrar todo mundo por uma
+indisponibilidade de terceiro cortaria justamente quem mais precisa. Token que o
+Cloudflare **recusa** continua recusado, ninguém de fora provoca a queda do
+Cloudflare, e os limites do banco continuam por baixo.
+
+**O que o captcha NÃO faz:** ele para robô comum. Não para quem paga serviço de
+resolução, nem alguém determinado especificamente contra este site. O disjuntor
+de 60/hora continua existindo por isso — defesa em profundidade, não
+substituição.
+
 ## `[27/08]` Onde está o rate limit — e onde ele não está
 
 Levantado ao conferir o projeto contra uma lista de camadas de engenharia.
@@ -352,7 +401,7 @@ para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
 | Dado sensível | `portas-do-banco.mjs` | que `posts` e `admin_logs` respondam 401 ao anônimo, e que de `profiles` o anônimo leia **exatamente `id` e `username`** — nem uma coluna a mais, nem a menos | sim — não vê o que um **logado** alcança |
 | Privacidade | `conteudoDaPrivacidade.test.js` | que chave nova no navegador, terceiro novo e cookie **entrem na política** antes de existirem | não, para o que ele conhece |
 | Admin/staff | `painel-admin.mjs` | que o painel liste, pagine e negue — com dado que o próprio teste cria | sim — cobre a tela, não a permissão no banco |
-| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 5 portas recusem chamada sem credencial | não, e é de propósito: as functions não estão no git |
+| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 6 portas recusem chamada sem credencial — e, na `verify-contact`, que o captcha esteja mesmo sendo conferido (403, não 400) | não, e é de propósito: as functions não estão no git |
 | Fluxos críticos | `fluxos.mjs` | publicar → conferir → apagar → sair, e nenhum lixo de teste sobrando | sim — cobre o caminho feliz de uma conta comum |
 | Testes | piso de testes, `rotasE2E.test.js`, **`varrerFontes`** | que rota nova tenha teste de navegador, e que trava que varre arquivo **prove que varreu** | não |
 | Segredo/config | `segredos-vazados.mjs` | que nenhum arquivo rastreado tenha chave privada, `service_role`, token ou senha | não, para os padrões que ele conhece |

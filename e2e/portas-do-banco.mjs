@@ -101,6 +101,13 @@ const RPCS_FECHADAS = [
   ['soft_delete_post', 'apagar post alheio'],
   ['admin_list_users', 'listar todos os usuários com dado pessoal'],
   ['log_audit_event', 'forjar linha na trilha de auditoria'],
+  // `[03/09]` Esta é diferente das de cima: ela não dá privilégio nenhum, e
+  // por isso ficou aberta de propósito até hoje. O que ela dá é VOLUME — encher
+  // o formulário de contato e fechar o canal para todo mundo pelo disjuntor de
+  // 60/hora. É a porta que o captcha fecha, e o captcha só vale enquanto ela
+  // estiver fechada: com ela aberta, basta um POST direto aqui para pular a
+  // verificação inteira (§1.3).
+  ['enviar_mensagem_de_contato', 'pular o captcha e encher o canal de contato'],
 ];
 
 const falhas = [];

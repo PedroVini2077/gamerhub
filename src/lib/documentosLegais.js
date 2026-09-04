@@ -81,10 +81,10 @@ export const DOCUMENTOS = {
   privacidade: {
     rotulo: 'Política de Privacidade',
     caminho: '/privacidade',
-    versao: '2026-09-03-3',
+    versao: '2026-09-03-4',
     conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: 'd79117c3d3979c65',
-    mudou: 'a idade mínima de 13 anos deixou de estar "a definir" — ela está decidida e é o banco que a recusa, não só o formulário',
+    impressao: 'b056b70ca13ba61a',
+    mudou: 'a página de contato passou a usar o Cloudflare Turnstile (a verificação de "não sou um robô"), e ele recebe seu IP — entrou na lista de quem vê alguma coisa',
   },
   regras: {
     rotulo: 'Regras da Comunidade',

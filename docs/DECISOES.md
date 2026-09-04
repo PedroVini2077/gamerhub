@@ -837,3 +837,44 @@ imagem, zero risco, e a informação que importa — o que ele joga — continua
 **O caminho legítimo, se um dia quisermos imagem:** print do próprio dono
 jogando. Aí o conteúdo é dele.
 
+
+---
+
+## `[03/09]` O captcha do contato falha ABERTO, e o canal passou a depender do Cloudflare
+
+**Decidido:** quando o Cloudflare não responde, a mensagem de contato **passa**
+mesmo assim, e a falha vai para o `admin_logs`.
+
+**Por quê:** o `/contato` é o canal de quem está banido, de quem perdeu o acesso
+e de quem nunca criou conta — está escrito como requisito na rota, e não existe
+outro caminho para falar com a equipe (o e-mail foi removido de propósito).
+Barrar todo mundo por causa de uma indisponibilidade de terceiro cortaria
+justamente quem mais precisa.
+
+**O buraco é estreito, e vale medir o tamanho dele:** token que o Cloudflare
+**recusa** continua recusado; só a *queda do serviço* passa, e ninguém de fora
+consegue provocar essa queda. Por baixo continuam os limites do banco — 3
+mensagens por e-mail em 24 h e o disjuntor de 60/hora.
+
+**A troca que isto NÃO evita, e é o custo real de ter captcha aqui.** Se o
+*script* do Cloudflare não carregar no navegador de quem está tentando falar
+com a equipe (rede que bloqueia o domínio, extensão agressiva), essa pessoa
+**não consegue enviar**. A tela diz o motivo e oferece tentar de novo — não é
+botão morto e mudo —, mas não existe caminho alternativo.
+
+Aceito conscientemente porque a alternativa era pior: sem captcha, um robô com
+muitos endereços enche a hora e fecha o canal **para todo mundo**, o que é o
+mesmo dano em escala maior. Se um dia aparecer relato de gente sem conseguir
+enviar, o caminho é oferecer uma segunda via — não desligar o captcha.
+
+**Não mandamos o IP para o Cloudflare.** O `siteverify` aceita um `remoteip`
+opcional que melhora um pouco a heurística. Ele foi deixado de fora: seria
+compartilhar endereço de IP de visitante com mais um terceiro, o oposto do
+endurecimento de LGPD que este projeto fez. O Cloudflare já vê o IP de quem
+carrega o widget — não há por que mandar de novo, do nosso lado.
+
+**A chave pública mora no código**, não em variável de ambiente. Mesmo motivo já
+registrado para o DSN do Sentry: ela é pública por construção, e depender da
+Vercel significaria que esquecer de configurá-la num deploy futuro apagaria o
+captcha **sem ninguém notar** — construindo a falha silenciosa que ele existe
+para evitar.

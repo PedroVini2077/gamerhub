@@ -63,6 +63,12 @@ export const TERCEIROS_DECLARADOS = [
   '@sentry/react',
   '@vercel/analytics',
   '@vercel/speed-insights',
+  // `[03/09]` NÃO é dependência npm: o Cloudflare Turnstile é um `<script>`
+  // buscado em tempo de execução (`lib/turnstile.js`), só na página de contato.
+  // Fica escrito aqui porque esta lista é onde se procura "quem recebe alguma
+  // coisa" — mas repare que a trava que varre o `package.json` NUNCA o pegaria.
+  // Quem vigia terceiro carregado por script é `e2e/terceiro-no-contato.mjs`.
+  'cloudflare-turnstile (script, nao e dependencia npm)',
 ];
 
 export const BLOCOS = [
@@ -158,6 +164,11 @@ export const BLOCOS = [
         ['Vercel', 'hospeda o site; recebe seu IP no registro de acesso, como qualquer servidor'],
         ['Vercel Analytics', 'quantas visitas cada página teve, sem cookie e sem identificar você'],
         ['Sentry', 'erros do site. Recebe seu id e seu nome de usuário — nunca seu e-mail'],
+        ['Cloudflare Turnstile',
+          'só na página de contato: é a verificação de "não sou um robô". '
+          + 'Recebe seu IP e sinais do navegador para decidir se você é uma '
+          + 'pessoa. Não recebe o que você escreveu e não é usado em nenhuma '
+          + 'outra página'],
       ],
     },
   },

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Send, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { ASSUNTOS, LIMITES } from './assuntosDeContato';
 import { enviarMensagemDeContato } from '../../services/contatoService';
+import DesafioAntiRobo from './DesafioAntiRobo';
 
 /**
  * O formulário público de contato.
@@ -29,22 +30,42 @@ export default function FormularioDeContato() {
   // primeira coisa que a pessoa abre. Toast some; o motivo de a mensagem não
   // ter ido precisa ficar (§1.5).
   const [erro, setErro] = useState(null);
+  // `[03/09]` O token do captcha. Ele vale poucos minutos, então some quando
+  // expira — e o botão de enviar volta a ficar desabilitado, o que é honesto:
+  // com token morto o envio seria recusado do outro lado de qualquer jeito.
+  const [token, setToken] = useState(null);
+
+  // `useCallback` porque estas duas entram nas dependências do efeito que
+  // RENDERIZA o widget. Recriadas a cada tecla digitada no formulário, elas
+  // remontariam o desafio a cada letra — o visitante veria o captcha piscando
+  // e perderia o que já tinha resolvido.
+  const aoResolver = useCallback((t) => { setToken(t); setErro(null); }, []);
+  const aoExpirar  = useCallback(() => setToken(null), []);
 
   const faltam = LIMITES.mensagemMin - mensagem.trim().length;
   const podeEnviar = nome.trim().length >= LIMITES.nomeMin
     && email.trim().length > 0
     && !!assunto
-    && faltam <= 0;
+    && faltam <= 0
+    && !!token;
 
   async function enviar(e) {
     e.preventDefault();
     setEnviando(true);
     setErro(null);
-    const { error } = await enviarMensagemDeContato({ nome, email, assunto, mensagem });
+    const { error } = await enviarMensagemDeContato({ nome, email, assunto, mensagem, token });
     setEnviando(false);
-    // A frase vem do banco, em português, e já diz qual dos limites foi. Um
-    // "erro ao enviar" genérico faria a pessoa tentar de novo sem mudar nada.
-    if (error) { setErro(error.message); return; }
+    if (error) {
+      // A frase vem do banco ou da função, em português, e já diz qual dos
+      // limites foi. Um "erro ao enviar" genérico faria a pessoa tentar de novo
+      // sem mudar nada.
+      setErro(error.message);
+      // O token é de uso único: gasto na tentativa, ele não serve para a
+      // seguinte. Sem limpar aqui, quem corrigisse a mensagem e reenviasse
+      // levaria "não foi possível confirmar o captcha" sem entender por quê.
+      setToken(null);
+      return;
+    }
     setEnviado(true);
   }
 
@@ -145,6 +166,8 @@ export default function FormularioDeContato() {
           </span>
         </div>
       </div>
+
+      <DesafioAntiRobo aoResolver={aoResolver} aoExpirar={aoExpirar} />
 
       {erro && (
         <div role="alert"

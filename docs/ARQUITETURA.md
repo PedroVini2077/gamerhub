@@ -75,6 +75,11 @@ src/
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
+│   ├── turnstile.js       # Carrega o captcha do Cloudflare SOB DEMANDA, só na
+│   │                      # /contato. A chave PÚBLICA mora aqui de propósito
+│   │                      # (mesmo motivo do DSN do Sentry), e há teto de 12 s:
+│   │                      # sem ele, script que nunca chega deixaria o
+│   │                      # formulário em "carregando" para sempre
 │   ├── somAmbiente.js     # Som ambiente da landing: ciclo de vida do áudio,
 │   │                      # volume, fade e a garantia de UMA instância só.
 │   │                      # Não sabe QUE som toca — isso são os dois abaixo
@@ -311,6 +316,11 @@ src/
     │   ├── assuntosDeContato.js # Mapa EXPLÍCITO dos assuntos. A lista existe
     │   │                  # também no CHECK do banco, e um teste compara as
     │   │                  # duas contra o SQL aplicado em db/
+    │   ├── DesafioAntiRobo.jsx # O captcha na tela. Quando o script do
+    │   │                  # Cloudflare não carrega ele DIZ isso e oferece
+    │   │                  # tentar de novo — botão morto e mudo seria pior
+    │   │                  # aqui do que em qualquer outra tela, porque este é
+    │   │                  # o canal de quem está trancado para fora
     │   └── FormularioDeContato.jsx # O formulário. Não consulta NADA antes de
     │                      # enviar — responder diferente conforme o e-mail
     │                      # informado seria oráculo de enumeração

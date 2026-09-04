@@ -24,8 +24,13 @@ Medido num navegador real, visitante na landing, sessão limpa:
 COOKIES:          NENHUM
 localStorage:     vazio
 sessionStorage:   ["gh_intro_vista"]
-terceiros:        fonts.googleapis.com
+terceiros:        fonts.googleapis.com    <- 01/09; SAIU em 03/09
 ```
+
+> **A linha dos terceiros é de 01/09 e já não vale**: o Google Fonts foi
+> removido no mesmo dia 03/09 (ver o achado resolvido mais abaixo), e hoje a
+> landing **não contacta terceiro nenhum**. A medição fica como retrato porque
+> é dela que sai a afirmação sobre cookies — que continua verdadeira.
 
 **Não existe banner de cookies a fazer**, porque não existem cookies. O
 Supabase guarda a sessão em `localStorage`, não em cookie; a Vercel Analytics é
@@ -131,7 +136,17 @@ autentica, e por isso existe.
 | **Vercel** | hospeda; recebe IP e user-agent nos logs de acesso, como todo servidor | inerente a estar no ar |
 | **Vercel Analytics / Speed Insights** | métrica de página, **sem cookie** | montados no `App.jsx` |
 | **Sentry** | erro + `{ id, username }` | lido em `monitoring.js`: **não manda e-mail** |
-| **Google Fonts** | o IP de quem visita, ao baixar a fonte | único terceiro contactado na landing |
+| **Cloudflare Turnstile** `[03/09]` | o IP e sinais do navegador de quem abre a **/contato** — e só ela | medido por `e2e/terceiro-no-contato.mjs`, que reprova se aparecer terceiro fora da lista ou qualquer cookie |
+| ~~**Google Fonts**~~ | ~~o IP de quem visita, ao baixar a fonte~~ | **saiu em 03/09** — as fontes vêm do próprio site |
+
+> **`[03/09]` A linha do Google Fonts estava errada quando eu a reli**: ela
+> descrevia o serviço como ativo, e ele tinha sido removido no mesmo dia, em
+> outra seção deste arquivo. Ficou riscada em vez de apagada — a tabela é onde
+> alguém procura "quem recebe o que", e um serviço que saiu é informação útil.
+>
+> **Por que nenhum portão pegou:** os três olham nome de arquivo e número. Uma
+> tabela em português afirmando que um serviço existe não é nada disso. Foi o
+> mesmo tipo de falha do `effectiveType` em 28/08.
 
 ---
 

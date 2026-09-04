@@ -86,6 +86,29 @@ const CASOS = [
     esperado: [401],
     estrago: 'queimar a cota de 10 mil consultas/dia do Safe Browsing',
   },
+  {
+    // `[03/09]` Esta porta é PÚBLICA de propósito — o formulário de contato
+    // existe para quem não tem conta. Então o que se confere aqui não é "tem
+    // token de usuário?", e sim **o captcha está mesmo sendo conferido?**
+    //
+    // O token abaixo tem formato plausível (mais de 20 caracteres) justamente
+    // para NÃO parar na checagem barata de formato: ele chega ao Cloudflare,
+    // que responde que é falso, e a função tem que devolver 403.
+    //
+    // Um 400 aqui não é "porta fechada": significa que a função passou reto
+    // pelo captcha e só a RPC recusou o conteúdo vazio — ou seja, captcha
+    // desligado. Por isso 403 é o único aceitável.
+    nome: 'verify-contact com captcha falso',
+    caminho: '/verify-contact',
+    corpo: {
+      token: 'token-de-captcha-inventado-pela-trava-do-e2e',
+      nome: 'Trava E2E', email: 'trava-e2e@example.com', assunto: 'outro',
+      mensagem: 'mensagem com mais de vinte caracteres so para passar da faixa',
+    },
+    esperado: [403],
+    estrago: 'encher o formulario de contato e fechar o canal para todo mundo '
+           + 'pelo disjuntor de 60/hora',
+  },
   // As duas abaixo foram APAGADAS de vez em 27/08. Para elas o esperado é 404:
   // função que não existe é a porta mais fechada que existe. Qualquer outra
   // resposta significa que alguém recriou a função — inclusive um 401, que
