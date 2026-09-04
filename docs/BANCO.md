@@ -32,7 +32,7 @@ todas as tabelas públicas.**
 | `staff_nominations`          | Indicação de alguém para a equipe: candidato, quem indicou, cargo pretendido, `eligibility_snapshot` (o retrato dos critérios no dia), período de estágio (`trial_started_at`, `trial_review_date`) e a decisão final |
 | `role_change_requests`       | Pedido de mudança de cargo de quem **já** é da equipe: cargo anterior, proposto, motivo e revisão. Separada de `staff_nominations` porque promover quem já entrou não tem estágio |
 | `policy_acceptances`         | **A prova do aceite** das políticas: quem, qual documento, qual versão, quando. Append-only por desenho — sem policy de UPDATE nem DELETE, porque registro de consentimento que pode ser reescrito não prova nada. `ON DELETE CASCADE` é a exceção deliberada: a política promete que apagar a conta apaga os dados |
-| `contact_messages`           | Mensagens do formulário público `/contato`. **Sem policy de INSERT de propósito** — a única porta é a RPC `enviar_mensagem_de_contato`. Só `is_staff()` lê e atualiza |
+| `contact_messages`           | Mensagens do formulário público `/contato`. **Sem policy de INSERT de propósito** — a única porta é a RPC `enviar_mensagem_de_contato`, e desde `[03/09]` ela também não é mais chamável por `anon` (o captcha). Só `is_staff()` lê e atualiza. `reply_text` guarda o que a equipe respondeu |
 | `login_attempts`             | Tentativas de login por e-mail (bloqueio) — sem acesso direto    |
 | `admin_logs`                 | Trilha de auditoria                                              |
 | `admin_notifications`        | Notificações para admins                                         |
@@ -123,6 +123,24 @@ transforma esta pegadinha em bug silencioso (§4).
   dentro da RPC: um `RAISE EXCEPTION` desfaz o `INSERT` de log feito antes
   dele, e a primeira versão gravava um alarme que nunca commitava. Ver
   [`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
+
+  > **`[03/09]` Ela deixou de ser chamável por `anon`.** O captcha (Turnstile)
+  > só vale porque a única porta agora é a Edge Function `verify-contact`, que
+  > confere o token e chama a RPC com `service_role` — com `anon` alcançando a
+  > RPC, bastava um POST direto em `/rest/v1/rpc/` para pular a verificação. O
+  > `author_id` passou a ser parâmetro (`p_author_id`) porque `auth.uid()` é
+  > nulo quando quem chama é a função. Ver
+  > [SEGURANCA.md](SEGURANCA.md).
+
+- Resposta ao contato `[03/09]`: `contato_dados_para_resposta(p_id)` e
+  `contato_registrar_resposta(p_id, p_texto)`, as duas `SECURITY DEFINER` com
+  `is_staff()` **por dentro** — a Edge Function `responder-contato` as chama com
+  a credencial de quem pediu, então uma checagem que morasse só nela seria porta
+  decorativa (§1.3). A ordem entre elas é o ponto: o e-mail sai **entre** as
+  duas. Registrar antes de enviar reproduziria o defeito que isto conserta — o
+  painel dizendo "respondida" com o envio tendo falhado. `reply_text` guarda o
+  texto (10 a 4000, com `CHECK`), porque status sem conteúdo é carimbo, não
+  histórico.
 
 > **Correção `[29/08]`:** esta lista citava `register_login_attempt`, e a função
 > **não existe mais** — conferido no `pg_proc`, não deduzido. Ela era chamada

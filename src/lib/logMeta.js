@@ -17,7 +17,7 @@ import {
   Tv, Radio, MicOff, Mic, RotateCcw, CheckCircle, XCircle,
   Crown, Shield, UserCog, Image, Mail, UserMinus, Clock, ScrollText,
   Lock, Settings2, Wrench, Siren, Bell, SlidersHorizontal, Filter, EyeOff, Eye,
-  Flag, MailQuestion,
+  Flag, MailQuestion, MailCheck,
 } from 'lucide-react';
 
 // ─── Categorias ──────────────────────────────────────────────────────────────
@@ -104,6 +104,10 @@ export const ACTION_META = {
   // passou de 60 mensagens numa hora. Uma linha por episódio, não por
   // tentativa — o trigger `alertar_enchente_de_contato` cuida disso.
   contact_flood:             A(Siren,        'text-orange-400',  '#fb923c'),
+  // `[03/09]` A equipe respondeu alguém de fora — alguém falou EM NOME DO SITE,
+  // e isso é ação de moderação como qualquer outra. O e-mail do destinatário
+  // não entra na trilha de propósito: ela é lida por toda a equipe.
+  contact_reply:             A(MailCheck,    'text-neon-cyan',   '#22d3ee'),
   moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
   // conteúdo — posts (o trigger `log_post_event` grava os `content_*`)

@@ -66,6 +66,25 @@ async function mensagemDaFuncao(error) {
 }
 
 /**
+ * A equipe responde, e a resposta SAI POR E-MAIL.
+ *
+ * `[03/09]` Antes disto o painel tinha um botão "Respondida" e mais nada: o
+ * status afirmava um ato que o sistema nunca executava. Quem abrisse depois não
+ * distinguia "respondi por fora" de "cliquei sem responder" (§1.5).
+ *
+ * Passa pela Edge Function `responder-contato` e não por uma RPC direta porque
+ * o envio de e-mail acontece FORA do banco — e a ordem lá é o que impede o
+ * defeito de voltar: o e-mail sai primeiro, o registro vem depois.
+ */
+export async function responderMensagemDeContato(id, texto) {
+  const { error } = await supabase.functions.invoke('responder-contato', {
+    body: { id, texto },
+  });
+  if (!error) return ok({ ok: true });
+  return fail({ message: await mensagemDaFuncao(error) });
+}
+
+/**
  * As mensagens, para a equipe. A RLS já limita a `is_staff()` — este `select`
  * não repete a checagem porque repetir criaria a ilusão de que ELA é a
  * proteção. Para quem não é da equipe a resposta é uma lista vazia.
@@ -74,7 +93,7 @@ export async function listarMensagensDeContato({ status = null, limite = 50 } = 
   let q = supabase
     .from('contact_messages')
     .select('id, name, email, subject, message, created_at, status, '
-          + 'handled_by_username, handled_at, internal_note')
+          + 'handled_by_username, handled_at, internal_note, reply_text')
     .order('created_at', { ascending: false })
     .limit(limite);
   if (status) q = q.eq('status', status);

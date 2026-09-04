@@ -58,7 +58,7 @@ certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**21 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -327,41 +327,13 @@ certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
 
 
 
-- ⬜ `[03/09]` 🟠 **Responder a mensagem de contato por dentro do painel, com
-  e-mail no tema do site.** *Pedido direto do dono em 03/09, ao testar o canal:
-  "como vou clicar no respondido sendo que não tem como responder nada?".*
+- ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail pessoal.**
+  *`[03/09]` O dono decidiu ficar no Gmail por enquanto: "não quero gastar 40
+  dólares cobrando um domínio agora, talvez mais tarde". A resposta de contato
+  foi construída em cima dele — e passou a ser mais um consumidor da MESMA cota
+  do cadastro e da recuperação de senha.*
 
-  **Ele está certo, e o defeito é de honestidade.** O status `answered` existe
-  desde 02/09, mas nada no sistema envia resposta nenhuma — o botão registra um
-  ato que não aconteceu. Hoje o caminho real é a equipe copiar o endereço da
-  tela e responder do próprio e-mail; quem olhar o painel depois não distingue
-  "respondi por fora" de "cliquei sem responder".
-
-  **O que ele quer:** escrever a resposta no painel e ela chegar por e-mail,
-  com a identidade visual do site.
-
-  **A conta que precisa ser feita ANTES (§0.2, regra 2):** o envio passaria pela
-  `send-email`, e portanto pela cota do Gmail — **a mesma** do cadastro e da
-  recuperação de senha, ~500/dia. Resposta de contato é rara, então o volume não
-  é o risco; o risco é a conta do Google travar por envio automatizado e
-  **derrubar o cadastro do site junto**. Vale decidir se isto entra antes ou
-  depois de sair do Gmail (item logo abaixo).
-
-  **Some junto, quando entrar:** guardar o texto da resposta na própria linha,
-  para o painel mostrar o que foi respondido — senão o histórico continua sendo
-  só um carimbo.
-
-- ⬜ `[03/09]` 🟢 **O painel de contato oferece andar para trás.** Depois de
-  marcar "Respondida", o botão "Lida" reaparece — e "Lida" depois de
-  "Respondida" não é um passo que faça sentido. O dono notou testando.
-
-  Não é bug de estado (o `Acao` some quando o status já é o dele; é desenho de
-  "mover para"), mas é confuso na tela. Decidir a forma certa: ou os três viram
-  um caminho só de ida, ou vira um seletor de estado explícito em vez de três
-  botões que parecem ações.
-
-- ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
-  nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
+  Hoje usa nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
   falta de painel de entrega continuam. Com domínio próprio (~R$40/ano) +
   Resend vira `nao-responda@…`; sem domínio, o Brevo é a opção. *Não é urgente
@@ -444,9 +416,9 @@ certo**, pelo mesmo teste: se não estivesse, o widget não teria aparecido.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->87<!--/n--> arq ·
-  <!--n:src.lib.linhas-->7.229<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->7.233<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.752<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

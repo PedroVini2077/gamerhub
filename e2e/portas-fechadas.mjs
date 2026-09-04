@@ -109,6 +109,23 @@ const CASOS = [
     estrago: 'encher o formulario de contato e fechar o canal para todo mundo '
            + 'pelo disjuntor de 60/hora',
   },
+  {
+    // `[03/09]` Esta manda e-mail em nome do site. Sem porta, qualquer um da
+    // internet escreveria para qualquer endereço com a marca do GamerHub — o
+    // mesmo estrago da `send-email` de 23/08, que foi o pior achado do projeto.
+    //
+    // A checagem de verdade e' do BANCO (`is_staff()` dentro das duas RPCs); o
+    // 401 aqui e' a primeira porta, e ela existe justamente para o caso de
+    // alguem um dia trocar a credencial usada la dentro.
+    nome: 'responder-contato sem credencial',
+    caminho: '/responder-contato',
+    corpo: {
+      id: '00000000-0000-0000-0000-000000000000',
+      texto: 'resposta com mais de dez caracteres',
+    },
+    esperado: [401],
+    estrago: 'mandar e-mail com a marca do site para qualquer endereco',
+  },
   // As duas abaixo foram APAGADAS de vez em 27/08. Para elas o esperado é 404:
   // função que não existe é a porta mais fechada que existe. Qualquer outra
   // resposta significa que alguém recriou a função — inclusive um 401, que
