@@ -20,6 +20,7 @@ import RolagemDeRota from './components/ui/RolagemDeRota';
 import GlobalBanner from './components/ui/GlobalBanner';
 import AvisoDeAceite from './components/ui/AvisoDeAceite';
 import BotaoDeSom from './components/landing/BotaoDeSom';
+import PortaoDeBoasVindas from './components/auth/PortaoDeBoasVindas';
 import { deveTocarSom } from './lib/rotasComSom';
 import FundoDaSecao from './components/layout/FundoDaSecao';
 import FeatureGate from './components/ui/FeatureGate';
@@ -174,6 +175,10 @@ function AppRoutes() {
   return (
     <>
       {semBanco && <AvisoSemBanco />}
+      {/* Fica FORA do `<Routes>` de propósito: ele cobre a montagem do site
+          logado, que acontece depois da troca de rota. Dentro de uma rota, ele
+          desmontaria junto com a tela de login. */}
+      <PortaoDeBoasVindas />
       <RolagemDeRota />
       {/* `introTerminou` só faz sentido na raiz, onde a intro toca. Nas outras
           páginas públicas não há raio para esperar, então a tentativa pode

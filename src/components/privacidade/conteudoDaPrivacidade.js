@@ -48,6 +48,9 @@ export const CHAVES_DECLARADAS = [
   'gh_som_ambiente',
   'gh_som_avisado',
   'gh_aceite_adiado',
+  // `[04/09]` As duas da tela de boas-vindas. Ver `lib/boasVindas.js`.
+  'gh_entrando',
+  'gh_ja_entrou:',
 ];
 
 /**
@@ -113,6 +116,8 @@ export const BLOCOS = [
         ['Sua escolha sobre o som', 'lembrar se você ligou ou DESLIGOU o som da landing', 'você limpar o navegador'],
         ['Aviso de som já visto', 'não repetir o aviso a cada página', 'você fecha o navegador'],
         ['"Ver depois" no aviso de documentos', 'não repetir o pedido de aceite a cada tela', 'você fecha o navegador'],
+        ['Marca de "acabou de entrar"', 'mostrar a tela de boas-vindas UMA vez depois do login, e não a cada recarregamento', 'você fecha a aba'],
+        ['Marca de "já entrou aqui antes"', 'saber se a saudação é de estreia ou de volta', 'você limpar o navegador'],
       ],
     },
   },

@@ -50,7 +50,7 @@ código** passaram para verde × roxo. O VS ganhou saída animada. Tudo em
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -110,21 +110,6 @@ código** passaram para verde × roxo. O VS ganhou saída animada. Tudo em
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[04/09]` 🟡 **Tela de boas-vindas depois do login e do cadastro.** *Ideia do
-  dono; a análise inteira está em
-  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
-
-  **O que ele descreveu:** em vez do redirecionamento seco, uma tela rápida —
-  *"seja bem-vindo (nome), preparando tudo pra você"* na primeira vez, *"bem-vindo
-  de volta"* nas seguintes — com um portão se abrindo.
-
-  **A pergunta dele:** *"só não sei se isso pra todo login ou cadastro"*.
-
-  **Minha recomendação:** sim, mas **amarrada a trabalho real** — ela aparece
-  enquanto o perfil e o feed carregam e sai quando terminam, com teto absoluto.
-  Animação que segura quem já está pronto vira pedágio na décima vez. E não
-  precisa de banco: quem acabou de se cadastrar é primeira vez por construção.
 
 - ⬜ `[04/09]` 🟡 **O "cofre" do painel do Fundador.** *Ideia do dono. **Só vale a
   pena se a checagem for no BANCO** — ver a análise em
@@ -443,8 +428,8 @@ código** passaram para verde × roxo. O VS ganhou saída animada. Tudo em
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->87<!--/n--> arq ·
-  <!--n:src.lib.linhas-->7.233<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->89<!--/n--> arq ·
+  <!--n:src.lib.linhas-->7.440<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

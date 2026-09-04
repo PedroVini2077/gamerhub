@@ -339,3 +339,28 @@ Nenhum destes se descobre lendo o projeto. Ficam em branco de propósito:
 | Quem é o controlador dos dados, e o canal de contato | dado pessoal dele |
 | Base legal declarada de cada coleta | precisa de leitura jurídica |
 | Se haverá política de privacidade publicada, e onde | há item de página no backlog |
+
+
+## `[04/09]` Duas marcas novas no navegador, e a decisão de NÃO subir a versão
+
+A tela de boas-vindas do login guarda dois sinalizadores locais:
+
+| chave | onde | para quê | some quando |
+| --- | --- | --- | --- |
+| `gh_entrando` | `sessionStorage` | mostrar a saudação **uma vez** depois do login, e não a cada recarregamento | fecha a aba |
+| `gh_ja_entrou:<id>` | `localStorage` | saber se a saudação é de estreia ou de volta | limpa o navegador |
+
+As duas estão na tabela do bloco "o que fica guardado no seu navegador" e em
+`CHAVES_DECLARADAS` — foi a trava dessa lista que reprovou o commit antes de eu
+lembrar de declará-las.
+
+**A `versao` do documento NÃO subiu; só a `impressao`.** Isso é decisão, e o
+motivo está escrito também em `lib/documentosLegais.js`: as duas linhas novas
+são da mesma natureza das sete que já estavam ali — sinalizador local de
+preferência, nada sai do aparelho, nada é pessoal. *"Lembramos que você acabou
+de entrar para não repetir uma saudação"* não muda o que o site coleta sobre a
+pessoa, e subir a versão faria todo mundo reaceitar o documento por causa disso.
+
+> **Se o dono discordar, é uma linha:** subir a `versao` para `2026-09-04` em
+> `lib/documentosLegais.js`. O julgamento é dele; o meu está escrito para poder
+> ser revisto.

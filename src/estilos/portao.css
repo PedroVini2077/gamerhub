@@ -1,0 +1,99 @@
+/* O PORTÃO de boas-vindas, que abre depois do login.
+ *
+ * Ver `components/auth/PortaoDeBoasVindas.jsx` para o porquê e para os tempos.
+ * Aqui só a aparência — e a regra é a mesma da arena: **só `transform` e
+ * `opacity` animam**. As folhas deslizam no compositor; o gradiente delas é
+ * estático e compõe uma vez.
+ */
+
+.portao {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  /* Enfeite não recebe clique: se por algum motivo ele demorar a sair, a
+   * pessoa continua conseguindo usar o site por baixo. */
+  pointer-events: none;
+}
+
+/* ── As duas folhas ─────────────────────────────────────────────────────────
+ *
+ * Elas entram JÁ FECHADAS (`translateX(0)`), porque a tela nasce cobrindo — o
+ * portão não "fecha na cara" de quem entrou, ele já está fechado e abre. */
+.portao-folha {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50.5%;   /* meio ponto a mais em cada: sem isso sobra um fio de fundo no meio */
+  transition: transform 620ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.portao-folha-verde {
+  left: 0;
+  background:
+    radial-gradient(70% 60% at 90% 50%, #39ff1426, transparent 70%),
+    linear-gradient(100deg, #061308 0%, #08200d 70%, #0a2a12 100%);
+  border-right: 1px solid #39ff1440;
+}
+
+.portao-folha-roxa {
+  right: 0;
+  background:
+    radial-gradient(70% 60% at 10% 50%, #bf00ff26, transparent 70%),
+    linear-gradient(260deg, #10041d 0%, #1a0630 70%, #220838 100%);
+  border-left: 1px solid #bf00ff40;
+}
+
+/* ── O texto ────────────────────────────────────────────────────────────── */
+.portao-texto {
+  position: relative;
+  text-align: center;
+  padding: 0 6vw;
+  transition: opacity 260ms ease, transform 620ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.portao-titulo {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: clamp(1.3rem, 5vw, 2.4rem);
+  color: #e7ffe2;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 26px #39ff1455;
+}
+
+.portao-nome {
+  display: block;
+  margin-top: 0.35em;
+  color: #39ff14;
+  text-shadow: 0 0 22px #39ff1466;
+}
+
+.portao-linha {
+  margin-top: 1.1em;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(0.75rem, 2.6vw, 0.95rem);
+  color: #7b8b7b;
+}
+
+/* ── A abertura ─────────────────────────────────────────────────────────────
+ *
+ * `101%` e não `100%`: um arredondamento de subpixel deixava uma linha da folha
+ * visível na borda no fim do movimento. */
+.portao-abrindo .portao-folha-verde { transform: translateX(-101%); }
+.portao-abrindo .portao-folha-roxa  { transform: translateX(101%); }
+
+/* O texto sai ANTES das folhas (260 ms contra 620 ms) e sem se mexer junto:
+ * texto deslizando com a folha vira borrão, e o que se quer ler é o nome. */
+.portao-abrindo .portao-texto { opacity: 0; }
+
+/* ── Menos movimento ────────────────────────────────────────────────────────
+ *
+ * Quem pediu recebe a mensagem sem o portão: as folhas apagam no lugar em vez
+ * de deslizarem. A informação fica; o movimento sai. */
+@media (prefers-reduced-motion: reduce) {
+  .portao-folha { transition: opacity 300ms ease; }
+  .portao-abrindo .portao-folha-verde,
+  .portao-abrindo .portao-folha-roxa { transform: none; opacity: 0; }
+}

@@ -141,6 +141,13 @@ transições discretas das páginas internas.
   e avisa que pedir reenvio invalida o link anterior.
 - **Email de confirmação** resistente a dark mode — template em Edge Function
   com cores explícitas (não herda tema escuro do cliente de email).
+- **`[04/09]` Ao entrar, um PORTÃO se abre.** Depois do login aparece uma tela
+  rápida — *"Seja bem-vindo, @fulano"* na estreia, *"Bem-vindo de volta"* nas
+  outras — com duas folhas que deslizam para os lados. Ela **não inventa
+  espera**: cobre o intervalo em que o site carrega perfil, cargo e feed, e sai
+  assim que eles chegam (piso de 0,7 s para não piscar, **teto de 2,5 s** — se o
+  carregamento demorar, ela sai do mesmo jeito). Recarregar a página **não** a
+  reabre; ela é do momento de entrar, não de estar logado.
 - **`[04/09]` A troca entre "Entrar" e "Registrar" tem transição.** O conteúdo
   entra em fade, **o card acompanha a altura** (o formulário de cadastro é 2,5×
   mais alto que o de login) e **os lutadores do fundo se cruzam em fade** em vez
