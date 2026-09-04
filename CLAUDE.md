@@ -680,6 +680,7 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `e2e/conteudo-visivel.mjs` | CI, **reprova** | conteúdo no DOM e invisível na tela, em janela de celular |
 | `e2e/navegacao.mjs` | CI, **reprova** | página abrindo no lugar errado, âncora morta, botão voltar atropelado |
 | `e2e/sem-banco.mjs` | CI, **reprova** | banco fora do ar derrubando o que **não** depende dele |
+| `e2e/artes-da-arena.mjs` | CI, **reprova** | arte da tela de entrada carregando pedaço do adversário — o corte que o orçamento de bytes não vê |
 | `src/lib/tabelasSemUpdate.js` | `npm test`, **reprova** | `update` em tabela sem policy — 0 linhas e **nenhum erro** |
 | `src/lib/__tests__/varrerFontes.js` | usado pelas travas | trava que varre pasta e **não leu arquivo nenhum**: sem ele, renomear a pasta deixa o teste verde para sempre |
 | `e2e/publicarPost.mjs` | CI, **reprova** | publicar que não aparece — e ele diz **o que a tela disse** em vez de um `waiting for locator` mudo |

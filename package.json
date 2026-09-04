@@ -24,6 +24,7 @@
     "test:e2e:navegacao": "node e2e/navegacao.mjs",
     "test:e2e:sembanco": "node e2e/sem-banco.mjs",
     "test:e2e:som": "node e2e/som-ambiente.mjs",
+    "test:e2e:arena": "node e2e/artes-da-arena.mjs",
     "mutacao": "stryker run",
     "numeros": "node scripts/numeros-do-projeto.mjs",
     "docs": "node scripts/documentacao-a-revisar.mjs",

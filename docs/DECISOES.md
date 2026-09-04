@@ -881,7 +881,7 @@ para evitar.
 
 ---
 
-## `[04/09]` O login e o cadastro ganharam fogo × gelo — e NENHUM personagem
+## `[04/09]` O login e o cadastro ganharam fogo × gelo — e, na v2, personagens de verdade
 
 **Pedido do dono**, com uma arte de luta como referência: *"dois personagens um
 de frente pro outro, divididos pelo 🆚, gelo e fogo, com uma animação leve… é só
@@ -920,3 +920,119 @@ KB gzip).
 **E quem pediu menos movimento recebe a composição parada:** com
 `prefers-reduced-motion`, as partículas somem e a fenda para de respirar. A cor
 e a fratura ficam — elas são a atmosfera, o movimento é o enfeite.
+
+
+---
+
+## `[04/09]` v3 da arena: os personagens passaram a ser ARTE, e eu parei de desenhar
+
+**O que aconteceu, na ordem.** O dono olhou a v2 (só composição, sem figuras) e
+achou o furo que eu não tinha visto: *"eu sei o contexto dessa tela, e o resto do
+povo não… o que raios significa esse vermelho e azul com algumas partículas?"*.
+Duelo sem duelistas é gradiente.
+
+Eu propus silhuetas em SVG desenhadas por mim, avisando antes que seriam
+estilizadas e não arte renderizada. Ele topou. **Tentei três vezes e não
+converge** — polígonos soltos, depois proporção errada, depois uma silhueta
+esguia que ainda lia mal. Ele me parou: *"tava ruim demais, os personagens
+estavam parecendo mais formas geométricas do que personagem mesmo"*.
+
+**Estava certo, e a regra do projeto já mandava parar antes.** O §1.2 diz que
+depois de duas tentativas sem convergir eu paro e mudo a abordagem em vez de
+insistir. Eu segui para a terceira. O aviso do teto de qualidade eu tinha dado;
+o que faltou foi *agir* nele quando o teto apareceu.
+
+**A decisão:** os personagens passam a ser **arte gerada pelo dono**, e eu faço o
+que sei fazer — recorte, otimização, montagem, responsividade e medição.
+
+### O que isso custou, e o que foi feito para caber
+
+Os PNG originais tinham **2,5 MB cada**. Recortados no limite do canal alfa
+(conferido: a transparência é real) e convertidos para WebP em dois tamanhos:
+
+| | par de 340 px | par de 720 px |
+| --- | --- | --- |
+| login | 83 KB | 279 KB |
+| cadastro | 62 KB | 215 KB |
+
+> A escolha entre os dois é por **densidade de tela**, não por aparelho: um
+> telefone 3x baixa o de 720. Medido, e a correção da frase antiga está em
+> [DESEMPENHO.md](DESEMPENHO.md).
+
+Só um par carrega por vez, e o `sizes` do `srcset` faz o celular baixar o
+pequeno — sem ele, baixaria 720 px para exibir 150, que é a forma mais comum de
+desperdiçar banda em imagem responsiva. E há **trava de peso** no `npm test`
+(`pesoDaArena.test.js`), porque o orçamento de bytes do CI mede JS e CSS, não
+imagem: sem ela, trocar uma arte por um PNG de 2,5 MB passaria verde.
+
+### O recorte errado que o dono pegou, e como se acha esse erro
+
+Na arte do cadastro, as chamas do personagem de fogo **se espalham para além do
+meio da imagem**. Eu cortei os dois em x=768 (o meio) e levei as chamas dele
+para dentro do recorte do gelo — na tela, aparecia fogo no lado do gelo. Ele viu
+na captura e me avisou.
+
+O conserto não foi mover o corte "a olho": foi **medir onde cada corpo começa**,
+com `cropdetect` num limiar alto (só o que é opaco de verdade). O fogo termina em
+x=890 e o gelo começa em x=1070 — a fronteira honesta é ~x=1000, não o meio.
+
+### A afirmação acima estava errada sobre o login, e quem achou foi ele de novo
+
+**Eu escrevi aqui que "a arte do login estava certa".** Não estava, e a frase era
+inferência vestida de fato (§1.1): eu medi a fronteira **do corpo opaco** (x=770,
+perto do meu corte em 768) e concluí que estava tudo certo — sem medir os
+**golpes**, que é onde os dois se encostam. O dono viu no celular: *"o fogo tá
+aparecendo um pouco na parte de gelo, não ficou um corte muito limpo"*.
+
+A medição por coluna mostrou o que nenhum limiar de opacidade mostraria: o fogo
+do golpe vai até a coluna **808** e o gelo já começa na **734** — os dois se
+sobrepõem por **75 colunas**, e a coluna mais vazia da faixa ainda tem 95 pixels.
+**Nenhuma reta vertical separa aquilo.** Procurar "o melhor lugar para cortar"
+era a pergunta errada.
+
+**A decisão que ficou:** na faixa disputada quem decide é a **cor** do pixel — o
+lado do fogo descarta o que é nitidamente frio, o do gelo o que é nitidamente
+quente, o núcleo branco do golpe vai para o dono da metade em que está, e o alfa
+cai por rampa nos últimos 30 px para o halo não terminar numa reta. Depois disso
+cada arte é recortada na caixa real do que sobrou.
+
+E virou **trava**, não só conserto: `e2e/artes-da-arena.mjs` desenha as artes
+servidas pelo site num canvas e conta pixels da cor do adversário na borda que
+encosta na fenda. Hoje dá 0; com o recorte antigo reinjetado, **638**. A receita
+e os números estão em [DESEMPENHO.md](DESEMPENHO.md).
+
+### Sobre a origem das artes
+
+São geradas por IA a pedido do dono, com prompt dele. Ele pediu "personagens
+genéricos", e a inspiração declarada é a mesma arte de luta que ele vinha usando
+como referência — o que já foi discutido aqui duas vezes. **A decisão de usá-las
+é dele, com o risco de semelhança dito antes.** O que o projeto continua não
+fazendo é pegar arte pronta de terceiro: a diferença é essa, e está registrada
+para não virar discussão nova daqui a dois meses.
+
+### `[04/09]` No celular, CORTAR sim; ESTICAR não
+
+**A pergunta do dono, e ela é boa:** *"vc acha que vai ficar muito feio esticar
+a imagem pra ficar inteira no celular? por mais que corte e eu tenho que usar o
+scroll pra ver tudo? pq oq acontece, tô achando muito pequeno as imagens"*.
+
+**Esticar: não.** Personagem com proporção alterada não lê como estilo, lê como
+defeito — é a mesma família do corte reto no meio do corpo que ele mesmo achou
+duas vezes hoje. Ninguém pensa "que enquadramento ousado"; pensa "essa imagem
+está errada".
+
+**Cortar: sim, e é o padrão da casa desde a landing.** Figura que sangra pela
+borda da tela é composição normal — o cinema faz isso o tempo todo. O que não
+pode é o corte parecer acidental, e é por isso que o de baixo é uma **máscara
+que dissolve**, não uma reta.
+
+**Sobre o scroll:** não seria possível do jeito que ele imaginou, e vale
+registrar por quê. A arena é `position: fixed` — ela é fundo de tela, não
+conteúdo. Rolar a página nunca revelaria mais dela; só afastaria o formulário.
+Ficar inteira e grande ao mesmo tempo, num retrato de 390 px, é geometria
+impossível: a arte é quase quadrada, e duas delas lado a lado não cabem.
+
+**O que ficou:** os dois cresceram de 16vh para 34vh (135 px → 287 px de altura
+medidos em 390×844), se encontram no meio da tela em vez de ladear o logo, saem
+pelas laterais, e a metade de baixo dissolve antes do formulário. Custo em
+bytes: **zero** — ver [DESEMPENHO.md](DESEMPENHO.md).

@@ -65,7 +65,7 @@ jobs:
       - name: Guarda — a suíte não pode encolher em silêncio
         run: |
           total=$(node -p "require('./vitest-report.json').numTotalTests")
-          piso=445
+          piso=470
           echo "testes executados: $total (piso: $piso)"
           if [ "$total" -lt "$piso" ]; then
             echo "::error::A suite caiu para $total testes, abaixo do piso de $piso."
@@ -348,6 +348,17 @@ jobs:
       # que o dono relatou como travado.
       - name: O botão de som ambiente alterna sempre
         run: npm run test:e2e:som
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
+      # `[04/09]` As duas artes da tela de entrada chegam como UMA imagem com os
+      # dois lutadores, e viram fundo depois de recortadas. O primeiro recorte
+      # foi numa reta vertical no meio — e os dois se sobrepõem em ~75 colunas,
+      # então o gelo levou um pedaço do fogo junto. Quem viu foi o dono, no
+      # celular. Este passo conta pixels da cor errada na borda que encosta na
+      # fenda; com o recorte antigo ele acusa 638, com o novo, 0.
+      - name: As artes do login não carregam pedaço do adversário
+        run: npm run test:e2e:arena
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 

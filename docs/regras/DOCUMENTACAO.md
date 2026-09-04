@@ -236,7 +236,7 @@ Duas partes da camada 3 são mecanizáveis, e viraram portão:
 | `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **que documento ESTA sessão tornou suspeito?** | não — é lista de leitura |
 
 **O número deixa de ser digitado.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->318<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->319<!--/n-->` —, invisível no markdown
 renderizado. O script mede e reescreve; o CI confere. **Chave desconhecida é
 erro, não silêncio**: um typo faria aquele número nunca mais ser atualizado, com
 o agravante de parecer vigiado.
@@ -259,7 +259,7 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->10.525<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->10.747<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e

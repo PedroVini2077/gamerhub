@@ -1,65 +1,159 @@
 import { useMemo } from 'react';
 
+import fogoGuarda340 from '../../assets/auth/fogo-guarda-340.webp';
+import fogoGuarda720 from '../../assets/auth/fogo-guarda-720.webp';
+import geloGuarda340 from '../../assets/auth/gelo-guarda-340.webp';
+import geloGuarda720 from '../../assets/auth/gelo-guarda-720.webp';
+import fogoFrente340 from '../../assets/auth/fogo-frente-340.webp';
+import fogoFrente720 from '../../assets/auth/fogo-frente-720.webp';
+import geloCostas340 from '../../assets/auth/gelo-costas-340.webp';
+import geloCostas720 from '../../assets/auth/gelo-costas-720.webp';
+
 /**
- * O fundo do login e do cadastro — fogo de um lado, gelo do outro.
+ * O fundo do login e do cadastro — dois lutadores, fogo de um lado, gelo do
+ * outro, e a fenda entre eles.
  *
- * ── De onde veio, e o que foi DESCARTADO da referência ──────────────────────
+ * ── Por que os personagens são IMAGEM, e não desenho meu ────────────────────
  *
- * O dono mandou uma arte de luta com dois personagens frente a frente, cortados
- * por um "VS", e disse: *"é só pra tirar essa ambientação seca do login e
- * cadastro"*.
+ * Eu tentei três vezes desenhar as silhuetas em SVG. O dono me parou no meio:
+ * *"tava ruim demais, os personagens estavam parecendo mais formas geométricas
+ * do que personagem mesmo"*. Ele estava certo — e a regra do §1.2 já mandava
+ * parar: depois de duas tentativas sem convergir, muda-se a abordagem, não se
+ * insiste.
  *
- * O que faz aquela imagem funcionar **não são os personagens**. É a composição:
- * dois campos de cor opostos que se encontram numa fratura carregada, com o
- * formulário em cima da fratura. Tapando as duas figuras, ela continua de pé.
+ * Ele gerou as artes e mandou. Elas vêm com **fundo transparente de verdade**
+ * (conferido no canal alfa, não suposto), então entram como camada por cima da
+ * cena que já existia — gradiente, fenda, labaredas, cristais, partículas e VS
+ * continuam sendo CSS.
  *
- * Personagem de jogo tem dono — Scorpion e Sub-Zero são da NetherRealm/Warner —,
- * e o projeto já recusou capa de jogo na página "Sobre" pelo mesmo motivo (ver
- * `docs/DECISOES.md`). Aqui o risco seria maior, porque login é a porta do site.
+ * ── Cada arte vem com os DOIS lutadores, e separá-los não é cortar ao meio ──
  *
- * ── Por que isto é barato, e por que isso importa nesta tela ────────────────
+ * Cortei na reta duas vezes e o dono achou o defeito nas duas: *"o fogo tá
+ * aparecendo um pouco na parte de gelo, não ficou um corte muito limpo"*. A
+ * medição explicou: **os dois se sobrepõem por 75 colunas** — o golpe de fogo
+ * vai até a coluna 808 e o de gelo já começa na 734. Não existe reta boa ali.
  *
- * Login e cadastro são a **camada 2** (§0.4): todo mundo que decide ficar passa
- * por aqui. A landing já paga uma cena 3D; esta tela não pode pagar nada
- * parecido. Então: zero imagem, zero biblioteca, só gradiente e elementos
- * animados por `transform`/`opacity` — as duas propriedades que rodam no
- * compositor. O projeto já aprendeu isso do jeito caro, animando `text-shadow`
- * no título da landing (ver `docs/DESEMPENHO.md`).
+ * Na faixa disputada quem decide é a **cor** do pixel, e o alfa cai por rampa
+ * nos últimos 30 px para o halo não terminar num corte. A receita inteira e os
+ * números estão em `docs/DESEMPENHO.md`; a trava é `e2e/artes-da-arena.mjs`.
  *
- * ── A composição muda com o modo, e não é enfeite ───────────────────────────
+ * ── O custo, medido antes de entrar ─────────────────────────────────────────
  *
- * `login` .... a fenda no MEIO, simétrica. São dois lados, e você decide entrar.
- * `register` . um lado DOMINA, a fenda sai do eixo. É escolha de personagem —
- *              o "character selected" que o dono descreveu.
+ * Os PNG originais tinham **2,5 MB cada**. Recortados no limite do alfa e
+ * convertidos para WebP, em dois tamanhos — e a escolha entre eles é por
+ * **densidade de tela**, não por aparelho:
  *
- * O formulário de cadastro é bem mais alto que o de login, e é por isso que o
- * fundo é `fixed`: ele não estica nem reflui quando a página rola.
+ *     par de 340 px ....  83 KB (login) ·  62 KB (cadastro)  — telas 1x
+ *     par de 720 px ... 279 KB (login) · 215 KB (cadastro)  — telas 2x e 3x
+ *
+ * **Celular comum cai no de 720**, e isso foi medido, não suposto: em 390×844
+ * com DPR 3 o navegador escolheu `fogo-guarda-720`. É correto — ele tem 3
+ * pixels físicos para cada CSS. Dizer "no celular são 83 KB" seria confortável
+ * e falso.
+ *
+ * Só um par carrega por vez: `sizes` escolhe o tamanho, o modo escolhe a dupla.
+ *
+ * ── Celular e PC são composições DIFERENTES, e isso é o pedido ──────────────
+ *
+ * *"eu percebi que no celular fica bem curto o espaço, então tem que funcionar
+ * dos dois lados"*. No celular o card ocupa quase toda a largura, então figura
+ * na lateral ficaria **atrás** dele — invisível.
+ *
+ *     PC ......... os dois de pé nas laterais, altos, se olhando
+ *     celular .... os dois GRANDES no alto, se encontrando no meio, saindo
+ *                  pelas laterais e dissolvendo antes do formulário
+ *
+ * A versão anterior punha os dois pequenos ladeando o logo, e o dono reprovou:
+ * *"tô achando muito pequeno as imagens"*. Ele perguntou se dava para esticar —
+ * não dá: proporção errada lê como defeito, não como estilo. Cortar pela borda,
+ * sim: é composição normal. Então eles cresceram 2× e sangram para fora.
+ *
+ * Mesmo DOM nos dois; quem decide é `@media` no CSS. Sem ramo em JavaScript:
+ * `window.innerWidth` lido no render erra na primeira pintura e não acompanha o
+ * giro do aparelho.
  */
 export default function ArenaDeEntrada({ modo = 'login' }) {
   // Posições fixas, calculadas uma vez. `Math.random()` a cada render faria as
   // partículas saltarem de lugar a cada tecla digitada no formulário.
-  const brasas = useMemo(() => semente(14, 7), []);
-  const cristais = useMemo(() => semente(14, 23), []);
+  const brasas = useMemo(() => semente(12, 7), []);
+  const cristais = useMemo(() => semente(12, 23), []);
 
-  // O eixo da fenda. `register` empurra para a direita: sobra mais fogo, que é
-  // o lado de quem está sendo escolhido.
-  const eixo = modo === 'register' ? '68%' : '50%';
+  // No cadastro o fogo domina: a fenda sai do eixo, o gelo vira de costas e
+  // recua. É o "character selected" que o dono descreveu.
+  const cadastro = modo === 'register';
+  const eixo = cadastro ? '68%' : '50%';
+
+  const fogo = cadastro
+    ? { p: fogoFrente340, g: fogoFrente720 }
+    : { p: fogoGuarda340, g: fogoGuarda720 };
+  const gelo = cadastro
+    ? { p: geloCostas340, g: geloCostas720 }
+    : { p: geloGuarda340, g: geloGuarda720 };
 
   return (
-    <div className="arena" style={{ '--eixo': eixo }} aria-hidden="true">
+    <div
+      className={`arena ${cadastro ? 'arena-selecionado' : ''}`}
+      style={{ '--eixo': eixo }}
+      aria-hidden="true"
+    >
       <div className="arena-lado arena-fogo" />
       <div className="arena-lado arena-gelo" />
+
+      {/* ── As labaredas, no pé do lado do fogo ──────────────────────────────
+          Elas ancoram o lutador no chão — sem isso ele flutua. Só `transform`
+          anima; o desfoque é estático, porque `filter: blur()` animado é o tipo
+          de custo que a landing já cobrou caro deste projeto. */}
+      <div className="arena-labaredas">
+        <span className="arena-labareda arena-labareda-1" />
+        <span className="arena-labareda arena-labareda-2" />
+        <span className="arena-labareda arena-labareda-3" />
+      </div>
+
+      {/* ── Os cristais, crescendo da borda do lado do gelo ─────────────────── */}
+      <div className="arena-cristais">
+        <span className="arena-cristal-fixo arena-cristal-1" />
+        <span className="arena-cristal-fixo arena-cristal-2" />
+        <span className="arena-cristal-fixo arena-cristal-3" />
+      </div>
 
       {brasas.map((p, i) => (
         <span key={`b${i}`} className="arena-particula arena-brasa" style={p} />
       ))}
       {cristais.map((p, i) => (
-        <span key={`c${i}`} className="arena-particula arena-cristal" style={p} />
+        <span key={`c${i}`} className="arena-particula arena-lasca" style={p} />
       ))}
 
-      {/* A fenda vem por último para ficar por cima das partículas — é ela que
-          separa os dois lados, e partícula passando por cima borraria o corte. */}
+      {/* ── Os lutadores ─────────────────────────────────────────────────────
+          `fetchPriority="low"`: é enfeite. O que precisa chegar primeiro é o
+          formulário, e o navegador só sabe disso se alguém disser. */}
+      <div className="arena-lutador arena-lutador-fogo">
+        <img
+          className="arena-figura"
+          src={fogo.g}
+          srcSet={`${fogo.p} 340w, ${fogo.g} 720w`}
+          sizes="(max-width: 767px) 68vw, 620px"
+          alt="" aria-hidden="true" decoding="async" fetchPriority="low"
+        />
+      </div>
+      <div className="arena-lutador arena-lutador-gelo">
+        <img
+          className="arena-figura"
+          src={gelo.g}
+          srcSet={`${gelo.p} 340w, ${gelo.g} 720w`}
+          sizes="(max-width: 767px) 68vw, 620px"
+          alt="" aria-hidden="true" decoding="async" fetchPriority="low"
+        />
+      </div>
+
+      {/* A fenda vem depois das partículas para ficar por cima delas. */}
       <div className="arena-fenda" />
+
+      {/* O VS. É o elemento que responde "o que raios é isso?" sem uma palavra
+          de explicação — cada metade na temperatura do seu lado. */}
+      <div className="arena-vs">
+        <span className="arena-vs-fogo">V</span>
+        <span className="arena-vs-gelo">S</span>
+      </div>
     </div>
   );
 }
