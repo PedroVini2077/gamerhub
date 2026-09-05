@@ -188,6 +188,32 @@ async function motivoParaRecusar(req: Request, corpo: string): Promise<string | 
 // Resposta única para toda recusa: contar de fora QUAL foi o motivo entrega de
 // graça o estado da configuração a quem está sondando. O motivo de verdade vai
 // para `admin_logs`.
+/**
+ * `[05/09]` O corpo tem cara de chamada REAL do GoTrue?
+ *
+ * É o discriminador que faltava para a severidade parar de mentir. Ver o bloco
+ * SEVERIDADE lá em cima: "assinatura invalida" é produzida por DOIS eventos
+ * muito diferentes — um estranho batendo na porta (comum, inofensivo) e o
+ * `SEND_EMAIL_HOOK_SECRET` errado (raro, fatal) —, e a função não tinha como
+ * separar os dois.
+ *
+ * O corpo separa: o GoTrue só chama esta função quando existe alguém para
+ * receber e-mail, então ele SEMPRE manda `user.email` e `email_data`. Quem
+ * varre a internet não monta isso.
+ *
+ * **Não é prova, e não pretende ser.** Um atacante pode montar um corpo
+ * parecido — e aí `critical` é a resposta certa mesmo, porque alguém que sabe
+ * o formato do payload não é varredura de porta.
+ */
+function pareceChamadaDoGoTrue(corpo: string): boolean {
+  try {
+    const p = JSON.parse(corpo) as Record<string, any>;
+    return typeof p?.user?.email === "string" && typeof p?.email_data === "object";
+  } catch {
+    return false;
+  }
+}
+
 const RECUSADO = () => new Response(
   JSON.stringify({ error: "Nao autorizado" }),
   { status: 401, headers: { "Content-Type": "application/json" } },
@@ -198,14 +224,35 @@ Deno.serve(async (req: Request) => {
 
   const recusa = await motivoParaRecusar(req, rawBody);
   if (recusa) {
+    // `[05/09]` A severidade parou de ser decidida SÓ pelo motivo.
+    //
+    // Medido em 05/09: `edge_function_error` era a 5ª ação mais frequente da
+    // trilha inteira — 72 eventos em 7 dias, SEMPRE EM PARES no mesmo segundo.
+    // A origem era o nosso próprio portão `e2e/portas-fechadas.mjs`, e metade
+    // entrava como `critical`. Alarme que grita todo dia por causa do CI ensina
+    // a ignorar o nível onde a falha real vai aparecer (§0.2, 4ª regra).
+    //
+    // A saída óbvia — deixar o teste se identificar por um cabeçalho — é uma
+    // BRECHA: cabeçalho é controlado por quem chama, então qualquer atacante
+    // mandaria o mesmo e apagaria o próprio rastro. O corpo não resolve isso
+    // sozinho, mas move a barra para bem mais alto: é preciso conhecer o
+    // formato do payload do GoTrue, o que já não é varredura de porta.
+    const pareceReal = pareceChamadaDoGoTrue(rawBody);
+    const severidade = RECUSAS_DE_ESTRANHO.has(recusa) || !pareceReal
+      ? "warning" as const
+      : "critical" as const;
+
     await gritar(
       `chamada recusada: ${recusa}`,
       {
         motivo: recusa,
         // Ajuda a distinguir varredura da internet de hook mal configurado.
         tem_cabecalho_de_assinatura: !!req.headers.get("webhook-signature"),
+        // A razão da severidade fica GRAVADA, não só decidida: quem abrir a
+        // linha daqui a seis meses precisa saber por que ela é warning.
+        corpo_parece_gotrue: pareceReal,
       },
-      RECUSAS_DE_ESTRANHO.has(recusa) ? "warning" : "critical",
+      severidade,
     );
     return RECUSADO();
   }
