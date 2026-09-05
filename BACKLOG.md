@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**26 itens abertos** (+ 1 ideia sem compromisso)
+**25 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -133,34 +133,6 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 
   Isto é a 4ª regra do §0.2 me pegando: *"meu próprio vigia de CI mandava um
   alarme falso por PR"*. Escrevi a regra e voltei a violá-la, do outro lado.
-
-- ⬜ `[05/09]` 🟠 **Ninguém prova que COMENTAR funciona — e a produção tem 150
-  posts e ZERO comentários.**
-
-  O zero pode ser só falta de gente. Mas pode não ser, e hoje **nada** responde
-  isso: nenhum dos 16 roteiros de navegador comenta (dois citam "comentário" em
-  texto de comentário de código, e só). O `publicarPost.mjs` cobre publicar,
-  não conversar.
-
-  **O que eu já verifiquei, e uma correção do que eu mesmo disse:** as quatro
-  policies de `comments` estão completas e corretas — o INSERT permite o autor
-  quando `pode_publicar()`. Então **não é RLS**.
-
-  E a trilha desmente a parte alarmista: `comment_added` tem **7 registros**, o
-  último em **23/08**. Ou seja, **comentar já funcionou** — a tabela está vazia
-  porque os posts daqueles comentários foram apagados e a FK é CASCADE. Isso
-  rebaixa a suspeita, e não a elimina: 23/08 foi há duas semanas e muita coisa
-  mudou desde então. O que continua sem prova é o caminho na tela **hoje**.
-
-  **Por que isto é 🟠 e não 🟢:** é exatamente a forma dos dois piores bugs
-  deste projeto. A moderação de comentário ficou quebrada **meses** porque o
-  `UPDATE` afetava 0 linhas em silêncio, e a moderação por IA falhou em 26 de 26
-  chamadas sem ninguém saber. Funcionalidade que ninguém usa é o esconderijo
-  perfeito: não há usuário para reclamar (§1.5).
-
-  **O que resolve:** um e2e que loga, comenta num post e confere que o
-  comentário aparece — com a mensagem de falha dizendo **o que a tela disse**,
-  no padrão do `publicarPost.mjs`. Barato, e fecha a pergunta de vez.
 
 - ⬜ `[05/09]` 🔵 **A tela de APARELHOS CONECTADOS.** *Ideia do dono, nascida
   de dentro da decisão do logout — ver
@@ -389,17 +361,45 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 
 
 
-- ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail pessoal.**
-  *`[03/09]` O dono decidiu ficar no Gmail por enquanto: "não quero gastar 40
-  dólares cobrando um domínio agora, talvez mais tarde". A resposta de contato
-  foi construída em cima dele — e passou a ser mais um consumidor da MESMA cota
-  do cadastro e da recuperação de senha.*
+- ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail.** *`[05/09]` O
+  CÓDIGO JÁ ESTÁ PRONTO — o que falta é ação de painel, e ela é do dono.*
 
-  Hoje usa nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
-  limite (~500/dia), o risco de o Google travar por envio automatizado, e a
-  falta de painel de entrega continuam. Com domínio próprio (~R$40/ano) +
-  Resend vira `nao-responda@…`; sem domínio, o Brevo é a opção. *Não é urgente
-  com 3 usuários.*
+  **O que mudou em 05/09.** A função passou a aceitar **dois caminhos**:
+  se `SMTP_HOST` existir ela usa o relay; se não existir, segue no Gmail
+  exatamente como hoje. Mudança aditiva (§7): o caminho feliz de agora não foi
+  tocado, e voltar atrás é **apagar um segredo**.
+
+  Isso torna a migração uma ação de painel — sem deploy, sem coordenar horário,
+  sem mexer em código com o cadastro possivelmente quebrado.
+
+  **O que depende do dono, na ordem:**
+
+  1. criar conta no Brevo e **verificar um remetente**;
+  2. **a pergunta que decide o custo:** o Brevo aceita remetente verificado
+     **sem domínio próprio**? Se sim, custa **R$0**; se exigir domínio, são os
+     ~R$40/ano que ele já recusou uma vez. *Eu não consegui confirmar isso —
+     a documentação deles não abre para leitura automática, e prefiro dizer
+     isso a repetir de memória um número que pode ter mudado.* Ele vê em dois
+     minutos ao criar a conta;
+  3. pegar as credenciais SMTP e colar em **Supabase → Edge Functions →
+     Secrets**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e
+     `SMTP_FROM`. **A senha não passa por aqui** — mesma regra do Turnstile;
+  4. me avisar para eu reimplantar a função e conferir o primeiro envio.
+
+  **Como provamos que funcionou:** um cadastro de teste. Se falhar, a mensagem
+  em `admin_logs` agora diz **qual caminho** estava em uso — antes ela mandaria
+  investigar o provedor errado.
+
+  **O que continua sem prova até lá:** que o e-mail chega, que a senha está
+  certa e que o remetente foi aceito. Nada disso é verificável do repositório;
+  a trava `envioDeEmailTemDoisCaminhos.test.js` só garante que as propriedades
+  do código não sumam.
+
+  > **Por que isto NÃO é urgente por volume, medido em 05/09:** `auth_register`
+  > tem **12 registros na vida do projeto**, o último em 28/08. A cota de ~500/dia
+  > não está perto de estourar. O que mantém o item em 🟠 é outra coisa: se o
+  > Google travar a conta por envio automatizado, **cadastro e recuperação de
+  > senha param em silêncio** — e o site continua de pé, aparentando funcionar.
 
 
 ## 🟢 Recomendado
@@ -491,8 +491,8 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->98<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.106<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->99<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.197<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
