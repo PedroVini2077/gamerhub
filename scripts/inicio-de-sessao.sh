@@ -29,9 +29,51 @@ git log --oneline -5 2>/dev/null
 echo
 echo "── Backlog ──"
 grep -m1 'itens abertos' BACKLOG.md 2>/dev/null
+echo
+echo "  Os de maior prioridade (🔴 e 🟠) — o resto está no BACKLOG.md:"
+grep -E '^- ⬜.*(🔴|🟠)' BACKLOG.md 2>/dev/null \
+  | sed 's/\*\*//g; s/^- ⬜ /    /' | cut -c1-96
+echo
+echo "  Só o número não bastava: em 01/09 QUATRO pedidos do dono ficaram só na"
+echo "  conversa e eu não percebi, porque nada os punha na minha frente."
+echo "  TUDO o que vamos fazer entra aqui — auditoria, feature, bug, decisão."
 echo "  (a fila inteira precisa ser relida antes de FECHAR um bloco — §6.2)"
 
 echo
+# `[03/09]` Bloco marcado como PENDENTE num documento PÚBLICO.
+#
+# O caso: a `/privacidade` continuou dizendo "esta parte ainda depende de uma
+# decisão… falta a decisão do dono sobre o piso de idade" DEPOIS de a idade
+# mínima ter sido decidida e imposta pelo banco. O dono viu no celular.
+#
+# Nenhum portão pegava: a trava de impressão vigia o arquivo MUDAR, e o
+# problema era ele não ter mudado. E o `docs/PRIVACIDADE.md` FOI atualizado com
+# "RESOLVIDO" no mesmo dia — a documentação do desenvolvedor andou, a do
+# usuário não.
+#
+# Eu tentei uma trava que cruzasse isto com o BACKLOG. Ela nao funcionou (o
+# proprio plano da tarefa no backlog satisfazia a busca) e foi descartada em vez
+# de remendada. Isto aqui e o que sobrou, e e a classe de mecanismo que funciona
+# neste projeto: nao julga, so poe na frente.
+# `^\s*pendente: true,` e nao `pendente: true`: os dois arquivos EXPLICAM o
+# campo num comentario de docstring, e a primeira versao deste bloco acusou os
+# dois como pendentes. Alarme que grita a toa e o §0.2, 4a regra — e ele nasceu
+# aqui, no codigo escrito para nao deixar nada passar em silencio.
+pendentes=$(grep -rln "^[[:space:]]*pendente: true," src/components/privacidade \
+              src/components/termos src/components/regras src/components/sobre \
+              --include=*.js 2>/dev/null | grep -v "__tests__" || true)
+if [ -n "$pendentes" ]; then
+  echo "── ⚠ Documento PÚBLICO com bloco marcado como PENDENTE ──"
+  for f in $pendentes; do
+    n=$(grep -c "^[[:space:]]*pendente: true," "$f")
+    echo "  $n bloco(s)  $f"
+  done
+  echo "  Isto aparece na TELA de quem usa o site. Se a pendência já foi"
+  echo "  resolvida, o texto está afirmando algo falso — conferir antes de"
+  echo "  fechar a sessão."
+  echo
+fi
+
 echo "── Há quantos dias cada documento não é tocado ──"
 hoje=$(date +%s)
 for doc in CLAUDE.md README.md BACKLOG.md docs/*.md docs/regras/*.md; do
@@ -70,5 +112,13 @@ echo "  Ela é assim de propósito. \"Estou fazendo tudo?\" se responde com um"
 echo "  \"sim\" preguiçoso, e teria deixado passar todas as falhas de 29/08."
 echo "  Esta obriga a NOMEAR regra e evidência. Sem evidência nomeada, não"
 echo "  cumpri: só acho que cumpri."
+echo
+echo "  E a segunda, que cobre o que a primeira não vê:"
+echo
+echo "  \"O que estou afirmando agora que ainda não provei?\""
+echo
+echo "  Esta ataca a falha mais registrada deste projeto: apresentar INFERÊNCIA"
+echo "  como FATO (§1.1). Em 23/08 duas afirmações minhas eram dedução vestida"
+echo "  de fato, e eu mesmo tive que corrigir as duas depois."
 echo
 echo "═══════════════════════════════════════════════════════════"

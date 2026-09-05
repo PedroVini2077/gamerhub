@@ -174,3 +174,46 @@ describe('os mocks apontam para arquivos que existem', () => {
     ).toContain("from '../services/moderationAiService'");
   });
 });
+
+/**
+ * ── `[02/09]` A janela entre a SESSÃO e o PERFIL ────────────────────────────
+ *
+ * O `PostForm` aparece assim que existe sessão (`if (!user) return null`), mas
+ * o perfil chega numa segunda consulta. Entre os dois existe uma janela em que
+ * o formulário está na tela e `profile` ainda é nulo.
+ *
+ * Publicar nessa janela mandava `user_id: undefined`. O supabase-js omite a
+ * chave, a coluna fica nula, e a policy `auth.uid() = user_id AND
+ * pode_publicar()` recusa. Reproduzido no banco em transação:
+ *
+ *   ERRO: new row violates row-level security policy for table "posts"
+ *
+ * Esse texto ia direto para o toast — verdadeiro, e não ensina nada.
+ *
+ * Foi assim que o job "painel de admin" reprovou uma vez: ele publica
+ * IMEDIATAMENTE depois do login, enquanto o `fluxos.mjs` visita dez rotas antes
+ * e chega com o perfil carregado. Mesmo código, janelas diferentes.
+ */
+describe('publicar antes de o perfil carregar', () => {
+  it('NÃO chama createPost, e diz o que está acontecendo', async () => {
+    vi.resetModules();
+    vi.doMock('../useAuth.jsx', () => ({
+      // Sessão sim, perfil ainda não — a janela exata.
+      useAuth: () => ({ user: { id: 'u1' }, profile: null }),
+    }));
+    const postService = await import('../../services/postService');
+    const toast = (await import('react-hot-toast')).default;
+    const { usePostComposer: hook } = await import('../usePostComposer');
+
+    const { result } = renderHook(() => hook());
+    act(() => { result.current.setTitle('Um título qualquer'); });
+    await act(async () => { await result.current.handleSubmit(); });
+
+    expect(postService.createPost,
+      'sem perfil o INSERT sai com user_id nulo e a RLS recusa — nao pode nem tentar')
+      .not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringContaining('perfil ainda está carregando'));
+    vi.doUnmock('../useAuth.jsx');
+  });
+});

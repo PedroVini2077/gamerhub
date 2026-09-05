@@ -1,0 +1,47 @@
+-- `[05/09]` Duas colunas mortas saem. Autorizado pelo dono.
+--
+-- ── `posts.likes` — a que causou um bug de verdade ──────────────────────────
+--
+-- NENHUM trigger jamais a manteve: o único trigger em `post_likes` é o
+-- `notify_post_like`, que só insere notificação. Ela ficou zerada desde sempre,
+-- e mesmo assim TRÊS lugares diferentes a somaram ao longo do tempo —
+-- `fetchProfileStats`, `owner_get_metrics` e `get_user_xp`. Os dois primeiros
+-- foram corrigidos em passadas anteriores; o terceiro só em 05/09, e por ele a
+-- tela de ranks prometeu "Receber um like -> 5 XP" que o sistema nunca pagou.
+--
+-- A coluna não era só inútil: era uma ARMADILHA. Quem lê o schema vê `likes` em
+-- `posts` e escreve `SUM(likes)`, que é a coisa mais natural do mundo. Apagar é
+-- a trava mais forte que existe (§2): o dado errado passa a ser IMPOSSÍVEL de
+-- produzir, em vez de depender de um teste lembrar de proibir.
+--
+-- DIMENSIONADO ANTES (§5): 124 posts, **0** com valor diferente de zero ou
+-- nulo. Não há dado a perder — só o nome da coluna.
+--
+-- ── `live_muted.muted_until` — a ideia que nunca foi ligada ─────────────────
+--
+-- Silenciar numa live é "existe linha = calado", e tirar o silêncio é DELETE.
+-- Nenhuma função, policy, índice ou linha de código lê `muted_until`. Ela é uma
+-- promessa falsa no schema: quem a vê conclui que silenciamento expira sozinho,
+-- e não expira.
+--
+-- DIMENSIONADO: a tabela tem **0 linhas**. Zero dado perdido.
+--
+-- Silenciar por tempo continua sendo uma possibilidade — foi para
+-- `docs/VISAO-DE-FUTURO.md`, que é onde intenção mora. Coluna vazia não é
+-- lugar de guardar intenção: é lugar de enganar quem lê o schema.
+--
+-- ── O QUE FICOU DE FORA, e é decisão consciente ─────────────────────────────
+--
+-- `admin_notification_reads.read_at` também não é lida por ninguém, mas tem
+-- **249 linhas COM dado**: o carimbo de quando cada pessoa da equipe leu cada
+-- aviso. Apagar destruiria isso para sempre, e manter não custa nada. Coluna
+-- sem leitor mas com dado não é a mesma coisa que coluna sem leitor e sem dado.
+--
+-- ── TESTADO EM ROLLBACK ANTES DE APLICAR (§5) ──────────────────────────────
+--
+-- Com as duas colunas já apagadas dentro da transação: `get_user_xp` respondeu
+-- (xp=1360), o feed continuou de pé, silenciar numa live funcionou sem a
+-- coluna, e `owner_get_metrics` — que menciona "likes" no corpo — respondeu
+-- normalmente, rodando com o JWT do fundador de verdade.
+ALTER TABLE public.posts      DROP COLUMN likes;
+ALTER TABLE public.live_muted DROP COLUMN muted_until;

@@ -7,9 +7,13 @@
 // Ao criar um `logAudit(...)` novo, ou uma função no banco que escreva em
 // `admin_logs`, registrar a action aqui.
 //
-// `ACTIONS_DO_BANCO` (no fim do arquivo) existe porque o teste de cobertura
-// varre o CÓDIGO-FONTE — action gravada por trigger/função do Postgres não
-// aparece em lugar nenhum de `src/` e escaparia da rede.
+// Action gravada por função do Postgres NÃO aparece como texto em `src/`, então
+// a varredura do código-fonte nunca a veria. Até 05/09 isso era coberto por uma
+// lista escrita à mão aqui — e ela envelheceu: a Fase 4 da auditoria encontrou
+// ONZE actions vivas fora dela, todas aparecendo no painel com o ícone genérico.
+// Lista à mão que precisa acompanhar o banco é a mesma classe de problema que
+// ela deveria resolver. Hoje quem responde é `logMeta.test.js`, derivando as
+// actions das próprias migrations.
 
 import {
   LogIn, LogOut, UserPlus, Ban, ShieldOff, LockOpen, KeyRound, ShieldAlert,
@@ -17,7 +21,7 @@ import {
   Tv, Radio, MicOff, Mic, RotateCcw, CheckCircle, XCircle,
   Crown, Shield, UserCog, Image, Mail, UserMinus, Clock, ScrollText,
   Lock, Settings2, Wrench, Siren, Bell, SlidersHorizontal, Filter, EyeOff, Eye,
-  Flag, MailQuestion,
+  Flag, MailQuestion, MailCheck,
 } from 'lucide-react';
 
 // ─── Categorias ──────────────────────────────────────────────────────────────
@@ -73,6 +77,24 @@ export const ACTION_META = {
   user_suspended:            A(Clock,        'text-yellow-400',  '#facc15'),
   auto_suspend:              A(ShieldAlert,  'text-yellow-400',  '#facc15'),
   auto_ban:                  A(ShieldOff,    'text-red-500',     '#ef4444'),
+  // `[05/09]` As onze abaixo saíram da Fase 4 da auditoria: TODAS são gravadas
+  // por função do Postgres, nenhuma aparece como texto em `src/`, e nenhuma
+  // tinha ícone — apareciam no painel com o genérico. A lista à mão que deveria
+  // cobri-las tinha envelhecido, e é por isso que ela deixou de existir: agora
+  // o teste deriva as actions das próprias migrations.
+  user_unsuspended:          A(CheckCircle,  'text-neon-green',  '#39ff14'),
+  auth_rate_limited:         A(ShieldAlert,  'text-yellow-400',  '#facc15'),
+  auto_solicitado:           A(RotateCcw,    'text-yellow-400',  '#facc15'),
+  admin_delete_unconfirmed:  A(UserMinus,    'text-red-400',     '#f87171'),
+
+  // admin — cargos e avaliação de equipe (tudo gravado pelo banco)
+  demotion_approved:         A(UserCog,      'text-yellow-400',  '#facc15'),
+  demotion_rejected:         A(XCircle,      'text-gray-500',    '#6b7280'),
+  staff_nomination_approved: A(CheckCircle,  'text-neon-green',  '#39ff14'),
+  staff_nomination_rejected: A(XCircle,      'text-red-400',     '#f87171'),
+  staff_trial_confirmed:     A(CheckCircle,  'text-neon-green',  '#39ff14'),
+  staff_trial_extended:      A(Clock,        'text-yellow-400',  '#facc15'),
+  staff_trial_reverted:      A(RotateCcw,    'text-red-400',     '#f87171'),
 
   // admin
   admin_role_changed:        A(Crown,        'text-yellow-400',  '#facc15'),
@@ -100,6 +122,14 @@ export const ACTION_META = {
   // quebrada em 26 de 26 chamadas por semanas (§1.5).
   edge_function_error:       A(Siren,         'text-red-400',     '#ef4444'),
   wordlist_flag:             A(Filter,       'text-orange-400',  '#fb923c'),
+  // `[02/09]` O disjuntor do formulário público de contato fechou a porta:
+  // passou de 60 mensagens numa hora. Uma linha por episódio, não por
+  // tentativa — o trigger `alertar_enchente_de_contato` cuida disso.
+  contact_flood:             A(Siren,        'text-orange-400',  '#fb923c'),
+  // `[03/09]` A equipe respondeu alguém de fora — alguém falou EM NOME DO SITE,
+  // e isso é ação de moderação como qualquer outra. O e-mail do destinatário
+  // não entra na trilha de propósito: ela é lida por toda a equipe.
+  contact_reply:             A(MailCheck,    'text-neon-cyan',   '#22d3ee'),
   moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
   // conteúdo — posts (o trigger `log_post_event` grava os `content_*`)
@@ -157,6 +187,15 @@ export const NOTIF_META = {
   role_changed:         A(Crown,       'text-yellow-400',  '#facc15'),
   banned_login_attempt: A(ShieldAlert, 'text-red-400',     '#f87171'),
   staff_alert:          A(Siren,       'text-red-400',     '#ef4444'),
+  // `[05/09]` Os dois saíram da Fase 4: o banco grava, o mapa não conhecia, e o
+  // sino mostrava o ícone genérico. `security_alert` vem de
+  // `contabilizar_falha_de_login`; `user_unsuspended`, de `lift_suspension`.
+  security_alert:       A(ShieldAlert, 'text-red-400',     '#ef4444'),
+  user_unsuspended:     A(CheckCircle, 'text-neon-green',  '#39ff14'),
+  // `[02/09]` Alguém escreveu pelo formulário público `/contato`. Sem este
+  // aviso a mensagem cairia numa tabela que ninguém tem motivo para abrir, e
+  // "mandei e nunca responderam" seria indistinguível de formulário quebrado.
+  contact_message:      A(Mail,        'text-neon-cyan',   '#22d3ee'),
 };
 
 export const DEFAULT_NOTIF_META = A(Bell, 'text-gray-500', '#6b7280');
@@ -174,27 +213,12 @@ export function feedItemMeta(item) {
 // ─── Retenção ────────────────────────────────────────────────────────────────
 // Precisa bater com `cleanup_old_data()` em `db/2026-08-otimizacao.sql`.
 // Mostrado nos painéis pra ninguém achar que log sumido é bug.
-export const LOG_RETENTION_DAYS = 90;
+// `[02/09]` 90 -> 365, decisão do dono sobre os prazos de retenção. O teste
+// `logMeta.test.js` confere que este número bate com o `interval` do SQL — se
+// alguém mudar um lado, a UI passa a mentir sobre quando o log some.
+export const LOG_RETENTION_DAYS = 365;
 
 // ─── Actions geradas pelo BANCO ──────────────────────────────────────────────
 // Nenhuma delas aparece como string em `src/`, então o teste que varre o
 // código-fonte não as veria. Listadas aqui à mão para entrarem na cobertura.
 // Ao criar uma função/trigger nova que escreva em `admin_logs`, acrescentar.
-export const ACTIONS_DO_BANCO = [
-  'content_post_created',
-  'content_post_edited',
-  'content_post_deleted',
-  'ai_moderation_hidden',
-  'edge_function_error',
-  'wordlist_flag',
-  'auto_ban',
-  'auto_suspend',
-  // `[28/08]` Trigger `log_report_created` em `reports`. Denúncia era a única
-  // ação de moderação sem rastro: ocultar, suspender, banir e aprovar na fila
-  // registravam; o gatilho de boa parte disso, não.
-  'content_report_created',
-  // `[28/08]` Pedido de revisão aberto pela PRÓPRIA pessoa banida
-  // (`solicitar_revisao_do_proprio_ban`). Diferente de `admin_unban_requested`,
-  // que é o pedido aberto por um membro da equipe em nome de alguém.
-  'user_unban_requested',
-];

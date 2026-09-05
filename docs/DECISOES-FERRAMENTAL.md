@@ -16,6 +16,62 @@
 
 ## Ferramental
 
+### `[02/09]` Teste de mutação (Stryker) — ADOTADO, sob demanda e com escopo pequeno
+
+**Decisão do dono:** *"pode fazer esse teste de mutações"*. Era o último item
+aberto da auditoria de mim mesmo.
+
+**O problema que ele resolve.** Dos 9 padrões de falha meus catalogados, o nº 3
+— *"escrevo teste que não consegue falhar"* — era o único sem mecanismo, e eu o
+repeti três vezes. `npm test` responde *"o teste rodou?"*. Teste de mutação
+responde a pergunta que importa: *"o teste DETECTA a mudança errada?"*. Ele
+altera o código de propósito e exige que alguma asserção quebre.
+
+**A prova de que não era teoria.** Na primeiríssima execução ele deu **0,00%**
+para `lib/loginBlock.js` — a fonte única de *"esta pessoa pode entrar no site?"*,
+usada pela página de login e pelo formulário — porque **não havia teste nenhum**
+ali. A suíte inteira estava verde. Escrever os testes levou o módulo a 92,86% e
+o total de 63,76% para 71,07%.
+
+#### Escopo pequeno de propósito
+
+Só a lógica pura de `src/lib/`, dez arquivos. Mutar componente de tela produz
+montanha de mutante que nenhum teste razoável mata, e **um número que ninguém
+consegue melhorar é um número que todo mundo aprende a ignorar** (§0.2, 4ª
+regra). Cobertura ampla e inútil é pior que cobertura estreita e verdadeira.
+
+#### Por que sob demanda, e não em todo PR
+
+Não é custo: a rodada leva **39 segundos**, medidos. É a natureza do número.
+
+Score de mutação é métrica de qualidade de **suíte**: move devagar e balança
+com refatoração inocente — extrair uma função muda a contagem de mutantes sem
+nada ter piorado. Portão que reprova PR por um número que oscila sozinho é
+alarme falso, e alarme falso ensina a ignorar o canal justamente para o dia em
+que a queda for real.
+
+Por isso ele segue o padrão do lembrete de auditoria: **issue mensal, não build
+vermelho** (`.github/workflows/lembrete-de-mutacao.yml`).
+
+#### O piso tem margem, e é para SUBIR
+
+`break: 65`, com o score em 71,07. Colar o piso no valor de hoje faria qualquer
+mudança inocente reprovar. Ele é um chão a levantar com o tempo, não uma meta a
+bater.
+
+#### A coluna que mais informa não é o score
+
+É `# no cov`: mutantes em código que **nenhum teste toca**. Foi ela que
+denunciou o `loginBlock.js`. Restam 65 nessa coluna, concentrados em `date.js`
+e `roles.js` — anotado no `BACKLOG.md`.
+
+#### O que ele NÃO faz
+
+Não encontra bug: encontra **teste fraco**. Um módulo com 100% de mutação pode
+estar implementando a regra errada com perfeição. Ele mede se a rede pega o
+peixe, não se o peixe é o certo.
+
+
 ### `[28/08]` Testar moderação com `ogamerpedro`, nunca com `claudetester`
 
 **A decisão do dono:** *"não precisa de uma terceira conta, existe uma minha:
@@ -382,3 +438,33 @@ como fugir disso sem hospedar o aviso fora do Supabase.
 ---
 
 [← voltar para o README](../README.md)
+
+
+---
+
+## `[04/09]` Queda do registro do npm não reprova o PR — mas também não passa em silêncio
+
+**O que aconteceu:** o PR #154 ficou vermelho com build, lint e testes **já
+verdes**. A causa era `npm audit` recebendo **HTTP 503** do registro do npm.
+
+**Por que isso enganava:** o `npm audit` sai com código 1 nos dois casos — achou
+vulnerabilidade **e** o endpoint não respondeu. Os dois chegam ao CI como a
+mesma coisa.
+
+**A decisão:** distinguir os dois, e é a mesma que já vale para as travas de
+porta (`portas-fechadas.mjs`, `portas-do-banco.mjs`) desde 03/09.
+
+| Situação | Antes | Agora |
+| --- | --- | --- |
+| vulnerabilidade `high`+ | ❌ reprova | ❌ reprova, igual |
+| registro fora do ar | ❌ reprova, dizendo a coisa errada | ⚠️ **aviso** no resumo do PR, e segue |
+
+**Por que aviso e não reprovação, sendo um portão de segurança:** ele é o único
+que olha vulnerabilidade conhecida, e é justamente por isso que ele **não pode
+gastar credibilidade com alarme falso** (§0.2, 4ª regra). Um portão que fica
+vermelho por queda de terceiro ensina a clicar em "re-run" sem ler — e no dia em
+que aparecer vulnerabilidade de verdade, o reflexo já estará treinado.
+
+**O que se perde, dito com todas as letras:** um PR pode ser mergeado sem a
+auditoria ter rodado. O aviso aparece no resumo do PR, e a próxima execução
+verifica de novo — inclusive o mesmo commit, quando ele chega na `main`.

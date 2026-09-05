@@ -65,7 +65,7 @@ jobs:
       - name: Guarda — a suíte não pode encolher em silêncio
         run: |
           total=$(node -p "require('./vitest-report.json').numTotalTests")
-          piso=222
+          piso=480
           echo "testes executados: $total (piso: $piso)"
           if [ "$total" -lt "$piso" ]; then
             echo "::error::A suite caiu para $total testes, abaixo do piso de $piso."
@@ -89,8 +89,30 @@ jobs:
       - name: Orçamento de bytes do carregamento
         run: node scripts/orcamento-de-bytes.mjs
 
+      # `[04/09]` Queda do registro do npm NAO e vulnerabilidade encontrada.
+      #
+      # O `npm audit` sai com 1 nos DOIS casos: quando acha vulnerabilidade e
+      # quando o endpoint dele responde 503 — e foi o 503 que reprovou o PR #154,
+      # com build, lint e testes ja verdes. Portao que grita a coisa errada
+      # ensina a ignorar o canal onde a falha real vai aparecer (§0.2, 4a regra),
+      # e aqui isso e caro: e o unico portao que olha vulnerabilidade conhecida.
+      #
+      # Entao a saida e a mesma das travas de porta: distinguir "nao consegui
+      # verificar" de "verifiquei e esta ruim". O primeiro AVISA e segue; o
+      # segundo continua reprovando.
       - name: Auditoria de dependências
-        run: npm audit --audit-level=high
+        run: |
+          set +e
+          saida=$(npm audit --audit-level=high 2>&1)
+          codigo=$?
+          echo "$saida"
+          if [ $codigo -eq 0 ]; then exit 0; fi
+          if echo "$saida" | grep -qiE 'audit endpoint returned an error|service unavailable|ENOTFOUND|ETIMEDOUT|socket hang up'; then
+            echo "::warning::npm audit NAO RODOU — o registro do npm nao respondeu."
+            echo "::warning::Isto nao diz nada sobre as dependencias. Rode de novo mais tarde."
+            exit 0
+          fi
+          exit $codigo
 
       # Job que se pula sozinho e verde que nao testou nada (§1.5). Enquanto a
       # conta de staff nao existir, o painel de admin segue SEM cobertura de
@@ -169,10 +191,67 @@ jobs:
       - name: todo arquivo de src/ está no mapa
         run: node scripts/mapa-de-arquivos.mjs
 
+      # `[01/09]` Segredo commitado e o erro com a pior curva de conserto:
+      # apagar o arquivo NAO resolve, porque a chave fica no historico do git e
+      # o repositorio e publico. O conserto e rotacionar no fornecedor.
+      #
+      # O .gitignore cobre .env, mas .gitignore e convencao, nao trava: um
+      # `git add -f`, um nome de arquivo novo, ou uma chave colada dentro de um
+      # .js passam sem ninguem ver.
+      #
+      # Ele NAO procura a anon key: ela e publica por construcao (vai no bundle),
+      # e marca-la como vazamento seria alarme falso em todo PR.
+      - name: nenhum segredo no repositório
+        run: npm run segredos
+
+      # `[02/09]` A terceira pergunta, e nenhum dos dois de cima a fazia.
+      #
+      # O primeiro pega documento que cita arquivo INEXISTENTE. O segundo pega
+      # arquivo que existe e nenhum documento cita. Os dois olham NOMES DE
+      # ARQUIVO — e por isso os dois deram verde enquanto o AUDITORIA.md
+      # afirmava "131 arquivos / 14.362 linhas" num projeto de 301 arquivos e
+      # 28.679 linhas. Nenhum arquivo tinha sumido; o NÚMERO é que estava velho.
+      #
+      # E o número não era enfeite: a frase "~14 mil linhas, lível por inteiro"
+      # é a premissa da regra que manda ler 100% do código numa auditoria.
+      - name: os números escritos na documentação batem com o projeto
+        run: npm run numeros -- --check
+
+      # `[02/09]` A quarta, e ela vigia o próprio mapa.
+      #
+      # O relatório mensal só enxerga o que está no mapa de territórios, que é
+      # escrito à mão. Pasta fora do mapa não fica "atrasada" — fica invisível,
+      # e o verde passa a significar "não olhei ali".
+      #
+      # O caso: `src/components/privacidade/`, onde mora o TEXTO DA POLÍTICA DE
+      # PRIVACIDADE, não tinha dono. O PR #140 reescreveu o bloco de retenção e
+      # os três portões aprovaram uma mudança em documento legal sem pedir que
+      # a documentação acompanhasse.
+      - name: toda parte do sistema tem documento responsável
+        run: node scripts/territorio-coberto.mjs
+
   deploys:
     name: a branch não gasta deploy da Vercel
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    # `[05/09]` BRANCH DE BOT NÃO ENTRA, e não é frouxidão — é que a exigência
+    # é IMPOSSÍVEL de cumprir ali. O Dependabot nomeia a branch com um hash
+    # aleatório (`dependabot/npm_and_yarn/minors-d04e3cbc33`), que só existe
+    # depois de a branch nascer: não há como pré-cadastrar em `vercel.json`.
+    #
+    # O resultado era três PRs de atualização de dependência VERMELHOS há dias,
+    # incluindo bumps de segurança, travados por um portão que eles nunca
+    # teriam como satisfazer. Vermelho que não significa defeito ensina a
+    # ignorar o vermelho (§0.2, quarta regra) — e aqui ainda por cima BLOQUEAVA
+    # atualização de segurança, que é o oposto do que o portão existe para
+    # proteger.
+    #
+    # O custo de deixar passar é pequeno e mensurável: o `ignoreCommand` já pula
+    # o build de commit que não toca no que vai para o navegador, então bump de
+    # GitHub Actions não gera deploy nenhum. Sobra o bump de npm, que é raro e
+    # agrupado — alguns deploys por mês contra um teto de 100 por DIA.
+    if: >-
+      github.event_name == 'pull_request'
+      && !startsWith(github.head_ref, 'dependabot/')
     steps:
       - uses: actions/checkout@v7
 
@@ -268,6 +347,66 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[01/09]` Chegar no LUGAR CERTO. Dois bugs achados pelo dono não
+      # quebravam nada visível — a página abria, os links existiam, o console
+      # ficava limpo. Eles só entregavam a pessoa no lugar errado, e por isso
+      # passaram por todos os portões que já existiam.
+      #
+      # Confere os TRÊS casos de propósito: um `scrollTo(0,0)` jogado em
+      # qualquer lugar consertaria o primeiro e quebraria a âncora e o botão
+      # voltar.
+      - name: A navegação entrega a pessoa no lugar certo
+        run: npm run test:e2e:navegacao
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
+      # `[02/09]` O contrato do botão de som: clicar SEMPRE alterna, com e sem
+      # preferência salva. O teste antigo só cobria o primeiro acesso — ou
+      # seja, o caminho de quem nunca voltou —, e por isso deu verde num botão
+      # que o dono relatou como travado.
+      - name: O botão de som ambiente alterna sempre
+        run: npm run test:e2e:som
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
+      # `[04/09]` As duas artes da tela de entrada chegam como UMA imagem com os
+      # dois lutadores, e viram fundo depois de recortadas. O primeiro recorte
+      # foi numa reta vertical no meio — e os dois se sobrepõem em ~75 colunas,
+      # então o gelo levou um pedaço do fogo junto. Quem viu foi o dono, no
+      # celular. Este passo conta pixels da cor errada na borda que encosta na
+      # fenda; com o recorte antigo ele acusa 638, com o novo, 0.
+      - name: As artes do login não carregam pedaço do adversário
+        run: npm run test:e2e:arena
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
+      # `[01/09]` Com o banco fora, o site inteiro ficava inacessível: um
+      # `return <OfflineGate />` acima do <Routes> matava até /sobre e /login,
+      # que não dependem do banco. A regra que ficou: fora do ar bloqueia SÓ o
+      # que depende do banco.
+      #
+      # O teste bloqueia o host do Supabase dentro do navegador e força o
+      # estado de verdade com 4 tentativas de login — a primeira versão dele
+      # NAO chegava a esse estado e passava mesmo com o bug reinjetado.
+      - name: Com o banco fora, o que é estático continua de pé
+        run: npm run test:e2e:sembanco
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+
+      # `[03/09]` A /contato passou a carregar o captcha do Cloudflare, e isso
+      # coloca o navegador de quem abre a pagina no registro de mais uma
+      # empresa. A politica de privacidade AFIRMA quem recebe o que, e afirma
+      # que o site nao usa cookie — este passo MEDE as duas coisas em vez de
+      # confiar no texto.
+      #
+      # Ele sai com 2 (ambiente) quando o Cloudflare esta inalcancavel: "nao
+      # consegui medir" e "medi e esta limpo" sao respostas diferentes.
+      - name: A /contato entrega para fora so o que a politica declara
+        run: npm run test:e2e:terceiro
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
       # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
       # animação) contra 789 ms de execução de script — ou seja, o custo nunca
@@ -315,6 +454,45 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
 
+      # `[01/09]` A CAMADA QUE NAO TINHA PORTAO NENHUM.
+      #
+      # Ate aqui nenhum job do CI tocava o Postgres. O passo acima bate nas
+      # Edge Functions; o resto le `src/` e a documentacao. E o banco e onde a
+      # seguranca de verdade mora: o site usa a `anon key`, entao qualquer um
+      # chama a REST API direto e pula o frontend inteiro.
+      #
+      # Pior: mudanca de banco e feita por MCP e NAO deixa rastro no
+      # repositorio (§5). Um GRANT a mais some junto com a conversa, e nenhum
+      # portao que leia arquivos veria isso.
+      #
+      # Ele confere as DUAS direcoes. A segunda e a que ja derrubou o site tres
+      # vezes: revoke bem-intencionado que para post, comentario e upload EM
+      # SILENCIO. Um portao que so olhasse "fechado continua fechado" aprovaria
+      # com prazer o revoke que derruba tudo.
+      - name: As portas do banco continuam no lugar
+        run: npm run test:banco
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      # `[02/09]` O espelho de migrations ficou 9 migrations para tras — o canal
+      # de contato inteiro, a idade minima e a tabela de aceite das politicas
+      # existiam no banco e nao no repositorio. O README daquela pasta promete
+      # que ela recria o banco do zero, e a promessa estava falsa.
+      #
+      # Falha silenciosa (§1.5) aplicada a recuperacao de desastre: so
+      # apareceria no dia em que alguem precisasse recuperar o banco.
+      #
+      # O README dizia que comparar exigiria um token de gestao no CI — verdade
+      # para comparar CONTEUDO, falso para comparar a CONTAGEM. A RPC
+      # `contagem_de_migrations()` devolve um inteiro e roda com a anon key.
+      # Nenhum segredo novo entrou.
+      - name: O espelho de migrations acompanha o banco
+        run: node scripts/espelho-de-migrations.mjs
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
   fluxos:
     name: fluxos autenticados
     runs-on: ubuntu-latest
@@ -326,9 +504,23 @@ jobs:
     #     E2E_PASSWORD  = a senha dela
     # A conta tem que ser `role = 'user'`: o teste confere justamente que ela
     # NÃO enxerga /admin nem /owner.
+    #
+    # `[05/09]` PR DO DEPENDABOT NÃO RODA ESTE JOB, e o motivo é do GitHub, não
+    # meu: workflow disparado pelo Dependabot **não recebe os secrets do
+    # repositório**. É proteção deliberada da plataforma — uma dependência
+    # maliciosa poderia exfiltrar a senha durante o `npm install`.
+    #
+    # Sem `E2E_PASSWORD`, o teste não tem como logar e falhava com "credenciais
+    # nao definidas" em TODO PR de dependência. Isso não é o teste pegando um
+    # defeito; é o teste não tendo como existir ali.
+    #
+    # A condição é pelo ATOR e não por "secret vazio" de propósito: se um dia a
+    # senha sumir das configurações num PR meu, eu QUERO o vermelho. Pular por
+    # "faltou credencial" esconderia exatamente esse caso (§1.5).
     if: >-
       vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
       && github.event_name == 'pull_request'
+      && github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v7
 

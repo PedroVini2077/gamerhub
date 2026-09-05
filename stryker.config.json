@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comentario": [
+    "TESTE DE MUTAÇÃO — o mecanismo que faltava para o padrão de falha nº 3.",
+    "",
+    "Ver docs/DECISOES-FERRAMENTAL.md para o porquê, e para o que ele NÃO faz.",
+    "Roda com `npm run mutacao`. NÃO roda no CI de todo PR, e isso é escolha:",
+    "ver a seção 'por que sob demanda' naquele documento.",
+    "",
+    "O escopo é deliberadamente pequeno — só a lógica pura de src/lib/. Mutar",
+    "componente de tela produz montanha de mutante que nenhum teste razoável",
+    "mata, e um número que ninguém consegue melhorar é um número que todo mundo",
+    "aprende a ignorar (CLAUDE.md §0.2, 4ª regra).",
+    "",
+    "O piso de 65 tem MARGEM de proposito. O score hoje e 71,07 — colar o piso no valor atual faria qualquer refatoracao inocente reprovar o build, e portao que acusa errado ensina a ignorar o canal. Ele e um piso a SUBIR com o tempo, nao uma meta a bater."
+  ],
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vite.config.js"
+  },
+  "reporters": [
+    "clear-text",
+    "progress"
+  ],
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/lib/recarregarAteAparecer.js",
+    "src/lib/preferenciaDeSom.js",
+    "src/lib/etapasDoCaso.js",
+    "src/lib/documentosLegais.js",
+    "src/lib/wordlist.js",
+    "src/lib/roles.js",
+    "src/lib/loginBlock.js",
+    "src/lib/date.js",
+    "src/lib/ritmoDoRaio.js",
+    "src/lib/paginacaoDePosts.js"
+  ],
+  "thresholds": {
+    "high": 90,
+    "low": 75,
+    "break": 65
+  },
+  "timeoutMS": 20000,
+  "concurrency": 2,
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true
+}

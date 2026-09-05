@@ -10,11 +10,47 @@
 ```
 src/
 ├── App.jsx                # Rotas, layout, HomeOrLanding, modo manutenção, feature gates
+├── paginasLazy.js         # As páginas sob demanda, só declaração. Saíram do
+│                          # App.jsx quando ele passou de 300 linhas (§4)
 ├── main.jsx               # Bootstrap React
 ├── index.css              # Tema (cores neon, classes .card/.btn/.tag/.input)
+├── estilos/               # `[04/09]` O CSS do site, em partes. A ORDEM dos
+│   │                      # @import no index.css é comportamento, não gosto:
+│   │                      # CSS resolve empate de especificidade por ordem
+│   ├── fontes.css         # @font-face das três famílias, servidas do domínio
+│   ├── tailwind.css       # as três diretivas @tailwind, isoladas para o
+│   │                      # index.css poder ser só imports
+│   ├── base.css           # reset, variáveis de cor, body — DEPOIS do preflight
+│   ├── componentes.css    # card, input, botões, tags, nav, texto neon,
+│   │                      # animações compartilhadas, celular, avatar.
+│   │                      # DEPOIS das utilitárias do Tailwind, de propósito
+│   ├── decoracao.css      # fundo das páginas públicas, intro do raio, peças
+│   │                      # de videogame, luzes de arena, explosões, aviso
+│   ├── cofre.css          # `[05/09]` o giro do disco do cofre do Fundador
+│   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
+│   ├── portao/            # o portão de boas-vindas, em 3 partes
+│   │   ├── superficie.css # as duas folhas de 50vw × 100vh e o que está
+│   │   │                  # desenhado nelas — o estado TRANCADO
+│   │   ├── tranca.css     # o quadrado centrado na emenda e o giro do disco
+│   │   └── estados.css    # texto, destravamento e abertura. Por ÚLTIMO:
+│   │                      # sobrescreve os dois de cima, e CSS decide
+│   │                      # empate por ordem
+│   ├── arena.css          # só os 4 @import da arena, e a ordem deles
+│   └── arena/             # o fundo do login e do cadastro, em 4 partes
+│       ├── cena.css       # os dois lados, a fenda e o VS
+│       ├── lutadores.css  # as artes, a entrada de cada uma, o cadastro
+│       ├── efeitos.css    # a moldura das bordas e as partículas.
+│       │                  # ATENÇÃO: o url() aqui é relativo a ESTA pasta
+│       └── celular.css    # a composição do telefone e a de quem pediu menos
+│                          # movimento — por último, porque sobrescreve
 ├── assets/
-│   └── landing/           # Prints reais do site usados na landing (feed, mural, lives,
-│                          # ranks, keys) — nomes de usuários censados por privacidade
+│   ├── landing/           # Prints reais do site usados na landing (feed, mural, lives,
+│   │                      # ranks, keys) — nomes de usuários censados por privacidade
+│   └── auth/              # `[04/09]` As artes da tela de entrada, NA PALETA DO
+│                          # SITE (verde neon x roxo): os dois lutadores em
+│                          # `verde-*`/`roxo-*` (WebP, 340 e 720 de altura) e a
+│                          # moldura de circuito das bordas. A cor NÃO é escolha
+│                          # livre — é a identidade do site (ver DECISOES.md)
 ├── hooks/
 │   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
 │   │                      # árvore e o arquivo de maior risco do projeto (§7)
@@ -37,6 +73,10 @@ src/
 │   ├── useOwnerUserActions.js    # As mesmas ações, no painel do fundador
 │   ├── useCargoDecisions.js      # Decisões de indicação/estágio/rebaixamento
 │   ├── useUnbanRequests.js       # Pedidos de desbanimento pendentes
+│   ├── useMensagensDeContato.js  # Estado da aba "Contato" do painel admin
+│   ├── useAceitesPendentes.js    # Quais documentos faltam ser aceitos. Guarda
+│   │                      # de QUEM são os dados: resposta que chega depois de
+│   │                      # a sessão trocar é reconhecível como velha
 │   ├── useBlockedLogins.js       # Logins travados por excesso de tentativa
 │   ├── usePostComposer.js # Publicar: upload, moderação e limpeza do formulário
 │   ├── usePostEngagement.js # Curtidas e comentários de um post
@@ -48,6 +88,13 @@ src/
 │   ├── useUserXP.js       # XP e rank do usuário
 │   ├── useAvatarUpload.js # Envio da foto de perfil
 │   ├── useDeleteCountdown.js # Contagem antes de ação destrutiva, com cancelar
+│   ├── useConfigDoSite.jsx # `[03/09]` A config global (manutenção + motivo da
+│   │                      # pausa), lida UMA vez no topo da árvore. Vivia
+│   │                      # dentro do `Layout`, que nunca monta na landing —
+│   │                      # por isso quem chegava por ela via a mensagem
+│   │                      # genérica mesmo com o banco de pé. É contexto, e
+│   │                      # não hook solto: duas chamadas criavam o MESMO
+│   │                      # canal de realtime e derrubavam o site
 │   ├── useDbOffline.js    # `true` enquanto o site está sem banco (ver lib/dbHealth)
 │   └── useVisiblePoll.js  # Repete uma chamada, mas SÓ com a aba visível
 ├── lib/
@@ -62,6 +109,39 @@ src/
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
+│   ├── turnstile.js       # Carrega o captcha do Cloudflare SOB DEMANDA, só na
+│   │                      # /contato. A chave PÚBLICA mora aqui de propósito
+│   │                      # (mesmo motivo do DSN do Sentry), e há teto de 12 s:
+│   │                      # sem ele, script que nunca chega deixaria o
+│   │                      # formulário em "carregando" para sempre
+│   ├── somAmbiente.js     # Som ambiente da landing: ciclo de vida do áudio,
+│   │                      # volume, fade e a garantia de UMA instância só.
+│   │                      # Não sabe QUE som toca — isso são os dois abaixo
+│   ├── trilhaAmbiente.js  # O arquivo real. `[03/09]` Trocado a pedido do dono
+│   │                      # para "Lofi Coffee Shop" (Alex Morgan, Pixabay
+│   │                      # Content License). Baixa sob demanda, decodifica e
+│   │                      # toca em laço. O original NÃO era loop: tinha
+│   │                      # fade-out no fim, e a região foi recortada e
+│   │                      # costurada com crossfade — o ponto de corte saiu de
+│   │                      # medir 5 candidatos, não de escolher a olho
+│   ├── vozesSintetizadas.js # O plano B, quando o arquivo não chega (rede
+│   │                      # fora, codec ausente). Silêncio aqui daria um
+│   │                      # botão "ligado" sem som — a tela mentindo
+│   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
+│   │                      # da cena a cada mudança de frameloop
+│   ├── rotasComSom.js     # Onde o som ambiente toca. Lista FECHADA: rota
+│   │                      # desconhecida é silêncio, não música — a regra
+│   │                      # invertida faria toda página nova nascer tocando
+│   ├── acentoDaSecao.js   # Como cada seção do site logado se veste: a COR do
+│   │                      # fundo e o ELENCO de peças. Sem padrão de propósito:
+│   │                      # tela nova sem entrada aparece sem fundo e sem peças
+│   ├── documentosLegais.js # Os três documentos que a pessoa aceita, e a
+│   │                      # VERSÃO de cada um. Sem versão, mudar a política
+│   │                      # apagaria o sentido de todo aceite anterior
+│   ├── preferenciaDeSom.js # A decisão sobre o som ambiente, com TRÊS estados
+│   │                      # (ligado / desligado / nunca escolheu). Apagar a
+│   │                      # chave ao desligar tornava "desliguei" igual a
+│   │                      # "nunca escolhi" — e o autoplay religaria o som
 │   ├── introJaVista.js    # Lembra, por sessão do navegador, que a intro do
 │   │                      # raio já foi vista — e decide se ela toca
 │   ├── roles.js           # Hierarquia de cargos no cliente; espelha `role_rank()`
@@ -69,10 +149,44 @@ src/
 │   ├── roleLabels.js      # Fonte única do nome e da cor de cada cargo na UI
 │   ├── realtimeTables.js  # TRAVA: assinatura de realtime só vale para tabela que
 │   │                      # está na publicação `supabase_realtime`
+│   ├── tabelasSemUpdate.js # TRAVA: as tabelas SEM policy de UPDATE no banco.
+│   │                      # `update` nelas devolve 0 linhas e NENHUM erro — a
+│   │                      # tela diz que salvou e nada acontece
+│   ├── etapasDoCaso.js    # As etapas da linha do tempo de quem foi banido.
+│   │                      # TRAVA: o mapa de desfechos tem que cobrir os
+│   │                      # status que `unban_requests` aceita — a tela testava
+│   │                      # `rejected` e o banco grava `denied`
+│   ├── recarregarAteAparecer.js # Recarrega a lista até o item recém-criado
+│   │                      # aparecer. Leitura logo após escrita pode cair numa
+│   │                      # conexão do pool que ainda não vê a linha — o feed
+│   │                      # engolia o post e nada estourava (§1.5)
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
+│   ├── boasVindas.js      # `[04/09]` As duas marcas da tela de boas-vindas:
+│   │                      # "acabou de entrar" (sessionStorage — morre ao
+│   │                      # fechar a aba, e é isso que impede a tela de voltar
+│   │                      # a cada F5) e "já entrou antes" (localStorage).
+│   │                      # Todo acesso em try: armazenamento LANÇA em aba
+│   │                      # anônima, e enfeite não pode derrubar o login.
+│   │                      # `[05/09]` A marca é escrita ANTES do login, e
+│   │                      # `nomeDaSaudacao()` tem duas fontes porque o perfil
+│   │                      # pode não ter chegado quando o portão sobe
+│   ├── conquistas.js      # `[05/09]` As 8 conquistas do perfil. DERIVADAS do
+│   │                      # que a get_user_xp já devolve — zero tabela, zero
+│   │                      # trigger, zero consulta nova. avaliarConquistas()
+│   │                      # devolve null (e não zeros) enquanto falta dado
+│   ├── cofre.js           # `[05/09]` O cofre do painel do Fundador: define,
+│   │                      # confere e abre por aba. CENOGRÁFICO — tranca de
+│   │                      # tela, não autorização. O código nunca é guardado,
+│   │                      # só um resumo SHA-256 com sal por aparelho.
+│   │                      # A tabela de o que ele protege está no cabeçalho
 │   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
 │   ├── pauseReason.js     # Motivo da pausa, guardado no navegador
+│   ├── ehFalhaDeRede.js   # `[03/09]` Este erro é queda de REDE ou defeito do
+│   │                      # site? O `ErrorBoundary` chamava Wi-Fi caindo de
+│   │                      # "algo deu errado", e a mensagem falsa mandava
+│   │                      # procurar bug onde não havia. Trava os DOIS lados:
+│   │                      # confundir bug com rede o esconderia do Sentry
 │   ├── objectUrls.js      # Controle de blob URLs — sem revoke, o arquivo fica na RAM
 │   ├── monitoring.js      # Sentry sob demanda
 │   ├── capturaAntecipada.js # Rede de captura que existe ANTES de o Sentry chegar
@@ -102,6 +216,18 @@ src/
 │   │                      # a sua convenção (um chegou a lançar exceção)
 │   ├── banService.js      # Ban, desban e o pedido de revisão aberto pela
 │   │                      # PRÓPRIA pessoa banida
+│   ├── contatoService.js  # O canal público `/contato`: envio pela RPC (única
+│   │                      # porta de entrada da tabela) e a leitura da equipe
+│   ├── aceiteService.js   # Grava a PROVA do aceite dos documentos: quem, qual
+│   │                      # documento, qual versão, quando. A caixinha do
+│   │                      # formulário não prova nada sozinha
+│   ├── cadastroService.js # Criar conta, do zero até a prova do aceite. Saiu do
+│   │                      # `useAuth.jsx` em 03/09: aquele é o arquivo de maior
+│   │                      # risco do projeto e cuida de SESSÃO — cadastro
+│   │                      # acontece ANTES de existir sessão, e foi por isso que
+│   │                      # dois bugs se esconderam lá dentro (o UPDATE que
+│   │                      # rodava como `anon` e afetava 0 linhas em silêncio,
+│   │                      # e o `select` que mantinha `profiles` aberto)
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
@@ -126,6 +252,13 @@ src/
 │   │                      # direto da fila de moderação; mostra conteúdo oculto
 │   │                      # para quem é da equipe (a RLS decide)
 │   ├── Sobre.jsx          # `/sobre` — pública, para ler antes de criar conta
+│   ├── Termos.jsx         # `/termos` — o terceiro documento, e o único que
+│   │                      # fala de CONTRATO: de quem é o conteúdo, quando a
+│   │                      # conta é encerrada, que garantia não existe
+│   ├── Contato.jsx        # `/contato` — falar com a administração de FORA do
+│   │                      # site. Pública porque quem está banido, quem perdeu
+│   │                      # o acesso e quem nem tem conta são exatamente as
+│   │                      # pessoas que mais precisam dela
 │   ├── MuralPage.jsx      # Uma mensagem do mural, em `/mural/:id`
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
@@ -139,22 +272,88 @@ src/
 │   └── NotFound.jsx       # 404
 └── components/
     ├── ErrorBoundary.jsx
+    ├── layout/            # Sidebar, Header
+    │   ├── FundoDaSecao.jsx # O fundo do site logado, em DUAS camadas com
+    │   │                  # papéis separados: `LuzesDaArena` é atmosfera (quase
+    │   │                  # parada) e `PecasFlutuantes` é o movimento. Duas
+    │   │                  # camadas se mexendo disputariam atenção com o texto
+    │   ├── LuzesDaArena.jsx # `[03/09]` A camada de baixo, e ela NÃO é a da
+    │   │                  # landing: o dono corrigiu que o site logado tem que
+    │   │                  # ser diferente. Duas luzes que respiram em ciclos
+    │   │                  # primos entre si (37 s e 53 s, nunca coincidem) e
+    │   │                  # cinco mini explosões em anel, nas cores da MARCA e
+    │   │                  # não da seção — se herdassem o acento da aba,
+    │   │                  # sumiriam dentro da própria cor
+    │   ├── PecasFlutuantes.jsx # As peças que atravessam a tela. Só CSS no
+    │   │                  # compositor — zero bloqueio medido a CPU 1/4
+    │   └── pecasDeJogo.jsx # Os SVG: controle, d-pad, moeda, vida, troféu,
+    │                      # nave, raio, balão, chave, fliperama. Desenhados
+    │                      # aqui e não emoji de teclado, que muda por sistema
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm, InputWrap
+    │   ├── ArenaDeEntrada.jsx # `[04/09]` O fundo do login e do cadastro:
+    │   │                  # dois lutadores NA PALETA DO SITE (verde x roxo),
+    │   │                  # fenda e VS no meio. Os personagens e a moldura são
+    │   │                  # ARTE do dono (transparência conferida no canal
+    │   │                  # alfa); o resto — gradiente, faísca, estilhaço,
+    │   │                  # entrada e o fade cruzado — é CSS/Framer que só
+    │   │                  # anima transform/opacity. Celular e PC têm
+    │   │                  # composições diferentes, por @media e não por JS
+    │   ├── PortaDeAcesso.jsx # `[05/09]` A porta, e ela É A TELA: duas folhas
+    │   │                  # de 50vw x 100vh. Superfície em CSS (gradiente
+    │   │                  # cobre qualquer proporção sem deformar) e só o
+    │   │                  # mecanismo em SVG (a tranca precisa continuar
+    │   │                  # redonda). O disco é desenhado INTEIRO nas duas
+    │   │                  # folhas e o `overflow: hidden` de cada uma faz o
+    │   │                  # corte — daí simetria exata e nada escapando da
+    │   │                  # moldura na abertura
+    │   ├── PortaoDeBoasVindas.jsx # `[04/09]` A tela que cobre a entrada
+    │   │                  # depois do login: duas folhas que abrem, com a
+    │   │                  # saudação. Não inventa espera — cobre a que já
+    │   │                  # existe (perfil + feed carregando). PISO 700 ms,
+    │   │                  # TETO 2500 ms, e o teto é regra (§0.3)
+    │   ├── CardQueAcompanhaAltura.jsx # `[04/09]` O card do login com a altura
+    │   │                  # animada na troca de aba. Mede o conteúdo por
+    │   │                  # ResizeObserver e só anima quando a `chave` muda —
+    │   │                  # senão animaria a cada tecla digitada. Existe porque
+    │   │                  # o `layout` do Framer foi medido e não animou nada
+    │   └── AceiteDosDocumentos.jsx # UMA caixinha cobrindo os três documentos,
+    │                      # com links em aba nova. Três caixinhas separadas
+    │                      # treinam a pessoa a clicar sem ler
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal
     ├── admin/             # UsersPanel, PostsPanel, LivesPanel, KeysPanel,
+    │   ├── CartaoDeContato.jsx # Uma mensagem do formulário público na visão
+    │   │                  # da equipe, com a caixa de resposta. Cada estado só
+    │   │                  # oferece o que faz sentido — e todo estado tem a
+    │   │                  # INVERSA (reabrir, não é spam), que antes faltava
     │                      # NotifsPanel, LogsPanel, SuperAdminPanel, StatCard,
     │                      # AdminTabs, AdminTabContent, AdminModals
+    │   ├── ContatoPanel.jsx # As mensagens do formulário público. É o outro
+    │   │                  # lado do canal: sem ele a mensagem cairia numa
+    │   │                  # tabela que ninguém abre (§1.5)
     │   ├── UnlockLoginModal.jsx / UnlockCountdownBtn.jsx # Desbloqueio de login,
     │   │                  # com espera forçada de 10 s — o tom é pesado de propósito
     │   ├── UnbanRequestModal.jsx / ReactivationModal.jsx # Análise de pedidos
     │   └── cargos/        # CargosTab e as peças dela: CargoSection, NominationCard,
     │                      # TrialCard, DemotionCard, CandidateHeader,
     │                      # EligibilityChecklist, DecisionButton
+    ├── ui/                # ConfirmModal, ReasonModal, BannedScreen, …
+    │   └── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
+    │                      # olho de mostrar/ocultar. O olho é nosso: o nativo
+    │                      # só existe em alguns navegadores de Android, e o
+    │                      # CSS o esconde para não ficarem dois
+    ├── profile/           # ProfileIdentityCard, PlayerStatsCard, GamingCard,
+    │   │                  # PersonalInfoCard, SocialLinksCard, AvatarModal
+    │   └── ConquistasCard.jsx # `[05/09]` as conquistas, lendo os MESMOS dados
+    │                      # do card de stats
     ├── owner/             # PainelTab, UsuariosTab, LogsTab, SiteTab,
     │                      # NotificacoesTab, MetricasTab, SiteModerationCards
+    │   ├── CofreDoFundador.jsx # `[05/09]` a tranca de tela na frente do
+    │   │                  # painel. CENOGRÁFICA, e o aviso disso está impresso
+    │   │                  # embaixo do campo — a autorização real é do banco
+    │   ├── DiscoDoCofre.jsx # o disco que gira ao destrancar (SVG próprio)
     │   └── usuarios/      # UserRow, UserFilters, RoleOverride (o cargo de
     │                      # fundador NÃO se atribui por override)
     ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,
@@ -166,14 +365,22 @@ src/
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
+    │   ├── FluxoDeDados.jsx # Traços de dados subindo atrás da landing.
+    │   │                  # Parallax por variável CSS + UM ouvinte de ponteiro,
+    │   │                  # agrupado em 3 planos por custo medido
+    │   ├── BotaoDeSom.jsx # Liga/desliga o som ambiente. Desligado por padrão:
+    │   │                  # navegador bloqueia autoplay, e site que toca
+    │   │                  # sozinho faz fechar a aba
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
     │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
     │                      # SceneObjects (LogoBolt/FloatingShapes)
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
-    │                      # InputWrap, e os dois porteiros de rota:
-    │                      # RequireAuth (barra visitante) e GuestOnly (barra logado)
+    │                      # InputWrap, LoginSemBanco (o que a tela de login diz
+    │                      # quando o banco está fora), e os dois porteiros de
+    │                      # rota: RequireAuth (barra visitante) e GuestOnly
+    │                      # (barra logado — só com o banco de pé, ver OPERACAO)
     ├── layout/            # Header e RightPanel do site logado
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard,
     │                      # CommentComposer, EditCountdown (janela de edição)
@@ -185,19 +392,64 @@ src/
     ├── profile/           # ProfileIdentityCard, PersonalInfoCard, GamingCard,
     │                      # SocialLinksCard, PlayerStatsCard, AvatarModal,
     │                      # AdminApplicationCard
+    ├── conteudo/          # A casca das páginas públicas de texto
+    │   ├── PaginaDeConteudo.jsx # Extraída quando a SEGUNDA ia nascer: cópia
+    │   │                  # diverge (§4). Hoje serve /privacidade, /regras,
+    │   │                  # /termos e /contato
+    │   └── FundoAnimado.jsx # As peças que atravessam a tela atrás do texto.
+    │                      # Mora na CASCA, não em cada página: assim toda aba
+    │                      # nova ganha por construção, e ninguém precisa
+    │                      # lembrar de acrescentar uma linha
+    ├── regras/            # As regras da comunidade (`/regras`), públicas
+    │   └── conteudoDasRegras.js # O texto, tirado do que a moderação REALMENTE
+    │                      # faz — se uma regra está lá, há mecanismo por trás
+    ├── termos/            # Os Termos de Uso (`/termos`), públicos
+    │   └── conteudoDosTermos.js # O texto, escrito a partir do que o sistema
+    │                      # faz — termo que promete o que o site não faz é
+    │                      # pior do que termo nenhum
+    ├── contato/           # O canal público para falar com a administração
+    │   ├── assuntosDeContato.js # Mapa EXPLÍCITO dos assuntos. A lista existe
+    │   │                  # também no CHECK do banco, e um teste compara as
+    │   │                  # duas contra o SQL aplicado em db/
+    │   ├── DesafioAntiRobo.jsx # O captcha na tela. Quando o script do
+    │   │                  # Cloudflare não carrega ele DIZ isso e oferece
+    │   │                  # tentar de novo — botão morto e mudo seria pior
+    │   │                  # aqui do que em qualquer outra tela, porque este é
+    │   │                  # o canal de quem está trancado para fora
+    │   └── FormularioDeContato.jsx # O formulário. Não consulta NADA antes de
+    │                      # enviar — responder diferente conforme o e-mail
+    │                      # informado seria oráculo de enumeração
+    ├── privacidade/       # A política de privacidade (`/privacidade`), pública
+    │   └── conteudoDaPrivacidade.js # O texto, escrito a partir do
+    │                      # levantamento medido em docs/PRIVACIDADE.md. Bloco
+    │                      # `pendente` = decisão do dono, marcada na tela
     ├── sobre/             # A página do projeto (`/sobre`), pública
     │   ├── conteudoDoSobre.js # Os sete blocos de texto — a FONTE, escrita pelo
     │   │                  # dono. A página só renderiza esta lista
     │   ├── iconesDoSobre.js   # Mapa explícito nome -> ícone do lucide. Sem
     │   │                  # padrão de propósito: bloco sem ícone estoura no teste
-    │   └── FundoAnimado.jsx   # As doze peças que atravessam a tela atrás do
-    │                      # texto. Só CSS, sem laço de JS — ver DESEMPENHO.md
+    │   ├── CreditosDeMidia.jsx # Atribuição TASL da mídia de terceiro. NÃO é
+    │   │                  # cortesia: CC-BY exige crédito visível, e um teste
+    │   │                  # varre src/assets/som/ exigindo crédito por arquivo
     └── ui/                # Avatar, AvatarPopup, BanModal, BannedScreen,
                            # ConfirmModal, ReasonModal, ReportModal, SuspendedNotice,
                            # EmbedPlayer, MediaCarousel, MediaLightbox, MediaPlayer,
                            # AudioRecorder, GlobalBanner, FeatureGate,
-                           # LazyVisible, PageTransition, SplashScreen (só durante
-                           # a resolução inicial da sessão) e OfflineGate
+                           # LinhaDoTempoDoCaso (o andamento do recurso, na
+                           # tela de quem foi banido),
+                           # AvisoDeAceite (documento novo para aceitar — avisa
+                           # e NÃO bloqueia; some por sessão, não para sempre),
+                           # LazyVisible, PageTransition, RolagemDeRota (decide
+                           # para onde a página rola ao trocar de rota),
+                           # AvisoSemBanco (faixa
+                           # de banco fora do ar — não sequestra o app),
+                           # MaintenancePage (`[03/09]` a tela de pausa, e ela
+                           # mostra o MOTIVO que o dono escreveu no painel —
+                           # antes o texto era cravado e o `pause_reason`
+                           # morria sem aparecer; saiu do App.jsx quando ele
+                           # passou de 300 linhas),
+                           # SplashScreen (só durante
+                           # a resolução inicial da sessão)
 ```
 
 **Fora de `src/`** — atualizado em 28/08, porque esta nota só citava `db/`:
@@ -206,8 +458,9 @@ src/
 | --- | --- |
 | `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
-| `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
-| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
+| `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, **segredos vazados**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
+| `stryker.config.json` | Configuração do teste de mutação (`npm run mutacao`). Escopo deliberadamente pequeno: só a lógica pura de `src/lib/` |
+| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados, painel de admin, portas das Edge Functions, **portas do banco** (`portas-do-banco.mjs`, o único que fala com o Postgres), o laço da cena 3D, e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
 | `.claude/` | `settings.json` com o hook `SessionStart` — o gatilho que injeta o estado real do projeto no começo de toda sessão |
 | `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |
 | `db/` | Scripts SQL avulsos para o SQL Editor e os relatórios de auditoria (`AAAA-MM-DD-*.md`). Não são migrations |
@@ -339,8 +592,11 @@ Detalhadas no `CLAUDE.md`. Resumo:
   Transição de página global com `PageTransition` + `AnimatePresence`.
 - **Ícones**: Lucide para UI; `react-icons/fa6` para marcas.
 - **Modais** estilizados via `createPortal` (sem `window.prompt/confirm`).
-- Tema em `src/index.css` (classes `.card`, `.btn-neon/.btn-solid/.btn-purple`,
-  `.tag-*`, `.input-gamer`).
+- Tema em `src/estilos/componentes.css` (classes `.card`,
+  `.btn-neon/.btn-solid/.btn-purple`, `.tag-*`, `.input-gamer`). O `index.css`
+  é **só a lista de `@import`**, e a ordem dela é comportamento: `.card` só
+  vence uma utilitária do Tailwind de mesma propriedade porque vem depois de
+  `@tailwind utilities`.
 - **Arquivos pequenos**: ~300 linhas como guia; extrair UI repetida em
   componentes, lógica em hooks/utils, acesso a dados em services.
 - **Testes** unitários da lógica pura em `src/lib/__tests__/` (Vitest).

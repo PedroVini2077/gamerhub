@@ -41,6 +41,23 @@ export const ROTAS_VISITANTE = [
   // ler sobre o GamerHub antes de decidir criar conta — então ela tem que
   // funcionar para o VISITANTE, e é aqui que isso fica travado.
   { path: '/sobre', nome: 'Sobre', destino: '/sobre', esperado: /O GamerHub/i },
+  // `[02/09]` Pública pelo mesmo motivo, e um mais forte: ninguém deveria
+  // precisar criar conta para descobrir o que acontece com os dados dela.
+  { path: '/privacidade', nome: 'Privacidade', destino: '/privacidade', esperado: /cookies/i },
+  // Pública porque a tela de banimento aponta para cá: quem foi punido precisa
+  // alcançar as regras sem estar logado.
+  { path: '/regras', nome: 'Regras', destino: '/regras', esperado: /não cabe aqui/i },
+  // `[02/09]` Aqui "público" É o requisito, não conveniência: quem está
+  // banido, quem perdeu o acesso e quem nunca criou conta são exatamente as
+  // pessoas que mais precisam falar com a equipe — e todas estão do lado de
+  // fora do `RequireAuth`. Se esta rota um dia cair atrás do login, o canal
+  // deixa de atender justamente quem ele existe para atender, e é este teste
+  // que precisa gritar.
+  { path: '/contato', nome: 'Contato', destino: '/contato', esperado: /falar com/i },
+  // `[02/09]` Pública pela razão mais direta: ninguém deveria precisar criar
+  // conta para ler o que está aceitando AO criar conta. Se esta rota cair
+  // atrás do login, a tela de consentimento passa a linkar para o nada.
+  { path: '/termos', nome: 'Termos', destino: '/termos', esperado: /do acordo/i },
   { path: '/rota-que-nao-existe', nome: '404',            destino: null,     esperado: /404|não encontrad/i },
 ];
 

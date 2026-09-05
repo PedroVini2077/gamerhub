@@ -20,6 +20,8 @@ todas as tabelas públicas.**
 | `comments`                   | Comentários de posts; `parent_id` self-FK para replies em thread |
 | `comment_likes`              | Likes em comentários (único por `comment_id+user_id`)            |
 | `community_posts`            | Mensagens do mural da comunidade (texto, imagem, reações)        |
+| `community_post_likes`       | Likes do mural (único por `post_id+user_id`) — o espelho de `post_likes` |
+| `community_post_media`       | Mídias de uma mensagem do mural (url, tipo, posição) — o espelho de `post_media` |
 | `notifications`              | Notificações ao usuário (like/comentário/reply)                  |
 | `game_keys`                  | Keys e promoções de jogos                                        |
 | `live_chat`                  | Mensagens do chat das lives                                      |
@@ -27,6 +29,10 @@ todas as tabelas públicas.**
 | `live_muted`                 | Silenciamentos (registro complementar)                           |
 | `live_reactivation_requests` | Fila de reativação de lives (admin → super admin)                |
 | `unban_requests`             | Fila de desbanimento (admin → super admin/owner)                 |
+| `staff_nominations`          | Indicação de alguém para a equipe: candidato, quem indicou, cargo pretendido, `eligibility_snapshot` (o retrato dos critérios no dia), período de estágio (`trial_started_at`, `trial_review_date`) e a decisão final |
+| `role_change_requests`       | Pedido de mudança de cargo de quem **já** é da equipe: cargo anterior, proposto, motivo e revisão. Separada de `staff_nominations` porque promover quem já entrou não tem estágio |
+| `policy_acceptances`         | **A prova do aceite** das políticas: quem, qual documento, qual versão, quando. Append-only por desenho — sem policy de UPDATE nem DELETE, porque registro de consentimento que pode ser reescrito não prova nada. `ON DELETE CASCADE` é a exceção deliberada: a política promete que apagar a conta apaga os dados |
+| `contact_messages`           | Mensagens do formulário público `/contato`. **Sem policy de INSERT de propósito** — a única porta é a RPC `enviar_mensagem_de_contato`, e desde `[03/09]` ela também não é mais chamável por `anon` (o captcha). Só `is_staff()` lê e atualiza. `reply_text` guarda o que a equipe respondeu |
 | `login_attempts`             | Tentativas de login por e-mail (bloqueio) — sem acesso direto    |
 | `admin_logs`                 | Trilha de auditoria                                              |
 | `admin_notifications`        | Notificações para admins                                         |
@@ -70,6 +76,33 @@ um admin; restaurar é só voltar a `NULL`.
 não cria conteúdo (post/comentário/mural/chat) — imposto pelos `WITH CHECK` de
 INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspension`.
 
+### ⚠️ `[02/09]` "Negado" se escreve de DUAS formas neste banco
+
+Levantado com `pg_constraint` depois de um bug real, e é a armadilha mais fácil
+de cair aqui:
+
+| Tabela | O valor de "negado" |
+| --- | --- |
+| `unban_requests` | **`denied`** |
+| `live_reactivation_requests` | **`denied`** |
+| `moderation_queue` | `rejected` |
+| `role_change_requests` | `rejected` |
+| `staff_nominations` | `rejected` |
+
+**O bug que isso já causou:** a `BannedScreen` testava `rejected` para
+`unban_requests`. Nunca batia — quem teve o recurso negado via *"Em análise"*
+para sempre, e nada acusava. Quem escreveu tinha visto `rejected` três vezes no
+mesmo código.
+
+**Por que NÃO foram unificados:** seria migration em cinco tabelas, com
+`UPDATE` em linhas existentes e mudança em toda RPC e tela que as lê — risco
+real por ganho zero para quem usa o site. A decisão está em
+[DECISOES.md](DECISOES.md).
+
+**O que fazer no lugar:** ao renderizar um status, mapa explícito conferido por
+teste, como em `lib/etapasDoCaso.js`. Ternário terminando em `else` é o que
+transforma esta pegadinha em bug silencioso (§4).
+
 ### Funções (RPCs / triggers)
 
 **Chamadas pelo front (RPC):**
@@ -80,6 +113,34 @@ INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspensi
   `deny_unban_request`, `admin_unlock_login`, `get_blocked_logins`.
 - Recurso do próprio banido: `solicitar_revisao_do_proprio_ban` (um pedido por
   banimento, 20 a 1000 caracteres) e `meu_pedido_de_revisao` (o andamento).
+- Contato público `[02/09]`: `enviar_mensagem_de_contato(p_nome, p_email,
+  p_assunto, p_mensagem)`. É a **única** porta de entrada de
+  `contact_messages`, chamável por `anon`, e carrega sozinha toda a validação:
+  faixas de tamanho, lista fechada de assunto, teto de 3 por e-mail em 24 h e
+  disjuntor de 60/hora. Os dois limites de vazão devolvem a **mesma** frase, de
+  propósito — mensagens diferentes fariam dela um oráculo de enumeração. O
+  alarme de enchente mora no trigger `alertar_enchente_de_contato`, e **não**
+  dentro da RPC: um `RAISE EXCEPTION` desfaz o `INSERT` de log feito antes
+  dele, e a primeira versão gravava um alarme que nunca commitava. Ver
+  [`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
+
+  > **`[03/09]` Ela deixou de ser chamável por `anon`.** O captcha (Turnstile)
+  > só vale porque a única porta agora é a Edge Function `verify-contact`, que
+  > confere o token e chama a RPC com `service_role` — com `anon` alcançando a
+  > RPC, bastava um POST direto em `/rest/v1/rpc/` para pular a verificação. O
+  > `author_id` passou a ser parâmetro (`p_author_id`) porque `auth.uid()` é
+  > nulo quando quem chama é a função. Ver
+  > [SEGURANCA.md](SEGURANCA.md).
+
+- Resposta ao contato `[03/09]`: `contato_dados_para_resposta(p_id)` e
+  `contato_registrar_resposta(p_id, p_texto)`, as duas `SECURITY DEFINER` com
+  `is_staff()` **por dentro** — a Edge Function `responder-contato` as chama com
+  a credencial de quem pediu, então uma checagem que morasse só nela seria porta
+  decorativa (§1.3). A ordem entre elas é o ponto: o e-mail sai **entre** as
+  duas. Registrar antes de enviar reproduziria o defeito que isto conserta — o
+  painel dizendo "respondida" com o envio tendo falhado. `reply_text` guarda o
+  texto (10 a 4000, com `CHECK`), porque status sem conteúdo é carimbo, não
+  histórico.
 
 > **Correção `[29/08]`:** esta lista citava `register_login_attempt`, e a função
 > **não existe mais** — conferido no `pg_proc`, não deduzido. Ela era chamada
@@ -89,7 +150,14 @@ INSERT. Protegida no `guard_profile_privileged_cols`. Setada por `apply_suspensi
 >
 > Este mesmo fantasma apareceu em **quatro** documentos diferentes. Ao remover
 > uma função, `grep -rn` no `docs/` inteiro faz parte do trabalho.
-- XP: `get_user_xp`.
+- XP: `get_user_xp`. **`[05/09]` As curtidas vêm de `post_likes`, não da coluna
+  `posts.likes`** — essa coluna **não existe mais** (apagada em 05/09): nunca
+  foi mantida por trigger nenhum, a soma dava 0 para todo mundo, e a presença
+  dela no schema fez três lugares diferentes escreverem `SUM(likes)` ao longo do
+  tempo. A auto-curtida não conta.
+  **Executável só por `authenticated`** desde 05/09: `anon` e `PUBLIC` saíram,
+  porque nenhum caminho anônimo a chamava e ela é cálculo (quatro `COUNT`) sem
+  sessão. Ver [SEGURANCA.md](SEGURANCA.md).
 - Auditoria: `log_audit_event`.
 - Owner: `owner_get_stats`, `owner_get_users`, `owner_get_audit_logs`,
   `owner_get_notifications`, `owner_get_metrics`, `owner_set_role`,
@@ -162,10 +230,31 @@ Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 
 ### Realtime
 
-Publicação `supabase_realtime` inclui: `posts`, `post_media`, `profiles`,
-`community_posts`, `live_chat`, `live_chat_timeouts`, `admin_logs`,
-`admin_notifications`, `site_config`. Usada para feed, mural, chat de lives,
-detecção de ban, banner/manutenção e sincronização dos painéis.
+**A publicação `supabase_realtime` tem estas 10 tabelas** — lido de
+`pg_publication_tables` em 02/09, não da memória:
+
+`admin_notifications` · `community_posts` · `live_chat` · `live_chat_timeouts` ·
+`live_reactivation_requests` · `moderation_queue` · `posts` · `profiles` ·
+`site_config` · `unban_requests`
+
+Usada para feed, mural, chat de lives, detecção de ban, banner/manutenção,
+as duas filas de recurso e a sincronização dos painéis.
+
+> **`[02/09]` Esta lista estava errada em cinco das dez linhas**, e a correção
+> importa mais do que a lista. Ela dizia que `post_media` e `admin_logs` eram
+> publicadas — **não são** —, e não citava `live_reactivation_requests`,
+> `moderation_queue` nem `unban_requests`, que **são**.
+>
+> As três que faltavam foram publicadas justamente para corrigir o bug da Fase 4
+> registrado no `CLAUDE.md`: assinatura de realtime em tabela não publicada
+> conecta, responde `SUBSCRIBED` e **nunca recebe evento**. O banco foi
+> corrigido; este parágrafo não foi junto e ficou afirmando o estado antigo.
+>
+> **A trava que existe é `src/lib/realtimeTables.js`**, e ela confere o que
+> importa: toda tabela **assinada pelo código** precisa estar publicada. O que
+> ela não faz — nem deve — é conferir se este texto em português está certo.
+> Documento não é executável; por isso a regra §1.4 manda ler o `pg_publication_tables`
+> antes de afirmar, e não este parágrafo.
 
 `useRealtime(table, cb, { events, filter })` aceita **quais** eventos assinar e
 um filtro do lado do servidor. Isso importa em custo: cada mudança na tabela

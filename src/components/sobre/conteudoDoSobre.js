@@ -195,4 +195,25 @@ export const BLOCOS = [
       + 'pode chegar.',
     ],
   },
+
+  {
+    id: 'creditos',
+    icone: 'HeartHandshake',
+    titulo: 'Créditos',
+    pendente: false,
+    paragrafos: [
+      'O GamerHub usa trabalho de outras pessoas, e isso aparece aqui porque é '
+      + 'o certo — mesmo quando a licença não obriga.',
+    ],
+    creditos: [
+      {
+        titulo: 'Lofi Coffee Shop',
+        autor: 'Alex Morgan',
+        origem: 'https://pixabay.com/music/lofi-lofi-coffee-shop-568150/',
+        licenca: 'Pixabay Content License',
+        licencaUrl: 'https://pixabay.com/service/license-summary/',
+        adaptacao: 'adaptada: recortada e costurada em laço contínuo',
+      },
+    ],
+  },
 ];

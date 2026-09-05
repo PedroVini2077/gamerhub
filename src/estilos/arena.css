@@ -1,0 +1,48 @@
+/* Os estilos da ARENA DE ENTRADA — o fundo do login e do cadastro.
+ *
+ * Saiu do `index.css` em 04/09 por causa do §4: o bloco cresceu 272 linhas
+ * nesta sessão e a regra é que arquivo que eu toco não passa de 300. Aqui ele
+ * mora sozinho, do lado do componente que o usa (`components/auth/
+ * ArenaDeEntrada.jsx`), e o `index.css` volta a ser só o alicerce do site.
+ *
+ * A ordem do `@import` no `index.css` é a MESMA em que o bloco estava — regra
+ * de CSS depende de ordem, e mover sem preservar ordem não é extração
+ * mecânica, é mudança de comportamento disfarçada.
+ */
+
+/* ── `[04/09]` A ARENA DE ENTRADA — o fundo do login e do cadastro ─────────
+ *
+ * Pedido do dono, com uma arte de luta como referência. A v1 tinha só a
+ * composição (dois campos de cor e a fratura) e ele achou o furo que eu não
+ * vi: *"eu sei o contexto dessa tela, e o resto do povo não… o que raios
+ * significa esse vermelho e azul com algumas partículas?"*.
+ *
+ * Duelo sem os dois duelistas é gradiente. Entraram os lutadores, fogo e gelo
+ * de verdade, e o **VS** — que é o elemento mais barato que responde "o que é
+ * isso?" sem uma palavra.
+ *
+ * ── A regra de desempenho, e ela não é negociável aqui ─────────────────────
+ *
+ * Esta é a camada 2 (§0.4): todo mundo que decide ficar passa por ela. Então
+ * **só `transform` e `opacity` animam**. Nada de animar `filter: blur()` nem
+ * `box-shadow` — não rodam no compositor, e a landing já cobrou caro por isso
+ * quando o `text-shadow` do título estava animado (ver docs/DESEMPENHO.md).
+ *
+ * A moldura das bordas é ESTÁTICA pelo mesmo motivo: ela compõe uma vez e fica
+ * parada. O que se mexe são as faíscas e os flocos, que são `transform` puro.
+ */
+
+/* ── COMO ESTE ARQUIVO FOI DIVIDIDO ─────────────────────────────────────────
+ *
+ * `[04/09]` Ele chegou a 455 linhas — acima das 300 do §4 — e virou quatro
+ * partes. A ORDEM abaixo é comportamento, não arrumação: `celular.css`
+ * sobrescreve o que veio antes, e trocá-lo de lugar apaga a composição do
+ * telefone.
+ *
+ * A divisão só valeu porque melhorou a leitura: antes, para entender a tela do
+ * celular era preciso pular entre quatro seções deste arquivo; agora ela é um
+ * arquivo. */
+@import './arena/cena.css';
+@import './arena/lutadores.css';
+@import './arena/efeitos.css';
+@import './arena/celular.css';

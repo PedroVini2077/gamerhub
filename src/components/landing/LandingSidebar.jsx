@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { X, Info, LogIn } from 'lucide-react';
+import { X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail, FileText } from 'lucide-react';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
 
 /**
@@ -88,6 +88,66 @@ export default function LandingSidebar({ aberta, aoFechar }) {
           >
             <Info size={16} className="text-neon-purple" />
             Sobre o projeto
+          </Link>
+          {/* `[02/09]` Privacidade fica ao lado do "Sobre" e ANTES do "Entrar":
+              a pessoa consegue ler o que acontece com os dados dela antes de
+              decidir criar conta, e não depois. */}
+          <Link
+            to="/privacidade"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <ShieldCheck size={16} className="text-neon-green" />
+            Privacidade
+          </Link>
+          <Link
+            to="/regras"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <Scale size={16} className="text-neon-purple" />
+            Regras da comunidade
+          </Link>
+          <Link
+            to="/termos"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <FileText size={16} className="text-gray-400" />
+            Termos de uso
+          </Link>
+          {/* `[02/09]` A porta de entrada de quem foi banido, e ela leva ao
+              LOGIN de propósito.
+              Uma página pública que aceitasse e-mail e respondesse "esta conta
+              está banida" seria um ORÁCULO DE ENUMERAÇÃO: qualquer um
+              descobriria se um endereço tem conta aqui e se aquela pessoa foi
+              punida — dado de terceiro, exposto sem consentimento.
+              Entrar resolve isso sem truque: a conta É a prova de identidade, e
+              o login continua funcionando para quem está banido (só a
+              navegação no site é que não). */}
+          <Link
+            to="/login"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-400 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <ShieldOff size={16} className="text-red-400" />
+            Fui banido — ver meu caso
+          </Link>
+          {/* `[02/09]` O canal que faltava, e ele NÃO substitui o link acima —
+              os dois atendem gente diferente, separada por uma pergunta só:
+              **você ainda consegue entrar?**
+
+              Quem consegue vai ao login e vê o motivo, a linha do tempo do
+              caso e o recurso na hora. Quem não consegue — perdeu o acesso,
+              perdeu o e-mail, nunca criou conta, ou quer exercer um direito de
+              LGPD — não tinha via nenhuma até este formulário existir. */}
+          <Link
+            to="/contato"
+            onClick={aoFechar}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+          >
+            <Mail size={16} className="text-neon-cyan" />
+            Não consigo entrar — falar com a equipe
           </Link>
           <Link
             to="/login"

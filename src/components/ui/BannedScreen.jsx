@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ShieldOff, LogOut, Send, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ShieldOff, LogOut, Send, Loader2, CheckCircle2, AlertTriangle, Scale, Mail } from 'lucide-react';
 import { solicitarRevisaoDoProprioBan, meuPedidoDeRevisao } from '../../services/banService';
+import LinhaDoTempoDoCaso from './LinhaDoTempoDoCaso';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const MIN_CARACTERES = 20;
 const MAX_CARACTERES = 1000;
@@ -19,6 +22,11 @@ const MAX_CARACTERES = 1000;
 const SEGUNDOS_ATE_SAIR = 20;
 
 export default function BannedScreen({ reason, details, onSignOut }) {
+  // O id da própria conta, para a pessoa conseguir se identificar ao procurar
+  // a equipe. Vem do `useAuth` e não de prop: quem monta esta tela não tinha
+  // motivo para passar isso adiante, e prop nova por dado que já está no
+  // contexto é acoplamento à toa.
+  const { user, profile } = useAuth();
   const [countdown, setCountdown] = useState(SEGUNDOS_ATE_SAIR);
   const [recorrendo, setRecorrendo] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -113,24 +121,46 @@ export default function BannedScreen({ reason, details, onSignOut }) {
           )}
         </div>
 
-        {pedido && !enviado && (
-          <div className="bg-dark-700/60 border border-dark-400 rounded-xl p-4 space-y-2">
-            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">Seu pedido de revisão</p>
-            <p className={`text-sm font-mono font-bold ${
-              pedido.status === 'approved' ? 'text-neon-green'
-              : pedido.status === 'rejected' ? 'text-red-400' : 'text-yellow-400'}`}>
-              {pedido.status === 'approved' ? 'Aprovado'
-                : pedido.status === 'rejected' ? 'Negado' : 'Em análise'}
+        {/* `[02/09]` O link que faltava. A pessoa via O QUE foi decidido e nunca
+            POR QUÊ — não existia lugar nenhum dizendo qual regra ela quebrou.
+            Punição sem regra escrita parece arbitrária mesmo quando é justa. */}
+        <Link
+          to="/regras"
+          className="flex items-center justify-center gap-2 text-xs font-mono
+                     text-gray-400 hover:text-neon-green transition-colors"
+        >
+          <Scale size={13} />
+          Ver as regras da comunidade
+        </Link>
+
+        {/* `[02/09]` Aqui existia a MESMA decisão escrita à mão, testando
+            `status === 'rejected'`. O banco nunca grava `rejected`: a
+            `deny_unban_request` grava `'denied'` — conferido no `prosrc`.
+            Quem teve o recurso NEGADO via "Em análise", para sempre.
+
+            A decisão agora mora em `lib/etapasDoCaso.js`, com trava que compara
+            o mapa com os status que a tabela aceita. Duas cópias da mesma
+            regra foi o que produziu o bug (§4, fonte única). */}
+        {pedido !== undefined && !enviado && (
+          <div className="bg-dark-700/60 border border-dark-400 rounded-xl p-4 space-y-3">
+            <p className="text-xs text-gray-500 font-mono uppercase tracking-wider">
+              O seu caso
             </p>
-            {pedido.resposta && (
-              <p className="text-xs font-mono text-gray-400 leading-relaxed">
-                Resposta da equipe: {pedido.resposta}
+            <LinhaDoTempoDoCaso banidoEm={profile?.banned_at} pedido={pedido} />
+            {pedido && (
+              <p className="text-[11px] font-mono text-gray-600">
+                Você pode entrar de novo quando quiser para ver se houve resposta.
               </p>
             )}
-            <p className="text-[11px] font-mono text-gray-600">
-              Você pode entrar de novo quando quiser para ver se houve resposta.
-            </p>
           </div>
+        )}
+
+        {/* O id da própria conta. Não vaza nada — é o dado dela, mostrado a
+            ela — e é o que a equipe pede quando alguém procura suporte. */}
+        {user?.id && (
+          <p className="text-center text-[11px] font-mono text-gray-600 select-all">
+            id da conta: {user.id}
+          </p>
         )}
 
         {enviado ? (
@@ -222,6 +252,15 @@ export default function BannedScreen({ reason, details, onSignOut }) {
           <p className="text-[11px] font-mono text-gray-600 leading-relaxed">
             Esta tela reaparece a cada login, com o andamento do seu pedido.
           </p>
+          {/* `[02/09]` A saída de quem já gastou o recurso — é UM por
+              banimento, e antes disto não havia mais nada depois dele. */}
+          <Link
+            to="/contato"
+            className="inline-flex items-center justify-center gap-2 text-[11px] font-mono
+                       text-gray-500 hover:text-neon-green transition-colors"
+          >
+            <Mail size={12} /> Falar com a administração por outro caminho
+          </Link>
         </div>
       </div>
     </div>

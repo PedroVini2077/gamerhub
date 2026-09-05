@@ -11,8 +11,73 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
-**Última conferência contra o sistema:** 29/08/2026, manhã ·
+> ### `[03/09]` E também é MEMÓRIA OPERACIONAL da execução
+>
+> Ordem do dono em 03/09: *"quero que o BACKLOG seja utilizado como memória
+> operacional da execução… não dependa apenas do contexto da conversa para
+> lembrar o que precisa ser feito"*.
+>
+> Isso dá ao arquivo um **segundo trabalho**, e ele é diferente do primeiro: a
+> seção **EM EXECUÇÃO** abaixo guarda o plano da tarefa em curso — objetivo,
+> etapas, estado, o que foi validado e o que travou. A fila de itens continua
+> sendo o que falta fazer.
+>
+> A diferença prática: quando eu perder o fio, o certo é **voltar aqui**, não
+> carregar mais contexto. Nas três falhas de 02–03/09 meu reflexo foi ler mais
+> e tentar de novo — foi assim que passei de duas tentativas, testei
+> desligando o que estava quebrado, e declarei entregue o que nunca saiu do
+> lugar.
+>
+> **A seção EM EXECUÇÃO esvazia quando a tarefa fecha.** Ela é estado, não
+> histórico — mesma regra do resto do arquivo.
+
+---
+
+## 🔄 EM EXECUÇÃO
+
+### `[05/09]` FASE 2 da auditoria — feita, e achou dois
+
+Era o que eu mesmo tinha declarado como não coberto no fim da Fase 4. Das **78**
+funções `SECURITY DEFINER`, o recorte por risco isolou **21** alcançáveis por
+quem tem conta e sem usar `is_super`/`is_staff`/`role_rank`. Dessas saíram dois
+achados 🟠, os dois comprovados em `ROLLBACK` e corrigidos:
+
+- **o fundador era barrado** do painel de logins bloqueados (`role =
+  'super_admin'` literal) — **terceira reincidência** da mesma classe;
+- **a trilha de auditoria era forjável**: um `role = 'user'` gravou
+  `action = 'admin_ban'` com `severity = 'critical'`.
+
+Relatório em [`db/2026-09-05-fase4-deriva-codigo-banco.md`](db/2026-09-05-fase4-deriva-codigo-banco.md).
+
+**Também nesta rodada:** os PRs do Dependabot estavam vermelhos por dois portões
+meus que exigiam o impossível de branch de bot — corrigido no PR #164.
+
+**O que continua aberto desta auditoria:** as 34 funções não alcançáveis por
+`anon`/`authenticated` não foram lidas uma a uma. Não há caminho pela API hoje —
+mas isso é afirmação sobre os `GRANT`s de hoje.
+
+---
+
+---
+
+**Última conferência contra o sistema:** 02/09/2026, noite ·
 **22 itens abertos** (+ 1 ideia sem compromisso)
+
+> **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
+> erradas, e nenhuma delas se corrigiria sozinha:
+>
+> | O que estava escrito | O que o sistema respondeu |
+> | --- | --- |
+> | *"`profiles` responde 401 ao anônimo, então não há como mapear UUID → pessoa"* | `select=id,username` responde **200 com as 5 linhas**. A cadeia `site_config.updated_by` → nome fecha. Item subiu de 🔵 para 🟡 |
+> | *"UUID de staff exposto em **duas** tabelas"* | `blocked_words.created_by` está **nula nas 322 linhas**. Só `site_config` vaza pessoa |
+> | as duas conferências de fila "daqui a alguns dias" | fila com **20 itens, todos resolvidos**, zero pendentes — mas **nada foi postado desde 28/08**, então o zero é falta de amostra, não veredito |
+>
+> **E um defeito meu, encontrado e corrigido na mesma passada:** o dono aceitou
+> a política de privacidade às 19:58 de 02/09, e o PR #140 reescreveu o bloco de
+> retenção depois disso **sem subir a versão**. O registro de aceite passou a
+> apontar para um texto que ele não leu. Corrigido: versão `2026-09-02-2`, o
+> `CHECK` do banco passou a aceitar revisão no mesmo dia, e entrou a trava de
+> impressão de conteúdo — ver [PRIVACIDADE.md](docs/PRIVACIDADE.md).
 
 > **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
 > principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
@@ -57,56 +122,42 @@
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[30/08]` 🔴 **PRIMEIRO ITEM DA PRÓXIMA SESSÃO — auditoria de mim mesmo.**
-  *Pedido do dono em 30/08: "o primeiro item do backlog literalmente vai ser vc
-  como IA... oq vc quase sempre falha, oq ficamos quebrando cabeça por sua
-  causa". Marcado 🔴 porque é o item que decide a qualidade de todos os outros.*
+- ⬜ `[04/09]` 🟢 **Música no painel do Fundador.** *Ideia do dono; as três saídas
+  que ele imaginou têm impedimento — ver
+  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
 
-  **O objetivo:** o mesmo tratamento que o projeto recebe — achar as brechas,
-  fechar o que der, e travar o que não der — aplicado a **mim**. Não é
-  autocrítica: é varredura de classe (§1.3) sobre o meu próprio comportamento.
+  Ler a biblioteca do celular dele pelo site não é possível (não existe API para
+  isso). Spotify e YouTube esbarram em conta paga, regra de uso e privacidade.
+  O caminho limpo é o mesmo do som ambiente que já existe: **um arquivo curto,
+  hospedado por nós, com licença clara**.
 
-  **O catálogo já começa aqui, com evidência.** Não custa nada agora e a
-  próxima sessão não tem como reconstruir isto de memória:
+- ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
+  offline.** *É o terceiro elo da corrente que o dono relatou, e o único que
+  não deu para consertar.*
 
-  | Padrão de falha | Evidência |
+  **A corrente que ele viu, com o aparelho offline:**
+
+  | O que aparecia | Estado |
   | --- | --- |
-  | Escrevo de memória em vez de abrir o arquivo | 3 casos em 28/08 (§6.2) + 2 em 29/08: medição no `FUNCIONALIDADES` e 6 arquivos fora do `ARQUITETURA` |
-  | Afirmo **inferência** como **fato** | 23/08, duas vezes, eu mesmo tive que corrigir (§1.1) |
-  | Escrevo teste que **não pode falhar** | o teste de portas RPC em `portas-fechadas.mjs` — PostgREST nunca expõe função `trigger` |
-  | Construo portão que acusa **errado** | `mapa-de-arquivos.mjs` acusou 145 arquivos na 1ª execução; comparava com a extensão |
-  | Produzo **verde que promete demais** | `npm run fim` dizia "sessão pode ser fechada" cobrindo 6 de 13 itens |
-  | Prometo acompanhar coisa **depois do turno** | 2 vezes em 29/08; o turno acaba e a sessão para — não existe "eu aviso depois" |
-  | Tentativa e erro em vez de diagnóstico | 3 rodadas na cena 3D, cada uma com justificativa própria e alvo errado (§1.2) |
-  | Crio dado de teste que **confunde o dono** | fila de moderação com itens falsos marcados `trigger_type: ai` |
-  | Entendo errado e **não pergunto** | a aba de banimento: eu li "site logado", ele quis "landing" |
+  | "sem acesso ao banco" | ✅ correto, e continua |
+  | "Algo deu errado" | ✅ **corrigido em 03/09** — virou "Sem conexão", e não vai mais para o Sentry |
+  | página de offline do navegador | ⬜ **este item** |
 
-  **O método proposto** (a decidir com ele):
-  1. Ler o `CLAUDE.md` e os `docs/regras/` inteiros procurando **regra que já
-     falhou** — cada uma existe porque eu errei, e o histórico está escrito lá.
-  2. Varrer `git log` e os corpos de PR atrás de "corrigi o que eu mesmo fiz".
-  3. Para cada padrão: existe mecanismo que o pega? Se não, dá para criar um?
-     Se não der, ele vira pergunta nos gatilhos — que é o mais fraco, e por
-     isso o último recurso (§2).
-  4. **Estender os gatilhos ao resto do projeto**, que foi o outro pedido: hoje
-     eles cobrem documentação e fechamento. Faltam banco, moderação e
-     segurança.
+  **Por que o terceiro é diferente:** ele acontece quando a pessoa **recarrega**
+  estando offline. Não é mensagem errada nossa — é o navegador não ter como
+  carregar o app, porque nada está guardado localmente. Só um Service Worker
+  resolve, servindo o app do cache.
 
-  **A pergunta que ele pediu, na forma que não deixa escapar.** A versão
-  original — *"estou fazendo tudo o que preciso?"* — é respondível com um "sim"
-  preguiçoso, e teria deixado passar todas as falhas de 29/08. A versão que
-  obriga a nomear:
+  **O que ele custaria, dito antes:** um SW é código que fica *entre* o site e
+  a rede, e erra caro — cache velho servido para sempre é o defeito clássico,
+  e o conserto exige a pessoa limpar o navegador. Ele também muda como o deploy
+  chega: o §0.2 já registra que **a Vercel conta deploy**, e um SW mal
+  configurado faz o visitante continuar na versão antiga sem saber.
 
-  > **Quais regras deste projeto se aplicam ao que acabei de fazer — e para
-  > cada uma, onde está a evidência de que cumpri?**
-
-  Sem evidência nomeada, não cumpri: só acho que cumpri. Formalizar isto no
-  `CLAUDE.md` é decisão da próxima sessão (§6.2 pede proposta).
-
-  **O que este item NÃO promete:** que eu pare de errar. Prometer isso seria a
-  mesma mentira do verde que prometia demais. O alvo é o mesmo do projeto —
-  **o mínimo possível**, e cada erro que acontecer virando trava para não
-  acontecer de novo.
+  **Minha recomendação: não agora.** O ganho é uma tela melhor num caso raro
+  (recarregar offline); o risco é servir versão velha em todos os casos. Com 5
+  usuários não paga. Registrado para quando houver volume — e para não ser
+  redescoberto como bug.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -139,9 +190,11 @@
   Onde ler: painel da Supabase → Edge Functions → `moderate-image` → Logs,
   linhas `[moderate-image] ... | notas: ...`.
 
-  > Os dois itens antigos que tinham ficado na fila já foram resolvidos pelo
-  > dono no painel — conferido ao fechar a sessão: `moderation_queue` com zero
-  > pendentes.
+  > **Conferido em 02/09, e o número não decide nada ainda:** a fila tem 20
+  > itens, **todos resolvidos** (15 `approved`, 5 `rejected`), **zero
+  > pendentes** — e nenhum item novo entrou desde 28/08. Fila vazia com uso
+  > parado não distingue "o piso está certo" de "ninguém postou". A conferência
+  > continua aberta porque ela depende de uso real, não de uma consulta.
 
 - ⬜ `[29/08]` 🟢 **Conferir a fila `Não analisado` daqui a alguns dias.**
   *Não é pendência de código — o caminho está fechado. É a conferência que diz
@@ -159,6 +212,10 @@
   | aparecer um item de vez em quando | funcionando como projetado; o motivo no item diz qual navegador falhou |
   | encher | o plano B não está cobrindo o caso real, e aí o motivo (que vem com as duas metades) aponta onde |
 
+  > **Conferido em 02/09:** os 20 itens da fila são `post` (13), `chat` (6) e
+  > `comment` (1) — **nenhum `sem_analise`**. Mesma ressalva do item acima:
+  > nada foi postado desde 28/08, então o zero é falta de amostra, não prova.
+
 - ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
   (~US$25/mês). Decisão de custo.
 - ⬜ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
@@ -171,79 +228,75 @@
   O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
   decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
 
-- ⬜ `[29/08]` 🟠 **O feed não mostrou um post recém-publicado, uma vez em sete.**
-  *Achado no CI, não reproduzido ainda — está aqui para não sumir em silêncio.*
 
-  Em 29/08 às 22:21 o `fluxos.mjs` falhou no passo 15: publicou e esperou 30 s
-  o post aparecer no feed. **Ele nunca apareceu.** Na segunda execução, com o
-  mesmo commit, passou.
 
-  **O que eu confirmei no banco** (não é dedução): o post foi criado às
-  22:21:02, `deleted_at`, `hidden_at` e `expires_at` todos nulos, a conta sem
-  ban nem suspensão. A publicação funcionou inteira — o que falhou foi a tela
-  refletir. As seis execuções anteriores do mesmo dia passaram, e o PR daquele
-  momento não tocava em nada do caminho de publicação nem do feed.
+- ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
+  *Auditoria da cena 3D de 01/09. A medição inteira está em
+  [DESEMPENHO.md](docs/DESEMPENHO.md); aqui fica só a decisão que falta.*
 
-  **Hipótese, ainda sem prova:** `onPost()` dispara UM refetch depois do
-  insert; se aquele refetch não trouxer o post, nada refaz a busca, e o feed
-  fica parado até navegar — o que casa com a tela vazia 30 s depois.
-  Para confirmar: instrumentar o retorno do refetch (quantas linhas vieram e
-  se o id do post recém-criado estava entre elas) e rodar o fluxo umas vezes.
+  A cena tem **7 `pointLight`**, e quatro delas são flashes que ficam apagados a
+  maior parte do tempo. No three.js, luz com `intensity = 0` **continua custando
+  shader inteiro** — ela segue no array de uniforms e é avaliada por fragmento.
 
-  **Por que não é 🟢:** se a hipótese estiver certa, isto não é problema de
-  teste — é uma pessoa publicando, não vendo o próprio post, e concluindo que o
-  site comeu o que ela escreveu. O post existe; a tela mente. É §1.5.
+  **O conserto óbvio é armadilha:** alternar `visible` mudaria a contagem de
+  luzes, que faz parte da chave do cache de programas — cada troca recompila
+  shader. Custo constante viraria engasgo a cada 0,6 s.
 
-- ⬜ `[29/08]` 🟠 **Aba "Fui banido / meu caso" na navegação lateral da LANDING.**
-  *Ideia do dono em 29/08. Fica registrada com a armadilha junto, porque a
-  parte difícil não é a tela — é decidir quem pode ver o quê.*
+  **A proposta viável:** uma `pointLight` compartilhada pelos três arcos (7 → 5).
+  **O risco é específico e real:** quando dois arcos disparam dentro da mesma
+  janela de 0,36 s, hoje são duas luzes e passariam a ser uma.
 
-  A ideia: quem foi banido tem hoje só a `BannedScreen`, uma tela que cobre
-  tudo e diz pouco. Vira uma página própria na landing, com o caso: o motivo,
-  a data, o prazo, o id da conta e a situação do recurso.
+  **Por que não implementei:** *"a luz verde não fica tão forte"* já foi uma
+  regressão deste projeto, e este ambiente renderiza WebGL por software — não dá
+  para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
+  no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
 
-  **A armadilha, e ela é de segurança.** A página é da landing, ou seja,
-  pública. Se ela aceitar um email ou um usuário e responder "esta conta está
-  banida", vira **oráculo de enumeração**: qualquer um descobre se um email
-  tem conta, e se aquela pessoa foi punida. Isso é dado de terceiro exposto
-  sem consentimento — o oposto do endurecimento de LGPD que já foi feito.
+- ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em `site_config.updated_by`.**
+  *`[03/09]` **Rebaixado de 🟡 para 🔵** — a metade grave foi fechada, e o que
+  sobrou é o item original, agora com a justificativa CERTA.*
 
-  **O caminho que não tem esse problema:** a pessoa **entra** e a página lê
-  `auth.uid()`. O login continua funcionando para conta banida (ela só não
-  navega no site), então a conta dela é a prova de identidade — sem oráculo,
-  sem enumeração. O link para essa página sai de dentro da própria
-  `BannedScreen` e da landing.
+  **O que foi fechado em 03/09:** a cadeia que ligava o UUID a uma pessoa.
+  `profiles?select=id,username` devolvia as 5 linhas e transformava
+  `site_config.updated_by` num nome. Hoje responde **401** — a checagem de
+  username do cadastro virou a RPC `username_disponivel`, e o `SELECT` de `anon`
+  em `profiles` foi revogado. Conferido na produção, depois do merge.
 
-  **O que falta decidir antes de codar:** quais campos a pessoa vê (o motivo,
-  sim; **quem** moderou, não — isso expõe a equipe a retaliação), e se o
-  recurso passa a ser feito ali.
+  **O que sobra:** `site_config.updated_by` continua legível, e agora é
+  **de fato** só um UUID sem nome — que era o que o item dizia em 01/09, só que
+  na época era falso. Impacto real: ligar mudanças de config a *uma* conta, sem
+  saber qual.
 
-  Depende de: policy/RPC nova para a pessoa ler o próprio caso, rota nova,
-  e o link dentro da `BannedScreen`.
+  > **Por que a justificativa antiga era falsa, e vale guardar.** Ela dizia
+  > *"`profiles` responde 401 ao anônimo"*. O 401 valia para `select=*` —
+  > privilégio no Postgres é **por coluna**, e um `select=*` negado prova apenas
+  > que *alguma* coluna está fechada. O portão `portas-do-banco.mjs` cometia o
+  > mesmo erro e por isso dava verde; desde 02/09 ele sonda **coluna a coluna**.
 
-- ⬜ `[29/08]` 🟢 **Página "Regras da comunidade" na navegação lateral.**
-  Hoje o site modera, oculta e bane sem nenhuma página que diga **qual regra**
-  foi quebrada. Isso enfraquece a moderação — punição sem regra escrita parece
-  arbitrária — e é o primeiro link que a página de banimento acima vai querer
-  apontar. Mesmo padrão da `/sobre`: conteúdo em arquivo, sem banco.
+  **`blocked_words.created_by`** é lida pelo anônimo mas está **nula nas 322
+  linhas** — vaza estrutura, não dado.
 
-- ⬜ `[29/08]` 🟢 **Página "Privacidade / seus dados" na navegação lateral.**
-  O projeto fez endurecimento de LGPD (colunas revogadas, dado de terceiro
-  fechado) e não tem nenhuma página que conte isso a quem usa. Mesmo padrão da
-  `/sobre`.
+  **A dependência já está checada** (a consulta de "quem lê" do
+  [POSTURA.md](docs/regras/POSTURA.md)): **nenhuma policy** usa
+  `updated_by`/`created_by`, e a única função que os toca é
+  `owner_set_site_config`, `SECURITY DEFINER`, que não passa por esses
+  privilégios. O `REVOKE` das duas colunas é seguro — só não é urgente.
 
-- ⬜ `[29/08]` 🟢 **Enfeitar a landing além do que já foi feito.**
-  O dono disse em 29/08 que quer a landing "muito mais parruda", mas que por
-  agora está bom. Fica anotado para não virar decisão esquecida.
+  > **A lição que ficou, e é a mais cara desta rodada.** Eu propus revogar
+  > `id`/`username` dizendo que a dependência estava checada. Estava — mas a
+  > consulta de "quem lê" procura **policy e função no banco**, e quem lia era
+  > **o cliente**: o cadastro. O revoke teria sido a **quarta** queda do site
+  > por revoke bem-intencionado. A consulta do POSTURA.md precisa incluir
+  > `grep` no `src/`, e não só o Postgres.
 
-- ⬜ `[30/08]` 🟢 **Tornar o teste do painel independente de dado de produção.**
-  Em 30/08 ele reprovou porque o site ficou sem post — não por defeito nenhum.
-  O remendo de agora distingue "seletor quebrou" de "site vazio", e mantém a
-  trava viva; mas o teste continua **medindo o banco** em vez de medir o painel.
+  **Bônus a decidir junto:** a lista inteira de 322 palavras bloqueadas é
+  pública. É consequência do filtro rodar no cliente, não descuido — mas entrega
+  o dicionário exato a quem quiser burlar. Vale registrar como decisão em
+  `DECISOES.md`, ou mudar de abordagem.
 
-  O certo é ele criar o próprio post antes de conferir a aba e apagá-lo depois,
-  como o `fluxos.mjs` já faz. Aí a paginação volta a ser exercitada sempre, e
-  não só quando alguém tiver postado.
+  **Defesa em profundidade, sem pressa:** `anon` tem privilégio de INSERT/UPDATE
+  em quase toda coluna de `profiles`, `site_config` e `blocked_words`. A RLS
+  nega tudo (sondado: 0 linhas afetadas, e nada entrou), então não está aberto —
+  mas privilégio que ninguém usa é superfície que ninguém revisa.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
@@ -258,8 +311,41 @@
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
-  nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
+
+- ⬜ `[02/09]` 🟠 **A cena 3D: o custo é por PIXEL, e a próxima medição é no
+  aparelho do dono.** *Primeira medição de regime permanente feita em 02/09 —
+  ver [DESEMPENHO.md](docs/DESEMPENHO.md).*
+
+  **O que já se sabe, medido:** o custo da cena escala com **pixels**, não com
+  JavaScript. Com 4× menos pixels o bloqueio cai de 5583 ms para **zero** — um
+  penhasco, não uma ladeira. E o lado JS é pequeno: a 0,256 Mpx a cena roda
+  6 s sem uma única tarefa longa.
+
+  **Por que isso não fecha o assunto:** a medição é num Chromium **sem GPU**,
+  onde a CPU faz o trabalho da placa. Num PC de verdade quem paga esse custo é
+  a GPU, e eu não meço isso daqui. Usar esse número para julgar o aparelho do
+  dono seria artefato de ambiente vendido como fato (§1.1).
+
+  **O que resolve:** abrir o painel de desempenho do navegador **na máquina
+  dele**, com a landing aberta, e olhar o tempo de GPU por quadro. Depende dele.
+
+  **Para onde olhar depois disso**, se confirmar: resolução (`dpr` adaptativo,
+  que já existe), **overdraw** (camadas transparentes pintadas umas sobre as
+  outras) e custo de shader. **Não** é "menos objetos" nem "menos JavaScript" —
+  era para lá que eu ia, e a medição desviou.
+
+  **O que NÃO pode:** reduzir qualidade visual para ganhar FPS. O dono já
+  recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md).
+
+
+
+- ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail pessoal.**
+  *`[03/09]` O dono decidiu ficar no Gmail por enquanto: "não quero gastar 40
+  dólares cobrando um domínio agora, talvez mais tarde". A resposta de contato
+  foi construída em cima dele — e passou a ser mais um consumidor da MESMA cota
+  do cadastro e da recuperação de senha.*
+
+  Hoje usa nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
   falta de painel de entrega continuam. Com domínio próprio (~R$40/ano) +
   Resend vira `nao-responda@…`; sem domínio, o Brevo é a opção. *Não é urgente
@@ -304,6 +390,28 @@
 
 ## 🔵 Só quando o volume crescer
 
+- ⬜ `[02/09]` 🔵 **Mensagem marcada como SPAM não precisa de 2 anos.**
+  *Refinamento do prazo decidido em 02/09, não correção dele.*
+
+  `contact_messages` tem prazo único de 2 anos, e ele foi calibrado pela
+  conversa de moderação legítima. Mensagem que a equipe marcou como spam não
+  tem essa finalidade — pela LGPD, guardar dado sem finalidade é justamente o
+  que o prazo existe para evitar.
+
+  **Por que não fiz junto:** o dono aprovou "2 anos", e inventar uma segunda
+  regra que ele não pediu é decidir por ele. Fica registrado; a mudança é uma
+  linha no `cleanup_old_data`.
+
+
+- ⬜ `[02/09]` 🔵 **`date.js` e `roles.js` têm regiões que nenhum teste toca.**
+  *Achado pelo teste de mutação — coluna `# no cov`, 65 mutantes.*
+
+  Não é bug: é código sem rede. `roles.js` marca 92,31% no que os testes
+  alcançam e 30% no total — ou seja, o que é testado é testado bem, e há uma
+  parte que ninguém exercita. Vale olhar quando sobrar fôlego; nenhum dos dois
+  é caminho crítico hoje.
+
+
 > Nenhum destes é dívida. São decisões **corretas para 3 usuários** que deixam
 > de ser corretas em outra escala. Registrados para não serem redescobertos
 > como se fossem problema.
@@ -318,8 +426,11 @@
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, 44 arq · 2.899 linhas; `src/services/`, 9 arq · 994
-  linhas) são 22% do código e concentram quase todo o benefício — é onde mora
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->98<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.013<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->17<!--/n--> arq ·
+  <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
+  benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
 - ⬜ `[21/08]` **2FA no login.**

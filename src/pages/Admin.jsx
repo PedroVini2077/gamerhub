@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, FileText, Key, Crown, Bell, Activity, ShieldAlert, UserPlus, Siren } from 'lucide-react';
+import { Shield, Users, FileText, Key, Crown, Bell, Activity, ShieldAlert, UserPlus, Siren, Mail } from 'lucide-react';
 import { fadeTab, gridContainer } from '../lib/motion';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -143,6 +143,7 @@ export default function Admin() {
     { id: 'lives',      label: 'Mod de Lives',  icon: Shield      },
     { id: 'keys',       label: 'Keys & Promos', icon: Key         },
     { id: 'notifs',     label: 'Notificações',  icon: Bell, badge: unreadCount },
+    { id: 'contato',    label: 'Contato',       icon: Mail        },
     { id: 'logs',       label: 'Logs',          icon: Activity    },
     ...(isSuperAdmin ? [{ id: 'cargos', label: 'Cargos',      icon: UserPlus }] : []),
     ...(isSuperAdmin ? [{ id: 'super',  label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),

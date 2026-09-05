@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
+import { marcarEntradaAgora, cancelarEntradaAgora } from '../lib/boasVindas';
 import { logAudit } from '../lib/auditLog';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
 import { usePresenca } from './usePresenca';
+import { criarConta } from '../services/cadastroService';
 import BannedScreen from '../components/ui/BannedScreen';
 
 const AuthContext = createContext(null);
 
-const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
-const MIN_PASSWORD_LENGTH = 8;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -84,9 +84,22 @@ export function AuthProvider({ children }) {
       return { error: { message: 'Preencha email e senha.' } };
     }
 
+    // `[05/09]` A marca vai ANTES da chamada, e a ordem é o conserto.
+    //
+    // O `onAuthStateChange` preenche o `user` lá dentro, antes de esta promessa
+    // voltar — então o site troca de rota e pinta enquanto ainda faltam duas
+    // idas ao servidor daqui. Marcando depois, o portão subia atrasado por esse
+    // tempo todo, que foi o que o dono viu. Todo caminho que NÃO termina em
+    // entrada desfaz a marca abaixo. Ver `lib/boasVindas.js`.
+    marcarEntradaAgora();
+
     const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
-    if (result.data?.user) {
+    if (!result.data?.user) {
+      // Senha errada, rede caindo, conta inexistente: não houve entrada, então
+      // a marca não pode sobrar esperando o próximo `user` da aba.
+      cancelarEntradaAgora();
+    } else {
       // Checagem de ban via query direta (sem setProfile) para não poluir o estado
       // global durante o handshake de uma conta banida que será deslogada em seguida.
       // Mesma RPC: a sessão já existe neste ponto (a senha foi aceita), então
@@ -117,6 +130,10 @@ export function AuthProvider({ children }) {
         //
         // Segurança: banido com sessão não cria nada. As policies de INSERT
         // checam `banned` no banco, então o bloqueio não depende desta tela.
+        // Quem foi barrado não é recebido com festa: a marca escrita antes da
+        // chamada é desfeita aqui, senão o portão abriria por cima da tela de
+        // ban — que é exatamente o que ela não pode deixar acontecer.
+        cancelarEntradaAgora();
         applyBannedCheck(p);
         // banned:true sinaliza ao Login para NÃO contar como tentativa de senha errada
         return { banned: true, reason: p.ban_reason || null };
@@ -125,53 +142,16 @@ export function AuthProvider({ children }) {
         `@${p?.username || email.trim()} fez login`,
         { category: 'auth', severity: 'info', metadata: { email: email.trim() } }
       );
+
     }
 
     return result;
   }
 
-  async function signUpWithEmail(email, password, username, extraFields = {}) {
-    if (!email?.trim()) {
-      return { error: { message: 'Informe um email válido.' } };
-    }
-    if (!USERNAME_REGEX.test(username)) {
-      return { error: { message: 'Username: 3-20 caracteres, apenas letras minúsculas, números e _' } };
-    }
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      return { error: { message: `Senha precisa ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.` } };
-    }
-
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (existing) {
-      return { error: { message: 'Este username já está em uso. Escolha outro.' } };
-    }
-
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: { data: { username } },
-    });
-    if (error) return { error };
-
-    // Salva campos extras (birth_date, state, platform) — o trigger já criou o perfil
-    if (data?.user?.id) {
-      const allowed = ['birth_date', 'state', 'platform'];
-      const updates = Object.fromEntries(
-        Object.entries(extraFields).filter(([k, v]) => allowed.includes(k) && v)
-      );
-      if (Object.keys(updates).length > 0) {
-        const { error: extraErr } = await supabase.from('profiles').update(updates).eq('id', data.user.id);
-        if (extraErr) console.warn('[GamerHub] Erro ao salvar campos extras do perfil:', extraErr.message);
-      }
-    }
-
-    return { data };
-  }
+  // O cadastro mora em `services/cadastroService.js` desde 03/09 — ver o
+  // cabeçalho de lá. O `useAuth` cuida de SESSÃO; criar conta acontece antes de
+  // existir sessão, e é outro assunto.
+  const signUpWithEmail = criarConta;
 
   async function signOut() {
     if (profile?.username) {

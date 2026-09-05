@@ -380,6 +380,40 @@ decidir enquanto a pessoa não está online, o aviso passa batido. Estado
 consultável no banco não expira nem depende de alguém estar com o site aberto
 na hora certa.
 
+#### `[02/09]` Correção: *Negado* nunca aparecia
+
+O parágrafo acima estava certo sobre a intenção e **errado sobre o
+comportamento**, e a diferença durava desde 28/08.
+
+A tela testava `status === 'rejected'`. A `deny_unban_request` grava
+**`'denied'`** — conferido no `prosrc`, não deduzido; o `CHECK` da tabela é
+`('pending','approved','denied')`. Como o `else` do ternário era *Em análise*,
+**quem teve o recurso negado via "Em análise", para sempre**: esperando uma
+decisão que já tinha saído, sem nada em lugar nenhum indicando erro. Nenhum
+log, nenhum teste, nenhuma mensagem. É o §1.5 na forma mais pura, e nasceu do
+fallback silencioso do §4 — um `else` que ninguém conseguia dizer quais
+valores engolia.
+
+**A correção não foi trocar a string.** Trocar `rejected` por `denied`
+consertaria o caso e deixaria a causa: a mesma decisão escrita à mão dentro do
+JSX, sem nada obrigando-a a concordar com o banco. O mapa passou para
+`lib/etapasDoCaso.js`, a tela consome, e um teste compara o mapa com os status
+que a tabela aceita. Provado reinjetando o bug: o teste falha nomeando
+`denied`.
+
+#### `[02/09]` A linha do tempo do caso
+
+No lugar do rótulo solto entrou o andamento inteiro — *Conta banida* →
+*Recurso enviado* → *Em análise* / *Aprovado* / *Negado*, com data em cada
+etapa. Um estado é um retrato; do lado de quem levou o ban, a diferença entre
+*"meu recurso sumiu"* e *"meu recurso está na fila"* é a diferença entre achar
+que o site engoliu o pedido e saber esperar.
+
+Sem recurso aberto, a linha mostra **o que falta** ("Você ainda pode pedir
+revisão") em vez de um vazio. E como o recurso é **um por banimento**, a tela
+ganhou saída para depois dele: um link para o formulário público `/contato`,
+que funciona sem login.
+
 ### `[28/08]` Ser desbanido também avisa
 
 O contrário faltava, e o dono achou: quando o ban é removido, a `BannedScreen`

@@ -1,0 +1,22 @@
+/* O PORTÃO de boas-vindas: a superfície das folhas e todo o movimento.
+ *
+ * O desenho da tranca está em `components/auth/PortaDeAcesso.jsx`; os tempos,
+ * em `components/auth/PortaoDeBoasVindas.jsx`.
+ *
+ * ── A regra de sempre ───────────────────────────────────────────────────────
+ *
+ * Só `transform`, `opacity` e cor animam. Nada aqui recalcula layout por
+ * quadro. As folhas saem por `translateX`, o disco gira por `rotate`, o
+ * ferrolho recua por `translateX`.
+ *
+ * ── `[05/09]` Por que a superfície é CSS ────────────────────────────────────
+ *
+ * Porque ela precisa cobrir QUALQUER proporção de tela sem deformar — de
+ * 390x844 a 2560x1080 — e gradiente não tem forma própria para preservar. A
+ * justificativa longa, com a tabela dos três `preserveAspectRatio` que não
+ * serviam, está no cabeçalho do `PortaDeAcesso.jsx`.
+ */
+
+@import './portao/superficie.css';
+@import './portao/tranca.css';
+@import './portao/estados.css';

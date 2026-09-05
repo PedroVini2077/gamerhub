@@ -16,7 +16,7 @@ export default function ComposerToolbar({
   category, setCategory,
   canAddMedia, hasAudio, showRecorder, showEmbed,
   onPickImage, onPickVideo, onPickAudio, onRecord, onAddEmbed,
-  loading, onSubmit,
+  loading, onSubmit, perfilPronto = true,
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -47,10 +47,17 @@ export default function ComposerToolbar({
         {!showEmbed && <IconAction icon={Link} label="Adicionar link externo" onClick={onAddEmbed} />}
       </div>
 
-      <button type="button" onClick={onSubmit} disabled={loading}
-        className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto">
+      {/* `[02/09]` `perfilPronto` desabilita o botão enquanto o perfil não
+          chegou. O formulário aparece assim que existe SESSÃO, e o perfil vem
+          numa segunda consulta — entre os dois havia uma janela em que dava
+          para clicar em Publicar e receber
+          "new row violates row-level security policy", que é verdade e não
+          ensina nada. Ver a guarda em `usePostComposer.handleSubmit`. */}
+      <button type="button" onClick={onSubmit} disabled={loading || !perfilPronto}
+        className="btn-solid flex items-center gap-2 py-2 px-4 ml-auto
+                   disabled:opacity-50 disabled:cursor-not-allowed">
         <Send size={13} />
-        {loading ? 'Aguarde...' : 'Publicar'}
+        {loading ? 'Aguarde...' : perfilPronto ? 'Publicar' : 'Carregando...'}
       </button>
     </div>
   );

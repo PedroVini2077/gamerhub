@@ -141,11 +141,61 @@ transições discretas das páginas internas.
   e avisa que pedir reenvio invalida o link anterior.
 - **Email de confirmação** resistente a dark mode — template em Edge Function
   com cores explícitas (não herda tema escuro do cliente de email).
+- **`[05/09]` Ao entrar, a TELA vira um portão e ele abre.** Depois do login a
+  tela inteira é uma porta blindada — não um desenho de porta com fundo em
+  volta: as duas folhas ocupam metade da largura cada uma e vão de borda a
+  borda. No meio, um disco de tranca gira enquanto o site carrega, com o
+  ferrolho travado e os chevrons piscando; quando o perfil chega, a tranca
+  **para no encaixe, acende, o ferrolho recua** e só então as folhas deslizam
+  para os lados — **revelando o site, que já está montado atrás**. A saudação
+  (*"Seja bem-vindo, @fulano"* na estreia, *"Bem-vindo de volta"* nas outras)
+  fica gravada na própria chapa, acima da tranca.
+  Ela **não inventa espera**: cobre o intervalo em que o site carrega perfil,
+  cargo e feed, e sai assim que eles chegam (piso de 0,7 s para não piscar,
+  **teto de 2,5 s** — se o carregamento demorar, ela sai do mesmo jeito).
+  Recarregar a página **não** a reabre; ela é do momento de entrar, não de estar
+  logado. E o site **nunca aparece antes dela**: a marca de entrada é escrita
+  antes do login e o portão sobe no mesmo quadro em que a rota troca.
+  **`[05/09]` Quem acaba de confirmar a conta pelo email também vê o portão** —
+  antes esse caminho entrava direto no feed, e era justamente a primeira entrada
+  da pessoa na vida. Redefinir senha não conta: ela termina no login de novo.
+  E a saudação **não sai mais sem nome** quando o perfil demora — o apelido já
+  vem junto do login.
+- **`[04/09]` A troca entre "Entrar" e "Registrar" tem transição.** O conteúdo
+  entra em fade, **o card acompanha a altura** (o formulário de cadastro é 2,5×
+  mais alto que o de login) e **os lutadores do fundo se cruzam em fade** em vez
+  de trocar de estalo. A primeira pintura da página não anima: o formulário
+  aparece pronto.
+- **`[05/09]` Conquistas no perfil.** Oito, fixas, calculadas em cima do que a
+  pessoa já fez: primeiro post, 10 posts, primeira live, primeira curtida
+  recebida, 25 curtidas, 10 comentários, perfil completo e um mês de conta. As
+  que faltam aparecem **com o nome à mostra** e uma barra de progresso — o que
+  falta é objetivo, não enigma. Enquanto os dados não chegam, o card diz
+  "Carregando" em vez de mostrar tudo bloqueado.
+- **`[05/09]` O olho de mostrar/ocultar senha existe em TODO campo de senha do
+  site** — login, cadastro, redefinição, configurações e o cofre do Fundador —
+  e é igual no computador e no celular. Antes ele só aparecia em alguns
+  navegadores de Android, porque era o botão nativo deles e não do site: quem
+  usava computador, Firefox ou Safari simplesmente não tinha o recurso.
+  Cada campo começa **oculto**, sempre: lembrar a escolha faria a senha aparecer
+  sozinha na próxima visita.
 - **Login** com detecção de bloqueio por tentativas (ver
   [bloqueio de login](#bloqueio-de-login-por-tentativas)) e contagem regressiva
   ao vivo quando bloqueado.
 - Botão **"Voltar para a página inicial"** na tela de login (leva para a
   Landing sem precisar de conta).
+- **`[04/09]` A arena de fundo** — a tela de entrada tem dois lutadores **nas
+  cores do site** (verde neon × roxo), separados por uma fenda com o "VS". Quem chega no **login**
+  os vê se encarando; ao trocar para **registrar**, o de fogo dá um passo à
+  frente e vira para quem olha, e o de gelo recua de costas — é o
+  *character selected* que a tela inteira está contando. As bordas da tela são
+  emolduradas por circuito neon — verde de um lado, roxo do outro; no cadastro
+  só a do vencedor fica acesa. O "VS" anima na entrada **e na saída**. No celular eles ocupam
+  o terço de cima da tela, se encontrando no meio e saindo pelas laterais, e
+  dissolvem antes do formulário — o card cobre quase a largura toda, então
+  figura na lateral ficaria escondida atrás dele. O peso e o recorte estão em
+  [DESEMPENHO.md](DESEMPENHO.md); a origem das artes e a escolha de cortar em
+  vez de esticar, em [DECISOES.md](DECISOES.md).
 - **Recuperação de senha** por e-mail; indicador de força de senha.
 - **Configurações** (`Settings`): trocar senha, trocar e-mail (com confirmação),
   preferências de notificação (likes/comentários) e **deletar a própria conta**
@@ -271,6 +321,20 @@ blocos estão preenchidos.
 | Como a comunidade é cuidada | a moderação por IA + fila humana, em linguagem de visitante |
 | Este site foi construído com inteligência artificial | dito na cara, a pedido dele |
 | Para onde o GamerHub vai | o que ele quer que o site seja |
+| **Créditos** | a mídia de terceiro que o site usa, com autor, origem e licença |
+
+**O bloco de Créditos existe por obrigação, não por cortesia** — e a trava que
+o protege é de classe. A trilha da landing em 03/09 é *"Lofi Coffee Shop"*
+(Alex Morgan, Pixabay Content License), e essa licença **não exige**
+atribuição. O crédito ficou de qualquer forma: é o que o próprio Pixabay pede
+como boa prática, e afrouxar a trava para acomodar uma licença permissiva
+enfraqueceria a proteção da **próxima** mídia, que pode muito bem ser CC-BY —
+onde crédito visível é a diferença entre usar com e sem licença.
+
+`conteudoDoSobre.test.js` varre `src/assets/som/` e exige crédito declarado para
+**cada arquivo**. Provada nas duas direções: arquivo sem crédito reprova, e a
+pasta renomeada também — senão a varredura devolveria vazio e o teste passaria
+verde para sempre sem olhar nada.
 
 **Como ela é enfeitada** `[29/08]`: cada bloco abre com um ícone num quadrado
 na identidade do site, e os jogos que o dono citou viram **chips** com nome e
@@ -474,3 +538,439 @@ quem **administra** opera.
 ---
 
 [← voltar para o README](../README.md)
+
+---
+
+### `[01/09]` Para onde a página rola quando a rota muda
+
+Dois bugs relatados pelo dono tinham a mesma raiz: **ninguém mandava a página
+rolar**. Nenhum dos dois quebrava nada visível — a página abria, os links
+existiam, o console ficava limpo. Eles só entregavam a pessoa no lugar errado.
+
+| O que ele viu | A causa |
+| --- | --- |
+| abrir "Sobre" pelo rodapé caía no meio da página | navegação do React Router é troca de rota no cliente; o v6 **não reseta scroll**, e a posição antiga fica |
+| links de seção do rodapé não faziam nada na "Sobre" | o rodapé aparece nas duas páginas, mas usava âncora **relativa** (`#feed`), que só existe na landing |
+
+**Quem resolve:** `components/ui/RolagemDeRota.jsx`, montado uma vez no
+`App.jsx`. Ele distingue três navegações, porque tratá-las igual quebra duas:
+
+| Navegação | O certo | O que um `scrollTo(0,0)` cego faria |
+| --- | --- | --- |
+| link para outra página | ir para o topo | certo por acidente |
+| link com âncora (`/#feed`) | rolar até a seção | **mataria a âncora** |
+| voltar/avançar | restaurar onde a pessoa estava | **perderia o lugar** |
+
+O `POP` é o caso mais esquecido: o navegador já guarda a posição de quem volta,
+e sobrescrever isso é apagar trabalho dele.
+
+O rodapé passou a usar `Link` com `{ pathname: '/', hash }` em vez de `href` —
+funciona das duas páginas e não recarrega. `HighlightsStrip` e a navegação
+lateral continuam com âncora simples: as duas só existem na landing.
+
+**A trava:** `e2e/navegacao.mjs`, no CI. Confere os **três** casos, não um.
+Provada removendo o `RolagemDeRota`: reprovou dizendo *"a /sobre abriu em
+4420px, vinda de 4420px na landing"* e apontando o arquivo.
+
+---
+
+### `[01/09]` O raio sumia ao voltar para a tela — e não era só o raio
+
+O dono relatou o raio ficando mudo depois de sair da viewport e voltar. A
+investigação achou **cinco** ocorrências da mesma causa, e três delas faziam
+coisas **sumirem** da tela.
+
+**A causa, lida no fonte do `@react-three/fiber`** (`setFrameloop`), não deduzida:
+
+```js
+clock.stop(); clock.elapsedTime = 0;
+if (frameloop !== 'never') { clock.start(); clock.elapsedTime = 0; }
+```
+
+**O relógio da cena zera a cada mudança de `frameloop`** — e ele muda toda vez
+que a cena sai e volta para a viewport, porque é exatamente assim que o laço é
+desligado fora da tela (otimização que fica).
+
+| Onde | O que acontecia ao voltar |
+| --- | --- |
+| arcos do raio | agendavam `proximo = elapsedTime + intervalo`; com o relógio zerado ficavam mudos **pelo tempo que a pessoa tinha ficado olhando antes** |
+| flash de trovão | idem |
+| entrada das formas | `popP` voltava a 0 → escala 0 → **sumiam e refaziam a entrada** |
+| entrada da logo | idem — **a logo encolhia até desaparecer** |
+| oscilações (`useBob`, diamante) | o seno saltava de fase e os objetos davam um pulo |
+
+**Nada estourava.** Medido: a cena seguia desenhando (185 draws antes, 185
+depois de voltar). Só o conteúdo se comportava errado — falha silenciosa.
+
+**A correção:** tempo acumulado a partir do `delta` de cada quadro. O `delta`
+não sabe nada de relógio absoluto e não tem como ser zerado por baixo. Fica em
+`lib/ritmoDoRaio.js` (agendamento) e no `useTempoAcumulado` do `SceneObjects`
+(animação). O teto de 1 s por quadro protege do salto que o navegador entrega
+quando a aba volta do segundo plano.
+
+**A trava:** `ritmoDoRaio.test.js` varre `scene3d/` e reprova qualquer
+`clock.elapsedTime` em código. Testar só o helper seria "teste que não consegue
+falhar" — alguém reescreveria a cena com o relógio e o teste seguiria verde.
+Provada reinjetando o bug na entrada da logo: reprovou apontando
+`SceneObjects.jsx:82` e explicando as duas consequências.
+
+---
+
+### `[01/09]` A página `/privacidade` — política escrita do sistema, não de modelo
+
+O dono deixou claro que isto é **requisito de lançamento**, não enfeite: *"não
+quero lançar um site que literalmente quebra as leis reais"*.
+
+**De onde veio o texto:** do levantamento em [PRIVACIDADE.md](PRIVACIDADE.md),
+feito medindo a implementação — navegador aberto para ver cookie e
+armazenamento, consultas ao banco para ver colunas, leitura do código para ver o
+que sai para terceiros.
+
+**Nada de modelo copiado.** Política copiada descreve um site que não é este, e
+política que descreve errado é pior do que nenhuma: ela promete o que o sistema
+não faz.
+
+**O que a página diz, com tabela:** que não há cookie nenhum (e por isso não há
+faixa de consentimento), o que fica guardado no navegador, que dado existe no
+banco e se é obrigatório ou opcional, quem mais recebe alguma coisa, e como
+exercer cada direito da LGPD — que aqui é botão, não formulário.
+
+**Três blocos aparecem MARCADOS como pendentes**, e é escolha deliberada: idade
+mínima, prazo de retenção e quem é o controlador dependem de decisão do dono.
+Preencher de palpite seria prometer o que ninguém prometeu.
+
+**A trava é diferente da de conteúdo comum.** Uma política **promete** coisas
+sobre o sistema; se o sistema mudar e o texto ficar, a página passa a afirmar
+algo falso e ninguém vê pela tela. A afirmação mais frágil é a dos cookies, então
+`conteudoDaPrivacidade.test.js` varre `src/` atrás de escrita de cookie e
+reprova. Provada criando um arquivo que escreve `document.cookie`: reprovou
+dizendo que o texto virou promessa falsa.
+
+O link está na navegação lateral **antes** do "Entrar", e no rodapé — a pessoa
+consegue ler o que acontece com os dados dela **antes** de decidir criar conta.
+
+---
+
+### `[01/09]` A página `/regras` — a moderação ganhou onde se explicar
+
+O site oculta conteúdo, suspende e bane desde antes desta página. Até agora
+**não havia lugar nenhum dizendo qual regra foi quebrada**. Punição sem regra
+escrita parece arbitrária mesmo quando é justa — e quem foi punido não tem como
+corrigir o próprio comportamento se ninguém disse qual era o esperado.
+
+**O conteúdo veio do que o sistema faz** ([MODERACAO.md](MODERACAO.md) e
+[MODERACAO-IA.md](MODERACAO-IA.md)): o que a checagem automática bloqueia, o que
+vai para fila humana, e como funciona o recurso. **Se uma regra está escrita lá,
+existe mecanismo por trás dela** — não é lista de bom-tom inventada.
+
+Pública de propósito: a futura tela de "fui banido" vai apontar para cá, e quem
+foi punido precisa alcançá-la **sem estar logado**.
+
+### `[02/09]` Os três documentos, e o aceite que os torna verificáveis
+
+Pergunta do dono: *"acha uma boa ideia já colocar o check no login ou cadastro
+pra a pessoa aceitar os termos? na vdd sites reais existem vários"*.
+
+**Sim, e agora são três** — cada um respondendo uma pergunta diferente, porque
+juntá-los faria os três piorarem:
+
+| Documento | Responde |
+| --- | --- |
+| [`/privacidade`](FUNCIONALIDADES.md) | o que fazemos com os **seus dados** |
+| [`/regras`](FUNCIONALIDADES.md) | o que você pode **publicar** |
+| **`/termos`** *(novo)* | as regras do **acordo**: de quem é o conteúdo, quando a conta é encerrada, que garantia não existe |
+
+O terceiro era o único que faltava, e é o único que fala de contrato.
+
+#### A caixinha não é a prova — o registro é
+
+Para a LGPD o que conta não é a pessoa ter marcado: é **conseguir provar
+depois** que ela marcou, **qual versão** aceitou e **quando**. Uma caixinha que
+só valida o formulário é teatro — no dia em que alguém questionar, não há o que
+mostrar.
+
+Por isso o desenho tem três partes, e a terceira é a que quase todo site
+esquece:
+
+1. cada documento tem uma **versão**, em `lib/documentosLegais.js`;
+2. o cadastro **grava** em `policy_acceptances` qual versão foi aceita e quando;
+3. quando um documento mudar de forma relevante, quem já tem conta **reaceita**
+   — este terceiro passo está no `BACKLOG.md`, é fluxo próprio.
+
+#### Quem já tinha conta, e quando o documento muda
+
+O aceite no cadastro cobre quem se cadastrar de 02/09 em diante. Os outros dois
+casos — as contas criadas antes, e qualquer pessoa no dia em que um documento
+mudar de versão — são o mesmo mecanismo: comparar a versão vigente com o que a
+pessoa aceitou.
+
+**Avisa, não bloqueia** (decisão do dono: *"só avisa sem bloquear"*), e a
+decisão é a correta: um modal que trava o site força a pessoa a clicar em
+"aceito" **para conseguir ler** o documento que está aceitando. Consentimento
+arrancado assim vale menos, não mais.
+
+O aviso é uma faixa na área logada, com os documentos como link em aba nova e
+dois botões: *Li e aceito* e *ver depois*. O "depois" some **por sessão** — se
+fosse permanente, o aviso deixaria de existir na prática; se voltasse a cada
+tela, viraria praga.
+
+**Três estados, e o terceiro é o que evita o alarme falso:** `[]` (tudo
+aceito, não mostra), lista com itens (mostra), e **`null`** — *não consegui
+perguntar*, com a rede caída. Nesse terceiro o aviso fica calado: cutucar quem
+já aceitou tudo por causa de uma falha de rede ensina a ignorar o canal
+(§0.2, 4ª regra).
+
+#### UMA caixinha, e não três
+
+Decisão de produto: uma marcação só, cobrindo os três documentos, com link para
+cada um. Três caixinhas separadas não deixam ninguém mais informado — treinam a
+pessoa a clicar três vezes sem ler, e o consentimento fica **pior**, não melhor.
+
+Dois detalhes que parecem pequenos e não são:
+
+- os links abrem em **aba nova**. Sem isso, clicar em "Termos de Uso" no meio do
+  cadastro faria a pessoa perder tudo que já digitou — e o resultado previsível
+  é ninguém clicar, ou seja, ninguém ler;
+- o clique no link **não marca a caixinha**. O link vive dentro do `<label>`, e
+  sem `stopPropagation` ler o documento registraria um aceite que a pessoa não
+  deu.
+
+#### O que o banco garante, e o que ele não garante
+
+Garante que ninguém forja aceite alheio (`WITH CHECK (user_id = auth.uid())`,
+testado), que a data não pode ser reescrita (sem policy de UPDATE) e que a
+versão é sempre uma data (`CHECK`).
+
+Não garante que toda conta tenha registro: quem criar conta fora do site fica
+sem. O registro prova quem aceitou — não prova que todos aceitaram, e a
+diferença está escrita aqui para ninguém confundir as duas.
+
+---
+
+### `[02/09]` A página `/contato` — falar com a administração de FORA do site
+
+Pedido do dono: *"nós precisamos de uma maneira dos usuários falarem com a
+administração de fora do site, nem que seja por formulário"*.
+
+**O buraco era real e maior do que parecia.** O que existia só atendia quem
+ainda conseguia entrar:
+
+| O que existia | Quem ele NÃO atendia |
+| --- | --- |
+| Pedido de revisão na tela de banimento | quem não consegue mais entrar |
+| "Conta bloqueada?" no rodapé → `/login` | quem perdeu o acesso ou o e-mail |
+| Botão de denúncia em cada post | quem nem tem conta |
+| — | quem quer exercer um direito de LGPD |
+
+A última é a mais séria: a política de privacidade prometia acesso, correção e
+exclusão de dados, e **não havia endereço para pedir nenhum dos três**.
+
+**O que a página faz.** Nome, e-mail, um assunto de uma lista fechada de seis, e
+o relato. Funciona sem conta e sem login. A resposta vai para o e-mail
+informado.
+
+**O que ela deliberadamente NÃO faz:** consultar coisa alguma antes de enviar.
+Nem *"esse e-mail tem conta?"*, nem *"essa pessoa está banida?"*. Um formulário
+que responde diferente conforme o endereço informado é um **oráculo de
+enumeração** — qualquer um descobriria quem tem conta aqui e quem foi punido.
+É a mesma razão pela qual a porta do banido leva ao login.
+
+**Do outro lado** existe a aba "Contato" no painel admin, com filtro por status
+e os botões de marcar como lida, respondida ou spam. Sem ela o formulário seria
+uma caixa fechada, e *"mandei e nunca responderam"* ficaria indistinguível de
+*"o formulário está quebrado"* (§1.5).
+
+Os limites de vazão, o disjuntor, o alarme de enchente e os 14 testes em
+`ROLLBACK` estão em
+[`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
+
+### `[02/09]` O fundo animado em TODAS as abas da barra lateral
+
+Pedido do dono, e uma correção de rota minha. Ele tinha perguntado em 02/09 se
+cada aba devia ter fundo próprio; eu registrei a decisão ("o mesmo para todas,
+variando a cor") e **entendi errado de qual barra lateral se tratava** — fui
+implementar no site logado. Ele corrigiu: *"não foi para o site logado que
+pedi, eu pedi para as rotas da barra lateral... eu queria que todas as abas
+assim como o sobre tivessem"*.
+
+A barra lateral da **landing** leva a `/sobre`, `/privacidade`, `/regras`,
+`/termos` e `/contato`. Só a primeira tinha fundo.
+
+**Onde ele foi posto, e por quê.** Na **casca** (`PaginaDeConteudo`), não em
+cada página. Posto em cada uma seriam quatro linhas iguais — e a quinta página
+nasceria sem, porque quem a escrevesse não saberia que precisa. Na casca, toda
+página que a usa ganha por construção.
+
+O componente saiu de `components/sobre/` para `components/conteudo/`: um
+arquivo chamado `sobre/FundoAnimado` usado por cinco páginas é um nome que
+mente, e nome que mente é o começo da duplicação.
+
+**A trava** (`PaginaDeConteudo.test.jsx`) cobre o fundo e as três regras que o
+enfeite não pode perder — não roubar clique, sumir com `prefers-reduced-motion`
+e não ser anunciado por leitor de tela. As quatro são **invisíveis quando
+quebram**: ninguém percebe que o fundo roubou um clique até tentar clicar num
+link por baixo dele, e ninguém reporta enfeite ausente como bug.
+
+Conferido nas cinco rotas num navegador: 24 elementos por camada,
+`pointer-events: none`, e o conteúdo acima.
+
+### `[01/09]` A casca compartilhada das páginas de texto
+
+`components/conteudo/PaginaDeConteudo.jsx` nasceu quando a **segunda** página
+com essa estrutura ia existir. O §4 manda extrair a partir de duas, e o motivo é
+concreto: cópias divergem. Com três cascas iguais, a correção do `whileInView`
+ou do scroll de âncora precisaria ser feita em três lugares — e uma ficaria para
+trás sem ninguém notar.
+
+`Privacidade.jsx` caiu de **132 para 24 linhas**. A `/sobre` **não** usa a
+casca: ela tem lema, bloco em destaque e o mural de jogos, e forçá-la aqui
+encheria o componente de opção que só uma página usa — a outra forma de errar a
+abstração.
+
+---
+
+### `[01/09]` Quem foi banido: por que NÃO existe página pública de "meu caso"
+
+O dono pediu uma aba na navegação da landing para quem foi banido ver o próprio
+caso. A aba existe — mas ela **leva ao login**, e a decisão é de segurança.
+
+**Uma página pública que aceitasse e-mail e respondesse "esta conta está
+banida" seria um oráculo de enumeração:** qualquer pessoa descobriria se um
+endereço tem conta aqui e se aquele alguém foi punido. Isso é dado de terceiro
+exposto sem consentimento — o oposto do endurecimento de LGPD que o projeto fez.
+
+**Entrar resolve sem truque:** a conta É a prova de identidade, e o login
+continua funcionando para quem está banido (só a navegação pelo site é que não).
+
+**E a tela que ela alcança já existia**, fazendo mais do que parecia: motivo,
+detalhes, status do pedido de revisão, resposta da equipe e o formulário de
+recurso. Os buracos reais eram dois, e foram fechados:
+
+| Faltava | Agora |
+| --- | --- |
+| dizer **qual regra** foi quebrada | link para [`/regras`](FUNCIONALIDADES.md), que passou a existir |
+| a pessoa se identificar ao procurar a equipe | o id da própria conta aparece, selecionável |
+
+O id não vaza nada: é o dado dela, mostrado a ela.
+
+### `[01/09]` O teste do painel passou a criar o próprio dado
+
+Ele media o **banco**, não o painel: em 30/08 reprovou porque o dono esvaziou a
+lixeira e o site ficou sem post — defeito zero, CI vermelho.
+
+O remendo da época distinguia "seletor quebrou" de "site vazio" e mantinha a
+trava viva, mas a paginação só era exercitada quando alguém por acaso tivesse
+postado. Agora o teste cria o próprio post antes de abrir o painel e o apaga no
+fim, como o `fluxos.mjs` já fazia.
+
+**E o ramo tolerante saiu junto**, de propósito: com dado garantido, zero linhas
+volta a significar uma coisa só — o seletor quebrou. Manter a tolerância seria
+deixar aberto o buraco original, em que o contador dava zero e o teste
+registrava sucesso.
+
+---
+
+### `[01/09]` Som ambiente da landing — sintetizado, sem arquivo nenhum
+
+O dono perguntou se precisava baixar uma música. **Não precisa.** O som é gerado
+no próprio navegador pela Web Audio API, e a escolha resolve quatro problemas de
+uma vez:
+
+| Com arquivo de música | Sintetizado |
+| --- | --- |
+| 200–400 KB para baixar | **0 KB** |
+| precisa hospedar, e egress é a cota mais apertada | nada trafega |
+| música tem dono — licença é problema real | nada de terceiro |
+| loop de 30 s fica óbvio na terceira volta | não repete: as vozes derivam de fase |
+
+**O som:** um acorde grave sustentado, filtrado em passa-baixa, com três vozes
+levemente desafinadas entre si. A desafinação faz ele "respirar" sozinho num
+ciclo de minutos — é o truque clássico de ambiente: soa vivo sem chamar atenção.
+
+**Três decisões que valem registro:**
+
+1. **Desligado por padrão, e sem tentar autoplay.** Não é limitação
+   contornável: Chrome, Safari e Firefox bloqueiam áudio antes de um gesto. E
+   site que toca sozinho faz fechar a aba — o pedido era "sutil".
+2. **A preferência é lembrada só para quem LIGOU.** Quem nunca ligou continua
+   no silêncio; quem ligou tem o som de volta no primeiro gesto seguinte.
+3. **Nada é alocado antes do clique.** Nenhum `AudioContext` nasce enquanto
+   ninguém pedir — o custo de o botão existir é o próprio botão. E desligar
+   chama `close()`, que devolve a thread de áudio: sem isso os osciladores
+   seguiriam rodando em silêncio, gastando bateria de quem desligou para
+   economizar.
+
+**Verificado num navegador real:** antes do clique, zero contexto de áudio e
+nada no armazenamento; depois, `aria-pressed="true"` e a preferência gravada.
+
+**E a trava de privacidade pegou isto na hora.** A chave nova (`gh_som_ambiente`)
+reprovou a suíte até entrar na política — exatamente o mecanismo pedido em
+01/09, funcionando na primeira coisa criada depois dele.
+
+### `[01/09]` Por que o som NÃO entra no site logado
+
+Recomendação minha, e o dono decide:
+
+| Landing | Site logado |
+| --- | --- |
+| visita de 30 s a 2 min | sessão de 20 min ou mais |
+| ambiente cria impressão | ambiente vira irritação |
+| nada mais toca | **as lives têm áudio próprio** |
+
+O terceiro item é o que decide: música de fundo por cima de uma live é conflito
+de áudio, não ambientação.
+
+---
+
+### `[01/09]` Elementos flutuantes da landing — o fluxo de dados
+
+Traços finos de luz subindo devagar atrás do conteúdo, como pacote de dado
+atravessando uma rede.
+
+**Por que ele não é "mais uma decoração":** ele lê como infraestrutura, não como
+enfeite solto. A cena 3D é o objeto em foco; o fundo da "Sobre" são formas
+grandes e lentas; este é fino, numeroso e vertical. Cada um ocupa um papel
+visual diferente, que era o pedido — *"diferentes dos elementos 3D existentes"*.
+
+**A interatividade, e o cuidado que ela exigiu:** o ponteiro desloca os planos
+em profundidades diferentes, criando parallax. O custo disso foi **medido e
+depois reduzido em 37%** agrupando os traços em três planos — os números e o
+A/B estão em [DESEMPENHO.md](DESEMPENHO.md). Parado, a camada custa zero.
+
+**Celular:** o ouvinte só é registrado com `pointer: fine`. Sem ponteiro não há
+para onde apontar, e registrar um ouvinte que nunca dispara é desperdício.
+
+**Acessibilidade:** `motion-reduce:hidden` — conferido no navegador, a camada
+fica `display: none` para quem pediu menos movimento.
+
+**Duas lições anteriores aplicadas aqui**, e vale dizer porque foi de propósito:
+a camada usa `100lvh` (não `100vh`), senão as peças saltariam quando a barra de
+endereço do celular some; e o conteúdo fica em `relative z-10`, senão o fluxo
+passaria por cima do texto — que é a diferença entre ambientação e poluição.
+
+---
+
+### `[02/09]` O botão de som: três defeitos, e um deles eu não consegui reproduzir
+
+O dono relatou: o botão não religava depois de desligado, não tocava som nenhum,
+não havia aviso de que o site tem áudio, e o navegador não pediu permissão.
+
+| O que ele viu | O que era |
+| --- | --- |
+| clicar não religava | **inferência:** o componente registrava um `pointerdown` para retomar o som em qualquer gesto, e `pointerdown` dispara **antes** de `click` — o ouvinte ligava e o botão desligava em seguida |
+| não tocava nada | **físico:** as vozes eram 55, 82,5 e 110 Hz. Alto-falante de celular e notebook não reproduz abaixo de ~200 Hz. O sinal existia e ninguém ouvia |
+| sem aviso | verdade — eu não tinha feito |
+| navegador não pediu permissão | **não existe** essa permissão. Navegador bloqueia áudio sem gesto **em silêncio**; quem avisa que há som somos nós |
+
+**As correções:** as vozes subiram para 220 / 329,8 / 440,6 Hz (e o filtro
+passa-baixa de 420 para 900 Hz, senão ele cortaria justamente a voz nova); o
+ouvinte de retomada **saiu** — o som liga pelo botão, e só; e entrou um aviso
+discreto, uma vez por sessão, que some sozinho em 9 s.
+
+> **O que eu NÃO provei.** Reinjetei o ouvinte antigo e o teste passou mesmo
+> assim: num navegador sem cabeça o clique sintético não produz a mesma corrida
+> que um clique humano — conferido com instrumentação, o handler do botão nem
+> chegou a rodar. A causa raiz do relato segue como **inferência**, e a
+> confirmação depende do aparelho do dono. O teste que ficou trava o
+> **contrato** do botão (clicar sempre alterna, com e sem preferência salva),
+> que é trabalho real — só não é a prova desta correção.

@@ -57,8 +57,36 @@
   `community_post_media.url`) — a anon key permite chamar a REST API direto,
   então validação só no frontend não vale nada.
 - **`anon` só enxerga `(id, username)` de `profiles`** — o suficiente para a
-  checagem de username duplicado no cadastro. RLS é por linha, não por coluna;
-  a restrição correta aqui é privilégio de coluna.
+  checagem de username duplicado no cadastro (`useAuth.jsx`:
+  `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por
+  coluna; a restrição correta aqui é privilégio de coluna.
+
+  > **`[02/09]` Este parágrafo estava certo, e outros dois documentos o
+  > contradiziam.** O `BACKLOG.md` afirmava que *"`profiles` responde 401 ao
+  > anônimo"* e a matriz de gatilhos deste mesmo arquivo repetia. Os dois
+  > tinham lido um `select=*` negado — que prova só que **alguma** coluna está
+  > fechada, porque privilégio no Postgres é por coluna.
+  >
+  > **A consequência quase foi um estrago.** Eu cheguei a propor ao dono
+  > revogar `id`/`username` de `anon`, com a checagem de dependência feita
+  > "corretamente" — nenhuma policy usa. Só que **quem lê não era uma policy: é
+  > o cadastro**. Revogar ali quebraria a checagem de username duplicado e seria
+  > a **quarta** queda do site por revoke bem-intencionado
+  > ([POSTURA.md](regras/POSTURA.md) registra as três primeiras). A consulta de
+  > "quem lê" daquele arquivo procura policy e função — e este caso mostra que
+  > ela precisa incluir o **código do cliente**, que é o que `e2e/portas-do-banco.mjs`
+  > agora vigia coluna a coluna, nas duas direções.
+  >
+  > **O que continua em aberto é outra coisa, e menor:** `anon` consegue
+  > **enumerar** — `select=id,username` devolve as 5 linhas, quando o cadastro
+  > só precisa perguntar por **um** username. Somado a `site_config.updated_by`,
+  > isso liga um UUID de staff a um nome.
+  >
+  > **A solução certa não é revoke, é RPC** — o padrão que este projeto já usa
+  > em `get_public_profile` e `admin_list_users` para exatamente este problema:
+  > uma `username_disponivel(p_username)` `SECURITY DEFINER` devolvendo booleano
+  > deixa revogar o `SELECT` de `anon` **sem** quebrar o cadastro. Está no
+  > `BACKLOG.md` como 🟡, esperando decisão.
 - **Guards de coluna privilegiada** em `profiles`
   (`guard_profile_privileged_cols`) e `posts` (`guard_post_privileged_cols`):
   usuário comum não altera `role`/`banned` nem `hidden_at`/`deleted_at`/
@@ -144,6 +172,55 @@ De quebra, a varredura achou uma mentira na tela: o painel do owner mandava
 configurar `HUGGINGFACE_API_KEY` para a moderação por IA, que usa **OpenAI**
 desde a troca de provedor. Mensagem errada custa mais tempo do dono do que
 mensagem nenhuma (§1.5).
+
+## `[03/09]` Captcha no formulário de contato — e por que o REVOKE é a parte que importa
+
+**O buraco que ele fecha, e estava escrito no SQL desde 02/09:** os limites do
+canal de contato (3 mensagens por e-mail em 24 h, disjuntor de 60/hora) impedem
+a tabela de virar depósito, mas **não** impedem um robô com muitos endereços de
+encher a hora e **fechar o canal para todo mundo**.
+
+**O widget não era a parte difícil.** Enquanto `enviar_mensagem_de_contato`
+tivesse `GRANT EXECUTE ... TO anon`, o captcha seria decoração: qualquer um
+posta em `/rest/v1/rpc/` e pula a verificação inteira. O site entrega a anon key
+por construção — regra que só existe no cliente não existe (§1.3).
+
+Por isso a mudança de verdade é o revoke:
+
+| Antes | Depois |
+| --- | --- |
+| `anon` e `authenticated` chamavam a RPC direto | só `service_role`, e a única porta é a Edge Function `verify-contact` |
+| `author_id` vinha de `auth.uid()` | vem por parâmetro, derivado de um JWT que o Supabase valida — não é forjável, e a função só é executável por `service_role` |
+
+**Antes de revogar, procurei quem lê** (POSTURA.md §1.3 — revoke
+bem-intencionado já derrubou este site três vezes): `grep` no `src/` (só o
+`contatoService.js`), `pg_policies`, `pg_proc` e triggers. Nenhum outro
+dependente. Testado em `ROLLBACK` antes de aplicar: `anon` bloqueado,
+`authenticated` bloqueado, `service_role` passa, `author_id` chega, as
+validações de conteúdo continuam valendo, e não sobrou overload da versão antiga.
+
+**Provado em produção, com a anon key real:**
+
+    POST /rest/v1/rpc/enviar_mensagem_de_contato
+      -> HTTP 401 "permission denied for function enviar_mensagem_de_contato"
+    POST /functions/v1/verify-contact  (token de captcha inventado)
+      -> HTTP 403 "Nao foi possivel confirmar o captcha"
+
+> O 403 do segundo é o que prova que a `TURNSTILE_SECRET_KEY` está configurada
+> **e** sendo usada: sem ela a função seguiria adiante (ver a decisão de falhar
+> aberto, abaixo) e o erro teria sido 400, vindo da RPC.
+
+**Falhar aberto, e o quanto isso é estreito.** Se o Cloudflare estiver fora do
+ar, a mensagem passa e a falha vai para `admin_logs`. O `/contato` é o canal de
+quem está banido ou trancado para fora; barrar todo mundo por uma
+indisponibilidade de terceiro cortaria justamente quem mais precisa. Token que o
+Cloudflare **recusa** continua recusado, ninguém de fora provoca a queda do
+Cloudflare, e os limites do banco continuam por baixo.
+
+**O que o captcha NÃO faz:** ele para robô comum. Não para quem paga serviço de
+resolução, nem alguém determinado especificamente contra este site. O disjuntor
+de 60/hora continua existindo por isso — defesa em profundidade, não
+substituição.
 
 ## `[27/08]` Onde está o rate limit — e onde ele não está
 
@@ -305,3 +382,229 @@ clique. Superfície de ataque: nenhuma — ninguém consegue chamá-las.
 ---
 
 [← voltar para o README](../README.md)
+
+---
+
+## `[01/09]` A matriz de gatilhos — o que cobre cada área, e o que NÃO cobre
+
+> Pedido do dono: *"todo lugar onde dê pra colocar um gatilho pra vc lembrar oq
+> falta, quero que vc ponha, desde do front até o banco de dados"*, com a forma
+> exigida sendo **gatilho → obrigação → evidência**.
+
+A pergunta que encontra brecha não é "existe portão?" — é **"existe caminho
+para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
+
+| Área | Portão | **O que ele EXIGE de quem mexe** | Existe caminho sem acionar? |
+| --- | --- | --- | --- |
+| Auth/autorização | `useAuth.test.js`, `roles.test.js`, `fluxos.mjs` | que `/admin` e `/owner` continuem negados a `role='user'`, provado num navegador | **sim** — policy no banco não passa por nenhum deles |
+| Banco e RLS | `portas-do-banco.mjs`, `tabelasSemUpdate.test.js` | que porta fechada siga fechada, porta aberta siga aberta, e que ninguém escreva `update` em tabela sem policy | **sim, em parte** — ver "o buraco que fica" |
+| Dado sensível | `portas-do-banco.mjs` | que `posts` e `admin_logs` respondam 401 ao anônimo, e que de `profiles` o anônimo leia **exatamente `id` e `username`** — nem uma coluna a mais, nem a menos | sim — não vê o que um **logado** alcança |
+| Privacidade | `conteudoDaPrivacidade.test.js` | que chave nova no navegador, terceiro novo e cookie **entrem na política** antes de existirem | não, para o que ele conhece |
+| Admin/staff | `painel-admin.mjs` | que o painel liste, pagine e negue — com dado que o próprio teste cria | sim — cobre a tela, não a permissão no banco |
+| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 6 portas recusem chamada sem credencial — e, na `verify-contact`, que o captcha esteja mesmo sendo conferido (403, não 400) | não, e é de propósito: as functions não estão no git |
+| Fluxos críticos | `fluxos.mjs` | publicar → conferir → apagar → sair, e nenhum lixo de teste sobrando | sim — cobre o caminho feliz de uma conta comum |
+| Testes | piso de testes, `rotasE2E.test.js`, **`varrerFontes`** | que rota nova tenha teste de navegador, e que trava que varre arquivo **prove que varreu** | não |
+| Segredo/config | `segredos-vazados.mjs` | que nenhum arquivo rastreado tenha chave privada, `service_role`, token ou senha | não, para os padrões que ele conhece |
+| CI/CD | portão de deploy da Vercel | que branch nova entre no `vercel.json` | não |
+| Documentação | `documentacao-quebrada`, `mapa-de-arquivos`, `documentacao-envelhecida` | que arquivo novo entre no `ARQUITETURA.md` e que nenhum doc cite arquivo morto | não |
+| Conteúdo visível | `conteudo-visivel.mjs` | que nada com tamanho real fique em `opacity: 0` numa janela de celular | não |
+| Navegação | `navegacao.mjs` | topo ao trocar de página, âncora funcionando das duas páginas, e voltar preservando o lugar | não |
+| Cena 3D | `cena-3d.mjs`, `ritmoDoRaio.test.js` | que o laço pare fora da tela, e que ninguém agende contra o relógio que o R3F zera | não |
+
+**A coluna do meio é a que faltava**, e o dono tinha razão em cobrá-la: sem
+dizer o que o portão **exige**, "existe portão" vira contagem — e contagem não
+orienta quem vai mexer na área.
+
+### O que a auditoria de 01/09 mediu, e o que ela desmentiu
+
+Rodando `get_advisors` e consultando `pg_proc`/`pg_policies` diretamente:
+
+| Classe verificada | Resultado |
+| --- | --- |
+| `SECURITY DEFINER` sem `search_path` | **zero** — a classe está fechada |
+| Tabela sem RLS ligada | **zero** |
+| Tabela sem policy de UPDATE | 13 — e **nenhuma** recebe `update` no código hoje |
+| `SECURITY DEFINER` chamável por `anon` | 2: `check_login_status`, `get_user_xp` |
+
+**O WARN de `check_login_status` NÃO se confirmou como brecha.** A suspeita era
+oráculo de enumeração de e-mail. Medido: `login_attempts` tem **0 linhas** com 5
+usuários reais — a tabela só ganha linha em tentativa **falha**, então a função
+devolve `{attempts: 0, blocked: false}` para e-mail existente e inexistente do
+mesmo jeito. Ela não distingue os dois casos. Ela **precisa** ser pública: a tela
+de login consulta o bloqueio antes de autenticar.
+
+> Registrado porque lint que acusa não é prova de brecha, e tratar WARN como
+> vulnerabilidade é o mesmo erro de tratar verde como garantia.
+
+### O buraco que FICA, e por que não fechei
+
+As duas classes mais perigosas do banco — **policy** e **privilégio de coluna** —
+só se verificam com acesso administrativo ao Postgres. Pôr a `service_role` nos
+secrets do CI daria a um runner público a chave que ignora toda a RLS: trocar
+uma incerteza de monitoramento por uma credencial exposta é a conta ruim de
+sempre (§0.2).
+
+Então elas continuam sendo trabalho de **auditoria** (§6), rodadas por MCP. As
+consultas estão em [`regras/AUDITORIA.md`](regras/AUDITORIA.md) e a de policy de
+UPDATE está repetida no cabeçalho de `lib/tabelasSemUpdate.js`, junto da lista
+que ela gera.
+
+---
+
+## `[01/09]` A varredura de classe — o que ela encontrou nas minhas próprias travas
+
+A parte B da auditoria (§ do `BACKLOG.md`) manda varrer as classes de erro pelo
+código, e não tratar achado como caso isolado. A classe mais grave é **"teste
+que não consegue falhar"** — está no catálogo desde 30/08 e eu já a repeti duas
+vezes.
+
+**O que a varredura mediu:** das 9 travas que leem arquivos, **6 não conferiam
+que leram algum**. Todas com o mesmo desenho:
+
+```js
+const arquivos = varrer('src/algum/caminho');   // e se voltar vazio?
+const infratores = arquivos.filter(...);
+expect(infratores).toEqual([]);                 // passa. sempre.
+```
+
+Renomeie a pasta e a trava fica **verde para sempre**, sem nunca mais ler uma
+linha. Não é hipótese: é o mesmo mecanismo do teste de portas RPC e do de banco
+fora do ar, os dois que já me pegaram.
+
+**O conserto é de classe, não de caso:** `src/lib/__tests__/varrerFontes.js`
+**estoura** quando não encontra arquivo. A guarda mora no varredor e não em cada
+teste de propósito — guarda que depende de alguém lembrar de escrever é o mesmo
+que não ter guarda.
+
+**Provada** movendo `scene3d/` para fora: a trava do raio parou de passar e
+disse por quê, em vez de seguir verde.
+
+---
+
+## `[05/09]` O cofre do painel do Fundador NÃO é um controle de segurança
+
+Isto está escrito aqui exatamente porque o contrário seria fácil de acreditar.
+O painel do Fundador ganhou uma tela de cofre com código, e ela **parece** uma
+segunda camada de autorização. Não é.
+
+| Ameaça | O cofre protege? |
+| --- | --- |
+| alguém sentado no computador do dono, com a sessão aberta, clicando | **sim** — é a única coisa para a qual ele existe |
+| alguém com a sessão roubada chamando a RPC direto pela API | **não**, e nada no navegador protegeria |
+| alguém que abre o DevTools e apaga o `localStorage` | **não** — apaga e define um código novo |
+
+**A autorização real está no banco e sempre esteve:** `is_super()`, a hierarquia
+de `role_rank()` e as policies. É isso que impede um `admin` de mexer em cargo.
+Se alguém apagar `src/lib/cofre.js` inteiro amanhã, **nenhuma permissão do site
+muda** — some só a tela.
+
+**Por que aceitar uma tranca que não tranca.** Porque a ameaça que ela cobre é
+real e não tinha resposta nenhuma: o computador do dono, aberto, com a sessão
+viva. Para essa, um código pedido antes de mostrar o painel é exatamente a
+medida certa.
+
+**O que estaria errado é ela se apresentar como mais do que é.** Por isso o
+aviso está impresso **na própria tela**, embaixo do campo, e não só neste
+documento: *"esta tranca é visual e vale só neste navegador"*. Cofre que parece
+proteger e não protege é pior do que cofre nenhum — ele muda o comportamento de
+quem confia nele.
+
+**A versão de verdade** — código conferido numa RPC contra um hash, tabela de
+desbloqueio, e toda RPC de owner exigindo desbloqueio ativo — está descrita em
+[VISAO-DE-FUTURO.md](VISAO-DE-FUTURO.md), junto do risco que ela traz: **ficar
+trancado para fora**, que precisa de caminho de recuperação pensado antes de
+existir.
+
+**A defesa que vale mais por hora de trabalho, se a preocupação for sessão
+roubada, continua sendo 2FA na conta do Supabase** — não uma segunda senha
+guardada no mesmo aparelho que a primeira.
+
+### O que é conferido por teste
+
+`src/lib/__tests__/cofre.test.js` cobre o comportamento local — define, confere,
+abre por aba, esquece — e um caso que nada na tela denunciaria: **o código nunca
+pode ser gravado em texto puro**. Se alguém "simplificar" o hash, a tela
+continua abrindo igual e só o teste percebe. Provado reinjetando o vazamento.
+
+
+---
+
+## `[05/09]` `get_user_xp` deixou de ser alcançável por quem não tem conta
+
+`PUBLIC` e `anon` tinham `EXECUTE`, então qualquer requisição sem sessão chamava
+`/rest/v1/rpc/get_user_xp` com um UUID qualquer.
+
+**A severidade honesta é 🔵 baixa**, e isso está escrito para o achado não ser
+inflado: o que ela devolve é agregação de dado que já é público — contagem de
+posts, comentários e lives. Não vaza email, data de nascimento nem nada
+revogado.
+
+**Fechou por duas razões concretas, não por precaução:**
+
+1. É um endpoint de **cálculo** sem sessão — quatro `COUNT`, um com `JOIN`, sem
+   limite de quantas vezes por segundo. Num plano gratuito, computação anônima
+   e ilimitada é cota sendo gasta (§0.2).
+2. **Nenhum caminho anônimo precisava dela.** Verificado nos quatro chamadores:
+   `Ranks.jsx` usa `user.id`; `useUserXP` só é consumido por `Sidebar` e
+   `AvatarPopup`, que só existem logado; `fetchProfileStats` é do perfil; e
+   `/u/:username` está atrás de `RequireAuth`.
+
+Superfície que não serve a ninguém só pode ser usada contra o site. **Testado em
+`ROLLBACK` antes de aplicar:** como `anon` a chamada passou a ser recusada, como
+`authenticated` continuou funcionando.
+
+**As outras três funções alcançáveis sem conta continuam abertas, e por quê:**
+`check_login_status` (só lê `login_attempts`, e a linha nasce na tentativa —
+não confirma se a conta existe), `username_disponivel` (o cadastro precisa dela
+antes de haver sessão, e apelido é público) e `contagem_de_migrations` (devolve
+um inteiro). O raciocínio de cada uma está em
+`db/2026-09-05-fase4-deriva-codigo-banco.md`.
+
+
+---
+
+## `[05/09]` FASE 2 — dois achados no corpo das funções privilegiadas
+
+### 🟠 O fundador era barrado do painel de logins bloqueados
+
+`get_blocked_logins` checava `role = 'super_admin'` **literal**, e o `owner` —
+que está acima na hierarquia — recebia `Access denied`. Comprovado em `ROLLBACK`
+com o JWT do fundador.
+
+**É a terceira vez que esta mesma classe morde este projeto**: antes foram 14
+policies sem `owner` e o `admin_unlock_login` barrando o próprio fundador. A
+regra existe e está escrita. O que falhou foi o **alcance da varredura**: a
+consulta de classe daquela vez procurava em `pg_policies` e parou ali — as
+funções nunca foram varridas com o mesmo critério.
+
+Corrigido para `is_super()`. E a lição operacional fica registrada: varredura de
+classe tem que cobrir **policies, funções e código**, não um dos três.
+
+### 🟠 A trilha de auditoria era forjável por quem tem conta
+
+`log_audit_event` é executável por `authenticated` **por desenho** — o cliente
+registra os próprios eventos. Mas aceitava qualquer `action`, `details` e
+`severity`.
+
+**Comprovado em `ROLLBACK`:** um perfil `role = 'user'` gravou
+`action = 'admin_ban'`, `severity = 'critical'`, com o texto que quisesse.
+
+| | |
+| --- | --- |
+| **risco** | escrever na trilha que a equipe usa para decidir |
+| **impacto** | não é escalada — o `actor_id` vem de `auth.uid()` e ninguém se passa por outro. É envenenar a fonte de verdade da moderação e disparar alarme falso de propósito |
+| **solução** | lista **fechada** de actions, cargo para as de equipe, severidade alta só de equipe |
+
+**Onde a trava mora, e por que não é no banco.** A recusa do banco existe, mas
+em produção ela é **invisível**: `lib/auditLog.js` engole o erro de propósito,
+então uma action nova esquecida na lista simplesmente não se registra — ninguém
+vê, nada é gravado, nenhum teste de comportamento quebra. As três respostas
+"nada" do §1.5. Por isso quem realmente segura é
+`src/lib/__tests__/trilhaNaoEhForjavel.test.js`, que reprova no CI.
+
+### O limite desta passada, dito com todas as letras
+
+As **34** funções não alcançáveis por `anon`/`authenticated` não foram lidas uma
+a uma. Não há caminho pela API para chamá-las — mas *"não é chamável"* é uma
+afirmação sobre os `GRANT`s de hoje, e um `GRANT` novo derruba essa premissa em
+silêncio.
