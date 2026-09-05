@@ -35,62 +35,15 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[05/09]` Os seis pedidos do dono, com print de PC e de celular
-
-| # | O que ele pediu | Tipo | Estado |
-| --- | --- | --- | --- |
-| 1 | **"Voltar" dos termos/privacidade cai na landing** em vez de voltar de onde veio | 🐛 bug | ✅ |
-| 2 | Celular, cadastro: o lutador **verde** um pouco mais para a direita, centralizado na área dele | ajuste | ✅ |
-| 3 | PC, login: os dois lutadores **mais longe das bordas** | ajuste | ✅ |
-| 4 | PC, cadastro: o lutador **roxo um pouco maior** — ele entende a ideia do "não escolhido", mas prefere maior | ajuste | ✅ |
-| 5 | **Moldura própria para o celular** — ele desenhou uma menor e reta, para as bordas de cada lado | arte nova | ✅ |
-| 6 | **Texto cinza apagado**: "Voltar para a página inicial" e afins somem no fundo colorido | contraste | ✅ |
-
-O #1 fura a fila por ser bug (§0). **Causa localizada, não suposta:**
-`components/conteudo/PaginaDeConteudo.jsx` tinha `<Link to="/">Voltar</Link>` —
-o botão estava **preso à landing**, não voltava para de onde a pessoa veio. Ele
-tinha uma **segunda metade**: mesmo voltando certo, `/login` reabria na aba de
-*entrar* porque a aba não estava na URL. As duas foram corrigidas
-(`components/conteudo/BotaoVoltar.jsx` e `pages/Login.jsx`).
-
-O #5 é **arte nova, não a mesma menor**: a moldura do PC se apaga em direção ao
-centro, e encolher aquilo num celular ou cobre metade da tela ou vira borrão —
-foram as duas rodadas anteriores (46vw, depois 24vw). A faixa reta que ele
-desenhou virou `borda-cel-verde.webp` / `borda-cel-roxo.webp`, e **o PC não baixa
-esses 49 KB**: ela só existe dentro do `@media` do celular.
-
-### `[05/09]` A ideia do painel do Fundador NA LANDING
-
-Pedido dele para **pensarmos juntos**, não para eu sair fazendo: hoje ele modera
-só dentro do site, e a landing — que é a porta de entrada — não tem ninguém
-olhando. **Análise escrita, e ela discorda de uma parte:**
-[VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).
-
-Em uma linha: **vigiar** a landing tem objeto e ninguém faz hoje; **moderar** a
-landing não tem objeto (não há conteúdo de visitante ali, e o contato já tem
-painel); e **entrar pela landing** é a parte que eu não faria — segunda porta de
-entrada é segundo sistema de autenticação, e ele não precisa dela para ver uma
-rota a mais. **Espera decisão dele.**
-
-### `[05/09]` O e2e autenticado não podia rodar em paralelo
-
-Descoberto ao atualizar os três PRs do Dependabot de uma vez: o botão "Sair" faz
-`signOut()` **global** — decisão registrada —, então o primeiro run que termina
-derruba a sessão dos outros no meio do teste. A evidência foi a screenshot: a
-landing, em `/`, sem sessão. **Não era regressão do bump.** Resolvido com fila
-por conta compartilhada no CI.
-
-> **Fica para o dono decidir:** sair no celular também desloga o PC. Está
-> escrito como intencional em `useAuth.jsx` ("o certo inclusive em aparelho
-> compartilhado"), mas é o tipo de coisa que surpreende quem usa. Se ele
-> preferir o contrário, é trocar o escopo para `local` — uma linha.
+*(vazia — os seis pedidos do dono e os três PRs do Dependabot fecharam nos PRs
+#165, #121, #120 e #118. Duas decisões dele ficaram na fila abaixo.)*
 
 ---
 
 ---
 
-**Última conferência contra o sistema:** 02/09/2026, noite ·
-**22 itens abertos** (+ 1 ideia sem compromisso)
+**Última conferência contra o sistema:** 05/09/2026 ·
+**25 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -150,6 +103,25 @@ por conta compartilhada no CI.
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[05/09]` 🟢 **Decidir o painel da PORTA DE ENTRADA.** *Ideia do dono,
+  pedida para pensarmos juntos; análise escrita em
+  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
+
+  Ela se separa em três, e as três têm respostas diferentes: **vigiar** a landing
+  tem objeto e ninguém faz hoje (se a cena 3D cair ou a cota de e-mail estourar,
+  ninguém fica sabendo — §1.5); **moderar** a landing não tem objeto (não há
+  conteúdo de visitante ali, e o contato já tem painel); e **entrar pela
+  landing** é a parte que eu não faria — segunda porta é segundo sistema de
+  autenticação, e ele já vê o site logado em `/`. A menor versão é uma aba
+  "Porta de entrada" no painel que já existe, juntando o que o `admin_logs` já
+  grava. **Depende de ele decidir se é isso que ele quis dizer.**
+
+- ⬜ `[05/09]` 🟢 **Decidir o escopo do `signOut`: global ou local.** Sair no
+  celular hoje também desloga o PC. Está escrito como intencional em
+  `useAuth.jsx` (*"o certo inclusive em aparelho compartilhado"*), e foi o que
+  fez três execuções de CI se derrubarem — resolvido com fila, não trocando o
+  escopo. É decisão de produto, e a troca é uma linha.
 
 - ⬜ `[04/09]` 🟢 **Música no painel do Fundador.** *Ideia do dono; as três saídas
   que ele imaginou têm impedimento — ver
@@ -382,6 +354,20 @@ por conta compartilhada no CI.
 
 
 ## 🟢 Recomendado
+
+- ⬜ `[05/09]` 🟢 **Dois arquivos passaram de 300 linhas sem eu ter tocado
+  neles.** `components/privacidade/conteudoDaPrivacidade.js` (314) e
+  `pages/Settings.jsx` (303).
+
+  **Está aqui e não foi feito na hora de propósito.** A regra do §4 é sobre
+  arquivo que **eu** inchei — estes dois cresceram em rodadas anteriores e não
+  estavam no caminho de nada hoje. Dividir o `Settings.jsx` no fim de uma sessão,
+  sem ter lido o arquivo, mexeria em troca de senha e exclusão de conta por
+  motivo de contagem de linhas; e o `conteudoDaPrivacidade.js` é **texto legal
+  com teste de impressão de conteúdo** — cortar ali pede cuidado, não pressa.
+
+  O `npm run fim` acusa os dois toda vez, então isto também serve para o alarme
+  parar de gritar sem motivo escrito (§0.2, 4ª regra).
 
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
   *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*
