@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Lock, Unlock, ShieldAlert, KeyRound, RotateCcw } from 'lucide-react';
 
+import CampoDeSenha from '../ui/CampoDeSenha';
+
 import DiscoDoCofre from './DiscoDoCofre';
 import ConfirmModal from '../ui/ConfirmModal';
 import {
@@ -100,39 +102,23 @@ export default function CofreDoFundador({ aoAbrir }) {
       </p>
 
       <form onSubmit={enviar} className="card p-6 mt-6 space-y-3 text-left">
-        <label className="block">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
-            Código
-          </span>
-          <div className="relative mt-1.5">
-            <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-            <input
-              type="password" autoFocus autoComplete="off" value={codigo}
-              disabled={girando}
-              onChange={(e) => setCodigo(e.target.value)}
-              className="input w-full pl-9" placeholder="••••••"
-            />
-          </div>
-        </label>
+        <CampoDeSenha
+          rotulo="Código" Icone={KeyRound} placeholder="••••••"
+          valor={codigo} aoMudar={setCodigo}
+          autoFocus autoComplete="off" desabilitado={girando}
+        />
 
         {definindo && (
-          <label className="block">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-gray-400">
-              Repita o código
-            </span>
-            <div className="relative mt-1.5">
-              <KeyRound size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
-              <input
-                type="password" autoComplete="off" value={confirmacao}
-                disabled={girando}
-                onChange={(e) => setConfirmacao(e.target.value)}
-                className="input w-full pl-9" placeholder="••••••"
-              />
-            </div>
+          <div>
+            <CampoDeSenha
+              rotulo="Repita o código" Icone={KeyRound} placeholder="••••••"
+              valor={confirmacao} aoMudar={setConfirmacao}
+              autoComplete="off" desabilitado={girando}
+            />
             <span className="block text-[11px] font-mono text-gray-600 mt-1">
               mínimo {MINIMO_DO_CODIGO} caracteres
             </span>
-          </label>
+          </div>
         )}
 
         {erro && (

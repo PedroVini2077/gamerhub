@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Zap, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
 import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../lib/password';
 import { marcarEntradaAgora } from '../lib/boasVindas';
+import CampoDeSenha from '../components/ui/CampoDeSenha';
 
 export default function AuthConfirm() {
   const [searchParams] = useSearchParams();
@@ -170,14 +171,10 @@ export default function AuthConfirm() {
 
               <div className="space-y-3 text-left">
                 <div>
-                  <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Nova Senha</label>
-                  <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-                    <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                    <input type="password" aria-label="Nova senha"
-                      className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                      placeholder="••••••••" value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)} />
-                  </div>
+                  <CampoDeSenha
+                    rotulo="Nova Senha" autoComplete="new-password"
+                    valor={newPassword} aoMudar={setNewPassword}
+                  />
                   {newPassword && (
                     <div className="mt-2 flex items-center gap-2">
                       <div className="flex gap-1 flex-1">
@@ -196,18 +193,11 @@ export default function AuthConfirm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Confirmar Senha</label>
-                  <div className={`flex items-center bg-dark-700 border rounded-md transition-all ${
-                    confirmPassword && confirmPassword !== newPassword
-                      ? 'border-red-400/60'
-                      : 'border-dark-400 focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420]'
-                  }`}>
-                    <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                    <input type="password" aria-label="Confirmar nova senha"
-                      className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                      placeholder="••••••••" value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)} />
-                  </div>
+                  <CampoDeSenha
+                    rotulo="Confirmar Senha" autoComplete="new-password"
+                    valor={confirmPassword} aoMudar={setConfirmPassword}
+                    erro={Boolean(confirmPassword) && confirmPassword !== newPassword}
+                  />
                   {confirmPassword && confirmPassword !== newPassword && (
                     <p className="text-xs text-red-400 font-mono mt-1">Senhas não coincidem</p>
                   )}

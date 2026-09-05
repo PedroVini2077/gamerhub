@@ -172,6 +172,13 @@ transições discretas das páginas internas.
   que faltam aparecem **com o nome à mostra** e uma barra de progresso — o que
   falta é objetivo, não enigma. Enquanto os dados não chegam, o card diz
   "Carregando" em vez de mostrar tudo bloqueado.
+- **`[05/09]` O olho de mostrar/ocultar senha existe em TODO campo de senha do
+  site** — login, cadastro, redefinição, configurações e o cofre do Fundador —
+  e é igual no computador e no celular. Antes ele só aparecia em alguns
+  navegadores de Android, porque era o botão nativo deles e não do site: quem
+  usava computador, Firefox ou Safari simplesmente não tinha o recurso.
+  Cada campo começa **oculto**, sempre: lembrar a escolha faria a senha aparecer
+  sozinha na próxima visita.
 - **Login** com detecção de bloqueio por tentativas (ver
   [bloqueio de login](#bloqueio-de-login-por-tentativas)) e contagem regressiva
   ao vivo quando bloqueado.
