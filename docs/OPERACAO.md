@@ -507,6 +507,26 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   seria alarme falso em todo PR. Existe porque `.gitignore` é convenção, não
   trava — e segredo vazado não se conserta apagando o arquivo: o repositório é
   público e a chave fica no histórico. O conserto é rotacionar no fornecedor.
+  **`[05/09]` O padrão de senha ficou mais preciso, e por um motivo concreto:**
+  ele reprovou um `aria-label={x ? 'Ocultar senha' : 'Mostrar senha'}`, lendo o
+  `:` do ternário como se fosse o de uma chave. A correção foi exigir que a aspa
+  antes e a aspa depois da palavra sejam a **mesma** — em `"password":` elas se
+  equilibram, num ternário só aparece a de depois. A outra saída seria dispensar
+  o arquivo, e ela é pior: dispensar **cega** o portão para aquele arquivo para
+  sempre, inclusive para uma senha de verdade escrita nele depois.
+  `scripts/__tests__/segredosVazados.test.js` confere os dois lados — 5 formas
+  de senha que ele **tem** que pegar e 4 que ele **não** pode acusar — e vigia a
+  lista de dispensados, que hoje tem **três** entradas com motivo escrito — a
+  terceira é o próprio teste, que precisa conter senhas em texto para fazer o
+  trabalho dele.
+  **`[05/09]` E ele passou a varrer arquivo NÃO COMMITADO também.** Antes usava
+  só `git ls-files`, ou seja, só o que já estava no índice — e isso deixava dois
+  buracos. O leve: rodar `npm run segredos` antes de `git add` dava verde falso
+  sobre o arquivo recém-escrito (aconteceu, e o CI pegou). O grave: **colar uma
+  chave num arquivo novo e rodar o portão respondia OK** — o momento em que a
+  pessoa mais precisa do aviso era o único que ele não cobria. Agora entra
+  `git ls-files --others --exclude-standard`, que respeita o `.gitignore`,
+  então `.env` de verdade continua fora.
 
 - **portas do banco** (`e2e/portas-do-banco.mjs`, dentro do job de fumaça) —
   bate na REST API do Supabase **como um estranho sem conta** e reprova o PR se
@@ -873,8 +893,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->334<!--/n--> arquivos e
-<!--n:src.linhas-->33.382<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->337<!--/n--> arquivos e
+<!--n:src.linhas-->33.823<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -898,7 +918,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->334<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->337<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -923,6 +943,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->11.620<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->11.871<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

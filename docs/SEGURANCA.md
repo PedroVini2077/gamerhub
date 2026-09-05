@@ -525,3 +525,37 @@ guardada no mesmo aparelho que a primeira.
 abre por aba, esquece — e um caso que nada na tela denunciaria: **o código nunca
 pode ser gravado em texto puro**. Se alguém "simplificar" o hash, a tela
 continua abrindo igual e só o teste percebe. Provado reinjetando o vazamento.
+
+
+---
+
+## `[05/09]` `get_user_xp` deixou de ser alcançável por quem não tem conta
+
+`PUBLIC` e `anon` tinham `EXECUTE`, então qualquer requisição sem sessão chamava
+`/rest/v1/rpc/get_user_xp` com um UUID qualquer.
+
+**A severidade honesta é 🔵 baixa**, e isso está escrito para o achado não ser
+inflado: o que ela devolve é agregação de dado que já é público — contagem de
+posts, comentários e lives. Não vaza email, data de nascimento nem nada
+revogado.
+
+**Fechou por duas razões concretas, não por precaução:**
+
+1. É um endpoint de **cálculo** sem sessão — quatro `COUNT`, um com `JOIN`, sem
+   limite de quantas vezes por segundo. Num plano gratuito, computação anônima
+   e ilimitada é cota sendo gasta (§0.2).
+2. **Nenhum caminho anônimo precisava dela.** Verificado nos quatro chamadores:
+   `Ranks.jsx` usa `user.id`; `useUserXP` só é consumido por `Sidebar` e
+   `AvatarPopup`, que só existem logado; `fetchProfileStats` é do perfil; e
+   `/u/:username` está atrás de `RequireAuth`.
+
+Superfície que não serve a ninguém só pode ser usada contra o site. **Testado em
+`ROLLBACK` antes de aplicar:** como `anon` a chamada passou a ser recusada, como
+`authenticated` continuou funcionando.
+
+**As outras três funções alcançáveis sem conta continuam abertas, e por quê:**
+`check_login_status` (só lê `login_attempts`, e a linha nasce na tentativa —
+não confirma se a conta existe), `username_disponivel` (o cadastro precisa dela
+antes de haver sessão, e apelido é público) e `contagem_de_migrations` (devolve
+um inteiro). O raciocínio de cada uma está em
+`db/2026-09-05-fase4-deriva-codigo-banco.md`.

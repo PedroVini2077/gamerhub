@@ -59,17 +59,30 @@ describe('ninguém soma a coluna morta posts.likes', () => {
     expect(arquivos.length, `${dir} não tem migration nenhuma — a trava não leu nada.`)
       .toBeGreaterThan(100);
 
-    // A ÚLTIMA definição de cada função é a que vale: migrations antigas
-    // guardam o erro de propósito, é o histórico. Só a mais recente é o estado.
+    // `[05/09]` DOIS ajustes, e os dois vieram de a trava se acusar sozinha.
+    //
+    // 1. COMENTÁRIO NÃO É CÓDIGO. A migration que apagou a coluna EXPLICA o bug
+    //    e escreve `SUM(likes)` no texto para isso. A trava a reprovou. Mesma
+    //    classe do falso positivo do varredor de segredos no mesmo dia:
+    //    descrever o defeito não é cometê-lo. O lado JavaScript já tirava os
+    //    comentários; o lado SQL não tirava.
+    //
+    // 2. DEFINIR não é MENCIONAR. Antes bastava o nome aparecer no arquivo —
+    //    então a migration do DROP, que só cita as funções num comentário,
+    //    passou a ser "a última definidora". O alvo tem que ser a última
+    //    migration que de fato faz `CREATE ... FUNCTION`.
+    const semComentariosSql = (sql) => sql.replace(/--.*$/gm, '');
+
     const definidoras = arquivos
-      .filter((f) => /get_user_xp|owner_get_metrics/.test(readFileSync(`${dir}/${f}`, 'utf8')))
+      .filter((f) => /create\s+(or\s+replace\s+)?function[\s\S]{0,80}(get_user_xp|owner_get_metrics)/i
+        .test(semComentariosSql(readFileSync(`${dir}/${f}`, 'utf8'))))
       .sort();
 
     expect(definidoras.length, 'nenhuma migration define get_user_xp — nome mudou?')
       .toBeGreaterThan(0);
 
     const ultima = definidoras.at(-1);
-    const sql = readFileSync(`${dir}/${ultima}`, 'utf8');
+    const sql = semComentariosSql(readFileSync(`${dir}/${ultima}`, 'utf8'));
 
     expect(
       SOMA_A_COLUNA_MORTA.test(sql),

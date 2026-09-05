@@ -178,3 +178,47 @@
   object-fit: cover;
   border-radius: 9999px;
 }
+
+
+/* ── `[05/09]` O campo de senha ──────────────────────────────────────────────
+ *
+ * O olho de mostrar/ocultar é NOSSO (`components/ui/CampoDeSenha.jsx`). Estas
+ * regras existem para o do navegador não aparecer junto — no Android, alguns
+ * navegadores desenham um dentro do campo, e ficariam dois olhos lado a lado.
+ *
+ * Cada seletor cobre um navegador diferente, e nenhum deles é redundante:
+ * `-ms-reveal` é do Edge, os `-webkit-*-auto-fill-button` são do Chrome e do
+ * Safari (chave, senha forte e cartão). Navegador que não conhece o seletor
+ * simplesmente ignora a regra. */
+.campo-de-senha::-ms-reveal,
+.campo-de-senha::-ms-clear { display: none; }
+
+.campo-de-senha::-webkit-credentials-auto-fill-button,
+.campo-de-senha::-webkit-strong-password-auto-fill-button,
+.campo-de-senha::-webkit-contacts-auto-fill-button,
+.campo-de-senha::-webkit-caps-lock-indicator {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+}
+
+/* O preenchimento automático pinta o campo de BRANCO por padrão, e o site é
+   escuro — o texto some no branco e a caixa destoa de todas as outras.
+ *
+ * `box-shadow` com `inset` e não `background`: o navegador ignora `background`
+ * no estado de autofill, mas respeita a sombra interna, que é o truque
+ * conhecido para isto. `-webkit-text-fill-color` porque `color` também é
+ * sobrescrito ali. O `transition` longo é o outro meio do mesmo caminho: ele
+ * adia o repinte do navegador para além do que ele espera. */
+.campo-de-senha:-webkit-autofill,
+.campo-de-senha:-webkit-autofill:hover,
+.campo-de-senha:-webkit-autofill:focus,
+.input-gamer:-webkit-autofill,
+.input-gamer:-webkit-autofill:hover,
+.input-gamer:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fff;
+  -webkit-box-shadow: 0 0 0 1000px #16202c inset;
+  box-shadow: 0 0 0 1000px #16202c inset;
+  transition: background-color 100000s ease-in-out 0s;
+  caret-color: #fff;
+}

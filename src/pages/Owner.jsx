@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeTab } from '../lib/motion';
-import { Gem, Activity, Users, FileText, Settings, Bell, TrendingUp } from 'lucide-react';
+import { Gem, Activity, Users, FileText, Settings, Bell, TrendingUp, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -12,7 +12,7 @@ import SiteTab from '../components/owner/SiteTab';
 import NotificacoesTab from '../components/owner/NotificacoesTab';
 import MetricasTab from '../components/owner/MetricasTab';
 import CofreDoFundador from '../components/owner/CofreDoFundador';
-import { cofreAberto } from '../lib/cofre';
+import { cofreAberto, fecharCofre } from '../lib/cofre';
 
 const OC = '#f97316';
 const OG = 'rgba(249,115,22,0.15)';
@@ -55,6 +55,22 @@ export default function Owner() {
           <h1 className="font-display text-sm tracking-widest uppercase" style={{ color: OC }}>
             Painel do Fundador
           </h1>
+
+          {/* `[05/09]` TRANCAR AGORA — a inversa que faltava (§5).
+              O cofre abre uma vez por aba e não fecha por tempo (tempo fixo
+              trancaria no meio de uma moderação). Sem este botão, a única forma
+              de trancar de novo era FECHAR A ABA — e quem levanta do computador
+              deixa o painel aberto atrás de si, que é exatamente a situação
+              para a qual o cofre existe. */}
+          <button
+            type="button"
+            onClick={() => { fecharCofre(); setAberto(false); }}
+            aria-label="Trancar o cofre agora"
+            title="Trancar o cofre agora"
+            className="ml-auto flex items-center gap-1.5 text-[11px] font-mono text-gray-500 hover:text-orange-400 transition-colors"
+          >
+            <Lock size={13} /> Trancar
+          </button>
         </div>
         <p className="text-xs font-mono text-gray-500">
           Visão completa · controle total · acesso exclusivo

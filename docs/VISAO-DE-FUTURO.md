@@ -61,6 +61,13 @@ valor.** Nenhuma destas ideias precisa nascer inteira, e quase nenhuma deveria.
 | 📰 | **Notícias gamer** | curadoria manual da equipe antes de qualquer integração automática |
 | 🔎 | **Busca global** | busca por usuário primeiro; jogos, posts, lives e o resto entram um por vez |
 
+> **`[05/09]` Silenciar por tempo numa live.** A coluna `live_muted.muted_until`
+> existia no banco e nunca foi ligada — silenciar é "existe linha = calado", e
+> tirar o silêncio é apagar a linha. A coluna foi apagada (estava vazia), e a
+> ideia veio para cá, que é onde intenção mora: coluna vazia no schema não
+> guarda intenção, engana quem lê. A menor versão que vale: um campo de minutos
+> no modal de silenciar, e uma checagem de `now()` na leitura.
+
 ## Expansões maiores, para quando houver gente
 
 Estas dependem de **volume de pessoas**, não de código. Construí-las cedo é

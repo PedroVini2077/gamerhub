@@ -35,24 +35,80 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* Os três blocos que o dono liberou em 05/09 fecharam:
+### `[05/09]` FASE 4 da auditoria — a deriva entre o código e o banco
 
-| # | Bloco | Onde ficou |
-| --- | --- | --- |
-| 1 | Os dois furos do portão | PR #161 — confirmação de conta passou a mostrar o portão; a saudação não sai mais sem nome |
-| 2 | Cofre do painel do Fundador (cenográfico) | PR #161 — `lib/cofre.js`, aviso impresso na tela, disco que gira |
-| 3 | Conquistas — 8 fixas, derivadas do XP | `lib/conquistas.js` + `ConquistasCard.jsx`, sem tabela nova |
+> Por que esta fase, e não outra coisa: o bug da XP de hoje foi **exatamente**
+> um achado de Fase 4 — o frontend contava certo, o banco contava errado, e cada
+> lado sozinho parecia saudável. Onde nasce um desses, nascem irmãos.
 
-Junto do bloco 3 saiu um bug que ninguém tinha relatado: **a XP contava
-curtidas de `posts.likes`, uma coluna que nenhum trigger mantém** — a soma dava
-0 para todo mundo desde sempre. Corrigido, testado em `ROLLBACK` e travado.
-Detalhes em [DECISOES.md](docs/DECISOES.md).
+| Confronto | Resultado |
+| --- | --- |
+| assinaturas de realtime × publicação | **bate** — as 10 do código são as 10 publicadas |
+| tabelas sem policy de UPDATE × telas que dão update | **nenhuma** tela faz update em tabela sem policy |
+| policies com `super_admin` sem `owner` | **nenhuma** — a trava de 3 reincidências segurou |
+| `moderation_queue.content_type` × mapa do JS | **bate** (post, comment, chat + mural) |
+| `admin_logs.action` × mapa de ícones | **11 sem ícone**, todas gravadas por função do Postgres |
+| `admin_notifications.type` × mapa de ícones | **2 sem ícone** (`security_alert`, `user_unsuspended`) |
+| advisors de segurança | 0 ERROR · 53 WARN, todos de `SECURITY DEFINER` executável |
 
-**Adiado por escolha do dono:** música no painel do Fundador. Motivo dele:
-*"quero colocar mais coisas de músicos sem pesar o site e o Supabase"* — é
-decisão de custo, não falta de caminho técnico. O caminho recomendado (faixa
-curta própria, em laço, ligada por clique) continua em
-[VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).
+**O que ficou corrigido:** as 13 entradas de ícone que faltavam, e — o que
+importa mais — **a lista escrita à mão saiu**. Ela existia justamente para
+cobrir o que o código-fonte não vê, e tinha envelhecido: lista que precisa ser
+lembrada é a mesma classe de falha que ela deveria resolver. Agora as duas
+travas derivam os valores das próprias migrations, lendo por posição de coluna.
+
+**Os dois que faltavam, feitos depois:** privilégio de coluna × o que a tela lê
+(**nenhuma** tela pede coluna revogada de `profiles`) e as regras duplicadas
+(**não há duplicação** no bloqueio de login — o cliente lê o estado que o banco
+devolve em vez de recalcular os limiares). Relatório completo em
+[`db/2026-09-05-fase4-deriva-codigo-banco.md`](db/2026-09-05-fase4-deriva-codigo-banco.md).
+
+### `[05/09]` As duas decisões do dono, executadas
+
+**Colunas mortas apagadas.** Varredura de classe primeiro, não só a que eu já
+conhecia: 24 candidatas no banco, cruzadas com o código e as Edge Functions —
+**22 eram lidas pelo site** e só 3 sobraram. Dessas, apaguei **duas**:
+`posts.likes` (124 posts, **0** com dado) e `live_muted.muted_until` (**0**
+linhas). A terceira, `admin_notification_reads.read_at`, **ficou**: tem 249
+linhas COM dado, e coluna sem leitor mas com dado não é a mesma coisa que coluna
+sem leitor e sem dado. Testado em `ROLLBACK` antes.
+
+**As chaves do cofre entraram na política visível**, e a `versao` subiu para
+`2026-09-05` — todo mundo reaceita. Eu tinha proposto o contrário; a razão dele
+venceu: a tabela abre dizendo "listados abaixo", e lista que se declara completa
+e não é deixa de ser verdade.
+
+### `[05/09]` Duas coisas fechadas depois, no mesmo bloco
+
+**O cofre ganhou o botão "Trancar".** O dono perguntou de quanto em quanto tempo
+ele fecha, e a resposta expôs um buraco meu: ele abre uma vez por **aba**, não
+fecha por tempo nenhum — e `fecharCofre()` existia sem nenhuma tela chamando.
+Ou seja, a única forma de trancar de novo era fechar a aba, e quem levanta do
+computador deixava o painel aberto atrás de si. Mesma falha do §5 que eu já
+tinha cometido com o "esquecer código". Travado: agora um teste confere que as
+duas inversas estão **ligadas a uma tela**, não só exportadas.
+
+**`get_user_xp` deixou de ser alcançável por anônimo.** Era o que faltava do que
+eu tinha declarado como não coberto na Fase 4. Severidade baixa (devolve
+agregação de dado já público), mas é endpoint de cálculo sem sessão e nenhum
+caminho anônimo precisava dele. Testado em `ROLLBACK` antes de aplicar.
+
+### `[05/09]` O campo de senha do site inteiro
+
+Relato do dono, com print do celular: *"esse campo de senha tá estranho, além de
+estar branco, os caracteres não aparecem direito"* e *"aquele olho pra mostrar
+senha ou não? só aparece no celular, no PC não existe, consegue padronizar
+isso?"*.
+
+**Os dois eram defeitos reais, e o primeiro era meu:** escrevi `className="input"`
+no cofre — uma classe que **não existe** neste projeto (a real é `.input-gamer`)
+—, e sem estilo o campo cai no padrão do navegador, que no Android é caixa
+branca. O segundo nunca foi do site: o olho era o botão nativo de alguns
+navegadores de Android, e por isso não existia no computador.
+
+Os **nove** campos de senha do site passaram a usar um componente único
+(`components/ui/CampoDeSenha.jsx`), com olho próprio, e o CSS esconde o nativo
+para não ficarem dois. Travado por teste nos dois lados.
 
 ---
 
@@ -79,7 +135,7 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
 ---
 
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -139,31 +195,6 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- `[05/09]` 🟡 **Apagar a coluna morta `posts.likes`?** Ela existe, nenhum
-  trigger a mantém, e nada mais a lê desde 05/09. Apagar seria a trava mais
-  forte possível — o dado errado vira **impossível** de existir —, mas
-  `DROP COLUMN` é irreversível e entra no 🔴 do §7. Hoje a trava é o teste
-  `xpNaoLeColunaMorta.test.js`, que varre migrations e JavaScript. **Decisão
-  sua.**
-
-- `[05/09]` 🔵 **As três chaves do cofre devem aparecer na tabela visível da
-  política de privacidade?** Hoje estão só na lista técnica, porque só nascem no
-  navegador de quem é fundador. Citá-las custa subir a `versao` do documento —
-  todo mundo reaceita. Motivo escrito em [DECISOES.md](docs/DECISOES.md).
-
-- ⬜ `[04/09]` 🟡 **O "cofre" do painel do Fundador.** *Ideia do dono. **Só vale a
-  pena se a checagem for no BANCO** — ver a análise em
-  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
-
-  **O que ele descreveu:** ao clicar na aba do Fundador, um cofre com campo de
-  senha; acertando, animação de abertura e acesso liberado por um tempo.
-
-  **O que eu preciso que ele decida antes:** cofre **cenográfico** (bonito, e
-  eu digo em todo lugar que é enfeite) ou **tranca de verdade** (RPC que confere
-  um hash e libera por tempo, com as RPCs do owner exigindo o desbloqueio).
-  Senha conferida no navegador não protege nada — o site usa a `anon key`, e
-  quem tiver a sessão chama a RPC direto (§1.3).
 
 - ⬜ `[04/09]` 🟢 **Música no painel do Fundador.** *Ideia do dono; as três saídas
   que ele imaginou têm impedimento — ver
@@ -469,8 +500,8 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->95<!--/n--> arq ·
-  <!--n:src.lib.linhas-->8.516<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->97<!--/n--> arq ·
+  <!--n:src.lib.linhas-->8.865<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

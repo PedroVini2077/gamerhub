@@ -22,7 +22,7 @@
  * `pendente: true` faz o bloco aparecer com o aviso, igual à página "Sobre".
  */
 
-export const ATUALIZADO_EM = '02/09/2026';
+export const ATUALIZADO_EM = '05/09/2026';
 
 /**
  * ── AS LISTAS QUE O SITE NÃO PODE CRESCER SEM ATUALIZAR ─────────────────────
@@ -54,16 +54,17 @@ export const CHAVES_DECLARADAS = [
   // `[05/09]` As três do cofre do painel do Fundador. Ver `lib/cofre.js`.
   // O código em si nunca é guardado — só um resumo SHA-256 com sal.
   //
-  // ELAS NÃO ENTRARAM NA TABELA VISÍVEL, e a escolha é deliberada. A tabela
-  // responde "o que o site guarda no SEU navegador" para quem está lendo, e
-  // essas três só nascem no aparelho de quem é fundador — nenhum visitante,
-  // nenhum usuário comum e nenhum moderador as recebe. Listá-las descreveria
-  // para milhares de pessoas um armazenamento que só existe para uma.
+  // `[05/09]` ELAS ENTRARAM NA TABELA VISÍVEL TAMBÉM, por decisão do dono.
   //
-  // A declaração aqui continua obrigatória: é ela que o teste de chaves confere,
-  // e é o que impede uma chave de nascer sem ninguém perceber. Se o dono achar
-  // que a tabela deve citá-las mesmo assim, o custo é subir a `versao` do
-  // documento — o que faz todo mundo aceitar de novo.
+  // Eu tinha proposto o contrário — elas só nascem no aparelho de quem é
+  // fundador, e listá-las descreve para milhares de pessoas um armazenamento
+  // que existe para uma. Ele decidiu citar, e a razão dele é mais forte que a
+  // minha: a tabela abre dizendo "listados abaixo". Lista que se declara
+  // completa e não é deixa de ser verdade para quem lê, e o custo de uma
+  // política de privacidade menos verdadeira é maior do que o de três linhas a
+  // mais.
+  //
+  // Custou subir a `versao` do documento: todo mundo reaceita.
   'gh_cofre_resumo',
   'gh_cofre_sal',
   'gh_cofre_aberto',
@@ -122,6 +123,11 @@ export const BLOCOS = [
     ],
     tabela: {
       titulo: 'O que fica guardado no seu navegador',
+      // `[05/09]` As três últimas linhas só nascem no aparelho de quem tem o
+      // cargo de fundador. Elas entraram na tabela a pedido do dono: a tabela
+      // diz "listados abaixo", e uma lista que se declara completa e não é
+      // deixa de ser verdade para quem lê. Custou subir a `versao` do
+      // documento — todo mundo reaceita —, e essa foi a escolha dele.
       colunas: ['O que é', 'Para quê', 'Some quando'],
       linhas: [
         ['Sua sessão', 'manter você logado', 'você sai da conta'],
@@ -134,6 +140,9 @@ export const BLOCOS = [
         ['"Ver depois" no aviso de documentos', 'não repetir o pedido de aceite a cada tela', 'você fecha o navegador'],
         ['Marca de "acabou de entrar"', 'mostrar a tela de boas-vindas UMA vez depois do login, e não a cada recarregamento', 'você fecha a aba'],
         ['Marca de "já entrou aqui antes"', 'saber se a saudação é de estreia ou de volta', 'você limpar o navegador'],
+        ['Código do cofre da equipe (resumo)', 'destrancar o painel do Fundador neste aparelho — o código em si NUNCA é guardado, só um resumo dele', 'você limpar o navegador'],
+        ['Embaralhador do código do cofre', 'fazer o mesmo código gerar resumos diferentes em aparelhos diferentes', 'você limpar o navegador'],
+        ['Cofre já aberto nesta aba', 'não pedir o código de novo a cada tela', 'você fecha a aba'],
       ],
     },
   },

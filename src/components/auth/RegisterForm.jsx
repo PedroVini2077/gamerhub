@@ -1,6 +1,7 @@
-import { Mail, Lock, User, Calendar, MapPin, Gamepad2 } from 'lucide-react';
+import { Mail, User, Calendar, MapPin, Gamepad2 } from 'lucide-react';
 import AceiteDosDocumentos from './AceiteDosDocumentos';
 import { InputWrap } from './InputWrap';
+import CampoDeSenha from '../ui/CampoDeSenha';
 import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../../lib/password';
 
 const BR_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
@@ -62,15 +63,11 @@ export default function RegisterForm({
 
         {/* Senha */}
         <div>
-          <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Senha</label>
-          <InputWrap>
-            <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-            <input id="password-register" aria-label="Senha" type="password"
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-              placeholder="••••••••" value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && onSubmit()} />
-          </InputWrap>
+          <CampoDeSenha
+            id="password-register" rotulo="Senha" autoComplete="new-password"
+            valor={password} aoMudar={setPassword}
+            aoTeclar={e => e.key === 'Enter' && onSubmit()}
+          />
           <div className="mt-2 flex items-center gap-2" style={{ visibility: password ? 'visible' : 'hidden' }}>
             <div className="flex gap-1 flex-1">
               {[1,2,3,4].map(n => (
@@ -88,19 +85,12 @@ export default function RegisterForm({
 
         {/* Confirmar Senha */}
         <div>
-          <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Confirmar Senha</label>
-          <div className={`flex items-center bg-dark-700 border rounded-md transition-all ${
-            confirmPassword && confirmPassword !== password
-              ? 'border-red-400/60'
-              : 'border-dark-400 focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420]'
-          }`}>
-            <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-            <input aria-label="Confirmar senha" type="password"
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-              placeholder="••••••••" value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && onSubmit()} />
-          </div>
+          <CampoDeSenha
+            rotulo="Confirmar Senha" autoComplete="new-password"
+            valor={confirmPassword} aoMudar={setConfirmPassword}
+            erro={Boolean(confirmPassword) && confirmPassword !== password}
+            aoTeclar={e => e.key === 'Enter' && onSubmit()}
+          />
           <p className="text-xs font-mono mt-1" style={{
             color: '#f87171',
             visibility: confirmPassword && confirmPassword !== password ? 'visible' : 'hidden'

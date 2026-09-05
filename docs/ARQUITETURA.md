@@ -339,6 +339,11 @@ src/
     │   └── cargos/        # CargosTab e as peças dela: CargoSection, NominationCard,
     │                      # TrialCard, DemotionCard, CandidateHeader,
     │                      # EligibilityChecklist, DecisionButton
+    ├── ui/                # ConfirmModal, ReasonModal, BannedScreen, …
+    │   └── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
+    │                      # olho de mostrar/ocultar. O olho é nosso: o nativo
+    │                      # só existe em alguns navegadores de Android, e o
+    │                      # CSS o esconde para não ficarem dois
     ├── profile/           # ProfileIdentityCard, PlayerStatsCard, GamingCard,
     │   │                  # PersonalInfoCard, SocialLinksCard, AvatarModal
     │   └── ConquistasCard.jsx # `[05/09]` as conquistas, lendo os MESMOS dados

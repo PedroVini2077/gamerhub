@@ -387,21 +387,21 @@ varre o `localStorage` inteiro procurando o código em texto puro. Se alguém
 "simplificar" o hash algum dia, a tela continua abrindo igual — nada visível
 quebra — e esse teste é a única coisa que percebe.
 
-### A decisão, e ela é revisível
+### A decisão foi do dono, e ela reverteu a minha
 
-As três entraram em `CHAVES_DECLARADAS` (a lista técnica que o teste confere) e
-**não** na tabela do bloco *"o que fica guardado no seu navegador"*, que é o que
-o leitor vê.
+Eu tinha proposto deixá-las só em `CHAVES_DECLARADAS` — a lista técnica que o
+teste confere — e **fora** da tabela que o leitor vê. Meu argumento: essas três
+só nascem no aparelho de quem tem o cargo de fundador, então listá-las
+descreveria para milhares de pessoas um armazenamento que existe para uma.
 
-**O motivo:** aquela tabela responde *"o que o site guarda no SEU navegador"*
-para quem está lendo. Essas três só nascem no aparelho de quem tem o cargo de
-fundador — nenhum visitante, nenhum usuário comum e nenhum moderador as recebe.
-Listá-las descreveria para milhares de pessoas um armazenamento que existe para
-uma, e a tabela ficaria menos verdadeira para quase todo mundo, não mais.
+**Ele decidiu citar, e a razão dele é mais forte que a minha.** A tabela abre
+dizendo *"listados abaixo"*. **Lista que se declara completa e não é deixa de
+ser verdade** — e uma política de privacidade menos verdadeira custa mais do que
+três linhas a mais.
 
-**A `versao` não subiu; só a `impressao`** (`24ed2efb568f88d8`), porque nenhuma
-linha do texto que a pessoa lê mudou.
-
-> **Se o dono discordar, o custo está dito:** citar as três na tabela visível é
-> mudança no texto aceito, e aí a `versao` sobe — todo mundo reaceita. O
-> julgamento é dele; o meu está escrito para poder ser revisto.
+**A `versao` subiu para `2026-09-05`, e a impressão para `c4d2095ac62c91b3`.**
+Mudança no texto que a pessoa lê significa reaceite de todo mundo — é exatamente
+a regra criada em 02/09, depois de eu ter reescrito o bloco de retenção sem
+subir a versão e o registro de aceite passar a apontar para um texto que ninguém
+tinha lido. A data visível subiu junto: deixá-la em 02/09 com o texto mudado
+seria a mesma mentira, só que na cara do leitor.
