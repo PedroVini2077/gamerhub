@@ -599,7 +599,15 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 - job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
   `/admin` e `/owner` **negados** para `role = 'user'`, **o fundo decorativo
-  estando dentro da janela**, publicar → conferir no feed → apagar, e logout. Exige `E2E_EMAIL` e `E2E_PASSWORD` nos **Secrets**
+  estando dentro da janela**, publicar → conferir no feed → **comentar** → apagar, e logout.
+
+  > **`[05/09]` O passo de comentar nasceu de um número, não de um bug
+  > relatado:** a produção tinha 150 posts e **zero** comentários, e nenhum dos
+  > 16 roteiros comentava. `comment_added` na trilha mostra que comentar já
+  > funcionou (7 registros, o último em 23/08), mas ninguém provava que
+  > continuava funcionando — e caminho sem usuário e sem teste é onde os dois
+  > piores bugs deste projeto se esconderam. O comentário some junto com o post
+  > do teste: `comments_post_id_fkey` é `ON DELETE CASCADE`, verificado no banco. Exige `E2E_EMAIL` e `E2E_PASSWORD` nos **Secrets**
   (senha é segredo, ao contrário da anon key). Só em PR: ele escreve no banco
   de produção. Quando falha, sobe `e2e-evidencia/` como artefato — screenshot,
   texto da tela e URL, senão o log diria só "timeout".
@@ -960,6 +968,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->12.322<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->12.386<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
