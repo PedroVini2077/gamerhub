@@ -151,8 +151,10 @@ transforma esta pegadinha em bug silencioso (§4).
 > Este mesmo fantasma apareceu em **quatro** documentos diferentes. Ao remover
 > uma função, `grep -rn` no `docs/` inteiro faz parte do trabalho.
 - XP: `get_user_xp`. **`[05/09]` As curtidas vêm de `post_likes`, não da coluna
-  `posts.likes`** — essa coluna existe e nunca foi mantida por trigger nenhum,
-  então a soma dava 0 para todo mundo. A auto-curtida não conta.
+  `posts.likes`** — essa coluna **não existe mais** (apagada em 05/09): nunca
+  foi mantida por trigger nenhum, a soma dava 0 para todo mundo, e a presença
+  dela no schema fez três lugares diferentes escreverem `SUM(likes)` ao longo do
+  tempo. A auto-curtida não conta.
   **Executável só por `authenticated`** desde 05/09: `anon` e `PUBLIC` saíram,
   porque nenhum caminho anônimo a chamava e ela é cálculo (quatro `COUNT`) sem
   sessão. Ver [SEGURANCA.md](SEGURANCA.md).
