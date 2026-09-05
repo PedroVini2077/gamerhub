@@ -74,6 +74,77 @@ try {
   // /entrar/i, e o Playwright recusa seletor ambíguo (ainda bem).
   await page.getByRole('button', { name: '// ENTRAR' }).click();
 
+  // ── O PORTÃO DE BOAS-VINDAS ─────────────────────────────────────────────
+  //
+  // Ele é o único canal que prova que a tela de boas-vindas funciona: se ela
+  // parar de aparecer, nada quebra, nada loga, e o site continua entrando
+  // normalmente (§1.5 — as três respostas seriam "nada").
+  //
+  // A espera é por SELETOR, não por tempo: ele fica na tela entre 700 ms e
+  // 2,5 s dependendo de quanto o perfil demora, e cravar um número aqui seria
+  // adivinhar o tempo do banco.
+  //
+  // Se ele NÃO aparecer, a mensagem tem que dizer o que investigar — a marca
+  // de "acabou de entrar" é `sessionStorage`, e ela é o elo que mais some.
+  try {
+    await page.locator('.portao').waitFor({ state: 'visible', timeout: 4000 });
+    ok('o portão de boas-vindas cobriu a entrada');
+  } catch {
+    throw new Error(
+      'o portão de boas-vindas NAO apareceu depois do login.\n'
+      + '  Ele deveria cobrir a tela entre 700 ms e 2,5 s enquanto o perfil\n'
+      + '  carrega. Confira, nesta ordem:\n'
+      + '   1. `marcarEntradaAgora()` ainda é chamado ANTES do\n'
+      + '      `signInWithPassword` (src/hooks/useAuth.jsx) — e nenhum\n'
+      + '      `cancelarEntradaAgora()` novo esta apagando a marca no caminho\n'
+      + '      feliz;\n'
+      + '   2. `<PortaoDeBoasVindas />` continua montado no App.jsx, FORA do\n'
+      + '      <Routes> — dentro de uma rota ele desmonta com a tela de login;\n'
+      + '   3. o navegador nao esta bloqueando `sessionStorage`.\n'
+      + '  Nada disso quebra o login: some so a tela.');
+  }
+
+  // ── A porta é A TELA INTEIRA ────────────────────────────────────────────
+  //
+  // `[05/09]` Exigência do dono, na letra: *"a porta é pra ser a tela inteira,
+  // entendeu? A TELA INTEIRA! não uma imagem abrindo, é pra ter imersão"*. Ele
+  // recusou quatro versões, e a quarta falhou justamente por ser um desenho
+  // BONITO dentro de uma tela com fundo em volta.
+  //
+  // Isso não se verifica por byte nem por unidade: é geometria em tela de
+  // verdade. As duas folhas somadas têm que cobrir a janela inteira — se um dia
+  // alguém puser `max-height` de volta, aqui quebra.
+  const cobertura = await page.evaluate(() => {
+    const folhas = [...document.querySelectorAll('.porta-folha')];
+    if (folhas.length !== 2) return { folhas: folhas.length };
+    const caixas = folhas.map((f) => f.getBoundingClientRect());
+    return {
+      folhas: 2,
+      esquerda: Math.round(Math.min(...caixas.map((c) => c.left))),
+      direita: Math.round(Math.max(...caixas.map((c) => c.right))),
+      topo: Math.round(Math.min(...caixas.map((c) => c.top))),
+      base: Math.round(Math.max(...caixas.map((c) => c.bottom))),
+      janela: { largura: innerWidth, altura: innerHeight },
+    };
+  });
+
+  const cobreTudo = cobertura.folhas === 2
+    && cobertura.esquerda <= 0 && cobertura.topo <= 0
+    && cobertura.direita >= cobertura.janela.largura
+    && cobertura.base >= cobertura.janela.altura;
+
+  if (!cobreTudo) {
+    throw new Error(
+      'o portão NAO cobre a tela inteira.\n'
+      + `  medido: ${JSON.stringify(cobertura)}\n`
+      + '  As duas .porta-folha somadas precisam ir de (0,0) ate\n'
+      + '  (innerWidth, innerHeight). Sobrar fundo em volta transforma a porta\n'
+      + '  num DESENHO de porta, que foi a versao recusada em 05/09.\n'
+      + '  Suspeitos: `max-height`/`width` em .porta-svg ou .porta-folha,\n'
+      + '  um `padding` no .portao, ou o texto empurrando as folhas.');
+  }
+  ok('a porta ocupa a tela inteira');
+
   // O composer só monta depois de a sessão resolver, o perfil carregar e o
   // chunk do feed baixar. Ele aparecer prova três coisas de uma vez: sessão
   // válida, perfil existe, conta não suspensa (se estivesse, o
@@ -110,6 +181,52 @@ try {
     if (vazou) throw new Error(`${rota.path} mostrou conteúdo de staff (${vazou}) para role = 'user'`);
     ok(`${rota.nome.padEnd(15)} ${rota.path} negado para conta comum`);
   }
+
+  // ── `[03/09]` O fundo do site logado está mesmo NA TELA ─────────────────
+  //
+  // A trava existe por uma falha de três rodadas. O dono relatou três vezes
+  // "não estou vendo as peças de videogame". As duas primeiras respostas minhas
+  // foram calibragem de opacidade — erradas —, porque eu conferia num recorte
+  // HTML meu que usava `animation: none` para fotografar as peças paradas.
+  // Eu testava a aparência DESLIGANDO exatamente o que estava quebrado.
+  //
+  // A causa real: `.peca-de-jogo` não tinha `top`, então cada peça nascia no
+  // TOPO do container e a animação a empurrava para fora por cima. Medido:
+  // 3 de 4 fora da tela no instante zero, as quatro em 3 segundos.
+  //
+  // Nada acusava. Não é erro de JS, não é rota fora do ar, não é texto ausente
+  // — é decoração que existe no DOM e não está onde alguém possa ver. É a mesma
+  // família do `conteudo-visivel.mjs` (§1.5), só que na área logada, que aquele
+  // não alcança porque exige sessão.
+  //
+  // A pergunta que ela faz é a única que importa aqui: **quantas peças estão
+  // dentro da janela?**
+  const pecasNaTela = await page.evaluate(() => {
+    const todas = [...document.querySelectorAll('.peca-de-jogo')];
+    const dentro = todas.filter((e) => {
+      const r = e.getBoundingClientRect();
+      return r.bottom > 0 && r.top < window.innerHeight
+          && r.right > 0 && r.left < window.innerWidth;
+    });
+    return { total: todas.length, dentro: dentro.length };
+  });
+
+  if (pecasNaTela.total === 0) {
+    throw new Error(
+      'nenhuma `.peca-de-jogo` no DOM do site logado.\n'
+      + '    O `FundoDaSecao` parou de montar as pecas — ou o elenco da rota\n'
+      + '    ficou vazio (ver `elencoDaSecao` em src/lib/acentoDaSecao.js).');
+  }
+  if (pecasNaTela.dentro === 0) {
+    throw new Error(
+      `as ${pecasNaTela.total} pecas existem no DOM e NENHUMA esta dentro da janela.\n`
+      + '    Foi exatamente este o bug de 01-03/09: sem `top`, a peca nasce no\n'
+      + '    topo do container e a animacao a empurra para fora por cima.\n'
+      + '    Decoracao invisivel nao estoura, nao loga e nao quebra teste nenhum —\n'
+      + '    o dono precisou relatar tres vezes. Confira `.peca-de-jogo` no\n'
+      + '    src/index.css e o keyframe `pecaFlutua`.');
+  }
+  ok(`fundo do site logado  ${pecasNaTela.dentro}/${pecasNaTela.total} pecas na tela`);
 
   // ── 4. Publicar → conferir → apagar ─────────────────────────────────────
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });

@@ -1,0 +1,139 @@
+/* A CENA da arena: os dois lados, a fenda e o VS.
+ *
+ * Parte 1 de 4 — ver `../arena.css` para a ordem e o porquê da divisão. O que
+ * mora aqui é o palco: o que não é personagem nem enfeite. */
+
+.arena {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  background: #06060a;
+  pointer-events: none;
+}
+
+.arena-lado {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              right 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 900ms ease;
+}
+
+/* `[04/09]` AS CORES SÃO AS DO SITE, e isso não é preferência — é identidade.
+ *
+ * `--neon: #39ff14`, `--purple: #bf00ff` e `--cyan: #00ffff` estão em
+ * `estilos/base.css` e mandam em todo o resto da interface. A rodada anterior
+ * desta tela usava laranja de lava e azul de gelo, e o dono cortou: *"não tem
+ * nada a ver com o site"*. Ele estava certo, e eu devia ter dito isso antes de
+ * construir.
+ *
+ * As opacidades saíram de OLHAR a tela: a luz mais forte fica ENCOSTADA na
+ * fenda, que é onde os dois lados se encontram. */
+.arena-verde {
+  left: -10%;
+  right: calc(100% - var(--eixo, 50%));
+  background:
+    radial-gradient(52% 60% at 92% 50%, #39ff1466, transparent 72%),
+    radial-gradient(70% 60% at 35% 40%, #00ffff2e, transparent 70%),
+    radial-gradient(95% 75% at 5% 85%, #39ff141f, transparent 75%),
+    linear-gradient(100deg, #08200d 0%, #061308 60%, #06060a 100%);
+}
+
+.arena-roxo {
+  left: var(--eixo, 50%);
+  right: -10%;
+  background:
+    radial-gradient(52% 60% at 8% 50%, #bf00ff5c, transparent 72%),
+    radial-gradient(70% 60% at 65% 40%, #7c3aed33, transparent 70%),
+    radial-gradient(95% 75% at 95% 85%, #00ffff1c, transparent 75%),
+    linear-gradient(260deg, #1a0630 0%, #10041d 60%, #06060a 100%);
+}
+
+/* No cadastro o VERDE vence: o lado roxo apaga e recua. */
+.arena-selecionado .arena-roxo { opacity: 0.45; }
+
+/* ── A fenda ─────────────────────────────────────────────────────────────── */
+.arena-fenda {
+  position: absolute;
+  top: -5%;
+  bottom: -5%;
+  left: var(--eixo, 50%);
+  width: 3px;
+  margin-left: -1.5px;
+  background: linear-gradient(180deg,
+    transparent, #ffffff26 10%, #ffffffcc 50%, #ffffff26 90%, transparent);
+  /* Duas sombras, uma de cada cor: é o encontro dos dois lados, não uma luz só.
+   * Elas são ESTÁTICAS — quem respira é a opacidade. */
+  box-shadow: 0 0 22px 3px #39ff1455, 0 0 60px 14px #bf00ff3d;
+  animation: arenaFendaRespira 7s ease-in-out infinite,
+             arenaFendaAcende 700ms ease-out both;
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes arenaFendaRespira {
+  0%, 100% { opacity: 0.55; transform: scaleX(1); }
+  50%      { opacity: 0.9;  transform: scaleX(1.6); }
+}
+
+/* A entrada: a fenda acende antes de todo mundo — é o corte que abre a arena. */
+@keyframes arenaFendaAcende {
+  0%   { transform: scaleY(0); opacity: 0; }
+  60%  { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); }
+}
+
+/* ── O VS ────────────────────────────────────────────────────────────────── */
+/* O VS fica EMBAIXO, entre os pés dos dois — e a posição saiu de medir, não
+ * de gosto: no meio da tela ele fica atrás do card, e no alto ele caiu em cima
+ * do logo "GAMER HUB" na primeira tentativa. A faixa livre é a de baixo, e ali
+ * ele lê como emblema de chão de arena. */
+.arena-vs {
+  position: absolute;
+  left: var(--eixo, 50%);
+  top: 86%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: clamp(2.2rem, 7vw, 4.6rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+  opacity: 0.9;
+  animation: arenaVsEstala 520ms cubic-bezier(0.2, 1.4, 0.4, 1) 620ms backwards;
+  /* Curvas DIFERENTES por propriedade, e isso foi medido: com a curva elástica
+   * nas duas, a opacidade caía para 0,02 em 140 ms — animação no papel, estalo
+   * na tela. A elástica fica no `transform`, onde o exagero é o efeito; a
+   * opacidade ganha uma curva calma, onde o que importa é dar tempo de ver. */
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 420ms ease,
+              transform 520ms cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.arena-vs-verde { color: #39ff14; text-shadow: 0 0 26px #39ff1466; }
+.arena-vs-roxo  { color: #bf00ff; text-shadow: 0 0 26px #bf00ff66; }
+
+/* SEM `to`, pela mesma razão dos lutadores: com o quadro final declarando
+ * `opacity`, ele venceria a `opacity` de qualquer outra regra — e foi assim que
+ * o VS continuava aparecendo no cadastro. Sem `to`, o alvo é o valor computado,
+ * então cada modo mantém o seu. */
+@keyframes arenaVsEstala {
+  from { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+
+/* `[04/09]` No cadastro o VS SAI, e agora ele sai ANIMADO.
+ *
+ * Pedido do dono: *"preciso que vc anime tanto a entrada como a saída dele
+ * também, ele só está animado para a entrada"*.
+ *
+ * A saída é a entrada ao contrário: ele encolhe e apaga, na mesma curva. Como
+ * `opacity` e `transform` estão os dois na `transition`, ir e voltar entre as
+ * abas anima nos dois sentidos sem keyframe a mais.
+ *
+ * O `animation: none` que existia aqui SAIU: era ele que reiniciava a entrada
+ * ao voltar para o login, o mesmo defeito que os lutadores tinham. */
+.arena-selecionado .arena-vs {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.4);
+}

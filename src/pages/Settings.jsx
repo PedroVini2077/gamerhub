@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import CampoDeSenha from '../components/ui/CampoDeSenha';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { updateNotifPref } from '../services/profileService';
 import { changePassword, changeEmail, deleteOwnAccount } from '../services/authService';
@@ -215,10 +216,17 @@ export default function Settings_() {
 
         {showPasswordForm && (
           <div className="space-y-3 animate-fade-up pb-2">
-            <input id="new-password" aria-label="Nova senha" className="input-gamer" type="password" placeholder="Nova senha (mín. 8 caracteres)"
-              value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-            <input id="confirm-password" aria-label="Confirmar nova senha" className="input-gamer" type="password" placeholder="Confirmar nova senha"
-              value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+            <CampoDeSenha
+              id="new-password" placeholder="Nova senha (mín. 8 caracteres)"
+              autoComplete="new-password"
+              valor={newPassword} aoMudar={setNewPassword}
+            />
+            <CampoDeSenha
+              id="confirm-password" placeholder="Confirmar nova senha"
+              autoComplete="new-password"
+              valor={confirmPassword} aoMudar={setConfirmPassword}
+              erro={Boolean(confirmPassword) && confirmPassword !== newPassword}
+            />
             <button onClick={handleChangePassword} disabled={changingPassword} className="btn-solid py-2 px-4">
               {changingPassword ? 'Salvando...' : 'Salvar nova senha'}
             </button>

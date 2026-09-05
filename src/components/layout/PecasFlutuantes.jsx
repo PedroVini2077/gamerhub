@@ -62,14 +62,14 @@ import * as PECAS from './pecasDeJogo';
  * já disputa atenção com o conteúdo do feed.
  */
 const POSICOES = [
-  { x: '6%',  tamanho: 62, duracao: 54, atraso: -8,  deriva: '5vw',  giro: '38deg',  pico: 0.30 },
-  { x: '19%', tamanho: 40, duracao: 68, atraso: -34, deriva: '-4vw', giro: '-26deg', pico: 0.24 },
-  { x: '32%', tamanho: 76, duracao: 46, atraso: -20, deriva: '3vw',  giro: '52deg',  pico: 0.34 },
-  { x: '45%', tamanho: 46, duracao: 74, atraso: -50, deriva: '-6vw', giro: '30deg',  pico: 0.22 },
-  { x: '58%', tamanho: 66, duracao: 58, atraso: -14, deriva: '4vw',  giro: '-44deg', pico: 0.31 },
-  { x: '70%', tamanho: 38, duracao: 80, atraso: -62, deriva: '-3vw', giro: '22deg',  pico: 0.21 },
-  { x: '82%', tamanho: 70, duracao: 50, atraso: -28, deriva: '6vw',  giro: '-34deg', pico: 0.33 },
-  { x: '93%', tamanho: 44, duracao: 66, atraso: -44, deriva: '-5vw', giro: '46deg',  pico: 0.25 },
+  { x: '6%',  tamanho: 62, duracao: 36, atraso: -8,  deriva: '5vw',  giro: '38deg',  pico: 0.52 },
+  { x: '19%', tamanho: 40, duracao: 30, atraso: -34, deriva: '-4vw', giro: '-26deg', pico: 0.42 },
+  { x: '32%', tamanho: 76, duracao: 46, atraso: -20, deriva: '3vw',  giro: '52deg',  pico: 0.58 },
+  { x: '45%', tamanho: 46, duracao: 34, atraso: -50, deriva: '-6vw', giro: '30deg',  pico: 0.40 },
+  { x: '58%', tamanho: 66, duracao: 38, atraso: -14, deriva: '4vw',  giro: '-44deg', pico: 0.54 },
+  { x: '70%', tamanho: 38, duracao: 52, atraso: -62, deriva: '-3vw', giro: '22deg',  pico: 0.40 },
+  { x: '82%', tamanho: 70, duracao: 50, atraso: -28, deriva: '6vw',  giro: '-34deg', pico: 0.56 },
+  { x: '93%', tamanho: 44, duracao: 44, atraso: -44, deriva: '-5vw', giro: '46deg',  pico: 0.44 },
 ];
 
 export default function PecasFlutuantes({ elenco = [], acento }) {

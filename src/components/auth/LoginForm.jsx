@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Mail, Lock, AlertTriangle, ShieldOff } from 'lucide-react';
+import { Mail, AlertTriangle, ShieldOff } from 'lucide-react';
 import { InputWrap } from './InputWrap';
+import CampoDeSenha from '../ui/CampoDeSenha';
 import { isLoginBlocked } from '../../lib/loginBlock';
 
 function formatCountdown(ms) {
@@ -76,17 +77,10 @@ export default function LoginForm({ email, setEmail, password, setPassword, load
           </InputWrap>
         </div>
 
-        <div>
-          <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Senha</label>
-          <InputWrap>
-            <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-            <input id="password" aria-label="Senha" type="password"
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-              placeholder="••••••••" value={password}
-              onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && onSubmit()} />
-          </InputWrap>
-        </div>
+        <CampoDeSenha
+          id="password" rotulo="Senha" valor={password} aoMudar={setPassword}
+          aoTeclar={e => e.key === 'Enter' && onSubmit()}
+        />
 
         <button onClick={onSubmit} disabled={loading || isBlocked}
           className="btn-solid w-full py-3 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">

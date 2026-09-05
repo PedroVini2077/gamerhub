@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Zap, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
 import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../lib/password';
+import { marcarEntradaAgora } from '../lib/boasVindas';
+import CampoDeSenha from '../components/ui/CampoDeSenha';
 
 export default function AuthConfirm() {
   const [searchParams] = useSearchParams();
@@ -19,6 +21,28 @@ export default function AuthConfirm() {
     const type       = searchParams.get('type');
     const redirectTo = searchParams.get('redirect_to');
 
+    /**
+     * Confirmou o email e a sessão nasceu aqui: isto É uma entrada.
+     *
+     * ── `[05/09]` O furo que isto fecha ─────────────────────────────────────
+     *
+     * O `verifyOtp` de `signup` **cria sessão**. Então a pessoa entrava no site
+     * pela primeira vez na vida por este caminho — e era o único caminho sem a
+     * marca de entrada, porque ela só existia dentro do `signInWithEmail`.
+     *
+     * Resultado: o momento que mais merecia o portão era exatamente o que nunca
+     * o via, e o *"Seja bem-vindo"* de estreia só aparecia no segundo acesso,
+     * quando a pessoa já não era novata.
+     *
+     * A recuperação de senha NÃO passa por aqui de propósito: ela termina em
+     * `signOut()` e volta para o login (ver `handleSetPassword`). Trocar senha
+     * não é entrar.
+     */
+    const entrarNoSite = (destino) => {
+      marcarEntradaAgora();
+      navigate(destino);
+    };
+
     // ── Formato 1: token_hash na query string (link direto para o app) ──
     if (token_hash) {
       supabase.auth.verifyOtp({ token_hash, type: type || 'signup' }).then(({ error }) => {
@@ -33,7 +57,7 @@ export default function AuthConfirm() {
           setStatus('set_password');
         } else {
           setStatus('success');
-          setTimeout(() => navigate(redirectTo?.startsWith('/') ? redirectTo : '/'), 2000);
+          setTimeout(() => entrarNoSite(redirectTo?.startsWith('/') ? redirectTo : '/'), 2000);
         }
       });
       return;
@@ -50,7 +74,7 @@ export default function AuthConfirm() {
           setStatus('set_password');
         } else {
           setStatus('success');
-          setTimeout(() => navigate('/'), 2000);
+          setTimeout(() => entrarNoSite('/'), 2000);
         }
       } else if (event === 'INITIAL_SESSION' && !session) {
         setStatus('error');
@@ -66,7 +90,7 @@ export default function AuthConfirm() {
           setStatus('set_password');
         } else {
           setStatus('success');
-          setTimeout(() => navigate('/'), 2000);
+          setTimeout(() => entrarNoSite('/'), 2000);
         }
       } else if (!hash.includes('access_token') && !hash.includes('error=')) {
         // Sem token na query nem no hash
@@ -147,14 +171,10 @@ export default function AuthConfirm() {
 
               <div className="space-y-3 text-left">
                 <div>
-                  <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Nova Senha</label>
-                  <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
-                    <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                    <input type="password" aria-label="Nova senha"
-                      className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                      placeholder="••••••••" value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)} />
-                  </div>
+                  <CampoDeSenha
+                    rotulo="Nova Senha" autoComplete="new-password"
+                    valor={newPassword} aoMudar={setNewPassword}
+                  />
                   {newPassword && (
                     <div className="mt-2 flex items-center gap-2">
                       <div className="flex gap-1 flex-1">
@@ -173,18 +193,11 @@ export default function AuthConfirm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">Confirmar Senha</label>
-                  <div className={`flex items-center bg-dark-700 border rounded-md transition-all ${
-                    confirmPassword && confirmPassword !== newPassword
-                      ? 'border-red-400/60'
-                      : 'border-dark-400 focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420]'
-                  }`}>
-                    <span className="pl-3 pr-2 text-gray-500 shrink-0"><Lock size={14} /></span>
-                    <input type="password" aria-label="Confirmar nova senha"
-                      className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-                      placeholder="••••••••" value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)} />
-                  </div>
+                  <CampoDeSenha
+                    rotulo="Confirmar Senha" autoComplete="new-password"
+                    valor={confirmPassword} aoMudar={setConfirmPassword}
+                    erro={Boolean(confirmPassword) && confirmPassword !== newPassword}
+                  />
                   {confirmPassword && confirmPassword !== newPassword && (
                     <p className="text-xs text-red-400 font-mono mt-1">Senhas não coincidem</p>
                   )}

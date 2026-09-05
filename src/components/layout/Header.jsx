@@ -79,7 +79,11 @@ export default function Header({ onMenuClick }) {
   const unread = notifs.filter(n => !n.read).length;
 
   return (
-    <header className="fixed top-0 left-0 right-0 md:left-60 h-14 bg-dark-800/95 backdrop-blur border-b border-dark-500 z-10 flex items-center px-4 gap-4">
+    <header
+      className="fixed left-0 right-0 md:left-60 h-14 bg-dark-800/95 backdrop-blur border-b border-dark-500 z-10 flex items-center px-4 gap-4"
+      // Mesma variável do `AvisoSemBanco` — ver `LandingNav`.
+      style={{ top: 'var(--altura-do-aviso, 0px)' }}
+    >
       <button aria-label="Abrir menu" onClick={onMenuClick} className="md:hidden text-gray-400 hover:text-white transition-colors">
         <Menu size={20} />
       </button>

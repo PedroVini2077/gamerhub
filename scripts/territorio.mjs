@@ -131,6 +131,10 @@ export const TERRITORIO = {
   'supabase/migrations/README.md': ['supabase/migrations'],
 
   // ── Território vazio DE PROPÓSITO (ver o cabeçalho) ───────────────────────
+  // Mapa de possibilidades, nao de codigo: nenhuma pasta o torna velho. Ele
+  // envelhece por DECISAO (uma ideia sai daqui e vira item), e isso e coisa que
+  // uma pessoa registra e nenhum script detecta — mesma razao do DECISOES.md.
+  'docs/VISAO-DE-FUTURO.md': [],
   'docs/DECISOES.md': [],
   'docs/DECISOES-FERRAMENTAL.md': [],
   'docs/MANIFESTO.md': [],
@@ -168,6 +172,14 @@ export const TERRITORIO = {
     'scripts/segredos-vazados.mjs',
     'scripts/numeros-do-projeto.mjs',
     'src/lib/__tests__/varrerFontes.js',
+  ],
+  // `[03/09]` O território dele é o mecanismo que o cumpre: o BACKLOG virou
+  // memória operacional, e o mapa de territórios é a ferramenta que o §9.4
+  // manda consultar. Mexer nos dois muda o que o arquivo afirma.
+  'docs/regras/EXECUCAO.md': [
+    'scripts/territorio.mjs',
+    'scripts/fim-de-sessao.mjs',
+    'scripts/inicio-de-sessao.sh',
   ],
   'docs/regras/DOCUMENTACAO.md': [
     'scripts/documentacao-quebrada.mjs',

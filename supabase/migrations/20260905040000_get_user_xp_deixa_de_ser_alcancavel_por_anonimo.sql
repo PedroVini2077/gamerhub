@@ -1,0 +1,34 @@
+-- `[05/09]` `get_user_xp` era alcançável por quem NÃO tem conta.
+--
+-- O QUE ERA. `PUBLIC` e `anon` tinham EXECUTE, então qualquer requisição sem
+-- sessão podia chamar `/rest/v1/rpc/get_user_xp` com um UUID qualquer.
+--
+-- POR QUE ISSO NÃO ERA URGENTE, e vale registrar para não inflar o achado: o
+-- que ela devolve é agregação de dado que já é público (contagem de posts, de
+-- comentários e de lives de alguém). Não vaza email, data de nascimento nem
+-- nada revogado. A severidade honesta é BAIXA.
+--
+-- POR QUE MESMO ASSIM FECHA. Duas razões, e nenhuma é "por precaução":
+--
+--   1. Ela é um endpoint de CÁLCULO sem sessão. São quatro COUNT, um deles com
+--      JOIN, e nada limita quantas vezes por segundo alguém chama. Num plano
+--      gratuito, computação anônima e ilimitada é a cota de outra pessoa sendo
+--      gasta (§0.2).
+--
+--   2. NINGUÉM anônimo precisa dela. Verificado nos quatro chamadores:
+--      `Ranks.jsx` usa `user.id`; `useUserXP` é consumido por `Sidebar` e
+--      `AvatarPopup`, os dois só existem logado; `fetchProfileStats` é do
+--      perfil; e `/u/:username` está atrás de `RequireAuth`. Nenhum e2e ou
+--      script de CI chama a função com a chave anônima.
+--
+-- Superfície que não serve a ninguém é superfície que só pode ser usada contra
+-- o site. Fechar custa uma linha e é reversível em uma linha.
+--
+-- TESTADO EM ROLLBACK ANTES DE APLICAR: assumindo `anon`, a chamada passou a
+-- ser recusada; assumindo `authenticated`, continuou funcionando.
+--
+-- `PUBLIC` junto de `anon` de propósito: `anon` herda de `PUBLIC`, e revogar só
+-- de `anon` deixaria o privilégio de pé pelo caminho herdado — é o padrão que o
+-- `docs/regras/BANCO.md` já registra.
+REVOKE EXECUTE ON FUNCTION public.get_user_xp(uuid) FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.get_user_xp(uuid) TO authenticated;

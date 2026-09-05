@@ -11,8 +11,57 @@
 >
 > Prioridade: 🔴 crítico · 🟠 importante · 🟢 recomendado · 🔵 futuro
 
+> ### `[03/09]` E também é MEMÓRIA OPERACIONAL da execução
+>
+> Ordem do dono em 03/09: *"quero que o BACKLOG seja utilizado como memória
+> operacional da execução… não dependa apenas do contexto da conversa para
+> lembrar o que precisa ser feito"*.
+>
+> Isso dá ao arquivo um **segundo trabalho**, e ele é diferente do primeiro: a
+> seção **EM EXECUÇÃO** abaixo guarda o plano da tarefa em curso — objetivo,
+> etapas, estado, o que foi validado e o que travou. A fila de itens continua
+> sendo o que falta fazer.
+>
+> A diferença prática: quando eu perder o fio, o certo é **voltar aqui**, não
+> carregar mais contexto. Nas três falhas de 02–03/09 meu reflexo foi ler mais
+> e tentar de novo — foi assim que passei de duas tentativas, testei
+> desligando o que estava quebrado, e declarei entregue o que nunca saiu do
+> lugar.
+>
+> **A seção EM EXECUÇÃO esvazia quando a tarefa fecha.** Ela é estado, não
+> histórico — mesma regra do resto do arquivo.
+
+---
+
+## 🔄 EM EXECUÇÃO
+
+### `[05/09]` FASE 2 da auditoria — feita, e achou dois
+
+Era o que eu mesmo tinha declarado como não coberto no fim da Fase 4. Das **78**
+funções `SECURITY DEFINER`, o recorte por risco isolou **21** alcançáveis por
+quem tem conta e sem usar `is_super`/`is_staff`/`role_rank`. Dessas saíram dois
+achados 🟠, os dois comprovados em `ROLLBACK` e corrigidos:
+
+- **o fundador era barrado** do painel de logins bloqueados (`role =
+  'super_admin'` literal) — **terceira reincidência** da mesma classe;
+- **a trilha de auditoria era forjável**: um `role = 'user'` gravou
+  `action = 'admin_ban'` com `severity = 'critical'`.
+
+Relatório em [`db/2026-09-05-fase4-deriva-codigo-banco.md`](db/2026-09-05-fase4-deriva-codigo-banco.md).
+
+**Também nesta rodada:** os PRs do Dependabot estavam vermelhos por dois portões
+meus que exigiam o impossível de branch de bot — corrigido no PR #164.
+
+**O que continua aberto desta auditoria:** as 34 funções não alcançáveis por
+`anon`/`authenticated` não foram lidas uma a uma. Não há caminho pela API hoje —
+mas isso é afirmação sobre os `GRANT`s de hoje.
+
+---
+
+---
+
 **Última conferência contra o sistema:** 02/09/2026, noite ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**22 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -72,6 +121,43 @@
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[04/09]` 🟢 **Música no painel do Fundador.** *Ideia do dono; as três saídas
+  que ele imaginou têm impedimento — ver
+  [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
+
+  Ler a biblioteca do celular dele pelo site não é possível (não existe API para
+  isso). Spotify e YouTube esbarram em conta paga, regra de uso e privacidade.
+  O caminho limpo é o mesmo do som ambiente que já existe: **um arquivo curto,
+  hospedado por nós, com licença clara**.
+
+- ⬜ `[03/09]` 🟢 **Decidir se o site precisa de Service Worker para o caso
+  offline.** *É o terceiro elo da corrente que o dono relatou, e o único que
+  não deu para consertar.*
+
+  **A corrente que ele viu, com o aparelho offline:**
+
+  | O que aparecia | Estado |
+  | --- | --- |
+  | "sem acesso ao banco" | ✅ correto, e continua |
+  | "Algo deu errado" | ✅ **corrigido em 03/09** — virou "Sem conexão", e não vai mais para o Sentry |
+  | página de offline do navegador | ⬜ **este item** |
+
+  **Por que o terceiro é diferente:** ele acontece quando a pessoa **recarrega**
+  estando offline. Não é mensagem errada nossa — é o navegador não ter como
+  carregar o app, porque nada está guardado localmente. Só um Service Worker
+  resolve, servindo o app do cache.
+
+  **O que ele custaria, dito antes:** um SW é código que fica *entre* o site e
+  a rede, e erra caro — cache velho servido para sempre é o defeito clássico,
+  e o conserto exige a pessoa limpar o navegador. Ele também muda como o deploy
+  chega: o §0.2 já registra que **a Vercel conta deploy**, e um SW mal
+  configurado faz o visitante continuar na versão antiga sem saber.
+
+  **Minha recomendação: não agora.** O ganho é uma tela melhor num caso raro
+  (recarregar offline); o risco é servir versão velha em todos os casos. Com 5
+  usuários não paga. Registrado para quando houver volume — e para não ser
+  redescoberto como bug.
 
 - ⬜ `[28/08]` 🟢 **Conferir os pisos novos com o uso real, em algumas semanas.**
   *Não é decisão pendente — a decisão foi tomada em 28/08 e está no ar (v14).*
@@ -144,18 +230,6 @@
 
 
 
-- ⬜ `[02/09]` 🔵 **Captcha no formulário de contato.** Os limites de vazão
-  atuais (3 por e-mail em 24 h, disjuntor de 60/hora) impedem a tabela de virar
-  depósito, mas **não** impedem um robô com muitos endereços de encher a hora e
-  fechar o canal para todo mundo. Fechar de verdade pediria Turnstile, que
-  exige Edge Function e mais uma cota. Quando o alarme `contact_flood` aparecer
-  em `admin_logs` alguma vez, é sinal de que a hora chegou.
-
-- ⬜ `[01/09]` 🔵 **Google Fonts entrega o IP do visitante ao Google.**
-  Único terceiro que a landing contacta (medido). Hospedar as fontes no próprio
-  site elimina isso por alguns KB de banda. **Boa prática, não obrigação
-  legal** — a distinção importa.
-
 - ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
   *Auditoria da cena 3D de 01/09. A medição inteira está em
   [DESEMPENHO.md](docs/DESEMPENHO.md); aqui fica só a decisão que falta.*
@@ -177,81 +251,52 @@
   para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
   no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
 
-- ⬜ `[01/09]` 🟡 **Staff identificável POR NOME pelo anônimo em `site_config`.**
-  *Achado em 01/09 · **severidade corrigida em 02/09**: a justificativa do 🔵
-  original era falsa, e a correção veio de refazer a sondagem em vez de confiar
-  no que estava escrito (§1.4).*
+- ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em `site_config.updated_by`.**
+  *`[03/09]` **Rebaixado de 🟡 para 🔵** — a metade grave foi fechada, e o que
+  sobrou é o item original, agora com a justificativa CERTA.*
 
-  **O que dizia aqui, e estava errado:** *"é UUID, não nome; `profiles` responde
-  401 ao anônimo, então não há como mapear UUID → pessoa"*. O 401 acontece com
-  `select=*` — as colunas sensíveis (`role`, `banned`, `birth_date`, `bio`,
-  `avatar_url`) são negadas mesmo. Mas `id` e `username` **passam juntos**:
+  **O que foi fechado em 03/09:** a cadeia que ligava o UUID a uma pessoa.
+  `profiles?select=id,username` devolvia as 5 linhas e transformava
+  `site_config.updated_by` num nome. Hoje responde **401** — a checagem de
+  username do cadastro virou a RPC `username_disponivel`, e o `SELECT` de `anon`
+  em `profiles` foi revogado. Conferido na produção, depois do merge.
 
-  ```
-  GET /rest/v1/profiles?select=id,username     -> 200, content-range: 0-4/5
-  ```
+  **O que sobra:** `site_config.updated_by` continua legível, e agora é
+  **de fato** só um UUID sem nome — que era o que o item dizia em 01/09, só que
+  na época era falso. Impacto real: ligar mudanças de config a *uma* conta, sem
+  saber qual.
 
-  Então a cadeia inteira fecha, sem conta nenhuma:
+  > **Por que a justificativa antiga era falsa, e vale guardar.** Ela dizia
+  > *"`profiles` responde 401 ao anônimo"*. O 401 valia para `select=*` —
+  > privilégio no Postgres é **por coluna**, e um `select=*` negado prova apenas
+  > que *alguma* coluna está fechada. O portão `portas-do-banco.mjs` cometia o
+  > mesmo erro e por isso dava verde; desde 02/09 ele sonda **coluna a coluna**.
 
-  ```
-  site_config.updated_by = 7ca78f83-…  ->  profiles?select=id,username
-                                       ->  "opedrovini"
-  ```
+  **`blocked_words.created_by`** é lida pelo anônimo mas está **nula nas 322
+  linhas** — vaza estrutura, não dado.
 
-  **10 das 14 linhas** de `site_config` carregam autor, todas o mesmo UUID.
-  Qualquer visitante descobre **qual conta administra o site**, pelo nome.
-
-  **Correção de fato, no mesmo item:** `blocked_words.created_by` é lida pelo
-  anônimo mas está **nula nas 322 linhas** — a coluna vaza estrutura, não dado.
-  Só `site_config` vaza pessoa hoje.
-
-  **O que NÃO é problema (sondado em 02/09):** escrita anônima nas duas tabelas
-  devolve **401** em `PATCH` e `POST`, e nada entrou. O privilégio de coluna
-  INSERT/UPDATE existe para `anon`, mas a RLS nega — vale fechar por defesa em
-  profundidade, não porque esteja aberto.
-
-  **A dependência de `site_config`/`blocked_words` foi checada** (a consulta de
-  "quem lê" do [POSTURA.md](docs/regras/POSTURA.md), 02/09): **nenhuma policy**
-  usa `updated_by`/`created_by`, e a única função que os toca é
+  **A dependência já está checada** (a consulta de "quem lê" do
+  [POSTURA.md](docs/regras/POSTURA.md)): **nenhuma policy** usa
+  `updated_by`/`created_by`, e a única função que os toca é
   `owner_set_site_config`, `SECURITY DEFINER`, que não passa por esses
-  privilégios. Ali o `REVOKE` das duas colunas é seguro.
+  privilégios. O `REVOKE` das duas colunas é seguro — só não é urgente.
 
-  > **`[02/09]` ⚠️ Correção de uma proposta minha que estava ERRADA, e o motivo
-  > vale mais do que o item.** Eu propus ao dono revogar também `id`/`username`
-  > de `profiles`, dizendo que a dependência estava checada. Estava — só que a
-  > consulta de "quem lê" procura **policy e função no banco**, e quem lê essas
-  > duas colunas é **o cadastro, no cliente**: `useAuth.jsx` faz
-  > `select('id').eq('username', …)` antes do `signUp` para recusar username
-  > repetido. O revoke teria quebrado o cadastro do site inteiro — a **quarta**
-  > queda por revoke bem-intencionado.
-  >
-  > E o `docs/SEGURANCA.md` **já dizia isso**, na linha certa, desde sempre:
-  > *"`anon` só enxerga `(id, username)` — o suficiente para a checagem de
-  > username duplicado"*. Eu li a linha errada do mesmo arquivo.
-  >
-  > **O que resta, e é menor do que eu disse:** não é o acesso, é a
-  > **enumeração**. O cadastro precisa perguntar por **um** username;
-  > `select=id,username` devolve **todos**. A saída certa é a que o projeto já
-  > usa em `get_public_profile`: uma RPC `username_disponivel(p_username)`
-  > `SECURITY DEFINER` devolvendo booleano, e aí o `SELECT` de `anon` em
-  > `profiles` pode ser revogado **sem** quebrar nada.
-
-  **O portão que deixava passar, e o que ele passou a fazer.** O
-  `portas-do-banco.mjs` sondava só `select=*`, então dava **verde honesto para a
-  pergunta errada** — e o `SEGURANCA.md` passou a afirmar, com base nesse verde,
-  que "`profiles` responde 401 ao anônimo". Desde 02/09 ele sonda **coluna a
-  coluna**: as 8 colunas pessoais precisam continuar em 401, e `id`/`username`
-  são registradas como estado conhecido. Ele **não reprova hoje** (item aberto e
-  não decidido reprovando todo PR viraria ruído, §0.2), mas reprova a **piora** —
-  provado reinjetando o bug: sai 1 nomeando a coluna que abriu.
-
-  **É CLASSE, não caso:** a pergunta certa é *"toda tabela legível pelo anônimo
-  devolve só o que a tela precisa?"*. Nenhuma das duas telas usa a autoria.
+  > **A lição que ficou, e é a mais cara desta rodada.** Eu propus revogar
+  > `id`/`username` dizendo que a dependência estava checada. Estava — mas a
+  > consulta de "quem lê" procura **policy e função no banco**, e quem lia era
+  > **o cliente**: o cadastro. O revoke teria sido a **quarta** queda do site
+  > por revoke bem-intencionado. A consulta do POSTURA.md precisa incluir
+  > `grep` no `src/`, e não só o Postgres.
 
   **Bônus a decidir junto:** a lista inteira de 322 palavras bloqueadas é
-  pública. Isso é consequência do filtro rodar no cliente, não descuido — mas
-  entrega a quem quiser burlar o dicionário exato. Vale registrar como decisão
-  consciente em `DECISOES.md`, ou mudar de abordagem.
+  pública. É consequência do filtro rodar no cliente, não descuido — mas entrega
+  o dicionário exato a quem quiser burlar. Vale registrar como decisão em
+  `DECISOES.md`, ou mudar de abordagem.
+
+  **Defesa em profundidade, sem pressa:** `anon` tem privilégio de INSERT/UPDATE
+  em quase toda coluna de `profiles`, `site_config` e `blocked_words`. A RLS
+  nega tudo (sondado: 0 linhas afetadas, e nada entrou), então não está aberto —
+  mas privilégio que ninguém usa é superfície que ninguém revisa.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
@@ -294,15 +339,13 @@
 
 
 
-- ⬜ `[02/09]` **Responder a mensagem de contato por dentro do painel.** Hoje a
-  equipe lê em `/admin` → aba Contato e responde do próprio e-mail, copiando o
-  endereço da tela. Responder de dentro exigiria a `send-email`, e portanto a
-  cota do Gmail — **a mesma** do cadastro e da recuperação de senha (§0.2).
-  Depende do item de migrar o envio de e-mail, logo abaixo. *Não é urgente com
-  o volume atual; está aqui para não virar redescoberta.*
+- ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail pessoal.**
+  *`[03/09]` O dono decidiu ficar no Gmail por enquanto: "não quero gastar 40
+  dólares cobrando um domínio agora, talvez mais tarde". A resposta de contato
+  foi construída em cima dele — e passou a ser mais um consumidor da MESMA cota
+  do cadastro e da recuperação de senha.*
 
-- ⬜ `[23/08]` **Migrar o envio de email para fora do Gmail pessoal.** Hoje usa
-  nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
+  Hoje usa nodemailer com uma conta Google dedicada — melhor que a conta pessoal, mas o
   limite (~500/dia), o risco de o Google travar por envio automatizado, e a
   falta de painel de entrega continuam. Com domínio próprio (~R$40/ano) +
   Resend vira `nao-responda@…`; sem domínio, o Brevo é a opção. *Não é urgente
@@ -310,7 +353,6 @@
 
 
 ## 🟢 Recomendado
-
 
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
   *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*
@@ -384,10 +426,10 @@
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->84<!--/n--> arq ·
-  <!--n:src.lib.linhas-->6.943<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->16<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.620<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->98<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.013<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->17<!--/n--> arq ·
+  <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

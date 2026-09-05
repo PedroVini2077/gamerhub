@@ -65,7 +65,7 @@ jobs:
       - name: Guarda — a suíte não pode encolher em silêncio
         run: |
           total=$(node -p "require('./vitest-report.json').numTotalTests")
-          piso=443
+          piso=480
           echo "testes executados: $total (piso: $piso)"
           if [ "$total" -lt "$piso" ]; then
             echo "::error::A suite caiu para $total testes, abaixo do piso de $piso."
@@ -89,8 +89,30 @@ jobs:
       - name: Orçamento de bytes do carregamento
         run: node scripts/orcamento-de-bytes.mjs
 
+      # `[04/09]` Queda do registro do npm NAO e vulnerabilidade encontrada.
+      #
+      # O `npm audit` sai com 1 nos DOIS casos: quando acha vulnerabilidade e
+      # quando o endpoint dele responde 503 — e foi o 503 que reprovou o PR #154,
+      # com build, lint e testes ja verdes. Portao que grita a coisa errada
+      # ensina a ignorar o canal onde a falha real vai aparecer (§0.2, 4a regra),
+      # e aqui isso e caro: e o unico portao que olha vulnerabilidade conhecida.
+      #
+      # Entao a saida e a mesma das travas de porta: distinguir "nao consegui
+      # verificar" de "verifiquei e esta ruim". O primeiro AVISA e segue; o
+      # segundo continua reprovando.
       - name: Auditoria de dependências
-        run: npm audit --audit-level=high
+        run: |
+          set +e
+          saida=$(npm audit --audit-level=high 2>&1)
+          codigo=$?
+          echo "$saida"
+          if [ $codigo -eq 0 ]; then exit 0; fi
+          if echo "$saida" | grep -qiE 'audit endpoint returned an error|service unavailable|ENOTFOUND|ETIMEDOUT|socket hang up'; then
+            echo "::warning::npm audit NAO RODOU — o registro do npm nao respondeu."
+            echo "::warning::Isto nao diz nada sobre as dependencias. Rode de novo mais tarde."
+            exit 0
+          fi
+          exit $codigo
 
       # Job que se pula sozinho e verde que nao testou nada (§1.5). Enquanto a
       # conta de staff nao existir, o painel de admin segue SEM cobertura de
@@ -211,7 +233,25 @@ jobs:
   deploys:
     name: a branch não gasta deploy da Vercel
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    # `[05/09]` BRANCH DE BOT NÃO ENTRA, e não é frouxidão — é que a exigência
+    # é IMPOSSÍVEL de cumprir ali. O Dependabot nomeia a branch com um hash
+    # aleatório (`dependabot/npm_and_yarn/minors-d04e3cbc33`), que só existe
+    # depois de a branch nascer: não há como pré-cadastrar em `vercel.json`.
+    #
+    # O resultado era três PRs de atualização de dependência VERMELHOS há dias,
+    # incluindo bumps de segurança, travados por um portão que eles nunca
+    # teriam como satisfazer. Vermelho que não significa defeito ensina a
+    # ignorar o vermelho (§0.2, quarta regra) — e aqui ainda por cima BLOQUEAVA
+    # atualização de segurança, que é o oposto do que o portão existe para
+    # proteger.
+    #
+    # O custo de deixar passar é pequeno e mensurável: o `ignoreCommand` já pula
+    # o build de commit que não toca no que vai para o navegador, então bump de
+    # GitHub Actions não gera deploy nenhum. Sobra o bump de npm, que é raro e
+    # agrupado — alguns deploys por mês contra um teto de 100 por DIA.
+    if: >-
+      github.event_name == 'pull_request'
+      && !startsWith(github.head_ref, 'dependabot/')
     steps:
       - uses: actions/checkout@v7
 
@@ -329,6 +369,17 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[04/09]` As duas artes da tela de entrada chegam como UMA imagem com os
+      # dois lutadores, e viram fundo depois de recortadas. O primeiro recorte
+      # foi numa reta vertical no meio — e os dois se sobrepõem em ~75 colunas,
+      # então o gelo levou um pedaço do fogo junto. Quem viu foi o dono, no
+      # celular. Este passo conta pixels da cor errada na borda que encosta na
+      # fenda; com o recorte antigo ele acusa 638, com o novo, 0.
+      - name: As artes do login não carregam pedaço do adversário
+        run: npm run test:e2e:arena
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # `[01/09]` Com o banco fora, o site inteiro ficava inacessível: um
       # `return <OfflineGate />` acima do <Routes> matava até /sobre e /login,
       # que não dependem do banco. A regra que ficou: fora do ar bloqueia SÓ o
@@ -342,6 +393,19 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+
+      # `[03/09]` A /contato passou a carregar o captcha do Cloudflare, e isso
+      # coloca o navegador de quem abre a pagina no registro de mais uma
+      # empresa. A politica de privacidade AFIRMA quem recebe o que, e afirma
+      # que o site nao usa cookie — este passo MEDE as duas coisas em vez de
+      # confiar no texto.
+      #
+      # Ele sai com 2 (ambiente) quando o Cloudflare esta inalcancavel: "nao
+      # consegui medir" e "medi e esta limpo" sao respostas diferentes.
+      - name: A /contato entrega para fora so o que a politica declara
+        run: npm run test:e2e:terceiro
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
 
       # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
       # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
@@ -440,9 +504,23 @@ jobs:
     #     E2E_PASSWORD  = a senha dela
     # A conta tem que ser `role = 'user'`: o teste confere justamente que ela
     # NÃO enxerga /admin nem /owner.
+    #
+    # `[05/09]` PR DO DEPENDABOT NÃO RODA ESTE JOB, e o motivo é do GitHub, não
+    # meu: workflow disparado pelo Dependabot **não recebe os secrets do
+    # repositório**. É proteção deliberada da plataforma — uma dependência
+    # maliciosa poderia exfiltrar a senha durante o `npm install`.
+    #
+    # Sem `E2E_PASSWORD`, o teste não tem como logar e falhava com "credenciais
+    # nao definidas" em TODO PR de dependência. Isso não é o teste pegando um
+    # defeito; é o teste não tendo como existir ali.
+    #
+    # A condição é pelo ATOR e não por "secret vazio" de propósito: se um dia a
+    # senha sumir das configurações num PR meu, eu QUERO o vermelho. Pular por
+    # "faltou credencial" esconderia exatamente esse caso (§1.5).
     if: >-
       vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
       && github.event_name == 'pull_request'
+      && github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v7
 

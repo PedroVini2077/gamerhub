@@ -81,10 +81,38 @@ export const DOCUMENTOS = {
   privacidade: {
     rotulo: 'Política de Privacidade',
     caminho: '/privacidade',
-    versao: '2026-09-03',
+    /* `[04/09]` Só a IMPRESSÃO subiu, e a versão NÃO — decisão consciente.
+     *
+     * `[05/09]` A VERSÃO SUBIU, e desta vez todo mundo reaceita.
+     *
+     * O que mudou no texto: a tabela "o que fica guardado no seu navegador"
+     * ganhou **três linhas** — as chaves do cofre do painel do Fundador
+     * (`lib/cofre.js`).
+     *
+     * Por que RELEVANTE e não cosmética, e a decisão foi do dono: eu tinha
+     * proposto deixá-las só na lista técnica, porque elas nascem apenas no
+     * aparelho de quem tem o cargo de fundador — listá-las descreve para
+     * milhares de pessoas um armazenamento que existe para uma. Ele decidiu
+     * citar, e a razão dele é mais forte: aquela tabela abre dizendo "listados
+     * abaixo". **Lista que se declara completa e não é deixa de ser verdade**,
+     * e política de privacidade menos verdadeira custa mais do que três linhas.
+     *
+     * Mudança no texto que a pessoa lê = versão nova = reaceite. É exatamente a
+     * regra que a rodada de 02/09 criou, depois de eu ter reescrito o bloco de
+     * retenção sem subir a versão — e o registro de aceite passar a apontar
+     * para um texto que ninguém tinha lido.
+     *
+     * A data visível (`ATUALIZADO_EM`) subiu junto: deixá-la em 02/09 com o
+     * texto mudado seria a mesma mentira, só que na cara do leitor.
+     *
+     * Histórico da decisão anterior, de 04/09, mantido porque explica por que a
+     * versão NÃO subiu naquela vez: a tabela ganhou duas linhas das marcas da
+     * tela de boas-vindas, da mesma natureza das sete que já estavam ali —
+     * sinalizador local, nada sai do aparelho, nada é pessoal. */
+    versao: '2026-09-05',
     conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: '8e7b39ecffc8f9db',
-    mudou: 'passou a dizer quem responde pelos dados e por onde falar com essa pessoa',
+    impressao: 'c4d2095ac62c91b3',
+    mudou: 'a lista do que fica guardado no seu navegador ficou completa: entraram as três chaves do cofre do painel da equipe, que só existem no aparelho de quem é da equipe',
   },
   regras: {
     rotulo: 'Regras da Comunidade',

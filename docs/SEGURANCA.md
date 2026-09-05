@@ -173,6 +173,55 @@ configurar `HUGGINGFACE_API_KEY` para a moderação por IA, que usa **OpenAI**
 desde a troca de provedor. Mensagem errada custa mais tempo do dono do que
 mensagem nenhuma (§1.5).
 
+## `[03/09]` Captcha no formulário de contato — e por que o REVOKE é a parte que importa
+
+**O buraco que ele fecha, e estava escrito no SQL desde 02/09:** os limites do
+canal de contato (3 mensagens por e-mail em 24 h, disjuntor de 60/hora) impedem
+a tabela de virar depósito, mas **não** impedem um robô com muitos endereços de
+encher a hora e **fechar o canal para todo mundo**.
+
+**O widget não era a parte difícil.** Enquanto `enviar_mensagem_de_contato`
+tivesse `GRANT EXECUTE ... TO anon`, o captcha seria decoração: qualquer um
+posta em `/rest/v1/rpc/` e pula a verificação inteira. O site entrega a anon key
+por construção — regra que só existe no cliente não existe (§1.3).
+
+Por isso a mudança de verdade é o revoke:
+
+| Antes | Depois |
+| --- | --- |
+| `anon` e `authenticated` chamavam a RPC direto | só `service_role`, e a única porta é a Edge Function `verify-contact` |
+| `author_id` vinha de `auth.uid()` | vem por parâmetro, derivado de um JWT que o Supabase valida — não é forjável, e a função só é executável por `service_role` |
+
+**Antes de revogar, procurei quem lê** (POSTURA.md §1.3 — revoke
+bem-intencionado já derrubou este site três vezes): `grep` no `src/` (só o
+`contatoService.js`), `pg_policies`, `pg_proc` e triggers. Nenhum outro
+dependente. Testado em `ROLLBACK` antes de aplicar: `anon` bloqueado,
+`authenticated` bloqueado, `service_role` passa, `author_id` chega, as
+validações de conteúdo continuam valendo, e não sobrou overload da versão antiga.
+
+**Provado em produção, com a anon key real:**
+
+    POST /rest/v1/rpc/enviar_mensagem_de_contato
+      -> HTTP 401 "permission denied for function enviar_mensagem_de_contato"
+    POST /functions/v1/verify-contact  (token de captcha inventado)
+      -> HTTP 403 "Nao foi possivel confirmar o captcha"
+
+> O 403 do segundo é o que prova que a `TURNSTILE_SECRET_KEY` está configurada
+> **e** sendo usada: sem ela a função seguiria adiante (ver a decisão de falhar
+> aberto, abaixo) e o erro teria sido 400, vindo da RPC.
+
+**Falhar aberto, e o quanto isso é estreito.** Se o Cloudflare estiver fora do
+ar, a mensagem passa e a falha vai para `admin_logs`. O `/contato` é o canal de
+quem está banido ou trancado para fora; barrar todo mundo por uma
+indisponibilidade de terceiro cortaria justamente quem mais precisa. Token que o
+Cloudflare **recusa** continua recusado, ninguém de fora provoca a queda do
+Cloudflare, e os limites do banco continuam por baixo.
+
+**O que o captcha NÃO faz:** ele para robô comum. Não para quem paga serviço de
+resolução, nem alguém determinado especificamente contra este site. O disjuntor
+de 60/hora continua existindo por isso — defesa em profundidade, não
+substituição.
+
 ## `[27/08]` Onde está o rate limit — e onde ele não está
 
 Levantado ao conferir o projeto contra uma lista de camadas de engenharia.
@@ -352,7 +401,7 @@ para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
 | Dado sensível | `portas-do-banco.mjs` | que `posts` e `admin_logs` respondam 401 ao anônimo, e que de `profiles` o anônimo leia **exatamente `id` e `username`** — nem uma coluna a mais, nem a menos | sim — não vê o que um **logado** alcança |
 | Privacidade | `conteudoDaPrivacidade.test.js` | que chave nova no navegador, terceiro novo e cookie **entrem na política** antes de existirem | não, para o que ele conhece |
 | Admin/staff | `painel-admin.mjs` | que o painel liste, pagine e negue — com dado que o próprio teste cria | sim — cobre a tela, não a permissão no banco |
-| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 5 portas recusem chamada sem credencial | não, e é de propósito: as functions não estão no git |
+| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 6 portas recusem chamada sem credencial — e, na `verify-contact`, que o captcha esteja mesmo sendo conferido (403, não 400) | não, e é de propósito: as functions não estão no git |
 | Fluxos críticos | `fluxos.mjs` | publicar → conferir → apagar → sair, e nenhum lixo de teste sobrando | sim — cobre o caminho feliz de uma conta comum |
 | Testes | piso de testes, `rotasE2E.test.js`, **`varrerFontes`** | que rota nova tenha teste de navegador, e que trava que varre arquivo **prove que varreu** | não |
 | Segredo/config | `segredos-vazados.mjs` | que nenhum arquivo rastreado tenha chave privada, `service_role`, token ou senha | não, para os padrões que ele conhece |
@@ -429,3 +478,133 @@ que não ter guarda.
 
 **Provada** movendo `scene3d/` para fora: a trava do raio parou de passar e
 disse por quê, em vez de seguir verde.
+
+---
+
+## `[05/09]` O cofre do painel do Fundador NÃO é um controle de segurança
+
+Isto está escrito aqui exatamente porque o contrário seria fácil de acreditar.
+O painel do Fundador ganhou uma tela de cofre com código, e ela **parece** uma
+segunda camada de autorização. Não é.
+
+| Ameaça | O cofre protege? |
+| --- | --- |
+| alguém sentado no computador do dono, com a sessão aberta, clicando | **sim** — é a única coisa para a qual ele existe |
+| alguém com a sessão roubada chamando a RPC direto pela API | **não**, e nada no navegador protegeria |
+| alguém que abre o DevTools e apaga o `localStorage` | **não** — apaga e define um código novo |
+
+**A autorização real está no banco e sempre esteve:** `is_super()`, a hierarquia
+de `role_rank()` e as policies. É isso que impede um `admin` de mexer em cargo.
+Se alguém apagar `src/lib/cofre.js` inteiro amanhã, **nenhuma permissão do site
+muda** — some só a tela.
+
+**Por que aceitar uma tranca que não tranca.** Porque a ameaça que ela cobre é
+real e não tinha resposta nenhuma: o computador do dono, aberto, com a sessão
+viva. Para essa, um código pedido antes de mostrar o painel é exatamente a
+medida certa.
+
+**O que estaria errado é ela se apresentar como mais do que é.** Por isso o
+aviso está impresso **na própria tela**, embaixo do campo, e não só neste
+documento: *"esta tranca é visual e vale só neste navegador"*. Cofre que parece
+proteger e não protege é pior do que cofre nenhum — ele muda o comportamento de
+quem confia nele.
+
+**A versão de verdade** — código conferido numa RPC contra um hash, tabela de
+desbloqueio, e toda RPC de owner exigindo desbloqueio ativo — está descrita em
+[VISAO-DE-FUTURO.md](VISAO-DE-FUTURO.md), junto do risco que ela traz: **ficar
+trancado para fora**, que precisa de caminho de recuperação pensado antes de
+existir.
+
+**A defesa que vale mais por hora de trabalho, se a preocupação for sessão
+roubada, continua sendo 2FA na conta do Supabase** — não uma segunda senha
+guardada no mesmo aparelho que a primeira.
+
+### O que é conferido por teste
+
+`src/lib/__tests__/cofre.test.js` cobre o comportamento local — define, confere,
+abre por aba, esquece — e um caso que nada na tela denunciaria: **o código nunca
+pode ser gravado em texto puro**. Se alguém "simplificar" o hash, a tela
+continua abrindo igual e só o teste percebe. Provado reinjetando o vazamento.
+
+
+---
+
+## `[05/09]` `get_user_xp` deixou de ser alcançável por quem não tem conta
+
+`PUBLIC` e `anon` tinham `EXECUTE`, então qualquer requisição sem sessão chamava
+`/rest/v1/rpc/get_user_xp` com um UUID qualquer.
+
+**A severidade honesta é 🔵 baixa**, e isso está escrito para o achado não ser
+inflado: o que ela devolve é agregação de dado que já é público — contagem de
+posts, comentários e lives. Não vaza email, data de nascimento nem nada
+revogado.
+
+**Fechou por duas razões concretas, não por precaução:**
+
+1. É um endpoint de **cálculo** sem sessão — quatro `COUNT`, um com `JOIN`, sem
+   limite de quantas vezes por segundo. Num plano gratuito, computação anônima
+   e ilimitada é cota sendo gasta (§0.2).
+2. **Nenhum caminho anônimo precisava dela.** Verificado nos quatro chamadores:
+   `Ranks.jsx` usa `user.id`; `useUserXP` só é consumido por `Sidebar` e
+   `AvatarPopup`, que só existem logado; `fetchProfileStats` é do perfil; e
+   `/u/:username` está atrás de `RequireAuth`.
+
+Superfície que não serve a ninguém só pode ser usada contra o site. **Testado em
+`ROLLBACK` antes de aplicar:** como `anon` a chamada passou a ser recusada, como
+`authenticated` continuou funcionando.
+
+**As outras três funções alcançáveis sem conta continuam abertas, e por quê:**
+`check_login_status` (só lê `login_attempts`, e a linha nasce na tentativa —
+não confirma se a conta existe), `username_disponivel` (o cadastro precisa dela
+antes de haver sessão, e apelido é público) e `contagem_de_migrations` (devolve
+um inteiro). O raciocínio de cada uma está em
+`db/2026-09-05-fase4-deriva-codigo-banco.md`.
+
+
+---
+
+## `[05/09]` FASE 2 — dois achados no corpo das funções privilegiadas
+
+### 🟠 O fundador era barrado do painel de logins bloqueados
+
+`get_blocked_logins` checava `role = 'super_admin'` **literal**, e o `owner` —
+que está acima na hierarquia — recebia `Access denied`. Comprovado em `ROLLBACK`
+com o JWT do fundador.
+
+**É a terceira vez que esta mesma classe morde este projeto**: antes foram 14
+policies sem `owner` e o `admin_unlock_login` barrando o próprio fundador. A
+regra existe e está escrita. O que falhou foi o **alcance da varredura**: a
+consulta de classe daquela vez procurava em `pg_policies` e parou ali — as
+funções nunca foram varridas com o mesmo critério.
+
+Corrigido para `is_super()`. E a lição operacional fica registrada: varredura de
+classe tem que cobrir **policies, funções e código**, não um dos três.
+
+### 🟠 A trilha de auditoria era forjável por quem tem conta
+
+`log_audit_event` é executável por `authenticated` **por desenho** — o cliente
+registra os próprios eventos. Mas aceitava qualquer `action`, `details` e
+`severity`.
+
+**Comprovado em `ROLLBACK`:** um perfil `role = 'user'` gravou
+`action = 'admin_ban'`, `severity = 'critical'`, com o texto que quisesse.
+
+| | |
+| --- | --- |
+| **risco** | escrever na trilha que a equipe usa para decidir |
+| **impacto** | não é escalada — o `actor_id` vem de `auth.uid()` e ninguém se passa por outro. É envenenar a fonte de verdade da moderação e disparar alarme falso de propósito |
+| **solução** | lista **fechada** de actions, cargo para as de equipe, severidade alta só de equipe |
+
+**Onde a trava mora, e por que não é no banco.** A recusa do banco existe, mas
+em produção ela é **invisível**: `lib/auditLog.js` engole o erro de propósito,
+então uma action nova esquecida na lista simplesmente não se registra — ninguém
+vê, nada é gravado, nenhum teste de comportamento quebra. As três respostas
+"nada" do §1.5. Por isso quem realmente segura é
+`src/lib/__tests__/trilhaNaoEhForjavel.test.js`, que reprova no CI.
+
+### O limite desta passada, dito com todas as letras
+
+As **34** funções não alcançáveis por `anon`/`authenticated` não foram lidas uma
+a uma. Não há caminho pela API para chamá-las — mas *"não é chamável"* é uma
+afirmação sobre os `GRANT`s de hoje, e um `GRANT` novo derruba essa premissa em
+silêncio.

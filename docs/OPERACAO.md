@@ -184,6 +184,143 @@ O motivo da pausa (`site_config.pause_reason`, editável na aba Site) é lido
 não pode vir de lá. Pausa planejada mostra o motivo real; queda inesperada, ou
 primeira visita, mostra texto genérico.
 
+
+### `[03/09]` Os três bugs de pausa/offline — o estado de cada um
+
+O dono pediu para conferir três coisas que ele relatou antes e não tinha
+testado. O levantamento foi feito no código e nos commits, não de memória:
+
+| O que ele relatou | Estado | Onde |
+| --- | --- | --- |
+| redirecionado antes do contador chegar a zero | ✅ **resolvido** | PR #126 |
+| a mensagem personalizada não funcionava | ✅ **corrigido em 03/09** | `MaintenancePage` |
+| "banco fora do ar" → "algo deu errado" → tela do navegador | ⚠️ **2 de 3** | `ErrorBoundary` |
+
+#### O contador: resolvido por REMOÇÃO, e a distinção importa
+
+Ele não passou a contar direito — ele **deixou de existir**. A mensagem
+prometia um redirecionamento que o `navigate('/')` do primeiro efeito já tinha
+feito; a contagem descrevia o passado e no fim só sumia.
+
+#### A mensagem personalizada: o campo existia e morria na tela
+
+`MaintenancePage` tinha o texto **cravado**. O `pause_reason` era escrito no
+painel do owner, salvo no `site_config`, lido pelo `Layout` e guardado no
+navegador — e a tela nunca o consultava.
+
+**Nada quebrava**, e é isso que fez o bug durar: a pausa funcionava, a tela
+aparecia, o texto era razoável. Só era o texto errado. É a classe de falha que
+produz um resultado **plausível**, e por isso ninguém desconfia.
+
+Agora ela chama `motivoDaPausa()`, que resolve os dois cenários — pausa
+deliberada lê do banco, queda inesperada lê a cópia do navegador — e nunca
+devolve vazio.
+
+#### A corrente de três mensagens: a do meio era mentira
+
+| O que aparecia | Quem mostrava | Era verdade? |
+| --- | --- | --- |
+| "sem acesso ao banco" | `AvisoSemBanco`, via `dbHealth` | **sim** |
+| "Algo deu errado" | `ErrorBoundary` | **não** — nada deu errado no site |
+| página de offline | o navegador | sim, mas é outro assunto |
+
+A segunda é o §1.5 na letra: *"toda mensagem de erro tem que ser verdadeira"*.
+Ela manda a pessoa achar que o site quebrou, e manda quem investigar procurar
+bug onde não há nenhum. O Wi-Fi caiu.
+
+O `ErrorBoundary` passou a classificar, por `lib/ehFalhaDeRede.js`, e a mostrar
+**"Sem conexão"** — com o conselho certo: esperar a conexão e tentar de novo
+**sem recarregar**, porque recarregar offline é o que produz o terceiro elo.
+
+**E queda de rede deixou de ir para o Sentry.** Não é economia de cota — é
+qualidade do sinal: o Sentry existe para dizer que o SITE quebrou, e Wi-Fi
+caindo no celular de quem usa não é defeito nosso. Mesma lição do
+`edge_function_error` de 27/08, onde 68 de 68 linhas eram ruído.
+
+> **A trava vigia os DOIS lados, e o segundo é o que mais importa.** Um bug de
+> verdade classificado como "sem conexão" deixaria de ir para o Sentry e a tela
+> mandaria a pessoa esperar a internet — o bug ficaria invisível dos dois lados.
+> `TypeError` é o que o `fetch` lança **e** o que um `undefined.map()` lança, e
+> por isso o tipo sozinho não decide nada: seis mensagens de bug real estão
+> travadas como NÃO-rede.
+>
+> `navigator.onLine` entra como **reforço, não resposta**: `false` prova
+> offline, mas `true` continua verdadeiro com Wi-Fi ligado num roteador sem
+> internet.
+
+
+
+### `[03/09]` O que o print do dono mostrou, e a regressão que EU criei
+
+Depois do conserto acima ele testou com o banco pausado e relatou quatro coisas.
+Reproduzi as quatro num navegador de verdade, com o host do Supabase bloqueado
+e uma sessão salva — a condição do celular dele.
+
+| O que ele viu | Causa REAL |
+| --- | --- |
+| a mensagem personalizada virou genérica | `pause_reason` só era buscado dentro do `Layout`, **que nunca monta na landing** |
+| a faixa tampa o menu | a faixa era `sticky`; os cabeçalhos são `fixed` — `sticky` empurra irmãos no **fluxo**, `fixed` é posicionado pela **janela** |
+| clicar em ENTRAR recarrega | ver abaixo — era consequência do erro que a árvore inteira sofria |
+| a landing precisa estar acessível | ela estava de pé; o que não dava era **navegar** nela |
+
+#### A hipótese que a reprodução DESMENTIU
+
+Eu achei que a consulta falhando chamava `guardarMotivoDaPausa(undefined)` e
+**apagava** a cópia guardada. Testei: o cache sobrevive. Se eu tivesse
+"consertado" isso, teria mexido no lugar errado e o defeito continuaria.
+
+E o meu primeiro teste ainda **mascarava** o efeito: o `addInitScript` do
+Playwright reescreve a chave a cada navegação, então o cache "sobrevivia" porque
+eu o reescrevia. Tive que refazer o teste antes de confiar nele.
+
+#### A regressão que eu criei, e como ela apareceu
+
+Ao mover a busca para o topo, chamei o hook em **dois** lugares — `AppRoutes` e
+`Layout`. Os dois criavam o canal de realtime com o mesmo nome, e o Supabase
+recusa:
+
+```
+cannot add `postgres_changes` callbacks for realtime:config_do_site
+after `subscribe()`
+```
+
+A árvore inteira estourava e o `ErrorBoundary` mostrava **"Algo deu errado"**.
+Ou seja: eu tinha acabado de reproduzir, sozinho, o sintoma que ele relatou.
+
+**Como eu soube que era minha e não dele:** rodei o mesmo teste num clone da
+`main`, isolado. Lá a landing renderiza normal. Sem essa comparação eu teria
+"consertado" um bug que eu mesmo tinha acabado de introduzir.
+
+A correção é uma leitura só, num provedor no topo. Nomear os canais de forma
+diferente esconderia o problema e pagaria duas assinaturas de realtime pela
+mesma pergunta (§6.1).
+
+#### O contrato que ficou: `--altura-do-aviso`
+
+A faixa publica a própria altura numa variável CSS; cada cabeçalho fixo lê
+`top: var(--altura-do-aviso, 0px)`, e o `#root` ganha o mesmo `padding-top`. O
+padrão `0px` é o que garante que, **sem** faixa, nada muda — descer os fixos sem
+ela na tela abriria um buraco no topo.
+
+`ResizeObserver` e não número fixo: a frase quebra em duas linhas no celular e
+uma no desktop.
+
+#### A trava, e a versão dela que passava no VAZIO
+
+`e2e/sem-banco.mjs` passou a exigir que, **com a faixa na tela, nenhum cabeçalho
+fixo fique coberto**. É a regra, não um botão específico — continua valendo
+quando surgir um cabeçalho novo.
+
+> **A primeira versão dela dizia "0 cabeçalhos fixos" e passava.** Ela rodava no
+> `/login`, que não tem cabeçalho fixo: verificava nada com ar de aprovada. Hoje
+> ela **reprova** quando não encontra nenhum, e forja uma sessão para alcançar a
+> landing — que é o único lugar onde a faixa e um cabeçalho fixo coexistem.
+>
+> Provada reinjetando o bug: `faixa: 65px · cobertos: [{"tag":"NAV","top":0}]`.
+
+**O terceiro elo continua aberto**, e está no `BACKLOG.md` como decisão: só um
+Service Worker resolve, e ele erra caro (cache velho servido para sempre).
+Minha recomendação registrada é não fazer agora.
 ## Quando a Vercel recusa o deploy
 
 > `Resource is limited - try again in 24 hours (more than 100, code:
@@ -345,7 +482,7 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
 
 - `lint` (0 erros) · `npm test` · `build` · `npm audit --audit-level=high`
-- **piso de <!--n:testes.piso-->443<!--/n--> testes** — o CI quebrando é o caso
+- **piso de <!--n:testes.piso-->480<!--/n--> testes** — o CI quebrando é o caso
   fácil, fica vermelho e alguém olha; o perigoso é ele **passar sem testar
   nada** (arquivo renomeado, `describe.skip` esquecido). Ao adicionar testes,
   subir o piso junto.
@@ -364,12 +501,42 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
   nas *Variables* do repositório; sem elas seria "0 rotas", falha que não diz
   nada sobre o código.
+- **branch não gasta deploy da Vercel** — exige que a branch do PR esteja
+  desligada em `vercel.json`. **`[05/09]` Branch do Dependabot não entra**, e
+  não é frouxidão: ele nomeia a branch com um hash aleatório
+  (`dependabot/npm_and_yarn/minors-d04e3cbc33`) que só existe depois de a branch
+  nascer — não há como pré-cadastrar. O portão estava travando **três PRs de
+  atualização de dependência**, incluindo bumps de segurança, por uma exigência
+  que eles nunca teriam como satisfazer. O custo de liberar é pequeno e
+  medido: o `ignoreCommand` já pula build de commit que não toca no navegador,
+  então bump de GitHub Actions não gera deploy nenhum; sobra o bump de npm, que
+  é raro e agrupado — alguns por mês contra um teto de 100 por dia.
 - **segredos** (`scripts/segredos-vazados.mjs`) — reprova o PR se algum arquivo
   rastreado tiver chave privada, `service_role`, token do GitHub ou senha em
   texto. Não procura a `anon key`: ela é pública por construção, e acusá-la
   seria alarme falso em todo PR. Existe porque `.gitignore` é convenção, não
   trava — e segredo vazado não se conserta apagando o arquivo: o repositório é
   público e a chave fica no histórico. O conserto é rotacionar no fornecedor.
+  **`[05/09]` O padrão de senha ficou mais preciso, e por um motivo concreto:**
+  ele reprovou um `aria-label={x ? 'Ocultar senha' : 'Mostrar senha'}`, lendo o
+  `:` do ternário como se fosse o de uma chave. A correção foi exigir que a aspa
+  antes e a aspa depois da palavra sejam a **mesma** — em `"password":` elas se
+  equilibram, num ternário só aparece a de depois. A outra saída seria dispensar
+  o arquivo, e ela é pior: dispensar **cega** o portão para aquele arquivo para
+  sempre, inclusive para uma senha de verdade escrita nele depois.
+  `scripts/__tests__/segredosVazados.test.js` confere os dois lados — 5 formas
+  de senha que ele **tem** que pegar e 4 que ele **não** pode acusar — e vigia a
+  lista de dispensados, que hoje tem **três** entradas com motivo escrito — a
+  terceira é o próprio teste, que precisa conter senhas em texto para fazer o
+  trabalho dele.
+  **`[05/09]` E ele passou a varrer arquivo NÃO COMMITADO também.** Antes usava
+  só `git ls-files`, ou seja, só o que já estava no índice — e isso deixava dois
+  buracos. O leve: rodar `npm run segredos` antes de `git add` dava verde falso
+  sobre o arquivo recém-escrito (aconteceu, e o CI pegou). O grave: **colar uma
+  chave num arquivo novo e rodar o portão respondia OK** — o momento em que a
+  pessoa mais precisa do aviso era o único que ele não cobria. Agora entra
+  `git ls-files --others --exclude-standard`, que respeita o `.gitignore`,
+  então `.env` de verdade continua fora.
 
 - **portas do banco** (`e2e/portas-do-banco.mjs`, dentro do job de fumaça) —
   bate na REST API do Supabase **como um estranho sem conta** e reprova o PR se
@@ -414,13 +581,67 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   cobria (§1.5). A causa era de classe — `whileInView` com `amount: 0.25` num
   container mais alto que 4x a janela —, então a trava varre as páginas em vez
   de conferir aquela.
+- **`[04/09]` artes da tela de entrada** (`e2e/artes-da-arena.mjs`, dentro do job
+  de fumaça) — desenha cada lutador do login num canvas e conta pixels da cor do
+  adversário na borda que encosta na fenda. Zero é o esperado; o limite é 30,
+  para ruído de croma do WebP.
+
+  Existe porque as duas artes chegam como **uma imagem com os dois lutadores** e
+  precisam ser recortadas — e eles se sobrepõem por 75 colunas, então corte em
+  reta sempre leva um pedaço do outro junto. Quem viu o defeito foi o dono, no
+  celular; nenhum portão via, porque o orçamento de bytes mede JS e CSS e não
+  olha imagem. Reinjetando o recorte antigo, ele acusa 638 pixels invasores.
+
+  Roda num navegador de propósito: assim mede **a arte que o site serve**, a que
+  o `srcset` escolheu, e não o arquivo da pasta. O terceiro passo confere que
+  login e cadastro servem pares **diferentes** — se o `modo` parar de chegar no
+  componente, as contagens continuariam zeradas e ninguém notaria.
 - job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
-  `/admin` e `/owner` **negados** para `role = 'user'`, publicar → conferir no
-  feed → apagar, e logout. Exige `E2E_EMAIL` e `E2E_PASSWORD` nos **Secrets**
+  `/admin` e `/owner` **negados** para `role = 'user'`, **o fundo decorativo
+  estando dentro da janela**, publicar → conferir no feed → apagar, e logout. Exige `E2E_EMAIL` e `E2E_PASSWORD` nos **Secrets**
   (senha é segredo, ao contrário da anon key). Só em PR: ele escreve no banco
   de produção. Quando falha, sobe `e2e-evidencia/` como artefato — screenshot,
   texto da tela e URL, senão o log diria só "timeout".
+  **`[05/09]` Não roda em PR do Dependabot.** O GitHub **não passa os secrets**
+  para workflow disparado por ele — é proteção deliberada da plataforma, porque
+  uma dependência maliciosa poderia exfiltrar a senha durante o `npm install`.
+  Sem `E2E_PASSWORD` o teste não tem como logar, e falhava com "credenciais nao
+  definidas" em TODO PR de dependência. A guarda é pelo **ator**, não por
+  "secret vazio": se a senha sumir das configurações num PR normal, o vermelho
+  tem que aparecer (§1.5).
+
+#### `[03/09]` A decoração precisa estar DENTRO DA JANELA, não só no DOM
+
+Esta trava nasceu de uma falha de três rodadas, e ela é sobre **método**, não
+sobre CSS.
+
+O dono relatou **três vezes** *"não estou vendo as peças de videogame"*. As duas
+primeiras respostas minhas foram calibragem de opacidade — as duas erradas.
+A causa real era outra: `.peca-de-jogo` não tinha `top`, então cada peça nascia
+no topo do container e a animação a empurrava para fora por cima. Medido depois:
+**3 de 4 fora da tela no instante zero, as quatro em 3 segundos**.
+
+**Por que eu não vi nas duas primeiras:** eu conferia num recorte HTML meu que
+usava `animation: none` para fotografar as peças paradas. Eu testava a aparência
+**desligando exatamente o que estava quebrado**. O `CLAUDE.md` §1.2 manda parar
+depois de duas tentativas e **instrumentar** — eu não parei.
+
+**Por que nenhum portão pegou.** Não é erro de JavaScript, não é rota fora do
+ar, não é texto ausente, não é byte a mais. É decoração que **existe no DOM** e
+não está onde alguém possa ver — o §1.5 na forma mais silenciosa que há. O
+`conteudo-visivel.mjs` faz a pergunta parecida (*algo com tamanho real está em
+`opacity: 0`?*), mas só nas páginas públicas: ele não tem sessão.
+
+A trava roda dentro do `fluxos.mjs`, que já está logado, e faz a única pergunta
+que importa: **quantas `.peca-de-jogo` estão dentro da janela?** Zero reprova, e
+a mensagem conta a história para quem esbarrar nela daqui a seis meses.
+
+> **O que ela não cobre, dito antes que alguém confie demais:** ela prova que a
+> peça está na janela, não que está *visível a olho nu*. Uma peça a
+> `opacity: 0.01` passaria. Para isso o critério continua sendo humano — e é
+> justamente por isso que o número de opacidade agora está medido e escrito no
+> `PecasFlutuantes.jsx`.
 
 ### A trava das Edge Functions bate na produção, e é de propósito
 
@@ -507,6 +728,35 @@ deixa de gritar à toa quando não houver (§0.2, 4ª regra).
 
 ---
 
+
+### `[03/09]` O terceiro estado: commitado, empurrado — e **nunca mergeado**
+
+Os dois checks de git respondiam *"commitei?"* e *"empurrei?"*. Faltava a
+terceira, que é a única que o dono enxerga: **chegou na main?**
+
+**O caso.** O conserto do fundo do site logado ficou pronto, commitado e
+empurrado — e o PR ficou aberto. O dono relatou **três vezes** que não via a
+mudança, e nas três eu olhei o meu diff (certo) em vez da produção (com a versão
+antiga). Só na terceira eu li o CSS que estava no ar:
+
+```
+.peca-de-jogo{ … position:absolute }   <- a versao bugada, no ar
+luz-da-arena          0 ocorrencias
+```
+
+`npm run fim` dava **verde** nos dois checks e em todo o resto. Nada acusava,
+porque ninguém fazia a pergunta — e o §8 é explícito: abrir o PR **e mergear**
+são obrigação minha.
+
+**Como ele responde sem API nem token:** `git merge-base --is-ancestor HEAD
+origin/main`. Se o HEAD ainda não está contido na main, sobrou entrega.
+
+> **Commitado e empurrado NÃO é entregue.** É a mesma família do §1.5, aplicada
+> ao meu próprio processo: o trabalho existia, estava correto, e o mundo lá fora
+> continuava com o bug — sem nada gritar de nenhum lado.
+
+Provada: com um commit fora da main ele reprova nomeando o commit; sem, dá
+verde.
 ## `[01/09]` Banco fora do ar: o que continua de pé, e o que para
 
 O desenho antigo **sequestrava o app**: `if (semBanco) return <OfflineGate />`
@@ -542,6 +792,92 @@ dizia testar, e passava **mesmo com o bug reinjetado**. Hoje `e2e/sem-banco.mjs`
 força o estado de verdade com quatro tentativas de login contra o host
 bloqueado, e reprova nomeando a causa.
 
+### `[03/09]` Com o projeto PAUSADO, quem tinha sessão salva ficava preso
+
+Relato do dono com o projeto em `INACTIVE` (conferido): *"ainda não consigo
+entrar na área de login e cadastro, vc fez isso de propósito?"*. A resposta
+honesta é **em parte**: barrar rota interna é deliberado; prender fora do login
+não era.
+
+**O mecanismo, reproduzido com controle.** `supabase.auth.getSession()` lê a
+sessão do `localStorage` **sem tocar na rede**, então `user` fica preenchido
+mesmo com o projeto pausado:
+
+    clica em "Entrar" -> /login -> GuestOnly vê `user` -> manda para /
+    em / o HomeOrLanding vê `semBanco` -> mostra a landing
+    a landing oferece "Entrar" ------------------------> volta ao começo
+
+| | com sessão salva | sem sessão salva |
+| --- | --- | --- |
+| clicar em "Entrar" | fica em `/`, sem formulário | vai para `/login` |
+| `/login` direto | volta para `/` | abre normal |
+
+**É deriva entre portões que precisam concordar** (§6 FASE 4) — dois sabiam do
+banco e um não:
+
+    HomeOrLanding ... user && !semBanco -> área logada
+    RequireAuth ..... !user || semBanco -> manda para /
+    GuestOnly ....... user             -> manda para /   <- não sabia
+
+A regra em uma frase: **sem banco, o site trata todo mundo como visitante.** Uma
+sessão que não pode ser conferida e não abre nenhuma página interna não é um
+login utilizável — é um dado velho no navegador.
+
+**E a tela de login passou a dizer a verdade** (`auth/LoginSemBanco.jsx`). Sem
+banco, o formulário sai e entra a explicação: entrar e cadastrar dependem do
+servidor de autenticação, que cai junto. Deixar o botão ali seria oferecer algo
+que não pode funcionar, e o erro de um `fetch` que não completa não distingue
+"senha errada" de "site fora do ar" — a mensagem falsa que o §1.5 proíbe. O
+estado do formulário fica no `Login.jsx`, então o que já foi digitado volta
+quando o banco responde.
+
+> **A trava anterior APROVAVA este bug, e a forma se repete.** O passo do
+> `e2e/sem-banco.mjs` era `if (!/entrar|senha/i.test(texto))`. Com sessão salva
+> o `GuestOnly` mandava `/login` de volta para `/`, a landing aparecia — e a
+> landing tem um botão escrito **ENTRAR**. A expressão casava e o teste dava
+> verde. Hoje ele clica no botão como uma pessoa faria e confere o **endereço**
+> depois do clique.
+>
+> **E a sessão forjada precisava ser um JWT bem formado.** A primeira gravava
+> `access_token: 'e2e'`; o cliente Supabase descarta um token que não decodifica,
+> `user` ficava nulo, e o teste rodava como visitante puro — desligando
+> exatamente o que deveria medir. Foi por isso que este defeito sobreviveu ao PR
+> #148, onde eu o registrei como *"não reproduzi"*.
+
+### `[03/09]` Com o projeto PAUSADO, o CI fica vermelho — e o que isso quer dizer
+
+**Três jobs não têm como passar com o Supabase em `INACTIVE`**, e é bom saber
+qual é qual antes de sair procurando bug no código:
+
+| Job | Por quê | Dá para consertar em código? |
+| --- | --- | --- |
+| `fluxos autenticados` | precisa **entrar** no site; o servidor de auth está fora | não — precisa do projeto ativo |
+| `painel de admin num navegador` | idem, com a conta de staff | não |
+| `rotas num navegador de verdade` | as duas travas de porta batem no gateway | **a mensagem, sim** — e estava errada |
+
+**O alarme que mentia, e era o pior lugar possível para isso.** Com o projeto
+pausado o gateway responde **HTTP 540** a tudo. Como 540 não estava em nenhuma
+lista de status esperados, `e2e/portas-fechadas.mjs` acusava **as cinco portas
+de uma vez** e escrevia *"alguém reimplantou uma Edge Function sem a checagem de
+quem chama"*. Nada disso tinha acontecido: as funções nem chegaram a rodar.
+
+Uma acusação de porta de segurança reaberta é justamente a que mais precisa ser
+levada a sério quando aparecer de verdade — gastá-la num falso positivo é o
+defeito do §0.2 (4ª regra) no lugar mais caro.
+
+`e2e/portas-do-banco.mjs` tinha a mesma classe de defeito, em dois disfarces: o
+`fetch` estourando subia como `TypeError: fetch failed` cru, e um 540 num
+`select` que deveria dar 401 seria relatado como **"LEITURA ABERTA"**.
+
+**Os dois passaram a sair com código 2 (ambiente), como este arquivo já fazia
+para queda de rede.** O CI continua **vermelho** — não dá para afirmar que as
+portas estão fechadas sem conseguir bater nelas —, mas o motivo passa a ser
+*"não foi verificado"*, e não *"foi verificado e está aberto"*.
+
+> **Quando o CI reprovar assim, a primeira conferência é o estado do projeto**,
+> não o código: `status` do projeto no painel da Supabase, ou pela MCP. Se
+> estiver `INACTIVE`, reativar e repetir o CI é o caminho inteiro.
+
 ---
 
 ## `[02/09]` O portão de documentação passou a ver TODOS os documentos
@@ -574,8 +910,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->303<!--/n--> arquivos e
-<!--n:src.linhas-->28.995<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->338<!--/n--> arquivos e
+<!--n:src.linhas-->33.971<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -599,7 +935,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->303<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->338<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -624,6 +960,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->9.456<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->11.948<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
