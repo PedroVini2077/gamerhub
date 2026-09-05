@@ -33,7 +33,11 @@ describe('as artes da arena de entrada cabem no que a camada 2 pode pagar', () =
    * caminho errado quando é para caber uma arte descuidada. Aqui não é: a pasta
    * guarda DUAS categorias — os quatro lutadores e a moldura das bordas —, e o
    * teto antigo tinha sido dimensionado só para a primeira. */
-  const TETO_TOTAL       = 900 * 1024;   // hoje: 719 KB (648 lutadores + 71 moldura)
+  /* `[05/09]` Entrou a TERCEIRA categoria: a borda reta do celular, que é arte
+   * própria e não a moldura do PC menor (ver `estilos/arena/celular.css`). Ela
+   * some 49 KB e o teto não muda — a folga que sobrava era justamente para isto,
+   * e continua havendo 133 KB dela. */
+  const TETO_TOTAL       = 900 * 1024;   // hoje: 767 KB (648 lutadores + 71 moldura + 49 borda)
 
   const arquivos = readdirSync(PASTA).filter((f) => /\.(webp|png|jpe?g|avif)$/i.test(f));
 

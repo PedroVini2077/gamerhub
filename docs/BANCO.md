@@ -291,9 +291,14 @@ um feed de 30 posts fazia ~120 requests. Hoje o feed traz `post_media`
 independentemente do tamanho da lista (mesma ideia no mural). Os cards mantêm o
 fallback individual para onde o post chega solto (painel admin, moderação).
 
-> ⚠️ A coluna `posts.likes` existe no schema mas **nenhum trigger a mantém** —
-> está zerada. Nada no app a lê. Não volte a usá-la sem antes criar o trigger;
-> era ela que fazia as curtidas do perfil aparecerem sempre 0.
+> ⚠️ **`[05/09]` A coluna `posts.likes` foi APAGADA.** Ela existia no schema sem
+> trigger nenhum que a mantivesse — zerada desde sempre —, e foi justamente essa
+> aparência de contador que fez **três lugares diferentes** somarem ela ao longo
+> do tempo: `fetchProfileStats`, `owner_get_metrics` e `get_user_xp`. Era ela
+> que fazia as curtidas do perfil e a XP aparecerem sempre 0.
+>
+> Não recrie o contador: conte de `post_likes`, que é a fonte de verdade.
+> `xpNaoLeColunaMorta.test.js` reprova quem voltar a somar.
 
 ### React Query
 

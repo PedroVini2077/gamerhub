@@ -70,7 +70,9 @@
 .arena-lutador-roxo .arena-figura { object-position: right bottom; }
 
 .arena-lutador-verde {
-  left: 3.5vw;
+  /* `[05/09]` 3.5vw -> 6vw. Pedido do dono, com print do PC: *"senti que eles
+     estão muito perto das bordas, só jogar um pouco mais pra frente"*. */
+  left: 6vw;
   animation: arenaEntraDaEsquerda 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms backwards;
 }
 
@@ -80,7 +82,8 @@
  * arquivo servindo os dois lados. As artes do dono já vêm **uma de frente para
  * a outra** — espelhar de novo viraria o lutador para fora da tela. */
 .arena-lutador-roxo {
-  right: 3.5vw;
+  /* Espelha o verde: mesma folga dos dois lados, senão a tela fica torta. */
+  right: 6vw;
   animation: arenaEntraDaDireita 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 260ms backwards;
 }
 
@@ -136,7 +139,12 @@
  * Encolher lê como "afastou" tão bem quanto deslizar, e não tem borda para
  * atravessar. Sobraram 2vw de translação só para dar a direção do movimento. */
 .arena-selecionado .arena-lutador-roxo {
-  transform: translateX(2vw) scale(0.86);
+  /* `[05/09]` 0.86 -> 0.94, e a opacidade sobe junto. Pedido do dono: *"achei
+     ele um pouco pequeno do lado direito, eu sei que é pra dar a sensação de
+     não ter sido escolhido, mas prefiro ele um pouco maior"*.
+     A leitura de "não escolhido" continua — ela vem de TRÊS sinais somados
+     (menor, mais apagado, recuado), e afrouxar um só não desmonta o conjunto. */
+  transform: translateX(2vw) scale(0.94);
   transform-origin: right bottom;
-  opacity: 0.5;
+  opacity: 0.58;
 }

@@ -185,17 +185,26 @@ transições discretas das páginas internas.
 - Botão **"Voltar para a página inicial"** na tela de login (leva para a
   Landing sem precisar de conta).
 - **`[04/09]` A arena de fundo** — a tela de entrada tem dois lutadores **nas
-  cores do site** (verde neon × roxo), separados por uma fenda com o "VS". Quem chega no **login**
-  os vê se encarando; ao trocar para **registrar**, o de fogo dá um passo à
-  frente e vira para quem olha, e o de gelo recua de costas — é o
+  cores do site** (verde neon × roxo), separados por uma fenda com o "VS". Quem
+  chega no **login** os vê se encarando; ao trocar para **registrar**, o **verde**
+  dá um passo à frente e vira para quem olha, e o **roxo** recua de costas — é o
   *character selected* que a tela inteira está contando. As bordas da tela são
   emolduradas por circuito neon — verde de um lado, roxo do outro; no cadastro
-  só a do vencedor fica acesa. O "VS" anima na entrada **e na saída**. No celular eles ocupam
-  o terço de cima da tela, se encontrando no meio e saindo pelas laterais, e
-  dissolvem antes do formulário — o card cobre quase a largura toda, então
-  figura na lateral ficaria escondida atrás dele. O peso e o recorte estão em
-  [DESEMPENHO.md](DESEMPENHO.md); a origem das artes e a escolha de cortar em
+  só a do vencedor fica acesa. O "VS" anima na entrada **e na saída**. No celular
+  eles ocupam o terço de cima da tela, se encontrando no meio e saindo pelas
+  laterais, e dissolvem antes do formulário — o card cobre quase a largura toda,
+  então figura na lateral ficaria escondida atrás dele. O peso e o recorte estão
+  em [DESEMPENHO.md](DESEMPENHO.md); a origem das artes e a escolha de cortar em
   vez de esticar, em [DECISOES.md](DECISOES.md).
+  > **`[05/09]` Duas palavras estavam erradas aqui.** O texto dizia *"o de fogo
+  > dá um passo à frente… o de gelo recua"* — nomes dos personagens **anteriores**,
+  > trocados por verde × roxo em 04/09 na mesma rodada que escreveu a frase.
+  > A linha se contradizia sozinha e ninguém tinha aberto (§6.2, camada 3).
+- **`[05/09]` A moldura do celular é OUTRA ARTE.** A do PC se apaga em direção
+  ao centro; encolhida numa tela de 390 px ela cobria metade da tela ou virava
+  borrão. A do celular é uma faixa **reta**, colada na borda de cada lado. Ela
+  vive dentro do `@media` do celular, então **quem abre no PC não baixa esses
+  49 KB**.
 - **Recuperação de senha** por e-mail; indicador de força de senha.
 - **Configurações** (`Settings`): trocar senha, trocar e-mail (com confirmação),
   preferências de notificação (likes/comentários) e **deletar a própria conta**
@@ -681,6 +690,31 @@ juntá-los faria os três piorarem:
 | **`/termos`** *(novo)* | as regras do **acordo**: de quem é o conteúdo, quando a conta é encerrada, que garantia não existe |
 
 O terceiro era o único que faltava, e é o único que fala de contrato.
+
+#### `[05/09]` O "Voltar" das três páginas volta para onde a pessoa estava
+
+Relato do dono: *"quando eu clico vai tudo certo, mas quando eu volto… eu volto
+direto pra landing"*. O botão era `<Link to="/">` — ele **não voltava**, navegava
+para a landing viesse a pessoa de onde viesse. Quem clicou no link durante o
+cadastro perdia o formulário.
+
+**E `navigate(-1)` sozinho não resolveria o caso dele** — é a parte que quase
+passou batido. Os links do cadastro abrem em **aba nova**, de propósito, para não
+perder o que já foi digitado; aba nova nasce **sem histórico**, e ali não existe
+"-1". Então a origem viaja junto do link, num `?de=`, e o botão tem três
+respostas nesta ordem: o `?de=` validado, o histórico, e a landing (para quem
+colou a URL no navegador — aí ela é o destino honesto).
+
+**O `?de=` é entrada de usuário e é tratado como tal.** Obedecer cegamente seria
+redirecionamento aberto: `…/termos?de=//site-falso` mostra o nosso domínio na
+barra e o clique em "Voltar" leva para fora. `caminhoInternoSeguro`
+(`lib/url.js`) barra isso, e a trava é `voltarNaoEhRedirecionador.test.jsx` —
+conferida reinjetando as duas metades do problema.
+
+**A segunda metade do mesmo relato** era que voltar para `/login` reabria a aba de
+*entrar* mesmo tendo saído da de *cadastro*. A aba agora mora na URL
+(`/login?modo=cadastro`), então voltar, recarregar e compartilhar o link levam
+todos ao mesmo lugar.
 
 #### A caixinha não é a prova — o registro é
 
