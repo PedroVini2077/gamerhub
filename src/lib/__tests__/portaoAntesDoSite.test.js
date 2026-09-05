@@ -40,6 +40,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const AUTH = 'src/hooks/useAuth.jsx';
+const CONFIRMA = 'src/pages/AuthConfirm.jsx';
 const PORTAO = 'src/components/auth/PortaoDeBoasVindas.jsx';
 
 const ler = (caminho) => {
@@ -115,6 +116,36 @@ describe('o portão sobe antes de o site pintar', () => {
       + 'sobra um quadro com o site logado visível e o portão ainda por vir —\n'
       + 'o defeito que o dono relatou em 05/09.',
     ).toBe('useLayoutEffect');
+  });
+
+  it('marca a entrada também na CONFIRMAÇÃO de email', () => {
+    // `[05/09]` O `verifyOtp` de signup cria sessão: quem confirma a conta
+    // ENTRA por este caminho, e era o único sem a marca. Efeito perverso: a
+    // primeira entrada da vida da pessoa — a que mais merecia o portão — era
+    // justamente a que nunca o via, e a saudação de estreia acabava aparecendo
+    // no segundo acesso, quando ela já não era novata.
+    const codigo = semComentarios(ler(CONFIRMA));
+
+    // COM PARÊNTESES, e isto não é detalhe: procurar o nome solto encontra a
+    // linha do `import`, que continua lá mesmo depois de alguém apagar a
+    // chamada. A primeira versão desta trava passou com o bug reinjetado
+    // justamente por isso — era decoração, e só a reinjeção mostrou.
+    expect(
+      codigo.includes('marcarEntradaAgora()'),
+      `${CONFIRMA}: o caminho de confirmação de email nao marca a entrada.\n`
+      + 'O verifyOtp de signup CRIA SESSAO — isso e uma entrada, e sem a marca\n'
+      + 'o portao nunca aparece para quem acabou de confirmar a conta.',
+    ).toBe(true);
+
+    // A recuperação de senha NÃO pode marcar: ela termina em signOut() e volta
+    // para o login. Marcar ali deixaria a marca sobrando na aba.
+    const recuperacao = codigo.slice(codigo.indexOf('handleSetPassword'));
+    expect(
+      recuperacao.includes('marcarEntradaAgora()'),
+      `${CONFIRMA}: a redefinicao de senha esta marcando entrada.\n`
+      + 'Ela termina em signOut() e volta para o login — trocar senha nao e\n'
+      + 'entrar, e a marca ficaria sobrando na aba.',
+    ).toBe(false);
   });
 
   it('não adia a abertura com temporizador', () => {

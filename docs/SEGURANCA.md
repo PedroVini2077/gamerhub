@@ -478,3 +478,50 @@ que não ter guarda.
 
 **Provada** movendo `scene3d/` para fora: a trava do raio parou de passar e
 disse por quê, em vez de seguir verde.
+
+---
+
+## `[05/09]` O cofre do painel do Fundador NÃO é um controle de segurança
+
+Isto está escrito aqui exatamente porque o contrário seria fácil de acreditar.
+O painel do Fundador ganhou uma tela de cofre com código, e ela **parece** uma
+segunda camada de autorização. Não é.
+
+| Ameaça | O cofre protege? |
+| --- | --- |
+| alguém sentado no computador do dono, com a sessão aberta, clicando | **sim** — é a única coisa para a qual ele existe |
+| alguém com a sessão roubada chamando a RPC direto pela API | **não**, e nada no navegador protegeria |
+| alguém que abre o DevTools e apaga o `localStorage` | **não** — apaga e define um código novo |
+
+**A autorização real está no banco e sempre esteve:** `is_super()`, a hierarquia
+de `role_rank()` e as policies. É isso que impede um `admin` de mexer em cargo.
+Se alguém apagar `src/lib/cofre.js` inteiro amanhã, **nenhuma permissão do site
+muda** — some só a tela.
+
+**Por que aceitar uma tranca que não tranca.** Porque a ameaça que ela cobre é
+real e não tinha resposta nenhuma: o computador do dono, aberto, com a sessão
+viva. Para essa, um código pedido antes de mostrar o painel é exatamente a
+medida certa.
+
+**O que estaria errado é ela se apresentar como mais do que é.** Por isso o
+aviso está impresso **na própria tela**, embaixo do campo, e não só neste
+documento: *"esta tranca é visual e vale só neste navegador"*. Cofre que parece
+proteger e não protege é pior do que cofre nenhum — ele muda o comportamento de
+quem confia nele.
+
+**A versão de verdade** — código conferido numa RPC contra um hash, tabela de
+desbloqueio, e toda RPC de owner exigindo desbloqueio ativo — está descrita em
+[VISAO-DE-FUTURO.md](VISAO-DE-FUTURO.md), junto do risco que ela traz: **ficar
+trancado para fora**, que precisa de caminho de recuperação pensado antes de
+existir.
+
+**A defesa que vale mais por hora de trabalho, se a preocupação for sessão
+roubada, continua sendo 2FA na conta do Supabase** — não uma segunda senha
+guardada no mesmo aparelho que a primeira.
+
+### O que é conferido por teste
+
+`src/lib/__tests__/cofre.test.js` cobre o comportamento local — define, confere,
+abre por aba, esquece — e um caso que nada na tela denunciaria: **o código nunca
+pode ser gravado em texto puro**. Se alguém "simplificar" o hash, a tela
+continua abrindo igual e só o teste percebe. Provado reinjetando o vazamento.

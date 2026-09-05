@@ -159,6 +159,35 @@ export function consumirEntradaAgora() {
   }
 }
 
+/**
+ * O nome a mostrar na saudação — e por que ele tem DUAS fontes.
+ *
+ * ── `[05/09]` O furo que isto fecha ─────────────────────────────────────────
+ *
+ * O portão sobe no instante em que o `user` aparece, mas o `profile` vem de uma
+ * chamada separada ao banco. Numa conexão ruim, ou se o teto de 2,5 s estourar
+ * antes de o perfil chegar, a saudação saía **sem nome nenhum**: só
+ * *"Bem-vindo de volta"*, pela metade.
+ *
+ * O `user_metadata.username` resolve porque ele **já vem junto do login** — foi
+ * gravado no `signUp` (`options: { data: { username } }`) e viaja dentro do
+ * próprio token, sem nenhuma ida a mais ao servidor.
+ *
+ * ── A ordem importa, e não é arbitrária ─────────────────────────────────────
+ *
+ * O `profile` vem primeiro porque é a fonte VIVA: quem troca o apelido depois
+ * do cadastro muda a tabela, não o metadado do token. O metadado é a reserva —
+ * está sempre disponível, e pode estar velho.
+ *
+ * Devolve `''` (e não um "Gamer" genérico) quando não há nome: a saudação
+ * simplesmente não mostra a linha do nome. Inventar um apelido seria fallback
+ * silencioso (§4) — o site afirmaria um nome que ninguém escolheu.
+ */
+export function nomeDaSaudacao(profile, user) {
+  const apelido = profile?.username || user?.user_metadata?.username || '';
+  return apelido ? `@${apelido}` : '';
+}
+
 /** É a primeira entrada DESTE usuário NESTE navegador? */
 export function ehPrimeiraVez(idDoUsuario) {
   if (!idDoUsuario) return false;

@@ -156,6 +156,11 @@ transições discretas das páginas internas.
   Recarregar a página **não** a reabre; ela é do momento de entrar, não de estar
   logado. E o site **nunca aparece antes dela**: a marca de entrada é escrita
   antes do login e o portão sobe no mesmo quadro em que a rota troca.
+  **`[05/09]` Quem acaba de confirmar a conta pelo email também vê o portão** —
+  antes esse caminho entrava direto no feed, e era justamente a primeira entrada
+  da pessoa na vida. Redefinir senha não conta: ela termina no login de novo.
+  E a saudação **não sai mais sem nome** quando o perfil demora — o apelido já
+  vem junto do login.
 - **`[04/09]` A troca entre "Entrar" e "Registrar" tem transição.** O conteúdo
   entra em fade, **o card acompanha a altura** (o formulário de cadastro é 2,5×
   mais alto que o de login) e **os lutadores do fundo se cruzam em fade** em vez

@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import {
   marcarEntradaAgora, consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou,
-  EVENTO_ENTROU,
+  nomeDaSaudacao, EVENTO_ENTROU,
 } from '../boasVindas';
 
 /**
@@ -116,5 +116,35 @@ describe('quando o armazenamento LANÇA (aba anônima, cookies bloqueados)', () 
     // de estreia a quem usa o site há meses.
     expect(consumirEntradaAgora()).toBe(false);
     expect(ehPrimeiraVez('x')).toBe(false);
+  });
+});
+
+/**
+ * O NOME da saudação — a trava do furo de 05/09.
+ *
+ * O portão sobe no instante em que o `user` aparece, mas o `profile` vem de
+ * outra chamada. Sem a segunda fonte, a saudação saía sem nome sempre que o
+ * perfil demorasse ou o teto de 2,5 s estourasse antes dele.
+ */
+describe('nomeDaSaudacao', () => {
+  const comMeta = { user_metadata: { username: 'ogamerpedro' } };
+
+  it('usa o perfil quando ele já chegou', () => {
+    expect(nomeDaSaudacao({ username: 'novonick' }, comMeta)).toBe('@novonick');
+  });
+
+  it('cai no metadado do token quando o perfil ainda não chegou', () => {
+    expect(nomeDaSaudacao(null, comMeta)).toBe('@ogamerpedro');
+  });
+
+  it('o perfil VENCE o metadado — quem troca o apelido muda a tabela, não o token', () => {
+    expect(nomeDaSaudacao({ username: 'apelidoNovo' }, comMeta)).toBe('@apelidoNovo');
+  });
+
+  it('sem nenhuma das duas fontes, devolve vazio em vez de inventar', () => {
+    // Nunca um "Gamer" genérico: seria fallback silencioso (§4), com o site
+    // afirmando um apelido que ninguém escolheu.
+    expect(nomeDaSaudacao(null, null)).toBe('');
+    expect(nomeDaSaudacao({}, { user_metadata: {} })).toBe('');
   });
 });

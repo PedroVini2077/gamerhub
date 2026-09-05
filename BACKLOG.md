@@ -35,15 +35,30 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — **o portão de boas-vindas virar a tela inteira** —
-fechou em 05/09, na quinta tentativa. As quatro recusas e o motivo de cada uma
-estão em [DECISOES.md](docs/DECISOES.md); o resumo é que o defeito nunca esteve
-no traço, e sim no enquadramento: enquanto sobra tela em volta da porta, o olho
-lê "figura de porta".
+### `[05/09]` Os três blocos que o dono liberou
 
-Fechou junto o bug que o dono relatou no mesmo dia — *"assim que eu logava, eu
-via o site por alguns segundos, depois aparecia o portão"* —, que era ordem e não
-lentidão, e virou trava de contrato em `portaoAntesDoSite.test.js`.
+> *"pode fazer então o que dá pra fazer agora, vamos deixar a música na aba
+> owner lá depois... pode começar a fazer o que você recomendou lá em cima, pode
+> começar a implementar tudo!"*
+
+| # | Bloco | Estado |
+| --- | --- | --- |
+| 1 | Os dois furos do portão de boas-vindas | **feito** — confirmação de conta passou a mostrar o portão; a saudação não sai mais sem nome |
+| 2 | Cofre do painel do Fundador (cenográfico) | **feito** — `lib/cofre.js`, tela com o aviso impresso, disco que gira |
+| 3 | Conquistas — 5 a 8 fixas em cima do XP que já existe | **a fazer** |
+
+**Adiado por escolha dele:** música no painel do Fundador. Motivo dado: *"quero
+colocar mais coisas de músicos sem pesar o site e o Supabase"* — ou seja, é
+decisão de custo/egress, e não falta de caminho técnico. O caminho recomendado
+(faixa curta própria, em laço, ligada por clique) continua em
+[VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).
+
+**Aguardando ele, sem bloquear nada:** se as três chaves do cofre devem
+aparecer na tabela visível da política de privacidade. Hoje estão só na lista
+técnica — o motivo está em [DECISOES.md](docs/DECISOES.md), e mudar custa uma
+reaceitação de todo mundo.
+
+---
 
 *A tarefa anterior* — refazer a tela de entrada na paleta do site — fechou
 em 04/09. O dono cortou a direção anterior (*"personagem de gelo e fogo não tem
@@ -446,8 +461,8 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->90<!--/n--> arq ·
-  <!--n:src.lib.linhas-->7.682<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->92<!--/n--> arq ·
+  <!--n:src.lib.linhas-->8.072<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

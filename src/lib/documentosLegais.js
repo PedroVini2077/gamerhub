@@ -97,7 +97,12 @@ export const DOCUMENTOS = {
      * escrito aqui para poder ser revisto. */
     versao: '2026-09-03-4',
     conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: '080d5f8ee5532088',
+    /* `[05/09]` Só a impressão de novo: entraram na lista técnica de chaves as
+     * três do cofre do Fundador, que nascem apenas no navegador de quem tem
+     * esse cargo. A TABELA QUE A PESSOA LÊ não mudou nenhuma linha — e o
+     * raciocínio de por que elas não entraram nela está no próprio
+     * `conteudoDaPrivacidade.js`, junto das chaves. */
+    impressao: '24ed2efb568f88d8',
     mudou: 'a página de contato passou a usar o Cloudflare Turnstile (a verificação de "não sou um robô"), e ele recebe seu IP — entrou na lista de quem vê alguma coisa',
   },
   regras: {

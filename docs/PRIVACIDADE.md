@@ -369,3 +369,39 @@ pessoa, e subir a versão faria todo mundo reaceitar o documento por causa disso
 > **Se o dono discordar, é uma linha:** subir a `versao` para `2026-09-04` em
 > `lib/documentosLegais.js`. O julgamento é dele; o meu está escrito para poder
 > ser revisto.
+
+---
+
+## `[05/09]` As três chaves do cofre do Fundador — e por que elas NÃO entraram na tabela visível
+
+O cofre do painel do Fundador guarda três coisas no navegador:
+
+| chave | onde | para quê | some quando |
+| --- | --- | --- | --- |
+| `gh_cofre_resumo` | `localStorage` | o resumo SHA-256 do código, para conferir sem guardar o código | limpa o navegador, ou usa "esquecer" |
+| `gh_cofre_sal` | `localStorage` | sal aleatório por aparelho, para o mesmo código gerar resumos diferentes em máquinas diferentes | idem |
+| `gh_cofre_aberto` | `sessionStorage` | lembrar que o cofre já foi aberto nesta aba | fecha a aba |
+
+**O código em si nunca é guardado, e há teste para isso.** `cofre.test.js`
+varre o `localStorage` inteiro procurando o código em texto puro. Se alguém
+"simplificar" o hash algum dia, a tela continua abrindo igual — nada visível
+quebra — e esse teste é a única coisa que percebe.
+
+### A decisão, e ela é revisível
+
+As três entraram em `CHAVES_DECLARADAS` (a lista técnica que o teste confere) e
+**não** na tabela do bloco *"o que fica guardado no seu navegador"*, que é o que
+o leitor vê.
+
+**O motivo:** aquela tabela responde *"o que o site guarda no SEU navegador"*
+para quem está lendo. Essas três só nascem no aparelho de quem tem o cargo de
+fundador — nenhum visitante, nenhum usuário comum e nenhum moderador as recebe.
+Listá-las descreveria para milhares de pessoas um armazenamento que existe para
+uma, e a tabela ficaria menos verdadeira para quase todo mundo, não mais.
+
+**A `versao` não subiu; só a `impressao`** (`24ed2efb568f88d8`), porque nenhuma
+linha do texto que a pessoa lê mudou.
+
+> **Se o dono discordar, o custo está dito:** citar as três na tabela visível é
+> mudança no texto aceito, e aí a `versao` sobe — todo mundo reaceita. O
+> julgamento é dele; o meu está escrito para poder ser revisto.

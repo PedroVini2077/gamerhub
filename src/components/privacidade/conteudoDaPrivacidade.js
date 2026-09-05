@@ -51,6 +51,22 @@ export const CHAVES_DECLARADAS = [
   // `[04/09]` As duas da tela de boas-vindas. Ver `lib/boasVindas.js`.
   'gh_entrando',
   'gh_ja_entrou:',
+  // `[05/09]` As três do cofre do painel do Fundador. Ver `lib/cofre.js`.
+  // O código em si nunca é guardado — só um resumo SHA-256 com sal.
+  //
+  // ELAS NÃO ENTRARAM NA TABELA VISÍVEL, e a escolha é deliberada. A tabela
+  // responde "o que o site guarda no SEU navegador" para quem está lendo, e
+  // essas três só nascem no aparelho de quem é fundador — nenhum visitante,
+  // nenhum usuário comum e nenhum moderador as recebe. Listá-las descreveria
+  // para milhares de pessoas um armazenamento que só existe para uma.
+  //
+  // A declaração aqui continua obrigatória: é ela que o teste de chaves confere,
+  // e é o que impede uma chave de nascer sem ninguém perceber. Se o dono achar
+  // que a tabela deve citá-las mesmo assim, o custo é subir a `versao` do
+  // documento — o que faz todo mundo aceitar de novo.
+  'gh_cofre_resumo',
+  'gh_cofre_sal',
+  'gh_cofre_aberto',
 ];
 
 /**
