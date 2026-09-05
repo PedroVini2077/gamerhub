@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**25 itens abertos** (+ 1 ideia sem compromisso)
+**26 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -106,6 +106,34 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[05/09]` 🟡 **O alarme de "chamada recusada" da `send-email` é o MEU
+  PRÓPRIO portão de CI — e metade dele entra como `critical`.** *Precisa de
+  decisão porque mexe na severidade de uma Edge Function de segurança (§7 🟡).*
+
+  Medido: **72 eventos em 7 dias**, sempre em pares no mesmo segundo — 36
+  *"requisicao sem cabecalhos de assinatura"* e 36 *"assinatura invalida"*. A
+  origem é `e2e/portas-fechadas.mjs`, que testa os dois casos a cada execução.
+  `edge_function_error` já é a **5ª ação mais frequente** de toda a trilha (172).
+
+  **O código não está errado** — ele já rebaixa as recusas "de estranho" para
+  `warning`. O problema é que *"assinatura invalida"* ficou de fora dessa lista
+  **de propósito**, com um argumento que continua válido: secret errado produz
+  exatamente essa mensagem, e aí o cadastro está quebrado em silêncio.
+
+  **A saída óbvia é uma brecha, e por isso não fiz:** deixar o teste se
+  identificar por um cabeçalho para ser rebaixado. Cabeçalho é controlado por
+  quem chama — qualquer atacante mandaria o mesmo e apagaria o próprio rastro.
+
+  **As duas saídas que eu considero honestas:**
+
+  | | Como | O que se perde |
+  | --- | --- | --- |
+  | A | separar por FORMA: cabeçalhos bem formados + carimbo válido → `critical` (cheira a secret errado); lixo → `warning` | mais lógica numa função de segurança |
+  | B | rebaixar tudo para `warning` e detectar secret errado pelo que ele REALMENTE causa — cadastro sem `auth_register` seguinte | perde a deteção imediata |
+
+  Isto é a 4ª regra do §0.2 me pegando: *"meu próprio vigia de CI mandava um
+  alarme falso por PR"*. Escrevi a regra e voltei a violá-la, do outro lado.
+
 - ⬜ `[05/09]` 🟠 **Ninguém prova que COMENTAR funciona — e a produção tem 150
   posts e ZERO comentários.**
 
@@ -114,10 +142,15 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   texto de comentário de código, e só). O `publicarPost.mjs` cobre publicar,
   não conversar.
 
-  **O que eu já verifiquei, para não misturar fato com suspeita:** as quatro
+  **O que eu já verifiquei, e uma correção do que eu mesmo disse:** as quatro
   policies de `comments` estão completas e corretas — o INSERT permite o autor
-  quando `pode_publicar()`. Então **não é RLS**. O que continua sem prova é o
-  caminho inteiro na tela.
+  quando `pode_publicar()`. Então **não é RLS**.
+
+  E a trilha desmente a parte alarmista: `comment_added` tem **7 registros**, o
+  último em **23/08**. Ou seja, **comentar já funcionou** — a tabela está vazia
+  porque os posts daqueles comentários foram apagados e a FK é CASCADE. Isso
+  rebaixa a suspeita, e não a elimina: 23/08 foi há duas semanas e muita coisa
+  mudou desde então. O que continua sem prova é o caminho na tela **hoje**.
 
   **Por que isto é 🟠 e não 🟢:** é exatamente a forma dos dois piores bugs
   deste projeto. A moderação de comentário ficou quebrada **meses** porque o

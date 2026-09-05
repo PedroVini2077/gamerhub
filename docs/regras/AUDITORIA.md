@@ -50,7 +50,7 @@ digitado à mão:
 | --- | --- |
 | código em `src/` | <!--n:src.arquivos-->345<!--/n--> arquivos · <!--n:src.linhas-->34.542<!--/n--> linhas |
 | dividido em | `lib` <!--n:src.lib.arquivos-->98<!--/n--> · `components` <!--n:src.components.arquivos-->165<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->40<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
-| rede de testes | <!--n:testes.arquivos-->69<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->16<!--/n--> roteiros de navegador |
+| rede de testes | <!--n:testes.arquivos-->69<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->8<!--/n--> |
 | banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
 

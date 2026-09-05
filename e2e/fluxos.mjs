@@ -23,6 +23,7 @@
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
 import { publicarEEsperarNoFeed } from './publicarPost.mjs';
+import { comentarEEsperarNaLista } from './comentar.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
 const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
@@ -34,6 +35,7 @@ const SENHA = process.env.E2E_PASSWORD;
 const MARCA  = `[e2e ${Date.now()}]`;
 const TITULO = `${MARCA} post automatico`;
 const CORPO  = 'Publicado pelo teste automatizado. Se este post ficou no ar, o E2E falhou na limpeza.';
+const COMENTARIO = `${MARCA} comentario automatico`;
 
 if (!EMAIL || !SENHA) {
   console.error('\n  E2E_EMAIL e E2E_PASSWORD nao definidos.');
@@ -243,6 +245,21 @@ try {
   // `.card` é a raiz do PostCard: garante que o botão é o do post desta
   // execução, nunca o de um vizinho.
   const card = page.locator('.card').filter({ has: tituloNoFeed });
+
+  // ── 4a. Comentar no próprio post ────────────────────────────────────────
+  //
+  // `[05/09]` Este passo nasceu de um número, não de um bug relatado: a
+  // produção tinha 150 posts e ZERO comentários, e NENHUM roteiro comentava.
+  // "Comentar funciona" era suposição minha — e as duas piores falhas deste
+  // projeto (moderação de comentário quebrada por meses, IA falhando em 26 de
+  // 26) eram exatamente isto: caminho sem usuário e sem teste.
+  //
+  // Vai no próprio post do teste porque o comentário some junto com ele:
+  // `comments_post_id_fkey` é ON DELETE CASCADE, verificado no banco. Comentar
+  // no post de outra pessoa deixaria lixo que o passo 4b não apanha.
+  await comentarEEsperarNaLista(page, { card, texto: COMENTARIO });
+  ok('comentário publicado e visível na lista');
+
   await card.getByRole('button', { name: 'Deletar post' }).click();
   await page.getByRole('button', { name: /^Deletar$/ }).click();
 
