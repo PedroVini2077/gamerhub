@@ -72,7 +72,15 @@
 .arena-lutador-verde {
   /* `[05/09]` 3.5vw -> 6vw. Pedido do dono, com print do PC: *"senti que eles
      estão muito perto das bordas, só jogar um pouco mais pra frente"*. */
-  left: 6vw;
+  /* `[05/09]` 3,5vw -> 6vw -> 10vw. O dono pediu DUAS vezes, e da segunda com
+   * a frase que corrige o meu erro: *"não vi diferença dos personagens no PC"*.
+   * Ele estava certo — a produção já tinha os 6vw, então o problema não era
+   * deploy: 2,5vw num monitor largo são ~48 px, que some no meio da cena.
+   * Em 1920 os 10vw dão 192 px de folga (eram 67 no começo). O teto é o card:
+   * a arte fica pinada na borda do lado por `object-position`, e a 10vw ela
+   * ainda para antes dele — conferido em 1280 e em 1920, que são as duas
+   * larguras onde o card ocupa fatia bem diferente da tela. */
+  left: 10vw;
   animation: arenaEntraDaEsquerda 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 120ms backwards;
 }
 
@@ -83,7 +91,7 @@
  * a outra** — espelhar de novo viraria o lutador para fora da tela. */
 .arena-lutador-roxo {
   /* Espelha o verde: mesma folga dos dois lados, senão a tela fica torta. */
-  right: 6vw;
+  right: 10vw;   /* espelho do verde — ver o porquê lá em cima */
   animation: arenaEntraDaDireita 800ms cubic-bezier(0.2, 0.9, 0.3, 1) 260ms backwards;
 }
 
@@ -139,12 +147,18 @@
  * Encolher lê como "afastou" tão bem quanto deslizar, e não tem borda para
  * atravessar. Sobraram 2vw de translação só para dar a direção do movimento. */
 .arena-selecionado .arena-lutador-roxo {
-  /* `[05/09]` 0.86 -> 0.94, e a opacidade sobe junto. Pedido do dono: *"achei
-     ele um pouco pequeno do lado direito, eu sei que é pra dar a sensação de
-     não ter sido escolhido, mas prefiro ele um pouco maior"*.
-     A leitura de "não escolhido" continua — ela vem de TRÊS sinais somados
-     (menor, mais apagado, recuado), e afrouxar um só não desmonta o conjunto. */
-  transform: translateX(2vw) scale(0.94);
-  transform-origin: right bottom;
-  opacity: 0.58;
+  /* `[05/09]` Pedido do dono: *"achei ele um pouco pequeno do lado direito, eu
+     sei que é pra dar a sensação de não ter sido escolhido, mas prefiro ele um
+     pouco maior"*. E DEPOIS, olhando a produção: *"não percebi diferença"*.
+     Ele estava certo de novo.
+     A primeira tentativa mexeu só na `scale` (0.86 -> 0.94): 53vh × 0,94 = 50vh,
+     contra os 45,6vh de antes. Nove por cento não se vê. Agora ele ganha ALTURA
+     própria — 60vh, +20% sobre o que estava no ar —, e a escala sai de cena
+     porque encolher o que acabou de crescer é andar em círculo.
+     A leitura de "não escolhido" continua inteira: ela vem de TRÊS sinais
+     somados, e os três seguem — ele é menor que o verde (60vh × 66vh), mais
+     apagado (0,62 × 0,9) e recuado para a direita. */
+  height: 60vh;
+  transform: translateX(2vw);
+  opacity: 0.62;
 }

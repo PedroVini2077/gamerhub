@@ -43,7 +43,7 @@
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**25 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -355,20 +355,6 @@
 
 ## 🟢 Recomendado
 
-- ⬜ `[05/09]` 🟢 **Dois arquivos passaram de 300 linhas sem eu ter tocado
-  neles.** `components/privacidade/conteudoDaPrivacidade.js` (314) e
-  `pages/Settings.jsx` (303).
-
-  **Está aqui e não foi feito na hora de propósito.** A regra do §4 é sobre
-  arquivo que **eu** inchei — estes dois cresceram em rodadas anteriores e não
-  estavam no caminho de nada hoje. Dividir o `Settings.jsx` no fim de uma sessão,
-  sem ter lido o arquivo, mexeria em troca de senha e exclusão de conta por
-  motivo de contagem de linhas; e o `conteudoDaPrivacidade.js` é **texto legal
-  com teste de impressão de conteúdo** — cortar ali pede cuidado, não pressa.
-
-  O `npm run fim` acusa os dois toda vez, então isto também serve para o alarme
-  parar de gritar sem motivo escrito (§0.2, 4ª regra).
-
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
   *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*
 
@@ -442,7 +428,7 @@
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->98<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.080<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->9.106<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

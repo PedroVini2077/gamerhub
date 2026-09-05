@@ -47,7 +47,7 @@ acontece — ruído sem função, e ruído ensina a ignorar avisos que importam.
 > essa aba de políticas esteja sempre atualizada, sempre mesmo"*.
 
 Promessa não sustenta isso: a política de ontem descreve o site de ontem. Duas
-listas em `conteudoDaPrivacidade.js` são a versão **conferível** do que a página
+listas em `listasDeclaradas.js` são a versão **conferível** do que a página
 afirma, e o teste as cruza com o código:
 
 | Trava | Reprova quando |
@@ -84,7 +84,7 @@ funcionou (§2: comentário é a mais fraca das cinco travas).
 
 | O que entrou | O que faz |
 | --- | --- |
-| `impressao` em `DOCUMENTOS` | o sha256 do arquivo de conteúdo de cada documento |
+| `impressao` em `DOCUMENTOS` | o sha256 dos arquivos de conteúdo de cada documento |
 | teste em `documentosLegais.test.js` | reprova quando o arquivo muda e a impressão não acompanha |
 | `CHECK` do banco widened para `^\d{4}-\d{2}-\d{2}(-\d+)?$` | deixa a **segunda revisão do mesmo dia** ser dita; antes era inexprimível |
 
@@ -96,6 +96,25 @@ teste apresenta as duas saídas: mudança relevante sobe `versao` **e**
 **Consequência já em produção:** a política está em `2026-09-02-2`, e o aviso
 não bloqueante de reaceite aparece para quem aceitou a versão anterior — hoje,
 uma pessoa.
+
+#### `[05/09]` A impressão passou a cobrir VÁRIOS arquivos, e o motivo é um erro meu
+
+Ao dividir o arquivo da política (ele tinha passado de 300 linhas), as duas
+listas declaradas foram para `listasDeclaradas.js` — e **saíram de baixo da
+impressão junto**, porque `conteudo` era um caminho só.
+
+Isso teria criado exatamente o silêncio que esta trava existe para impedir:
+acrescentar uma chave de armazenamento na lista sem tocar na tabela visível
+passaria por tudo — o teste de contrato aprova (a lista bate com o código), a
+impressão aprova (o texto não mudou), e a página segue afirmando uma lista
+completa que não é. Foi o próprio dono quem levantou esse ponto em 05/09, sobre
+as chaves do cofre: *"aquela tabela abre dizendo 'listados abaixo'"*.
+
+`conteudo` virou **lista de arquivos**, e a impressão cobre todos na ordem
+declarada. A `versao` **não** subiu: conferi byte a byte que `BLOCOS`,
+`CHAVES_DECLARADAS` e `TERCEIROS_DECLARADOS` saíram idênticos da divisão —
+nenhuma palavra que alguém lê mudou, então ninguém precisa reaceitar. Pedir
+reaceite por mudança de arquivo é o dano oposto ao de 02/09.
 
 ---
 

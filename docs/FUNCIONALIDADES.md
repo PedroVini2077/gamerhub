@@ -209,6 +209,11 @@ transições discretas das páginas internas.
 - **Configurações** (`Settings`): trocar senha, trocar e-mail (com confirmação),
   preferências de notificação (likes/comentários) e **deletar a própria conta**
   (RPC `delete_own_account`, com dupla confirmação).
+  > **`[05/09]` Os dois interruptores de notificação passaram a ter nome.** Eles
+  > eram um `<button>` sem rótulo e sem `aria-pressed`: para quem usa leitor de
+  > tela, o interruptor era *"botão"*, e se ele estava ligado ou desligado
+  > existia **só na cor** — que não é lida. Encontrado ao extrair o componente
+  > para `components/ui/Toggle.jsx`.
 - Trigger `handle_new_user` cria automaticamente a linha em `profiles` ao
   registrar um usuário no `auth.users` — isso acontece **antes** de qualquer
   confirmação de e-mail (é assim que o Supabase Auth funciona; não dá pra

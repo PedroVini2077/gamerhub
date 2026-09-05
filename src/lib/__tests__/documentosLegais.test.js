@@ -52,13 +52,21 @@ describe('documentos legais', () => {
   // Ela cobra DECISAO, nao versao nova. Exigir reaceite a cada virgula
   // treinaria todo mundo a clicar sem ler, que e o dano oposto e igualmente
   // real.
+  //
+  // `[05/09]` `conteudo` virou LISTA, e a razao vale escrever: ao dividir o
+  // arquivo da politica, as duas listas declaradas (chaves de armazenamento e
+  // terceiros) sairam para um arquivo proprio — e sairam de baixo desta
+  // impressao junto. A vigilancia teria diminuido em silencio, que e o defeito
+  // que esta trava existe para impedir. Um documento pode ser feito de varios
+  // arquivos; a impressao cobre todos, na ordem declarada.
   it('o conteúdo de cada documento bate com a impressão registrada', () => {
     for (const [chave, doc] of Object.entries(DOCUMENTOS)) {
-      const atual = createHash('sha256')
-        .update(readFileSync(doc.conteudo)).digest('hex').slice(0, 16);
+      const h = createHash('sha256');
+      for (const arquivo of doc.conteudo) h.update(readFileSync(arquivo));
+      const atual = h.digest('hex').slice(0, 16);
 
       expect(atual,
-        `O conteudo de "${chave}" (${doc.conteudo}) mudou e a impressao em\n`
+        `O conteudo de "${chave}" (${doc.conteudo.join(', ')}) mudou e a impressao em\n`
         + '  src/lib/documentosLegais.js nao acompanhou.\n\n'
         + '  Isto NAO e erro: e a decisao que so voce pode tomar.\n\n'
         + '  A mudanca e relevante para quem le o documento — o que a gente\n'
@@ -77,13 +85,16 @@ describe('documentos legais', () => {
     // Sem isto, renomear o arquivo faria `readFileSync` estourar e alguem
     // "consertaria" apagando o caminho — e a trava de cima morreria junto.
     for (const [chave, doc] of Object.entries(DOCUMENTOS)) {
-      expect(doc.conteudo, `"${chave}" sem caminho de conteudo`).toBeTruthy();
-      expect(() => readFileSync(doc.conteudo),
-        `O arquivo de conteudo de "${chave}" (${doc.conteudo}) nao existe.\n`
-        + '  Ele foi renomeado ou movido? Atualize o caminho em\n'
-        + '  src/lib/documentosLegais.js — NAO apague o campo, ou a trava de\n'
-        + '  conteudo para de vigiar este documento para sempre.')
-        .not.toThrow();
+      expect(Array.isArray(doc.conteudo) && doc.conteudo.length > 0,
+        `"${chave}" sem lista de arquivos de conteudo`).toBe(true);
+      for (const arquivo of doc.conteudo) {
+        expect(() => readFileSync(arquivo),
+          `O arquivo de conteudo de "${chave}" (${arquivo}) nao existe.\n`
+          + '  Ele foi renomeado ou movido? Atualize o caminho em\n'
+          + '  src/lib/documentosLegais.js — NAO apague o campo, ou a trava de\n'
+          + '  conteudo para de vigiar este documento para sempre.')
+          .not.toThrow();
+      }
     }
   });
 

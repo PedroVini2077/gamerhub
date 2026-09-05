@@ -110,22 +110,37 @@ export const DOCUMENTOS = {
      * tela de boas-vindas, da mesma natureza das sete que já estavam ali —
      * sinalizador local, nada sai do aparelho, nada é pessoal. */
     versao: '2026-09-05',
-    conteudo: 'src/components/privacidade/conteudoDaPrivacidade.js',
-    impressao: 'c4d2095ac62c91b3',
+    conteudo: [
+      'src/components/privacidade/conteudoDaPrivacidade.js',
+      // `[05/09]` As duas listas declaradas saíram para cá quando o arquivo foi
+      // dividido. Elas SEGUEM sob a impressão: fora dela, acrescentar uma chave
+      // de armazenamento sem tocar na tabela visível deixaria a página
+      // afirmando uma lista completa que não é (§1.5).
+      'src/components/privacidade/listasDeclaradas.js',
+    ],
+    /* `[05/09]` A impressao mudou e a VERSAO NAO, e a decisao esta provada, nao
+     * suposta: o arquivo foi DIVIDIDO — as duas listas declaradas foram para
+     * `listasDeclaradas.js` — e conferi byte a byte que `BLOCOS`,
+     * `CHAVES_DECLARADAS` e `TERCEIROS_DECLARADOS` sairam identicos. Nenhuma
+     * palavra que alguem le mudou, entao ninguem precisa reaceitar.
+     *
+     * Subir a versao aqui seria o dano oposto ao de 02/09: pedir reaceite por
+     * uma mudanca de arquivo treina todo mundo a clicar sem ler. */
+    impressao: 'c44a1204bd904102',
     mudou: 'a lista do que fica guardado no seu navegador ficou completa: entraram as três chaves do cofre do painel da equipe, que só existem no aparelho de quem é da equipe',
   },
   regras: {
     rotulo: 'Regras da Comunidade',
     caminho: '/regras',
     versao: '2026-09-01',
-    conteudo: 'src/components/regras/conteudoDasRegras.js',
+    conteudo: ['src/components/regras/conteudoDasRegras.js'],
     impressao: '88f4042d95a218cb',
   },
   termos: {
     rotulo: 'Termos de Uso',
     caminho: '/termos',
     versao: '2026-09-02',
-    conteudo: 'src/components/termos/conteudoDosTermos.js',
+    conteudo: ['src/components/termos/conteudoDosTermos.js'],
     impressao: 'd2240fc92349715c',
   },
 };

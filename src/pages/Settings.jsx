@@ -8,25 +8,7 @@ import toast from 'react-hot-toast';
 import { Settings, Lock, Mail, Heart, MessageSquare, Shield, ChevronRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmModal from '../components/ui/ConfirmModal';
-
-function Toggle({ value, onChange }) {
-  return (
-    <button
-      onClick={() => onChange(!value)}
-      style={{
-        position: 'relative', width: 44, height: 24, borderRadius: 12,
-        background: value ? '#39ff14' : '#2e2e3e', border: 'none',
-        cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0, padding: 0,
-      }}
-    >
-      <span style={{
-        position: 'absolute', top: 3, left: value ? 23 : 3,
-        width: 18, height: 18, borderRadius: '50%',
-        background: 'white', transition: 'left 0.2s', display: 'block',
-      }} />
-    </button>
-  );
-}
+import Toggle from '../components/ui/Toggle';
 
 export default function Settings_() {
   const { user, profile, signOut } = useAuth();
@@ -245,7 +227,8 @@ export default function Settings_() {
             <p className="text-sm font-semibold text-white">Curtidas</p>
             <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando curtirem seu post ou comentário</p>
           </div>
-          {notifLikes !== null && <Toggle value={notifLikes} onChange={v => handleToggleNotif('likes', v)} />}
+          {notifLikes !== null && <Toggle value={notifLikes} rotulo="Avisar quando curtirem"
+            onChange={v => handleToggleNotif('likes', v)} />}
         </div>
         <div className="flex items-center gap-4 py-4">
           <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
@@ -255,7 +238,8 @@ export default function Settings_() {
             <p className="text-sm font-semibold text-white">Comentários</p>
             <p className="text-xs text-gray-500 font-mono mt-0.5">Avisar quando comentarem no seu post ou responderem você</p>
           </div>
-          {notifComments !== null && <Toggle value={notifComments} onChange={v => handleToggleNotif('comments', v)} />}
+          {notifComments !== null && <Toggle value={notifComments} rotulo="Avisar quando comentarem"
+            onChange={v => handleToggleNotif('comments', v)} />}
         </div>
       </div>
 
