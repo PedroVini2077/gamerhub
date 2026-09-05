@@ -35,7 +35,15 @@
 //   SEND_EMAIL_HOOK_SECRET  — o mesmo segredo que aparece em
 //                             Authentication -> Hooks -> Send Email Hook.
 //                             Formato `v1,whsec_...` (cola como está).
-//   GMAIL_USER / GMAIL_APP_PASSWORD
+//   GMAIL_USER / GMAIL_APP_PASSWORD   — o caminho de HOJE (Gmail)
+//
+//   SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS   — o caminho GENERICO.
+//     `[05/09]` Se `SMTP_HOST` existir, ele vence. Foi assim, e nao trocando o
+//     Gmail de lugar, porque isso torna a migracao uma acao de PAINEL: o dono
+//     cola quatro segredos e o proximo e-mail ja sai pelo provedor novo, sem
+//     deploy, sem coordenar horario, e com o caminho antigo intacto para
+//     voltar apagando um segredo. Mudanca aditiva (§7): o caminho feliz de
+//     hoje continua identico enquanto SMTP_HOST nao existir.
 //
 // Sem o secret a função RECUSA tudo e grita. É proposital: preferir cadastro
 // parado e barulhento a hook aberto e silencioso. Ao chamador sai sempre o
@@ -47,6 +55,14 @@ import { getEmailContent, buildEmail } from "./email-template.ts";
 
 const GMAIL_USER         = Deno.env.get("GMAIL_USER") ?? "";
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD") ?? "";
+const SMTP_HOST          = Deno.env.get("SMTP_HOST") ?? "";
+const SMTP_PORT          = Number(Deno.env.get("SMTP_PORT") ?? "587");
+const SMTP_USER          = Deno.env.get("SMTP_USER") ?? "";
+const SMTP_PASS          = Deno.env.get("SMTP_PASS") ?? "";
+// De quem o e-mail PARECE vir. No Gmail e obrigatoriamente a propria conta —
+// provedor nenhum deixa remetente arbitrario. Num relay (Brevo, Resend) o
+// remetente e verificado la, e pode ser diferente do usuario de login.
+const SMTP_FROM          = Deno.env.get("SMTP_FROM") ?? SMTP_USER;
 const HOOK_SECRET        = Deno.env.get("SEND_EMAIL_HOOK_SECRET") ?? "";
 const SUPABASE_URL       = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE       = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -223,20 +239,44 @@ Deno.serve(async (req: Request) => {
   const { subject, title, message, buttonText } = getEmailContent(verification_type);
   const html = buildEmail({ title, message, buttonText, actionUrl, userEmail: user.email });
 
-  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
-    await gritar("GMAIL_USER ou GMAIL_APP_PASSWORD nao configurado — NINGUEM consegue se cadastrar nem recuperar senha",
-      { tipo: verification_type });
+  // Qual caminho vale, e a regra e uma so: SMTP_HOST presente vence.
+  //
+  // Sem `else if` encadeado e sem "tenta um, se falhar tenta o outro" — cair
+  // para o outro provedor quando o primeiro recusa esconderia justamente o que
+  // precisa gritar (cota estourada, senha revogada). Um caminho, escolhido pela
+  // configuracao, e a falha dele e a falha (§1.5).
+  const usandoRelay = Boolean(SMTP_HOST);
+  const remetente   = usandoRelay ? SMTP_FROM : GMAIL_USER;
+  const faltando    = usandoRelay
+    ? [!SMTP_USER && "SMTP_USER", !SMTP_PASS && "SMTP_PASS", !SMTP_FROM && "SMTP_FROM"]
+    : [!GMAIL_USER && "GMAIL_USER", !GMAIL_APP_PASSWORD && "GMAIL_APP_PASSWORD"];
+  const ausentes    = faltando.filter(Boolean);
+
+  if (ausentes.length > 0) {
+    await gritar(
+      `${ausentes.join(" e ")} nao configurado — NINGUEM consegue se cadastrar `
+      + `nem recuperar senha (caminho: ${usandoRelay ? `relay ${SMTP_HOST}` : "gmail"})`,
+      { tipo: verification_type, caminho: usandoRelay ? "relay" : "gmail" });
     return new Response(JSON.stringify({ error: "Credenciais SMTP nao configuradas" }), { status: 500 });
   }
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
-  });
+  const transporter = usandoRelay
+    ? nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      // 465 é TLS implícito; 587 começa em claro e sobe com STARTTLS. Deixar
+      // `secure: true` na 587 faz o handshake travar sem mensagem útil.
+      secure: SMTP_PORT === 465,
+      auth: { user: SMTP_USER, pass: SMTP_PASS },
+    })
+    : nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
+    });
 
   try {
     await transporter.sendMail({
-      from: `GamerHub <${GMAIL_USER}>`,
+      from: `GamerHub <${remetente}>`,
       to: user.email,
       subject,
       html,
@@ -247,8 +287,10 @@ Deno.serve(async (req: Request) => {
     // A falha mais provável aqui é a conta do Google: senha de app revogada,
     // conta travada por envio automatizado, ou cota diária estourada. Todas
     // travam a porta de entrada do site, e nenhuma avisa sozinha.
-    await gritar(`SMTP recusou o envio: ${err instanceof Error ? err.message : String(err)}`,
-      { tipo: verification_type });
+    await gritar(
+      `SMTP recusou o envio (${usandoRelay ? `relay ${SMTP_HOST}` : "gmail"}): `
+      + `${err instanceof Error ? err.message : String(err)}`,
+      { tipo: verification_type, caminho: usandoRelay ? "relay" : "gmail" });
     return new Response(JSON.stringify({ error: "Falha ao enviar email" }), { status: 500 });
   }
 });

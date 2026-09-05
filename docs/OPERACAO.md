@@ -103,9 +103,22 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   recusada, credenciais SMTP ausentes, e SMTP recusando o envio.
 
   > **Se você vir `Falha em send-email` no painel, a porta de entrada do site
-  > está fechada.** Confira, nesta ordem: a senha de app do Google ainda é
-  > válida? a conta não foi travada por envio automatizado? passou dos ~500
-  > envios do dia?
+  > está fechada.** A mensagem agora diz **qual caminho** estava em uso —
+  > `gmail` ou `relay <host>` —, o que evita investigar o provedor errado.
+  >
+  > No **gmail**, nesta ordem: a senha de app ainda é válida? a conta não foi
+  > travada por envio automatizado? passou dos ~500 envios do dia?
+  > No **relay**, nesta ordem: o remetente ainda está verificado no provedor? a
+  > chave SMTP foi revogada? a cota do plano estourou?
+
+  > **`[05/09]` A função aceita DOIS provedores, e a troca é ação de painel.**
+  > Se `SMTP_HOST` existir, ela usa o relay (`SMTP_PORT`, `SMTP_USER`,
+  > `SMTP_PASS`, `SMTP_FROM`); se não existir, segue no Gmail. Foi feito assim
+  > de propósito: migrar deixa de ser mudança de código + deploy — que é o que
+  > ninguém quer fazer com o cadastro quebrado — e **voltar atrás é apagar um
+  > segredo**. O `secure` do TLS sai da porta (465 implícito, 587 STARTTLS);
+  > fixá-lo trava o handshake sem mensagem útil, e a trava
+  > `envioDeEmailTemDoisCaminhos.test.js` existe por causa disso.
 
   > **`[28/08]` E esta trilha já pagou o próprio custo.** O dono publicou um
   > post com 4 imagens e "não deu em nada". A linha
@@ -918,8 +931,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->345<!--/n--> arquivos e
-<!--n:src.linhas-->34.542<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->346<!--/n--> arquivos e
+<!--n:src.linhas-->34.633<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -943,7 +956,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->345<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->346<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -968,6 +981,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->12.386<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->12.399<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
