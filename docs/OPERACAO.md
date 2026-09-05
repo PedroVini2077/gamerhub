@@ -501,6 +501,16 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   para onde deveria. Só roda com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
   nas *Variables* do repositório; sem elas seria "0 rotas", falha que não diz
   nada sobre o código.
+- **branch não gasta deploy da Vercel** — exige que a branch do PR esteja
+  desligada em `vercel.json`. **`[05/09]` Branch do Dependabot não entra**, e
+  não é frouxidão: ele nomeia a branch com um hash aleatório
+  (`dependabot/npm_and_yarn/minors-d04e3cbc33`) que só existe depois de a branch
+  nascer — não há como pré-cadastrar. O portão estava travando **três PRs de
+  atualização de dependência**, incluindo bumps de segurança, por uma exigência
+  que eles nunca teriam como satisfazer. O custo de liberar é pequeno e
+  medido: o `ignoreCommand` já pula build de commit que não toca no navegador,
+  então bump de GitHub Actions não gera deploy nenhum; sobra o bump de npm, que
+  é raro e agrupado — alguns por mês contra um teto de 100 por dia.
 - **segredos** (`scripts/segredos-vazados.mjs`) — reprova o PR se algum arquivo
   rastreado tiver chave privada, `service_role`, token do GitHub ou senha em
   texto. Não procura a `anon key`: ela é pública por construção, e acusá-la
@@ -593,6 +603,13 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   (senha é segredo, ao contrário da anon key). Só em PR: ele escreve no banco
   de produção. Quando falha, sobe `e2e-evidencia/` como artefato — screenshot,
   texto da tela e URL, senão o log diria só "timeout".
+  **`[05/09]` Não roda em PR do Dependabot.** O GitHub **não passa os secrets**
+  para workflow disparado por ele — é proteção deliberada da plataforma, porque
+  uma dependência maliciosa poderia exfiltrar a senha durante o `npm install`.
+  Sem `E2E_PASSWORD` o teste não tem como logar, e falhava com "credenciais nao
+  definidas" em TODO PR de dependência. A guarda é pelo **ator**, não por
+  "secret vazio": se a senha sumir das configurações num PR normal, o vermelho
+  tem que aparecer (§1.5).
 
 #### `[03/09]` A decoração precisa estar DENTRO DA JANELA, não só no DOM
 
@@ -943,6 +960,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->11.871<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->11.817<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

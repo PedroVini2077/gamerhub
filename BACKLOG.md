@@ -35,102 +35,31 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[05/09]` FASE 4 da auditoria — a deriva entre o código e o banco
+### `[05/09]` Os PRs do Dependabot estavam travados por portão MEU
 
-> Por que esta fase, e não outra coisa: o bug da XP de hoje foi **exatamente**
-> um achado de Fase 4 — o frontend contava certo, o banco contava errado, e cada
-> lado sozinho parecia saudável. Onde nasce um desses, nascem irmãos.
+> Pergunta do dono, com print: *"já não é a primeira vez que percebo que os bots
+> no GitHub ficam atrás nos commits... por que deu erros nesses CIs?"*.
 
-| Confronto | Resultado |
+Três PRs de atualização de dependência (#118, #120, #121) vermelhos há dias.
+**Nenhum dos dois motivos era defeito do bump** — os dois eram portão meu
+exigindo o impossível:
+
+| job | por que falhava |
 | --- | --- |
-| assinaturas de realtime × publicação | **bate** — as 10 do código são as 10 publicadas |
-| tabelas sem policy de UPDATE × telas que dão update | **nenhuma** tela faz update em tabela sem policy |
-| policies com `super_admin` sem `owner` | **nenhuma** — a trava de 3 reincidências segurou |
-| `moderation_queue.content_type` × mapa do JS | **bate** (post, comment, chat + mural) |
-| `admin_logs.action` × mapa de ícones | **11 sem ícone**, todas gravadas por função do Postgres |
-| `admin_notifications.type` × mapa de ícones | **2 sem ícone** (`security_alert`, `user_unsuspended`) |
-| advisors de segurança | 0 ERROR · 53 WARN, todos de `SECURITY DEFINER` executável |
+| `a branch não gasta deploy da Vercel` | exige a branch cadastrada em `vercel.json`, mas o Dependabot nomeia com hash aleatório que **só existe depois** de a branch nascer |
+| `fluxos autenticados` | o GitHub **não passa secrets** para workflow disparado pelo Dependabot — proteção da plataforma contra dependência maliciosa exfiltrar a senha |
 
-**O que ficou corrigido:** as 13 entradas de ícone que faltavam, e — o que
-importa mais — **a lista escrita à mão saiu**. Ela existia justamente para
-cobrir o que o código-fonte não vê, e tinha envelhecido: lista que precisa ser
-lembrada é a mesma classe de falha que ela deveria resolver. Agora as duas
-travas derivam os valores das próprias migrations, lendo por posição de coluna.
+**O custo real disso não é o vermelho: é que bump de SEGURANÇA fica sem
+mergear.** Um portão que bloqueia atualização de segurança faz o oposto do que
+existe para fazer.
 
-**Os dois que faltavam, feitos depois:** privilégio de coluna × o que a tela lê
-(**nenhuma** tela pede coluna revogada de `profiles`) e as regras duplicadas
-(**não há duplicação** no bloqueio de login — o cliente lê o estado que o banco
-devolve em vez de recalcular os limiares). Relatório completo em
-[`db/2026-09-05-fase4-deriva-codigo-banco.md`](db/2026-09-05-fase4-deriva-codigo-banco.md).
+Corrigido com guarda por branch e por ator, e a segunda é pelo **ator** de
+propósito: pular por "secret vazio" esconderia o caso em que a senha some das
+configurações num PR normal (§1.5).
 
-### `[05/09]` As duas decisões do dono, executadas
-
-**Colunas mortas apagadas.** Varredura de classe primeiro, não só a que eu já
-conhecia: 24 candidatas no banco, cruzadas com o código e as Edge Functions —
-**22 eram lidas pelo site** e só 3 sobraram. Dessas, apaguei **duas**:
-`posts.likes` (124 posts, **0** com dado) e `live_muted.muted_until` (**0**
-linhas). A terceira, `admin_notification_reads.read_at`, **ficou**: tem 249
-linhas COM dado, e coluna sem leitor mas com dado não é a mesma coisa que coluna
-sem leitor e sem dado. Testado em `ROLLBACK` antes.
-
-**As chaves do cofre entraram na política visível**, e a `versao` subiu para
-`2026-09-05` — todo mundo reaceita. Eu tinha proposto o contrário; a razão dele
-venceu: a tabela abre dizendo "listados abaixo", e lista que se declara completa
-e não é deixa de ser verdade.
-
-### `[05/09]` Duas coisas fechadas depois, no mesmo bloco
-
-**O cofre ganhou o botão "Trancar".** O dono perguntou de quanto em quanto tempo
-ele fecha, e a resposta expôs um buraco meu: ele abre uma vez por **aba**, não
-fecha por tempo nenhum — e `fecharCofre()` existia sem nenhuma tela chamando.
-Ou seja, a única forma de trancar de novo era fechar a aba, e quem levanta do
-computador deixava o painel aberto atrás de si. Mesma falha do §5 que eu já
-tinha cometido com o "esquecer código". Travado: agora um teste confere que as
-duas inversas estão **ligadas a uma tela**, não só exportadas.
-
-**`get_user_xp` deixou de ser alcançável por anônimo.** Era o que faltava do que
-eu tinha declarado como não coberto na Fase 4. Severidade baixa (devolve
-agregação de dado já público), mas é endpoint de cálculo sem sessão e nenhum
-caminho anônimo precisava dele. Testado em `ROLLBACK` antes de aplicar.
-
-### `[05/09]` O campo de senha do site inteiro
-
-Relato do dono, com print do celular: *"esse campo de senha tá estranho, além de
-estar branco, os caracteres não aparecem direito"* e *"aquele olho pra mostrar
-senha ou não? só aparece no celular, no PC não existe, consegue padronizar
-isso?"*.
-
-**Os dois eram defeitos reais, e o primeiro era meu:** escrevi `className="input"`
-no cofre — uma classe que **não existe** neste projeto (a real é `.input-gamer`)
-—, e sem estilo o campo cai no padrão do navegador, que no Android é caixa
-branca. O segundo nunca foi do site: o olho era o botão nativo de alguns
-navegadores de Android, e por isso não existia no computador.
-
-Os **nove** campos de senha do site passaram a usar um componente único
-(`components/ui/CampoDeSenha.jsx`), com olho próprio, e o CSS esconde o nativo
-para não ficarem dois. Travado por teste nos dois lados.
+**Falta:** rebasear os três PRs para pegarem o CI novo, e mergear o que passar.
 
 ---
-
-*A tarefa anterior* — refazer a tela de entrada na paleta do site — fechou
-em 04/09. O dono cortou a direção anterior (*"personagem de gelo e fogo não tem
-nada a ver com o site"*) e cobrou, com razão, que eu tinha que ter avisado. As
-artes, a moldura, os gradientes, a fenda, o VS, as partículas e **os nomes no
-código** passaram para verde × roxo. O VS ganhou saída animada. Tudo em
-[DECISOES.md](docs/DECISOES.md).
-
-**Conferido em 04/09, com medida e print** (o dono pediu prova): nenhum dos dois
-lutadores está cortado no PC (1280×800). Caixa de cada um contra a largura da
-janela — `login`: verde 45→469, roxo 811→**1235**; `cadastro`: verde 96→624,
-roxo 896→**1261**. Os quatro cabem dentro de 0→1280, e o roxo do cadastro, que
-era o caso relatado, sobra 19 px da borda. A regra que segura isso é
-`transform: translateX(2vw) scale(0.86)` ancorado à direita-baixo, em
-`src/estilos/arena/lutadores.css`.
-
-> **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
-> etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
-> Ao fechar, esvazie — isto é estado, não histórico. A regra inteira está em
-> [EXECUCAO.md §9.5](docs/regras/EXECUCAO.md).
 
 ---
 

@@ -233,7 +233,25 @@ jobs:
   deploys:
     name: a branch não gasta deploy da Vercel
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    # `[05/09]` BRANCH DE BOT NÃO ENTRA, e não é frouxidão — é que a exigência
+    # é IMPOSSÍVEL de cumprir ali. O Dependabot nomeia a branch com um hash
+    # aleatório (`dependabot/npm_and_yarn/minors-d04e3cbc33`), que só existe
+    # depois de a branch nascer: não há como pré-cadastrar em `vercel.json`.
+    #
+    # O resultado era três PRs de atualização de dependência VERMELHOS há dias,
+    # incluindo bumps de segurança, travados por um portão que eles nunca
+    # teriam como satisfazer. Vermelho que não significa defeito ensina a
+    # ignorar o vermelho (§0.2, quarta regra) — e aqui ainda por cima BLOQUEAVA
+    # atualização de segurança, que é o oposto do que o portão existe para
+    # proteger.
+    #
+    # O custo de deixar passar é pequeno e mensurável: o `ignoreCommand` já pula
+    # o build de commit que não toca no que vai para o navegador, então bump de
+    # GitHub Actions não gera deploy nenhum. Sobra o bump de npm, que é raro e
+    # agrupado — alguns deploys por mês contra um teto de 100 por DIA.
+    if: >-
+      github.event_name == 'pull_request'
+      && !startsWith(github.head_ref, 'dependabot/')
     steps:
       - uses: actions/checkout@v7
 
@@ -486,9 +504,23 @@ jobs:
     #     E2E_PASSWORD  = a senha dela
     # A conta tem que ser `role = 'user'`: o teste confere justamente que ela
     # NÃO enxerga /admin nem /owner.
+    #
+    # `[05/09]` PR DO DEPENDABOT NÃO RODA ESTE JOB, e o motivo é do GitHub, não
+    # meu: workflow disparado pelo Dependabot **não recebe os secrets do
+    # repositório**. É proteção deliberada da plataforma — uma dependência
+    # maliciosa poderia exfiltrar a senha durante o `npm install`.
+    #
+    # Sem `E2E_PASSWORD`, o teste não tem como logar e falhava com "credenciais
+    # nao definidas" em TODO PR de dependência. Isso não é o teste pegando um
+    # defeito; é o teste não tendo como existir ali.
+    #
+    # A condição é pelo ATOR e não por "secret vazio" de propósito: se um dia a
+    # senha sumir das configurações num PR meu, eu QUERO o vermelho. Pular por
+    # "faltou credencial" esconderia exatamente esse caso (§1.5).
     if: >-
       vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
       && github.event_name == 'pull_request'
+      && github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v7
 
