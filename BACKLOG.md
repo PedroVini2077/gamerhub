@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**25 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -105,6 +105,29 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[05/09]` 🟠 **Ninguém prova que COMENTAR funciona — e a produção tem 150
+  posts e ZERO comentários.**
+
+  O zero pode ser só falta de gente. Mas pode não ser, e hoje **nada** responde
+  isso: nenhum dos 16 roteiros de navegador comenta (dois citam "comentário" em
+  texto de comentário de código, e só). O `publicarPost.mjs` cobre publicar,
+  não conversar.
+
+  **O que eu já verifiquei, para não misturar fato com suspeita:** as quatro
+  policies de `comments` estão completas e corretas — o INSERT permite o autor
+  quando `pode_publicar()`. Então **não é RLS**. O que continua sem prova é o
+  caminho inteiro na tela.
+
+  **Por que isto é 🟠 e não 🟢:** é exatamente a forma dos dois piores bugs
+  deste projeto. A moderação de comentário ficou quebrada **meses** porque o
+  `UPDATE` afetava 0 linhas em silêncio, e a moderação por IA falhou em 26 de 26
+  chamadas sem ninguém saber. Funcionalidade que ninguém usa é o esconderijo
+  perfeito: não há usuário para reclamar (§1.5).
+
+  **O que resolve:** um e2e que loga, comenta num post e confere que o
+  comentário aparece — com a mensagem de falha dizendo **o que a tela disse**,
+  no padrão do `publicarPost.mjs`. Barato, e fecha a pergunta de vez.
 
 - ⬜ `[05/09]` 🔵 **A tela de APARELHOS CONECTADOS.** *Ideia do dono, nascida
   de dentro da decisão do logout — ver
