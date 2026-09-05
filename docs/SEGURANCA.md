@@ -559,3 +559,52 @@ não confirma se a conta existe), `username_disponivel` (o cadastro precisa dela
 antes de haver sessão, e apelido é público) e `contagem_de_migrations` (devolve
 um inteiro). O raciocínio de cada uma está em
 `db/2026-09-05-fase4-deriva-codigo-banco.md`.
+
+
+---
+
+## `[05/09]` FASE 2 — dois achados no corpo das funções privilegiadas
+
+### 🟠 O fundador era barrado do painel de logins bloqueados
+
+`get_blocked_logins` checava `role = 'super_admin'` **literal**, e o `owner` —
+que está acima na hierarquia — recebia `Access denied`. Comprovado em `ROLLBACK`
+com o JWT do fundador.
+
+**É a terceira vez que esta mesma classe morde este projeto**: antes foram 14
+policies sem `owner` e o `admin_unlock_login` barrando o próprio fundador. A
+regra existe e está escrita. O que falhou foi o **alcance da varredura**: a
+consulta de classe daquela vez procurava em `pg_policies` e parou ali — as
+funções nunca foram varridas com o mesmo critério.
+
+Corrigido para `is_super()`. E a lição operacional fica registrada: varredura de
+classe tem que cobrir **policies, funções e código**, não um dos três.
+
+### 🟠 A trilha de auditoria era forjável por quem tem conta
+
+`log_audit_event` é executável por `authenticated` **por desenho** — o cliente
+registra os próprios eventos. Mas aceitava qualquer `action`, `details` e
+`severity`.
+
+**Comprovado em `ROLLBACK`:** um perfil `role = 'user'` gravou
+`action = 'admin_ban'`, `severity = 'critical'`, com o texto que quisesse.
+
+| | |
+| --- | --- |
+| **risco** | escrever na trilha que a equipe usa para decidir |
+| **impacto** | não é escalada — o `actor_id` vem de `auth.uid()` e ninguém se passa por outro. É envenenar a fonte de verdade da moderação e disparar alarme falso de propósito |
+| **solução** | lista **fechada** de actions, cargo para as de equipe, severidade alta só de equipe |
+
+**Onde a trava mora, e por que não é no banco.** A recusa do banco existe, mas
+em produção ela é **invisível**: `lib/auditLog.js` engole o erro de propósito,
+então uma action nova esquecida na lista simplesmente não se registra — ninguém
+vê, nada é gravado, nenhum teste de comportamento quebra. As três respostas
+"nada" do §1.5. Por isso quem realmente segura é
+`src/lib/__tests__/trilhaNaoEhForjavel.test.js`, que reprova no CI.
+
+### O limite desta passada, dito com todas as letras
+
+As **34** funções não alcançáveis por `anon`/`authenticated` não foram lidas uma
+a uma. Não há caminho pela API para chamá-las — mas *"não é chamável"* é uma
+afirmação sobre os `GRANT`s de hoje, e um `GRANT` novo derruba essa premissa em
+silêncio.

@@ -132,3 +132,88 @@ são o desenho normal deste projeto — RPC feita para quem está logado, com a
 checagem de identidade dentro do corpo —, mas *"é o desenho normal"* não é
 evidência de que **cada uma** das 48 checa direito. Ler as 48 é trabalho de
 Fase 2, não de Fase 4, e não foi feito aqui.
+
+---
+
+# `[05/09/2026]` FASE 2 — o corpo das funções `SECURITY DEFINER`
+
+> Continuação do mesmo dia. A Fase 4 acima terminou dizendo que os **48** avisos
+> de `authenticated_security_definer_function_executable` **não** tinham sido
+> lidos, e que *"é o desenho normal do projeto"* não era evidência. Isto fecha
+> essa lacuna.
+
+## O método, e o número real
+
+São **78** funções `SECURITY DEFINER`. Enumerá-las e ler as 78 seria varredura
+por peso, não por risco. O recorte foi por **quem alcança** e **o que checa**:
+
+| grupo | quantas | tratamento |
+| --- | --- | --- |
+| não executáveis por `anon`/`authenticated` (trigger e interna) | 34 | fora do piso: não há como chamar pela API |
+| alcançáveis por quem **não tem conta** | 4 | **lidas as 4**, corpo inteiro (relatório da Fase 4) |
+| alcançáveis por quem tem conta, **com** `is_super`/`is_staff`/`role_rank` | 19 | usam o helper que a regra manda usar |
+| alcançáveis por quem tem conta, **sem** o helper | **21** | **este é o alvo** |
+
+Das 21, a leitura foi guiada por duas perguntas: *como ela checa cargo, se
+checa?* e *ela escreve?*. Oito comparam `role` com texto literal — que é o
+padrão que este projeto já viu quebrar três vezes.
+
+## Achado 1 · 🟠 O fundador era barrado do painel de logins bloqueados
+
+`get_blocked_logins` fazia `role = 'super_admin'` literal. O `owner` — que está
+**acima** na hierarquia — recebia `Access denied: super_admin required`.
+
+**Comprovado em `ROLLBACK`**, assumindo o JWT do fundador de verdade:
+`RECUSADO: Access denied: super_admin required`.
+
+**É a terceira reincidência da mesma classe.** Antes foram 14 policies sem
+`owner` e o `admin_unlock_login` barrando o próprio fundador. A regra existe,
+está escrita e foi lida — *"hierarquia nunca se escreve à mão"*. O que a fez
+falhar de novo foi ninguém ter varrido as **funções** com o critério com que se
+varreu as **policies**: a consulta de classe daquela vez procurava em
+`pg_policies`, e parou ali.
+
+Corrigido para `is_super()` (`role_rank(...) >= 3`), que cobre super_admin e
+owner hoje e continua cobrindo se um cargo novo entrar acima.
+
+## Achado 2 · 🟠 A trilha de auditoria era forjável por quem tem conta
+
+`log_audit_event` é `GRANT`-ada a `authenticated` **por desenho** — é o cliente
+que registra os próprios eventos. Só que ela aceitava **qualquer** `action`,
+`details`, `category` e `severity`.
+
+**Comprovado em `ROLLBACK`:** um perfil `role = 'user'` gravou
+`action = 'admin_ban'`, `details = '@vitima foi banida'`,
+`severity = 'critical'` em `admin_logs`.
+
+**Risco:** escrever na trilha que a equipe usa para decidir o que aconteceu.
+**Impacto:** não é escalada de privilégio — o `actor_id` sempre veio de
+`auth.uid()`, então ninguém se passa por outro. É **envenenar a fonte de
+verdade da moderação** e disparar alarme falso de propósito: o §0.2, quarta
+regra, virado do avesso com alguém do outro lado querendo.
+**Solução:** lista fechada de actions, cargo para as de equipe, e severidade
+alta só de equipe.
+
+### O que ficou de fora da lista de equipe, e é decisão
+
+`post_deleted`, `comment_deleted`, `mural_delete`, `live_chat_delete` e
+`live_silence` **parecem** moderação, mas o dono do post, do comentário, da
+mensagem e da **live** moderam o que é deles sem ser equipe (`canModerateLive`).
+Exigir cargo ali perderia registro legítimo — e perderia **em silêncio**, porque
+`lib/auditLog.js` engole o erro de propósito ("logging nunca deve quebrar o
+fluxo principal", o que está certo).
+
+Essa é a razão de a trava real ser um **teste**, e não a recusa do banco:
+`src/lib/__tests__/trilhaNaoEhForjavel.test.js` cruza todo literal de
+`logAudit()` (e dos ajudantes `log()`/`done()`, que já furaram a rede uma vez)
+com as listas escritas na migration. Provado nos três sentidos: cliente
+registrando action recusada, ação própria movida para equipe, e action do banco
+entrando na lista do cliente.
+
+## O que continua NÃO coberto
+
+As **34** funções não alcançáveis por `anon`/`authenticated` não foram lidas
+uma a uma. Elas são triggers e internas — não há caminho pela API para chamá-las
+—, mas *"não é chamável"* é uma afirmação sobre GRANTs de hoje. Se um `GRANT`
+novo aparecer, essa premissa cai em silêncio. Fica registrado como o limite
+desta passada, não como cobertura.
