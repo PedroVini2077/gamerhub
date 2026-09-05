@@ -35,29 +35,26 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[05/09]` Os PRs do Dependabot estavam travados por portão MEU
+### `[05/09]` FASE 2 da auditoria — feita, e achou dois
 
-> Pergunta do dono, com print: *"já não é a primeira vez que percebo que os bots
-> no GitHub ficam atrás nos commits... por que deu erros nesses CIs?"*.
+Era o que eu mesmo tinha declarado como não coberto no fim da Fase 4. Das **78**
+funções `SECURITY DEFINER`, o recorte por risco isolou **21** alcançáveis por
+quem tem conta e sem usar `is_super`/`is_staff`/`role_rank`. Dessas saíram dois
+achados 🟠, os dois comprovados em `ROLLBACK` e corrigidos:
 
-Três PRs de atualização de dependência (#118, #120, #121) vermelhos há dias.
-**Nenhum dos dois motivos era defeito do bump** — os dois eram portão meu
-exigindo o impossível:
+- **o fundador era barrado** do painel de logins bloqueados (`role =
+  'super_admin'` literal) — **terceira reincidência** da mesma classe;
+- **a trilha de auditoria era forjável**: um `role = 'user'` gravou
+  `action = 'admin_ban'` com `severity = 'critical'`.
 
-| job | por que falhava |
-| --- | --- |
-| `a branch não gasta deploy da Vercel` | exige a branch cadastrada em `vercel.json`, mas o Dependabot nomeia com hash aleatório que **só existe depois** de a branch nascer |
-| `fluxos autenticados` | o GitHub **não passa secrets** para workflow disparado pelo Dependabot — proteção da plataforma contra dependência maliciosa exfiltrar a senha |
+Relatório em [`db/2026-09-05-fase4-deriva-codigo-banco.md`](db/2026-09-05-fase4-deriva-codigo-banco.md).
 
-**O custo real disso não é o vermelho: é que bump de SEGURANÇA fica sem
-mergear.** Um portão que bloqueia atualização de segurança faz o oposto do que
-existe para fazer.
+**Também nesta rodada:** os PRs do Dependabot estavam vermelhos por dois portões
+meus que exigiam o impossível de branch de bot — corrigido no PR #164.
 
-Corrigido com guarda por branch e por ator, e a segunda é pelo **ator** de
-propósito: pular por "secret vazio" esconderia o caso em que a senha some das
-configurações num PR normal (§1.5).
-
-**Falta:** rebasear os três PRs para pegarem o CI novo, e mergear o que passar.
+**O que continua aberto desta auditoria:** as 34 funções não alcançáveis por
+`anon`/`authenticated` não foram lidas uma a uma. Não há caminho pela API hoje —
+mas isso é afirmação sobre os `GRANT`s de hoje.
 
 ---
 
@@ -429,8 +426,8 @@ configurações num PR normal (§1.5).
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->97<!--/n--> arq ·
-  <!--n:src.lib.linhas-->8.865<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->98<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.013<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
