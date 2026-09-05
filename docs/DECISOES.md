@@ -322,6 +322,58 @@ escrita.
 
 ## Código
 
+### `[02/09]` Cada seção do site logado tem animação PRÓPRIA — e isto não é regra do CLAUDE.md
+
+**Decisão do dono**, e a forma dela importa tanto quanto o conteúdo:
+
+> *"acho que pode até virar uma regra, **não uma regra pra memória**, mas que
+> toda aba (que fizer sentido) ter animações diversas, pra não ficar repetido"*
+
+Ele foi explícito sobre onde isto mora: **aqui, e não no `CLAUDE.md`**. E está
+certo — o `CLAUDE.md` é sobre como eu trabalho, não sobre como o site se veste.
+Encher aquele arquivo de preferência visual dilui as regras que existem para
+impedir bug e brecha, e regra diluída é regra que se ignora.
+
+#### O que ficou combinado
+
+Toda aba que fizer sentido tem animação de fundo própria, para não ficar
+repetido. "Que fizer sentido" é a parte que exige julgamento, e ela já tem uma
+exceção decidida: **os painéis de equipe (`/admin`, `/owner`) ficam sem nada**.
+Quem está ali lê log e decide punição — movimento atrás desse texto atrapalha
+em vez de ambientar.
+
+#### Como foi executado, em duas camadas
+
+| Camada | O que é | Por que |
+| --- | --- | --- |
+| `FluxoDeDados` | os traços, com a cor da seção | assinatura **compartilhada** com a landing — o site parece o mesmo site |
+| `PecasFlutuantes` | peças de videogame em SVG | o que **separa** o site logado do resto |
+
+E o elenco muda por aba: troféu e moeda nos ranks, chave nas keys, balão no
+mural e nas lives, fliperama no feed. Um elenco só em cinco telas seria a mesma
+cena com outra cor — o olho reconhece a repetição antes da variação.
+
+#### "Emoji" aqui quer dizer SVG, e ele deixou isso claro
+
+> *"quando falo emoji, não é literalmente emoji do teclado, é feito por svg ou
+> o jeito que vc faz"*
+
+Emoji de teclado muda de desenho em cada sistema: o mesmo caractere é uma coisa
+no Android, outra no iPhone, outra no Windows. Num fundo de cena isso é ruído —
+a identidade do site passaria a depender da fonte que o aparelho instalou.
+
+#### O custo, medido antes de aceitar
+
+Página parada, CPU a 1/4, com as **duas** camadas: **59,6 fps e zero
+bloqueio**. Tudo é `transform` e `opacity` no compositor, sem laço de
+JavaScript por quadro. Ver [DESEMPENHO.md](DESEMPENHO.md).
+
+#### O que reabriria
+
+O dono achar poluído com o uso. A saída barata já existe: as peças saem de uma
+lista, e esvaziar a lista de uma seção a deixa só com o fluxo de dados.
+
+
 ### `[02/09]` O som ambiente atravessa as páginas públicas, e PARA ao entrar
 
 **Pedido do dono:** *"essa música deve funcionar em toda landing page, então no
@@ -699,6 +751,69 @@ forte: o gateway aceitaria qualquer JWT do projeto, inclusive a própria anon ke
 
 [← voltar para o README](../README.md)
 
+## `[03/09]` O fundo do site logado é PRÓPRIO, e não o da landing
+
+**A decisão anterior estava registrada errada — por interpretação minha.** Em
+02/09 o dono disse *"pode fazer o mesmo fundo pra todas as rotas então"*, e eu
+li como "o mesmo da landing também no site logado". Em 03/09 ele corrigiu:
+*"eu quero que o fundo do site logado seja diferente do resto… não quero o
+fluxo de dados no site logado"*.
+
+O "mesmo para todas as rotas" era **entre as abas do site logado** — feed,
+mural, lives, keys, ranks. Não entre o site e a landing.
+
+### As camadas, e por que cada uma tem um papel
+
+| Camada | Papel | Onde |
+| --- | --- | --- |
+| `FluxoDeDados` | a assinatura da landing | **só** landing e páginas públicas |
+| `LuzesDaArena` | atmosfera: luz que respira, quase parada | site logado |
+| `PecasFlutuantes` | o movimento: as peças de videogame | site logado |
+
+**Duas camadas se mexendo é o que não pode.** Elas disputariam atenção uma com
+a outra e com o conteúdo — e o site logado é onde se lê e se rola, não onde se
+contempla. Por isso a luz é lenta e as peças são o que se move.
+
+### O que saiu, e por que
+
+A **linha de horizonte** foi removida. Ela era minha ideia de "chão de
+fliperama", e o dono perguntou direto: *"existe uma linha ali embaixo, uma cor
+pra cada aba do site logado, pq isso existe?"*. Quando o próprio dono do site
+não entende o que um elemento comunica, ele não comunica nada — estava ali por
+gosto meu, não por função. Enfeite que precisa de explicação não se defende.
+
+### O que entrou: as mini explosões
+
+Pedido dele: *"mini explosões com as cores do site enquanto os objetos sobem,
+não precisa ser algo muito exagerado, como se tivesse algo explodindo ao
+fundo"*.
+
+Cinco anéis de choque, e **nas cores da MARCA (verde, roxo, ciano), não no
+acento da aba** — todo o resto do fundo já é monocromático, então uma explosão
+na cor da seção sumiria dentro da própria cor. É o contraste que faz o estouro
+ler como estouro.
+
+**Anel e não bolha:** um círculo cheio crescendo parece mancha; o
+`radial-gradient` com miolo transparente desenha a onda de choque que a gente
+reconhece de jogo — e sai muito mais barato do que partículas.
+
+**O ritmo entrega o "não exagerado":** cada estouro ocupa 12% do ciclo e fica
+invisível nos outros 88%. Com ciclos primos entre si (17, 19, 23, 27, 29 s),
+aparece um a cada poucos segundos, em lugar diferente, e dois nunca caem juntos
+por acidente de sincronia.
+
+### A calibragem, ajustada pelo dono
+
+| | Antes | Agora | Motivo |
+| --- | --- | --- | --- |
+| espessura do traço | 2 px | **1,6 px** | *"tá meio espesso demais"* |
+| duração | 46–80 s | **30–52 s** | *"poderia aumentar um pouco a velocidade"* |
+
+Tudo continua sendo `transform` e `opacity` no compositor — mais peças e mais
+estouros não mudam a conta de desempenho.
+
+---
+
 ## `[29/08]` Sem capa de jogo na página "Sobre" — chips no lugar
 
 **Recusado:** buscar imagem dos jogos na internet para enfeitar o bloco "Quem
@@ -722,3 +837,647 @@ imagem, zero risco, e a informação que importa — o que ele joga — continua
 **O caminho legítimo, se um dia quisermos imagem:** print do próprio dono
 jogando. Aí o conteúdo é dele.
 
+
+---
+
+## `[03/09]` O captcha do contato falha ABERTO, e o canal passou a depender do Cloudflare
+
+**Decidido:** quando o Cloudflare não responde, a mensagem de contato **passa**
+mesmo assim, e a falha vai para o `admin_logs`.
+
+**Por quê:** o `/contato` é o canal de quem está banido, de quem perdeu o acesso
+e de quem nunca criou conta — está escrito como requisito na rota, e não existe
+outro caminho para falar com a equipe (o e-mail foi removido de propósito).
+Barrar todo mundo por causa de uma indisponibilidade de terceiro cortaria
+justamente quem mais precisa.
+
+**O buraco é estreito, e vale medir o tamanho dele:** token que o Cloudflare
+**recusa** continua recusado; só a *queda do serviço* passa, e ninguém de fora
+consegue provocar essa queda. Por baixo continuam os limites do banco — 3
+mensagens por e-mail em 24 h e o disjuntor de 60/hora.
+
+**A troca que isto NÃO evita, e é o custo real de ter captcha aqui.** Se o
+*script* do Cloudflare não carregar no navegador de quem está tentando falar
+com a equipe (rede que bloqueia o domínio, extensão agressiva), essa pessoa
+**não consegue enviar**. A tela diz o motivo e oferece tentar de novo — não é
+botão morto e mudo —, mas não existe caminho alternativo.
+
+Aceito conscientemente porque a alternativa era pior: sem captcha, um robô com
+muitos endereços enche a hora e fecha o canal **para todo mundo**, o que é o
+mesmo dano em escala maior. Se um dia aparecer relato de gente sem conseguir
+enviar, o caminho é oferecer uma segunda via — não desligar o captcha.
+
+**Não mandamos o IP para o Cloudflare.** O `siteverify` aceita um `remoteip`
+opcional que melhora um pouco a heurística. Ele foi deixado de fora: seria
+compartilhar endereço de IP de visitante com mais um terceiro, o oposto do
+endurecimento de LGPD que este projeto fez. O Cloudflare já vê o IP de quem
+carrega o widget — não há por que mandar de novo, do nosso lado.
+
+**A chave pública mora no código**, não em variável de ambiente. Mesmo motivo já
+registrado para o DSN do Sentry: ela é pública por construção, e depender da
+Vercel significaria que esquecer de configurá-la num deploy futuro apagaria o
+captcha **sem ninguém notar** — construindo a falha silenciosa que ele existe
+para evitar.
+
+---
+
+## `[04/09]` O login e o cadastro ganharam fogo × gelo — e, na v2, personagens de verdade
+
+**Pedido do dono**, com uma arte de luta como referência: *"dois personagens um
+de frente pro outro, divididos pelo 🆚, gelo e fogo, com uma animação leve… é só
+pra tirar essa ambientação seca do login e cadastro"*.
+
+**O que foi aproveitado da referência, e não são as figuras.** O que faz aquela
+imagem funcionar é a **composição**: dois campos de cor opostos que se encontram
+numa fratura carregada, com o formulário em cima dela. Tapando as duas figuras
+com a mão, ela continua de pé — e é essa parte que veio.
+
+**Por que personagem ficou de fora, e é decisão, não preguiça:**
+
+1. **Tem dono.** Scorpion e Sub-Zero são da NetherRealm/Warner. O projeto já
+   recusou capa de jogo na página "Sobre" pelo mesmo motivo, e ali o risco era
+   menor — aqui seria na porta de entrada do site.
+2. **Custa onde não pode custar.** Login e cadastro são a **camada 2** (§0.4):
+   todo mundo que decide ficar passa por ali. A landing já paga uma cena 3D;
+   arte de personagem em duas telas de formulário seria pagar duas vezes.
+3. **A composição sozinha resolveu o pedido.** O objetivo declarado era tirar o
+   "seco" — e isso a cor e a fratura entregam.
+
+**O caminho se um dia quisermos figura:** silhueta **nossa**, em SVG, sem rosto.
+Barata, sem dono, e entra numa camada por cima sem refazer nada do que existe.
+
+**O que a composição faz de diferente em cada modo**, e isso não é enfeite: no
+login a fenda fica no **meio** (dois lados, você decide entrar); no cadastro ela
+**sai do eixo** e o fogo domina — é escolha de personagem, um lado só. A frase
+abaixo do logo acompanha (`// Escolha seu personagem`), que é o *"character
+selected"* da referência em palavra em vez de arte licenciada.
+
+**O custo, medido:** 3,7 KB de componente e **1,7 KB gzip** de CSS. Nenhuma
+imagem, nenhuma biblioteca, e só `transform`/`opacity` animando — as duas que
+rodam no compositor. O orçamento de bytes do CI continua com folga (218,5 de 222
+KB gzip).
+
+**E quem pediu menos movimento recebe a composição parada:** com
+`prefers-reduced-motion`, as partículas somem e a fenda para de respirar. A cor
+e a fratura ficam — elas são a atmosfera, o movimento é o enfeite.
+
+
+---
+
+## `[04/09]` v3 da arena: os personagens passaram a ser ARTE, e eu parei de desenhar
+
+**O que aconteceu, na ordem.** O dono olhou a v2 (só composição, sem figuras) e
+achou o furo que eu não tinha visto: *"eu sei o contexto dessa tela, e o resto do
+povo não… o que raios significa esse vermelho e azul com algumas partículas?"*.
+Duelo sem duelistas é gradiente.
+
+Eu propus silhuetas em SVG desenhadas por mim, avisando antes que seriam
+estilizadas e não arte renderizada. Ele topou. **Tentei três vezes e não
+converge** — polígonos soltos, depois proporção errada, depois uma silhueta
+esguia que ainda lia mal. Ele me parou: *"tava ruim demais, os personagens
+estavam parecendo mais formas geométricas do que personagem mesmo"*.
+
+**Estava certo, e a regra do projeto já mandava parar antes.** O §1.2 diz que
+depois de duas tentativas sem convergir eu paro e mudo a abordagem em vez de
+insistir. Eu segui para a terceira. O aviso do teto de qualidade eu tinha dado;
+o que faltou foi *agir* nele quando o teto apareceu.
+
+**A decisão:** os personagens passam a ser **arte gerada pelo dono**, e eu faço o
+que sei fazer — recorte, otimização, montagem, responsividade e medição.
+
+### O que isso custou, e o que foi feito para caber
+
+Os PNG originais tinham **2,5 MB cada**. Recortados no limite do canal alfa
+(conferido: a transparência é real) e convertidos para WebP em dois tamanhos:
+
+| | par de 340 px | par de 720 px |
+| --- | --- | --- |
+| login | 83 KB | 279 KB |
+| cadastro | 62 KB | 215 KB |
+
+> A escolha entre os dois é por **densidade de tela**, não por aparelho: um
+> telefone 3x baixa o de 720. Medido, e a correção da frase antiga está em
+> [DESEMPENHO.md](DESEMPENHO.md).
+
+Só um par carrega por vez, e o `sizes` do `srcset` faz o celular baixar o
+pequeno — sem ele, baixaria 720 px para exibir 150, que é a forma mais comum de
+desperdiçar banda em imagem responsiva. E há **trava de peso** no `npm test`
+(`pesoDaArena.test.js`), porque o orçamento de bytes do CI mede JS e CSS, não
+imagem: sem ela, trocar uma arte por um PNG de 2,5 MB passaria verde.
+
+### O recorte errado que o dono pegou, e como se acha esse erro
+
+Na arte do cadastro, as chamas do personagem de fogo **se espalham para além do
+meio da imagem**. Eu cortei os dois em x=768 (o meio) e levei as chamas dele
+para dentro do recorte do gelo — na tela, aparecia fogo no lado do gelo. Ele viu
+na captura e me avisou.
+
+O conserto não foi mover o corte "a olho": foi **medir onde cada corpo começa**,
+com `cropdetect` num limiar alto (só o que é opaco de verdade). O fogo termina em
+x=890 e o gelo começa em x=1070 — a fronteira honesta é ~x=1000, não o meio.
+
+### A afirmação acima estava errada sobre o login, e quem achou foi ele de novo
+
+**Eu escrevi aqui que "a arte do login estava certa".** Não estava, e a frase era
+inferência vestida de fato (§1.1): eu medi a fronteira **do corpo opaco** (x=770,
+perto do meu corte em 768) e concluí que estava tudo certo — sem medir os
+**golpes**, que é onde os dois se encostam. O dono viu no celular: *"o fogo tá
+aparecendo um pouco na parte de gelo, não ficou um corte muito limpo"*.
+
+A medição por coluna mostrou o que nenhum limiar de opacidade mostraria: o fogo
+do golpe vai até a coluna **808** e o gelo já começa na **734** — os dois se
+sobrepõem por **75 colunas**, e a coluna mais vazia da faixa ainda tem 95 pixels.
+**Nenhuma reta vertical separa aquilo.** Procurar "o melhor lugar para cortar"
+era a pergunta errada.
+
+**A decisão que ficou:** na faixa disputada quem decide é a **cor** do pixel — o
+lado do fogo descarta o que é nitidamente frio, o do gelo o que é nitidamente
+quente, o núcleo branco do golpe vai para o dono da metade em que está, e o alfa
+cai por rampa nos últimos 30 px para o halo não terminar numa reta. Depois disso
+cada arte é recortada na caixa real do que sobrou.
+
+E virou **trava**, não só conserto: `e2e/artes-da-arena.mjs` desenha as artes
+servidas pelo site num canvas e conta pixels da cor do adversário na borda que
+encosta na fenda. Hoje dá 0; com o recorte antigo reinjetado, **638**. A receita
+e os números estão em [DESEMPENHO.md](DESEMPENHO.md).
+
+### Sobre a origem das artes
+
+São geradas por IA a pedido do dono, com prompt dele. Ele pediu "personagens
+genéricos", e a inspiração declarada é a mesma arte de luta que ele vinha usando
+como referência — o que já foi discutido aqui duas vezes. **A decisão de usá-las
+é dele, com o risco de semelhança dito antes.** O que o projeto continua não
+fazendo é pegar arte pronta de terceiro: a diferença é essa, e está registrada
+para não virar discussão nova daqui a dois meses.
+
+### `[04/09]` No celular, CORTAR sim; ESTICAR não
+
+**A pergunta do dono, e ela é boa:** *"vc acha que vai ficar muito feio esticar
+a imagem pra ficar inteira no celular? por mais que corte e eu tenho que usar o
+scroll pra ver tudo? pq oq acontece, tô achando muito pequeno as imagens"*.
+
+**Esticar: não.** Personagem com proporção alterada não lê como estilo, lê como
+defeito — é a mesma família do corte reto no meio do corpo que ele mesmo achou
+duas vezes hoje. Ninguém pensa "que enquadramento ousado"; pensa "essa imagem
+está errada".
+
+**Cortar: sim, e é o padrão da casa desde a landing.** Figura que sangra pela
+borda da tela é composição normal — o cinema faz isso o tempo todo. O que não
+pode é o corte parecer acidental, e é por isso que o de baixo é uma **máscara
+que dissolve**, não uma reta.
+
+**Sobre o scroll:** não seria possível do jeito que ele imaginou, e vale
+registrar por quê. A arena é `position: fixed` — ela é fundo de tela, não
+conteúdo. Rolar a página nunca revelaria mais dela; só afastaria o formulário.
+Ficar inteira e grande ao mesmo tempo, num retrato de 390 px, é geometria
+impossível: a arte é quase quadrada, e duas delas lado a lado não cabem.
+
+**O que ficou:** os dois cresceram de 16vh para 34vh (135 px → 287 px de altura
+medidos em 390×844), se encontram no meio da tela em vez de ladear o logo, saem
+pelas laterais, e a metade de baixo dissolve antes do formulário. Custo em
+bytes: **zero** — ver [DESEMPENHO.md](DESEMPENHO.md).
+
+### `[04/09]` A moldura de arte substituiu as labaredas e os cristais que eu desenhava
+
+**O pedido:** *"tira os efeitos de labareda e tbm os cristais que vc fez a mão,
+coloca essa moldura nos cantos, mas deixa os efeitos de fogo e gelo presentes,
+faíscas, flocos de gelo"*.
+
+**O que saiu:** `.arena-labaredas` (três formas em gradiente radial pulsando) e
+`.arena-cristais` (três triângulos em `border` com brilho em laço). Eram a
+tentativa de fazer fogo e gelo **em CSS**, e sofriam do mesmo problema das
+silhuetas: forma geométrica não vira elemento.
+
+**O que ficou:** as faíscas e os flocos (`.arena-brasa` e `.arena-lasca`)
+continuam, porque são partícula, não desenho de objeto — ali a forma simples é
+a leitura certa, e elas são o que dá movimento à cena.
+
+**Como a moldura entra, e por que `mix-blend-mode: screen`.** A arte tem o
+centro **preto** e as bordas acesas. Em `screen`, preto é transparente e claro
+soma: a moldura acende as bordas e desaparece sozinha em direção ao meio, sem
+máscara e sem uma reta de fim. Colada do jeito normal, o centro preto
+escureceria o gradiente da arena exatamente onde o formulário mora.
+
+**A máscara horizontal é obrigatória, e o motivo já é conhecido.**
+`background-size: cover` numa caixa alta e estreita corta a arte na horizontal,
+e o esvanecimento que ela traz para o centro morre no corte — sobra uma **reta
+vertical** no meio da tela. É o mesmo defeito do recorte dos lutadores, virado
+90°, e a solução também é a mesma: gradiente no lugar de corte.
+
+**Duas rodadas de calibragem, e a primeira estava errada.** Entrou com 42vw e
+opacidade 0.85 e **engoliu os dois lutadores** — a lava tinha mais presença que
+o personagem, o oposto do que a tela precisa contar. Ficou em 30vw / 0.55 no
+desktop e 34vw / 0.38 no celular, e passou para **trás** dos lutadores no DOM.
+
+**No cadastro ela é só de fogo, e a borda direita fica VAZIA** — e aqui eu errei
+uma vez antes de acertar. A primeira versão espelhava a arte de fogo para a
+direita, para "fechar" a moldura dos dois lados; o dono viu e questionou na
+hora: *"o fogo tá tomando conta do gelo aqui?"*.
+
+Ele tem razão, e a leitura literal do pedido dele já era a certa. Com o gelo de
+costas e recuado, lava passando por cima dele conta que **o fogo invadiu o outro
+lado** — história diferente de "o fogo venceu". Borda direita limpa deixa o gelo
+na penumbra, que é o que a cena quer dizer.
+
+> **O padrão, porque foi a segunda vez hoje:** quando ele descreve o que quer,
+> a versão literal é a que ele quer. Meu instinto de "completar" a ideia —
+> espelhar para fechar a moldura — trocou a intenção dele pela minha.
+
+Travado por `e2e/artes-da-arena.mjs`, que confere o estilo computado da borda
+direita nas duas telas; provado apagando a regra e vendo o passo 4 reprovar.
+
+**Custo:** 148 KB nos dois arquivos (72 + 76), estáticos, sem animação de
+tela cheia. Ver [DESEMPENHO.md](DESEMPENHO.md).
+
+### `[04/09]` Três acabamentos da arena, e o que cada um ensinou
+
+**1. A partícula não sabia onde ficava a fronteira.** Achado do dono: *"quando a
+parte de fogo pega o lado do gelo, as partículas de gelo ficam caindo no fogo…
+não é algo que incomoda, só é falta de capricho"*.
+
+A causa não era a posição de nenhuma partícula: `--x` era porcentagem **da
+tela**, e a fronteira entre os dois lados é o `--eixo`, que no cadastro vai para
+68%. Corrigido pela **classe**, não pelo caso: `--x` virou fração do próprio
+lado (0,06 a 0,84) e o CSS multiplica pela largura dele. Passa a valer em
+qualquer eixo — inclusive num terceiro modo que ainda não existe.
+
+**2. A transição de aba, e o `layout` do Framer que NÃO funcionou.** Pedido:
+*"podia fazer uma transição melhor da aba de login e cadastro, pq quando fazemos
+essa troca, simplesmente corta de um pro outro"*.
+
+O conteúdo entrou em `AnimatePresence mode="wait"` com a variante `fadeTab` que
+o resto do site já usa. Faltava a altura: o cadastro é **2,5× mais alto** que o
+login (354 → 877 px, medido em 1280 px de largura), e o card saltava de tamanho
+com o conteúdo ainda transparente.
+
+A saída de uma linha seria `<motion.div layout>`. **Ela não funcionou, e isso é
+medição:** com ela no card, a altura pulava de 354 para 877 px entre dois
+quadros e o `transform` computado ficava em `none` o tempo todo — nenhuma
+animação de projeção chegou a rodar. Em vez de insistir (§1.2), a altura passou
+a ser medida por `ResizeObserver` e animada em `CardQueAcompanhaAltura`.
+
+> **A animação é condicional à `chave` de propósito.** O `ResizeObserver`
+> dispara a cada mudança de altura, inclusive as de digitação (medidor de força
+> da senha, mensagem de erro). Animar 280 ms a cada tecla deixaria o formulário
+> com cara de travado.
+
+**3. "Recuar" tinha virado "sumir".** *"a área de cadastro no celular, o
+personagem de gelo mal aparece"*. A causa era acumulada e nenhuma das partes
+estava errada sozinha: a base do celular joga o gelo para `right: -16vw`, e a
+regra do cadastro somava mais 6vw de translação **para a direita**. Somados,
+22vw dele ficavam fora da tela. Ele voltou para dentro e ganhou opacidade —
+continua atrás e mais apagado, que é o ponto, mas agora dá para ver que está lá.
+
+### `[04/09]` O `index.css` virou lista de imports — e a ORDEM é o comportamento
+
+O arquivo tinha 948 linhas com a arena dentro, e 550 depois que ela saiu. As 550
+restantes eram anteriores e encostam em toda tela do site, então a divisão
+esperou o dono liberar (*"vai com calma arrumando o css e fazendo o split"*).
+
+**O que decidiu o desenho:** CSS resolve empate de especificidade por **ordem**.
+`.card` só vence uma utilitária do Tailwind de mesma propriedade porque está
+depois de `@tailwind utilities`. E `@import` tem que vir antes de qualquer
+regra. As duas coisas juntas obrigam a solução: as diretivas `@tailwind` saíram
+para um arquivo próprio, e o `index.css` virou **só a lista de imports**, na
+mesma sequência em que os blocos estavam.
+
+**Como foi provado que nada mudou:** o CSS emitido pelo build tem as **mesmas
+862 regras**, antes e depois. A única diferença de ordem é o bloco da arena, que
+voltou para o fim — que é onde ele estava antes de eu extraí-lo no PR #155.
+Prova de saída, não opinião sobre o processo.
+
+**E a prova pegou um bug de verdade.** O `arena.css` também passou de 300 linhas
+(455) e virou quatro partes dentro de `estilos/arena/`. Ao descer uma pasta, os
+dois `url('../assets/auth/moldura-*.webp')` deixaram de resolver: o Vite emitiu
+o **caminho cru**, e a moldura daria **404 em produção** — com build verde, lint
+verde e testes verdes. Nenhum portão via, porque nenhum deles compara a saída.
+
+Só apareceu porque o CSS emitido foi comparado byte a byte com o de antes. É a
+lição do §1.5 aplicada a refactor: *"extraí sem mudar comportamento"* é
+afirmação, e afirmação precisa de evidência. A evidência aqui é o arquivo de
+saída, e ela custa um `cmp`.
+
+### `[04/09]` A troca de aba: metade da cena mudava em 900 ms e a outra de estalo
+
+Dois achados do dono na mesma mensagem, e **a mesma raiz nos dois**.
+
+**1. *"os personagens simplesmente aparecem, sem nenhum fade in ou fade out"*.**
+Era o mesmo `<img>` recebendo um `src` novo — o navegador pinta a imagem nova no
+quadro em que ela chega, e troca de arquivo não tem transição. Virou fade
+cruzado: as duas artes coexistem por 550 ms, com `AnimatePresence` **sem**
+`mode="wait"` (com `wait` a que sai termina antes de a que entra começar, e aí
+não é cruzamento, é piscada).
+
+**2. *"quando volto do cadastro pro login, as partículas azuis estão caindo na
+área do fogo"*.** A posição delas vinha do `--eixo` **sem transição**, enquanto
+a fenda e os lados levam 900 ms para andar. Voltando de 68% para 50%, o lado do
+gelo alargava no mesmo quadro e a fenda ainda estava lá atrás.
+
+> **Só na volta**, e essa assimetria é a assinatura do defeito: na ida o lado do
+> gelo encolhe, então as partículas se afastam da fenda em vez de cruzá-la. Um
+> bug que só acontece num sentido quase sempre é "duas coisas que deviam andar
+> juntas andando em velocidades diferentes".
+
+O conserto foi **contêiner por lado**, com a mesma `transition` de
+`.arena-lado`. Dois elementos transicionam e as 24 partículas seguem de graça,
+porque a posição delas passou a ser porcentagem do contêiner. Fazer cada
+partícula transicionar seria animar `left`/`right` em 24 nós, que não roda no
+compositor (§0.3).
+
+#### A pré-carga que eu escrevi e a medição derrubou
+
+Para o cruzamento da PRIMEIRA troca não desvanecer para uma imagem ainda
+chegando, minha primeira solução foi **pré-carregar o outro par** em
+`requestIdleCallback`. Medi antes de entregar, e ela caiu por dois motivos:
+
+| | |
+| --- | --- |
+| custo | **+215 KB** — a tela de entrada ia de 423 para **638 KB** de imagem |
+| "ocioso" | os 6 arquivos chegaram **dentro de 2 s**, junto com a tela. O `requestIdleCallback` disparou cedo porque a página fica ociosa rápido — "ocioso" não quer dizer "depois" |
+
+**O que ficou custa zero:** a arte que entra só **começa** a aparecer quando o
+`load` dela dispara. Em rede boa ela chega dentro da janela do fade e ninguém
+percebe diferença; em rede ruim, a entrada começa mais tarde — nunca é um
+estalo. Camada 2 é por onde todo mundo passa, e metade dessa gente nunca abre a
+outra aba: 215 KB de enfeite por isso não se paga.
+
+#### A caixa do lutador colapsou, e o e2e pegou na hora
+
+Com as duas artes fora de fluxo (para se sobreporem), o `.arena-lutador` ficou
+sem conteúdo que o dimensionasse e **colapsou para 0 px de largura**. Corrigido
+com `aspect-ratio: 1` na caixa e `object-fit: contain` + `object-position` por
+lado — a largura passa a acompanhar a altura sozinha, em toda tela e em todo
+modo, e a arte encosta na borda certa. Conferido nas quatro combinações.
+
+### `[04/09]` A tela de entrada voltou para a PALETA DO SITE — e eu devia ter avisado
+
+**O corte do dono, e ele está certo:** *"eu não sei o que tava passando na minha
+cabeça de fazer personagem de gelo e fogo, não tem nada a ver com o site"*. E a
+cobrança que veio junto: *"você tinha que ter me avisado isso, né?"*.
+
+**Tinha.** A paleta está em `estilos/base.css` desde o começo — `--neon: #39ff14`,
+`--purple: #bf00ff`, `--cyan: #00ffff` — e manda em toda a interface. Laranja de
+lava e azul de gelo são outra linguagem visual. Eu construí **três rodadas**
+inteiras em cima da referência dele sem levantar isso uma vez.
+
+> **O §7 é explícito:** *"se eu discordar de uma ideia do dono, eu digo antes de
+> executar. Concordar por educação com uma abordagem pior é o pior serviço que
+> eu posso prestar"*. A regra existia, estava certa, e eu não a apliquei — não
+> por discordar em silêncio, mas por **não ter percebido que havia do que
+> discordar**. Identidade visual não estava na minha lista de coisas a conferir
+> antes de começar; passa a estar.
+
+**O que mudou, item a item:**
+
+| | antes | agora |
+| --- | --- | --- |
+| lutadores | fogo × gelo | verde neon × roxo, com o raio da marca no peito |
+| moldura | lava e cristal | circuito neon, verde de um lado e roxo do outro |
+| gradiente dos lados | laranja / ciano-gelo | `#39ff14` / `#bf00ff` |
+| fenda | sombra quente + fria | sombra verde + roxa |
+| VS | laranja / ciano | verde / roxo |
+| partículas | brasa e lasca de gelo | faísca verde e estilhaço roxo |
+| nomes no código | `fogo`/`gelo`/`brasa`/`lasca` | `verde`/`roxo`/`faisca`/`estilhaco` |
+
+**Os nomes foram renomeados junto, e isso não é capricho.** `.arena-lutador-fogo`
+apontando para uma arte verde é a definição de nome que mente — o §4 chama isso
+de fonte de bug, e a próxima pessoa a abrir o arquivo procuraria fogo.
+
+#### O VS passou a animar na SAÍDA também
+
+Pedido do dono: *"preciso que você anime tanto a entrada como a saída dele
+também, ele só está animado para a entrada"*. Ele encolhe e apaga ao ir para o
+cadastro, e volta com o mesmo estalo elástico.
+
+**Duas curvas diferentes, e o número decidiu.** Com a curva elástica nas duas
+propriedades, a opacidade caía para **0,02 em 140 ms** — animação no papel,
+estalo na tela. A elástica ficou no `transform`, onde o exagero é o efeito; a
+opacidade ganhou uma curva calma de 420 ms, onde o que importa é dar tempo de
+ver. Medido depois: 0,90 → 0,29 → 0,08 → 0.
+
+O `animation: none` que existia na regra do VS **saiu** — era ele que reiniciava
+a entrada ao voltar para o login, o mesmo defeito que os lutadores tinham.
+
+
+## `[04/09]` A tela de boas-vindas: a fenda contava a história errada
+
+A primeira versão eram duas metades com uma **fenda visível no meio desde o
+primeiro quadro**. O dono reprovou: *"não queria que ela tivesse essa fenda, eu
+queria que fosse estilo portão futurista, que tem uma tranca no meio que rodasse
+'destrancando' a porta e carregando o site"*.
+
+**A diferença não é decorativa, e vale escrever por quê.** Fenda no primeiro
+quadro conta *"isto vai abrir"* — a porta já está entregue, só falta o
+movimento. Porta inteira com tranca girando conta *"isto está sendo aberto para
+você"*, que é exatamente o que a tela existe para dizer enquanto o site carrega.
+A primeira mostra o resultado; a segunda mostra o trabalho.
+
+**Daí os três estados, e o do meio é o que dá CAUSA à abertura:**
+
+| estado | o que está na tela | duração |
+| --- | --- | --- |
+| trancado | superfície única, tranca de três anéis girando | do piso (700 ms) ao teto (2500 ms) |
+| destrancado | a tranca para, trava e acende; a linha vira "acesso liberado" | 420 ms |
+| abrindo | as folhas se separam | 560 ms |
+
+Sem o estado do meio a porta abriria sozinha, e a tranca no meio não teria feito
+nada — seria enfeite em cima de enfeite.
+
+**As duas folhas continuam existindo** (é o único jeito de a porta abrir), mas
+com o **mesmo fundo e sem borda**: a divisão só passa a existir no instante em
+que elas se separam.
+
+### O que ficou igual, e é o que importa
+
+O teto de 2,5 s. A tranca gira enquanto o perfil carrega, mas se ele não chegar
+ela trava e a porta abre do mesmo jeito. Animação bonita não vira porta trancada
+(§0.3).
+
+---
+
+## `[05/09]` O portão é A TELA — e as quatro versões recusadas até chegar nele
+
+Esta entrada existe porque a mesma tela foi refeita **cinco vezes**, e sem o
+registro a próxima pessoa (ou eu, daqui a dois meses) refaz a nº 2 achando que
+está melhorando.
+
+| # | o que eu entreguei | a recusa do dono, na letra |
+| --- | --- | --- |
+| 1 | duas metades com uma fenda desde o 1º quadro | *"não queria que ela tivesse essa fenda"* |
+| 2 | anéis e argolas de CSS girando | *"quando eu falei portão, eu tô falando literalmente de uma porta"* |
+| 3 | a ilustração dele recortada em 4 peças | *"eu mandei pra vc usar como exemplo e criar a mão"* |
+| 4 | SVG desenhado à mão, centralizado, 62vh | *"a porta é pra ser a tela inteira... A TELA INTEIRA! não uma imagem abrindo, é pra ter imersão"* |
+| 5 | duas folhas de 50vw × 100vh | — |
+
+**O erro que se repetiu da 1 à 4 foi sempre o mesmo, e não era de desenho.** Eu
+tratei "portão" como um *objeto a ser ilustrado* e fui melhorando a ilustração.
+A nº 4 era desenho melhor que a nº 3 e foi recusada igual, porque o defeito
+nunca esteve no traço: estava no **enquadramento**. Enquanto sobra tela em volta
+da porta, o olho lê "figura de porta". Quando a porta encosta nas quatro bordas,
+não existe fora — e aí não se olha a porta, se está atrás dela.
+
+### A decisão técnica: superfície em CSS, mecanismo em SVG
+
+Um SVG único de tela cheia precisa de `preserveAspectRatio`, e **nenhum dos três
+modos serve** — medido, não suposto:
+
+| modo | no celular (390×844), viewBox 1200×800 |
+| --- | --- |
+| `meet` | a porta cabe inteira e sobra fundo em volta: é o defeito da nº 4 de novo |
+| `slice` | restam ~370 unidades de largura visíveis — some tudo menos a tranca |
+| `none` | a tranca deixa de ser redonda e vira elipse |
+
+Daí a divisão por **natureza da peça**, que é a parte reaproveitável desta
+decisão: o que **não tem forma própria** (chapa, nervura, listra, brilho) é CSS,
+porque estica para qualquer proporção sem deformar nada; o que **tem forma** (a
+tranca, que precisa continuar redonda) é SVG de lado fixo.
+
+O disco é desenhado **inteiro nas duas folhas**, centrado na emenda, e o
+`overflow: hidden` de cada folha faz o corte. Não há `clipPath`, não há "metade
+esquerda" e "metade direita" para divergirem, a metade viaja com a folha na
+abertura sem cálculo nenhum, e nada aparece fora da moldura quando as folhas
+saem — que era um defeito real da nº 4.
+
+### Duas coisas que o print desmentiu, e valem ficar escritas
+
+**A emenda não pode CLAREAR.** A primeira tentativa da nº 5 tinha um bisel que
+subia até `#263443`, mais claro que a chapa, dos dois lados — e o resultado era
+uma coluna de luz descendo o meio da tela. Ou seja: uma fenda, que é literalmente
+o que foi recusado na nº 1. Porta fechada não tem luz no meio; tem sombra.
+
+**A abertura revela o SITE, não um vão desenhado.** A versão com um poço escuro
+por baixo das folhas foi descartada: quem cobre a tela são as folhas, então tirar
+o fundo faz a porta abrir sobre a página já montada. Um fundo ali esconderia
+justamente aquilo que a porta existe para revelar.
+
+### O bug que veio junto, e era o mais grave
+
+Relato do dono: *"assim que eu logava, eu via o site por alguns segundos, depois
+aparecia o portão"*. Não era lentidão — era **ordem**. `marcarEntradaAgora()`
+ficava depois do `signInWithPassword`, mas o `onAuthStateChange` preenche o
+`user` **dentro** dessa chamada: o site trocava de rota e pintava enquanto ainda
+faltavam duas idas ao servidor até a marca existir. E o próprio portão ainda
+adiava mais um `setTimeout(0)`, com um comentário meu dizendo que era de
+propósito — o defeito escrito como decisão.
+
+O conserto são duas metades: a marca passou a ser escrita **antes** do login (com
+`cancelarEntradaAgora()` em todo caminho que não termina em entrada), e a leitura
+virou `useLayoutEffect`, que roda **antes da pintura**. As duas são invisíveis em
+runtime — desfazer qualquer uma não gera erro, não gera log e não quebra teste de
+comportamento —, então viraram trava de contrato em
+`src/lib/__tests__/portaoAntesDoSite.test.js`, provada reinjetando cada metade.
+
+---
+
+## `[05/09]` O cofre do Fundador é CENOGRÁFICO, e isso está escrito na tela
+
+Duas versões possíveis foram postas na mesa do dono, e ele escolheu a primeira:
+
+| | Cenográfico (feito) | De verdade (não feito) |
+| --- | --- | --- |
+| onde o código é conferido | no navegador | numa RPC, contra hash no banco |
+| protege de | quem senta na frente do computador dele | quem tem a sessão roubada |
+| custo | pequeno | grande, mexe no arquivo mais sensível do projeto |
+| risco novo | nenhum | **ficar trancado para fora** |
+
+**Por que aceitar uma tranca que não tranca.** Porque a ameaça que ela cobre é
+real e não tinha resposta nenhuma — o computador do dono, aberto, com a sessão
+viva. Para essa, pedir um código antes de mostrar o painel é a medida certa.
+O que estaria errado seria ela se apresentar como mais do que é, e por isso o
+aviso está impresso **embaixo do campo**, não só na documentação.
+
+**Três escolhas menores, e cada uma tem motivo:**
+
+**O código é por aparelho, não no banco.** Guardar no banco não deixaria o cofre
+mais forte — a `anon key` é pública e a checagem continuaria no navegador — e
+criaria uma senha a mais para perder. Local, cada aparelho tem o seu e perder um
+não tranca nenhum outro.
+
+**Fica guardado o resumo, nunca o código.** SHA-256 com sal aleatório por
+aparelho. Não é para resistir a força bruta séria — é para o código não ficar em
+texto puro num lugar que a própria pessoa pode abrir sem querer numa gravação de
+tela. Travado por teste, porque nada na tela denunciaria a troca.
+
+**O desbloqueio dura a ABA, não um tempo fixo.** Trinta minutos ou uma hora
+trancaria no meio de uma moderação. Fechou a aba, fecha o cofre.
+
+**O que ficou de fora e é decisão dele:** as três chaves de armazenamento do
+cofre entraram na lista técnica da política de privacidade, mas **não** na
+tabela que o leitor vê. Elas só nascem no navegador de quem é fundador, e
+listá-las descreveria para milhares de pessoas um armazenamento que existe para
+uma. Se ele preferir citá-las, o custo é subir a `versao` do documento — o que
+faz todo mundo aceitar de novo.
+
+---
+
+## `[05/09]` As conquistas são DERIVADAS — não têm tabela, e isso é escolha
+
+Conquista normalmente é uma tabela: `achievements` mais `user_achievements`, com
+trigger gravando a cada post, curtida e comentário. Aqui não é.
+
+**A pergunta que decidiu foi a de sempre (§0.2): quantas vezes por dia isso
+roda?** A resposta da versão com tabela é "uma escrita por interação de todo
+mundo" — e isso multiplica por usuários × posts × curtidas, que é exatamente a
+conta que estoura cota.
+
+As oito conquistas são calculadas em cima do que a `get_user_xp` **já devolve**,
+numa chamada que o perfil **já faz**. Custo: zero consulta nova, zero escrita,
+zero tabela, zero trigger.
+
+### O que se perde, dito antes de alguém descobrir
+
+| | derivada (é assim) | com tabela |
+| --- | --- | --- |
+| custo | zero | uma escrita por interação |
+| "quando" foi conquistada | **não existe** | data guardada |
+| notificar na hora | **não dá** | dá |
+| conquista de evento sem rastro (ex.: "entrou no 1º dia") | **impossível** | possível |
+
+O dia em que notificar ou datar virar necessidade, a tabela passa a valer o
+preço. Hoje não vale — e trocar depois é aditivo: as oito continuam existindo.
+
+### Duas escolhas menores
+
+**"Perfil completo" olha os seis campos, não o número 140** (a soma dos bônus no
+SQL). Se um bônus mudar de valor, a conquista continua verdadeira. Depender do
+total faria ela virar inalcançável em silêncio.
+
+**Conquista bloqueada mostra o nome.** Esconder o que falta transforma a lista
+num enigma; mostrar transforma em objetivo. O cadeado e a cor dizem o estado.
+
+---
+
+## `[05/09]` O XP contava curtidas de uma coluna morta — e era o TERCEIRO lugar
+
+`get_user_xp` fazia `SUM(posts.likes) * 5`. Nada no banco nunca escreveu nessa
+coluna: o único trigger em `post_likes` é o `notify_post_like`, que só insere
+notificação. **A soma dava 0 para todo mundo, para sempre**, e a tela de ranks
+anunciava *"Receber um like → 5 XP"* que o sistema nunca pagou.
+
+Comprovado em transação com `ROLLBACK`: 3 linhas em `post_likes`, `posts.likes`
+= 0, `get_user_xp` = 0, `count(*)` = 3.
+
+**O que mais importa aqui não é o bug — é por que ele sobreviveu.** Este era o
+terceiro lugar com o mesmo defeito. `fetchProfileStats` (frontend) e
+`owner_get_metrics` (banco) já tinham sido corrigidos antes, **cada um por conta
+própria, em passadas diferentes**. Ninguém perguntou *"onde MAIS este padrão
+existe?"* — que é literalmente a regra da varredura de classe (§1.3) — e a
+função que sobrou ficou errada sozinha.
+
+**A correção conta da tabela em vez de criar trigger para manter a coluna.**
+Contador denormalizado exige acertar INSERT e DELETE e desincroniza no primeiro
+caminho que alguém esquecer; esta coluna morta é a prova viva disso.
+
+**Anti-farm:** a auto-curtida não conta (`pl.user_id <> p.user_id`). "Receber um
+like" é de outra pessoa — sem isso, curtir o próprio post seria 5 XP por clique.
+
+**Efeito visível:** o XP de quem já recebeu curtidas **sobe**. É a correção de um
+valor que estava errado para baixo, não uma mudança de regra.
+
+### O que ficou pendente, e é decisão do dono
+
+A coluna `posts.likes` continua existindo, morta. Apagá-la seria a trava mais
+forte possível (o dado errado passa a ser **impossível**), mas `DROP COLUMN` é
+irreversível e entra no 🔴 do §7 — não faço sem ele mandar. Enquanto isso, a
+trava é o teste `xpNaoLeColunaMorta.test.js`, que varre as migrations e o
+JavaScript atrás do padrão.

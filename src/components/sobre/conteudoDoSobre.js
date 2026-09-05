@@ -203,15 +203,15 @@ export const BLOCOS = [
     pendente: false,
     paragrafos: [
       'O GamerHub usa trabalho de outras pessoas, e isso aparece aqui porque é '
-      + 'o certo — e, no caso de licença CC-BY, porque é obrigatório.',
+      + 'o certo — mesmo quando a licença não obriga.',
     ],
     creditos: [
       {
-        titulo: 'Universe',
-        autor: 'AiTechEye',
-        origem: 'https://opengameart.org/content/universe',
-        licenca: 'CC BY 4.0',
-        licencaUrl: 'https://creativecommons.org/licenses/by/4.0/',
+        titulo: 'Lofi Coffee Shop',
+        autor: 'Alex Morgan',
+        origem: 'https://pixabay.com/music/lofi-lofi-coffee-shop-568150/',
+        licenca: 'Pixabay Content License',
+        licencaUrl: 'https://pixabay.com/service/license-summary/',
         adaptacao: 'adaptada: recortada e costurada em laço contínuo',
       },
     ],

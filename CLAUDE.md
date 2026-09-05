@@ -109,6 +109,7 @@ tem como lembrar de tudo; o arquivo é que tem.
 
 | Roda sozinho, sempre | Onde está a regra |
 | --- | --- |
+| **Rodar `npm run docs` antes de fechar bloco, e abrir o que ele apontar** | §6.2 |
 | Dividir arquivo que passou de 300 linhas | §4 |
 | Fechar falha de segurança explorável | §1.3 |
 | Diagnosticar e matar bug | §1.2 |
@@ -671,11 +672,15 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `scripts/mapa-de-arquivos.mjs` | CI, **reprova** | arquivo em `src/` que o `ARQUITETURA.md` não conhece |
 | `scripts/segredos-vazados.mjs` | CI, **reprova** | chave privada, `service_role`, token ou senha em arquivo rastreado |
 | `scripts/documentacao-quebrada.mjs` | CI, **reprova** | documento citando arquivo que não existe mais |
+| `scripts/numeros-do-projeto.mjs` (`npm run numeros`) | CI, **reprova** | **número escrito num documento que não bate com o projeto** — o AUDITORIA dizia "14.362 linhas" com 28.679 |
+| `scripts/territorio-coberto.mjs` | CI, **reprova** | pasta do sistema que **nenhum documento** se considera dono — era o caso da pasta do texto da política de privacidade |
+| `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **eu rodo antes de fechar** | quais documentos **esta sessão** tornou suspeitos, e o que mudou embaixo de cada um |
 | `scripts/documentacao-envelhecida.mjs` | dia 1º, **abre issue** | documento atrás do código — **inclusive `CLAUDE.md` e os `docs/regras/`**, que até 02/09 eram os únicos sem vigilância |
 | `e2e/portas-do-banco.mjs` | CI, **reprova** | porta do banco que abriu — **e porta que fechou**, que já derrubou o site 3× |
 | `e2e/conteudo-visivel.mjs` | CI, **reprova** | conteúdo no DOM e invisível na tela, em janela de celular |
 | `e2e/navegacao.mjs` | CI, **reprova** | página abrindo no lugar errado, âncora morta, botão voltar atropelado |
 | `e2e/sem-banco.mjs` | CI, **reprova** | banco fora do ar derrubando o que **não** depende dele |
+| `e2e/artes-da-arena.mjs` | CI, **reprova** | arte da tela de entrada carregando pedaço do adversário — o corte que o orçamento de bytes não vê |
 | `src/lib/tabelasSemUpdate.js` | `npm test`, **reprova** | `update` em tabela sem policy — 0 linhas e **nenhum erro** |
 | `src/lib/__tests__/varrerFontes.js` | usado pelas travas | trava que varre pasta e **não leu arquivo nenhum**: sem ele, renomear a pasta deixa o teste verde para sempre |
 | `e2e/publicarPost.mjs` | CI, **reprova** | publicar que não aparece — e ele diz **o que a tela disse** em vez de um `waiting for locator` mudo |
@@ -819,3 +824,21 @@ fix, fase de auditoria), eu fecho o ciclo inteiro:
 **Só mergear com a definição de pronto (§2) cumprida** — build, lint, testes e
 validação no banco. Se algo estiver falhando, o PR fica aberto e eu aviso; não
 mergear "pra não deixar pendente".
+
+---
+
+## 9. Execução — gestão de contexto
+
+> Protocolo do dono, 03/09: *"depois de tanta regras, gatilhos e tudo mais, vc
+> está tendo que pensar em 400 coisas ao mesmo tempo e isso tá te levando a uma
+> exaustão de memória"*.
+
+A sequência antes de mexer em arquivo, a classificação da tarefa, o território
+como recorte de contexto, o BACKLOG como memória operacional, e o que fazer
+quando eu perder o fio (**voltar ao estado registrado, não carregar mais
+contexto**).
+
+**Ele não dispensa documentação nenhuma** — muda *quando* cada uma é
+consultada.
+
+@docs/regras/EXECUCAO.md

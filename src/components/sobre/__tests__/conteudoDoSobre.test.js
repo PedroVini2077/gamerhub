@@ -165,10 +165,19 @@ describe('toda mídia de terceiro tem crédito na tela', () => {
 
   it('todo arquivo de mídia tem um crédito declarado', () => {
     const arquivos = readdirSync(PASTA);
-    // `universe-loop.opus` -> casa com o credito de titulo "Universe".
+
+    // `[03/09]` O casamento normaliza os DOIS lados. A versao anterior fazia
+    // `base.includes(titulo.toLowerCase())` cru, e por isso um titulo com
+    // espaco — "Lofi Coffee Shop" — nunca casava com o arquivo
+    // `lofi-coffee-shop.opus`. A trava reprovava uma midia que TINHA credito.
+    //
+    // Falso positivo tambem e defeito de trava: ele ensina a mexer na trava
+    // para calar, que e o caminho mais curto para ela deixar de proteger.
+    const chave = (txt) => txt.toLowerCase().replace(/[^a-z0-9]+/g, '');
+
     const semCredito = arquivos.filter((nome) => {
-      const base = nome.replace(/\.[^.]+$/, '').toLowerCase();
-      return !creditos.some(c => base.includes(c.titulo.toLowerCase()));
+      const base = chave(nome.replace(/\.[^.]+$/, ''));
+      return !creditos.some(c => base.includes(chave(c.titulo)));
     });
     expect(semCredito,
       `Arquivo de midia sem credito na pagina /sobre: ${semCredito.join(', ')}.\n`

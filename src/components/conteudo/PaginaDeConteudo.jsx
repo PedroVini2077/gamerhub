@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, PencilLine } from 'lucide-react';
 import { iconeDoBloco } from '../sobre/iconesDoSobre';
 import LandingFooter from '../landing/LandingFooter';
+import FundoAnimado from './FundoAnimado';
 import { fadeUpReveal, VIEWPORT } from '../../lib/landingMotion';
 
 /**
@@ -101,6 +102,11 @@ export default function PaginaDeConteudo({
 }) {
   return (
     <div className="min-h-screen bg-dark-900 grid-bg relative">
+      {/* `[02/09]` O fundo entra AQUI, na casca, e não em cada página.
+          Posto em cada uma, seria uma linha que alguém esquece na próxima —
+          e o sintoma (uma aba sem fundo) ninguém reporta como bug. Na casca,
+          toda página que a usa ganha por construção. */}
+      <FundoAnimado />
       <div className="relative z-10 max-w-3xl mx-auto px-4 md:px-6 pt-10 pb-16 space-y-10">
         <Link to="/" className="inline-flex items-center gap-2 text-xs font-mono
                                 text-gray-400 hover:text-neon-green transition-colors">

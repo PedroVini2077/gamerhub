@@ -438,3 +438,33 @@ como fugir disso sem hospedar o aviso fora do Supabase.
 ---
 
 [← voltar para o README](../README.md)
+
+
+---
+
+## `[04/09]` Queda do registro do npm não reprova o PR — mas também não passa em silêncio
+
+**O que aconteceu:** o PR #154 ficou vermelho com build, lint e testes **já
+verdes**. A causa era `npm audit` recebendo **HTTP 503** do registro do npm.
+
+**Por que isso enganava:** o `npm audit` sai com código 1 nos dois casos — achou
+vulnerabilidade **e** o endpoint não respondeu. Os dois chegam ao CI como a
+mesma coisa.
+
+**A decisão:** distinguir os dois, e é a mesma que já vale para as travas de
+porta (`portas-fechadas.mjs`, `portas-do-banco.mjs`) desde 03/09.
+
+| Situação | Antes | Agora |
+| --- | --- | --- |
+| vulnerabilidade `high`+ | ❌ reprova | ❌ reprova, igual |
+| registro fora do ar | ❌ reprova, dizendo a coisa errada | ⚠️ **aviso** no resumo do PR, e segue |
+
+**Por que aviso e não reprovação, sendo um portão de segurança:** ele é o único
+que olha vulnerabilidade conhecida, e é justamente por isso que ele **não pode
+gastar credibilidade com alarme falso** (§0.2, 4ª regra). Um portão que fica
+vermelho por queda de terceiro ensina a clicar em "re-run" sem ler — e no dia em
+que aparecer vulnerabilidade de verdade, o reflexo já estará treinado.
+
+**O que se perde, dito com todas as letras:** um PR pode ser mergeado sem a
+auditoria ter rodado. O aviso aparece no resumo do PR, e a próxima execução
+verifica de novo — inclusive o mesmo commit, quando ele chega na `main`.

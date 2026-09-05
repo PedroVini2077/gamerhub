@@ -86,6 +86,46 @@ const CASOS = [
     esperado: [401],
     estrago: 'queimar a cota de 10 mil consultas/dia do Safe Browsing',
   },
+  {
+    // `[03/09]` Esta porta é PÚBLICA de propósito — o formulário de contato
+    // existe para quem não tem conta. Então o que se confere aqui não é "tem
+    // token de usuário?", e sim **o captcha está mesmo sendo conferido?**
+    //
+    // O token abaixo tem formato plausível (mais de 20 caracteres) justamente
+    // para NÃO parar na checagem barata de formato: ele chega ao Cloudflare,
+    // que responde que é falso, e a função tem que devolver 403.
+    //
+    // Um 400 aqui não é "porta fechada": significa que a função passou reto
+    // pelo captcha e só a RPC recusou o conteúdo vazio — ou seja, captcha
+    // desligado. Por isso 403 é o único aceitável.
+    nome: 'verify-contact com captcha falso',
+    caminho: '/verify-contact',
+    corpo: {
+      token: 'token-de-captcha-inventado-pela-trava-do-e2e',
+      nome: 'Trava E2E', email: 'trava-e2e@example.com', assunto: 'outro',
+      mensagem: 'mensagem com mais de vinte caracteres so para passar da faixa',
+    },
+    esperado: [403],
+    estrago: 'encher o formulario de contato e fechar o canal para todo mundo '
+           + 'pelo disjuntor de 60/hora',
+  },
+  {
+    // `[03/09]` Esta manda e-mail em nome do site. Sem porta, qualquer um da
+    // internet escreveria para qualquer endereço com a marca do GamerHub — o
+    // mesmo estrago da `send-email` de 23/08, que foi o pior achado do projeto.
+    //
+    // A checagem de verdade e' do BANCO (`is_staff()` dentro das duas RPCs); o
+    // 401 aqui e' a primeira porta, e ela existe justamente para o caso de
+    // alguem um dia trocar a credencial usada la dentro.
+    nome: 'responder-contato sem credencial',
+    caminho: '/responder-contato',
+    corpo: {
+      id: '00000000-0000-0000-0000-000000000000',
+      texto: 'resposta com mais de dez caracteres',
+    },
+    esperado: [401],
+    estrago: 'mandar e-mail com a marca do site para qualquer endereco',
+  },
   // As duas abaixo foram APAGADAS de vez em 27/08. Para elas o esperado é 404:
   // função que não existe é a porta mais fechada que existe. Qualquer outra
   // resposta significa que alguém recriou a função — inclusive um 401, que
@@ -127,6 +167,33 @@ for (const caso of CASOS) {
     // Rede caindo não é a função estando aberta. Sai com 2 (ambiente), não 1.
     console.error(`\n  Nao consegui falar com ${caso.caminho}: ${e.message}`);
     console.error('  Isto e falha de rede, nao prova nada sobre a funcao.\n');
+    process.exit(2);
+  }
+
+  // `[03/09]` PROJETO PAUSADO NÃO É PORTA ABERTA.
+  //
+  // Com o projeto Supabase em `INACTIVE`, o gateway responde **HTTP 540** a
+  // tudo — e como 540 não está em nenhuma lista de `esperado`, esta trava
+  // acusava as 5 portas de uma vez e escrevia *"alguem reimplantou uma Edge
+  // Function sem a checagem de quem chama"*. Nada disso tinha acontecido: as
+  // funções nem chegaram a rodar.
+  //
+  // Alarme que grita a coisa errada é o defeito do §0.2 (4ª regra) — ele ensina
+  // a ignorar exatamente o canal onde a falha real vai aparecer. E era pior aqui
+  // do que em outros lugares: uma acusação de porta de segurança reaberta é a
+  // que mais merece ser levada a sério quando aparecer de verdade.
+  //
+  // A saída é a MESMA que este arquivo já usava para rede caindo, logo acima:
+  // sair com 2 (ambiente). O CI continua vermelho — não dá para afirmar que as
+  // portas estão fechadas sem conseguir bater nelas —, mas o motivo passa a ser
+  // verdadeiro: **não foi verificado**, e não "foi verificado e está aberto".
+  if (status >= 500) {
+    console.error(`\n  Nao consegui conferir ${caso.caminho}: HTTP ${status}.`);
+    console.error('  5xx aqui vem do GATEWAY, nao da funcao — 540 e o que a');
+    console.error('  Supabase responde com o PROJETO PAUSADO. As funcoes nem');
+    console.error('  chegaram a rodar, entao isto NAO prova nada sobre elas:');
+    console.error('  nem que estao fechadas, nem que estao abertas.');
+    console.error('\n  Para conferir de verdade, o projeto precisa estar ativo.\n');
     process.exit(2);
   }
 

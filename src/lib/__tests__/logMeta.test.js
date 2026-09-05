@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  ACTION_META, NOTIF_META, LOG_CATEGORIES, CATEGORY_META, ACTIONS_DO_BANCO,
+  ACTION_META, NOTIF_META, LOG_CATEGORIES, CATEGORY_META,
   actionMeta, notifMeta, feedItemMeta, LOG_RETENTION_DAYS,
 } from '../logMeta';
+import { actionsDoBanco, tiposDeNotificacaoDoBanco } from './actionsDoBanco';
 
 // Estes testes existem porque o bug real foi DERIVA: o site passou a gravar
 // actions e categorias novas, e os painéis continuaram com mapas antigos —
@@ -52,11 +53,47 @@ describe('cobertura de actions de auditoria', () => {
     expect(used.filter(a => !ACTION_META[a])).toEqual([]);
   });
 
-  // Action gravada por trigger/função do Postgres não existe como string em
-  // `src/`, então a varredura do código-fonte nunca a veria.
+  // Action gravada por função do Postgres não existe como string em `src/`,
+  // então a varredura do código-fonte nunca a veria.
+  //
+  // `[05/09]` ISTO ERA UMA LISTA ESCRITA À MÃO, e a Fase 4 da auditoria achou
+  // ONZE actions vivas fora dela — todas chegando ao painel com o ícone
+  // genérico, sem nada estourar. O problema não era a lista estar errada: era
+  // ela precisar ser LEMBRADA, que é a mesma classe de falha que ela deveria
+  // resolver. Agora a lista é derivada das migrations. Ver `actionsDoBanco.js`.
   it('actions geradas pelo banco têm ícone registrado', () => {
-    expect(ACTIONS_DO_BANCO.length).toBeGreaterThan(3);
-    expect(ACTIONS_DO_BANCO.filter(a => !ACTION_META[a])).toEqual([]);
+    const doBanco = actionsDoBanco();
+
+    expect(doBanco.length, 'a varredura das migrations nao achou action nenhuma')
+      .toBeGreaterThan(10);
+
+    expect(
+      doBanco.filter(a => !ACTION_META[a]),
+      'action gravada por funcao do Postgres SEM icone em ACTION_META.\n'
+      + 'Ela aparece no painel de trilha com o icone generico, e nada estoura.\n'
+      + 'Acrescente uma linha em ACTION_META (src/lib/logMeta.js) com o icone e\n'
+      + 'a cor — a lista acima foi lida das proprias migrations.',
+    ).toEqual([]);
+  });
+
+  // `[05/09]` O irmão do teste acima, e ele nasceu junto porque o defeito era o
+  // mesmo dos dois lados: a Fase 4 achou `security_alert` (de
+  // `contabilizar_falha_de_login`) e `user_unsuspended` (de `lift_suspension`)
+  // chegando ao sino da equipe com o ícone genérico. Fechar um e deixar o outro
+  // aberto seria repetir exatamente o erro que a fase existe para não repetir.
+  it('tipos de notificação gerados pelo banco têm ícone registrado', () => {
+    const doBanco = tiposDeNotificacaoDoBanco();
+
+    expect(doBanco.length, 'a varredura das migrations nao achou tipo nenhum')
+      .toBeGreaterThan(5);
+
+    expect(
+      doBanco.filter(t => !NOTIF_META[t]),
+      'tipo de admin_notifications SEM icone em NOTIF_META.\n'
+      + 'Ele aparece no sino da equipe com o icone generico, e nada estoura.\n'
+      + 'Acrescente uma linha em NOTIF_META (src/lib/logMeta.js) — a lista acima\n'
+      + 'foi lida das proprias migrations.',
+    ).toEqual([]);
   });
 
   it('toda categoria usada em logAudit() aparece no filtro dos painéis', () => {

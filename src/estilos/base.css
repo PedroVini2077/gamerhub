@@ -1,0 +1,21 @@
+/* O alicerce: reset, variáveis de cor e o `body`.
+ *
+ * Vem depois do `@tailwind base` de propósito — é ele que sobrescreve o
+ * preflight, não o contrário. */
+
+* { box-sizing: border-box; }
+
+:root {
+  --neon: #39ff14;
+  --neon-dim: #39ff1420;
+  --purple: #bf00ff;
+  --cyan: #00ffff;
+}
+
+body {
+  background-color: #060608;
+  color: #e0e0e0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  overflow-x: hidden;
+}

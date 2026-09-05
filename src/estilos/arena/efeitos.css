@@ -1,0 +1,203 @@
+/* Os EFEITOS: a moldura das bordas e as partículas (faíscas e flocos).
+ *
+ * Parte 3 de 4 — ver `../arena.css`.
+ *
+ * ── Atenção ao `url()` daqui ────────────────────────────────────────────────
+ *
+ * Ele é relativo a ESTE arquivo, não ao `index.css`. Ao mover este bloco uma
+ * pasta para dentro, os dois `url('../assets/...')` deixaram de resolver e o
+ * Vite emitiu o caminho **cru** — a moldura daria 404 em produção, e nada
+ * quebraria no build. Só apareceu porque o CSS emitido foi comparado com o de
+ * antes, byte a byte. É o tipo de falha muda do §1.5: build verde, imagem
+ * faltando. */
+
+/* ── A MOLDURA: circuito verde numa borda, roxo na outra ─────────────────────
+ *
+ * `[04/09]` Substituiu efeitos que eu desenhava em CSS. Pedido do dono, com a
+ * arte junto: *"tira os efeitos que vc fez a mão, coloca essa moldura nos
+ * cantos"*. A arte foi trocada de novo no fim do dia, quando a cena inteira
+ * passou de fogo × gelo para a paleta do site.
+ *
+ * ── Por que `mix-blend-mode: screen` ────────────────────────────────────────
+ *
+ * A arte tem o centro PRETO e as bordas acesas. Em `screen`, preto é
+ * transparente e claro soma — então a moldura acende as bordas e desaparece
+ * sozinha em direção ao meio, sem máscara nenhuma e sem uma reta de fim. Colada
+ * por cima do jeito normal, o centro preto escureceria o gradiente da arena
+ * exatamente onde o formulário mora.
+ *
+ * ── Estática, e isso é escolha ──────────────────────────────────────────────
+ *
+ * Ela não anima. O que se mexe continua sendo faísca e floco (as partículas
+ * abaixo), que rodam em `transform`/`opacity` no compositor. Moldura de tela
+ * cheia animada seria repintura de tela cheia por quadro — o custo que o §0.3
+ * deste projeto já cobrou caro uma vez.
+ */
+.arena-moldura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.arena-moldura-lado {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 30vw e opacidade baixa: é MOLDURA, não papel de parede. Na primeira
+   * tentativa ela entrou com 42vw e 0.85 e engoliu os dois lutadores — a
+   * moldura tinha mais presença que o personagem, o contrário do que a
+   * tela precisa contar. */
+  width: 30vw;
+  background-repeat: no-repeat;
+  background-size: cover;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  /* Entra depois dos lutadores: a arena monta de dentro para fora. */
+  animation: arenaMolduraAcende 900ms ease-out 420ms both;
+}
+
+/* A máscara é obrigatória, não enfeite. `background-size: cover` numa caixa
+ * alta e estreita corta a arte na horizontal, e o esvanecimento que ela traz
+ * para o centro morre no corte — sobra uma RETA vertical no meio da tela. É o
+ * mesmo defeito do recorte dos lutadores, na outra direção. */
+.arena-moldura-verde {
+  left: 0;
+  background-image: url('../../assets/auth/moldura-verde.webp');
+  background-position: left center;
+  -webkit-mask-image: linear-gradient(to right, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 38%, transparent 100%);
+}
+
+.arena-moldura-roxo {
+  right: 0;
+  background-image: url('../../assets/auth/moldura-roxo.webp');
+  background-position: right center;
+  -webkit-mask-image: linear-gradient(to left, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to left, #000 38%, transparent 100%);
+}
+
+/* SEM `to`. Com `to { opacity: .85 }` e `fill-mode: both`, o quadro final
+ * venceria a `opacity` declarada — inclusive a de dentro do `@media` do
+ * celular, que ficaria sem efeito. Foi exatamente o defeito encontrado hoje no
+ * `.arena-lutador`. Sem o `to`, o alvo é o valor computado do elemento, e cada
+ * tela mantém o seu. */
+@keyframes arenaMolduraAcende {
+  from { opacity: 0; }
+}
+
+/* CADASTRO: moldura SÓ na borda do verde. A direita fica limpa.
+ *
+ * Pedido do dono — *"a do cadastro pode ser só a de um lado"*. A primeira
+ * versão espelhava a arte vencedora para a borda direita, para fechar a moldura
+ * dos dois lados; ele viu e questionou se um lado não estava *"tomando conta"*
+ * do outro.
+ *
+ * Ele tem razão, e o certo era a leitura literal: com o perdedor de costas e
+ * recuado, moldura acesa por cima dele conta que o vencedor invadiu o lado —
+ * história diferente de "ele venceu". Borda direita vazia deixa o perdedor na
+ * penumbra, que é exatamente o que a cena quer dizer. */
+.arena-selecionado .arena-moldura-roxo {
+  display: none;
+}
+
+/* ── As partículas ───────────────────────────────────────────────────────────
+ *
+ * `[04/09]` Elas moram num CONTÊINER POR LADO, e isso é o conserto de um bug
+ * que só aparecia na VOLTA do cadastro para o login.
+ *
+ * O que o dono viu: *"quando volto do cadastro pro login, as partículas azuis
+ * estão caindo na área do outro na hora de voltar"*.
+ *
+ * A causa: metade da cena mudava em 900 ms e a outra metade de estalo. A fenda
+ * e os lados têm `transition` no `left`/`right`; a posição de cada partícula era
+ * calculada do `--eixo` **sem transição nenhuma**. Voltando de 68% para 50%, o
+ * lado roxo alargava no mesmo quadro e a fenda ainda estava lá atrás — por
+ * 900 ms havia partícula roxa em cima do verde.
+ *
+ * **Só acontecia na volta**, e isso é a assinatura do defeito: na ida o lado
+ * roxo ENCOLHE, então as partículas se afastam da fenda em vez de cruzá-la.
+ *
+ * Por que contêiner e não `transition` em cada partícula: são 24 delas, e
+ * `left`/`right` não roda no compositor (§0.3). Com o contêiner, **dois**
+ * elementos transicionam e as 24 seguem de graça, porque a posição delas é
+ * porcentagem do contêiner. É o mesmo mecanismo do `.arena-lado`, e é de
+ * propósito: quem tem que andar junto anda pela mesma regra.
+ */
+.arena-particulas {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* A MESMA curva e a mesma duração de `.arena-lado` e `.arena-fenda`. Se estes
+   * três números divergirem, o bug volta em câmera lenta. */
+  transition: left 900ms cubic-bezier(0.4, 0, 0.2, 1),
+              right 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.arena-particulas-verde {
+  left: 0;
+  right: calc(100% - var(--eixo, 50%));
+}
+
+.arena-particulas-roxo {
+  left: var(--eixo, 50%);
+  right: 0;
+}
+
+.arena-particula {
+  position: absolute;
+  bottom: -4vh;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  animation-name: arenaSobe;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-delay: var(--atraso, 0s);
+  animation-duration: var(--duracao, 13s);
+  will-change: transform, opacity;
+}
+
+/* Faísca sobe pela esquerda; estilhaço desce pela direita. Duas direções,
+ * porque as duas subindo seria a mesma coisa em dobro, não um duelo.
+ *
+ * `--x` é FRAÇÃO do lado (0..1), e a conta usa o `--eixo`. Antes era
+ * porcentagem da tela, e no cadastro — onde o eixo vai para 68% — as lascas de
+ * um lado caíam dentro do outro. Era o dono quem tinha que ver: *"não é
+ * algo que incomoda, só é falta de capricho"*.
+ *
+ * A folga para a deriva lateral (`--deriva`, até 2,5vw) já vem do próprio
+ * `--x`, que para em 0,84 do lado — sobram 16% de margem antes da fenda. */
+.arena-faisca {
+  /* `--x` é fração do LADO, e o lado agora é o contêiner — então a conta é
+   * direta, sem `--eixo` no meio. */
+  left: calc(var(--x, 0.2) * 100%);
+  background: #39ff14;
+  box-shadow: 0 0 10px 2px #39ff1499;
+}
+
+/* Estilhaço, não ponto: o lado roxo é feito de arestas. */
+.arena-estilhaco {
+  right: calc(var(--x, 0.2) * 100%);
+  top: -4vh;
+  bottom: auto;
+  width: 2px;
+  height: 9px;
+  border-radius: 1px;
+  background: #e9d5ff;
+  box-shadow: 0 0 8px 1px #bf00ff99;
+  animation-name: arenaDesce;
+}
+
+@keyframes arenaSobe {
+  0%   { transform: translate3d(0, 0, 0);                     opacity: 0; }
+  10%  {                                                      opacity: 0.85; }
+  90%  {                                                      opacity: 0.85; }
+  100% { transform: translate3d(var(--deriva, 0), -108vh, 0); opacity: 0; }
+}
+
+@keyframes arenaDesce {
+  0%   { transform: translate3d(0, 0, 0) rotate(8deg);                     opacity: 0; }
+  10%  {                                                                   opacity: 0.75; }
+  90%  {                                                                   opacity: 0.75; }
+  100% { transform: translate3d(var(--deriva, 0), 108vh, 0) rotate(22deg); opacity: 0; }
+}

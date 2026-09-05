@@ -1,24 +1,31 @@
 import { useLocation } from 'react-router-dom';
-import { acentoDaSecao } from '../../lib/acentoDaSecao';
-import FluxoDeDados from '../landing/FluxoDeDados';
+import { acentoDaSecao, elencoDaSecao } from '../../lib/acentoDaSecao';
+import LuzesDaArena from './LuzesDaArena';
+import PecasFlutuantes from './PecasFlutuantes';
 
 /**
  * O fundo animado do site logado.
  *
- * ── A decisão que isto executa ──────────────────────────────────────────────
+ * ── `[03/09]` O que eu tinha entendido ERRADO, e a correção ────────────────
  *
- * Do dono, em 02/09: *"pode fazer o mesmo fundo pra todas as rotas então"*. É
- * o **mesmo** `FluxoDeDados` da landing — não um componente parecido. Fazer um
- * segundo seria criar a segunda fonte de verdade que o §4 proíbe, e ela
- * divergiria justamente onde dói: desempenho, `prefers-reduced-motion`, e o
- * conserto do `100lvh` que já custou um bug de salto no celular.
+ * Em 02/09 o dono disse *"pode fazer o mesmo fundo pra todas as rotas então"*,
+ * e eu li como "o mesmo da landing também aqui" — então este arquivo montava o
+ * `FluxoDeDados` da landing com outra cor.
  *
- * ── `parallax={false}` não é economia à toa ─────────────────────────────────
+ * Em 03/09 ele corrigiu, e a frase não deixa dúvida: *"eu quero que o fundo do
+ * site logado seja diferente do resto… não quero o fluxo de dados no site
+ * logado"*. O "mesmo para todas as rotas" era **entre as abas do site logado**
+ * — feed, mural, lives, keys, ranks —, não entre o site e a landing.
  *
- * Ponteiro e rolagem custam +451 ms e +296 ms medidos durante movimento
- * contínuo (ver DESEMPENHO.md), e o feed é a tela onde mais se rola. Sem eles
- * a camada custa **zero** medido — que é exatamente o *"o site logado deve ser
- * mais quieto que a landing"* da decisão.
+ * ── As DUAS camadas, e por que cada uma tem um papel ───────────────────────
+ *
+ *   LuzesDaArena ..... atmosfera: luz que respira, quase parada
+ *   PecasFlutuantes .. o movimento: as peças de videogame
+ *
+ * A separação é deliberada. Duas camadas se mexendo disputariam atenção uma
+ * com a outra e com o conteúdo — e o site logado é onde se lê e se rola, não
+ * onde se contempla. A landing fica com o fluxo de dados, que é a assinatura
+ * dela e continua exclusiva dela.
  *
  * ── Por que ele decide sozinho, em vez de receber a cor por prop ────────────
  *
@@ -33,5 +40,10 @@ export default function FundoDaSecao() {
   // `undefined` = seção sem fundo (os painéis de equipe). Não existe cor
   // padrão de propósito — ver `acentoDaSecao`.
   if (!acento) return null;
-  return <FluxoDeDados acento={acento} parallax={false} />;
+  return (
+    <>
+      <LuzesDaArena acento={acento} />
+      <PecasFlutuantes elenco={elencoDaSecao(pathname)} acento={acento} />
+    </>
+  );
 }

@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ROTAS_COM_SOM, deveTocarSom } from '../rotasComSom';
-import { acentoDaSecao, PREFIXOS_COM_ACENTO, PREFIXOS_SEM_FUNDO } from '../acentoDaSecao';
+import {
+  acentoDaSecao, elencoDaSecao, PREFIXOS_COM_ACENTO, PREFIXOS_SEM_FUNDO,
+} from '../acentoDaSecao';
+import * as PECAS from '../../components/layout/pecasDeJogo';
 
 /**
  * ── As duas listas que precisam concordar com o `App.jsx` ───────────────────
@@ -85,5 +88,58 @@ describe('acento do fundo por seção', () => {
   it('caminho que não é string não estoura', () => {
     expect(acentoDaSecao(undefined)).toBeUndefined();
     expect(acentoDaSecao(null)).toBeUndefined();
+  });
+});
+
+describe('as peças de videogame do site logado', () => {
+  const SECOES = ['/', '/community', '/keys', '/lives', '/ranks', '/profile', '/settings'];
+
+  it('toda peça citada num elenco EXISTE de verdade', () => {
+    // ── O modo silencioso de quebrar ──────────────────────────────────────
+    // `PECAS[nome]` de um nome errado devolve `undefined`, e o React
+    // simplesmente nao desenha nada. A aba fica com menos pecas, ninguem ve
+    // erro, e ninguem reporta enfeite que nao apareceu (§4: nada de escolher
+    // um padrao pelo desconhecido).
+    const inexistentes = [];
+    for (const secao of SECOES) {
+      for (const nome of elencoDaSecao(secao)) {
+        if (!PECAS[nome]) inexistentes.push(`${secao} -> ${nome}`);
+      }
+    }
+    expect(inexistentes,
+      `Elenco citando peca que nao existe em pecasDeJogo.jsx: ${inexistentes.join(', ')}.\n`
+      + '  O React nao desenha nada e NAO reclama — a aba fica com menos pecas\n'
+      + '  e ninguem descobre.')
+      .toEqual([]);
+  });
+
+  it('toda seção do site logado tem peças', () => {
+    for (const secao of SECOES) {
+      expect(elencoDaSecao(secao).length, `${secao} sem pecas`).toBeGreaterThan(0);
+    }
+  });
+
+  it('os elencos são DIFERENTES entre si — o pedido era não repetir', () => {
+    // "toda aba (que fizer sentido) ter animacoes diversas, pra nao ficar
+    // repetido". Um elenco unico em cinco telas seria a mesma cena com outra
+    // cor, e o olho reconhece a repeticao antes da variacao.
+    const assinaturas = SECOES.map(s => elencoDaSecao(s).join('+'));
+    const distintas = new Set(assinaturas);
+    expect(distintas.size,
+      `${SECOES.length} secoes produzem so ${distintas.size} elencos distintos.\n`
+      + '  Elencos repetidos demais fazem as abas parecerem a mesma tela.')
+      .toBeGreaterThanOrEqual(5);
+  });
+
+  it('painel de equipe NÃO tem peças', () => {
+    // Painel e ferramenta de trabalho: quem esta ali le log e decide punicao.
+    for (const rota of PREFIXOS_SEM_FUNDO) {
+      expect(elencoDaSecao(rota), `${rota} nao devia ter pecas`).toEqual([]);
+    }
+  });
+
+  it('caminho que não é string não estoura', () => {
+    expect(elencoDaSecao(undefined)).toEqual([]);
+    expect(elencoDaSecao(null)).toEqual([]);
   });
 });

@@ -1,0 +1,263 @@
+/* A decoração de fundo do site: a camada das páginas públicas, a intro do raio,
+ * as peças de videogame, as luzes de arena do site logado, as mini explosões e
+ * o aviso de banco fora do ar.
+ *
+ * A ARENA do login e do cadastro tem arquivo próprio (`arena.css`) por ser de
+ * uma tela só e por já ter passado de 400 linhas sozinha. */
+
+/*
+ * A camada decorativa das páginas públicas (`conteudo/FundoAnimado.jsx`).
+ *
+ * As duas linhas de `height` são de propósito: é o padrão de fallback do CSS.
+ * Navegador que não conhece `lvh` ignora a segunda linha e fica com `100vh`;
+ * quem conhece usa a segunda, que vence por vir depois.
+ *
+ * POR QUE `lvh` E NÃO `vh` NEM `dvh` — este é o conserto do salto que o dono
+ * viu no celular em 29/08. A camada é `fixed` e cada peça é posicionada em
+ * PORCENTAGEM da altura dela. Ao rolar para baixo o celular esconde a barra de
+ * endereço, a janela cresce, e toda porcentagem é recalculada de uma vez: as
+ * peças pulam. Medido antes do conserto, com a janela indo de 830 para 930 px,
+ * a peça do topo saltava 4 px e a de baixo 70 px — quanto mais embaixo, maior
+ * o salto, que é a assinatura do defeito.
+ *
+ * `lvh` é a altura da janela COM a barra recolhida: um valor fixo, que não
+ * muda quando a barra vai e volta. `dvh` faria o oposto — ele ACOMPANHA a
+ * barra, e é exatamente o que provoca o pulo.
+ */
+.camada-de-fundo {
+  height: 100vh;
+  height: 100lvh;
+}
+
+/* ── `[02/09]` A intro do raio, em CSS puro ────────────────────────────────
+ *
+ * Ela era animada pelo Framer Motion, e por isso NUNCA APARECIA direito. A
+ * medição que mostrou isso:
+ *
+ *   CPU 1x .... o traco surge no DOM as 496 ms ja com stroke-dashoffset: 0
+ *   CPU 4x .... surge as 894 ms, tambem ja pronto
+ *   CPU 6x .... nao aparece dentro de 1,5 s
+ *
+ * Ou seja: em nenhuma das medicoes o traco chegou a ser DESENHADO. Ele pulava
+ * direto para o estado final.
+ *
+ * O mecanismo: o Framer calcula cada quadro dentro de `requestAnimationFrame`.
+ * Durante o boot da landing a thread principal fica ocupada (602 ms de tarefas
+ * longas medidos a 4x), o rAF nao roda, e quando volta a rodar a animacao ja
+ * passou do fim — ela salta em vez de correr. Foi exatamente o "as vezes corta,
+ * as vezes nao aparece" que o dono relatou.
+ *
+ * Em CSS o relogio da animacao e do NAVEGADOR e corre independente do
+ * JavaScript. Com a thread travada a animacao perde quadros — mas continua na
+ * posicao certa quando volta, em vez de congelar e pular.
+ *
+ * A/B com a cena 3D ligada e desligada deu 602 ms contra 594 ms de bloqueio: a
+ * cena 3D NAO era a causa, e o palpite de que era estava errado. */
+.raio-intro-traco {
+  /* `pathLength="1"` no SVG normaliza o comprimento: o dash trabalha em
+     unidades de 1, sem precisar medir o caminho em JS. */
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: raioDesenha 0.3s ease-in forwards, raioSome 0.75s ease-out forwards;
+}
+
+@keyframes raioDesenha { to { stroke-dashoffset: 0; } }
+@keyframes raioSome    { 0%, 50% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Flash da tela inteira e clarão do impacto. `opacity` e `transform` são as
+   duas propriedades que o navegador anima no compositor — elas continuam
+   suaves mesmo com a thread principal ocupada, que é o ponto de tudo isto. */
+.raio-intro-flash {
+  opacity: 0;
+  animation: raioFlash 0.34s ease-out 0.28s forwards;
+}
+@keyframes raioFlash { 0% { opacity: 0; } 25% { opacity: 0.85; } 100% { opacity: 0; } }
+
+.raio-intro-clarao {
+  opacity: 0;
+  transform: scale(0);
+  animation: raioClarao 0.8s ease-out 0.28s forwards;
+}
+@keyframes raioClarao {
+  0%   { opacity: 0; transform: scale(0); }
+  35%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+.raio-intro-fundo {
+  animation: raioFundoSome 0.45s ease-out 0.82s forwards;
+}
+@keyframes raioFundoSome { to { opacity: 0; } }
+
+/* ── `[02/09]` As peças de videogame do site logado ───────────────────────
+ *
+ * Pedido do dono: o site logado deve ter "outras coisas... diferentes do
+ * resto, nem que seja controles de video game", e nao emoji de teclado —
+ * SVG desenhado.
+ *
+ * Mesma disciplina de custo do resto do projeto: SO `transform` e `opacity`,
+ * que o navegador anima no COMPOSITOR, fora da thread principal. Nenhum laco
+ * de JavaScript por quadro — foi exatamente esse laco que custou 29.441 ms de
+ * thread na cena 3D (§0.3).
+ *
+ * A deriva lenta e a rotacao suave sao de proposito: pecas girando rapido
+ * viram distracao numa tela onde a pessoa esta LENDO. Aqui elas atravessam a
+ * altura da tela em um a dois minutos.
+ */
+/* `[03/09]` `top: 100%` é o conserto do bug que deixou as peças invisíveis por
+ * dois dias — e ele mora aqui, não no componente, porque é a mesma correção
+ * para toda peça.
+ *
+ * Sem `top`, um elemento `position: absolute` fica na posição estática: o TOPO
+ * do container. A animação então empurrava a peça de `12vh` para `-108vh`, ou
+ * seja, ela nascia na borda de cima e saía da tela em segundos, passando o
+ * ciclo inteiro acima da janela.
+ *
+ * Medido num navegador de verdade, com a animação RODANDO — que foi o que
+ * faltou da primeira vez, quando eu conferi a aparência com `animation: none`
+ * e portanto desliguei justamente o que estava quebrado:
+ *
+ *   t=0s   top: -42px, -258px, -112px, -346px   (3 de 4 fora da tela)
+ *   t=3s   as quatro fora da tela
+ *
+ * Agora a peça nasce logo ABAIXO da borda de baixo e sobe cruzando a tela
+ * inteira, que é o movimento que o `translate` sempre descreveu.
+ */
+.peca-de-jogo {
+  position: absolute;
+  top: 100%;
+  animation-name: pecaFlutua;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes pecaFlutua {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg);          opacity: 0; }
+  6%   {                                                        opacity: var(--pico, 0.16); }
+  94%  {                                                        opacity: var(--pico, 0.16); }
+  100% { transform: translate3d(var(--deriva, 4vw), -118vh, 0) rotate(var(--giro, 40deg)); opacity: 0; }
+}
+
+/* ── `[03/09]` O fundo do SITE LOGADO — luz de arena ───────────────────────
+ *
+ * O dono corrigiu o que eu tinha entendido errado: *"quero que o fundo do site
+ * logado seja diferente do resto… não quero o fluxo de dados no site logado"*.
+ * O "mesmo fundo pra todas as rotas" era entre as ABAS do site logado, não
+ * entre o site e a landing.
+ *
+ * Os papéis ficam separados de propósito: esta camada é ATMOSFERA (luz que
+ * respira, quase parada) e as peças de videogame são o MOVIMENTO. Duas coisas
+ * se mexendo disputariam atenção com o conteúdo — e o site logado é onde se lê.
+ *
+ * Só `transform` e `opacity`: compositor, sem laço de JavaScript por quadro.
+ */
+.luz-da-arena {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  will-change: transform, opacity;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--cor) 60%, transparent) 0%,
+    transparent 70%);
+}
+
+.luz-da-arena--alta {
+  width: 60vw;
+  height: 60vw;
+  max-width: 900px;
+  max-height: 900px;
+  left: -10vw;
+  top: -18vh;
+  opacity: 0.38;
+  animation: luzRespira 37s ease-in-out infinite;
+}
+
+.luz-da-arena--baixa {
+  width: 46vw;
+  height: 46vw;
+  max-width: 700px;
+  max-height: 700px;
+  right: -8vw;
+  bottom: -14vh;
+  opacity: 0.30;
+  /* 53 s contra 37 s: os dois ciclos sao primos entre si, entao as duas luzes
+   * nunca voltam a mesma posicao relativa e o olho nao acha a repeticao. */
+  animation: luzRespira 53s ease-in-out infinite reverse;
+}
+
+@keyframes luzRespira {
+  0%,  100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%       { transform: translate3d(4vw, 3vh, 0) scale(1.18); }
+}
+
+
+
+/* ── `[03/09]` As mini explosões ───────────────────────────────────────────
+ *
+ * Pedido do dono: *"fazer mini explosões com as cores do site enquanto os
+ * objetos sobem, não precisa ser algo muito exagerado, como se tivesse algo
+ * explodindo ao fundo"*.
+ *
+ * ── Por que elas usam as cores do SITE, e não a da seção ───────────────────
+ *
+ * Todo o resto do fundo é monocromático — a luz e as peças herdam o acento da
+ * aba. Se a explosão também herdasse, ela sumiria dentro da própria cor. As
+ * três cores da marca (verde, roxo, ciano) são o que faz o estouro LER como
+ * estouro, e é literalmente o que ele pediu: "com as cores do site".
+ *
+ * ── Anel, e não bolha ──────────────────────────────────────────────────────
+ *
+ * Um círculo cheio que cresce parece uma mancha. O `radial-gradient` com o
+ * miolo transparente e a borda acesa desenha um ANEL de choque — o mesmo
+ * desenho que a gente reconhece de explosão em jogo, e que sai muito mais
+ * barato do que partículas.
+ *
+ * ── O ritmo: 12% de trabalho, 88% de espera ───────────────────────────────
+ *
+ * O keyframe estoura nos primeiros 12% e fica invisível o resto do ciclo. Com
+ * ciclos de 17 a 29 s e atrasos diferentes, aparece um estouro a cada poucos
+ * segundos, em lugar diferente — sem nunca haver dois ao mesmo tempo por
+ * acidente de sincronia. "Não exagerado" era o pedido, e a espera é o que
+ * entrega isso.
+ *
+ * `transform` e `opacity` apenas: compositor, mesmo custo de zero.
+ */
+.explosao-de-fundo {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  will-change: transform, opacity;
+  background: radial-gradient(circle,
+    transparent 38%,
+    color-mix(in srgb, var(--cor) 55%, transparent) 52%,
+    transparent 68%);
+  animation-name: explodeAoFundo;
+  animation-timing-function: cubic-bezier(0.15, 0.7, 0.3, 1);
+  animation-iteration-count: infinite;
+}
+
+@keyframes explodeAoFundo {
+  0%   { transform: scale(0.15); opacity: 0; }
+  3%   {                         opacity: 0.55; }
+  12%  { transform: scale(1);    opacity: 0; }
+  100% { transform: scale(1);    opacity: 0; }
+}
+
+/* `[03/09]` O aviso de banco fora do ar EMPURRA a página, em vez de cobrir.
+ *
+ * A faixa era `sticky`, e `sticky` empurra irmãos no fluxo — mas os cabeçalhos
+ * da landing e do site logado são `fixed`, e `fixed` é posicionado pela JANELA.
+ * Os dois ficavam debaixo dela. Medido no celular do dono: faixa de 65 px em
+ * `top: 0`, botão de menu em `top: 14` — o menu existia e não dava para tocar.
+ *
+ * Agora a faixa é `fixed` e publica a própria altura em `--altura-do-aviso`.
+ * Quem está fixo no topo lê a variável no `top`; e esta regra empurra todo o
+ * resto do app, para o conteúdo não começar embaixo dela.
+ *
+ * O padrão `0px` é o que garante que, sem faixa, nada muda — era o risco
+ * declarado: descer os fixos sem a faixa na tela abriria um buraco no topo.
+ */
+#root {
+  padding-top: var(--altura-do-aviso, 0px);
+}

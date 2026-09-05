@@ -39,9 +39,25 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/SEGURANCA.md` | O que protege o quê | — |
 | `docs/OPERACAO.md` | **Quando quebra.** Monitoramento, site fora do ar, CI | Feature |
 | `docs/DESEMPENHO.md` | **O histórico das medições** e o que cada uma desmentiu | O portão de bytes, que é operação |
-| `docs/DECISOES.md` | O que foi decidido e **descartado**, com data e motivo | Item a fazer |
-| `BACKLOG.md` | **Checklist.** Só o que falta | Decisão, histórico, item já feito |
-| `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado | — |
+| `docs/MODERACAO-IA.md` | A moderação por IA de mídia: política por categoria, limiares e as medições que os produziram | Moderação humana |
+| `docs/PAINEIS.md` | O que **a equipe** opera: painéis, banimento, config, trilha | O que o usuário comum vê |
+| `docs/PRIVACIDADE.md` | O que o site coleta **de verdade**, medido na implementação | Promessa não verificada |
+| `docs/VISAO-DE-FUTURO.md` | **Onde o produto pode chegar** — possibilidades, sem data e sem compromisso, com a menor versão de cada uma | Fila, prazo, especificação |
+| `docs/DECISOES.md` | O que foi decidido e **descartado** no PRODUTO, com data e motivo | Item a fazer |
+| `docs/DECISOES-FERRAMENTAL.md` | O mesmo, para a **esteira**: CI, Vercel, Sentry, email | Decisão de produto |
+| `docs/MANIFESTO.md` | Como o dono e o Claude trabalham **juntos** — papéis, continuidade | Regra executável (vai no `CLAUDE.md`) |
+| `docs/regras/*.md` | Partes do `CLAUDE.md` puxadas por `@import` — instrução de trabalho | Documentação do produto |
+| `docs/regras/EXECUCAO.md` | **Como executar** (`[03/09]`): sequência antes de mexer em arquivo, classificação da tarefa, território como recorte de contexto, e o que fazer ao perder o fio | Regra sobre o produto |
+| `supabase/*/README.md` | Como publicar Edge Function e versionar migration | Comportamento do site |
+| `BACKLOG.md` | **DOIS trabalhos** (`[03/09]`): a fila do que falta, e a seção **EM EXECUÇÃO**, que é a memória operacional da tarefa em curso | Decisão, histórico, item já feito, pensamento solto |
+| `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado. **Retrato de um dia — deve envelhecer**, e o varredor o ignora de propósito | Estado atual do sistema |
+
+> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->29<!--/n-->
+> documentos.** Os que faltavam não eram menores — eram `PRIVACIDADE.md`,
+> `PAINEIS.md` e os próprios `docs/regras/`, que são regra executável. Tabela de
+> "onde cada coisa mora" incompleta é pior do que tabela nenhuma: ela responde
+> com autoridade e manda a informação para o lugar errado, que foi como uma
+> medição foi parar no `FUNCIONALIDADES.md` em 29/08.
 
 ### As cinco regras
 
@@ -192,5 +208,67 @@ exatamente esse lembrar que produziu os três. Na prática:
 > As três se complementam de propósito e nenhuma substitui a outra. A 1 pega o
 > arquivo que sumiu; a 2 aponta onde olhar; a 3 é a única que pega texto que
 > ficou falso sem nada ter sumido — que foi o caso do `effectiveType`.
+
+### `[02/09]` A camada 3 falhou de novo, e por isso virou máquina em duas frentes
+
+> Cobrança do dono: *"estou percebendo que vc está dando muita bola fora…
+> **toda a documentação do projeto, não falo algumas, todas!** todas devem estar
+> atualizadas, e em uma única sessão… não estou pagando o Claude Pro pra vc
+> ficar vacilando desse jeito"*.
+
+**Ele está certo, e o diagnóstico é que a camada 3 é a única sem máquina.** As
+camadas 1 e 2 são scripts; a 3 é "reler antes de escrever", que depende de mim
+lembrar — e foi ela que falhou nos três casos de 28/08 e de novo em 02/09,
+quando o `AUDITORIA.md` afirmava *"131 arquivos / 14.362 linhas"* num projeto
+que tinha **dobrado**.
+
+**Os três portões existentes aprovaram aquilo**, cada um por um motivo
+diferente — o que mostra que não era descuido de nenhum, e sim uma pergunta que
+ninguém fazia. Os três olham **nome de arquivo**; nenhum lê o que o texto
+**afirma**.
+
+Duas partes da camada 3 são mecanizáveis, e viraram portão:
+
+| Mecanismo | Pergunta | Reprova? |
+| --- | --- | --- |
+| `scripts/numeros-do-projeto.mjs` (`npm run numeros`) | **o número escrito bate com o projeto?** | **sim**, no CI |
+| `scripts/territorio-coberto.mjs` | **toda parte do sistema tem documento responsável?** | **sim**, no CI |
+| `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **que documento ESTA sessão tornou suspeito?** | não — é lista de leitura |
+
+**O número deixa de ser digitado.** O documento escreve o valor dentro de um
+comentário HTML — `<!--n:src.arquivos-->338<!--/n-->` —, invisível no markdown
+renderizado. O script mede e reescreve; o CI confere. **Chave desconhecida é
+erro, não silêncio**: um typo faria aquele número nunca mais ser atualizado, com
+o agravante de parecer vigiado.
+
+**Marcador explícito, e não varredura de "N linhas"**, porque o histórico
+legítimo — *"918 → 197 linhas"* — precisa continuar congelado. Portão que grita
+no lugar certo pelo motivo errado vira ruído (§0.2, 4ª regra).
+
+**A cobertura de território fecha o buraco do próprio mapa.** O relatório mensal
+só enxerga o que está no mapa, e o mapa é escrito à mão: pasta fora dele não
+fica "atrasada", fica **invisível**, e aí o verde passa a significar "não olhei
+ali". Foi o caso de `src/components/privacidade/` — onde mora o texto da
+política —, que não tinha dono nenhum quando o PR #140 reescreveu o bloco de
+retenção. Na primeira execução ele achou ainda **três caminhos mortos**, um
+deles apagado desde o PR #105, deixando o `DESEMPENHO.md` meio vigiado.
+
+### O que continua sendo leitura humana — e como ela deixou de ser cega
+
+Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fingir
+que responde seria pior do que não ter portão (§6.3).
+
+O que mudou é o **custo** dessa leitura. Mandar reler
+<!--n:docs.linhas-->11.948<!--/n--> linhas por precaução a cada sessão consome
+contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
+deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
+cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
+**o que mudou embaixo de cada um**. `npm run docs -- --tudo` lista os
+<!--n:docs.arquivos-->29<!--/n--> por idade, para varredura completa.
+
+**A regra prática, e ela é curta:** rodar `npm run docs` **antes de fechar
+qualquer bloco de trabalho**, e abrir o que ele apontar. Um documento marcado
+`NAO TOCADO` não está necessariamente errado — está **não conferido**, que é
+exatamente o estado em que os erros de 28/08 e 02/09 sobreviveram.
 
 ---

@@ -22,7 +22,7 @@
  * `pendente: true` faz o bloco aparecer com o aviso, igual à página "Sobre".
  */
 
-export const ATUALIZADO_EM = '02/09/2026';
+export const ATUALIZADO_EM = '05/09/2026';
 
 /**
  * ── AS LISTAS QUE O SITE NÃO PODE CRESCER SEM ATUALIZAR ─────────────────────
@@ -48,6 +48,26 @@ export const CHAVES_DECLARADAS = [
   'gh_som_ambiente',
   'gh_som_avisado',
   'gh_aceite_adiado',
+  // `[04/09]` As duas da tela de boas-vindas. Ver `lib/boasVindas.js`.
+  'gh_entrando',
+  'gh_ja_entrou:',
+  // `[05/09]` As três do cofre do painel do Fundador. Ver `lib/cofre.js`.
+  // O código em si nunca é guardado — só um resumo SHA-256 com sal.
+  //
+  // `[05/09]` ELAS ENTRARAM NA TABELA VISÍVEL TAMBÉM, por decisão do dono.
+  //
+  // Eu tinha proposto o contrário — elas só nascem no aparelho de quem é
+  // fundador, e listá-las descreve para milhares de pessoas um armazenamento
+  // que existe para uma. Ele decidiu citar, e a razão dele é mais forte que a
+  // minha: a tabela abre dizendo "listados abaixo". Lista que se declara
+  // completa e não é deixa de ser verdade para quem lê, e o custo de uma
+  // política de privacidade menos verdadeira é maior do que o de três linhas a
+  // mais.
+  //
+  // Custou subir a `versao` do documento: todo mundo reaceita.
+  'gh_cofre_resumo',
+  'gh_cofre_sal',
+  'gh_cofre_aberto',
 ];
 
 /**
@@ -63,6 +83,12 @@ export const TERCEIROS_DECLARADOS = [
   '@sentry/react',
   '@vercel/analytics',
   '@vercel/speed-insights',
+  // `[03/09]` NÃO é dependência npm: o Cloudflare Turnstile é um `<script>`
+  // buscado em tempo de execução (`lib/turnstile.js`), só na página de contato.
+  // Fica escrito aqui porque esta lista é onde se procura "quem recebe alguma
+  // coisa" — mas repare que a trava que varre o `package.json` NUNCA o pegaria.
+  // Quem vigia terceiro carregado por script é `e2e/terceiro-no-contato.mjs`.
+  'cloudflare-turnstile (script, nao e dependencia npm)',
 ];
 
 export const BLOCOS = [
@@ -97,6 +123,11 @@ export const BLOCOS = [
     ],
     tabela: {
       titulo: 'O que fica guardado no seu navegador',
+      // `[05/09]` As três últimas linhas só nascem no aparelho de quem tem o
+      // cargo de fundador. Elas entraram na tabela a pedido do dono: a tabela
+      // diz "listados abaixo", e uma lista que se declara completa e não é
+      // deixa de ser verdade para quem lê. Custou subir a `versao` do
+      // documento — todo mundo reaceita —, e essa foi a escolha dele.
       colunas: ['O que é', 'Para quê', 'Some quando'],
       linhas: [
         ['Sua sessão', 'manter você logado', 'você sai da conta'],
@@ -107,6 +138,11 @@ export const BLOCOS = [
         ['Sua escolha sobre o som', 'lembrar se você ligou ou DESLIGOU o som da landing', 'você limpar o navegador'],
         ['Aviso de som já visto', 'não repetir o aviso a cada página', 'você fecha o navegador'],
         ['"Ver depois" no aviso de documentos', 'não repetir o pedido de aceite a cada tela', 'você fecha o navegador'],
+        ['Marca de "acabou de entrar"', 'mostrar a tela de boas-vindas UMA vez depois do login, e não a cada recarregamento', 'você fecha a aba'],
+        ['Marca de "já entrou aqui antes"', 'saber se a saudação é de estreia ou de volta', 'você limpar o navegador'],
+        ['Código do cofre da equipe (resumo)', 'destrancar o painel do Fundador neste aparelho — o código em si NUNCA é guardado, só um resumo dele', 'você limpar o navegador'],
+        ['Embaralhador do código do cofre', 'fazer o mesmo código gerar resumos diferentes em aparelhos diferentes', 'você limpar o navegador'],
+        ['Cofre já aberto nesta aba', 'não pedir o código de novo a cada tela', 'você fecha a aba'],
       ],
     },
   },
@@ -158,7 +194,11 @@ export const BLOCOS = [
         ['Vercel', 'hospeda o site; recebe seu IP no registro de acesso, como qualquer servidor'],
         ['Vercel Analytics', 'quantas visitas cada página teve, sem cookie e sem identificar você'],
         ['Sentry', 'erros do site. Recebe seu id e seu nome de usuário — nunca seu e-mail'],
-        ['Google Fonts', 'as fontes do site vêm de lá, e isso entrega seu IP ao Google'],
+        ['Cloudflare Turnstile',
+          'só na página de contato: é a verificação de "não sou um robô". '
+          + 'Recebe seu IP e sinais do navegador para decidir se você é uma '
+          + 'pessoa. Não recebe o que você escreveu e não é usado em nenhuma '
+          + 'outra página'],
       ],
     },
   },
@@ -186,21 +226,52 @@ export const BLOCOS = [
     id: 'menores',
     titulo: 'Idade mínima',
     icone: 'CalendarClock',
-    pendente: true,
-    dica: 'Falta a decisão do dono sobre o piso de idade (13, 16 ou 18 anos). '
-      + 'Hoje o cadastro exige 13 no formulário, mas o banco ainda não impõe '
-      + 'esse limite — está no BACKLOG.md como item 🟡, com a consulta de '
-      + 'dimensionamento pronta.',
+    pendente: false,
+    paragrafos: [
+      'É preciso ter pelo menos 13 anos para usar o GamerHub. A data de '
+      + 'nascimento é pedida no cadastro, e quem informar menos de 13 anos '
+      + 'não consegue criar a conta — isso é recusado pelo banco de dados, '
+      + 'não só pelo formulário.',
+      'A diferença importa: o site inteiro roda com uma chave pública, então '
+      + 'uma regra que existisse só na tela seria contornável por quem '
+      + 'soubesse falar direto com o servidor. Esta não é.',
+      'O que a gente NÃO faz é verificar documento. Nada em software impede '
+      + 'alguém de digitar uma data falsa, e conferir de verdade exigiria '
+      + 'pedir RG — desproporcional para um site como este. O que garantimos é '
+      + 'que o limite que está escrito aqui é o mesmo que o sistema aplica.',
+      'Se você é responsável por alguém com menos de 13 anos e acha que existe '
+      + 'uma conta dessa pessoa aqui, fale com a gente pelo formulário de '
+      + 'contato, na opção "Meus dados pessoais".',
+    ],
   },
 
   {
     id: 'por-quanto-tempo',
     titulo: 'Por quanto tempo a gente guarda',
     icone: 'Timer',
-    pendente: true,
-    dica: 'Falta definir o prazo de retenção do registro de tentativas de '
-      + 'login e da trilha de moderação. Ambos guardam dado pessoal e hoje '
-      + 'não têm prazo — item 🔵 no BACKLOG.md.',
+    pendente: false,
+    paragrafos: [
+      'Dado não fica guardado para sempre "porque sim". Cada coisa tem um '
+      + 'prazo, e passado esse prazo ela é apagada automaticamente — todo dia, '
+      + 'de madrugada, sem ninguém precisar mandar.',
+      'Seu perfil e o que você publica não estão nesta tabela: eles ficam '
+      + 'enquanto sua conta existir, e somem quando você apagar a conta.',
+    ],
+    tabela: {
+      titulo: 'Prazos de exclusão automática',
+      colunas: ['O que', 'Por quanto tempo', 'Por que esse prazo'],
+      linhas: [
+        ['Tentativas de login', '30 dias',
+          'servem para barrar ataque em andamento; tentativa de meses atrás não protege ninguém'],
+        ['Registro de moderação', '1 ano',
+          'precisa sustentar uma decisão questionada meses depois'],
+        ['Mensagens do formulário de contato', '2 anos',
+          'apagar cedo demais atrapalharia a própria moderação'],
+        ['Notificações já lidas', '30 dias', 'depois disso não aparecem em lugar nenhum'],
+        ['Chat de live encerrada', '7 dias', 'a live acabou; o chat dela não serve mais'],
+        ['Post na lixeira', '30 dias', 'a janela para a equipe conseguir restaurar'],
+      ],
+    },
   },
 
   {
@@ -224,10 +295,19 @@ export const BLOCOS = [
     id: 'controlador',
     titulo: 'Quem responde juridicamente por isso',
     icone: 'UserCheck',
-    pendente: true,
-    dica: 'Falta o dono decidir como se identificar como controlador dos '
-      + 'dados. É dado pessoal DELE — só ele decide o que expor. O canal de '
-      + 'contato, que era a outra metade deste bloco, já existe desde 02/09 e '
-      + 'está na seção acima.',
+    pendente: false,
+    paragrafos: [
+      'O GamerHub é um projeto pessoal, mantido por uma pessoa física — não há '
+      + 'empresa por trás. Quem responde pelos dados tratados aqui é quem '
+      + 'mantém o site, e o canal para falar com essa pessoa é o formulário '
+      + 'em /contato, na opção "Meus dados pessoais".',
+      'É por ali que você pede acesso, correção ou exclusão dos seus dados, e '
+      + 'é por ali que a resposta volta, no e-mail que você informar. Não '
+      + 'existe um segundo canal escondido: o formulário é o caminho, e ele '
+      + 'funciona sem conta e sem login.',
+      'Se um dia o projeto deixar de ser pessoal, esta seção muda e você será '
+      + 'avisado para aceitar a política de novo — é o mesmo mecanismo que '
+      + 'avisou quando os prazos de retenção entraram.',
+    ],
   },
 ];

@@ -101,19 +101,60 @@ const RPCS_FECHADAS = [
   ['soft_delete_post', 'apagar post alheio'],
   ['admin_list_users', 'listar todos os usuários com dado pessoal'],
   ['log_audit_event', 'forjar linha na trilha de auditoria'],
+  // `[03/09]` Esta é diferente das de cima: ela não dá privilégio nenhum, e
+  // por isso ficou aberta de propósito até hoje. O que ela dá é VOLUME — encher
+  // o formulário de contato e fechar o canal para todo mundo pelo disjuntor de
+  // 60/hora. É a porta que o captcha fecha, e o captcha só vale enquanto ela
+  // estiver fechada: com ela aberta, basta um POST direto aqui para pular a
+  // verificação inteira (§1.3).
+  ['enviar_mensagem_de_contato', 'pular o captcha e encher o canal de contato'],
 ];
 
 const falhas = [];
 const ok = (m) => console.log(`  OK      ${m}`);
 const falhou = (m, detalhe) => { console.log(`  FALHOU  ${m}`); falhas.push(detalhe); };
 
+/**
+ * `[03/09]` Banco inalcançável não é veredito sobre porta nenhuma.
+ *
+ * Duas coisas eram tratadas errado aqui, e as duas apareceram no mesmo dia em
+ * que o projeto foi pausado:
+ *
+ * 1. **O `fetch` estourando** subia como `TypeError: fetch failed` cru, com
+ *    pilha de `undici` e nenhuma frase em português. Quem esbarrasse nisso teria
+ *    que ler o código para descobrir que o problema não era o banco estar
+ *    aberto — era não dar para perguntar.
+ * 2. **HTTP 5xx** — o gateway da Supabase responde **540** com o projeto
+ *    pausado. Um 540 num `select` que deveria dar 401 cairia no `else` e seria
+ *    relatado como *"LEITURA ABERTA"*, que é uma acusação grave e falsa.
+ *
+ * Nos dois casos a saída é 2 (ambiente), não 1 (porta aberta): o CI continua
+ * vermelho, porque não dá para afirmar que as portas estão fechadas sem bater
+ * nelas — mas o motivo passa a ser **não verificado**, e não um alarme mentindo
+ * (`CLAUDE.md` §0.2, 4ª regra).
+ */
+function desistir(motivo) {
+  console.error(`\n  Nao consegui falar com o banco: ${motivo}`);
+  console.error('  Isto NAO prova nada sobre as portas — nem que estao');
+  console.error('  fechadas, nem que estao abertas. Causa mais comum: o');
+  console.error('  projeto Supabase esta PAUSADO (o gateway responde 540).');
+  console.error('\n  Para conferir de verdade, o projeto precisa estar ativo.\n');
+  process.exit(2);
+}
+
 async function pegar(caminho, opcoes = {}) {
-  const r = await fetch(`${URL_BASE}${caminho}`, {
-    headers: { ...cabecalhos, ...(opcoes.headers ?? {}) },
-    method: opcoes.method ?? 'GET',
-    body: opcoes.body,
-    signal: AbortSignal.timeout(15000),
-  });
+  let r;
+  try {
+    r = await fetch(`${URL_BASE}${caminho}`, {
+      headers: { ...cabecalhos, ...(opcoes.headers ?? {}) },
+      method: opcoes.method ?? 'GET',
+      body: opcoes.body,
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (e) {
+    desistir(`${e.message}${e.cause?.code ? ` (${e.cause.code})` : ''}`);
+  }
+  if (r.status >= 500) desistir(`HTTP ${r.status} em ${caminho}`);
   let corpo = null;
   try { corpo = await r.json(); } catch { /* 204, ou corpo não-JSON */ }
   return { status: r.status, corpo };
@@ -178,11 +219,80 @@ for (const [funcao, estrago] of RPCS_FECHADAS) {
   }
 }
 
+// ── 4. A porta que estava ENTREABERTA, e o teste não via ───────────────────
+//
+// Em 02/09 a sondagem manual desmentiu o verde deste próprio arquivo. O bloco
+// 1 acima pergunta `select=*`, e `profiles` responde 401 a isso — então a linha
+// dava OK e o SEGURANCA.md passou a afirmar que "profiles responde 401 ao
+// anônimo". A afirmação é falsa por coluna:
+//
+//     GET /rest/v1/profiles?select=*            -> 401
+//     GET /rest/v1/profiles?select=id,username  -> 200, as 5 linhas
+//
+// Privilégio no Postgres é POR COLUNA. Um `select=*` negado prova só que
+// ALGUMA coluna está fechada — nunca que a tabela está.
+//
+// Por que isto NÃO reprova hoje: a exposição de `id`+`username` é item 🟡 em
+// aberto no BACKLOG.md, esperando decisão do dono sobre o revoke (revoke de
+// coluna já derrubou este site três vezes). Portão vermelho por item conhecido
+// e não decidido bloquearia todo PR e viraria ruído (§0.2, 4ª regra).
+//
+// O que ele trava é a PIORA: a superfície é exatamente estas duas colunas, e
+// qualquer coluna a mais reprova.
+const SUPERFICIE_ANONIMA = {
+  profiles: {
+    // `[03/09]` `id` e `username` saíram de `pode` e entraram aqui: o item 🟡
+    // foi fechado. O que os mantinha abertos era a checagem de username
+    // duplicado no cadastro, que virou a RPC `username_disponivel` — ela
+    // responde a mesma pergunta sem devolver a lista de perfis.
+    pode: [],
+    naoPode: ['id', 'username', 'avatar_url', 'role', 'banned', 'banned_at',
+      'suspended_until', 'birth_date', 'bio', 'created_at'],
+    estrago: 'a lista de todos os usuarios, com o UUID e o nome de cada um — o '
+      + 'que liga site_config.updated_by a uma pessoa',
+  },
+};
+
+for (const [tabela, { pode, naoPode, estrago }] of Object.entries(SUPERFICIE_ANONIMA)) {
+  for (const coluna of naoPode) {
+    const { status } = await pegar(`/rest/v1/${tabela}?select=${coluna}&limit=1`);
+    if (status === 401 || status === 403) {
+      ok(`${tabela}.${coluna.padEnd(18)} continua negada (HTTP ${status})`);
+    } else {
+      falhou(`${tabela}.${coluna.padEnd(18)} ABRIU PARA O ANÔNIMO (HTTP ${status})`,
+        `A coluna \`${tabela}.${coluna}\` passou a ser legível SEM CONTA.\n`
+        + `    O que a tabela entrega quando isso acontece: ${estrago}.\n`
+        + '    Um `select=*` negado NAO prova tabela fechada — o privilegio do\n'
+        + '    Postgres e por COLUNA, e foi exatamente assim que a exposicao de\n'
+        + '    id+username passou meses invisivel para este portao.\n'
+        + '    Conferir: GRANT SELECT (coluna) ON profiles TO anon.');
+    }
+  }
+
+  // A inversa. Sem ela, um revoke amplo fecharia as duas colunas e o teste
+  // ficaria VERDE — que é a queda silenciosa descrita no bloco ABERTAS.
+  for (const coluna of pode) {
+    const { status } = await pegar(`/rest/v1/${tabela}?select=${coluna}&limit=1`);
+    if (status === 200) {
+      ok(`${tabela}.${coluna.padEnd(18)} legível (estado conhecido, item 🟡)`);
+    } else {
+      falhou(`${tabela}.${coluna.padEnd(18)} FECHOU (HTTP ${status})`,
+        `\`${tabela}.${coluna}\` deixou de ser legivel pelo anonimo.\n`
+        + '    Isso pode ser BOM — e o revoke do item 🟡 do BACKLOG.md. Se foi\n'
+        + '    proposital, tire a coluna de `pode` aqui e feche o item.\n'
+        + '    Se NAO foi, um revoke amplo pegou junto o que nao devia: veja as\n'
+        + '    tres quedas do site por essa causa em docs/regras/POSTURA.md.');
+    }
+  }
+}
+
 // ── Veredicto ──────────────────────────────────────────────────────────────
 if (falhas.length > 0) {
   console.error(`\n  ${falhas.length} porta(s) do banco fora do lugar:\n`);
   falhas.forEach(f => console.error(`  ─ ${f}\n`));
   process.exit(1);
 }
-console.log(`\n  ${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length}/`
-  + `${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length} portas do banco no lugar.\n`);
+const colunas = Object.values(SUPERFICIE_ANONIMA)
+  .reduce((n, s) => n + s.pode.length + s.naoPode.length, 0);
+console.log(`\n  ${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length + colunas}/`
+  + `${FECHADAS.length + ABERTAS.length + RPCS_FECHADAS.length + colunas} portas do banco no lugar.\n`);

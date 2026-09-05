@@ -141,11 +141,61 @@ transições discretas das páginas internas.
   e avisa que pedir reenvio invalida o link anterior.
 - **Email de confirmação** resistente a dark mode — template em Edge Function
   com cores explícitas (não herda tema escuro do cliente de email).
+- **`[05/09]` Ao entrar, a TELA vira um portão e ele abre.** Depois do login a
+  tela inteira é uma porta blindada — não um desenho de porta com fundo em
+  volta: as duas folhas ocupam metade da largura cada uma e vão de borda a
+  borda. No meio, um disco de tranca gira enquanto o site carrega, com o
+  ferrolho travado e os chevrons piscando; quando o perfil chega, a tranca
+  **para no encaixe, acende, o ferrolho recua** e só então as folhas deslizam
+  para os lados — **revelando o site, que já está montado atrás**. A saudação
+  (*"Seja bem-vindo, @fulano"* na estreia, *"Bem-vindo de volta"* nas outras)
+  fica gravada na própria chapa, acima da tranca.
+  Ela **não inventa espera**: cobre o intervalo em que o site carrega perfil,
+  cargo e feed, e sai assim que eles chegam (piso de 0,7 s para não piscar,
+  **teto de 2,5 s** — se o carregamento demorar, ela sai do mesmo jeito).
+  Recarregar a página **não** a reabre; ela é do momento de entrar, não de estar
+  logado. E o site **nunca aparece antes dela**: a marca de entrada é escrita
+  antes do login e o portão sobe no mesmo quadro em que a rota troca.
+  **`[05/09]` Quem acaba de confirmar a conta pelo email também vê o portão** —
+  antes esse caminho entrava direto no feed, e era justamente a primeira entrada
+  da pessoa na vida. Redefinir senha não conta: ela termina no login de novo.
+  E a saudação **não sai mais sem nome** quando o perfil demora — o apelido já
+  vem junto do login.
+- **`[04/09]` A troca entre "Entrar" e "Registrar" tem transição.** O conteúdo
+  entra em fade, **o card acompanha a altura** (o formulário de cadastro é 2,5×
+  mais alto que o de login) e **os lutadores do fundo se cruzam em fade** em vez
+  de trocar de estalo. A primeira pintura da página não anima: o formulário
+  aparece pronto.
+- **`[05/09]` Conquistas no perfil.** Oito, fixas, calculadas em cima do que a
+  pessoa já fez: primeiro post, 10 posts, primeira live, primeira curtida
+  recebida, 25 curtidas, 10 comentários, perfil completo e um mês de conta. As
+  que faltam aparecem **com o nome à mostra** e uma barra de progresso — o que
+  falta é objetivo, não enigma. Enquanto os dados não chegam, o card diz
+  "Carregando" em vez de mostrar tudo bloqueado.
+- **`[05/09]` O olho de mostrar/ocultar senha existe em TODO campo de senha do
+  site** — login, cadastro, redefinição, configurações e o cofre do Fundador —
+  e é igual no computador e no celular. Antes ele só aparecia em alguns
+  navegadores de Android, porque era o botão nativo deles e não do site: quem
+  usava computador, Firefox ou Safari simplesmente não tinha o recurso.
+  Cada campo começa **oculto**, sempre: lembrar a escolha faria a senha aparecer
+  sozinha na próxima visita.
 - **Login** com detecção de bloqueio por tentativas (ver
   [bloqueio de login](#bloqueio-de-login-por-tentativas)) e contagem regressiva
   ao vivo quando bloqueado.
 - Botão **"Voltar para a página inicial"** na tela de login (leva para a
   Landing sem precisar de conta).
+- **`[04/09]` A arena de fundo** — a tela de entrada tem dois lutadores **nas
+  cores do site** (verde neon × roxo), separados por uma fenda com o "VS". Quem chega no **login**
+  os vê se encarando; ao trocar para **registrar**, o de fogo dá um passo à
+  frente e vira para quem olha, e o de gelo recua de costas — é o
+  *character selected* que a tela inteira está contando. As bordas da tela são
+  emolduradas por circuito neon — verde de um lado, roxo do outro; no cadastro
+  só a do vencedor fica acesa. O "VS" anima na entrada **e na saída**. No celular eles ocupam
+  o terço de cima da tela, se encontrando no meio e saindo pelas laterais, e
+  dissolvem antes do formulário — o card cobre quase a largura toda, então
+  figura na lateral ficaria escondida atrás dele. O peso e o recorte estão em
+  [DESEMPENHO.md](DESEMPENHO.md); a origem das artes e a escolha de cortar em
+  vez de esticar, em [DECISOES.md](DECISOES.md).
 - **Recuperação de senha** por e-mail; indicador de força de senha.
 - **Configurações** (`Settings`): trocar senha, trocar e-mail (com confirmação),
   preferências de notificação (likes/comentários) e **deletar a própria conta**
@@ -271,6 +321,20 @@ blocos estão preenchidos.
 | Como a comunidade é cuidada | a moderação por IA + fila humana, em linguagem de visitante |
 | Este site foi construído com inteligência artificial | dito na cara, a pedido dele |
 | Para onde o GamerHub vai | o que ele quer que o site seja |
+| **Créditos** | a mídia de terceiro que o site usa, com autor, origem e licença |
+
+**O bloco de Créditos existe por obrigação, não por cortesia** — e a trava que
+o protege é de classe. A trilha da landing em 03/09 é *"Lofi Coffee Shop"*
+(Alex Morgan, Pixabay Content License), e essa licença **não exige**
+atribuição. O crédito ficou de qualquer forma: é o que o próprio Pixabay pede
+como boa prática, e afrouxar a trava para acomodar uma licença permissiva
+enfraqueceria a proteção da **próxima** mídia, que pode muito bem ser CC-BY —
+onde crédito visível é a diferença entre usar com e sem licença.
+
+`conteudoDoSobre.test.js` varre `src/assets/som/` e exige crédito declarado para
+**cada arquivo**. Provada nas duas direções: arquivo sem crédito reprova, e a
+pasta renomeada também — senão a varredura devolveria vazio e o teste passaria
+verde para sempre sem olhar nada.
 
 **Como ela é enfeitada** `[29/08]`: cada bloco abre com um ícone num quadrado
 na identidade do site, e os jogos que o dono citou viram **chips** com nome e
@@ -719,6 +783,36 @@ uma caixa fechada, e *"mandei e nunca responderam"* ficaria indistinguível de
 Os limites de vazão, o disjuntor, o alarme de enchente e os 14 testes em
 `ROLLBACK` estão em
 [`db/2026-09-02-canal-de-contato.md`](../db/2026-09-02-canal-de-contato.md).
+
+### `[02/09]` O fundo animado em TODAS as abas da barra lateral
+
+Pedido do dono, e uma correção de rota minha. Ele tinha perguntado em 02/09 se
+cada aba devia ter fundo próprio; eu registrei a decisão ("o mesmo para todas,
+variando a cor") e **entendi errado de qual barra lateral se tratava** — fui
+implementar no site logado. Ele corrigiu: *"não foi para o site logado que
+pedi, eu pedi para as rotas da barra lateral... eu queria que todas as abas
+assim como o sobre tivessem"*.
+
+A barra lateral da **landing** leva a `/sobre`, `/privacidade`, `/regras`,
+`/termos` e `/contato`. Só a primeira tinha fundo.
+
+**Onde ele foi posto, e por quê.** Na **casca** (`PaginaDeConteudo`), não em
+cada página. Posto em cada uma seriam quatro linhas iguais — e a quinta página
+nasceria sem, porque quem a escrevesse não saberia que precisa. Na casca, toda
+página que a usa ganha por construção.
+
+O componente saiu de `components/sobre/` para `components/conteudo/`: um
+arquivo chamado `sobre/FundoAnimado` usado por cinco páginas é um nome que
+mente, e nome que mente é o começo da duplicação.
+
+**A trava** (`PaginaDeConteudo.test.jsx`) cobre o fundo e as três regras que o
+enfeite não pode perder — não roubar clique, sumir com `prefers-reduced-motion`
+e não ser anunciado por leitor de tela. As quatro são **invisíveis quando
+quebram**: ninguém percebe que o fundo roubou um clique até tentar clicar num
+link por baixo dele, e ninguém reporta enfeite ausente como bug.
+
+Conferido nas cinco rotas num navegador: 24 elementos por camada,
+`pointer-events: none`, e o conteúdo acima.
 
 ### `[01/09]` A casca compartilhada das páginas de texto
 

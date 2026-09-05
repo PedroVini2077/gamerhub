@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from './useAuth.jsx';
 import {
-  listarMensagensDeContato, marcarMensagemDeContato,
+  listarMensagensDeContato, marcarMensagemDeContato, responderMensagemDeContato,
 } from '../services/contatoService';
 
 /**
@@ -50,5 +50,20 @@ export function useMensagensDeContato() {
     await carregar();
   }, [carregar, user?.id, profile?.username]);
 
-  return { mensagens, carregando, filtro, setFiltro, carregar, marcar };
+  /**
+   * `[03/09]` Responder de verdade — e o status vem como CONSEQUÊNCIA.
+   *
+   * Não existe mais um `marcar(id, 'answered')`: o painel só chega nesse estado
+   * porque um e-mail saiu. Era o defeito que o dono apontou — um botão
+   * afirmando um ato que o sistema não executava (§1.5).
+   */
+  const responder = useCallback(async (id, texto) => {
+    const { error } = await responderMensagemDeContato(id, texto);
+    if (error) { toast.error(error.message); return false; }
+    toast.success('Resposta enviada por e-mail.');
+    await carregar();
+    return true;
+  }, [carregar]);
+
+  return { mensagens, carregando, filtro, setFiltro, carregar, marcar, responder };
 }

@@ -10,6 +10,7 @@ import AdminApplicationCard from '../components/profile/AdminApplicationCard';
 import AvatarModal from '../components/profile/AvatarModal';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import PlayerStatsCard from '../components/profile/PlayerStatsCard';
+import ConquistasCard from '../components/profile/ConquistasCard';
 import PersonalInfoCard from '../components/profile/PersonalInfoCard';
 import GamingCard from '../components/profile/GamingCard';
 import SocialLinksCard from '../components/profile/SocialLinksCard';
@@ -53,6 +54,11 @@ export default function Profile() {
         stats={stats} xpData={xpData} rank={rank}
         progress={progress} nextTier={nextTier} isOwner={isOwner}
       />
+
+      {/* `[05/09]` As conquistas vêm logo depois dos stats porque leem os
+          MESMOS dados — a chamada de XP que o card acima já fez. Nenhuma
+          consulta nova entra por causa deste card. */}
+      <ConquistasCard xpData={xpData} profile={profile} />
 
       {/* Candidatura a admin — só faz sentido pra quem ainda é usuário comum */}
       {profile?.role === 'user' && <AdminApplicationCard userId={user.id} />}

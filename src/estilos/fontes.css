@@ -1,0 +1,95 @@
+/* As fontes do site, servidas do próprio domínio.
+ *
+ * Saiu do `index.css` em 04/09 junto com o resto do split (§4). O conteúdo é o
+ * mesmo, na mesma ordem — só mudou de arquivo. */
+
+/* ── `[03/09]` As fontes moram AQUI, e não no Google ───────────────────────
+ *
+ * Achado da auditoria de privacidade de 01/09: o Google Fonts era o **único
+ * terceiro que a landing contactava**, e todo visitante — inclusive quem só
+ * abre a página e vai embora — entregava o IP ao Google sem ter escolhido nada.
+ *
+ * Era boa prática, não obrigação legal, e a distinção continua valendo. O que
+ * mudou é que o custo de resolver ficou pequeno: são 96 KB de fonte,
+ * servidos do mesmo domínio.
+ *
+ * ── O que se ganha além da privacidade ─────────────────────────────────────
+ *
+ * Some uma cadeia de rede inteira. Antes: `preconnect` -> baixar o CSS do
+ * Google -> descobrir a URL do woff2 -> baixar do `fonts.gstatic.com`. Eram
+ * DOIS domínios e duas viagens antes do primeiro glifo. Agora o `@font-face`
+ * já está neste arquivo e o navegador vai direto ao arquivo, no mesmo host.
+ *
+ * ── Só o subconjunto `latin` ───────────────────────────────────────────────
+ *
+ * O Google servia também cirílico, grego e vietnamita. Um site em português
+ * não usa nenhum, e cada um é um arquivo a mais. Baixar tudo seria pagar banda
+ * por glifo que ninguém vai ver.
+ *
+ * O `unicode-range` continua declarado: é ele que faz o navegador nem buscar a
+ * fonte quando a página não tem nenhum caractere daquela faixa.
+ *
+ * ── `font-display: swap` ───────────────────────────────────────────────────
+ *
+ * O texto aparece na fonte do sistema e troca quando a fonte chega. A
+ * alternativa (`block`) esconderia o texto por até 3 s — texto invisível é
+ * pior do que texto na fonte errada.
+ */
+
+
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  /* Arquivo VARIAVEL: os quatro pesos que o site usa (400/600/700/900) vinham
+   * do MESMO woff2 — conferido por md5, os quatro downloads eram byte a byte
+   * iguais. Declarar a faixa evita servir quatro copias do mesmo arquivo. */
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('/fonts/orbitron-variavel.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/rajdhani-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/rajdhani-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/rajdhani-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/rajdhani-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Share Tech Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/share-tech-mono-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}

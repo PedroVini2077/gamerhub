@@ -1,0 +1,71 @@
+/* O disco do COFRE do painel do Fundador.
+ *
+ * O desenho está em `components/owner/DiscoDoCofre.jsx`; a lógica, em
+ * `lib/cofre.js`. Aqui mora só o giro.
+ *
+ * `transform-box: view-box` porque a origem padrão do `transform` num nó SVG é
+ * o canto do viewBox — sem isso, "girar no centro" vira girar em torno do canto
+ * da tela.
+ */
+
+.cofre-disco {
+  transform-box: view-box;
+  transform-origin: 100px 100px;
+}
+
+/* TRÊS voltas exatas, desacelerando até o encaixe: é a leitura de "destravou",
+   e não de "está carregando". Os 900 ms batem com o teto cravado no
+   `CofreDoFundador.jsx` — mudar um sem o outro corta a animação no meio.
+
+   `1080deg` e não um número qualquer: múltiplo de 360 devolve o ponteiro ao
+   topo. A primeira versão parava em 995deg — 275deg, ou seja, ponteiro
+   apontando para a esquerda —, e disco de cofre parado torto lê como travado
+   no meio do caminho, que é o oposto do que a animação existe para dizer. */
+.cofre-girando .cofre-disco {
+  animation: cofreAbre 900ms cubic-bezier(0.25, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes cofreAbre {
+  to { transform: rotate(1080deg); }
+}
+
+.cofre-girando .cofre-ponteiro {
+  animation: cofreAcende 900ms ease-out forwards;
+}
+
+@keyframes cofreAcende {
+  to { fill: #ffd7a8; }
+}
+
+/* Quem pediu menos movimento não recebe o giro — recebe o resultado. A
+   informação fica; o movimento sai. */
+@media (prefers-reduced-motion: reduce) {
+  .cofre-girando .cofre-disco,
+  .cofre-girando .cofre-ponteiro { animation: none; }
+  .cofre-girando .cofre-ponteiro { fill: #ffd7a8; }
+}
+
+/* ── O botão do cofre ────────────────────────────────────────────────────────
+ *
+ * Laranja, e não o verde do `btn-solid`. O painel do Fundador é laranja em todo
+ * o site (`#f97316`), e um botão verde no meio dele lê como se a tela fosse de
+ * outro lugar — a primeira renderização saiu assim e o print entregou.
+ *
+ * Não vira utilitário do Tailwind porque é uma peça só, de uma tela só. */
+.cofre-botao {
+  background: linear-gradient(180deg, #f97316 0%, #c2560d 100%);
+  color: #140c05;
+  border: 1px solid #ffa04d;
+  box-shadow: 0 0 22px rgba(249, 115, 22, 0.25);
+  transition: filter 160ms ease, opacity 160ms ease;
+}
+
+.cofre-botao:hover:not(:disabled) { filter: brightness(1.12); }
+
+/* Desabilitado tem que PARECER desabilitado: sem isto, a pessoa clica num botão
+   que não responde e acha que a tela travou. */
+.cofre-botao:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  box-shadow: none;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { varrerFontes } from '../../../lib/__tests__/varrerFontes';
 import {
   BLOCOS, ATUALIZADO_EM, CHAVES_DECLARADAS, TERCEIROS_DECLARADOS,
@@ -146,5 +146,153 @@ describe('a política acompanha o crescimento do site', () => {
       + '  Antes de declarar: veja O QUE ele recebe, se dá para mandar menos, e\n'
       + '  se ele usa cookie — a página afirma que nao ha nenhum.\n'
     )).toEqual([]);
+  });
+});
+
+/**
+ * `[03/09]` As fontes não podem voltar a ser de terceiro sem ninguém decidir.
+ *
+ * O Google Fonts era o **único terceiro que a landing contactava**: todo
+ * visitante entregava o IP ao Google só por abrir a página. As fontes passaram
+ * a ser servidas do próprio site (`public/fonts/`, `@font-face` no
+ * `index.css`), e a linha saiu da tabela de terceiros da política.
+ *
+ * O risco agora é o inverso do de antes: alguém acrescenta uma fonte nova
+ * copiando um `<link>` do Google — que é o caminho natural, porque é o que a
+ * página deles manda fazer — e o terceiro volta **sem** a política dizer.
+ *
+ * As duas travas existentes não pegam isso: `TERCEIROS_DECLARADOS` varre
+ * `package.json` (e um `<link>` não é dependência), e a de cookies varre o
+ * código-fonte JS.
+ */
+describe('nenhuma fonte vem de terceiro', () => {
+  const HOSTS = [
+    ['fonts.googleapis.com', 'Google Fonts (CSS)'],
+    ['fonts.gstatic.com', 'Google Fonts (arquivos)'],
+    ['use.typekit.net', 'Adobe Fonts'],
+    ['fonts.bunny.net', 'Bunny Fonts'],
+    ['cdn.jsdelivr.net/npm/@fontsource', 'Fontsource via CDN'],
+  ];
+
+  /**
+   * `[04/09]` Todo o CSS, e não só o `index.css`.
+   *
+   * A trava lia um arquivo com nome cravado, e o split do CSS a quebrou — o
+   * bloco de `@font-face` mudou para `src/estilos/fontes.css`. Ela **fez o
+   * trabalho dela**: reprovou em vez de passar sobre um arquivo sem fontes.
+   *
+   * O conserto não foi trocar um nome cravado por outro: agora ela varre toda
+   * folha de estilo de `src/`. Assim vale para arquivo de CSS que ainda não
+   * existe, e é impossível esconder um terceiro criando um arquivo novo.
+   */
+  const folhasDeEstilo = () => [
+    'src/index.css',
+    ...readdirSync('src/estilos').filter(f => f.endsWith('.css')).map(f => `src/estilos/${f}`),
+  ];
+
+  const alvos = () => ['index.html', ...folhasDeEstilo()];
+
+  it('nem o index.html nem NENHUMA folha de estilo buscam fonte de fora', () => {
+    const lista = alvos();
+    // Prova que leu de verdade: se a pasta `src/estilos` mudar de lugar, a
+    // varredura ficaria sobre uma lista curta e verde para sempre.
+    expect(lista.length,
+      'a lista de folhas de estilo encolheu — src/estilos/ mudou de lugar?\n'
+      + '  Sem os arquivos, esta trava nao verifica nada.').toBeGreaterThanOrEqual(6);
+
+    for (const alvo of lista) {
+      const bruto = readFileSync(alvo, 'utf8');
+      expect(bruto.length, `${alvo} veio vazio`).toBeGreaterThan(200);
+
+      // A mencao em COMENTARIO e legitima e existe de proposito nos dois
+      // arquivos: eles contam por que as fontes sairam de la. O que nao pode
+      // voltar e uma URL de verdade — entao a busca e feita no arquivo SEM
+      // comentario, que e mais simples e mais dificil de errar do que tentar
+      // reconhecer `href`/`src`/`url()` por expressao regular.
+      const semComentario = bruto
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '');
+
+      for (const [host, nome] of HOSTS) {
+        expect(semComentario,
+          `${alvo} voltou a buscar fonte do ${nome}.\n`
+          + '  Isso entrega o IP de TODO visitante a um terceiro, inclusive de\n'
+          + '  quem so abre a landing e vai embora — era o unico terceiro que a\n'
+          + '  landing contactava, e foi removido em 03/09.\n'
+          + '  Se a fonte nova e mesmo necessaria: baixe o woff2 para\n'
+          + '  public/fonts/, declare o @font-face em src/estilos/fontes.css, e\n'
+          + '  SO entao\n'
+          + '  esta trava fica verde. Se o terceiro for proposital, ele precisa\n'
+          + '  entrar na tabela de terceiros da politica de privacidade.')
+          .not.toContain(host);
+      }
+    }
+  });
+
+  it('os arquivos de fonte que o CSS declara existem mesmo', () => {
+    // Sem isto, renomear um woff2 daria fallback silencioso para a fonte do
+    // sistema: nada quebra, nada avisa, e o site so fica com outra cara (§4).
+    const css = folhasDeEstilo().map(f => readFileSync(f, 'utf8')).join('\n');
+    const declarados = [...css.matchAll(/url\('(\/fonts\/[^']+)'\)/g)].map(m => m[1]);
+
+    expect(declarados.length,
+      'nenhum @font-face local encontrado no CSS de src/ — as fontes voltaram\n'
+      + '  a vir de fora, ou o bloco foi removido').toBeGreaterThanOrEqual(5);
+
+    for (const caminho of declarados) {
+      expect(existsSync(`public${caminho}`),
+        `o @font-face aponta para public${caminho}, que NAO existe.\n`
+        + '  O navegador cairia na fonte do sistema em silencio.').toBe(true);
+    }
+  });
+});
+
+/**
+ * `[03/09]` Bloco PENDENTE — o que dá para travar, e o que NÃO dá.
+ *
+ * O caso: a `/privacidade` continuou mostrando *"Esta parte ainda depende de
+ * uma decisão… falta a decisão do dono sobre o piso de idade"* **depois** de a
+ * idade mínima ter sido decidida (13 anos, 02/09) e passado a ser imposta pelo
+ * banco (03/09). O dono viu no celular.
+ *
+ * ── A trava que eu tentei, e por que ela foi DESCARTADA ────────────────────
+ *
+ * A primeira versão perguntava: *"um bloco `pendente` cuja dica cita o
+ * `BACKLOG.md` tem item lá?"*. Eu a provei reinjetando o bug exato — e **ela
+ * não disparou**.
+ *
+ * O motivo é estrutural, não um ajuste de regex: o `BACKLOG.md` passou a ser
+ * memória operacional (§9.5), então o plano da própria tarefa mencionava
+ * "idade mínima" e satisfazia a busca. A trava passava pelo motivo errado.
+ *
+ * Ela foi removida em vez de remendada. Trava que dá verde sem sustentar nada
+ * é pior do que trava nenhuma — ensina a confiar num sinal que não segura
+ * (§2: se passa com o bug presente, é decoração).
+ *
+ * ── O que ficou no lugar ───────────────────────────────────────────────────
+ *
+ * 1. **O teste abaixo**, que é determinístico: bloco pendente sem dica, ou com
+ *    dica curta demais, mostra o aviso amarelo e não explica o buraco.
+ * 2. **O `scripts/inicio-de-sessao.sh`**, que passou a listar os blocos
+ *    pendentes dos documentos públicos a cada sessão. É a mesma classe de
+ *    mecanismo que funcionou para os itens 🔴/🟠 do backlog (§6.3): não tenta
+ *    julgar, só põe na frente.
+ *
+ * **Por que não uma terceira regra:** o §9.8 manda perguntar por que a
+ * existente falhou. O `npm run docs` funciona numa direção — código mudou,
+ * confira o documento. A direção que faltava é *"o documento diz RESOLVIDO; o
+ * texto do usuário acompanhou?"*, e essa é julgamento. O que dá para mecanizar
+ * é a lembrança, não o veredito.
+ */
+describe('bloco pendente precisa explicar o que falta', () => {
+  it('todo bloco pendente tem dica, e ela diz o que falta', () => {
+    // Um bloco pendente SEM dica mostra o aviso amarelo e nao explica nada —
+    // o leitor fica sabendo que ha um buraco e nao sabe qual.
+    for (const b of BLOCOS.filter(x => x.pendente)) {
+      expect(b.dica, `o bloco "${b.titulo}" esta pendente e nao tem dica`).toBeTruthy();
+      expect(b.dica.length,
+        `a dica de "${b.titulo}" e curta demais para explicar o que falta`)
+        .toBeGreaterThan(40);
+    }
   });
 });

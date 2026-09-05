@@ -1,0 +1,24 @@
+-- Funcao de TRIGGER nao precisa de EXECUTE para disparar.
+--
+-- O Postgres checa esse privilegio na CRIACAO do trigger, nao a cada disparo
+-- (CLAUDE.md §5). Entao o `GRANT` que vem por padrao nao serve para nada aqui
+-- alem de publicar a funcao em `/rest/v1/rpc/<nome>`.
+--
+-- Como isto apareceu: o `get_advisors` acusou
+-- `anon_security_definer_function_executable` na
+-- `enfileirar_conteudo_denunciado`, que eu mesmo tinha acabado de criar. Em vez
+-- de corrigir so a minha, varri a CLASSE (§1.3) — toda funcao que devolve
+-- `trigger` e tem EXECUTE para `anon` ou `authenticated`. Apareceram duas, e a
+-- outra e antiga.
+--
+-- Risco real, dito com precisao: baixo. Chamar uma funcao de trigger fora de um
+-- trigger falha, porque `NEW` nao existe. Mas e superficie publicada sem
+-- proposito nenhum, e o §1.3 manda fechar o que da para fechar em vez de
+-- confiar em protecao acidental — hoje ela quebra por acidente de contexto, e
+-- nao por decisao de ninguem.
+--
+-- `log_report_created` grava em `admin_logs`; `enfileirar_conteudo_denunciado`
+-- escreve em `moderation_queue`. Sao exatamente os dois lugares onde entrada
+-- forjada faria estrago se algum dia o contexto deixasse de proteger.
+REVOKE EXECUTE ON FUNCTION public.enfileirar_conteudo_denunciado() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.log_report_created() FROM PUBLIC, anon, authenticated;
