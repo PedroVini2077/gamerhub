@@ -63,6 +63,21 @@ travas derivam os valores das próprias migrations, lendo por posição de colun
 devolve em vez de recalcular os limiares). Relatório completo em
 [`db/2026-09-05-fase4-deriva-codigo-banco.md`](db/2026-09-05-fase4-deriva-codigo-banco.md).
 
+### `[05/09]` Duas coisas fechadas depois, no mesmo bloco
+
+**O cofre ganhou o botão "Trancar".** O dono perguntou de quanto em quanto tempo
+ele fecha, e a resposta expôs um buraco meu: ele abre uma vez por **aba**, não
+fecha por tempo nenhum — e `fecharCofre()` existia sem nenhuma tela chamando.
+Ou seja, a única forma de trancar de novo era fechar a aba, e quem levanta do
+computador deixava o painel aberto atrás de si. Mesma falha do §5 que eu já
+tinha cometido com o "esquecer código". Travado: agora um teste confere que as
+duas inversas estão **ligadas a uma tela**, não só exportadas.
+
+**`get_user_xp` deixou de ser alcançável por anônimo.** Era o que faltava do que
+eu tinha declarado como não coberto na Fase 4. Severidade baixa (devolve
+agregação de dado já público), mas é endpoint de cálculo sem sessão e nenhum
+caminho anônimo precisava dele. Testado em `ROLLBACK` antes de aplicar.
+
 ### `[05/09]` O campo de senha do site inteiro
 
 Relato do dono, com print do celular: *"esse campo de senha tá estranho, além de
@@ -483,7 +498,7 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->97<!--/n--> arq ·
-  <!--n:src.lib.linhas-->8.798<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->8.843<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

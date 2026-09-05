@@ -93,12 +93,42 @@ trava de `admin_logs` falha nomeando-o; removido o de `security_alert`, a de
 escapa desta trava. É o mesmo buraco que o README de `supabase/migrations` já
 descreve, e a resposta é a mesma: **migration que não está lá não existe**.
 
-## O que NÃO foi feito
+## As quatro funções alcançáveis por quem NÃO tem conta
 
-Os 53 avisos de `SECURITY DEFINER` executável não foram tratados nesta passada.
-Quatro deles são alcançáveis por quem **não tem conta** —
-`check_login_status`, `contagem_de_migrations`, `get_user_xp` e
-`username_disponivel`. O corpo do `check_login_status` foi lido: ele só consulta
-`login_attempts`, e uma linha ali existe a partir da primeira tentativa, então
-**não confirma se a conta existe** — não é oráculo de enumeração. Os outros três
-não foram analisados um a um, e isso é amostra, não cobertura.
+Lidas uma a uma, o corpo inteiro. Não é amostra: são quatro.
+
+| Função | O que ela entrega a um estranho | Veredito |
+| --- | --- | --- |
+| `check_login_status(email)` | o estado de bloqueio daquele email | 🔵 **fica** — só lê `login_attempts`, e uma linha ali nasce na primeira TENTATIVA, exista a conta ou não. Não confirma existência, então não é oráculo de enumeração. A tela de login precisa dela antes de haver sessão |
+| `username_disponivel(texto)` | se um apelido já existe | 🔵 **fica** — é por construção: o formulário de cadastro checa disponibilidade antes de existir conta. Valida o formato antes de consultar, e apelido é público de qualquer forma (aparece em todo post) |
+| `contagem_de_migrations()` | um inteiro: quantas migrations o projeto tem | 🔵 **fica** — zero dado pessoal, e é o que o portão de números usa |
+| `get_user_xp(uuid)` | contagem de posts, comentários e lives de alguém | 🟡 **FECHADA** — ver abaixo |
+
+### `get_user_xp` deixou de ser alcançável por anônimo
+
+**A severidade honesta é baixa**, e vale dizer para não inflar o achado: o que
+ela devolve é agregação de dado que já é público. Não vaza email, data de
+nascimento nem nada revogado.
+
+**Fechou por duas razões, e nenhuma é "por precaução":**
+
+1. É um endpoint de **cálculo** sem sessão — quatro `COUNT`, um deles com
+   `JOIN`, e nada limita quantas vezes por segundo alguém chama. Num plano
+   gratuito, computação anônima e ilimitada é cota sendo gasta (§0.2).
+2. **Ninguém anônimo precisa dela.** Verificado nos quatro chamadores:
+   `Ranks.jsx` usa `user.id`; `useUserXP` só é consumido por `Sidebar` e
+   `AvatarPopup`, que só existem logado; `fetchProfileStats` é do perfil; e
+   `/u/:username` está atrás de `RequireAuth`. Nenhum e2e ou script de CI a
+   chama com a chave anônima.
+
+Superfície que não serve a ninguém só pode ser usada contra o site.
+**Testado em `ROLLBACK` antes de aplicar:** assumindo `anon`, a chamada passou a
+ser recusada; assumindo `authenticated`, continuou funcionando.
+
+## O que continua NÃO coberto
+
+Os **48** avisos de `authenticated_security_definer_function_executable`. Eles
+são o desenho normal deste projeto — RPC feita para quem está logado, com a
+checagem de identidade dentro do corpo —, mas *"é o desenho normal"* não é
+evidência de que **cada uma** das 48 checa direito. Ler as 48 é trabalho de
+Fase 2, não de Fase 4, e não foi feito aqui.

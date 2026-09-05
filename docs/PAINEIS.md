@@ -189,7 +189,10 @@ Abrir `/owner` passou a pedir um código antes de mostrar o painel.
 | --- | --- |
 | **primeira vez neste navegador** | ele pede para você criar o código, e repetir |
 | **depois** | pede o código |
-| **enquanto a aba estiver aberta** | não pede de novo |
+| **enquanto a aba estiver aberta** | não pede de novo — nem depois de recarregar a página, nem ao navegar pelo site e voltar |
+| **passa o tempo que for** | continua aberto: **não existe temporizador**. Tempo fixo trancaria você no meio de uma moderação |
+| **você clica em "Trancar"** | fecha na hora, sem sair da aba |
+| **abriu numa aba nova** | pede o código de novo |
 | **fechou a aba** | pede na próxima vez |
 
 **O código é por aparelho e fica só nele.** Não vai para o banco, não é enviado
@@ -201,6 +204,11 @@ quem senta na frente do seu computador com a sua sessão aberta. Quem tem a
 sessão em si continua alcançando as funções pela API — o que impede isso são as
 regras do banco, que não dependem desta tela. A explicação inteira, com o que
 ele protege e o que não protege, está em [SEGURANCA.md](SEGURANCA.md).
+
+**O botão "Trancar"** fica no cabeçalho do painel, ao lado do título. Ele existe
+porque o cofre não fecha sozinho: sem ele, a única forma de trancar de novo era
+fechar a aba — e quem levanta do computador deixaria o painel aberto atrás de si,
+que é justamente a situação para a qual o cofre existe.
 
 **Se você esquecer o código:** tem um link **"Esqueci o código deste
 navegador"** embaixo do botão. Ele apaga o código guardado ali e pede um novo na

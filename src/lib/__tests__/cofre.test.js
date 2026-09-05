@@ -15,6 +15,7 @@
  * continua abrindo igual. É falha silenciosa clássica (§1.5), e só um teste
  * pega.
  */
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -110,6 +111,50 @@ describe('o desbloqueio vale por ABA', () => {
     // uma vez e nunca mais pediria código — em nenhum dia, em nenhuma aba.
     expect(sessionStorage.getItem('gh_cofre_aberto')).toBe('1');
     expect(localStorage.getItem('gh_cofre_aberto')).toBe(null);
+  });
+});
+
+/**
+ * As INVERSAS precisam estar ALCANÇÁVEIS, não só existir (§5).
+ *
+ * Este arquivo já provava que `fecharCofre` e `esquecerCodigo` funcionam. Só
+ * que uma função exportada que nenhuma tela chama não cumpre o §5 — ele pede a
+ * inversa **e quem pode executá-la**. As duas nasceram assim, e as duas foram
+ * ligadas depois: `esquecerCodigo` num link do cofre, `fecharCofre` no botão
+ * "Trancar" do cabeçalho do painel.
+ *
+ * A diferença é concreta: sem o botão, a única forma de trancar de novo era
+ * fechar a aba — e quem levanta do computador deixa o painel aberto atrás de
+ * si, que é exatamente a situação para a qual o cofre existe.
+ *
+ * Nada denuncia a volta disso: a função continua exportada, os testes dela
+ * continuam passando, e o build não repara em botão que sumiu.
+ */
+describe('as inversas estão ligadas a alguma tela', () => {
+  const chamadaEm = (arquivo, funcao) => {
+    const codigo = readFileSync(arquivo, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    return codigo.includes(`${funcao}()`);
+  };
+
+  it('`fecharCofre` é chamado pelo painel — o botão "Trancar"', () => {
+    expect(
+      chamadaEm('src/pages/Owner.jsx', 'fecharCofre'),
+      'src/pages/Owner.jsx nao chama fecharCofre().\n'
+      + 'Sem isso, a unica forma de trancar de novo e FECHAR A ABA — o cofre\n'
+      + 'nao fecha por tempo, de proposito. Quem levanta do computador deixa o\n'
+      + 'painel aberto atras de si.',
+    ).toBe(true);
+  });
+
+  it('`esquecerCodigo` é chamado pela tela do cofre', () => {
+    expect(
+      chamadaEm('src/components/owner/CofreDoFundador.jsx', 'esquecerCodigo'),
+      'CofreDoFundador.jsx nao chama esquecerCodigo().\n'
+      + 'Sem isso, esquecer o codigo tranca o dono fora do proprio painel\n'
+      + 'naquele navegador ate ele saber abrir o DevTools.',
+    ).toBe(true);
   });
 });
 

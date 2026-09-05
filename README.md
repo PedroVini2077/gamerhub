@@ -32,7 +32,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
 | [`docs/MANIFESTO.md`](docs/MANIFESTO.md) | Como o dono e o Claude trabalham **juntos** — papéis, quando explicar mais, continuidade |
 | [`supabase/functions/`](supabase/functions/README.md) | As Edge Functions em produção, e por que este espelho pode mentir |
-| [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — <!--n:migrations-->156<!--/n--> migrations que recriam o banco |
+| [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — <!--n:migrations-->157<!--/n--> migrations que recriam o banco |
 | `db/AAAA-MM-DD-*.md` | Relatórios de auditoria, com o que foi achado e como foi provado |
 
 ---
@@ -113,7 +113,7 @@ npm install
 criar o `.env` na raiz com a URL e a anon key do seu projeto Supabase.
 
 **4. Recriar o banco** (se for um projeto Supabase novo): aplicar as
-**[migrations](supabase/migrations/)** em ordem — são <!--n:migrations-->156<!--/n-->, e elas reconstroem o
+**[migrations](supabase/migrations/)** em ordem — são <!--n:migrations-->157<!--/n-->, e elas reconstroem o
 schema inteiro. O passo a passo e o que elas *não* cobrem (buckets, secrets,
 Auth Hook) estão no [README daquela pasta](supabase/migrations/README.md).
 
