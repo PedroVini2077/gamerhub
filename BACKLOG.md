@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**23 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -347,6 +347,21 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 
 
 ## 🟢 Recomendado
+
+- ⬜ `[05/09]` 🟢 **A query de índice nunca usado do §6.1 não serve neste
+  volume — e isso precisa estar escrito antes de alguém agir nela.**
+
+  Rodada hoje, ela devolveu **72 índices** com `idx_scan = 0` — **incluindo as
+  chaves primárias de quase toda tabela**. Não é dívida: é que o site tem poucos
+  usuários e a maioria dos caminhos nunca foi exercida. Apagar índice por esse
+  sinal seria estrago, não faxina.
+
+  **O que fazer:** deixá-la de fora da bateria enquanto o volume for este, ou
+  trocá-la por uma que compare `idx_scan` **entre** índices da mesma tabela (o
+  que distingue "ninguém usa este banco" de "ninguém usa este índice"). Enquanto
+  não houver tráfego real, nenhuma das duas responde nada.
+
+
 
 - ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
   *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*

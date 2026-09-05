@@ -114,6 +114,32 @@ jobs:
           fi
           exit $codigo
 
+      # `[05/09]` O que NAO reprova precisa aparecer FORA do log.
+      #
+      # O passo acima ja IMPRIMIA os avisos `low` e `moderate` — ele so nao
+      # reprova por eles, e isso e proposital (advisory novo aparece sozinho, e
+      # portao que grita a toa vira ruido; §0.2, 4a regra). O buraco era outro:
+      # log de job VERDE ninguem abre. Tres avisos ficaram parados ali ate o
+      # dono perguntar se a faxina estava sendo feita.
+      #
+      # Agora eles sobem para o RESUMO do PR, que e a pagina que se olha sem
+      # precisar querer. Continua sem reprovar — muda de "escondido num log
+      # verde" para "escrito na cara de quem revisa".
+      - name: Levar os avisos menores para o resumo do PR
+        if: always()
+        run: |
+          set +e
+          n=$(npm audit --json 2>/dev/null | node -e "
+            let e='';process.stdin.on('data',d=>e+=d).on('end',()=>{
+              try{const v=JSON.parse(e).metadata.vulnerabilities;
+                console.log((v.low||0)+(v.moderate||0));}catch{console.log(0)}});")
+          if [ "${n:-0}" -gt 0 ]; then
+            echo "### ${n} aviso(s) de dependência abaixo do limite de reprovação" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo 'Não reprovam (são `low`/`moderate`), mas a bateria de faxina do `CLAUDE.md` §6.1 pede **zero**.' >> $GITHUB_STEP_SUMMARY
+            echo 'Rode `npm audit` para ver quais, e `npm audit fix` ou um `overrides` no `package.json` para fechar.' >> $GITHUB_STEP_SUMMARY
+          fi
+
       # Job que se pula sozinho e verde que nao testou nada (§1.5). Enquanto a
       # conta de staff nao existir, o painel de admin segue SEM cobertura de
       # navegador — e isso tem que aparecer em algum lugar, nem que seja como

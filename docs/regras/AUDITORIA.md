@@ -296,12 +296,21 @@ select * from pg_stat_user_indexes where idx_scan = 0;  -- índice nunca usado
 
 **6. Saúde do projeto**
 ```bash
-npm audit            # 0 vulnerabilidades
+npm audit            # 0 vulnerabilidades — inclusive `low` e `moderate`
 npm run lint         # 0 erros; warnings não podem AUMENTAR
 npx vitest run       # tudo verde
 npm run build        # limpo
 node e2e/smoke.mjs   # rotas de pé num navegador real
 ```
+
+> **`[05/09]` O CI cobre parte disto, e a parte que ele NÃO cobre é a que
+> falhou.** O portão `Auditoria de dependências` reprova em `high`/`critical`, e
+> essa calibragem é deliberada — advisory novo aparece sozinho, em dependência de
+> dependência, e reprovar todo PR por um `low` de ferramenta de build vira ruído
+> (§0.2, 4ª regra). O efeito colateral é que `low` e `moderate` ficavam impressos
+> num log de job **verde**, que ninguém abre: três deles passaram semanas ali até
+> o dono perguntar se a faxina estava sendo feita. Agora eles sobem para o resumo
+> do PR. **O zero desta linha continua sendo trabalho da faxina, não do portão.**
 
 ### Regras da faxina
 
