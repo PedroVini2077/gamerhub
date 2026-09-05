@@ -1,7 +1,7 @@
 import { createElement } from 'react';
-import { Link } from 'react-router-dom';
+import BotaoVoltar from './BotaoVoltar';
 import { motion } from 'framer-motion';
-import { ArrowLeft, PencilLine } from 'lucide-react';
+import { PencilLine } from 'lucide-react';
 import { iconeDoBloco } from '../sobre/iconesDoSobre';
 import LandingFooter from '../landing/LandingFooter';
 import FundoAnimado from './FundoAnimado';
@@ -108,10 +108,9 @@ export default function PaginaDeConteudo({
           toda página que a usa ganha por construção. */}
       <FundoAnimado />
       <div className="relative z-10 max-w-3xl mx-auto px-4 md:px-6 pt-10 pb-16 space-y-10">
-        <Link to="/" className="inline-flex items-center gap-2 text-xs font-mono
-                                text-gray-400 hover:text-neon-green transition-colors">
-          <ArrowLeft size={14} /> Voltar
-        </Link>
+        {/* `[05/09]` Era `<Link to="/">`, que não voltava: navegava para a
+            landing viesse a pessoa de onde viesse. Ver `BotaoVoltar.jsx`. */}
+        <BotaoVoltar />
 
         <motion.header
           initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}

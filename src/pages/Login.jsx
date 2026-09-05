@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
@@ -14,8 +14,9 @@ import LoginSemBanco from '../components/auth/LoginSemBanco';
 import ArenaDeEntrada from '../components/auth/ArenaDeEntrada';
 import CardQueAcompanhaAltura from '../components/auth/CardQueAcompanhaAltura';
 import { fadeTab } from '../lib/motion';
-import { isLoginBlocked } from '../lib/loginBlock';
 import { useDbOffline } from '../hooks/useDbOffline';
+import { useModoDaEntrada } from '../hooks/useModoDaEntrada';
+import { useBloqueioDeLogin } from '../hooks/useBloqueioDeLogin';
 
 /**
  * A frase abaixo do logo, por modo.
@@ -37,7 +38,9 @@ export default function Login() {
   // resto do projeto. Ver `LoginSemBanco` para o porquê de explicar em vez de
   // deixar tentar.
   const semBanco = useDbOffline();
-  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
+  // A aba vive na URL (`?modo=cadastro`), e não no estado do React: estado
+  // morre na navegação, e foi por isso que voltar dos termos reabria "entrar".
+  const [mode, setMode] = useModoDaEntrada();
   const [email, setEmail]                   = useState('');
   const [password, setPassword]             = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -49,22 +52,9 @@ export default function Login() {
   // escolha; a PROVA é a linha em `policy_acceptances`, gravada no `signUp`.
   const [aceitouDocumentos, setAceitouDocumentos] = useState(false);
   const [loading, setLoading]               = useState(false);
-  const [block, setBlock]                   = useState(null); // { permanent, blocked_until } | null
   const [registeredEmail, setRegisteredEmail] = useState(null); // email pendente de confirmação (mostra tela "verifique seu email")
 
-  const isBlocked = isLoginBlocked(block);
-
-  // Enquanto bloqueado, consulta o servidor periodicamente para refletir
-  // desbloqueio feito pelo admin sem precisar recarregar a página.
-  useEffect(() => {
-    if (!isBlocked || !email.trim()) return;
-    const t = setInterval(async () => {
-      const { data } = await supabase.rpc('check_login_status', { p_email: email.trim() });
-      if (!data?.blocked) setBlock(null);
-      else setBlock({ permanent: data.permanent, blocked_until: data.blocked_until });
-    }, 8000);
-    return () => clearInterval(t);
-  }, [isBlocked, email]);
+  const [block, setBlock] = useBloqueioDeLogin(email);
 
   // Uma chave só para as duas coisas que precisam dela: o `AnimatePresence`
   // (que conteúdo está na tela) e o card (quando animar a altura). Duas
@@ -191,7 +181,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-neon-green transition-colors mb-6"
+          className="arena-chip inline-flex items-center gap-1.5 text-xs font-mono mb-6"
         >
           <ArrowLeft size={14} /> Voltar para a página inicial
         </Link>
@@ -208,7 +198,7 @@ export default function Login() {
 
               Mapa EXPLÍCITO e não `mode === 'register' ? ... : ...`: modo novo
               sem frase aparece como `undefined` em vez de herdar a errada (§4). */}
-          <p className="text-gray-500 font-mono text-xs">
+          <p className="arena-texto font-mono text-xs">
             {LINHA_DO_MODO[mode]}
           </p>
         </div>
@@ -281,7 +271,7 @@ export default function Login() {
           )}
         </CardQueAcompanhaAltura>
 
-        <p className="text-center text-xs text-gray-600 font-mono mt-4">
+        <p className="arena-texto text-center text-xs font-mono mt-4 opacity-80">
           // GamerHub v1.0 — Powered by Supabase
         </p>
       </div>

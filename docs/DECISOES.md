@@ -312,7 +312,13 @@ não é dívida, é precaução.
 
 ### `[20/08]` `posts.likes` está morta e nada a lê
 
-A coluna existe mas nenhum trigger a mantém. O plano original era criar esse
+> **`[05/09]` DESFECHO: a coluna foi apagada.** Esta decisão continua aqui
+> porque explica **por que** o trigger nunca foi criado — e porque ela mostra o
+> preço de deixar uma coluna morta de pé: entre 20/08 e 05/09, *três* lugares
+> diferentes somaram essa coluna achando que ela valia alguma coisa. "Nada a lê"
+> era verdade no dia em que foi escrito, e deixou de ser sem ninguém mexer nela.
+
+A coluna existia mas nenhum trigger a mantinha. O plano original era criar esse
 trigger; na hora de implementar mostrou-se pior, porque `posts` tem triggers em
 `AFTER UPDATE` e cada curtida passaria a disparar essa cadeia. O feed resolve
 curtidas e comentários em **2 consultas em lote**, sem tocar no caminho de
@@ -1474,10 +1480,18 @@ like" é de outra pessoa — sem isso, curtir o próprio post seria 5 XP por cli
 **Efeito visível:** o XP de quem já recebeu curtidas **sobe**. É a correção de um
 valor que estava errado para baixo, não uma mudança de regra.
 
-### O que ficou pendente, e é decisão do dono
+### O desfecho, no mesmo dia
 
-A coluna `posts.likes` continua existindo, morta. Apagá-la seria a trava mais
-forte possível (o dado errado passa a ser **impossível**), mas `DROP COLUMN` é
-irreversível e entra no 🔴 do §7 — não faço sem ele mandar. Enquanto isso, a
-trava é o teste `xpNaoLeColunaMorta.test.js`, que varre as migrations e o
-JavaScript atrás do padrão.
+Eu tinha deixado isto como pendente — *"apagá-la seria a trava mais forte
+possível, mas `DROP COLUMN` é irreversível e entra no 🔴 do §7"*. **O dono
+autorizou, e a coluna foi apagada.**
+
+Antes de apagar, a busca foi por CLASSE e não só pela que eu conhecia: 24
+colunas que nenhuma função, policy, índice ou view do banco menciona; cruzadas
+com o código, **22 eram lidas pelo site**. Das 3 restantes, duas foram apagadas
+(`posts.likes`, 0 linhas com dado; `live_muted.muted_until`, 0 linhas) e
+**`admin_notification_reads.read_at` ficou**: 249 linhas COM dado. Coluna sem
+leitor mas com dado não é a mesma coisa que coluna sem leitor e sem dado.
+
+O teste `xpNaoLeColunaMorta.test.js` continua de pé — agora como segunda rede,
+não como única.

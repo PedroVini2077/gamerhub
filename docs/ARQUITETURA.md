@@ -96,6 +96,12 @@ src/
 │   │                      # não hook solto: duas chamadas criavam o MESMO
 │   │                      # canal de realtime e derrubavam o site
 │   ├── useDbOffline.js    # `true` enquanto o site está sem banco (ver lib/dbHealth)
+│   ├── useModoDaEntrada.js # A aba da tela de entrada, guardada na URL
+│   │                      # (`?modo=cadastro`). Estado do React morre na
+│   │                      # navegação; a URL sobrevive à ida e à volta
+│   ├── useBloqueioDeLogin.js # O bloqueio por tentativas e a consulta de 8s que
+│   │                      # reflete o desbloqueio feito no painel. Só LÊ —
+│   │                      # nada nesta tela move o contador
 │   └── useVisiblePoll.js  # Repete uma chamada, mas SÓ com a aba visível
 ├── lib/
 │   ├── supabase.js        # Cliente Supabase
@@ -396,6 +402,10 @@ src/
     │   ├── PaginaDeConteudo.jsx # Extraída quando a SEGUNDA ia nascer: cópia
     │   │                  # diverge (§4). Hoje serve /privacidade, /regras,
     │   │                  # /termos e /contato
+    │   ├── BotaoVoltar.jsx # O "Voltar" que volta para onde a pessoa ESTAVA.
+    │   │                  # `useLocation().key === 'default'` distingue quem
+    │   │                  # chegou por link direto/aba nova (sem histórico, e
+    │   │                  # aí o destino é a landing) de quem veio de dentro
     │   └── FundoAnimado.jsx # As peças que atravessam a tela atrás do texto.
     │                      # Mora na CASCA, não em cada página: assim toda aba
     │                      # nova ganha por construção, e ninguém precisa

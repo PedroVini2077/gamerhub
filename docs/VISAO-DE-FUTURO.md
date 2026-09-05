@@ -201,3 +201,94 @@ arquivo curto, hospedado por nós, com crédito e licença conferidos por teste
 (`conteudoDoSobre.test.js`). Para uma aba que **só o dono vê**, isso resolve
 inteiro: uma faixa de 1–2 minutos em laço, ligada por clique dele, com a
 preferência salva. Sem terceiro, sem cota, sem regra de plataforma.
+
+---
+
+## `[05/09]` A ideia do painel do Fundador NA LANDING
+
+> Pedido dele para **pensarmos juntos**, com a frase certa: *"eu modero apenas
+> dentro do site, mas a landing não tem ninguém olhando… pensei em fazer um
+> painel só pro site em si, que é a porta de entrada, com um painel totalmente
+> diferente do site logado"*.
+
+**A dor que ele descreveu é real, e eu não sabia que ela existia.** Está aqui, e
+não no backlog como tarefa, porque a decisão que ela pede é dele.
+
+### A palavra "painel" está escondendo duas coisas diferentes
+
+Separar as duas é o valor deste texto — elas têm respostas opostas.
+
+| | O que seria | Tem objeto hoje? |
+| --- | --- | --- |
+| **A** | **moderar** a landing | **não** |
+| **B** | **vigiar** a landing — saber se ela está de pé | **sim, e ninguém vigia** |
+
+**A não tem objeto, e isso é fato conferido, não impressão.** A landing não
+recebe conteúdo de quem visita: ela é Hero, seções, prints, rodapé e as páginas
+públicas (`/sobre`, `/termos`, `/privacidade`, `/regras`, `/contato`). O único
+texto humano que entra por ali é o **formulário de contato** — e ele já tem
+painel, leitura e resposta, em `components/admin/ContatoPanel.jsx`. Moderação de
+landing seria uma tela sem nada para moderar.
+
+**B tem objeto, e é exatamente o §1.5.** Hoje, se a cena 3D cair no fallback, se
+a fonte não chegar, se o `dbHealth` jogar o visitante para a versão sem banco, ou
+se o envio de e-mail parar por cota — **o visitante vê e o dono não fica
+sabendo**. Ele descobre abrindo o site por acaso. Essa é a parte da ideia dele
+que eu acho que precisa existir.
+
+### O que eu discordo, e digo antes de executar (§7)
+
+**"Conseguir entrar pela própria landing" é a única parte que eu não faria.**
+
+Um segundo caminho de entrada é um segundo sistema de autenticação: outra senha
+para vazar, outra sessão para expirar errado, outro lugar onde um bug meu abre a
+porta. `hooks/useAuth.jsx` e `pages/Login.jsx` estão na lista de **alto risco**
+do `CLAUDE.md` §7 justamente porque quebrar ali derruba o site inteiro.
+
+**E ele não precisa disso.** A landing em `/` já é `HomeOrLanding`: logado, ele
+não vê a landing — vê o site. Um painel da porta de entrada é uma **rota a mais
+para quem já é `is_super()`**, não uma porta a mais. Mesma senha, mesma
+identidade, mesma RLS, tela diferente. É aditivo, que é o que o §7 pede.
+
+> O cofre do painel do Fundador já respondeu a mesma pergunta em 04/09, e a
+> resposta continua valendo: **o que protege é o banco, não a tela**. Uma senha
+> só de landing, checada no cliente, seria decoração — o site entrega a `anon
+> key`, e quem quiser fala com a API sem passar por tela nenhuma (§1.3).
+
+### A tensão que precisa ser dita: vigiar a porta × não rastrear quem passa
+
+*"Saber quem está chegando na landing"* e *"não rastrear visitante"* são
+objetivos que se puxam em direções opostas, e este projeto já escolheu um lado —
+o `DECISOES.md` registra a recusa de identificar aparelho, e a política de
+privacidade lista quem recebe o quê.
+
+O caminho honesto para número de visita é o **agregado, sem cookie**: o Vercel
+Web Analytics e o Speed Insights já estão instalados. Isso é um **link** no
+painel, não um sistema a construir — e é a diferença entre saber *quanta* gente
+chegou e saber *quem* chegou. A segunda é a que este site não vai fazer.
+
+### A menor versão que entrega o valor
+
+Uma aba **"Porta de entrada"** dentro do painel que já existe — não um site
+separado, não um login separado:
+
+| Linha | De onde vem o dado |
+| --- | --- |
+| banco de pé? última queda? | `dbHealth`, que já existe |
+| envio de e-mail recusado (cota do Gmail) | já grita em `admin_logs` desde 23/08 |
+| checagem de link recusada (Safe Browsing) | já grita em `admin_logs` desde 23/08 |
+| Edge Function falhando | já grita em `admin_logs` |
+| mensagens de contato sem resposta | já existe, hoje espalhado noutra aba |
+| quanta gente chegou | **link** para o Vercel Analytics |
+
+**Quase tudo já é gravado.** O que falta não é instrumentação: é uma tela que
+separe *"o que quebrou na porta de entrada"* de *"o que quebrou lá dentro"* —
+que é a pergunta que ele fez e que nenhuma tela de hoje responde.
+
+**O que eu não faria, e o motivo:**
+
+- **segunda porta de entrada** — acima;
+- **painel fora do app** — outro build, outro deploy, outra cota da Vercel (§0.2)
+  e um segundo lugar para a mesma regra de permissão divergir (§4);
+- **qualquer medição de visitante individual** — é o oposto do que o site
+  prometeu por escrito.

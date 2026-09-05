@@ -67,21 +67,51 @@
    * Rodapé e emblema disputando o mesmo pixel viram sujeira, não composição. */
   .arena-vs { top: 88vh; font-size: clamp(1.8rem, 9vw, 2.8rem); }
 
-  /* Mais ESTREITA e mais fraca no celular, não mais larga. A tela é estreita:
-   * com 46vw de cada lado a moldura cobria quase tudo e virava papel de
-   * parede — os lutadores, que são o assunto, ficavam lavados por trás dela. */
-  /* `[04/09]` Mais para o CANTO e mais fraca. Pedido do dono: *"as molduras
-   * estão cobrindo muito os personagens, tem como colocar elas um pouco mais
-   * pro canto? e deixar os personagens um pouco mais visíveis?"*. Duas coisas
-   * mudam juntas — a largura, e a máscara, que passa a apagar bem antes. */
-  .arena-moldura-lado { width: 24vw; opacity: 0.3; }
+  /* ── `[05/09]` No celular a moldura é OUTRA ARTE, não a mesma menor ─────────
+   *
+   * Pedido do dono, com o arquivo junto: *"quero mudar a moldura para o celular,
+   * essa grande só serve melhor pro PC, eu fiz outra menor e reta, pra colocar
+   * nas bordas de cada um"*.
+   *
+   * Ele está certo, e o motivo é geométrico. A moldura do PC é uma arte LARGA
+   * que se apaga em direção ao centro: numa tela de 390 px, encolher aquilo
+   * significava ou cobrir metade da tela, ou espremer a decoração até virar
+   * borrão. As duas rodadas anteriores foram exatamente isso — 46vw, depois
+   * 24vw, e a reclamação *"as molduras estão cobrindo muito os personagens"*
+   * veio da primeira. Arte errada não se conserta com número.
+   *
+   * A arte nova é uma FAIXA RETA de 48×1536: circuito aceso colado na borda,
+   * sem esvanecimento embutido. Ela vive só aqui, dentro do `@media` — e por
+   * isso **o PC não baixa esses 50 KB**: o navegador só busca a imagem de fundo
+   * quando a media query casa.
+   *
+   * ── Por que ainda tem máscara ──────────────────────────────────────────────
+   *
+   * O arquivo original do dono tem um brilho branco largo ao lado do circuito,
+   * e o recorte pega 56 colunas para não cortar o circuito rente. As últimas
+   * ~14 são esse brilho — e sob `mix-blend-mode: screen` branco não sai:
+   * viraria uma coluna clara descendo a tela. A máscara apaga justamente essa
+   * faixa. Medido no arquivo do dono: o circuito termina na coluna 40 de 56
+   * (71%), então a máscara começa a cair em 62% e acaba em 88%.
+   *
+   * `background-size: 100% 100%` e não `cover`: `cover` numa caixa de 35×844 px
+   * com uma arte de proporção 1:32 estoura a altura e corta o pé da faixa —
+   * borda que termina no meio da tela é o defeito, não o objetivo. Esticar na
+   * vertical é o que uma borda faz. */
+  .arena-moldura-lado {
+    width: 9vw;
+    opacity: 0.5;
+    background-size: 100% 100%;
+  }
   .arena-moldura-verde {
-    -webkit-mask-image: linear-gradient(to right, #000 18%, transparent 82%);
-    mask-image: linear-gradient(to right, #000 18%, transparent 82%);
+    background-image: url('../../assets/auth/borda-cel-verde.webp');
+    -webkit-mask-image: linear-gradient(to right, #000 62%, transparent 88%);
+    mask-image: linear-gradient(to right, #000 62%, transparent 88%);
   }
   .arena-moldura-roxo {
-    -webkit-mask-image: linear-gradient(to left, #000 18%, transparent 82%);
-    mask-image: linear-gradient(to left, #000 18%, transparent 82%);
+    background-image: url('../../assets/auth/borda-cel-roxo.webp');
+    -webkit-mask-image: linear-gradient(to left, #000 62%, transparent 88%);
+    mask-image: linear-gradient(to left, #000 62%, transparent 88%);
   }
 
   /* No cadastro o verde "venceu": ele cresce mais e vem para o centro; o roxo
@@ -95,7 +125,12 @@
    * Agora ele volta para dentro (`right` menor, sem translação a mais) e ganha
    * opacidade. Continua atrás e mais apagado que o vencedor — que é o ponto —,
    * agora dá para ver que ele está lá. */
-  .arena-selecionado .arena-lutador-verde { height: 34vh; transform: translateX(1vw); }
+  /* `[05/09]` 1vw -> 5vw. Pedido do dono, com print do celular: *"joga o boneco
+     verde só mais um pouco pra direita, dá pra enxergar ele, mas queria deixar
+     ele um pouco mais centralizado na área verde dele"*.
+     A área verde do cadastro vai da borda esquerda até a fenda; 5vw levam o
+     lutador para perto do meio dela sem encostar na fenda. */
+  .arena-selecionado .arena-lutador-verde { height: 34vh; transform: translateX(5vw); }
   .arena-selecionado .arena-lutador-roxo {
     right: -1vw;
     height: 26vh;
