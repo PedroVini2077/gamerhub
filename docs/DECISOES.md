@@ -1366,3 +1366,44 @@ virou `useLayoutEffect`, que roda **antes da pintura**. As duas são invisíveis
 runtime — desfazer qualquer uma não gera erro, não gera log e não quebra teste de
 comportamento —, então viraram trava de contrato em
 `src/lib/__tests__/portaoAntesDoSite.test.js`, provada reinjetando cada metade.
+
+---
+
+## `[05/09]` O cofre do Fundador é CENOGRÁFICO, e isso está escrito na tela
+
+Duas versões possíveis foram postas na mesa do dono, e ele escolheu a primeira:
+
+| | Cenográfico (feito) | De verdade (não feito) |
+| --- | --- | --- |
+| onde o código é conferido | no navegador | numa RPC, contra hash no banco |
+| protege de | quem senta na frente do computador dele | quem tem a sessão roubada |
+| custo | pequeno | grande, mexe no arquivo mais sensível do projeto |
+| risco novo | nenhum | **ficar trancado para fora** |
+
+**Por que aceitar uma tranca que não tranca.** Porque a ameaça que ela cobre é
+real e não tinha resposta nenhuma — o computador do dono, aberto, com a sessão
+viva. Para essa, pedir um código antes de mostrar o painel é a medida certa.
+O que estaria errado seria ela se apresentar como mais do que é, e por isso o
+aviso está impresso **embaixo do campo**, não só na documentação.
+
+**Três escolhas menores, e cada uma tem motivo:**
+
+**O código é por aparelho, não no banco.** Guardar no banco não deixaria o cofre
+mais forte — a `anon key` é pública e a checagem continuaria no navegador — e
+criaria uma senha a mais para perder. Local, cada aparelho tem o seu e perder um
+não tranca nenhum outro.
+
+**Fica guardado o resumo, nunca o código.** SHA-256 com sal aleatório por
+aparelho. Não é para resistir a força bruta séria — é para o código não ficar em
+texto puro num lugar que a própria pessoa pode abrir sem querer numa gravação de
+tela. Travado por teste, porque nada na tela denunciaria a troca.
+
+**O desbloqueio dura a ABA, não um tempo fixo.** Trinta minutos ou uma hora
+trancaria no meio de uma moderação. Fechou a aba, fecha o cofre.
+
+**O que ficou de fora e é decisão dele:** as três chaves de armazenamento do
+cofre entraram na lista técnica da política de privacidade, mas **não** na
+tabela que o leitor vê. Elas só nascem no navegador de quem é fundador, e
+listá-las descreveria para milhares de pessoas um armazenamento que existe para
+uma. Se ele preferir citá-las, o custo é subir a `versao` do documento — o que
+faz todo mundo aceitar de novo.

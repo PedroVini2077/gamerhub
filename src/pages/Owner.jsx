@@ -11,6 +11,8 @@ import LogsTab from '../components/owner/LogsTab';
 import SiteTab from '../components/owner/SiteTab';
 import NotificacoesTab from '../components/owner/NotificacoesTab';
 import MetricasTab from '../components/owner/MetricasTab';
+import CofreDoFundador from '../components/owner/CofreDoFundador';
+import { cofreAberto } from '../lib/cofre';
 
 const OC = '#f97316';
 const OG = 'rgba(249,115,22,0.15)';
@@ -29,12 +31,21 @@ export default function Owner() {
   const { loading, onlineCount } = useAuth();
   const navigate                 = useNavigate();
   const [tab, setTab]            = useState('painel');
+  // `[05/09]` O cofre. Estado inicial lido de uma vez — `sessionStorage` não
+  // muda sozinho, e reler a cada render seria trabalho por nada.
+  const [aberto, setAberto]      = useState(cofreAberto);
 
   useEffect(() => {
     if (!loading && !isOwner) navigate('/');
   }, [loading, isOwner, navigate]);
 
   if (loading || !isOwner) return null;
+
+  // O cofre vem DEPOIS da checagem de cargo, nunca antes: quem não é fundador
+  // já foi mandado para a home acima, e não tem nem o que destrancar. Ele é uma
+  // tranca de tela para o próprio dono — a proteção real está no banco, e não
+  // depende dele. Ver `lib/cofre.js`.
+  if (!aberto) return <CofreDoFundador aoAbrir={() => setAberto(true)} />;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 pb-8">

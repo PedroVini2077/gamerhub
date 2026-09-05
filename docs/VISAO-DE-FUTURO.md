@@ -151,6 +151,13 @@ projetos diferentes com o mesmo desenho:
 | risco novo | nenhum | **ficar trancado para fora** se a senha se perder — precisa de caminho de recuperação pensado antes |
 | custo | pequeno | grande, e mexe no arquivo mais sensível do projeto |
 
+> **`[05/09]` FEITO, na versão cenográfica.** O dono escolheu com a tabela
+> acima na mesa. Está em `lib/cofre.js` + `components/owner/CofreDoFundador.jsx`,
+> com o aviso de que é visual impresso **na própria tela**, e em
+> [SEGURANCA.md](SEGURANCA.md) por extenso. **A coluna "cofre de verdade" desta
+> tabela continua valendo como possibilidade** — inclusive o risco de ficar
+> trancado para fora, que precisa de caminho de recuperação pensado antes.
+
 **Minha recomendação:** o cenográfico agora, **dito com todas as letras que é
 cenográfico** — inclusive no `SEGURANCA.md`, para ninguém daqui a seis meses
 achar que existe uma segunda tranca que não existe. E, se a preocupação real é

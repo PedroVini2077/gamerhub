@@ -26,6 +26,7 @@ src/
 │   │                      # DEPOIS das utilitárias do Tailwind, de propósito
 │   ├── decoracao.css      # fundo das páginas públicas, intro do raio, peças
 │   │                      # de videogame, luzes de arena, explosões, aviso
+│   ├── cofre.css          # `[05/09]` o giro do disco do cofre do Fundador
 │   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
 │   ├── portao/            # o portão de boas-vindas, em 3 partes
 │   │   ├── superficie.css # as duas folhas de 50vw × 100vh e o que está
@@ -165,7 +166,15 @@ src/
 │   │                      # fechar a aba, e é isso que impede a tela de voltar
 │   │                      # a cada F5) e "já entrou antes" (localStorage).
 │   │                      # Todo acesso em try: armazenamento LANÇA em aba
-│   │                      # anônima, e enfeite não pode derrubar o login
+│   │                      # anônima, e enfeite não pode derrubar o login.
+│   │                      # `[05/09]` A marca é escrita ANTES do login, e
+│   │                      # `nomeDaSaudacao()` tem duas fontes porque o perfil
+│   │                      # pode não ter chegado quando o portão sobe
+│   ├── cofre.js           # `[05/09]` O cofre do painel do Fundador: define,
+│   │                      # confere e abre por aba. CENOGRÁFICO — tranca de
+│   │                      # tela, não autorização. O código nunca é guardado,
+│   │                      # só um resumo SHA-256 com sal por aparelho.
+│   │                      # A tabela de o que ele protege está no cabeçalho
 │   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
 │   ├── pauseReason.js     # Motivo da pausa, guardado no navegador
@@ -328,6 +337,10 @@ src/
     │                      # EligibilityChecklist, DecisionButton
     ├── owner/             # PainelTab, UsuariosTab, LogsTab, SiteTab,
     │                      # NotificacoesTab, MetricasTab, SiteModerationCards
+    │   ├── CofreDoFundador.jsx # `[05/09]` a tranca de tela na frente do
+    │   │                  # painel. CENOGRÁFICA, e o aviso disso está impresso
+    │   │                  # embaixo do campo — a autorização real é do banco
+    │   ├── DiscoDoCofre.jsx # o disco que gira ao destrancar (SVG próprio)
     │   └── usuarios/      # UserRow, UserFilters, RoleOverride (o cargo de
     │                      # fundador NÃO se atribui por override)
     ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,

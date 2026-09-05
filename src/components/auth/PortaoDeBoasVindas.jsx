@@ -5,7 +5,7 @@ import PortaDeAcesso from './PortaDeAcesso';
 
 import { useAuth } from '../../hooks/useAuth.jsx';
 import {
-  consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou,
+  consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou, nomeDaSaudacao,
   EVENTO_ENTROU, EVENTO_CANCELADO,
 } from '../../lib/boasVindas';
 
@@ -183,7 +183,9 @@ export default function PortaoDeBoasVindas() {
 
   if (!visivel) return null;
 
-  const nome = profile?.username ? `@${profile.username}` : '';
+  // Duas fontes de propósito: o perfil pode ainda não ter chegado quando o
+  // portão sobe. Ver `nomeDaSaudacao` em `lib/boasVindas.js`.
+  const nome = nomeDaSaudacao(profile, user);
   const titulo = estreia ? 'Seja bem-vindo' : 'Bem-vindo de volta';
 
   const classes = [

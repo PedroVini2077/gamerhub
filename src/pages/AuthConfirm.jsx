@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Zap, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
 import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../lib/password';
+import { marcarEntradaAgora } from '../lib/boasVindas';
 
 export default function AuthConfirm() {
   const [searchParams] = useSearchParams();
@@ -19,6 +20,28 @@ export default function AuthConfirm() {
     const type       = searchParams.get('type');
     const redirectTo = searchParams.get('redirect_to');
 
+    /**
+     * Confirmou o email e a sessão nasceu aqui: isto É uma entrada.
+     *
+     * ── `[05/09]` O furo que isto fecha ─────────────────────────────────────
+     *
+     * O `verifyOtp` de `signup` **cria sessão**. Então a pessoa entrava no site
+     * pela primeira vez na vida por este caminho — e era o único caminho sem a
+     * marca de entrada, porque ela só existia dentro do `signInWithEmail`.
+     *
+     * Resultado: o momento que mais merecia o portão era exatamente o que nunca
+     * o via, e o *"Seja bem-vindo"* de estreia só aparecia no segundo acesso,
+     * quando a pessoa já não era novata.
+     *
+     * A recuperação de senha NÃO passa por aqui de propósito: ela termina em
+     * `signOut()` e volta para o login (ver `handleSetPassword`). Trocar senha
+     * não é entrar.
+     */
+    const entrarNoSite = (destino) => {
+      marcarEntradaAgora();
+      navigate(destino);
+    };
+
     // ── Formato 1: token_hash na query string (link direto para o app) ──
     if (token_hash) {
       supabase.auth.verifyOtp({ token_hash, type: type || 'signup' }).then(({ error }) => {
@@ -33,7 +56,7 @@ export default function AuthConfirm() {
           setStatus('set_password');
         } else {
           setStatus('success');
-          setTimeout(() => navigate(redirectTo?.startsWith('/') ? redirectTo : '/'), 2000);
+          setTimeout(() => entrarNoSite(redirectTo?.startsWith('/') ? redirectTo : '/'), 2000);
         }
       });
       return;
@@ -50,7 +73,7 @@ export default function AuthConfirm() {
           setStatus('set_password');
         } else {
           setStatus('success');
-          setTimeout(() => navigate('/'), 2000);
+          setTimeout(() => entrarNoSite('/'), 2000);
         }
       } else if (event === 'INITIAL_SESSION' && !session) {
         setStatus('error');
@@ -66,7 +89,7 @@ export default function AuthConfirm() {
           setStatus('set_password');
         } else {
           setStatus('success');
-          setTimeout(() => navigate('/'), 2000);
+          setTimeout(() => entrarNoSite('/'), 2000);
         }
       } else if (!hash.includes('access_token') && !hash.includes('error=')) {
         // Sem token na query nem no hash
