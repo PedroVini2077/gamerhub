@@ -76,15 +76,40 @@ describe('useAuth — os dois logouts', () => {
     ).not.toMatch(/replace\('\/login'\)/);
   });
 
-  it('o logout COMUM continua global — ele não pode herdar o atalho', () => {
-    const comum = corpoDe('signOut');
+  /**
+   * `[05/09]` ESTE TESTE AFIRMAVA O CONTRÁRIO, e a inversão é decisão do dono.
+   *
+   * Ele exigia que o "Sair" comum continuasse **global**, com a justificativa de
+   * *"aparelho compartilhado"*. O dono desmontou o argumento: *"deslogar no
+   * celular não pode deslogar no PC… a não ser que tenha uma aba pra identificar
+   * dispositivos conectados, tipo Instagram"*.
+   *
+   * Ele está certo, e o motivo é que a proteção era **cega**: derrubar todas as
+   * sessões só serve a quem sabe que existe uma sessão indevida, e este site não
+   * tem como contar isso a ninguém. O registro completo está em
+   * [DECISOES.md](../../../docs/DECISOES.md).
+   *
+   * **O teste foi invertido, não apagado.** Ele guardava uma decisão; agora
+   * guarda a decisão nova, e a mensagem de falha carrega o histórico — quem
+   * esbarrar nela daqui a seis meses precisa saber que os dois escopos já
+   * estiveram aqui, e por quê.
+   *
+   * A vigilância AMPLA — todo ponto de saída do site, inclusive os que ainda não
+   * existem — mora em `logoutEhLocal.test.js`. Este aqui é o par do teste do
+   * banido, logo acima: os dois olham este arquivo.
+   */
+  it('o logout COMUM também é local — decisão do dono em 05/09', () => {
     expect(
-      comum,
-      'O botão "Sair" do Header passou a usar escopo local. Para usuário\n'
-      + 'legítimo, possivelmente em aparelho compartilhado, revogar os refresh\n'
-      + 'tokens no servidor é o comportamento certo — o atalho vale só para\n'
-      + 'quem está banido, onde o token já não abre nada.',
-    ).not.toMatch(/scope:\s*'local'/);
-    expect(comum).toMatch(/await supabase\.auth\.signOut\(\)/);
+      corpoDe('signOut'),
+      'O botao "Sair" do Header voltou ao escopo GLOBAL (que e o padrao do\n'
+      + 'supabase-js quando nao se passa nada, entao isso acontece sozinho ao\n'
+      + 'escrever `signOut()`).\n\n'
+      + 'Global revoga TODAS as sessoes da conta: sair no celular derruba o PC.\n'
+      + 'Decisao do dono em 05/09 — derrubar tudo so faz sentido com uma tela de\n'
+      + 'aparelhos conectados, que o site nao tem; sem ela a pessoa so se expulsa\n'
+      + 'do proprio outro aparelho.\n\n'
+      + 'Quem precisa mesmo revogar tudo troca a senha — e e por isso que a saida\n'
+      + 'de AuthConfirm.jsx (depois de redefinir a senha) segue global.',
+    ).toMatch(/signOut\(\{\s*scope:\s*'local'\s*\}\)/);
   });
 });

@@ -35,15 +35,17 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*(vazia — os seis pedidos do dono e os três PRs do Dependabot fecharam nos PRs
-#165, #121, #120 e #118. Duas decisões dele ficaram na fila abaixo.)*
+*(vazia — tudo do dia fechou nos PRs #165, #121, #120, #118, #167 e #168. As
+duas decisões que esperavam o dono foram tomadas por ele em 05/09: o painel da
+landing foi **descartado** e o logout deixou de ser global; as duas viraram
+registro em [DECISOES.md](docs/DECISOES.md).)*
 
 ---
 
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**24 itens abertos** (+ 1 ideia sem compromisso)
+**23 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -104,24 +106,15 @@
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[05/09]` 🟢 **Decidir o painel da PORTA DE ENTRADA.** *Ideia do dono,
-  pedida para pensarmos juntos; análise escrita em
+- ⬜ `[05/09]` 🔵 **A tela de APARELHOS CONECTADOS.** *Ideia do dono, nascida
+  de dentro da decisão do logout — ver
   [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).*
 
-  Ela se separa em três, e as três têm respostas diferentes: **vigiar** a landing
-  tem objeto e ninguém faz hoje (se a cena 3D cair ou a cota de e-mail estourar,
-  ninguém fica sabendo — §1.5); **moderar** a landing não tem objeto (não há
-  conteúdo de visitante ali, e o contato já tem painel); e **entrar pela
-  landing** é a parte que eu não faria — segunda porta é segundo sistema de
-  autenticação, e ele já vê o site logado em `/`. A menor versão é uma aba
-  "Porta de entrada" no painel que já existe, juntando o que o `admin_logs` já
-  grava. **Depende de ele decidir se é isso que ele quis dizer.**
-
-- ⬜ `[05/09]` 🟢 **Decidir o escopo do `signOut`: global ou local.** Sair no
-  celular hoje também desloga o PC. Está escrito como intencional em
-  `useAuth.jsx` (*"o certo inclusive em aparelho compartilhado"*), e foi o que
-  fez três execuções de CI se derrubarem — resolvido com fila, não trocando o
-  escopo. É decisão de produto, e a troca é uma linha.
+  Lista de sessões abertas com "encerrar esta". É a peça que faltava para o caso
+  *"tem alguém na minha conta"* ser **visível** — hoje o site não tem como
+  contar isso a ninguém. **Três coisas precisam ser respondidas antes**, e uma
+  delas é dele: a região que ele citou é geolocalização por IP, ou seja,
+  terceiro novo e dado pessoal novo na política de privacidade.
 
 - ⬜ `[04/09]` 🟢 **Música no painel do Fundador.** *Ideia do dono; as três saídas
   que ele imaginou têm impedimento — ver

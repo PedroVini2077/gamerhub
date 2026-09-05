@@ -910,8 +910,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->344<!--/n--> arquivos e
-<!--n:src.linhas-->34.397<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->345<!--/n--> arquivos e
+<!--n:src.linhas-->34.542<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -935,7 +935,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->344<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->345<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -960,6 +960,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->12.152<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->12.298<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

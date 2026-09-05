@@ -153,11 +153,45 @@ export function AuthProvider({ children }) {
   // existir sessão, e é outro assunto.
   const signUpWithEmail = criarConta;
 
+  /**
+   * O "Sair" do cabeçalho — e ele encerra a sessão **deste aparelho só**.
+   *
+   * ── `[05/09]` Era GLOBAL, e a decisão do dono mudou isso ────────────────────
+   *
+   * O padrão do `supabase-js` é `scope: 'global'`: ele revoga **todos** os
+   * refresh tokens da conta, então sair no celular derrubava o PC junto. Estava
+   * escrito aqui como intencional — *"o certo inclusive em aparelho
+   * compartilhado"* — e o dono desmontou o argumento:
+   *
+   * > *"não faz sentido, a não ser que tenha uma aba pra identificar
+   * > dispositivos conectados, tipo Instagram… como no nosso site não tem nada
+   * > disso, não faz sentido eu deslogar no celular e sair no PC"*.
+   *
+   * **Ele está certo, e o motivo é que a proteção era CEGA.** Derrubar todas as
+   * sessões só protege quem sabe que existe uma sessão indevida — e é
+   * exatamente isso que este site não tem como contar a ninguém: não há tela de
+   * aparelhos conectados, não há região, não há "sessão iniciada agora em X".
+   * Sem essa informação, o botão nunca foi usado para expulsar um invasor;
+   * ele só derrubava a própria pessoa no outro aparelho.
+   *
+   * ── O que se perde, dito com todas as letras ───────────────────────────────
+   *
+   * Quem usar o site num computador emprestado e sair **naquele** computador
+   * continua protegido: o token daquele navegador é apagado. O que deixa de
+   * acontecer é o caso "esqueci a sessão aberta em outro lugar e quero matar
+   * todas de longe" — e para esse caso a resposta certa é **trocar a senha**,
+   * que revoga tudo no servidor, ou a tela de aparelhos conectados, que está
+   * registrada em `docs/VISAO-DE-FUTURO.md` como a forma de fazer isto direito.
+   *
+   * A trava é `logoutEhLocal.test.js`: sem ela, a próxima pessoa que "limpar" o
+   * `{ scope }` daqui devolve o comportamento sem nada acusar — logout que
+   * derruba o outro aparelho é silencioso do lado de quem fica (§1.5).
+   */
   async function signOut() {
     if (profile?.username) {
       logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
     }
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
     setProfile(null);
   }
 
@@ -197,8 +231,10 @@ export function AuthProvider({ children }) {
     // disso é o token da própria pessoa, no aparelho dela: ela poderia
     // simplesmente não clicar em sair e mantê-lo do mesmo jeito.
     //
-    // O `signOut()` comum (o botão "Sair" do `Header`) **continua global**, que
-    // é o certo para quem não está banido — inclusive em aparelho compartilhado.
+    // `[05/09]` Esta função e o `signOut()` comum passaram a usar o MESMO
+    // escopo, por caminhos diferentes: aqui era por velocidade (medida acima),
+    // lá virou decisão de produto do dono. O parágrafo que dizia *"o `signOut()`
+    // comum continua global"* deixou de ser verdade — ver o cabeçalho dele.
     if (profile?.username) {
       logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
     }

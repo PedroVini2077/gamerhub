@@ -687,6 +687,12 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `conteudoDoSobre.test.js` | `npm test`, **reprova** | mídia de terceiro em `src/assets/som/` **sem crédito visível**: licença CC-BY exige atribuição, e sem ela o site usa a obra sem licença |
 | `documentosLegais.test.js` | `npm test`, **reprova** | documento público que ninguém aceita, e versão fora do formato que o `CHECK` do banco exige |
 | `src/lib/somAmbiente.js` (teste) | `npm test`, **reprova** | duas instâncias de áudio tocando juntas — a janela entre o clique e o download terminar |
+| `portaoAntesDoSite.test.js` | `npm test`, **reprova** | o site aparecendo **antes** do portão — a marca de entrada lida depois da pintura |
+| `trilhaNaoEhForjavel.test.js` | `npm test`, **reprova** | action que o cliente registra e o banco **recusa em silêncio** (`logAudit` engole o erro de propósito) |
+| `campoDeSenhaUnico.test.js` | `npm test`, **reprova** | `<input type="password">` solto, fora do `CampoDeSenha` — o olho de mostrar/ocultar sumiria só naquele campo |
+| `voltarNaoEhRedirecionador.test.jsx` | `npm test`, **reprova** | o `?de=` do botão "Voltar" aceitando destino de FORA do site — redirecionamento aberto |
+| `logoutEhLocal.test.js` | `npm test`, **reprova** | ponto de saída com o escopo errado. O `supabase-js` usa **global por omissão**, então sair no celular volta a derrubar o PC só por escrever `signOut()` |
+| `documentosLegais.test.js` (impressão) | `npm test`, **reprova** | texto de documento legal mudando **por baixo de quem já aceitou** — cobre a lista de arquivos de cada documento |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 
@@ -721,6 +727,17 @@ a coisa foi construída — pensar em abuso depois de entregar não é seguranç
 proativa, é auditoria do próprio erro. E no **fim**, como última chance de
 voltar. A resposta de cada um vai **dita ao dono no relatório de entrega**, que
 é o único lugar onde ele pode cobrar.
+
+> **`[05/09]` Esta tabela foi conferida contra o sistema**, depois de a issue
+> automática de documentação apontar o `CLAUDE.md` como atrasado. Duas coisas
+> saíram da conferência: todos os caminhos citados aqui **existem** (verificado
+> arquivo a arquivo), e **seis travas estavam faltando** — as de 04–05/09.
+>
+> A ausência importava pelo mesmo motivo que o dono levantou sobre a tabela da
+> política de privacidade: *"aquela tabela abre dizendo 'listados abaixo'"*.
+> Lista que se apresenta como o inventário dos mecanismos e não é deixa de ser
+> verdade para quem a lê — inclusive para mim, na sessão em que eu for procurar
+> se já existe trava para alguma coisa.
 
 ### Onde cada coisa escrita mora — a tabela que eu errei
 

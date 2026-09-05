@@ -1495,3 +1495,91 @@ leitor mas com dado não é a mesma coisa que coluna sem leitor e sem dado.
 
 O teste `xpNaoLeColunaMorta.test.js` continua de pé — agora como segunda rede,
 não como única.
+
+---
+
+## `[05/09]` O painel do Fundador NA LANDING foi DESCARTADO pelo próprio dono
+
+Ele levantou a ideia de manhã e a recusou no mesmo dia, depois de ler a análise:
+*"esquece o painel da porta de entrada kkkk, realmente não faz sentido, descarta
+e nem lembra disso não"*.
+
+**Fica registrado justamente porque ele mandou esquecer.** Ideia boa que foi
+recusada volta — inclusive por mim, numa sessão em que o contexto já morreu — e
+aí alguém "conserta" uma decisão proposital (§6.2, regra 4). O que a análise
+tinha separado, e o que sustenta a recusa:
+
+| A ideia se separava em | Situação |
+| --- | --- |
+| **moderar** a landing | não tem objeto: não há conteúdo de visitante ali, e o formulário de contato já tem painel, leitura e resposta |
+| **entrar** pela landing | segunda porta de entrada é segundo sistema de autenticação, e ele já vê o site logado em `/` |
+| **vigiar** a landing | tinha objeto — mas o dado já é gravado em `admin_logs` e no `dbHealth`; faltava só uma tela para separá-lo, o que não paga uma aba nova |
+
+A análise completa continua em [VISAO-DE-FUTURO.md](VISAO-DE-FUTURO.md), sem
+ponteiro no `BACKLOG.md`: não é fila, é história de uma decisão.
+
+## `[05/09]` Sair num aparelho deixou de derrubar os outros
+
+**A decisão é dele, e o argumento também:** *"deslogar no celular não pode
+deslogar no PC, não faz sentido, a não ser que tenha uma aba pra identificar
+dispositivos conectados, tipo Instagram… como no nosso site não tem nada disso,
+não faz sentido eu deslogar no celular e sair no PC e vice-versa"*.
+
+**O que estava escrito antes, e por que estava errado.** `useAuth.jsx` afirmava
+que o logout global era *"o certo, inclusive em aparelho compartilhado"*. O
+`supabase-js` usa `scope: 'global'` por omissão, então nunca foi escolha
+deliberada — era o padrão da biblioteca com uma justificativa escrita depois.
+
+E a justificativa não se sustenta: **derrubar todas as sessões só protege quem
+sabe que existe uma sessão indevida**, e é exatamente isso que este site não
+tem como contar a ninguém. Não há tela de aparelhos conectados, não há região,
+não há "sessão iniciada agora em X". Sem essa informação o botão nunca serviu
+para expulsar invasor nenhum — ele só derrubava a própria pessoa no outro
+aparelho.
+
+**O que se perde, dito antes de alguém descobrir.** Quem usa o site num
+computador emprestado e sai *naquele* computador continua protegido: o token
+daquele navegador é apagado. O que deixa de existir é o caso *"esqueci a sessão
+aberta em outro lugar e quero matar todas de longe"* — e para esse caso a
+resposta certa continua sendo **trocar a senha**, que revoga no servidor. Por
+isso a saída de `AuthConfirm.jsx`, a que acontece **depois de redefinir a
+senha**, ficou **global** de propósito: ali derrubar tudo é o ponto.
+
+A trava `logoutEhLocal.test.js` guarda a distinção entre as duas — provada
+reinjetando o `signOut()` sem argumento e vendo o teste falhar nomeando a
+decisão. Ela varre o código, e não o comportamento, porque a afirmação a
+proteger é sobre **todos** os pontos de saída, inclusive os que ainda não
+existem.
+
+## `[05/09]` O lutador do cadastro entrava 14vw na tela, e o card comia a capa dele
+
+Pergunta do dono, olhando dois prints meus: *"num o personagem verde tá tendo um
+dos lados cortados e no outro não, você pegou no meio da animação? ou realmente
+existe um corte ali?"*.
+
+**Não era animação** — os prints foram tirados 2,6 s depois da carga, e a entrada
+dura 900 ms com 420 ms de atraso. Era sobreposição real com o card, e ela
+**depende da largura da janela**:
+
+| Janela | Escondido atrás do card, ANTES | DEPOIS |
+| --- | --- | --- |
+| 1280×800 | 117 px | 79 px |
+| 1366×768 | 72 px | 31 px |
+| 1440×900 | 104 px | 61 px |
+| 1920×1080 | 11 px | **0** |
+
+A causa era uma soma: o cadastro aplicava `translateX(4vw)` **por cima** dos
+10vw de `left`, então o verde entrava 14vw tela adentro. Em monitor largo sobra
+espaço e ninguém vê; num notebook de 1366 — que é o mais comum por aqui — o card
+come a capa.
+
+**O passo à frente nunca dependeu daquela translação:** quem conta que ele foi
+escolhido é a ALTURA (66vh contra os 53vh do login), que se lê de longe. Sobrou
+1vw só para dar a direção do movimento.
+
+**O que continua acontecendo em janela estreita, e é escolha:** abaixo de ~1500
+px ainda sobra sobreposição. Zerá-la exigiria empurrar os dois de volta para a
+borda, que é o defeito oposto — e foi de onde esta sequência inteira partiu
+(*"os personagens estão muito colados na borda"*). Capa passando atrás de um
+card opaco lê como profundidade; personagem terminando rente à borda lê como
+arte cortada.

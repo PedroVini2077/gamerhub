@@ -24,7 +24,7 @@
 
 ### 9.1 Por que ele existe, com o número que decidiu o formato
 
-O projeto tem <!--n:docs.linhas-->12.152<!--/n--> linhas de documentação, e
+O projeto tem <!--n:docs.linhas-->12.298<!--/n--> linhas de documentação, e
 `CLAUDE.md` + `docs/regras/` são **injetados em toda sessão**. Isso é uma
 vantagem — o conhecimento não se perde entre sessões. Mas tentar manter tudo
 **ativo** enquanto executo uma tarefa foi o que produziu as três falhas de
