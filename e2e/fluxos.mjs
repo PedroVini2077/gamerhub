@@ -94,13 +94,56 @@ try {
       'o portão de boas-vindas NAO apareceu depois do login.\n'
       + '  Ele deveria cobrir a tela entre 700 ms e 2,5 s enquanto o perfil\n'
       + '  carrega. Confira, nesta ordem:\n'
-      + '   1. `marcarEntradaAgora()` ainda é chamado no sucesso do login\n'
-      + '      (src/hooks/useAuth.jsx, DEPOIS da checagem de ban);\n'
+      + '   1. `marcarEntradaAgora()` ainda é chamado ANTES do\n'
+      + '      `signInWithPassword` (src/hooks/useAuth.jsx) — e nenhum\n'
+      + '      `cancelarEntradaAgora()` novo esta apagando a marca no caminho\n'
+      + '      feliz;\n'
       + '   2. `<PortaoDeBoasVindas />` continua montado no App.jsx, FORA do\n'
       + '      <Routes> — dentro de uma rota ele desmonta com a tela de login;\n'
       + '   3. o navegador nao esta bloqueando `sessionStorage`.\n'
       + '  Nada disso quebra o login: some so a tela.');
   }
+
+  // ── A porta é A TELA INTEIRA ────────────────────────────────────────────
+  //
+  // `[05/09]` Exigência do dono, na letra: *"a porta é pra ser a tela inteira,
+  // entendeu? A TELA INTEIRA! não uma imagem abrindo, é pra ter imersão"*. Ele
+  // recusou quatro versões, e a quarta falhou justamente por ser um desenho
+  // BONITO dentro de uma tela com fundo em volta.
+  //
+  // Isso não se verifica por byte nem por unidade: é geometria em tela de
+  // verdade. As duas folhas somadas têm que cobrir a janela inteira — se um dia
+  // alguém puser `max-height` de volta, aqui quebra.
+  const cobertura = await page.evaluate(() => {
+    const folhas = [...document.querySelectorAll('.porta-folha')];
+    if (folhas.length !== 2) return { folhas: folhas.length };
+    const caixas = folhas.map((f) => f.getBoundingClientRect());
+    return {
+      folhas: 2,
+      esquerda: Math.round(Math.min(...caixas.map((c) => c.left))),
+      direita: Math.round(Math.max(...caixas.map((c) => c.right))),
+      topo: Math.round(Math.min(...caixas.map((c) => c.top))),
+      base: Math.round(Math.max(...caixas.map((c) => c.bottom))),
+      janela: { largura: innerWidth, altura: innerHeight },
+    };
+  });
+
+  const cobreTudo = cobertura.folhas === 2
+    && cobertura.esquerda <= 0 && cobertura.topo <= 0
+    && cobertura.direita >= cobertura.janela.largura
+    && cobertura.base >= cobertura.janela.altura;
+
+  if (!cobreTudo) {
+    throw new Error(
+      'o portão NAO cobre a tela inteira.\n'
+      + `  medido: ${JSON.stringify(cobertura)}\n`
+      + '  As duas .porta-folha somadas precisam ir de (0,0) ate\n'
+      + '  (innerWidth, innerHeight). Sobrar fundo em volta transforma a porta\n'
+      + '  num DESENHO de porta, que foi a versao recusada em 05/09.\n'
+      + '  Suspeitos: `max-height`/`width` em .porta-svg ou .porta-folha,\n'
+      + '  um `padding` no .portao, ou o texto empurrando as folhas.');
+  }
+  ok('a porta ocupa a tela inteira');
 
   // O composer só monta depois de a sessão resolver, o perfil carregar e o
   // chunk do feed baixar. Ele aparecer prova três coisas de uma vez: sessão

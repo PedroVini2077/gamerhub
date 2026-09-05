@@ -59,9 +59,52 @@ const CHAVE_ENTRANDO = 'gh_entrando';
  * chega; se chegar depois, o aviso reconfere na hora. As duas ordens funcionam.
  */
 export const EVENTO_ENTROU = 'gh:entrou';
+
+/**
+ * O aviso de que a entrada NÃO vai acontecer.
+ *
+ * ── Por que ele existe, e é §1.3 puro ───────────────────────────────────────
+ *
+ * Com a marca escrita ANTES do login, existe uma janela: o `onAuthStateChange`
+ * preenche o `user` assim que a senha é aceita — **antes** de a checagem de ban
+ * terminar. Nessa janela o portão consome a marca e sobe; quando
+ * `cancelarEntradaAgora()` roda, já não há marca para apagar.
+ *
+ * Hoje isso não aparece na tela porque a `BannedScreen` tem `z-[9999]` e o
+ * portão tem `z-index: 80`. Só que isso é **proteção acidental**, que este
+ * projeto já registrou como a pior espécie: basta alguém mexer num `z-index`
+ * para o portão passar a dar as boas-vindas a quem acabou de ser barrado.
+ *
+ * O aviso fecha a classe em vez do caso: quem cancela AVISA, e o portão sai
+ * na hora — não importa quem esteja por cima.
+ */
+export const EVENTO_CANCELADO = 'gh:entrada-cancelada';
 const PREFIXO_JA_ENTROU = 'gh_ja_entrou:';
 
-/** Chamado no instante em que o login dá certo. */
+/**
+ * Chamado ANTES de pedir o login ao servidor.
+ *
+ * ── `[05/09]` Por que "antes", e não "quando deu certo" ─────────────────────
+ *
+ * Marcar no sucesso parece o certo e produziu o defeito que o dono relatou:
+ * *"assim que eu logava, eu via o site por alguns segundos, depois aparecia o
+ * portão"*. A ordem real é essa:
+ *
+ *     signInWithPassword ... o onAuthStateChange preenche o `user` AQUI,
+ *                            antes de a promessa voltar
+ *     -> o App troca de rota e o site PINTA
+ *     get_own_profile ...... mais uma ida ao servidor
+ *     logAudit ............. mais uma
+ *     marcarEntradaAgora ... só agora o portão fica sabendo
+ *
+ * Entre a pintura e a marca cabem duas viagens de rede — os "alguns segundos".
+ * Marcando antes, a marca já existe no instante em que o `user` aparece, e o
+ * portão sobe no MESMO quadro (ver o `useLayoutEffect` em
+ * `PortaoDeBoasVindas.jsx`). O site nunca chega a ser visto.
+ *
+ * O preço é que a marca passa a significar *"entrada em andamento"* e pode
+ * sobrar se a entrada não se completar — daí `cancelarEntradaAgora()`.
+ */
 export function marcarEntradaAgora() {
   try {
     sessionStorage.setItem(CHAVE_ENTRANDO, '1');
@@ -72,6 +115,29 @@ export function marcarEntradaAgora() {
   // mantém o comportamento previsível.
   try {
     window.dispatchEvent(new Event(EVENTO_ENTROU));
+  } catch {
+    // Ambiente sem `window` (teste de nó puro): nada a avisar.
+  }
+}
+
+/**
+ * Desfaz a marca quando a entrada NÃO se completou.
+ *
+ * Três caminhos precisam disto, e cada um por um motivo diferente:
+ * senha errada (não houve entrada), conta banida (houve, mas quem foi barrado
+ * não é recebido com festa) e erro de rede (não se sabe). Sem isto, a marca
+ * ficaria na aba esperando o próximo `user` para abrir um portão sem causa.
+ */
+export function cancelarEntradaAgora() {
+  try {
+    sessionStorage.removeItem(CHAVE_ENTRANDO);
+  } catch {
+    // Sem armazenamento não havia marca para desfazer.
+  }
+  // FORA do try: se o portão já tiver consumido a marca, apagá-la não basta —
+  // é o aviso que o tira da tela. Ver `EVENTO_CANCELADO`.
+  try {
+    window.dispatchEvent(new Event(EVENTO_CANCELADO));
   } catch {
     // Ambiente sem `window` (teste de nó puro): nada a avisar.
   }

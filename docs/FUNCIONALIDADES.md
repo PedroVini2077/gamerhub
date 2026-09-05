@@ -141,15 +141,21 @@ transições discretas das páginas internas.
   e avisa que pedir reenvio invalida o link anterior.
 - **Email de confirmação** resistente a dark mode — template em Edge Function
   com cores explícitas (não herda tema escuro do cliente de email).
-- **`[04/09]` Ao entrar, uma TRANCA gira e o portão abre.** Depois do login
-  aparece uma tela rápida — *"Seja bem-vindo, @fulano"* na estreia, *"Bem-vindo
-  de volta"* nas outras. A porta é **uma superfície só**, com uma tranca de três
-  anéis girando no meio enquanto o site carrega; quando ele fica pronto, a
-  tranca **para, acende** e só então as folhas se separam. Ela **não inventa
-  espera**: cobre o intervalo em que o site carrega perfil, cargo e feed, e sai
-  assim que eles chegam (piso de 0,7 s para não piscar, **teto de 2,5 s** — se o
-  carregamento demorar, ela sai do mesmo jeito). Recarregar a página **não** a
-  reabre; ela é do momento de entrar, não de estar logado.
+- **`[05/09]` Ao entrar, a TELA vira um portão e ele abre.** Depois do login a
+  tela inteira é uma porta blindada — não um desenho de porta com fundo em
+  volta: as duas folhas ocupam metade da largura cada uma e vão de borda a
+  borda. No meio, um disco de tranca gira enquanto o site carrega, com o
+  ferrolho travado e os chevrons piscando; quando o perfil chega, a tranca
+  **para no encaixe, acende, o ferrolho recua** e só então as folhas deslizam
+  para os lados — **revelando o site, que já está montado atrás**. A saudação
+  (*"Seja bem-vindo, @fulano"* na estreia, *"Bem-vindo de volta"* nas outras)
+  fica gravada na própria chapa, acima da tranca.
+  Ela **não inventa espera**: cobre o intervalo em que o site carrega perfil,
+  cargo e feed, e sai assim que eles chegam (piso de 0,7 s para não piscar,
+  **teto de 2,5 s** — se o carregamento demorar, ela sai do mesmo jeito).
+  Recarregar a página **não** a reabre; ela é do momento de entrar, não de estar
+  logado. E o site **nunca aparece antes dela**: a marca de entrada é escrita
+  antes do login e o portão sobe no mesmo quadro em que a rota troca.
 - **`[04/09]` A troca entre "Entrar" e "Registrar" tem transição.** O conteúdo
   entra em fade, **o card acompanha a altura** (o formulário de cadastro é 2,5×
   mais alto que o de login) e **os lutadores do fundo se cruzam em fade** em vez

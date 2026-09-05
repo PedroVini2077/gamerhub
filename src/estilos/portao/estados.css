@@ -1,0 +1,91 @@
+/* Os ESTADOS do portão: o texto, o destravamento, a abertura e o modo de menos
+ * movimento.
+ *
+ * Vem por ÚLTIMO no `portao.css` de propósito: estas regras sobrescrevem as de
+ * `superficie.css` e `tranca.css`, e em CSS o empate de especificidade é
+ * decidido pela ordem. Trocar a ordem dos imports desliga o destravamento em
+ * silêncio. Ver `superficie.css` para a nota do split.
+ */
+
+/* ── O TEXTO, dentro da porta ────────────────────────────────────────────────
+ *
+ * `[05/09]` Antes ele ficava ABAIXO da porta, e era metade do defeito: um
+ * parágrafo fora do desenho é a prova de que existe um "fora". Agora ele está
+ * gravado na chapa, acima da tranca, e some quando a porta abre. */
+.portao-texto {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: min(90vw, 720px);
+  transform: translate(-50%, calc(-50% - var(--tranca) * 0.78));
+  text-align: center;
+  transition: opacity 240ms ease;
+}
+
+.portao-titulo {
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  font-size: clamp(1rem, 3.4vw, 1.7rem);
+  letter-spacing: 0.04em;
+  color: #cfe9cb;
+  text-shadow: 0 2px 0 #05080c, 0 0 30px #39ff1433;
+}
+
+.portao-nome {
+  display: block;
+  margin-top: 0.3em;
+  color: #39ff14;
+  text-shadow: 0 0 24px #39ff1477;
+}
+
+.portao-linha {
+  margin-top: 0.8em;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: clamp(0.7rem, 2.2vw, 0.86rem);
+  letter-spacing: 0.16em;
+  color: #6d7f6d;
+  transition: color 240ms ease;
+}
+
+/* ── DESTRANCADO ─────────────────────────────────────────────────────────────
+ *
+ * Quatro coisas ao mesmo tempo, e juntas elas contam "abriu": o disco para no
+ * encaixe e acende, o ferrolho RECUA, os chevrons param de piscar e ficam
+ * acesos, e a linha fica verde.
+ *
+ * O `rotate(0)` não é capricho: parado num ângulo qualquer, o disco se parte na
+ * diagonal quando a porta abre, e o corte aparece dentro dele. */
+.portao-destrancado .porta-disco {
+  animation: none;
+  transform: rotate(0deg);
+  transition: transform 380ms cubic-bezier(0.2, 1.25, 0.4, 1);
+}
+
+.portao-destrancado .porta-arco { stroke: #d9ffd2; transition: stroke 300ms ease; }
+.portao-destrancado .porta-raio { fill: #d9ffd2; transition: fill 300ms ease; }
+.portao-destrancado .porta-chevron { animation: none; opacity: 1; }
+.portao-destrancado .porta-ferrolho { transform: translateY(-50%) translateX(-14%); }
+.portao-destrancado .portao-linha { color: #39ff14; }
+
+/* ── ABRINDO ─────────────────────────────────────────────────────────────────
+ *
+ * `101%` e não `100%`: em largura ímpar, o arredondamento de sub-pixel deixava
+ * uma tira de 1 px da folha na borda. */
+.portao-abrindo .porta-folha-esq { transform: translateX(-101%); }
+.portao-abrindo .porta-folha-dir { transform: translateX(101%); }
+.portao-abrindo .portao-texto { opacity: 0; }
+
+/* ── Menos movimento ─────────────────────────────────────────────────────────
+ *
+ * A porta continua na tela, com o nome e a saudação — o que sai é o giro, o
+ * pisca-pisca e o deslizar. A informação fica; o movimento sai. */
+@media (prefers-reduced-motion: reduce) {
+  .porta-disco,
+  .porta-chevron { animation: none; }
+
+  .porta-folha { transition: opacity 320ms ease; }
+
+  .portao-abrindo .porta-folha-esq,
+  .portao-abrindo .porta-folha-dir { transform: none; opacity: 0; }
+}

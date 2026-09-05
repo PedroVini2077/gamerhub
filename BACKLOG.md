@@ -35,54 +35,15 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[04/09]` 🔴 O PORTÃO de boas-vindas — a tela INTEIRA vira porta
+*Vazia.* A última tarefa — **o portão de boas-vindas virar a tela inteira** —
+fechou em 05/09, na quinta tentativa. As quatro recusas e o motivo de cada uma
+estão em [DECISOES.md](docs/DECISOES.md); o resumo é que o defeito nunca esteve
+no traço, e sim no enquadramento: enquanto sobra tela em volta da porta, o olho
+lê "figura de porta".
 
-> Ordem do dono, na letra: *"a porta é pra ser a tela inteira, entendeu? A TELA
-> INTEIRA! não uma imagem abrindo, é pra ter imersão... eu quero a tela como
-> portão"*.
-
-**O erro que estou registrando aqui, para não repetir pela quinta vez.** Eu
-desenhei a porta como um **objeto dentro da tela**: um SVG de `max-height: 62vh`
-centralizado, com fundo preto em volta e o texto de boas-vindas embaixo. Isso é
-uma ilustração de porta abrindo. O que ele pediu é o oposto: a **tela** é a
-porta — 100vw × 100vh, sem margem, sem moldura, sem "lá fora"; as duas folhas
-ocupam metade da tela cada uma e se abrem revelando o site que já está montado
-atrás.
-
-**Quatro tentativas recusadas até aqui**, e cada recusa ensinou uma coisa:
-
-| # | O que eu fiz | Por que ele cortou |
-| --- | --- | --- |
-| 1 | tela com uma fenda que se abre | *"não queria que ela tivesse essa fenda"* |
-| 2 | anéis e argolas de CSS | *"eu tô falando literalmente de uma porta"* |
-| 3 | a ilustração dele recortada em 4 peças | *"eu mandei usar como exemplo e criar à mão"* |
-| 4 | SVG desenhado à mão (este) | é um **desenho de** porta, não a tela virando porta |
-
-**O que existe hoje, e onde está.** `src/components/auth/PortaDeAcesso.jsx`
-(desenho) + `src/estilos/portao.css` (movimento) + `PortaoDeBoasVindas.jsx`
-(tempos e estados). O desenho em si funciona — tranca girando, ferrolho que
-recua, chevrons em sequência, folhas deslizando, paleta do site. **O que não
-serve é o enquadramento.**
-
-**O que falta, em ordem:**
-
-1. **Tela cheia.** O SVG passa a `width: 100vw; height: 100vh` com
-   `preserveAspectRatio="xMidYMid slice"` — a porta corta nas bordas em vez de
-   caber inteira, que é o que produz imersão. Sem `max-height`, sem `gap`, sem
-   fundo aparecendo em volta.
-2. **A saudação vai PARA DENTRO da porta** — gravada nas folhas ou na tranca,
-   não num parágrafo abaixo dela.
-3. **As folhas somem atrás das bordas da tela.** No print de 04/09 elas deslizam
-   para fora e ficam visíveis flutuando sobre o fundo. Falta o `clipPath` do vão.
-4. **Rótulos.** `IDENTIFIQUE-SE` transborda o pilar; e `LIBERADO`/`OK` aparecem
-   **enquanto a porta ainda está trancada** — a tela mente sobre o próprio
-   estado (§1.5).
-5. **A tela atual, que está NO AR, é a nº 1** — a da fenda, que ele já recusou.
-   Decidir com ele: tirar do ar agora, ou deixar até o portão certo entrar.
-
-**Não é decisão minha:** o item 5. Os outros quatro são execução.
-
----
+Fechou junto o bug que o dono relatou no mesmo dia — *"assim que eu logava, eu
+via o site por alguns segundos, depois aparecia o portão"* —, que era ordem e não
+lentidão, e virou trava de contrato em `portaoAntesDoSite.test.js`.
 
 *A tarefa anterior* — refazer a tela de entrada na paleta do site — fechou
 em 04/09. O dono cortou a direção anterior (*"personagem de gelo e fogo não tem
@@ -485,8 +446,8 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->89<!--/n--> arq ·
-  <!--n:src.lib.linhas-->7.484<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->90<!--/n--> arq ·
+  <!--n:src.lib.linhas-->7.682<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
