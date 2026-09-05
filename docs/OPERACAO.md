@@ -516,7 +516,17 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   sempre, inclusive para uma senha de verdade escrita nele depois.
   `scripts/__tests__/segredosVazados.test.js` confere os dois lados — 5 formas
   de senha que ele **tem** que pegar e 4 que ele **não** pode acusar — e vigia a
-  lista de dispensados, que hoje tem duas entradas com motivo escrito.
+  lista de dispensados, que hoje tem **três** entradas com motivo escrito — a
+  terceira é o próprio teste, que precisa conter senhas em texto para fazer o
+  trabalho dele.
+  **`[05/09]` E ele passou a varrer arquivo NÃO COMMITADO também.** Antes usava
+  só `git ls-files`, ou seja, só o que já estava no índice — e isso deixava dois
+  buracos. O leve: rodar `npm run segredos` antes de `git add` dava verde falso
+  sobre o arquivo recém-escrito (aconteceu, e o CI pegou). O grave: **colar uma
+  chave num arquivo novo e rodar o portão respondia OK** — o momento em que a
+  pessoa mais precisa do aviso era o único que ele não cobria. Agora entra
+  `git ls-files --others --exclude-standard`, que respeita o `.gitignore`,
+  então `.env` de verdade continua fora.
 
 - **portas do banco** (`e2e/portas-do-banco.mjs`, dentro do job de fumaça) —
   bate na REST API do Supabase **como um estranho sem conta** e reprova o PR se
@@ -933,6 +943,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->11.849<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->11.859<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

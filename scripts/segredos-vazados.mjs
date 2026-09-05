@@ -23,8 +23,29 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const rastreados = execSync('git ls-files', { encoding: 'utf8' })
-  .split('\n').filter(Boolean);
+/**
+ * Os arquivos a varrer: os rastreados MAIS os novos ainda não commitados.
+ *
+ * ── `[05/09]` Por que os não commitados entram ──────────────────────────────
+ *
+ * Antes era só `git ls-files`, ou seja, só o que já está no índice. Isso abria
+ * dois buracos, e o segundo é o grave:
+ *
+ *   1. Rodar `npm run segredos` antes de `git add` dava VERDE FALSO sobre o
+ *      arquivo recém-escrito. Aconteceu comigo hoje: o portão passou aqui e
+ *      reprovou no CI, porque lá o arquivo já estava commitado.
+ *
+ *   2. **Colar uma chave num arquivo novo e rodar o portão respondia OK.** O
+ *      momento em que a pessoa mais precisa do aviso — logo depois de colar,
+ *      antes de commitar — era justamente o único que ele não cobria.
+ *
+ * `--exclude-standard` respeita o `.gitignore`, então `.env` de verdade
+ * continua fora: ele não é candidato a vazar por estar ignorado.
+ */
+const rastreados = [
+  ...execSync('git ls-files', { encoding: 'utf8' }).split('\n'),
+  ...execSync('git ls-files --others --exclude-standard', { encoding: 'utf8' }).split('\n'),
+].filter(Boolean);
 
 /** Arquivo de ambiente rastreado é vazamento por definição. */
 const ARQUIVOS_PROIBIDOS = /(^|\/)(\.env(\..*)?|.*\.pem|.*\.p12|id_rsa.*)$/;
@@ -83,6 +104,10 @@ const PADROES = [
 const DISPENSADOS = new Set([
   'scripts/segredos-vazados.mjs',
   'e2e/portas-fechadas.mjs',   // manda assinatura FALSA de propósito
+  // `[05/09]` O teste DO PRÓPRIO portão. Ele precisa conter senhas em texto —
+  // é o material com que confere que o padrão ainda pega o que deve pegar. Sem
+  // esta linha, o portão reprova o teste que existe para vigiá-lo.
+  'scripts/__tests__/segredosVazados.test.js',
 ]);
 
 const achados = [];

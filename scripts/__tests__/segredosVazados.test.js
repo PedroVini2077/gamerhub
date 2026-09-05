@@ -88,10 +88,12 @@ describe('o portão de segredos — senha em texto', () => {
 
     const entradas = [...bloco[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
 
-    // Dispensar arquivo é cegar o portão para ele PARA SEMPRE. Duas entradas
-    // são legítimas e estão explicadas no código: o próprio portão (que contém
-    // os padrões que procura) e o e2e que manda assinatura falsa de propósito.
-    // Uma terceira precisa de conversa, não de commit silencioso.
+    // Dispensar arquivo é cegar o portão para ele PARA SEMPRE. As três
+    // entradas legítimas, cada uma explicada no código: o próprio portão (que
+    // contém os padrões que procura), o e2e que manda assinatura falsa de
+    // propósito, e ESTE arquivo — que precisa de senhas em texto para conferir
+    // que o padrão ainda pega o que deve pegar. Uma quarta precisa de conversa,
+    // não de commit silencioso.
     expect(
       entradas.sort(),
       'alguem dispensou mais um arquivo do portao de segredos.\n'
@@ -99,6 +101,10 @@ describe('o portão de segredos — senha em texto', () => {
       + 'para uma senha de verdade escrita nele depois. Quase sempre o certo e\n'
       + 'apertar o PADRAO, nao esconder o arquivo. Se for mesmo necessario,\n'
       + 'atualize este teste junto, com o motivo.',
-    ).toEqual(['e2e/portas-fechadas.mjs', 'scripts/segredos-vazados.mjs']);
+    ).toEqual([
+      'e2e/portas-fechadas.mjs',
+      'scripts/__tests__/segredosVazados.test.js',
+      'scripts/segredos-vazados.mjs',
+    ]);
   });
 });
