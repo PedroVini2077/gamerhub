@@ -150,7 +150,9 @@ transforma esta pegadinha em bug silencioso (§4).
 >
 > Este mesmo fantasma apareceu em **quatro** documentos diferentes. Ao remover
 > uma função, `grep -rn` no `docs/` inteiro faz parte do trabalho.
-- XP: `get_user_xp`.
+- XP: `get_user_xp`. **`[05/09]` As curtidas vêm de `post_likes`, não da coluna
+  `posts.likes`** — essa coluna existe e nunca foi mantida por trigger nenhum,
+  então a soma dava 0 para todo mundo. A auto-curtida não conta.
 - Auditoria: `log_audit_event`.
 - Owner: `owner_get_stats`, `owner_get_users`, `owner_get_audit_logs`,
   `owner_get_notifications`, `owner_get_metrics`, `owner_set_role`,

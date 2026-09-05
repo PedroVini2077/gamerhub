@@ -41,6 +41,7 @@ import { describe, expect, it } from 'vitest';
 
 const AUTH = 'src/hooks/useAuth.jsx';
 const CONFIRMA = 'src/pages/AuthConfirm.jsx';
+const ESTADOS = 'src/estilos/portao/estados.css';
 const PORTAO = 'src/components/auth/PortaoDeBoasVindas.jsx';
 
 const ler = (caminho) => {
@@ -146,6 +147,34 @@ describe('o portão sobe antes de o site pintar', () => {
       + 'Ela termina em signOut() e volta para o login — trocar senha nao e\n'
       + 'entrar, e a marca ficaria sobrando na aba.',
     ).toBe(false);
+  });
+
+  it('a volta do destravamento termina ALINHADA no encaixe', () => {
+    // `[05/09]` A volta virou 360° a pedido do dono. O que não pode mudar junto
+    // é o ponto de CHEGADA: parada num ângulo qualquer, a tranca se parte na
+    // diagonal quando as folhas andam, e o corte aparece dentro dela.
+    //
+    // Isto não estoura em runtime nem aparece em teste de comportamento — só
+    // num print, e só se alguém for olhar. É §1.5.
+    const css = semComentarios(ler(ESTADOS));
+    const bloco = css.slice(css.indexOf('@keyframes portaDestrava'));
+    const corpo = bloco.slice(0, bloco.indexOf('}', bloco.indexOf('to')) + 1);
+
+    expect(
+      /to\s*\{\s*transform:\s*rotate\(0deg\)/.test(corpo),
+      `${ESTADOS}: o @keyframes portaDestrava nao termina em rotate(0deg).\n`
+      + 'A tranca precisa parar ALINHADA no encaixe: em qualquer outro angulo\n'
+      + 'ela se parte na diagonal quando as folhas deslizam, e o corte aparece\n'
+      + 'dentro dela. Nada quebra em runtime — so aparece num print.',
+    ).toBe(true);
+
+    expect(
+      corpo.includes('var(--tranca-em'),
+      `${ESTADOS}: o inicio da volta deixou de usar --tranca-em.\n`
+      + 'Sem o angulo real de onde o disco parou, a volta ou salta no primeiro\n'
+      + 'quadro ou deixa de ser 360 graus exatos. Quem escreve a variavel e o\n'
+      + 'useLayoutEffect de PortaoDeBoasVindas.jsx.',
+    ).toBe(true);
   });
 
   it('não adia a abertura com temporizador', () => {

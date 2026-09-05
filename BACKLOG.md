@@ -35,28 +35,24 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[05/09]` Os três blocos que o dono liberou
+*Vazia.* Os três blocos que o dono liberou em 05/09 fecharam:
 
-> *"pode fazer então o que dá pra fazer agora, vamos deixar a música na aba
-> owner lá depois... pode começar a fazer o que você recomendou lá em cima, pode
-> começar a implementar tudo!"*
-
-| # | Bloco | Estado |
+| # | Bloco | Onde ficou |
 | --- | --- | --- |
-| 1 | Os dois furos do portão de boas-vindas | **feito** — confirmação de conta passou a mostrar o portão; a saudação não sai mais sem nome |
-| 2 | Cofre do painel do Fundador (cenográfico) | **feito** — `lib/cofre.js`, tela com o aviso impresso, disco que gira |
-| 3 | Conquistas — 5 a 8 fixas em cima do XP que já existe | **a fazer** |
+| 1 | Os dois furos do portão | PR #161 — confirmação de conta passou a mostrar o portão; a saudação não sai mais sem nome |
+| 2 | Cofre do painel do Fundador (cenográfico) | PR #161 — `lib/cofre.js`, aviso impresso na tela, disco que gira |
+| 3 | Conquistas — 8 fixas, derivadas do XP | `lib/conquistas.js` + `ConquistasCard.jsx`, sem tabela nova |
 
-**Adiado por escolha dele:** música no painel do Fundador. Motivo dado: *"quero
-colocar mais coisas de músicos sem pesar o site e o Supabase"* — ou seja, é
-decisão de custo/egress, e não falta de caminho técnico. O caminho recomendado
-(faixa curta própria, em laço, ligada por clique) continua em
+Junto do bloco 3 saiu um bug que ninguém tinha relatado: **a XP contava
+curtidas de `posts.likes`, uma coluna que nenhum trigger mantém** — a soma dava
+0 para todo mundo desde sempre. Corrigido, testado em `ROLLBACK` e travado.
+Detalhes em [DECISOES.md](docs/DECISOES.md).
+
+**Adiado por escolha do dono:** música no painel do Fundador. Motivo dele:
+*"quero colocar mais coisas de músicos sem pesar o site e o Supabase"* — é
+decisão de custo, não falta de caminho técnico. O caminho recomendado (faixa
+curta própria, em laço, ligada por clique) continua em
 [VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).
-
-**Aguardando ele, sem bloquear nada:** se as três chaves do cofre devem
-aparecer na tabela visível da política de privacidade. Hoje estão só na lista
-técnica — o motivo está em [DECISOES.md](docs/DECISOES.md), e mudar custa uma
-reaceitação de todo mundo.
 
 ---
 
@@ -143,6 +139,18 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- `[05/09]` 🟡 **Apagar a coluna morta `posts.likes`?** Ela existe, nenhum
+  trigger a mantém, e nada mais a lê desde 05/09. Apagar seria a trava mais
+  forte possível — o dado errado vira **impossível** de existir —, mas
+  `DROP COLUMN` é irreversível e entra no 🔴 do §7. Hoje a trava é o teste
+  `xpNaoLeColunaMorta.test.js`, que varre migrations e JavaScript. **Decisão
+  sua.**
+
+- `[05/09]` 🔵 **As três chaves do cofre devem aparecer na tabela visível da
+  política de privacidade?** Hoje estão só na lista técnica, porque só nascem no
+  navegador de quem é fundador. Citá-las custa subir a `versao` do documento —
+  todo mundo reaceita. Motivo escrito em [DECISOES.md](docs/DECISOES.md).
 
 - ⬜ `[04/09]` 🟡 **O "cofre" do painel do Fundador.** *Ideia do dono. **Só vale a
   pena se a checagem for no BANCO** — ver a análise em
@@ -461,8 +469,8 @@ era o caso relatado, sobra 19 px da borda. A regra que segura isso é
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->92<!--/n--> arq ·
-  <!--n:src.lib.linhas-->8.072<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->95<!--/n--> arq ·
+  <!--n:src.lib.linhas-->8.516<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

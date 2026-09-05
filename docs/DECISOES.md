@@ -1407,3 +1407,77 @@ tabela que o leitor vê. Elas só nascem no navegador de quem é fundador, e
 listá-las descreveria para milhares de pessoas um armazenamento que existe para
 uma. Se ele preferir citá-las, o custo é subir a `versao` do documento — o que
 faz todo mundo aceitar de novo.
+
+---
+
+## `[05/09]` As conquistas são DERIVADAS — não têm tabela, e isso é escolha
+
+Conquista normalmente é uma tabela: `achievements` mais `user_achievements`, com
+trigger gravando a cada post, curtida e comentário. Aqui não é.
+
+**A pergunta que decidiu foi a de sempre (§0.2): quantas vezes por dia isso
+roda?** A resposta da versão com tabela é "uma escrita por interação de todo
+mundo" — e isso multiplica por usuários × posts × curtidas, que é exatamente a
+conta que estoura cota.
+
+As oito conquistas são calculadas em cima do que a `get_user_xp` **já devolve**,
+numa chamada que o perfil **já faz**. Custo: zero consulta nova, zero escrita,
+zero tabela, zero trigger.
+
+### O que se perde, dito antes de alguém descobrir
+
+| | derivada (é assim) | com tabela |
+| --- | --- | --- |
+| custo | zero | uma escrita por interação |
+| "quando" foi conquistada | **não existe** | data guardada |
+| notificar na hora | **não dá** | dá |
+| conquista de evento sem rastro (ex.: "entrou no 1º dia") | **impossível** | possível |
+
+O dia em que notificar ou datar virar necessidade, a tabela passa a valer o
+preço. Hoje não vale — e trocar depois é aditivo: as oito continuam existindo.
+
+### Duas escolhas menores
+
+**"Perfil completo" olha os seis campos, não o número 140** (a soma dos bônus no
+SQL). Se um bônus mudar de valor, a conquista continua verdadeira. Depender do
+total faria ela virar inalcançável em silêncio.
+
+**Conquista bloqueada mostra o nome.** Esconder o que falta transforma a lista
+num enigma; mostrar transforma em objetivo. O cadeado e a cor dizem o estado.
+
+---
+
+## `[05/09]` O XP contava curtidas de uma coluna morta — e era o TERCEIRO lugar
+
+`get_user_xp` fazia `SUM(posts.likes) * 5`. Nada no banco nunca escreveu nessa
+coluna: o único trigger em `post_likes` é o `notify_post_like`, que só insere
+notificação. **A soma dava 0 para todo mundo, para sempre**, e a tela de ranks
+anunciava *"Receber um like → 5 XP"* que o sistema nunca pagou.
+
+Comprovado em transação com `ROLLBACK`: 3 linhas em `post_likes`, `posts.likes`
+= 0, `get_user_xp` = 0, `count(*)` = 3.
+
+**O que mais importa aqui não é o bug — é por que ele sobreviveu.** Este era o
+terceiro lugar com o mesmo defeito. `fetchProfileStats` (frontend) e
+`owner_get_metrics` (banco) já tinham sido corrigidos antes, **cada um por conta
+própria, em passadas diferentes**. Ninguém perguntou *"onde MAIS este padrão
+existe?"* — que é literalmente a regra da varredura de classe (§1.3) — e a
+função que sobrou ficou errada sozinha.
+
+**A correção conta da tabela em vez de criar trigger para manter a coluna.**
+Contador denormalizado exige acertar INSERT e DELETE e desincroniza no primeiro
+caminho que alguém esquecer; esta coluna morta é a prova viva disso.
+
+**Anti-farm:** a auto-curtida não conta (`pl.user_id <> p.user_id`). "Receber um
+like" é de outra pessoa — sem isso, curtir o próprio post seria 5 XP por clique.
+
+**Efeito visível:** o XP de quem já recebeu curtidas **sobe**. É a correção de um
+valor que estava errado para baixo, não uma mudança de regra.
+
+### O que ficou pendente, e é decisão do dono
+
+A coluna `posts.likes` continua existindo, morta. Apagá-la seria a trava mais
+forte possível (o dado errado passa a ser **impossível**), mas `DROP COLUMN` é
+irreversível e entra no 🔴 do §7 — não faço sem ele mandar. Enquanto isso, a
+trava é o teste `xpNaoLeColunaMorta.test.js`, que varre as migrations e o
+JavaScript atrás do padrão.

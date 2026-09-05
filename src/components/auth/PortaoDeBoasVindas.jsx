@@ -71,8 +71,16 @@ import {
 const PISO_MS = 700;
 /** Teto absoluto. Passou disto, o site assume mesmo sem o perfil. */
 const TETO_MS = 2500;
-/** Quanto a tranca fica travada e acesa antes de a porta abrir. */
-const DESTRAVE_MS = 420;
+/**
+ * Quanto dura o destravamento: a volta inteira da tranca, mais um respiro.
+ *
+ * `[05/09]` Era 420 ms. Pedido do dono: *"achei a volta da tranca muito curta,
+ * você acha legal ela fazer uma volta 360 e depois abrir?"*. A volta são 820 ms
+ * (`portaDestrava`, em `estilos/portao/estados.css`) e os 140 ms de sobra são a
+ * pausa em que ela fica travada e acesa antes de as folhas andarem — sem essa
+ * pausa, a abertura come o fim da volta e as duas coisas viram uma só.
+ */
+const DESTRAVE_MS = 960;
 /** A abertura das folhas — igual à `transition` do CSS. */
 const ABERTURA_MS = 640;
 
@@ -164,7 +172,32 @@ export default function PortaoDeBoasVindas() {
     return () => { clearTimeout(teto); if (piso) clearTimeout(piso); };
   }, [visivel, destrancado, profile]);
 
-  // ABRE, depois de a tranca ter travado e acendido. A pausa é o que faz a
+  // ── A VOLTA da tranca precisa saber onde ela está ─────────────────────────
+  //
+  // O giro contínuo é uma animação CSS, e o ângulo dela não é legível como
+  // valor — só como matriz de transformação já calculada. Então, no instante em
+  // que destranca, lemos a matriz e escrevemos o ângulo em `--tranca-em`; o
+  // `@keyframes portaDestrava` usa isso para girar EXATAMENTE 360° e parar
+  // alinhado. O porquê de cada metade da conta está no CSS.
+  //
+  // `useLayoutEffect` porque a variável tem que existir ANTES de o navegador
+  // pintar o primeiro quadro da nova animação. Num `useEffect`, o primeiro
+  // quadro usaria o padrão e o disco daria um salto visível.
+  useLayoutEffect(() => {
+    if (!destrancado) return;
+
+    const disco = document.querySelector('.porta-disco');
+    if (!disco) return;
+
+    const { m11, m12 } = new DOMMatrixReadOnly(getComputedStyle(disco).transform);
+    // `atan2` devolve de -180 a 180; o `+ 360) % 360` normaliza para 0..360,
+    // que é o intervalo que a conta do CSS espera.
+    const graus = ((Math.atan2(m12, m11) * 180) / Math.PI + 360) % 360;
+
+    disco.closest('.portao')?.style.setProperty('--tranca-em', `${graus}deg`);
+  }, [destrancado]);
+
+  // ABRE, depois de a tranca ter dado a volta e travado. A pausa é o que faz a
   // abertura ter causa em vez de acontecer sozinha.
   useEffect(() => {
     if (!destrancado) return undefined;
