@@ -137,3 +137,52 @@
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.4);
 }
+
+
+/* ── `[05/09]` TEXTO POR CIMA DA ARENA ───────────────────────────────────────
+ *
+ * Relato do dono: *"essas letras como a do 'voltar para a página inicial'
+ * estão cinzas? Sempre foram, pq o fundo era preto então elas ficavam
+ * destacadas, agora que o fundo é colorido... ficaram meio que apagadas"*.
+ *
+ * Ele está certo, e o diagnóstico é exatamente esse: os cinzas foram escolhidos
+ * contra PRETO. A arena trocou o fundo por verde e roxo claros, e um cinza
+ * médio some contra os dois.
+ *
+ * ── Por que não basta trocar para branco ────────────────────────────────────
+ *
+ * Porque o fundo não é de UMA cor. O mesmo texto atravessa verde claro, roxo
+ * claro, a fenda escura do meio e a arte dos lutadores. Branco puro resolve
+ * contra a fenda e continua brigando contra o verde neon, que é quase branco.
+ *
+ * O que resolve para qualquer fundo é a SOMBRA DE LEITURA: um halo escuro
+ * atrás da letra. Ela não muda a cor do texto, muda o que está imediatamente
+ * atrás dele — então funciona igual sobre claro e sobre escuro.
+ *
+ * Duas sombras somadas de propósito: a curta e opaca dá a borda que separa a
+ * letra do fundo; a larga e suave apaga o ruído da arte ao redor. */
+.arena-texto {
+  color: #e8edf2;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    0 0 10px rgba(0, 0, 0, 0.75);
+}
+
+/* O "voltar" é CONTROLE, não texto corrido: ele ganha o fundo escuro que o dono
+   sugeriu, porque uma pastilha também diz "isto é clicável" — coisa que texto
+   solto sobre arte não diz. */
+.arena-chip {
+  color: #e8edf2;
+  background: rgba(6, 10, 14, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  backdrop-filter: blur(3px);
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.arena-chip:hover {
+  color: #39ff14;
+  background: rgba(6, 10, 14, 0.82);
+  border-color: rgba(57, 255, 20, 0.35);
+}

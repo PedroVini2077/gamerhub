@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FileText, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAceitesPendentes } from '../../hooks/useAceitesPendentes';
 import { DOCUMENTOS } from '../../lib/documentosLegais';
+import { comVoltaPara } from '../../lib/url';
 
 /**
  * O aviso de que há documento novo para aceitar.
@@ -36,6 +37,10 @@ function foiAdiado() {
 export default function AvisoDeAceite() {
   const { pendentes, aceitar, enviando } = useAceitesPendentes();
   const [adiado, setAdiado] = useState(foiAdiado);
+  // Os links abrem em aba nova, e aba nova nasce sem histórico: sem levar a
+  // origem junto, o "Voltar" de lá jogaria na landing (`BotaoVoltar.jsx`).
+  const { pathname, search } = useLocation();
+  const daqui = pathname + search;
 
   // `null` = ainda não sei. `[]` = está tudo aceito. Nos dois casos, nada na tela.
   if (!pendentes || pendentes.length === 0 || adiado) return null;
@@ -98,7 +103,7 @@ export default function AvisoDeAceite() {
           {pendentes.map((chave, i) => (
             <span key={chave}>
               <Link
-                to={DOCUMENTOS[chave].caminho}
+                to={comVoltaPara(DOCUMENTOS[chave].caminho, daqui)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-neon-cyan hover:underline"

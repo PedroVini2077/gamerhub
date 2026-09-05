@@ -170,6 +170,12 @@ e migration exigem esse nível. Registrado para quando deixar de exigir.
   escalada.
 - Funções admin/owner: `REVOKE ... FROM PUBLIC, anon` + `GRANT ... TO
   authenticated`, **além** da checagem interna por `auth.uid()`.
-- Não confiar em `posts.likes` — a coluna existe mas nenhum trigger a mantém.
+- **Curtida se conta de `post_likes`, nunca de contador em `posts`.**
+  `[05/09]` A coluna `posts.likes` **foi apagada** — ela existia sem trigger
+  nenhum que a mantivesse, ficou zerada desde sempre, e **três lugares
+  diferentes** somaram ela ao longo do tempo achando que valia alguma coisa. O
+  histórico está em [DECISOES.md](../DECISOES.md); o que fica como regra é a
+  lição: contador desnormalizado exige acertar INSERT **e** DELETE, e
+  desincroniza no primeiro caminho que alguém esquecer.
 
 ---

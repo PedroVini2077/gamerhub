@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { DOCUMENTOS } from '../../lib/documentosLegais';
+import { comVoltaPara } from '../../lib/url';
 
 /**
  * A marcação de aceite dos documentos, no cadastro.
@@ -18,6 +19,11 @@ import { DOCUMENTOS } from '../../lib/documentosLegais';
  * previsível é ninguém clicar, ou seja, ninguém ler — que é o oposto do que
  * uma tela de consentimento existe para fazer.
  *
+ * **`[05/09]` E aba nova nasce sem histórico.** Relato do dono: *"quando eu
+ * volto, eu volto direto pra landing"*. O `?de=` leva a origem junto, e é o
+ * único jeito de o "Voltar" de lá saber que ele veio do cadastro. Ver
+ * `components/conteudo/BotaoVoltar.jsx`.
+ *
  * ── O que esta caixinha NÃO é ───────────────────────────────────────────────
  *
  * Não é a prova do consentimento. A prova é a linha em `policy_acceptances`,
@@ -26,6 +32,8 @@ import { DOCUMENTOS } from '../../lib/documentosLegais';
  */
 export default function AceiteDosDocumentos({ aceito, setAceito }) {
   const documentos = Object.entries(DOCUMENTOS);
+  const { pathname, search } = useLocation();
+  const daqui = pathname + search;
 
   return (
     <label className="flex items-start gap-3 cursor-pointer group">
@@ -40,7 +48,7 @@ export default function AceiteDosDocumentos({ aceito, setAceito }) {
         {documentos.map(([chave, doc], i) => (
           <span key={chave}>
             <Link
-              to={doc.caminho}
+              to={comVoltaPara(doc.caminho, daqui)}
               target="_blank"
               rel="noopener noreferrer"
               // `stopPropagation` porque o link vive DENTRO do <label>: sem

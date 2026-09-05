@@ -56,6 +56,15 @@
   constraints em `posts.embed_url`, `game_keys.promo_url`, `post_media.url`,
   `community_post_media.url`) — a anon key permite chamar a REST API direto,
   então validação só no frontend não vale nada.
+- **`[05/09]` Caminho INTERNO vindo da URL também é saneado** (`lib/url.js` →
+  `caminhoInternoSeguro`). Os links dos documentos legais abrem em aba nova, que
+  nasce sem histórico, então a origem viaja num `?de=` para o botão "Voltar"
+  saber para onde ir. Isso é entrada de usuário: sem checagem seria
+  **redirecionamento aberto** — `…/termos?de=//site-falso` mostra o nosso
+  domínio na barra e o "Voltar" leva para fora. Só passa caminho que comece com
+  **uma** barra: `//host`, `/\host`, `/%2f%2fhost`, esquema absoluto e caractere
+  de controle são recusados, e o botão cai na landing. Trava:
+  `voltarNaoEhRedirecionador.test.jsx`, provada reinjetando a checagem ingênua.
 - **`anon` só enxerga `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

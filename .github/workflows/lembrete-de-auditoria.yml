@@ -111,7 +111,7 @@ jobs:
 
       - name: Abrir issue
         if: steps.medir.outputs.disparar == 'sim'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           DATA: ${{ steps.medir.outputs.data }}
           DIAS: ${{ steps.medir.outputs.dias }}

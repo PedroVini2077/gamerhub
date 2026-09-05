@@ -497,6 +497,23 @@ jobs:
     name: fluxos autenticados
     runs-on: ubuntu-latest
     needs: qualidade
+    # `[05/09]` UM DE CADA VEZ, e a razão é do produto, não do CI.
+    #
+    # Este job LOGA com uma conta compartilhada, e o botão "Sair" do site faz
+    # `signOut()` com escopo GLOBAL — decisão registrada em `useAuth.jsx`:
+    # revoga toda sessão daquela conta, que é o certo para aparelho
+    # compartilhado. A consequência aqui é que dois runs simultâneos se matam:
+    # o primeiro que termina e desloga derruba a sessão do outro no meio do
+    # teste, e o segundo cai na landing com uma falha que NÃO é defeito nenhum.
+    #
+    # Aconteceu de verdade em 05/09, quando atualizei três PRs do Dependabot de
+    # uma vez. A evidência foi a screenshot: a landing, em `/`, sem sessão.
+    #
+    # `cancel-in-progress: false` porque a fila é o que se quer — cancelar
+    # devolveria o vermelho enganoso pelo outro lado.
+    concurrency:
+      group: conta-de-teste-comum
+      cancel-in-progress: false
     # Precisa das variáveis do site E das credenciais da conta de teste.
     # As credenciais são *secrets* (senha é segredo, ao contrário da anon key):
     #   Settings -> Secrets and variables -> Actions -> Secrets -> New secret
@@ -562,7 +579,7 @@ jobs:
       # sem reproduzir na mão.
       - name: Guardar a evidência da falha
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-evidencia
           path: e2e-evidencia/
@@ -573,6 +590,12 @@ jobs:
     name: painel de admin num navegador
     runs-on: ubuntu-latest
     needs: qualidade
+    # Mesma razão do `fluxos`, com a OUTRA conta compartilhada (a de staff).
+    # Grupo separado de propósito: são contas diferentes, então os dois jobs
+    # podem rodar juntos — o que não pode é dois `painel` ao mesmo tempo.
+    concurrency:
+      group: conta-de-teste-staff
+      cancel-in-progress: false
     # Segunda conta de teste, com cargo `admin`. Ela existe porque a do
     # `fluxos` é `role = 'user'` DE PROPÓSITO — é assim que aquele job prova
     # que /admin e /owner sao negados. Promover aquela conta destruiria a prova,
@@ -651,7 +674,7 @@ jobs:
 
       - name: Guardar a evidência da falha
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: painel-evidencia
           path: e2e-evidencia/

@@ -35,26 +35,55 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[05/09]` FASE 2 da auditoria — feita, e achou dois
+### `[05/09]` Os seis pedidos do dono, com print de PC e de celular
 
-Era o que eu mesmo tinha declarado como não coberto no fim da Fase 4. Das **78**
-funções `SECURITY DEFINER`, o recorte por risco isolou **21** alcançáveis por
-quem tem conta e sem usar `is_super`/`is_staff`/`role_rank`. Dessas saíram dois
-achados 🟠, os dois comprovados em `ROLLBACK` e corrigidos:
+| # | O que ele pediu | Tipo | Estado |
+| --- | --- | --- | --- |
+| 1 | **"Voltar" dos termos/privacidade cai na landing** em vez de voltar de onde veio | 🐛 bug | ✅ |
+| 2 | Celular, cadastro: o lutador **verde** um pouco mais para a direita, centralizado na área dele | ajuste | ✅ |
+| 3 | PC, login: os dois lutadores **mais longe das bordas** | ajuste | ✅ |
+| 4 | PC, cadastro: o lutador **roxo um pouco maior** — ele entende a ideia do "não escolhido", mas prefere maior | ajuste | ✅ |
+| 5 | **Moldura própria para o celular** — ele desenhou uma menor e reta, para as bordas de cada lado | arte nova | ✅ |
+| 6 | **Texto cinza apagado**: "Voltar para a página inicial" e afins somem no fundo colorido | contraste | ✅ |
 
-- **o fundador era barrado** do painel de logins bloqueados (`role =
-  'super_admin'` literal) — **terceira reincidência** da mesma classe;
-- **a trilha de auditoria era forjável**: um `role = 'user'` gravou
-  `action = 'admin_ban'` com `severity = 'critical'`.
+O #1 fura a fila por ser bug (§0). **Causa localizada, não suposta:**
+`components/conteudo/PaginaDeConteudo.jsx` tinha `<Link to="/">Voltar</Link>` —
+o botão estava **preso à landing**, não voltava para de onde a pessoa veio. Ele
+tinha uma **segunda metade**: mesmo voltando certo, `/login` reabria na aba de
+*entrar* porque a aba não estava na URL. As duas foram corrigidas
+(`components/conteudo/BotaoVoltar.jsx` e `pages/Login.jsx`).
 
-Relatório em [`db/2026-09-05-fase4-deriva-codigo-banco.md`](db/2026-09-05-fase4-deriva-codigo-banco.md).
+O #5 é **arte nova, não a mesma menor**: a moldura do PC se apaga em direção ao
+centro, e encolher aquilo num celular ou cobre metade da tela ou vira borrão —
+foram as duas rodadas anteriores (46vw, depois 24vw). A faixa reta que ele
+desenhou virou `borda-cel-verde.webp` / `borda-cel-roxo.webp`, e **o PC não baixa
+esses 49 KB**: ela só existe dentro do `@media` do celular.
 
-**Também nesta rodada:** os PRs do Dependabot estavam vermelhos por dois portões
-meus que exigiam o impossível de branch de bot — corrigido no PR #164.
+### `[05/09]` A ideia do painel do Fundador NA LANDING
 
-**O que continua aberto desta auditoria:** as 34 funções não alcançáveis por
-`anon`/`authenticated` não foram lidas uma a uma. Não há caminho pela API hoje —
-mas isso é afirmação sobre os `GRANT`s de hoje.
+Pedido dele para **pensarmos juntos**, não para eu sair fazendo: hoje ele modera
+só dentro do site, e a landing — que é a porta de entrada — não tem ninguém
+olhando. **Análise escrita, e ela discorda de uma parte:**
+[VISAO-DE-FUTURO.md](docs/VISAO-DE-FUTURO.md).
+
+Em uma linha: **vigiar** a landing tem objeto e ninguém faz hoje; **moderar** a
+landing não tem objeto (não há conteúdo de visitante ali, e o contato já tem
+painel); e **entrar pela landing** é a parte que eu não faria — segunda porta de
+entrada é segundo sistema de autenticação, e ele não precisa dela para ver uma
+rota a mais. **Espera decisão dele.**
+
+### `[05/09]` O e2e autenticado não podia rodar em paralelo
+
+Descoberto ao atualizar os três PRs do Dependabot de uma vez: o botão "Sair" faz
+`signOut()` **global** — decisão registrada —, então o primeiro run que termina
+derruba a sessão dos outros no meio do teste. A evidência foi a screenshot: a
+landing, em `/`, sem sessão. **Não era regressão do bump.** Resolvido com fila
+por conta compartilhada no CI.
+
+> **Fica para o dono decidir:** sair no celular também desloga o PC. Está
+> escrito como intencional em `useAuth.jsx` ("o certo inclusive em aparelho
+> compartilhado"), mas é o tipo de coisa que surpreende quem usa. Se ele
+> preferir o contrário, é trocar o escopo para `local` — uma linha.
 
 ---
 
@@ -427,7 +456,7 @@ mas isso é afirmação sobre os `GRANT`s de hoje.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->98<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.013<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->9.080<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
