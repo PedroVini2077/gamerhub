@@ -166,6 +166,12 @@ transições discretas das páginas internas.
   mais alto que o de login) e **os lutadores do fundo se cruzam em fade** em vez
   de trocar de estalo. A primeira pintura da página não anima: o formulário
   aparece pronto.
+- **`[05/09]` Conquistas no perfil.** Oito, fixas, calculadas em cima do que a
+  pessoa já fez: primeiro post, 10 posts, primeira live, primeira curtida
+  recebida, 25 curtidas, 10 comentários, perfil completo e um mês de conta. As
+  que faltam aparecem **com o nome à mostra** e uma barra de progresso — o que
+  falta é objetivo, não enigma. Enquanto os dados não chegam, o card diz
+  "Carregando" em vez de mostrar tudo bloqueado.
 - **Login** com detecção de bloqueio por tentativas (ver
   [bloqueio de login](#bloqueio-de-login-por-tentativas)) e contagem regressiva
   ao vivo quando bloqueado.

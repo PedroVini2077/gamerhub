@@ -50,16 +50,45 @@
 
 /* ── DESTRANCADO ─────────────────────────────────────────────────────────────
  *
- * Quatro coisas ao mesmo tempo, e juntas elas contam "abriu": o disco para no
- * encaixe e acende, o ferrolho RECUA, os chevrons param de piscar e ficam
- * acesos, e a linha fica verde.
+ * Quatro coisas ao mesmo tempo, e juntas elas contam "abriu": o disco dá a
+ * volta do destravamento e acende, o ferrolho RECUA, os chevrons param de
+ * piscar e ficam acesos, e a linha fica verde.
  *
- * O `rotate(0)` não é capricho: parado num ângulo qualquer, o disco se parte na
- * diagonal quando a porta abre, e o corte aparece dentro dele. */
+ * ── `[05/09]` A volta INTEIRA, e por que ela precisa de uma variável ────────
+ *
+ * Pedido do dono: *"achei a volta da tranca muito curta, você acha legal ela
+ * fazer uma volta 360 e depois abrir?"*. Ele está certo, e o motivo é que a
+ * versão anterior não tinha volta nenhuma: era `transform: rotate(0deg)` com
+ * transição, ou seja, o disco voltava ao encaixe pelo **caminho mais curto**.
+ * Parando em 350° ele andava 10° e acabava — o destravamento era sorte de onde
+ * o giro contínuo tivesse parado.
+ *
+ * Girar "mais 360" pelo CSS sozinho não resolve, porque o CSS não sabe em que
+ * ângulo o disco está: o giro contínuo é uma animação, e o ângulo dela não é
+ * legível como valor. Por isso o `PortaoDeBoasVindas.jsx` LÊ a matriz de
+ * transformação no momento de destrancar e escreve o ângulo em `--tranca-em`.
+ *
+ * A conta é `de (ângulo − 360°) até 0°`, e cada metade tem razão:
+ *
+ *   começar em `ângulo − 360` é visualmente idêntico a `ângulo` (dá na mesma
+ *   volta), então não existe salto no primeiro quadro;
+ *
+ *   terminar em `0` deixa o disco alinhado no encaixe — e isso não é capricho:
+ *   parado num ângulo qualquer, ele se parte na diagonal quando a porta abre e
+ *   o corte aparece dentro dele.
+ *
+ * O intervalo entre os dois é exatamente 360°, sempre — nunca 10°, nunca 700°.
+ *
+ * `--tranca-em: 360deg` como padrão: se o JS não escrever (teste, render
+ * estático, navegador antigo), a conta vira `de 0 a 0` e o disco simplesmente
+ * não gira, em vez de dar um salto. Falhar parado é melhor do que falhar torto. */
 .portao-destrancado .porta-disco {
-  animation: none;
-  transform: rotate(0deg);
-  transition: transform 380ms cubic-bezier(0.2, 1.25, 0.4, 1);
+  animation: portaDestrava 820ms cubic-bezier(0.16, 0.72, 0.24, 1) forwards;
+}
+
+@keyframes portaDestrava {
+  from { transform: rotate(calc(var(--tranca-em, 360deg) - 360deg)); }
+  to   { transform: rotate(0deg); }
 }
 
 .portao-destrancado .porta-arco { stroke: #d9ffd2; transition: stroke 300ms ease; }
@@ -83,6 +112,9 @@
 @media (prefers-reduced-motion: reduce) {
   .porta-disco,
   .porta-chevron { animation: none; }
+
+  /* Sem a volta do destravamento também: o disco só assume a posição final. */
+  .portao-destrancado .porta-disco { animation: none; transform: rotate(0deg); }
 
   .porta-folha { transition: opacity 320ms ease; }
 

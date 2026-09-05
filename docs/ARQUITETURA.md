@@ -170,6 +170,10 @@ src/
 │   │                      # `[05/09]` A marca é escrita ANTES do login, e
 │   │                      # `nomeDaSaudacao()` tem duas fontes porque o perfil
 │   │                      # pode não ter chegado quando o portão sobe
+│   ├── conquistas.js      # `[05/09]` As 8 conquistas do perfil. DERIVADAS do
+│   │                      # que a get_user_xp já devolve — zero tabela, zero
+│   │                      # trigger, zero consulta nova. avaliarConquistas()
+│   │                      # devolve null (e não zeros) enquanto falta dado
 │   ├── cofre.js           # `[05/09]` O cofre do painel do Fundador: define,
 │   │                      # confere e abre por aba. CENOGRÁFICO — tranca de
 │   │                      # tela, não autorização. O código nunca é guardado,
@@ -335,6 +339,10 @@ src/
     │   └── cargos/        # CargosTab e as peças dela: CargoSection, NominationCard,
     │                      # TrialCard, DemotionCard, CandidateHeader,
     │                      # EligibilityChecklist, DecisionButton
+    ├── profile/           # ProfileIdentityCard, PlayerStatsCard, GamingCard,
+    │   │                  # PersonalInfoCard, SocialLinksCard, AvatarModal
+    │   └── ConquistasCard.jsx # `[05/09]` as conquistas, lendo os MESMOS dados
+    │                      # do card de stats
     ├── owner/             # PainelTab, UsuariosTab, LogsTab, SiteTab,
     │                      # NotificacoesTab, MetricasTab, SiteModerationCards
     │   ├── CofreDoFundador.jsx # `[05/09]` a tranca de tela na frente do
