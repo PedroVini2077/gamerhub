@@ -9,6 +9,18 @@
 
   Ao editar: as referências cruzadas (§1.3, §6.2…) continuam apontando para a
   numeração original, que não mudou. Nada foi reescrito na mudança — só movido.
+
+  [05/09/2026] CONFERIDO CONTRA O SISTEMA, depois de a issue automática de
+  documentação apontá-lo como atrasado (8 commits de código desde o último
+  toque). O que foi verificado, e não é "eu li e achei bom":
+
+    - todo caminho de arquivo citado aqui existe — checado um a um;
+    - todo número no texto é HISTÓRICO congelado ("14 policies esqueceram
+      owner", "918 linhas", "26 de 26 chamadas"), não afirmação sobre hoje;
+    - as consultas SQL do §1.3 continuam válidas contra o schema atual.
+
+  Nada estava falso. O aviso era indício, e o indício foi conferido — que é o
+  que o relatório mensal pede (§6.2, camada 2).
 -->
 
 ## 1. Postura (as regras que valem acima de tudo)

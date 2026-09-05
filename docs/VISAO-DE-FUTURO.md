@@ -204,7 +204,43 @@ preferência salva. Sem terceiro, sem cota, sem regra de plataforma.
 
 ---
 
-## `[05/09]` A ideia do painel do Fundador NA LANDING
+## `[05/09]` A tela de APARELHOS CONECTADOS
+
+> Nasceu de dentro da recusa do logout global: *"a não ser que tenha uma aba pra
+> identificar dispositivos conectados, tipo Instagram, sabe? … isso serve
+> realmente pra identificar roubos de dados e se tem alguém mexendo na sua
+> conta"*.
+
+**Ele descreveu a peça que falta, não um enfeite.** O logout global existia para
+um caso — *"tem alguém na minha conta, derruba todo mundo"* — que o site nunca
+conseguiu apresentar a ninguém. Uma lista de sessões é o que torna esse caso
+**visível**, e só depois dela faz sentido oferecer o botão que o resolve.
+
+**A menor versão que serve:** uma lista com *quando entrou*, *qual navegador e
+sistema*, e um botão **"encerrar esta sessão"** por linha — mais um "encerrar
+todas as outras". Sem isso a tela vira decoração; com isso ela responde à
+pergunta que a pessoa realmente faz.
+
+**O que precisa ser resolvido antes, e é o motivo de não ser tarefa hoje:**
+
+| Pergunta | Situação |
+| --- | --- |
+| o Supabase expõe as sessões da própria pessoa? | **não sei, e não vou afirmar** — `auth.sessions` é schema interno; alcançá-la pede RPC `SECURITY DEFINER` própria, e revogar uma sessão específica é outra história |
+| e a **região**, que ele citou? | é geolocalização por IP, que é **serviço de terceiro** e **dado pessoal novo** — entra na política de privacidade e na lista de quem recebe o quê. Decisão dele, não minha |
+| o que exibir de "aparelho"? | `user-agent` é o caminho honesto (navegador e sistema). Modelo exato é impressão digital, e este projeto já recusou isso — ver [DECISOES.md](DECISOES.md) |
+
+**Enquanto ela não existe**, quem precisa expulsar alguém troca a senha: isso
+revoga no servidor, e é o que a saída de `AuthConfirm.jsx` faz de propósito.
+
+---
+
+## `[05/09]` A ideia do painel do Fundador NA LANDING — DESCARTADA por ele
+
+> **`[05/09]`, no fim do dia: descartada.** *"esquece o painel da porta de
+> entrada kkkk, realmente não faz sentido, descarta e nem lembra disso não"*. A
+> análise fica inteira abaixo porque ideia recusada volta, e o registro é o que
+> impede alguém — inclusive eu, noutra sessão — de "consertar" uma decisão
+> proposital. O resumo está em [DECISOES.md](DECISOES.md).
 
 > Pedido dele para **pensarmos juntos**, com a frase certa: *"eu modero apenas
 > dentro do site, mas a landing não tem ninguém olhando… pensei em fazer um

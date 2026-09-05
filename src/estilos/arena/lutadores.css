@@ -132,7 +132,27 @@
  * roxo recua para a penumbra. É o "character selected" da referência. */
 .arena-selecionado .arena-lutador-verde {
   height: 66vh;
-  transform: translateX(4vw);
+  /* `[05/09]` 4vw -> 1vw, e o motivo é uma pergunta do dono: *"num print o
+   * personagem verde tá tendo um dos lados cortados e no outro não, você pegou
+   * no meio da animação?"*.
+   *
+   * **Não era animação** — os dois prints foram tirados 2,6 s depois da carga, e
+   * a entrada dura 900 ms com 420 ms de atraso. Era sobreposição real com o
+   * card, e ela depende da largura da janela. Medido:
+   *
+   *     1280x800   117 px escondidos     1600x900    47 px
+   *     1366x768    72 px                1920x1080   11 px
+   *     1440x900   104 px                2560x1080    0 px
+   *
+   * A causa é esta linha SOMANDO com o `left`: o cadastro empurrava mais 4vw
+   * por cima dos 10vw da base, então o verde entrava 14vw tela adentro. Em
+   * monitor largo sobra espaço e ninguém vê; num notebook de 1366 o card come a
+   * capa dele.
+   *
+   * 1vw mantém a direção do "deu um passo à frente" sem repetir a folga que o
+   * `left` já dá. E o passo à frente nunca dependeu daqui: quem o conta é a
+   * ALTURA (66vh contra 53vh do login), que é o sinal que se lê de longe. */
+  transform: translateX(1vw);
 }
 
 /* O roxo RECUA enquanto o verde toma conta — pedido do dono: *"pode fazer ela
