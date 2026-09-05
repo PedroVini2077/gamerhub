@@ -125,12 +125,21 @@
    * Agora ele volta para dentro (`right` menor, sem translação a mais) e ganha
    * opacidade. Continua atrás e mais apagado que o vencedor — que é o ponto —,
    * agora dá para ver que ele está lá. */
-  /* `[05/09]` 1vw -> 5vw. Pedido do dono, com print do celular: *"joga o boneco
-     verde só mais um pouco pra direita, dá pra enxergar ele, mas queria deixar
-     ele um pouco mais centralizado na área verde dele"*.
-     A área verde do cadastro vai da borda esquerda até a fenda; 5vw levam o
-     lutador para perto do meio dela sem encostar na fenda. */
-  .arena-selecionado .arena-lutador-verde { height: 34vh; transform: translateX(5vw); }
+  /* `[05/09]` 1vw -> 5vw -> 9vw, e desta vez o número saiu de CONTA, não de
+     tentativa. O dono pediu duas vezes: *"parece que o personagem verde ainda
+     tá um pouco mais pra esquerda, não dá pra jogar um pouco mais pra direita e
+     centralizar mais ele na área verde?"*.
+
+     A conta, em 390×844: o lado verde do cadastro vai de 0 até a fenda, que
+     está em `--eixo: 68%` = 265 px, então o CENTRO dele é 132 px. A caixa do
+     lutador tem 34vh de lado (287 px) e a arte fica pinada à esquerda dentro
+     dela por `object-position`, ocupando ~205 px a partir de -4 px. Sem
+     translação o centro da arte cai em ~98 px; com 5vw (19,5 px) vai a 117; com
+     9vw (35 px) chega em ~133 — que é o centro da área dele.
+
+     Foi aqui que eu errei antes: escolhi "um pouco mais" no olho em vez de
+     medir onde era o meio. */
+  .arena-selecionado .arena-lutador-verde { height: 34vh; transform: translateX(9vw); }
   .arena-selecionado .arena-lutador-roxo {
     right: -1vw;
     height: 26vh;

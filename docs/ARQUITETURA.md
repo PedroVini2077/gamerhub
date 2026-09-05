@@ -346,10 +346,15 @@ src/
     │                      # TrialCard, DemotionCard, CandidateHeader,
     │                      # EligibilityChecklist, DecisionButton
     ├── ui/                # ConfirmModal, ReasonModal, BannedScreen, …
-    │   └── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
-    │                      # olho de mostrar/ocultar. O olho é nosso: o nativo
-    │                      # só existe em alguns navegadores de Android, e o
-    │                      # CSS o esconde para não ficarem dois
+    │   ├── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
+    │   │                  # olho de mostrar/ocultar. O olho é nosso: o nativo
+    │   │                  # só existe em alguns navegadores de Android, e o
+    │   │                  # CSS o esconde para não ficarem dois
+    │   └── Toggle.jsx     # `[05/09]` O interruptor liga/desliga. Saiu de dentro
+    │                      # do Settings.jsx, e trouxe um defeito junto: era um
+    │                      # botão sem nome e sem `aria-pressed` — para leitor de
+    │                      # tela, o estado existia só na COR. O `rotulo` é
+    │                      # obrigatório porque só quem monta sabe o que ele liga
     ├── profile/           # ProfileIdentityCard, PlayerStatsCard, GamingCard,
     │   │                  # PersonalInfoCard, SocialLinksCard, AvatarModal
     │   └── ConquistasCard.jsx # `[05/09]` as conquistas, lendo os MESMOS dados
@@ -430,9 +435,14 @@ src/
     │                      # enviar — responder diferente conforme o e-mail
     │                      # informado seria oráculo de enumeração
     ├── privacidade/       # A política de privacidade (`/privacidade`), pública
-    │   └── conteudoDaPrivacidade.js # O texto, escrito a partir do
-    │                      # levantamento medido em docs/PRIVACIDADE.md. Bloco
-    │                      # `pendente` = decisão do dono, marcada na tela
+    │   ├── conteudoDaPrivacidade.js # O TEXTO, escrito a partir do
+    │   │                  # levantamento medido em docs/PRIVACIDADE.md. Bloco
+    │   │                  # `pendente` = decisão do dono, marcada na tela
+    │   └── listasDeclaradas.js # As duas listas que a MÁQUINA confere: chaves
+    │                      # gravadas no navegador e terceiros que recebem dado.
+    │                      # Separadas do texto porque mudam por motivo
+    │                      # diferente — o código, não a redação. Seguem sob a
+    │                      # `impressao` de documentosLegais.js
     ├── sobre/             # A página do projeto (`/sobre`), pública
     │   ├── conteudoDoSobre.js # Os sete blocos de texto — a FONTE, escrita pelo
     │   │                  # dono. A página só renderiza esta lista
