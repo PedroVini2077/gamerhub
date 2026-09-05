@@ -53,7 +53,25 @@ const PADROES = [
   },
   {
     nome: 'senha em texto no código',
-    re: /(senha|password|passwd)["'\s]*[:=]\s*["'][^"'{$\n]{8,}["']/i,
+    // `[05/09]` A ASPA ANTES E A ASPA DEPOIS TÊM QUE SER A MESMA (`\1`), e essa
+    // regra nasceu de um falso positivo real: o portão reprovou o
+    // `CampoDeSenha.jsx` por causa de
+    //
+    //     aria-label={visivel ? 'Ocultar senha' : 'Mostrar senha'}
+    //
+    // O padrão antigo lia `senha' : '` como "chave, dois-pontos, valor" — mas
+    // aquilo é um TERNÁRIO: a aspa fecha um texto e o `:` é do `?:`.
+    //
+    // Com a referência de volta, a palavra só conta como chave se as aspas
+    // estiverem equilibradas em torno dela: `senha:`, `senha =` e
+    // `"password":` continuam casando; `... senha' : '...` não casa mais,
+    // porque ali a aspa aparece SÓ depois.
+    //
+    // Consertar o padrão em vez de dispensar o arquivo é deliberado: pôr o
+    // arquivo na lista de dispensados cegaria o portão para uma senha de
+    // verdade escrita ali dentro, para sempre. E portão que grita à toa vira
+    // ruído, que ensina a ignorar o canal (§0.2, quarta regra).
+    re: /(["'`]?)\b(?:senha|password|passwd)\1\s*[:=]\s*["'][^"'{$\n]{8,}["']/i,
     acao: 'tire do código. Se for de conta real, troque a senha também.',
   },
 ];

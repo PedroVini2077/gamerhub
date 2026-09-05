@@ -507,6 +507,16 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   seria alarme falso em todo PR. Existe porque `.gitignore` é convenção, não
   trava — e segredo vazado não se conserta apagando o arquivo: o repositório é
   público e a chave fica no histórico. O conserto é rotacionar no fornecedor.
+  **`[05/09]` O padrão de senha ficou mais preciso, e por um motivo concreto:**
+  ele reprovou um `aria-label={x ? 'Ocultar senha' : 'Mostrar senha'}`, lendo o
+  `:` do ternário como se fosse o de uma chave. A correção foi exigir que a aspa
+  antes e a aspa depois da palavra sejam a **mesma** — em `"password":` elas se
+  equilibram, num ternário só aparece a de depois. A outra saída seria dispensar
+  o arquivo, e ela é pior: dispensar **cega** o portão para aquele arquivo para
+  sempre, inclusive para uma senha de verdade escrita nele depois.
+  `scripts/__tests__/segredosVazados.test.js` confere os dois lados — 5 formas
+  de senha que ele **tem** que pegar e 4 que ele **não** pode acusar — e vigia a
+  lista de dispensados, que hoje tem duas entradas com motivo escrito.
 
 - **portas do banco** (`e2e/portas-do-banco.mjs`, dentro do job de fumaça) —
   bate na REST API do Supabase **como um estranho sem conta** e reprova o PR se
@@ -923,6 +933,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->11.839<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->11.849<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
