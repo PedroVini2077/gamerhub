@@ -67,10 +67,20 @@ const CASOS = [
       'webhook-timestamp': String(Math.floor(Date.now() / 1000)),
       'webhook-signature': 'v1,YXNzaW5hdHVyYS1mYWxzYQ==',
     },
-    corpo: {
-      user: { email: 'trava-e2e@example.com' },
-      email_data: { token_hash: 'trava', email_action_type: 'recovery' },
-    },
+    // `[05/09]` O corpo deste caso deixou de imitar o GoTrue, DE PROPOSITO.
+    //
+    // Ele imitava, e isso fazia a `send-email` classificar a recusa como
+    // `critical` — a cada execucao do CI. Medido: 72 eventos em 7 dias, sempre
+    // em pares, e `edge_function_error` virou a 5a acao mais frequente da
+    // trilha inteira. Alarme que grita todo dia por causa do proprio CI ensina
+    // a ignorar o nivel onde a falha de verdade vai aparecer (§0.2, 4a regra).
+    //
+    // NAO se perde cobertura: a assinatura continua BEM FORMADA e o HMAC
+    // continua sendo comparado, entao este caso segue provando que a porta
+    // recusa quem finge ser o GoTrue. O que muda e so a severidade do registro
+    // — e ela passa a ser reservada para quem conhece o formato do payload,
+    // que ja nao e varredura de porta.
+    corpo: { sonda: 'portas-fechadas', motivo: 'provar que a porta recusa' },
     esperado: [401],
     estrago: 'o mesmo, so que fingindo ser o GoTrue',
   },

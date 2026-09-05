@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**25 itens abertos** (+ 1 ideia sem compromisso)
+**24 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -105,34 +105,6 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[05/09]` 🟡 **O alarme de "chamada recusada" da `send-email` é o MEU
-  PRÓPRIO portão de CI — e metade dele entra como `critical`.** *Precisa de
-  decisão porque mexe na severidade de uma Edge Function de segurança (§7 🟡).*
-
-  Medido: **72 eventos em 7 dias**, sempre em pares no mesmo segundo — 36
-  *"requisicao sem cabecalhos de assinatura"* e 36 *"assinatura invalida"*. A
-  origem é `e2e/portas-fechadas.mjs`, que testa os dois casos a cada execução.
-  `edge_function_error` já é a **5ª ação mais frequente** de toda a trilha (172).
-
-  **O código não está errado** — ele já rebaixa as recusas "de estranho" para
-  `warning`. O problema é que *"assinatura invalida"* ficou de fora dessa lista
-  **de propósito**, com um argumento que continua válido: secret errado produz
-  exatamente essa mensagem, e aí o cadastro está quebrado em silêncio.
-
-  **A saída óbvia é uma brecha, e por isso não fiz:** deixar o teste se
-  identificar por um cabeçalho para ser rebaixado. Cabeçalho é controlado por
-  quem chama — qualquer atacante mandaria o mesmo e apagaria o próprio rastro.
-
-  **As duas saídas que eu considero honestas:**
-
-  | | Como | O que se perde |
-  | --- | --- | --- |
-  | A | separar por FORMA: cabeçalhos bem formados + carimbo válido → `critical` (cheira a secret errado); lixo → `warning` | mais lógica numa função de segurança |
-  | B | rebaixar tudo para `warning` e detectar secret errado pelo que ele REALMENTE causa — cadastro sem `auth_register` seguinte | perde a deteção imediata |
-
-  Isto é a 4ª regra do §0.2 me pegando: *"meu próprio vigia de CI mandava um
-  alarme falso por PR"*. Escrevi a regra e voltei a violá-la, do outro lado.
 
 - ⬜ `[05/09]` 🔵 **A tela de APARELHOS CONECTADOS.** *Ideia do dono, nascida
   de dentro da decisão do logout — ver
@@ -492,7 +464,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->99<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.197<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->9.220<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

@@ -91,6 +91,29 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   > Só a `send-email` registra recusa. A `moderate-links` devolve 401 sem
   > logar — conferido: das 68 linhas de ruído, **68 eram da `send-email`**.
 
+  > **`[05/09]` Metade daquele ruído entrava como `critical`, e o culpado era
+  > o nosso próprio portão.** Medido: 72 eventos em 7 dias, sempre em pares no
+  > mesmo segundo — `e2e/portas-fechadas.mjs` bate na função sem assinatura e
+  > com assinatura falsa a cada execução. `edge_function_error` tinha virado a
+  > **5ª ação mais frequente** de toda a trilha.
+  >
+  > *"Assinatura inválida"* é produzida por dois eventos de peso oposto: um
+  > estranho batendo na porta (comum) e o `SEND_EMAIL_HOOK_SECRET` errado (raro
+  > e fatal). A função agora separa os dois pelo **corpo**: o GoTrue só chama
+  > quando existe alguém para receber e-mail, então ele sempre manda
+  > `user.email` e `email_data`; quem varre a internet não monta isso. Corpo que
+  > não parece real → `warning`. Corpo que parece → `critical`, porque quem
+  > conhece o formato do payload já não é varredura de porta.
+  >
+  > **A saída que parecia óbvia era uma brecha:** deixar o teste se identificar
+  > por um cabeçalho. Cabeçalho é controlado por quem chama — qualquer atacante
+  > mandaria o mesmo e apagaria o próprio rastro.
+  >
+  > **Nenhuma cobertura foi perdida:** o portão continua mandando assinatura bem
+  > formada, e o HMAC continua sendo comparado. Só o corpo deixou de imitar o
+  > GoTrue. A razão da severidade vai **gravada** na linha
+  > (`corpo_parece_gotrue`), e a trava é `envioDeEmailTemDoisCaminhos.test.js`.
+
 - **Falhas de servidor viram trilha** — `registrar_falha_de_edge_function`
   grava `edge_function_error` em `admin_logs`, porque o corpo da resposta
   sozinho não basta quando o chamador é fire-and-forget. `EXECUTE` só para
@@ -932,7 +955,7 @@ Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
 linhas"* num projeto de <!--n:src.arquivos-->346<!--/n--> arquivos e
-<!--n:src.linhas-->34.633<!--/n--> linhas.
+<!--n:src.linhas-->34.656<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -981,6 +1004,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->12.399<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->12.394<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

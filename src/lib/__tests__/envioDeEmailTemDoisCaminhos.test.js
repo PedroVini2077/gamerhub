@@ -74,6 +74,29 @@ describe('o envio de e-mail mantém as propriedades que seguram o cadastro', () 
       .toMatch(/secure:\s*SMTP_PORT\s*===\s*465/);
   });
 
+  it('a severidade da recusa não é decidida só pelo motivo', () => {
+    // `[05/09]` "assinatura invalida" e produzida por DOIS eventos com pesos
+    // opostos: um estranho batendo na porta (comum, inofensivo) e o
+    // SEND_EMAIL_HOOK_SECRET errado (raro, fatal). Marcar o comum como
+    // `critical` fazia o CI gritar todo dia — 72 eventos em 7 dias, sempre em
+    // pares —, e alarme que grita a toa ensina a ignorar o nivel onde a falha
+    // real vai aparecer (§0.2, 4a regra).
+    expect(codigo,
+      'o discriminador de severidade sumiu de send-email.\n'
+      + '  Sem ele a recusa volta a ser `critical` por padrao, e o proprio\n'
+      + '  portao `e2e/portas-fechadas.mjs` reabastece a trilha de alarme falso.\n'
+      + '  CUIDADO ao "consertar" isso com um cabecalho que o teste manda para\n'
+      + '  se identificar: cabecalho e controlado por quem chama, entao qualquer\n'
+      + '  atacante mandaria o mesmo e apagaria o proprio rastro.')
+      .toMatch(/pareceChamadaDoGoTrue\(rawBody\)/);
+
+    expect(codigo,
+      'a razao da severidade deixou de ser GRAVADA na linha.\n'
+      + '  Quem abrir o registro daqui a seis meses precisa saber por que\n'
+      + '  aquela recusa era warning e nao critical.')
+      .toMatch(/corpo_parece_gotrue/);
+  });
+
   it('configuração faltando grita em vez de falhar calado', () => {
     expect(codigo,
       'o aviso de credencial ausente sumiu de send-email.\n'
