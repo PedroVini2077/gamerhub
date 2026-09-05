@@ -26,8 +26,14 @@ src/
 │   │                      # DEPOIS das utilitárias do Tailwind, de propósito
 │   ├── decoracao.css      # fundo das páginas públicas, intro do raio, peças
 │   │                      # de videogame, luzes de arena, explosões, aviso
-│   ├── portao.css         # `[04/09]` A tela de boas-vindas do login: as duas
-│   │                      # folhas que abrem e o texto entre elas
+│   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
+│   ├── portao/            # o portão de boas-vindas, em 3 partes
+│   │   ├── superficie.css # as duas folhas de 50vw × 100vh e o que está
+│   │   │                  # desenhado nelas — o estado TRANCADO
+│   │   ├── tranca.css     # o quadrado centrado na emenda e o giro do disco
+│   │   └── estados.css    # texto, destravamento e abertura. Por ÚLTIMO:
+│   │                      # sobrescreve os dois de cima, e CSS decide
+│   │                      # empate por ordem
 │   ├── arena.css          # só os 4 @import da arena, e a ordem deles
 │   └── arena/             # o fundo do login e do cadastro, em 4 partes
 │       ├── cena.css       # os dois lados, a fenda e o VS
@@ -279,6 +285,14 @@ src/
     │   │                  # entrada e o fade cruzado — é CSS/Framer que só
     │   │                  # anima transform/opacity. Celular e PC têm
     │   │                  # composições diferentes, por @media e não por JS
+    │   ├── PortaDeAcesso.jsx # `[05/09]` A porta, e ela É A TELA: duas folhas
+    │   │                  # de 50vw x 100vh. Superfície em CSS (gradiente
+    │   │                  # cobre qualquer proporção sem deformar) e só o
+    │   │                  # mecanismo em SVG (a tranca precisa continuar
+    │   │                  # redonda). O disco é desenhado INTEIRO nas duas
+    │   │                  # folhas e o `overflow: hidden` de cada uma faz o
+    │   │                  # corte — daí simetria exata e nada escapando da
+    │   │                  # moldura na abertura
     │   ├── PortaoDeBoasVindas.jsx # `[04/09]` A tela que cobre a entrada
     │   │                  # depois do login: duas folhas que abrem, com a
     │   │                  # saudação. Não inventa espera — cobre a que já

@@ -1,0 +1,34 @@
+/* A TRANCA: o quadrado centrado na emenda, e o giro do disco.
+ *
+ * O desenho está em `components/auth/PortaDeAcesso.jsx`. Aqui só o tamanho, a
+ * posição e a rotação. Ver `superficie.css` para a nota do split.
+ */
+
+/* ── A TRANCA ────────────────────────────────────────────────────────────────
+ *
+ * Quadrado de lado fixo, centrado na emenda. Na folha esquerda ele estoura a
+ * borda direita pela metade; na direita, a esquerda. O `overflow: hidden` da
+ * folha faz o corte — ver o cabeçalho do JSX. */
+.porta-tranca {
+  position: absolute;
+  top: 50%;
+  width: var(--tranca);
+  aspect-ratio: 1;
+  transform: translateY(-50%);
+}
+
+.porta-folha-esq .porta-tranca { right: calc(var(--tranca) / -2); }
+.porta-folha-dir .porta-tranca { left: calc(var(--tranca) / -2); }
+
+.porta-tranca-svg { width: 100%; height: 100%; display: block; }
+
+.porta-disco {
+  transform-box: view-box;
+  transform-origin: 100px 100px;
+  animation: portaGiraDisco 7s linear infinite;
+  will-change: transform;
+}
+
+@keyframes portaGiraDisco {
+  to { transform: rotate(360deg); }
+}

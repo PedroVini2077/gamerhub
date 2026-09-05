@@ -1292,3 +1292,77 @@ que elas se separam.
 O teto de 2,5 s. A tranca gira enquanto o perfil carrega, mas se ele não chegar
 ela trava e a porta abre do mesmo jeito. Animação bonita não vira porta trancada
 (§0.3).
+
+---
+
+## `[05/09]` O portão é A TELA — e as quatro versões recusadas até chegar nele
+
+Esta entrada existe porque a mesma tela foi refeita **cinco vezes**, e sem o
+registro a próxima pessoa (ou eu, daqui a dois meses) refaz a nº 2 achando que
+está melhorando.
+
+| # | o que eu entreguei | a recusa do dono, na letra |
+| --- | --- | --- |
+| 1 | duas metades com uma fenda desde o 1º quadro | *"não queria que ela tivesse essa fenda"* |
+| 2 | anéis e argolas de CSS girando | *"quando eu falei portão, eu tô falando literalmente de uma porta"* |
+| 3 | a ilustração dele recortada em 4 peças | *"eu mandei pra vc usar como exemplo e criar a mão"* |
+| 4 | SVG desenhado à mão, centralizado, 62vh | *"a porta é pra ser a tela inteira... A TELA INTEIRA! não uma imagem abrindo, é pra ter imersão"* |
+| 5 | duas folhas de 50vw × 100vh | — |
+
+**O erro que se repetiu da 1 à 4 foi sempre o mesmo, e não era de desenho.** Eu
+tratei "portão" como um *objeto a ser ilustrado* e fui melhorando a ilustração.
+A nº 4 era desenho melhor que a nº 3 e foi recusada igual, porque o defeito
+nunca esteve no traço: estava no **enquadramento**. Enquanto sobra tela em volta
+da porta, o olho lê "figura de porta". Quando a porta encosta nas quatro bordas,
+não existe fora — e aí não se olha a porta, se está atrás dela.
+
+### A decisão técnica: superfície em CSS, mecanismo em SVG
+
+Um SVG único de tela cheia precisa de `preserveAspectRatio`, e **nenhum dos três
+modos serve** — medido, não suposto:
+
+| modo | no celular (390×844), viewBox 1200×800 |
+| --- | --- |
+| `meet` | a porta cabe inteira e sobra fundo em volta: é o defeito da nº 4 de novo |
+| `slice` | restam ~370 unidades de largura visíveis — some tudo menos a tranca |
+| `none` | a tranca deixa de ser redonda e vira elipse |
+
+Daí a divisão por **natureza da peça**, que é a parte reaproveitável desta
+decisão: o que **não tem forma própria** (chapa, nervura, listra, brilho) é CSS,
+porque estica para qualquer proporção sem deformar nada; o que **tem forma** (a
+tranca, que precisa continuar redonda) é SVG de lado fixo.
+
+O disco é desenhado **inteiro nas duas folhas**, centrado na emenda, e o
+`overflow: hidden` de cada folha faz o corte. Não há `clipPath`, não há "metade
+esquerda" e "metade direita" para divergirem, a metade viaja com a folha na
+abertura sem cálculo nenhum, e nada aparece fora da moldura quando as folhas
+saem — que era um defeito real da nº 4.
+
+### Duas coisas que o print desmentiu, e valem ficar escritas
+
+**A emenda não pode CLAREAR.** A primeira tentativa da nº 5 tinha um bisel que
+subia até `#263443`, mais claro que a chapa, dos dois lados — e o resultado era
+uma coluna de luz descendo o meio da tela. Ou seja: uma fenda, que é literalmente
+o que foi recusado na nº 1. Porta fechada não tem luz no meio; tem sombra.
+
+**A abertura revela o SITE, não um vão desenhado.** A versão com um poço escuro
+por baixo das folhas foi descartada: quem cobre a tela são as folhas, então tirar
+o fundo faz a porta abrir sobre a página já montada. Um fundo ali esconderia
+justamente aquilo que a porta existe para revelar.
+
+### O bug que veio junto, e era o mais grave
+
+Relato do dono: *"assim que eu logava, eu via o site por alguns segundos, depois
+aparecia o portão"*. Não era lentidão — era **ordem**. `marcarEntradaAgora()`
+ficava depois do `signInWithPassword`, mas o `onAuthStateChange` preenche o
+`user` **dentro** dessa chamada: o site trocava de rota e pintava enquanto ainda
+faltavam duas idas ao servidor até a marca existir. E o próprio portão ainda
+adiava mais um `setTimeout(0)`, com um comentário meu dizendo que era de
+propósito — o defeito escrito como decisão.
+
+O conserto são duas metades: a marca passou a ser escrita **antes** do login (com
+`cancelarEntradaAgora()` em todo caminho que não termina em entrada), e a leitura
+virou `useLayoutEffect`, que roda **antes da pintura**. As duas são invisíveis em
+runtime — desfazer qualquer uma não gera erro, não gera log e não quebra teste de
+comportamento —, então viraram trava de contrato em
+`src/lib/__tests__/portaoAntesDoSite.test.js`, provada reinjetando cada metade.

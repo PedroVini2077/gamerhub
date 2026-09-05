@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Zap } from 'lucide-react';
+
+import PortaDeAcesso from './PortaDeAcesso';
 
 import { useAuth } from '../../hooks/useAuth.jsx';
 import {
-  consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou, EVENTO_ENTROU,
+  consumirEntradaAgora, ehPrimeiraVez, registrarQueJaEntrou,
+  EVENTO_ENTROU, EVENTO_CANCELADO,
 } from '../../lib/boasVindas';
 
 /**
@@ -72,7 +74,7 @@ const TETO_MS = 2500;
 /** Quanto a tranca fica travada e acesa antes de a porta abrir. */
 const DESTRAVE_MS = 420;
 /** A abertura das folhas — igual à `transition` do CSS. */
-const ABERTURA_MS = 560;
+const ABERTURA_MS = 640;
 
 export default function PortaoDeBoasVindas() {
   const { user, profile } = useAuth();
@@ -92,25 +94,59 @@ export default function PortaoDeBoasVindas() {
     return () => window.removeEventListener(EVENTO_ENTROU, aviso);
   }, []);
 
+  // SAI NA HORA quando a entrada é cancelada — senha recusada ou conta banida.
+  //
+  // A marca é escrita antes do login, e o `user` aparece antes de a checagem de
+  // ban terminar: nessa janela o portão já subiu e já consumiu a marca, então
+  // apagá-la não o tira da tela. Sem isto, quem fosse barrado teria um
+  // "Bem-vindo de volta" rodando atrás da tela de banimento — invisível hoje só
+  // porque o `z-index` dela é maior, o que é sorte, não proteção (§1.3).
+  useEffect(() => {
+    const sumir = () => {
+      setVisivel(false); setSaindo(false); setDestrancado(false);
+    };
+    window.addEventListener(EVENTO_CANCELADO, sumir);
+    return () => window.removeEventListener(EVENTO_CANCELADO, sumir);
+  }, []);
+
   // Abre SÓ quando a marca de "acabou de entrar" existe. Sem ela, recarregar a
   // página com sessão salva reabriria a tela em todo F5.
   //
-  // A LEITURA do armazenamento é síncrona aqui de propósito — ela consome a
-  // marca, e render descartado pelo React concorrente não pode engolir esse
-  // consumo. Quem vai para o próximo tique é a APLICAÇÃO do estado, por duas
-  // razões: o lint acusa `setState` síncrono em efeito (e está certo, é render
-  // em cascata), e um tique de folga deixa a troca de rota assentar antes de o
-  // portão cobrir a tela.
-  useEffect(() => {
-    if (!user || visivel) return undefined;
-    if (!consumirEntradaAgora()) return undefined;
+  // ── `[05/09]` `useLayoutEffect`, e é a metade do conserto do bug ───────────
+  //
+  // Relato do dono: *"assim que eu logava, eu via o site por alguns segundos,
+  // depois aparecia o portão"*. A outra metade está em `useAuth.jsx` (a marca
+  // passou a ser escrita ANTES do login); esta é o instante em que o portão
+  // sobe.
+  //
+  // `useEffect` roda DEPOIS de o navegador pintar. Como o `user` aparecer é o
+  // mesmo evento que troca a rota, um efeito comum garante pelo menos um quadro
+  // com o site logado à mostra e nada por cima — e a versão anterior ainda
+  // adiava mais um `setTimeout(0)` em cima disso, com um comentário meu dizendo
+  // que era de propósito. Era o defeito, escrito como decisão.
+  //
+  // `useLayoutEffect` roda depois da mutação do DOM e ANTES da pintura, e o
+  // React descarrega o `setState` dele de forma síncrona. Resultado: o primeiro
+  // quadro que contém o site já contém o portão em cima. Não existe janela.
+  useLayoutEffect(() => {
+    if (!user || visivel) return;
+    if (!consumirEntradaAgora()) return;
 
-    const estreou = ehPrimeiraVez(user.id);
+    // SUPRESSÃO CONSCIENTE, e ela é o oposto de maquiagem (§6.1).
+    //
+    // A regra avisa que `setState` síncrono em efeito provoca render em
+    // cascata, e está certa: provoca mesmo. Só que a cascata é EXATAMENTE o
+    // que se quer aqui — é o segundo render, ainda antes da pintura, que põe
+    // o portão sobre o site. Obedecer ao aviso (adiar por `setTimeout`, que
+    // era como estava) devolve o bug que o dono relatou.
+    //
+    // O custo é um render extra, uma vez por login, num componente de três
+    // estados. Não é laço, não é por quadro, não escala com nada.
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setEstreia(ehPrimeiraVez(user.id));
     registrarQueJaEntrou(user.id);
     desde.current = Date.now();
-
-    const t = setTimeout(() => { setEstreia(estreou); setVisivel(true); }, 0);
-    return () => clearTimeout(t);
+    setVisivel(true);
   }, [user, visivel, tique]);
 
   // DESTRANCA: pelo perfil que chegou (respeitando o piso) ou pelo teto.
@@ -158,33 +194,20 @@ export default function PortaoDeBoasVindas() {
 
   return createPortal(
     <div className={classes} role="status" aria-live="polite">
-      {/* As duas folhas têm o MESMO fundo e nenhuma borda: fechadas, elas são
-          uma superfície só. A divisão só existe a partir do instante em que
-          elas se separam — foi essa fenda prematura que o dono reprovou. */}
-      <div className="portao-folha portao-folha-a" />
-      <div className="portao-folha portao-folha-b" />
-      <div className="portao-textura" />
+      {/* A porta é desenhada em SVG, à MÃO. O dono mandou um render como
+          REFERÊNCIA e foi explícito: *"eu mandei pra você usar como exemplo e
+          criar à mão"* — antes disso eu tinha recortado a própria ilustração em
+          quatro pedaços, e ele cortou com razão. Ver `PortaDeAcesso.jsx`. */}
+      <PortaDeAcesso />
 
-      <div className="portao-nucleo">
-        {/* A tranca: três anéis girando em sentidos e velocidades diferentes,
-            com o raio da marca no miolo. Ela para e acende quando o site fica
-            pronto — é o "destrancou" que dá causa à porta abrir. */}
-        <div className="tranca">
-          <span className="tranca-anel tranca-anel-externo" />
-          <span className="tranca-anel tranca-anel-medio" />
-          <span className="tranca-anel tranca-anel-interno" />
-          <Zap className="tranca-miolo" size={34} strokeWidth={2.5} aria-hidden="true" />
-        </div>
-
-        <div className="portao-texto">
-          <p className="portao-titulo">
-            {titulo}
-            {nome && <span className="portao-nome">{nome}</span>}
-          </p>
-          <p className="portao-linha">
-            {destrancado ? '// acesso liberado' : '// destrancando'}
-          </p>
-        </div>
+      <div className="portao-texto">
+        <p className="portao-titulo">
+          {titulo}
+          {nome && <span className="portao-nome">{nome}</span>}
+        </p>
+        <p className="portao-linha">
+          {destrancado ? '// acesso liberado' : '// destrancando'}
+        </p>
       </div>
     </div>,
     document.body,

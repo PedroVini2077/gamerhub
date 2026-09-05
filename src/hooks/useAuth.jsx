@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
-import { marcarEntradaAgora } from '../lib/boasVindas';
+import { marcarEntradaAgora, cancelarEntradaAgora } from '../lib/boasVindas';
 import { logAudit } from '../lib/auditLog';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
 import { usePresenca } from './usePresenca';
@@ -84,9 +84,22 @@ export function AuthProvider({ children }) {
       return { error: { message: 'Preencha email e senha.' } };
     }
 
+    // `[05/09]` A marca vai ANTES da chamada, e a ordem é o conserto.
+    //
+    // O `onAuthStateChange` preenche o `user` lá dentro, antes de esta promessa
+    // voltar — então o site troca de rota e pinta enquanto ainda faltam duas
+    // idas ao servidor daqui. Marcando depois, o portão subia atrasado por esse
+    // tempo todo, que foi o que o dono viu. Todo caminho que NÃO termina em
+    // entrada desfaz a marca abaixo. Ver `lib/boasVindas.js`.
+    marcarEntradaAgora();
+
     const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
-    if (result.data?.user) {
+    if (!result.data?.user) {
+      // Senha errada, rede caindo, conta inexistente: não houve entrada, então
+      // a marca não pode sobrar esperando o próximo `user` da aba.
+      cancelarEntradaAgora();
+    } else {
       // Checagem de ban via query direta (sem setProfile) para não poluir o estado
       // global durante o handshake de uma conta banida que será deslogada em seguida.
       // Mesma RPC: a sessão já existe neste ponto (a senha foi aceita), então
@@ -117,6 +130,10 @@ export function AuthProvider({ children }) {
         //
         // Segurança: banido com sessão não cria nada. As policies de INSERT
         // checam `banned` no banco, então o bloqueio não depende desta tela.
+        // Quem foi barrado não é recebido com festa: a marca escrita antes da
+        // chamada é desfeita aqui, senão o portão abriria por cima da tela de
+        // ban — que é exatamente o que ela não pode deixar acontecer.
+        cancelarEntradaAgora();
         applyBannedCheck(p);
         // banned:true sinaliza ao Login para NÃO contar como tentativa de senha errada
         return { banned: true, reason: p.ban_reason || null };
@@ -126,11 +143,6 @@ export function AuthProvider({ children }) {
         { category: 'auth', severity: 'info', metadata: { email: email.trim() } }
       );
 
-      // A marca de "acabou de entrar AGORA" — é ela que separa login de
-      // recarregamento de página, e sem ela a tela de boas-vindas apareceria a
-      // cada F5. Fica DEPOIS da checagem de ban de propósito: quem foi barrado
-      // não é recebido com festa. Ver `lib/boasVindas.js`.
-      marcarEntradaAgora();
     }
 
     return result;

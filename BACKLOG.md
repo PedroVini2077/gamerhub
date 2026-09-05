@@ -35,12 +35,30 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia.* A última tarefa — refazer a tela de entrada na paleta do site — fechou
+*Vazia.* A última tarefa — **o portão de boas-vindas virar a tela inteira** —
+fechou em 05/09, na quinta tentativa. As quatro recusas e o motivo de cada uma
+estão em [DECISOES.md](docs/DECISOES.md); o resumo é que o defeito nunca esteve
+no traço, e sim no enquadramento: enquanto sobra tela em volta da porta, o olho
+lê "figura de porta".
+
+Fechou junto o bug que o dono relatou no mesmo dia — *"assim que eu logava, eu
+via o site por alguns segundos, depois aparecia o portão"* —, que era ordem e não
+lentidão, e virou trava de contrato em `portaoAntesDoSite.test.js`.
+
+*A tarefa anterior* — refazer a tela de entrada na paleta do site — fechou
 em 04/09. O dono cortou a direção anterior (*"personagem de gelo e fogo não tem
 nada a ver com o site"*) e cobrou, com razão, que eu tinha que ter avisado. As
 artes, a moldura, os gradientes, a fenda, o VS, as partículas e **os nomes no
 código** passaram para verde × roxo. O VS ganhou saída animada. Tudo em
 [DECISOES.md](docs/DECISOES.md).
+
+**Conferido em 04/09, com medida e print** (o dono pediu prova): nenhum dos dois
+lutadores está cortado no PC (1280×800). Caixa de cada um contra a largura da
+janela — `login`: verde 45→469, roxo 811→**1235**; `cadastro`: verde 96→624,
+roxo 896→**1261**. Os quatro cabem dentro de 0→1280, e o roxo do cadastro, que
+era o caso relatado, sobra 19 px da borda. A regra que segura isso é
+`transform: translateX(2vw) scale(0.86)` ancorado à direita-baixo, em
+`src/estilos/arena/lutadores.css`.
 
 > **Como usar esta seção.** Tarefa com múltiplas etapas: registre objetivo,
 > etapas e estado aqui **antes de começar**, e atualize a cada etapa validada.
@@ -428,8 +446,8 @@ código** passaram para verde × roxo. O VS ganhou saída animada. Tudo em
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->89<!--/n--> arq ·
-  <!--n:src.lib.linhas-->7.484<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->90<!--/n--> arq ·
+  <!--n:src.lib.linhas-->7.682<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
