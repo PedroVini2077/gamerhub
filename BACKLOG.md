@@ -72,18 +72,32 @@ não é ambição em cima de quem tem aparelho fraco.
 
 #### As etapas
 
-1. ⬜ geometria do raio **em código**: metade superior + núcleo + metade inferior,
-   com fissura pequena, núcleo hexagonal vazado e as duas asas — a silhueta que
-   as referências fixam;
-2. ⬜ `ShaderMaterial` de cristal: Fresnel, energia interna, ruído procedural,
-   transparência variável;
-3. ⬜ o núcleo como estrutura cristalina que **pulsa e ilumina as faces internas**
-   — as duas metades reagem (sobe/desce), sem explosão;
-4. ⬜ família de fragmentos derivada da linguagem do raio (verde dominante, cyan
-   perto do núcleo, roxo longe, âmbar raro e pontual);
-5. ⬜ **timeline central** de entrada em 9 tempos, e depois estado de repouso —
-   substituindo os `useFrame` independentes;
+1. ✅ geometria do raio **em código** (`geometriaDoRaio.js`): contorno medido da
+   arte, metade superior + núcleo + metade inferior, furo central, corte
+   Sutherland–Hodgman na horizontal;
+2. ✅ `ShaderMaterial` de cristal (`materialDeCristal.js`): Fresnel, energia
+   interna por ruído de valor, rampa cromática, luz do núcleo;
+3. ✅ núcleo como bipirâmide hexagonal que pulsa e ilumina as faces internas;
+4. ✅ fragmentos cortados do **próprio contorno** do raio, cor pela profundidade;
+5. ✅ **timeline central** (`linhaDoTempo.js`) em 9 fases + repouso, um único
+   `useFrame` (`RaioCristalino.jsx`);
 6. ⬜ medir antes/depois no mesmo aparelho (§0.3) e reavaliar cada otimização.
+
+#### O que foi entregue e **ainda não está bom** — palavra do dono
+
+> *"faz só o commit e faz o merge, assim mesmo, ainda não tá bonito, depois
+> vemos outras ferramentas e outras maneiras, pq não tá bonito"*.
+
+Mergeado nesse estado a pedido dele. Os defeitos conhecidos, escritos para não
+sumirem na conversa:
+
+| Defeito | Estado |
+| --- | --- |
+| o raio é **cortado no topo** pelo enquadramento | não corrigido |
+| o núcleo lê **pálido**, não como fonte de energia | não corrigido |
+| os fragmentos lêem como **cápsulas**, não como lascas | não corrigido |
+| a dramaturgia das 9 fases **nunca foi conferida quadro a quadro** | não verificado |
+| `eslint-disable react-hooks/immutability` no topo de `RaioCristalino.jsx` | **supressão, não conserto** (§6.1). O conserto: `<shaderMaterial>` como filho JSX + `ShaderMaterial` no `extend()` — custa o `extend()` seletivo, que segura o chunk |
 
 **O que NÃO pode morrer:** `IntersectionObserver`, `frameloop` controlado, DPR
 limitado, `ResizeObserver`, `root.unmount()`, carregamento sob demanda, o
