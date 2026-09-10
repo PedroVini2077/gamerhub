@@ -67,6 +67,15 @@ grupo.add(new THREE.Mesh(metades.inferior, mat()));
 const mn = new THREE.Mesh(nucleo, CRU ? fosco() : criarMaterialDoNucleo());
 mn.position.set(CENTRO_DO_NUCLEO[0], CENTRO_DO_NUCLEO[1], 0);
 grupo.add(mn);
+
+// A luz que MORA no núcleo. Sem ela o preview mostra uma peça diferente da que
+// vai ao ar — e julgar preview que não é o produto foi o erro que originou este
+// script. Os números são os mesmos do componente RaioCristalino.
+if (!CRU) {
+  const dentro = new THREE.PointLight(0x8dff7a, 3.4, 4.6);
+  dentro.position.set(CENTRO_DO_NUCLEO[0], CENTRO_DO_NUCLEO[1], 0.35);
+  grupo.add(dentro);
+}
 cena.add(grupo);
 
 // Sem a timeline, os uniforms ficam no estado de REPOUSO — senão a peça

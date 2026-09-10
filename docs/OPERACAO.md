@@ -970,7 +970,7 @@ Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
 linhas"* num projeto de <!--n:src.arquivos-->357<!--/n--> arquivos e
-<!--n:src.linhas-->36.497<!--/n--> linhas.
+<!--n:src.linhas-->36.516<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma

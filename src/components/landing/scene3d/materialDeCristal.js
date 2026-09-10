@@ -57,6 +57,7 @@ const fragmentShader = /* glsl */ `
   uniform vec3  uNucleo;       // posição do núcleo, em espaço LOCAL
   uniform float uOpacidade;
   uniform float uMaterializacao; // 0..1 — quanto da peça já existe
+  uniform float uBranco;         // quanto a luz do núcleo puxa para o branco
 
   varying vec3 vNormalMundo;
   varying vec3 vParaCamera;
@@ -114,7 +115,7 @@ const fragmentShader = /* glsl */ `
     vec3 cor = uCorBase;
     cor = mix(cor, cromatica, fresnel * 0.55);           // aresta cromática
     cor += uCorBase * veia * 0.55;                        // veios internos
-    cor += mix(uCorBase, vec3(1.0), 0.35) * doNucleo;     // luz do core
+    cor += mix(uCorBase, vec3(1.0), uBranco) * doNucleo;  // luz do core
 
     // ── Transparência: face aberta, aresta fechada ───────────────────────
     float alfa = uOpacidade + fresnel * 0.55 + veia * 0.12 + doNucleo * 0.25;
@@ -145,7 +146,7 @@ export const PALETA = {
  * contra si mesma — sem isso, a metade de trás some atrás da da frente em
  * ângulos rasos.
  */
-export function criarMaterialDeCristal({ nucleo = [0, 0, 0], opacidade = 0.34 } = {}) {
+export function criarMaterialDeCristal({ nucleo = [0, 0, 0], opacidade = 0.34, branco = 0.35 } = {}) {
   return new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
@@ -161,6 +162,7 @@ export function criarMaterialDeCristal({ nucleo = [0, 0, 0], opacidade = 0.34 } 
       uNucleo: { value: new THREE.Vector3(...nucleo) },
       uOpacidade: { value: opacidade },
       uMaterializacao: { value: 0 },
+      uBranco: { value: branco },
     },
   });
 }
@@ -172,8 +174,25 @@ export function criarMaterialDeCristal({ nucleo = [0, 0, 0], opacidade = 0.34 } 
  * dentro dele e a peça brilha de dentro para fora, em vez de ser iluminada.
  */
 export function criarMaterialDoNucleo() {
-  const material = criarMaterialDeCristal({ nucleo: [0, 0, 0], opacidade: 0.62 });
-  material.uniforms.uCorBase.value = new THREE.Color('#aaffb0');
+  // `[10/09]` Duas correções, e a segunda é um achado de §1.5.
+  //
+  // **1. O núcleo lia como pedra clara.** O termo `doNucleo` puxava 35% para o
+  // branco, e como aqui a fonte é o próprio centro da peça, ele saturava o
+  // miolo inteiro. A arte mostra o contrário: verde fundo e SATURADO no corpo,
+  // com a aresta acesa. Por isso `branco: 0.04` — a luz continua existindo,
+  // mas ela é verde, não branca.
+  //
+  // **2. A `pointLight` que mora no núcleo NÃO FAZ NADA.** Um `ShaderMaterial`
+  // cru não recebe luz de cena: sem `lights: true` e sem os chunks de
+  // iluminação do three, os uniforms de luz nem existem no programa. A luz
+  // estava lá, na cena, sem efeito nenhum — e nada avisava, que é exatamente a
+  // forma de falha do §1.5. Ela foi mantida porque as LASCAS e qualquer peça
+  // futura com `meshStandardMaterial` a usam; o que mudou é que o brilho do
+  // núcleo passou a vir de onde ele pode vir, que é daqui.
+  const material = criarMaterialDeCristal({
+    nucleo: [0, 0, 0], opacidade: 0.55, branco: 0.04,
+  });
+  material.uniforms.uCorBase.value = new THREE.Color('#6dff3a');
   material.depthWrite = true;
   return material;
 }
