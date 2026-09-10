@@ -545,6 +545,35 @@ dependência técnica real** que decide o resto:
   artes são PNG, e favicon 16 px pede vetor). Isso é **eu redesenhando** — ele
   precisa olhar e aprovar antes de eu espalhar pelo site.
 
+  ### `[10/09]` A AUDITORIA (etapa 1) — feita, e ela confirma o diagnóstico dele
+
+  O inventário achou **duas marcas diferentes, em cores diferentes**, e nenhuma
+  das duas é o raio das referências:
+
+  | Onde | O que está lá hoje |
+  | --- | --- |
+  | aba do navegador (`public/favicon.svg`) | um raio **roxo/azul** — `#7e14ff` ×10, `#863bff`, `#47bfff` ×2. **Zero verde** |
+  | dentro do site (8 componentes) | o `Zap` do `lucide-react`, **verde** `#39ff14` |
+  | ícone de app / PWA | **não existe** — não há `manifest`, nem `apple-touch-icon` |
+  | prévia ao compartilhar link | **não existe** — não há `og:image` nem `twitter:image` |
+
+  Os 8 componentes que exibem a marca: `SplashScreen`, `landing/Hero`,
+  `landing/FinalCTA`, `landing/LandingFooter`, `landing/LandingNav`,
+  `layout/Sidebar`, `pages/AuthConfirm` — mais o `public/favicon.svg`.
+
+  **Fica FORA:** o `Zap` em `lib/ranks.js` é ícone de **rank**, não a marca. O
+  escopo dele diz *"não alterar componentes que não exibem a marca"*.
+
+  **A silhueta foi reconstruída em SVG** (4 pontas — duas lâminas longas em
+  ziguezague, duas asas curtas — com o núcleo hexagonal vazado), e a folha de
+  prova foi ao dono em 10/09. **Aguardando aprovação dele.**
+
+  **Um achado da própria folha, que ele precisa decidir junto:** a **16 px o
+  furo do hexágono quase fecha**. A referência já prevê isso — o
+  `docs/identidade/README.md` diz que a versão mono é *"deliberadamente mais
+  simples"* —, então o certo é uma variante de 16 px com o furo **maior**, e não
+  espremer a mesma geometria. Isso é adaptação técnica, não marca nova.
+
 - ⬜ `[10/09]` 🟠 **3. RECONSTRUÇÃO RADICAL DA LANDING — 3D e 2D.** *A maior das
   três. Referência da cena: `docs/identidade/referencias/10-cena-da-landing.webp`.*
 
