@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**27 itens abertos** (+ 1 ideia sem compromisso)
+**31 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -103,6 +103,162 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 > repetir o PageSpeed do desktop no preset padrão.
 
 ---
+
+## 🎯 O BLOCO DE 10/09 — o que o dono mandou de uma vez
+
+> **Como isto chegou.** Ele mandou um **protocolo de trabalho** e **dois pedidos
+> grandes** numa sequência só, com a ordem: *"grava tudo no backlog por ordem de
+> prioridade… não deixa nada na memória da sessão"*. E avisou que **as condições
+> do Brevo já estão feitas — falta testar**.
+>
+> As artes da identidade vieram **dentro da conversa**, que morre com a sessão.
+> Foram salvas em [`docs/identidade/`](docs/identidade/README.md) antes de
+> qualquer outra coisa, com o índice do papel de cada uma.
+
+### A ordem que eu recomendo, e o porquê dela
+
+Não é a ordem em que ele mandou. É a que a régua do projeto produz — camada mais
+externa primeiro (§0.4), risco operacional antes de estética (§0), e **uma
+dependência técnica real** que decide o resto:
+
+| # | O quê | Por que nesta posição |
+| --- | --- | --- |
+| **1** | **Testar o Brevo** | ele já fez a parte dele; é o mais barato da fila e fecha um risco que quebra o cadastro **em silêncio** |
+| **2** | **Identidade de ícones** | camada 1, e produz o **SVG mestre do raio** |
+| **3** | **Reconstrução da Landing 3D + 2D** | camada 1, a maior das três — e **consome** o SVG mestre do item 2 |
+| **4** | Integrar o protocolo às regras | é meta-trabalho; muda como eu trabalho, não o que o site faz |
+
+> **A dependência que decide a ordem 2 → 3, e ela é técnica, não preferência.**
+> O item 3 pede um *"novo raio 2D dividido em metade superior, core e metade
+> inferior, em SVG"*. O item 2 pede *"um sistema visual único com adaptações
+> técnicas"*. Fazer a Landing antes criaria um **segundo desenho do raio**, feito
+> por outro caminho — exatamente a duplicação que os dois pedidos proíbem (§4,
+> fonte única). O raio 2D da Landing tem que ser o **mesmo** SVG mestre, dividido.
+
+---
+
+- ⬜ `[10/09]` 🟠 **1. TESTAR O BREVO.** *O dono já criou a conta e configurou —
+  falta a metade que é minha.*
+
+  **O código já está pronto** desde o PR #172: se `SMTP_HOST` existir, a
+  `send-email` usa o relay; se não existir, segue no Gmail. Mudança aditiva, e o
+  caminho de volta é apagar um segredo.
+
+  **O que falta, na ordem:** reimplantar a Edge Function (🟡 §7 — é função de
+  autenticação, então com ele por perto), conferir que os cinco segredos estão
+  no painel, e **provar com um cadastro de verdade**.
+
+  **O que a trava NÃO cobre, e por isso o teste real é obrigatório:**
+  `envioDeEmailTemDoisCaminhos.test.js` garante que as propriedades do código não
+  sumam — **não** que o e-mail chega, que a senha do relay está certa, ou que o
+  remetente foi aceito no provedor.
+
+  **Se falhar, a mensagem em `admin_logs` agora diz qual caminho estava em uso** —
+  antes ela mandaria investigar o provedor errado.
+
+- ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
+  *Referências em [`docs/identidade/`](docs/identidade/README.md).*
+
+  **O objetivo, na frase dele:** *"não quero cinco logos diferentes, quero um
+  sistema visual único com adaptações técnicas"*. Logo mestre, favicon, ícone
+  PWA, monocromático e animação — todos o **mesmo raio**.
+
+  **Hierarquia que decide qualquer conflito:** geometria do raio → silhueta →
+  consistência com o que já existe → legibilidade em tamanho pequeno → cor →
+  glow. *Se removermos o glow, a marca ainda funciona. Se removermos a cor, ainda
+  funciona.*
+
+  **O que eu JÁ SEI, e é o coração da tarefa:** o "raio" que aparece hoje no
+  Login e no cabeçalho é o ícone **`Zap` do `lucide-react`** — um raio genérico
+  de biblioteca, **não** o raio da identidade. Trocar isso é o que faz o sistema
+  existir, e toca vários componentes.
+
+  **Etapas, na ordem que ele definiu:** auditar (o que existe em `index.html`,
+  favicon, manifest, PWA, logos, componentes) → comparar com as referências →
+  mapear *asset atual → asset correto → onde é usado* → planejar a **menor**
+  mudança → implementar → validar → segunda passada procurando inconsistência.
+
+  **FORA DO ESCOPO, e é obrigatório estar escrito:**
+  - não criar identidade nova, não fazer rebranding;
+  - não substituir o raio por gamepad, headset, escudo, letra G/GH ou qualquer
+    símbolo genérico de esports/SaaS;
+  - não alterar componentes que não exibem a marca;
+  - não refatorar nada "já que estou aqui";
+  - não mexer em autenticação, banco, RLS ou permissões.
+
+  **O que depende dele:** eu vou precisar **reconstruir a silhueta em SVG** (as
+  artes são PNG, e favicon 16 px pede vetor). Isso é **eu redesenhando** — ele
+  precisa olhar e aprovar antes de eu espalhar pelo site.
+
+- ⬜ `[10/09]` 🟠 **3. RECONSTRUÇÃO RADICAL DA LANDING — 3D e 2D.** *A maior das
+  três. Referência da cena: `docs/identidade/referencias/10-cena-da-landing.webp`.*
+
+  **Não é evolução incremental.** A camada visual da cena é desmontada e
+  reconstruída; o que fica é a **infraestrutura de performance**.
+
+  **O conceito, na frase dele:** *"um artefato cristalino de energia que está
+  vivo"*. O raio é a identidade, o cristal é o material, o núcleo é a fonte, o
+  vórtice é o nascimento, os fragmentos são a consequência.
+
+  | O que muda | Em uma linha |
+  | --- | --- |
+  | **raio dividido** | metade superior + **core** + metade inferior, com uma **fissura visível mas pequena** — lê como um raio primeiro, dividido depois |
+  | **core** | pertence à mesma linguagem geométrica; pulsa, ilumina as faces internas e **sustenta** as duas metades |
+  | **entrada** | 7 fases: vazio → vórtice → convergência → core → formação do raio → ruptura curta → estabilização |
+  | **idle** | o vórtice quase some; o core é o coração da animação |
+  | **fragmentos** | acabam o torus/octaedro/dodecaedro/icosaedro nos quatro cantos; entram fragmentos da **mesma família cristalina**, distribuídos em **profundidade** |
+  | **2D** | **não é versão pobre da 3D** — é interpretação gráfica da mesma identidade, em SVG + CSS, com a mesma dramaturgia |
+  | **arquitetura** | um **controlador central** de animação (timeline de estados), não lógica espalhada por objeto |
+
+  **A regra mais importante, e ela é dele em maiúsculas:** a imagem 3D é
+  **referência, não asset**. Nada de pôr a imagem na Landing, usar como
+  background, textura, sprite ou plano. *"A imagem é o mapa. O código é a
+  construção."*
+
+  **O que NÃO pode morrer na reconstrução** — é infraestrutura, não estética:
+  `IntersectionObserver`, suspensão fora da viewport, `ResizeObserver`, cleanup,
+  `root.unmount()`, controle de DPR, resolução adaptativa, o portão de bytes e o
+  fallback. Reavaliar cada uma; substituir só conscientemente e por algo
+  equivalente ou melhor.
+
+  **FORA DO ESCOPO:**
+  - não alterar autenticação, autorização, banco, RLS, roles, permissões ou API;
+  - não mexer em páginas sem relação com a Landing;
+  - não trocar bibliotecas nem atualizar dependência sem necessidade;
+  - não aproveitar para reorganizar o projeto;
+  - achado de segurança incidental **documenta, não corrige aqui**.
+
+  **Restrição de processo, explícita:** *"não faça commit nem push sem minha
+  autorização"*. Pode criar, alterar, remover, testar e analisar — **para antes
+  do commit**.
+
+  > **O que eu preciso dizer antes de começar, não depois.** Este item é grande
+  > e a régua do §0.1 vale: se o contexto acabar no meio, o certo é **parar num
+  > ponto íntegro e registrar onde parei**, nunca empurrar cena pela metade. E há
+  > uma tensão real entre *"faça bonito"* e o orçamento de bytes do CI — se o
+  > resultado bonito não couber no teto, quem decide é ele, não eu sozinho.
+
+- ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
+  regras.** *Documento estrutural → precisa de proposta (§6.2).*
+
+  **O que ele traz de genuinamente novo** — o resto já existe, e duplicar regra
+  cria duas fontes de verdade que divergem (§4):
+
+  | Novo | O que muda |
+  | --- | --- |
+  | **FORA DO ESCOPO obrigatório** | hoje eu delimito o que **vou** fazer, nunca o que deliberadamente **não** vou |
+  | **Descoberta ≠ ação** | *"descobrir um problema não significa receber autorização para corrigi-lo"* |
+  | **Validação em camadas** | validar proporcional ao risco, em vez da bateria inteira sempre |
+  | **Expansão mínima declarada** | quando expandir, nomear a **menor** expansão possível |
+  | **Relatório final estruturado** | com *"o que NÃO foi alterado"* como campo fixo |
+
+  **O conflito que eu preciso resolver por escrito, e não pode ficar implícito:**
+  o `CLAUDE.md` §0 manda **tratar** dívida que está no caminho, e o §4 manda
+  **dividir agora** arquivo que eu mesmo inchei. O protocolo §21 proíbe *"já que
+  estou aqui"*. Não são a mesma coisa — sujeira que **eu acabei de fazer** é
+  limpeza do meu próprio trabalho, não descoberta —, mas a fronteira precisa
+  estar escrita, senão vira brecha nos dois sentidos: ou eu paro de dividir
+  arquivo que inchei, ou eu uso o §4 como desculpa para refatorar o que quiser.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
