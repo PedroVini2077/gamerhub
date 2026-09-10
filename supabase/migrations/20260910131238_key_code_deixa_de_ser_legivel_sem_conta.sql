@@ -1,0 +1,54 @@
+-- `[10/09]` SEC-001 — `game_keys.key_code` era legível SEM CONTA.
+--
+-- ── A contradição que definiu o achado ──────────────────────────────────────
+--
+-- A INTERFACE exige login para ver a chave: `/keys` está atrás de `RequireAuth`
+-- e o `RightPanel` só existe no site logado. A POLICY não exigia nada —
+-- `Public keys` é `SELECT` para `{public}` com `USING (true)`, e `key_code`
+-- estava entre as colunas concedidas a `anon`.
+--
+-- Comprovado assumindo o papel `anon` em ROLLBACK: **3 chaves reais** legíveis
+-- (as de `is_promo = false`, que é justamente onde o `KeysPanel` mostra o campo
+-- "Código da key"). Amostra registrada mascarada; nenhuma chave foi copiada
+-- para relatório, log ou commit.
+--
+-- ── Por que o filtro do frontend nunca protegeu ─────────────────────────────
+--
+-- `hooks/useAdminData.js` faz `select('*')` e a decisão do que mostrar acontece
+-- no JavaScript (`!k.is_promo`). Quem chama o endpoint REST direto não passa
+-- pelo nosso código — é o §1.3 na letra: regra que só existe no cliente não
+-- vale nada, porque o site entrega a anon key.
+--
+-- ── Por que REVOGAR A COLUNA não bastava, e isto quase me enganou ───────────
+--
+-- A primeira tentativa foi `REVOKE SELECT (key_code) ... FROM anon`. Ela roda
+-- **sem erro** e não faz nada: quando existe grant no nível de TABELA, ele
+-- cobre todas as colunas, e o privilégio de coluna vira irrelevante. Só o teste
+-- em ROLLBACK pegou — `anon` continuou lendo as 6 linhas depois do REVOKE.
+--
+-- Sem esse teste eu teria declarado a falha corrigida com ela aberta. É por
+-- isso que o §5 manda testar em ROLLBACK ANTES da produção.
+--
+-- A correção certa é a de duas etapas: derrubar o grant de tabela e reconceder
+-- coluna a coluna, deixando `key_code` de fora.
+--
+-- ── O que muda, e o que deliberadamente NÃO muda ────────────────────────────
+--
+--   anon           -> continua vendo a VITRINE (jogo, plataforma, desconto,
+--                     link da promoção) e deixa de ver o código
+--   authenticated  -> nada muda: continua lendo tudo, como a tela já fazia
+--
+-- **A escolha de manter a vitrine pública é deliberada.** Revogar o SELECT
+-- inteiro de `anon` seria menor privilégio ainda, e hoje nenhum consumidor
+-- anônimo existe — todos os quatro estão atrás de `RequireAuth`. Mas isso
+-- fecharia a porta de uma vitrine de promoções na landing sem o dono ter
+-- decidido nada, e o §22 do protocolo dele manda a MENOR alteração que resolve
+-- o problema. O problema era o segredo, e é o segredo que sai.
+--
+-- Fica registrado como opção: se um dia se decidir que nem a vitrine é pública,
+-- é um REVOKE a mais.
+REVOKE SELECT ON public.game_keys FROM anon;
+
+GRANT SELECT (id, game_title, platform, is_promo, discount_percent, promo_url,
+              expires_at, created_at)
+  ON public.game_keys TO anon;

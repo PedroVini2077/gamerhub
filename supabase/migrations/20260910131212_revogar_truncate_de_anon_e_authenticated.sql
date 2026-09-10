@@ -1,0 +1,55 @@
+-- `[10/09]` SEC-003 — TRUNCATE estava concedido a `anon` em 27 de 29 tabelas.
+--
+-- ── O que foi COMPROVADO, não suposto ───────────────────────────────────────
+--
+-- Assumindo o papel `anon` numa transação com ROLLBACK:
+--
+--     TRUNCATE public.game_keys  ->  antes=6  depois=0
+--
+-- A tabela inteira foi apagada por um papel que qualquer pessoa da internet
+-- usa, sem conta. **RLS não se aplica a TRUNCATE** — é a única operação de
+-- escrita que ignora policy, então nenhuma das nossas policies protegia.
+--
+-- ── Por que isto era 🟠 e não 🔴 ────────────────────────────────────────────
+--
+-- Não havia detonador conhecido, e as duas metades foram verificadas:
+--
+--   1. o PostgREST **não expõe TRUNCATE** — os verbos são GET/POST/PATCH/DELETE;
+--   2. o DELETE, que ELE expõe, foi testado nas 29 tabelas como `anon` e
+--      apagou **zero linhas** — a RLS segurou todas.
+--
+-- Então era privilégio de destruição total sem caminho de exploração pela API.
+-- O que não existia era **defesa em profundidade**: qualquer função
+-- `SECURITY INVOKER` com SQL dinâmico, ou qualquer mudança futura do PostgREST,
+-- transformaria isso em 🔴 no mesmo instante. (Conferido: hoje há ZERO funções
+-- INVOKER com `TRUNCATE` ou `EXECUTE format` alcançáveis pelo cliente.)
+--
+-- ── De onde veio ────────────────────────────────────────────────────────────
+--
+-- **Não foi de código nosso.** Nenhuma migration deste repositório contém
+-- `GRANT ALL` — a concessão vem do template padrão do Supabase, que dá
+-- `arwdDxtm` para `anon` e `authenticated` no schema `public`.
+--
+-- Registrado porque muda a lição: não é "alguém escreveu errado", é "o padrão
+-- da plataforma é mais amplo do que o projeto precisa", e isso vale para todo
+-- projeto Supabase — inclusive para tabelas que ainda vão nascer.
+--
+-- ── O que fica, e é o menor privilégio (§38) ────────────────────────────────
+--
+-- SELECT, INSERT, UPDATE e DELETE continuam: é neles que a RLS trabalha, e é
+-- deles que o site depende. Saem os três que o cliente nunca usa:
+--
+--   TRUNCATE   — apaga tudo, ignorando RLS
+--   REFERENCES — criar foreign key apontando para a tabela
+--   TRIGGER    — criar trigger sobre a tabela
+--
+-- Validado em ROLLBACK antes de aplicar: `anon` deixa de truncar, `anon`
+-- continua vendo o que deve ver, e o papel `authenticated` continua lendo o
+-- feed e as keys sem erro de privilégio.
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+
+-- Tabela que nascer daqui em diante já nasce sem o excesso. Sem isto, a
+-- próxima migration que criar tabela reabre o buraco em silêncio — e ninguém
+-- ia perceber, porque o sintoma é a AUSÊNCIA de um erro.
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+  REVOKE TRUNCATE, REFERENCES, TRIGGER ON TABLES FROM anon, authenticated;
