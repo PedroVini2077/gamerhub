@@ -44,8 +44,8 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 
 ---
 
-**Última conferência contra o sistema:** 05/09/2026 ·
-**33 itens abertos** (+ 1 ideia sem compromisso)
+**Última conferência contra o sistema:** 10/09/2026 ·
+**34 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -124,6 +124,14 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   com ele o item 🔵 que estava **aberto no backlog desde 01/09**. Deu para
   fechar sem decisão nova porque duas coisas mudaram: `profiles` foi revogado de
   `anon` (o UUID já não vira nome) e nenhuma tela pública lê essa coluna.
+- ✅ **SEC-007 · a moderação de conteúdo dizia ter apagado o que não apagou** —
+  **FECHADO**. 🟡 Ver a lixeira é `role_rank >= 2` (plana), apagar é
+  `can_moderate_content` (hierarquia estrita): o admin **enxerga** o post do
+  owner e não pode apagá-lo, e a RLS recusa com **0 linhas e nenhum erro**. O
+  toast dizia "apagado permanentemente" e a trilha gravava a exclusão. Medido em
+  `ROLLBACK` (a tela contava 176, o banco apagava 175). Varrido por CLASSE: dos
+  17 `delete()` de `src/`, **6 corrigidos** e 4 marcados como 0-linhas legítimo.
+  Trava `apagarConfereLinhas.test.js`, provada reinjetando o bug.
 
 > **A auditoria CONTINUA.** As três primeiras frentes fecharam, mas o piso do
 > §6 pede muito mais: as **48 funções alcançáveis** uma a uma, as **12 policies
@@ -131,24 +139,52 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 > assignment e o isolamento de sessão. O que já foi apurado está em
 > `db/2026-09-10-auditoria-seguranca.md`.
 
-## 🟡 DOIS ACHADOS OPERACIONAIS — `[10/09]`
+## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
 
 *Encontrados durante a auditoria de segurança, e **fora do escopo dela**. Estão
 aqui, e não corrigidos junto, porque o §21 do protocolo proíbe expandir tarefa
-por oportunidade — e nenhum dos dois é brecha.*
+por oportunidade — e nenhum deles é brecha.*
 
-- ⬜ `[10/09]` 🟡 **`e2e/artes-da-arena.mjs` é instável no CI.** Falhou com
-  *"cadastro tem 4 lutador(es), esperava 2"* — que é o **fade cruzado** flagrado
-  no meio: `AnimatePresence` mantém as duas artes por lado durante a troca.
+- ⬜ `[10/09]` 🟠 **13 `update()` em `src/` não conferem quantas linhas
+  mudaram.** É a **mesma classe** do SEC-007, que foi fechado do lado do
+  `delete()`: a RLS recusa devolvendo 0 linhas e **nenhum erro**, e a tela diz
+  que salvou.
 
-  **Não é regressão:** rodei **três vezes** localmente e deu **5/5** nas três; e
-  nada nesta sessão tocou na arena. O passo 2 lê o estado que deveria estar
-  estável e às vezes pega a transição.
+  **O número é medido, não estimado:** 16 chamadas de `update()` em `src/`,
+  **3** com `count: 'exact'`, 13 sem. Não foram auditadas uma a uma — cada uma
+  precisa da mesma classificação que os `delete()` levaram (0 linhas é falha, ou
+  é o caso legítimo de "a linha já não existe"?), e isso é bloco próprio.
 
-  Conserto provável: o passo 2 esperar a animação terminar, como o passo 5 já
-  faz de propósito. **Portão que falha sozinho ensina a ignorar o CI** (§0.2,
-  4ª regra) — e este acabou de me fazer perder tempo procurando uma regressão
-  que não existia.
+  Quando for feito, a trava tem que **crescer** em vez de nascer de novo:
+  `apagarConfereLinhas.test.js` já varre a árvore e já tem o marcador de
+  dispensa com motivo obrigatório.
+
+- ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
+  diferentes: `liveService.unsilenceUser({postId, userId})` e
+  `useAdminLiveActions.unsilenceUser(id)`. Os dois foram corrigidos junto no
+  SEC-007, mas **cópia diverge** (§4, fonte única) — foi assim com os ícones de
+  log, os rótulos de cargo e a regra de bloqueio de login. Unificar exige
+  decidir uma assinatura só, e o hook apaga por `id` da linha enquanto o serviço
+  apaga por par: não é troca mecânica.
+
+- ✅ `[10/09]` 🟡 **`e2e/artes-da-arena.mjs` era instável no CI** — **FECHADO**.
+  Falhava com *"cadastro tem 4 lutador(es), esperava 2"*: o fade cruzado
+  flagrado no meio.
+
+  **A causa raiz:** a espera pedia só *"existem 2 `.arena-troca`"*, e isso é
+  verdade em **dois** estados — antes de a troca começar (com as artes do
+  login) e depois de ela terminar. Fallback silencioso na versão temporal (§4).
+
+  **A janela foi provada**: clicando de dentro da página e lendo a condição na
+  mesma tarefa de JS, ela responde `true` com as artes do login ainda na tela.
+  Mas **a falha não reproduziu aqui** — pelo caminho real do Playwright a
+  condição antiga levou **728 ms**, já com as artes novas: o clique é mais lento
+  que o render nesta máquina, e no CI a corrida deu para o outro lado.
+
+  O conserto diz **o que se espera ver**, não quantos elementos: os `src` têm
+  que ser diferentes dos de antes. A prova é estrutural, não estatística — 5
+  rodadas verdes aqui não valem nada, porque **antes** do conserto também davam
+  5/5.
 
 - ⬜ `[10/09]` 🟡 **O orçamento de bytes dá resultado DIFERENTE aqui e no CI.**
   Local, com `npm ci` (mesmo lockfile do CI): **222,4 kB gzip**, acima do teto
@@ -883,10 +919,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->99<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.220<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->100<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.347<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.793<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

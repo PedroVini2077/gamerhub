@@ -80,7 +80,13 @@ export async function addBlockedWord(word, severity = 'medium') {
 }
 
 export async function removeBlockedWord(wordId) {
-  return from(await supabase.from('blocked_words').delete().eq('id', wordId));
+  // `[10/09]` A palavra some da tela e CONTINUA bloqueando se a RLS recusar —
+  // 0 linhas, nenhum erro. O sintoma seria "removi a palavra e o site continua
+  // barrando", que manda investigar o trigger em vez da permissão (§1.5).
+  return fromCount(
+    await supabase.from('blocked_words').delete({ count: 'exact' }).eq('id', wordId),
+    'Não foi possível remover a palavra — sem permissão, ou ela já não existia.',
+  );
 }
 
 // ─── Violations ───────────────────────────────────────────────────────────────

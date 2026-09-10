@@ -211,6 +211,7 @@ export async function likePost(postId, userId) {
 }
 
 export async function unlikePost(postId, userId) {
+  // 0-linhas-ok: descurtir o que já não está curtido é o objetivo atingido.
   return from(await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId));
 }
 

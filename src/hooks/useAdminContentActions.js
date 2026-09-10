@@ -73,8 +73,19 @@ export function useAdminContentActions({ setConfirmModal, username, posts, refre
       message: `Apagar o post "${title}" de forma permanente? Esta ação não pode ser desfeita.`,
       confirmLabel: 'Apagar para sempre', confirmIcon: Trash2,
       onConfirm: async () => {
-        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        const { error, count } = await supabase
+          .from('posts').delete({ count: 'exact' }).eq('id', postId);
         if (error) { toast.error('Erro ao apagar: ' + error.message); return; }
+        // `[10/09]` 0 linhas SEM erro é o caso normal aqui, não o excepcional:
+        // ver a lixeira é `role_rank >= 2`, mas apagar é `can_moderate_content`,
+        // que é hierarquia estrita. O admin ENXERGA o post do owner na lixeira e
+        // não pode apagá-lo — provado em ROLLBACK. Sem esta checagem o toast
+        // dizia "apagado permanentemente" e a trilha registrava uma exclusão
+        // que nunca aconteceu (§1.5, e a trilha passa a mentir — ver BANCO.md).
+        if (!count) {
+          toast.error('Nada foi apagado: este post é de alguém de cargo igual ou superior ao seu.');
+          return;
+        }
         await done(
           'Post apagado permanentemente', 'admin_permanent_delete_post',
           `Post "${title}" apagado permanentemente pelo admin ${actor}`,
@@ -90,11 +101,25 @@ export function useAdminContentActions({ setConfirmModal, username, posts, refre
       message: `Apagar permanentemente ${count} post(s) na lixeira? Esta ação não pode ser desfeita.`,
       confirmLabel: `Apagar ${count} post(s)`, confirmIcon: Trash2,
       onConfirm: async () => {
-        const { error } = await supabase.from('posts').delete().not('deleted_at', 'is', null);
+        const { error, count: apagados } = await supabase
+          .from('posts').delete({ count: 'exact' }).not('deleted_at', 'is', null);
         if (error) { toast.error('Erro ao apagar: ' + error.message); return; }
+        if (!apagados) {
+          toast.error('Nada foi apagado: a lixeira só tem posts de cargo igual ou superior ao seu.');
+          return;
+        }
+        // O número que vale é o que o BANCO apagou, nunca o que a tela contou.
+        // Medido em ROLLBACK: a tela contava 176 e o banco apagava 175, porque a
+        // lixeira mostra o que a hierarquia não deixa apagar. Relatar `count`
+        // aqui gravava o número errado na trilha de auditoria.
+        const sobraram = count - apagados;
         await done(
-          `${count} post(s) apagados permanentemente`, 'admin_permanent_delete_all',
-          `${count} posts da lixeira apagados permanentemente pelo admin ${actor}`,
+          sobraram > 0
+            ? `${apagados} post(s) apagados — ${sobraram} não podiam ser apagados por você`
+            : `${apagados} post(s) apagados permanentemente`,
+          'admin_permanent_delete_all',
+          `${apagados} posts da lixeira apagados permanentemente pelo admin ${actor}`
+          + (sobraram > 0 ? ` (${sobraram} recusados pela hierarquia)` : ''),
         );
       },
     });
@@ -106,8 +131,10 @@ export function useAdminContentActions({ setConfirmModal, username, posts, refre
       message: 'Remover este item permanentemente?',
       confirmLabel: 'Remover', confirmIcon: Trash2,
       onConfirm: async () => {
-        const { error } = await supabase.from('game_keys').delete().eq('id', keyId);
+        const { error, count } = await supabase
+          .from('game_keys').delete({ count: 'exact' }).eq('id', keyId);
         if (error) { toast.error('Erro ao remover item'); return; }
+        if (!count) { toast.error('Nada foi removido — sem permissão, ou o item já não existia.'); return; }
         await done('Removido', 'admin_delete_key', `Key removida pelo admin ${actor}`, 'info');
       },
     });

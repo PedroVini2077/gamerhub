@@ -294,6 +294,71 @@ consultas de hora em hora — egress à toa, que é a cota mais apertada do plan
 metades — sem o `clear()`, e com ele disparando a cada evento. Ela vigia também
 a **deriva**: chave de painel nova que nasça sem identidade reprova.
 
+## SEC-007 — a moderação de conteúdo: a hierarquia segurou, a TELA mentiu
+
+🟡 **Médio.** Não é escalada: a hierarquia funcionou exatamente como projetada.
+O defeito é o site **relatar ações que não aconteceram** — inclusive na trilha
+de auditoria do dono.
+
+**A causa raiz é uma assimetria proposital entre duas policies de `posts`:**
+
+| operação | regra | tipo |
+| --- | --- | --- |
+| VER a lixeira | `role_rank(...) >= 2` | plana — qualquer admin vê tudo |
+| APAGAR | `can_moderate_content(user_id)` | hierarquia **estrita** (`>`) |
+
+As duas estão certas isoladamente — é a Fase 4 pura (§6, deriva entre dois
+lugares que se olham por dentro e não concordam entre si). Juntas produzem o
+caso em que o admin **enxerga na tela** um post que **não pode apagar**: o do
+owner, o de outro admin. E `DELETE` recusado pela RLS devolve **0 linhas e
+nenhum erro** (§1.5, fonte de silêncio nº 2).
+
+**Provado em `ROLLBACK`**, com um post do owner na lixeira:
+
+```
+1_admin_ve_na_lixeira  1 linha(s) — SIM, aparece na tela dele
+2_delete_individual    0 linha(s) apagada(s) — BLOQUEADO pela RLS, E SEM ERRO
+3_apagar_todos         a tela conta 176, o banco apaga 175 -> A TELA MENTE
+```
+
+**O impacto real não é o post sobreviver** — é o que o site diz que fez. O toast
+dava *"Post apagado permanentemente"* e o `logAudit` gravava
+`admin_permanent_delete_post` em `admin_logs`: uma exclusão que nunca aconteceu,
+escrita na trilha que o dono usa para saber o que a equipe fez. O `BANCO.md` já
+nomeia esse risco — *"a trilha de auditoria do dono passa a mentir"*.
+
+**Hoje o número não diverge por sorte:** não há post de cargo alto na lixeira. É
+o caso do §1.3 — *"achou algo que não quebrou ainda por baixo volume? Corrigir
+igual"*.
+
+### A varredura de CLASSE, que é o que valeu a pena
+
+§1.3 manda perguntar *"onde mais esse padrão existe?"*. Varrendo os 17 `delete()`
+de `src/`, **8** não conferiam linha nenhuma. Classificados um a um:
+
+| Corrigido — 0 linhas é falha de verdade | O que a pessoa via antes |
+| --- | --- |
+| `useAdminContentActions` · apagar post da lixeira | "apagado permanentemente", e o post continuava |
+| `useAdminContentActions` · apagar TODOS da lixeira | o número da tela, não o do banco |
+| `useAdminContentActions` · remover key/promo | "Removido", e o item continuava |
+| `useAdminLiveActions` · remover silêncio do chat | trilha dizia "silêncio removido", pessoa seguia calada |
+| `liveService.unsilenceUser` | o mesmo, pelo caminho do serviço |
+| `moderationService.removeBlockedWord` | palavra some da tela e **continua bloqueando** |
+
+Os outros **quatro** são o caso legítimo de 0 linhas: descurtir o que já não
+está curtido é objetivo atingido, não falha (§1.5, *"0 linhas é AMBÍGUO"*), e a
+linha é da própria pessoa. Esses ficaram com o marcador `0-linhas-ok:` **e o
+motivo escrito ao lado**.
+
+**Trava:** `apagarConfereLinhas.test.js` — varre `src/` e reprova todo
+`delete()` do Supabase sem `count: 'exact'`, separando-os dos `.delete()` de
+`Set`/`Map` (`objectUrls.js`, `dbHealth.js`) para não virar ruído. Provada
+reinjetando o bug: ela falhou nomeando
+`src/hooks/useAdminContentActions.js:77`, e voltou ao verde ao restaurar.
+
+O marcador de dispensa **exige motivo escrito** de propósito: silenciar a trava
+tem que custar uma frase, senão vira o `eslint-disable` que a §6.1 proíbe.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
@@ -302,12 +367,16 @@ CONSEGUI PROVAR"*.
 - as funções alcançáveis **fora** do recorte de classe C/D acima — as que não
   escrevem, ou que não recebem UUID. São a maioria das 48, e o risco delas é
   menor por construção, mas **não foram lidas uma a uma**;
-- o fluxo de **moderação de conteúdo** (§14 do prompt 2) — a escalada de
-  **role** e o **ban/suspensão** foram auditados e estão acima;
 - **RPC chaining** e **confused deputy** — upsert e mass assignment foram
   auditados e estão acima;
 - **role stale** e **downgrade durante sessão ativa** — o cache foi auditado e
   está acima (SEC-006);
-- a **matriz de permissões** 29 ações × 4 papéis.
+- a **matriz de permissões** 29 ações × 4 papéis;
+- os **13 `update()`** de `src/` sem `count: 'exact'`. São a mesma classe do
+  SEC-007 e o número é conhecido; auditá-los um a um é bloco próprio, e está no
+  `BACKLOG.md` com o número escrito. **Não** foram verificados.
+
+Do que estava nesta lista na versão anterior, saiu o fluxo de **moderação de
+conteúdo** (§14 do prompt 2): ele foi auditado e produziu o SEC-007 acima.
 
 Nada disso está "provavelmente ok". Está **não verificado**.

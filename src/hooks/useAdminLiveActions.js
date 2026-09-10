@@ -22,7 +22,15 @@ export function useAdminLiveActions({
     logAudit(action, details, { category: 'admin', severity });
 
   async function unsilenceUser(id) {
-    await supabase.from('live_chat_timeouts').delete().eq('id', id);
+    // `[10/09]` A trilha registrava "silêncio removido" mesmo quando a RLS
+    // recusava — 0 linhas e nenhum erro. A pessoa continuava calada, e o log
+    // dizia o contrário (§1.5; BANCO.md: a trilha não pode mentir).
+    const { error, count } = await supabase
+      .from('live_chat_timeouts').delete({ count: 'exact' }).eq('id', id);
+    if (error || !count) {
+      toast.error('Não foi possível remover o silêncio — sem permissão, ou ele já expirou.');
+      return;
+    }
     await log('admin_unsilence_chat', `Silêncio de chat removido por @${username}`);
     fetchLiveMod();
   }

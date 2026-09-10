@@ -154,6 +154,8 @@ export async function likeMuralPost(postId, userId) {
 }
 
 export async function unlikeMuralPost(postId, userId) {
+  // A linha é da própria pessoa: a RLS não tem o que recusar aqui.
+  // 0-linhas-ok: descurtir o que já não está curtido é o objetivo atingido.
   return from(await supabase.from('community_post_likes')
     .delete().eq('post_id', postId).eq('user_id', userId));
 }

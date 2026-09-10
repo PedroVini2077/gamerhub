@@ -61,5 +61,6 @@ export async function likeComment(commentId, userId) {
 }
 
 export async function unlikeComment(commentId, userId) {
+  // 0-linhas-ok: descurtir o que já não está curtido é o objetivo atingido.
   return from(await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId));
 }

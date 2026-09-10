@@ -92,6 +92,25 @@
   tabelas e apagou zero (a RLS segurou). Era **defesa em profundidade zero**. A
   origem não é código nosso: é o grant padrão do template do Supabase. O
   `ALTER DEFAULT PRIVILEGES` fecha para as tabelas que ainda vão nascer.
+- **`[10/09]` A lixeira do painel MOSTRA o que a hierarquia não deixa apagar**
+  (SEC-007). Não é brecha — as duas policies de `posts` estão certas, e é a
+  combinação que engana:
+
+  | operação | regra | tipo |
+  | --- | --- | --- |
+  | ver post com `deleted_at` | `role_rank(...) >= 2` | **plana** |
+  | `DELETE` | `can_moderate_content(user_id)` | hierarquia **estrita** |
+
+  O admin enxerga o post do owner na lixeira e não consegue apagá-lo — e a RLS
+  recusa com **0 linhas e nenhum erro**. Sem `count: 'exact'`, o site dizia
+  *"apagado permanentemente"* e gravava `admin_permanent_delete_post` em
+  `admin_logs`: **exclusão que nunca aconteceu, escrita na trilha de auditoria**.
+  Medido em `ROLLBACK` — a tela contava 176, o banco apagava 175. Corrigido em
+  6 chamadas (a varredura de classe achou 8 `delete()` sem contagem; 4 eram o
+  caso legítimo de descurtir). Trava: `apagarConfereLinhas.test.js`.
+
+  **A hierarquia não foi contornada em momento nenhum** — o que falhou foi o
+  site relatar o resultado dela.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

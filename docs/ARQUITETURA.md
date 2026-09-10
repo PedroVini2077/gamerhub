@@ -54,6 +54,9 @@ src/
 ├── hooks/
 │   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
 │   │                      # árvore e o arquivo de maior risco do projeto (§7)
+│   ├── saidasDaSessao.js  # As DUAS maneiras de encerrar sessão (o "Sair" comum
+│   │                      # e a saída de quem foi banido) e por que cada uma é
+│   │                      # `scope: 'local'`. Saiu do useAuth em 10/09 (§4)
 │   ├── useVigiaDeBanimento.js # Realtime + poll de 60 s que detectam ban durante
 │   │                      # o uso. Saiu do useAuth em 29/08 — testável isolado
 │   ├── usePresenca.js     # Canal de presence: quantos estão online agora
