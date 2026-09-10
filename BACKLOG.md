@@ -472,24 +472,44 @@ dependência técnica real** que decide o resto:
   > `400` que ele observou: são evidência do que aconteceu **naquele momento**,
   > não prova do estado atual do banco.
 
-- ⬜ `[10/09]` 🟠 **1. TESTAR O BREVO.** *O dono já criou a conta e configurou —
-  falta a metade que é minha.*
+- 🔄 `[10/09]` 🟠 **1. TESTAR O BREVO — a metade minha está FEITA, falta a dele.**
 
-  **O código já está pronto** desde o PR #172: se `SMTP_HOST` existir, a
-  `send-email` usa o relay; se não existir, segue no Gmail. Mudança aditiva, e o
-  caminho de volta é apagar um segredo.
+  **`[10/09]` A Edge Function foi reimplantada** (v33 → v34), com autorização
+  dele nesta sessão. A v33 em produção era de ~25/08 e estava **sem duas
+  correções que já estavam no repositório desde 05/09**: o relay SMTP e o
+  discriminador de severidade. §9.9 na veia — *commit não é deploy*.
 
-  **O que falta, na ordem:** reimplantar a Edge Function (🟡 §7 — é função de
-  autenticação, então com ele por perto), conferir que os cinco segredos estão
-  no painel, e **provar com um cadastro de verdade**.
+  **Provado que a v34 está no ar**, e não pelo número de versão: forcei um tipo
+  de falha que não era registrado desde 27/08 (`carimbo de tempo fora da
+  janela`, para escapar do limite de 1 linha por hora) e a linha nova trouxe
+  `corpo_parece_gotrue: false` — campo que **não existe** na linha de 27/08.
 
-  **O que a trava NÃO cobre, e por isso o teste real é obrigatório:**
-  `envioDeEmailTemDoisCaminhos.test.js` garante que as propriedades do código não
-  sumam — **não** que o e-mail chega, que a senha do relay está certa, ou que o
-  remetente foi aceito no provedor.
+  **O que FALTA, e é só ele que pode fazer:** um **cadastro de verdade** com um
+  endereço de teste. Nenhuma trava cobre isso —
+  `envioDeEmailTemDoisCaminhos.test.js` garante que as propriedades do código
+  não sumam, **não** que o e-mail chega, que a senha do relay está certa, nem
+  que o remetente foi aceito no provedor.
 
-  **Se falhar, a mensagem em `admin_logs` agora diz qual caminho estava em uso** —
-  antes ela mandaria investigar o provedor errado.
+  **Se falhar, a mensagem em `admin_logs` diz qual caminho estava em uso**
+  (`relay <host>` ou `gmail`) — antes mandaria investigar o provedor errado. E a
+  volta é apagar o segredo `SMTP_HOST`: sem ele o código cai no Gmail sozinho,
+  sem deploy.
+
+- ⬜ `[10/09]` 🟠 **Nada vigia se uma Edge Function em produção é a do
+  repositório.** É o buraco que deixou as duas correções da `send-email` mortas
+  por 5 dias enquanto a documentação as descrevia como vivas — inclusive um
+  comentário no `e2e/portas-fechadas.mjs` que explicava um comportamento que
+  produção não tinha.
+
+  `scripts/espelho-de-migrations.mjs` faz exatamente isso para migrations. Para
+  as <!--n:edge.funcoes-->8<!--/n--> Edge Functions não existe equivalente.
+
+  **O desenho que eu recomendo, e por que ele evita credencial no CI:** a API de
+  gerenciamento exigiria um token — trocar incerteza por credencial exposta é a
+  conta ruim do §0.2. Em vez disso, cada função responde a um `GET` com a
+  própria versão (`{ versao: "2026-09-05" }`, sem segredo nenhum), e o CI compara
+  com uma constante no repositório. Editar a função sem reimplantar passa a
+  reprovar o PR.
 
 - ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
   *Referências em [`docs/identidade/`](docs/identidade/README.md).*
