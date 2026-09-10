@@ -60,7 +60,23 @@ const MARCADOR = /\/\/\s*0-linhas-ok:\s*\S+/;
 const ALCANCE = 3;
 
 /**
- * Acha os `delete()` que falam com o BANCO, separando-os dos que mexem em
+ * `[10/09]` A trava passou a cobrir `update()` também.
+ *
+ * Ela nasceu só para `delete()`, e o `update()` ficou registrado no backlog com
+ * o número medido. Ao auditá-los, **oito** não conferiam a contagem, e dois
+ * eram os piores da lista: o item da fila de moderação que podia não sair de
+ * `pending` depois de o conteúdo já ter sido ocultado, e os dois pedidos de
+ * reativação de live, que não checavam **nem `error`, nem contagem**.
+ *
+ * A contagem antiga do backlog dizia "13". O número certo é menor: aquele
+ * `grep` era por LINHA, e chamada quebrada em várias linhas põe o
+ * `{ count: 'exact' }` numa linha diferente da do `.update(` — o
+ * `contatoService.js` já estava correto e foi contado como faltando.
+ */
+const VERBOS = /\.(delete|update)\(/;
+
+/**
+ * Acha as escritas que falam com o BANCO, separando-as das que mexem em
  * `Set`/`Map` — `objectUrls.js` e `dbHealth.js` têm `.delete(x)` que não tem
  * nada a ver com Supabase, e reprovar por eles seria ruído (§0.2, 4ª regra).
  */
@@ -69,7 +85,7 @@ function apagamentosDeBanco(fonte) {
   const linhas = fonte.split('\n');
 
   for (let i = 0; i < linhas.length; i++) {
-    if (!/\.delete\(/.test(linhas[i])) continue;
+    if (!VERBOS.test(linhas[i])) continue;
 
     // A chamada do Supabase é sempre `.from('tabela')` em algum ponto do mesmo
     // encadeamento. Olhar 3 linhas para trás cobre o estilo quebrado em
@@ -77,7 +93,21 @@ function apagamentosDeBanco(fonte) {
     const janela = linhas.slice(Math.max(0, i - ALCANCE), i + 1).join('\n');
     if (!/\.from\(/.test(janela)) continue;
 
-    const confere = /\.delete\(\s*\{[^}]*count:\s*'exact'/.test(linhas[i]);
+    // `update()` recebe os campos primeiro, e o `{ count: 'exact' }` vem como
+    // SEGUNDO argumento — muitas vezes linhas abaixo, quando o objeto de campos
+    // é multilinha. Então a busca precisa olhar um trecho, não a linha.
+    //
+    // **Mas o trecho tem que parar no fim DESTA chamada.** A primeira versão
+    // olhava 14 linhas fixas e por isso não pegava nada: o `count` da chamada
+    // SEGUINTE caía dentro da janela e dava por conferida a chamada anterior.
+    // Reinjetei o bug em `updateReportStatus` e o teste passou — trava que não
+    // falha com o bug presente é decoração (§2). O `;` fecha o statement.
+    const trecho = [];
+    for (let j = i; j < Math.min(linhas.length, i + 14); j++) {
+      trecho.push(linhas[j]);
+      if (linhas[j].includes(';')) break;
+    }
+    const confere = /count:\s*'exact'/.test(trecho.join('\n'));
     const dispensado = linhas
       .slice(Math.max(0, i - ALCANCE), i + 1)
       .some((l) => MARCADOR.test(l));

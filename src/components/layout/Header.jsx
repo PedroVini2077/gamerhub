@@ -58,6 +58,8 @@ export default function Header({ onMenuClick }) {
     const previous = queryClient.getQueryData(notifKey);
     queryClient.setQueryData(notifKey, (old = []) => old.map(x => ({ ...x, read: true })));
 
+    // 0-linhas-ok: nao havia nenhuma nao-lida. A linha e da propria pessoa
+    // (`.eq('user_id', user.id)`), entao a RLS nao tem o que recusar aqui.
     const { error } = await supabase.from('notifications')
       .update({ read: true })
       .eq('user_id', user.id)

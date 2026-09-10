@@ -430,6 +430,107 @@ bom: como nenhuma tela envia esses valores, a faixa não quebrou caminho algum.
 
 `get_advisors` depois da mudança: **nenhum aviso novo**.
 
+## SEC-009 — o UPDATE de conteúdo ignorava a hierarquia que o DELETE respeita
+
+🟠 **Alto.** Explorável por qualquer conta de **staff**, e é escalada
+horizontal de verdade — não é só a tela mentindo, como no SEC-007.
+
+**Provado em `ROLLBACK`**, um admin (rank 2) contra um post do fundador (rank 4):
+
+```
+conteudo="TEXTO TROCADO PELO ADMIN" · oculto=true
+3_rpc_soft_delete  recusado: Sem permissão para excluir este post
+```
+
+O caminho oficial (a RPC) **barrava**, e o `PATCH` direto no PostgREST
+**passava**. O admin não conseguia apagar o post do fundador, mas conseguia
+**reescrever** e **ocultar** — e reescrever é pior, porque é silencioso: o post
+continua no lugar, com outro texto.
+
+### A causa: DELETE e UPDATE discordavam nas três tabelas
+
+| tabela | DELETE | UPDATE (antes) |
+| --- | --- | --- |
+| `posts` | `can_moderate_content(user_id)` | `... OR is_staff()` |
+| `comments` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+| `community_posts` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+
+`can_moderate_content` é `role_rank(quem_chama) > role_rank(autor)` —
+**estrito**, e é o modelo que este projeto escolheu de propósito. `is_staff()` e
+`role_rank >= 2` são planos: qualquer staff alcança qualquer autor, **inclusive
+quem está acima dele**.
+
+É Fase 4 pura: os dois lados corretos por dentro, discordando entre si.
+
+### O caminho até aqui — duas hipóteses minhas que o teste derrubou
+
+Registrado porque é o §1.1 em ação, e as duas eram inferência vestida de fato:
+
+1. **"O admin consegue rebaixar o fundador por `PATCH` em `profiles`"** —
+   `profiles_update` permite `is_staff()` em qualquer linha, e `authenticated`
+   tem `UPDATE` em `role`, `banned` e `suspended_until`. Parecia 🔴. **Testei e
+   falhou**: o `UPDATE` respondeu "1 linha, sem erro" e o cargo **não mudou**. O
+   `guard_profile_privileged_cols` vivo reverte para **todo** chamador
+   `authenticated`, sem condição de rank. Eu havia lido a condição
+   `role_rank < 2` no `guard_post_privileged_cols` — outro guard, outra tabela —
+   e atribuído ao de `profiles`.
+2. **"A correção quebra a edição do autor"** — o primeiro teste da policy nova
+   deu `4_autor_edita_o_proprio → 0 linhas`. Não era a policy: o teste anterior,
+   no **mesmo post**, tinha setado `hidden_at`, e `posts_select` exige rank ≥ 2
+   para enxergar post oculto. O autor não conseguia mais **ler** a linha para
+   atualizá-la. Refeito com um post por cenário, deu `1 — OK`.
+
+O segundo é o gotcha que o `BANCO.md` já documenta (*"contar linhas de tabela
+protegida por RLS enquanto assume um papel sem acesso dá 0 e parece que a
+feature quebrou"*), aplicado a `UPDATE`.
+
+### A correção, e por que as três policies não ficaram iguais
+
+`posts` recebeu exatamente a expressão do `posts_delete`: autor **ou**
+hierarquia. `comments` e `community_posts` **não tinham** o ramo do autor —
+usuário comum não edita comentário neste site — e acrescentá-lo seria mudança de
+comportamento disfarçada de conserto. Elas ficaram com *"é staff **E** (supera o
+autor **ou** é o próprio)"*: o `ou é o próprio` existe porque
+`can_moderate_content(eu_mesmo)` é falso (`rank > rank`), e sem ele o fundador
+perderia a capacidade de ocultar o próprio comentário.
+
+**Não quebra a moderação**, e isso foi medido: ocultar conteúdo é `UPDATE
+hidden_at` direto (`setHiddenAt`), então esta policy **é** o caminho da
+moderação. O que muda é só o alcance.
+
+**Trava:** `hierarquiaNoConteudo.test.js`, que lê a **última** definição de cada
+uma das seis policies nas migrations e exige `can_moderate_content`. Provada
+reinjetando o bug numa migration posterior: dois testes falharam nomeando
+`posts_update`. **O que ela não cobre, dito com todas as letras:** policy trocada
+direto no banco, sem migration.
+
+### Junto: os `update()` que não conferiam a contagem
+
+Mesma varredura de classe do SEC-007, agora do lado do `UPDATE`. **Seis
+corrigidos**, e dois eram graves:
+
+- `moderation_queue` — o conteúdo era ocultado e o item podia **não sair de
+  `pending`**. Voltava para a fila no carregamento seguinte, já tratado, e o
+  moderador tratava de novo;
+- os dois pedidos de reativação de live — não conferiam **nem `error`, nem
+  contagem**. A live era reativada e o pedido continuava `pending`.
+
+Mais `game_keys`, `reports`, `profiles` (perfil e preferência de notificação) e
+`posts`. O de `notifications` (marcar tudo como lido) ficou com o marcador
+`0-linhas-ok`: a linha é da própria pessoa e 0 significa "nada não lido".
+
+> **Correção de um número meu.** O `BACKLOG.md` dizia **13** `update()` sem
+> contagem. Estava errado: aquele `grep` era por LINHA, e chamada quebrada em
+> várias linhas põe o `{ count: 'exact' }` numa linha diferente da do
+> `.update(` — o `contatoService.js`, que já estava correto, foi contado como
+> faltando. O número real de corrigidos é **6**.
+>
+> O mesmo defeito estava dentro da trava: ao estendê-la para `update()`, a busca
+> olhava 14 linhas fixas e o `count` da chamada **seguinte** dava a anterior por
+> conferida. Reinjetei o bug e o teste **passou** — decoração, não trava (§2).
+> Agora o trecho para no `;` que fecha o statement, e a reinjeção falha nomeando
+> `src/services/moderationService.js:31`.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
@@ -454,9 +555,10 @@ CONSEGUI PROVAR"*.
   próximo carregamento, o rebaixado veria a interface (sem conseguir executar
   nada — o banco nega). Isso é comportamento de front, e exige teste de
   navegador com duas sessões;
-- os **13 `update()`** de `src/` sem `count: 'exact'`. São a mesma classe do
-  SEC-007 e o número é conhecido; auditá-los um a um é bloco próprio, e está no
-  `BACKLOG.md` com o número escrito. **Não** foram verificados.
+- se algum staff **reescreveu conteúdo alheio antes de 10/09**. A brecha existiu
+  e não dá para saber pela trilha: `log_post_event` grava a edição com
+  `actor_id := NEW.user_id`, ou seja, **atribuída ao autor**, não a quem editou.
+  Está no `BACKLOG.md`.
 
 Do que estava nesta lista na versão anterior, saíram duas frentes: o fluxo de
 **moderação de conteúdo** (§14 do prompt 2), que produziu o SEC-007, e **RPC

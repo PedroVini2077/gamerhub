@@ -128,6 +128,30 @@
   **cargo** do JWT. A varredura por `request.jwt`/`auth.jwt()` em `pg_proc` e
   `pg_policies` achou só `notify_admin_new_live`, que lê o `sub` (identidade,
   não papel). Um rebaixamento vale na chamada seguinte, sem esperar refresh.
+- **`[10/09]` Escrever em conteúdo alheio passou a respeitar a hierarquia**
+  (SEC-009). 🟠 As três tabelas de conteúdo tinham `DELETE` com hierarquia
+  estrita e `UPDATE` com cargo **plano**:
+
+  | tabela | DELETE | UPDATE (antes) |
+  | --- | --- | --- |
+  | `posts` | `can_moderate_content(user_id)` | `... OR is_staff()` |
+  | `comments` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+  | `community_posts` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+
+  Medido em `ROLLBACK`: um admin **reescreveu e ocultou** um post do fundador
+  por `PATCH` direto, enquanto o `soft_delete_post` recusava o mesmo post. O
+  caminho oficial barrava e o PostgREST passava.
+
+  Hoje as seis usam `can_moderate_content`. A moderação continua alcançando quem
+  está abaixo — ocultar é `UPDATE hidden_at`, então esta policy **é** o caminho
+  da moderação; o que mudou foi só o alcance. Trava:
+  `hierarquiaNoConteudo.test.js`.
+
+  **Verificado no caminho e passou:** `profiles` **não** tem a mesma brecha. O
+  `guard_profile_privileged_cols` reverte `role`, `banned` e `suspended_until`
+  para **todo** chamador `authenticated`, sem condição de cargo — testado com um
+  admin tentando rebaixar, banir e se autopromover: os três `UPDATE` responderam
+  "1 linha, sem erro" e **nada mudou**.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

@@ -98,6 +98,20 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   suspendia até o ano 2126 e nem o fundador desfazia — o trigger-guarda revertia
   o `UPDATE` manual em silêncio, virando banimento permanente que pulava toda a
   hierarquia do ban.
+- **`[10/09]` Ocultar conteúdo respeita a hierarquia — antes, não respeitava.**
+  Ocultar é `UPDATE hidden_at` direto (`setHiddenAt`), então quem decide o
+  alcance da moderação é a policy de `UPDATE` da tabela. As três tinham `DELETE`
+  com hierarquia estrita e `UPDATE` com cargo **plano** (`is_staff()` /
+  `role_rank >= 2`), e a diferença deixava um `admin` **reescrever e ocultar um
+  post do fundador** por `PATCH` direto, enquanto o `soft_delete_post` recusava
+  o mesmo post. Hoje as seis usam `can_moderate_content`, que é
+  `role_rank(quem_modera) > role_rank(autor)`.
+
+  **O que isso muda na prática:** staff modera quem está **abaixo**, nunca quem
+  está no mesmo nível ou acima — a mesma regra que o ban e o `soft_delete` já
+  seguiam. Um `admin` não oculta conteúdo de outro `admin`; quem faz isso é um
+  `super_admin` ou o fundador. Detalhes e as medições em
+  [SEGURANCA.md](SEGURANCA.md) (SEC-009).
 - **Conteúdo apagado limpa a fila sozinho** (trigger `AFTER DELETE` nas quatro
   tabelas de conteúdo): sem isso, banir alguém deixava os itens dele `pending`
   apontando para linhas mortas, sem jeito de sair da tela. Fica na tabela e não

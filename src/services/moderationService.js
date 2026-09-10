@@ -24,7 +24,13 @@ export async function fetchReports({ status = null, contentType = null } = {}) {
 }
 
 export async function updateReportStatus(reportId, status) {
-  return from(await supabase.from('reports').update({ status }).eq('id', reportId));
+  // `[10/09]` A denúncia sumia da fila na tela e voltava no próximo
+  // carregamento, porque a RLS negava sem erro (0 linhas).
+  return fromCount(
+    await supabase.from('reports')
+      .update({ status }, { count: 'exact' }).eq('id', reportId),
+    'Não foi possível atualizar a denúncia — sem permissão, ou ela já não existe.',
+  );
 }
 
 // ─── Moderation Queue ─────────────────────────────────────────────────────────
@@ -57,11 +63,15 @@ export async function resolveQueueItem(queueId, decision, contentType, contentId
     if (res.error) return res;
   }
 
-  return from(await supabase.from('moderation_queue').update({
+  // `[10/09]` O conteúdo era ocultado/restaurado acima e o item da fila podia
+  // NÃO sair de `pending` — 0 linhas, nenhum erro. O item voltava para a fila no
+  // próximo carregamento, já com a ação aplicada: o moderador tratava de novo.
+  return fromCount(await supabase.from('moderation_queue').update({
     status: decision,
     reviewed_by: userId,
     reviewed_at: new Date().toISOString(),
-  }).eq('id', queueId));
+  }, { count: 'exact' }).eq('id', queueId),
+  'O conteúdo foi tratado, mas o item não pôde ser baixado da fila.');
 }
 
 // Enfileira manualmente (ex: admin oculta via wordlist)

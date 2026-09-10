@@ -172,9 +172,13 @@ export async function updatePost(postId, { content, isLive, wasLive }, userId, i
     is_live: isLive,
     was_live: wasLive,
     edited_at: new Date().toISOString(),
-  }).eq('id', postId);
+  }, { count: 'exact' }).eq('id', postId);
   if (!isAdmin) q = q.eq('user_id', userId);
-  return from(await q);
+  // `[10/09]` Sem a contagem, a RLS recusando virava "Post editado!" com o
+  // texto antigo na tela até o próximo carregamento. E `isAdmin` vem do
+  // CLIENTE: ele só tira o filtro `.eq('user_id')` — quem decide de verdade é a
+  // policy `posts_update`, que desde o SEC-009 exige hierarquia estrita.
+  return fromCount(await q, 'Não foi possível editar este post.');
 }
 
 export async function softDeletePost(postId) {

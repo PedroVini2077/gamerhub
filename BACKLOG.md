@@ -141,6 +141,14 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   aceitos, cargo virou `admin`, revisão para 12020-01-20. Faixa de 7–180 dias
   (extensão 1–90, total 365) **e** `CHECK` no banco — a trava que torna o dado
   errado impossível, e que sobrevive a alguém reescrever a função.
+- ✅ **SEC-009 · o UPDATE de conteúdo ignorava a hierarquia que o DELETE
+  respeita** — **FECHADO**. 🟠 O mais sério do dia: um admin **reescreveu e
+  ocultou** um post do fundador por `PATCH` direto, enquanto o
+  `soft_delete_post` recusava o mesmo post por falta de permissão. As três
+  tabelas de conteúdo tinham `DELETE` com hierarquia estrita e `UPDATE` com
+  cargo plano (`is_staff()` / `role_rank >= 2`). Corrigido nas seis policies,
+  cada cenário testado em `ROLLBACK` (moderação segue viva, autor segue
+  editando). Trava `hierarquiaNoConteudo.test.js`.
 
 > **A auditoria CONTINUA.** As três primeiras frentes fecharam, mas o piso do
 > §6 pede muito mais: as **48 funções alcançáveis** uma a uma, as **12 policies
@@ -154,19 +162,26 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 aqui, e não corrigidos junto, porque o §21 do protocolo proíbe expandir tarefa
 por oportunidade — e nenhum deles é brecha.*
 
-- ⬜ `[10/09]` 🟠 **13 `update()` em `src/` não conferem quantas linhas
-  mudaram.** É a **mesma classe** do SEC-007, que foi fechado do lado do
-  `delete()`: a RLS recusa devolvendo 0 linhas e **nenhum erro**, e a tela diz
-  que salvou.
+- ✅ `[10/09]` 🟠 **Os `update()` que não conferiam quantas linhas mudaram** —
+  **FECHADO**, junto do SEC-009. **6 corrigidos**, sendo dois graves: o item da
+  fila de moderação podia não sair de `pending` depois de o conteúdo já ter sido
+  ocultado (voltava para a fila e era tratado de novo), e os dois pedidos de
+  reativação de live não conferiam **nem `error`, nem contagem**.
 
-  **O número é medido, não estimado:** 16 chamadas de `update()` em `src/`,
-  **3** com `count: 'exact'`, 13 sem. Não foram auditadas uma a uma — cada uma
-  precisa da mesma classificação que os `delete()` levaram (0 linhas é falha, ou
-  é o caso legítimo de "a linha já não existe"?), e isso é bloco próprio.
+  **O número "13" desta linha estava errado, e é correção minha:** o `grep` era
+  por LINHA, e chamada quebrada em várias linhas põe o `{ count: 'exact' }` numa
+  linha diferente da do `.update(`. O `contatoService.js` já estava certo e foi
+  contado como faltando.
 
-  Quando for feito, a trava tem que **crescer** em vez de nascer de novo:
-  `apagarConfereLinhas.test.js` já varre a árvore e já tem o marcador de
-  dispensa com motivo obrigatório.
+- ⬜ `[10/09]` 🟡 **A trilha atribui ao AUTOR a edição feita por outra pessoa.**
+  `log_post_event` grava `actor_id := NEW.user_id` no `UPDATE` e
+  `OLD.user_id` no `DELETE` — então staff editando ou apagando post alheio
+  aparece na trilha como se o **próprio autor** tivesse feito.
+
+  É a mesma família do SEC-007 (a trilha não pode mentir), e ficou de fora
+  daquele conserto porque é mudança de **trigger**, não de tela. Consequência
+  prática hoje: não dá para auditar se alguém usou a brecha do SEC-009 antes de
+  ela ser fechada.
 
 - ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
   diferentes: `liveService.unsilenceUser({postId, userId})` e
@@ -928,10 +943,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->100<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.347<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.503<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.793<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.820<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
