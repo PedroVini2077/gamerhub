@@ -21,6 +21,8 @@ maior descoberta do dia **não estava em nenhum deles**.
 | SEC-001 | `game_keys.key_code` legível **sem conta** | 🟠 | **FECHADO** |
 | SEC-002 | `SEGURANCA.md` afirmando o que deixou de ser verdade | 🔵 | **FECHADO** |
 | SEC-003 | `TRUNCATE` para `anon` em 27 de 29 tabelas | 🟠 | **FECHADO** |
+| SEC-004 | a wordlist inteira legível sem conta | 🔵 | **FECHADO** |
+| SEC-005 | `site_config.updated_by` legível por `anon` | 🔵 | **FECHADO** |
 
 ### SEC-001 — a contradição entre a tela e a policy
 
@@ -92,13 +94,27 @@ Ela roda sem erro, sem aviso, e deixa a falha aberta. Sem o teste em `ROLLBACK`
 exigido pelo §5, eu teria declarado o SEC-001 corrigido com ele intacto — e o
 relatório diria "fechado".
 
+## As 12 policies `USING (true)` — auditadas
+
+**Nenhuma é vulnerabilidade por si, e o motivo importa:** as 12 são **SELECT**.
+Não existe **nenhuma** `WITH CHECK (true)` em tabela com `user_id`, `role`,
+`status` ou `approved` — que era o alerta principal do §20 do prompt.
+
+O que decide o que vaza, no desenho deste projeto, é o **grant de coluna**: a
+policy libera a linha, o grant decide o que se lê dela. Foi olhando por essa
+lente que saíram o SEC-001, o SEC-004 e o SEC-005.
+
+**Uma constatação que muda a leitura de tudo:** `user_id` e `created_by` são
+legíveis por `anon` em 8 das 10 tabelas restantes — **mas `profiles` está
+fechado para `anon`**, então UUID não vira nome. A cadeia de identificação está
+quebrada, e é isso que rebaixa esses casos de 🟡 para ruído.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
 CONSEGUI PROVAR"*.
 
 - as **48 funções alcançáveis** pelo cliente, uma a uma, com as 30 perguntas;
-- as **12 policies com `USING (true)`** — só `game_keys` foi olhada;
 - os fluxos de **role, ban, suspensão e moderação** (§10 a §14 do prompt 2);
 - **IDOR/BOLA** função a função;
 - **upsert**, **mass assignment**, **RPC chaining**, **confused deputy**;

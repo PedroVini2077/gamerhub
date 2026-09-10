@@ -1,0 +1,51 @@
+-- `[10/09]` SEC-004 e SEC-005 — o que `anon` lia sem precisar.
+--
+-- Achados na varredura das 12 policies `USING (true)`. Nenhuma delas é
+-- vulnerabilidade por si: **todas as 12 são SELECT**, e nenhuma é
+-- `WITH CHECK (true)` em tabela com `user_id`/`role`/`status`, que era o alerta
+-- principal. O que decide o que vaza, no desenho deste projeto, é o **grant de
+-- coluna** — a policy libera a linha, o grant decide o que se lê dela.
+--
+-- ── SEC-004 · a wordlist inteira era pública ────────────────────────────────
+--
+-- `anon` lia `blocked_words` — 322 palavras com a severidade de cada uma. Quem
+-- não tem conta ganhava o mapa exato do que o filtro pega e como contorná-lo.
+--
+-- **Quem realmente lê, verificado no código:** `useBlockedWords` (avisa antes
+-- de publicar) e `WordlistManager` (moderação). Os dois exigem conta — visitante
+-- anônimo não publica. Então `anon` nunca precisou disto.
+--
+-- Severidade 🔵: é defesa em profundidade. A wordlist não é segredo de
+-- autenticação, e o filtro de verdade roda no banco (trigger), não no cliente.
+-- Mas superfície que não serve a ninguém é superfície que se fecha (§38).
+--
+-- ── SEC-005 · `site_config.updated_by` fecha a cadeia UUID -> pessoa ────────
+--
+-- Este estava **aberto no BACKLOG.md desde 01/09**, como item 🔵/🟡, esperando
+-- decisão. A conferência de 02/09 tinha apurado que `site_config` era a única
+-- tabela que ligava um UUID de staff a uma pessoa — porque `profiles(id,
+-- username)` era legível por `anon` e a cadeia fechava.
+--
+-- **Duas coisas mudaram desde então**, e é por isso que dá para fechar agora
+-- sem decisão nova:
+--
+--   1. `profiles` foi revogado de `anon` por inteiro — o UUID já não vira nome;
+--   2. as telas que leem `site_config` sem conta (`FeatureGate`, `GlobalBanner`,
+--      `MaintenancePage`) leem `key` e `value`. **Nenhuma lê `updated_by`.**
+--
+-- Então o revoke fecha o item sem custo e sem risco de repetir as três quedas
+-- do site por revoke bem-intencionado (docs/regras/POSTURA.md): desta vez a
+-- dependência foi conferida no CÓDIGO DO CLIENTE, que é justamente onde a
+-- consulta de "quem lê" falhava.
+--
+-- ── Validado em ROLLBACK antes de aplicar ───────────────────────────────────
+--
+--   anon          -> wordlist FECHADA · updated_by FECHADO · 14 flags OK
+--   authenticated -> 322 palavras OK · 14 configs OK
+--
+-- A landing continua funcionando: ela precisa de `key` e `value`, e os dois
+-- ficam.
+REVOKE SELECT ON public.blocked_words FROM anon;
+
+REVOKE SELECT ON public.site_config FROM anon;
+GRANT SELECT (key, value, updated_at) ON public.site_config TO anon;

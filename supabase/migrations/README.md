@@ -1,6 +1,6 @@
 # Migrations
 
-**Esta pasta é a verdade sobre o schema.** As <!--n:migrations-->161<!--/n-->
+**Esta pasta é a verdade sobre o schema.** As <!--n:migrations-->162<!--/n-->
 migrations aqui, aplicadas em ordem de nome, reconstroem o banco do zero.
 
 ## Por que ela existe

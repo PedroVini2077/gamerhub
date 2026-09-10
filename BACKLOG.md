@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**32 itens abertos** (+ 1 ideia sem compromisso)
+**31 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -115,6 +115,12 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 - ✅ **SEC-003 · `TRUNCATE` concedido a `anon` em 27 de 29 tabelas** —
   **FECHADO**. Migration `revogar_truncate_de_anon_e_authenticated`, com
   `ALTER DEFAULT PRIVILEGES` para as tabelas futuras.
+- ✅ **SEC-004 · a wordlist inteira era legível sem conta** (322 palavras com a
+  severidade — o mapa de como contornar o filtro) — **FECHADO**. 🔵
+- ✅ **SEC-005 · `site_config.updated_by` legível por `anon`** — **FECHADO**, e
+  com ele o item 🔵 que estava **aberto no backlog desde 01/09**. Deu para
+  fechar sem decisão nova porque duas coisas mudaram: `profiles` foi revogado de
+  `anon` (o UUID já não vira nome) e nenhuma tela pública lê essa coluna.
 
 > **A auditoria CONTINUA.** As três primeiras frentes fecharam, mas o piso do
 > §6 pede muito mais: as **48 funções alcançáveis** uma a uma, as **12 policies
@@ -664,53 +670,6 @@ dependência técnica real** que decide o resto:
   regressão deste projeto, e este ambiente renderiza WebGL por software — não dá
   para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
   no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
-
-- ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em `site_config.updated_by`.**
-  *`[03/09]` **Rebaixado de 🟡 para 🔵** — a metade grave foi fechada, e o que
-  sobrou é o item original, agora com a justificativa CERTA.*
-
-  **O que foi fechado em 03/09:** a cadeia que ligava o UUID a uma pessoa.
-  `profiles?select=id,username` devolvia as 5 linhas e transformava
-  `site_config.updated_by` num nome. Hoje responde **401** — a checagem de
-  username do cadastro virou a RPC `username_disponivel`, e o `SELECT` de `anon`
-  em `profiles` foi revogado. Conferido na produção, depois do merge.
-
-  **O que sobra:** `site_config.updated_by` continua legível, e agora é
-  **de fato** só um UUID sem nome — que era o que o item dizia em 01/09, só que
-  na época era falso. Impacto real: ligar mudanças de config a *uma* conta, sem
-  saber qual.
-
-  > **Por que a justificativa antiga era falsa, e vale guardar.** Ela dizia
-  > *"`profiles` responde 401 ao anônimo"*. O 401 valia para `select=*` —
-  > privilégio no Postgres é **por coluna**, e um `select=*` negado prova apenas
-  > que *alguma* coluna está fechada. O portão `portas-do-banco.mjs` cometia o
-  > mesmo erro e por isso dava verde; desde 02/09 ele sonda **coluna a coluna**.
-
-  **`blocked_words.created_by`** é lida pelo anônimo mas está **nula nas 322
-  linhas** — vaza estrutura, não dado.
-
-  **A dependência já está checada** (a consulta de "quem lê" do
-  [POSTURA.md](docs/regras/POSTURA.md)): **nenhuma policy** usa
-  `updated_by`/`created_by`, e a única função que os toca é
-  `owner_set_site_config`, `SECURITY DEFINER`, que não passa por esses
-  privilégios. O `REVOKE` das duas colunas é seguro — só não é urgente.
-
-  > **A lição que ficou, e é a mais cara desta rodada.** Eu propus revogar
-  > `id`/`username` dizendo que a dependência estava checada. Estava — mas a
-  > consulta de "quem lê" procura **policy e função no banco**, e quem lia era
-  > **o cliente**: o cadastro. O revoke teria sido a **quarta** queda do site
-  > por revoke bem-intencionado. A consulta do POSTURA.md precisa incluir
-  > `grep` no `src/`, e não só o Postgres.
-
-  **Bônus a decidir junto:** a lista inteira de 322 palavras bloqueadas é
-  pública. É consequência do filtro rodar no cliente, não descuido — mas entrega
-  o dicionário exato a quem quiser burlar. Vale registrar como decisão em
-  `DECISOES.md`, ou mudar de abordagem.
-
-  **Defesa em profundidade, sem pressa:** `anon` tem privilégio de INSERT/UPDATE
-  em quase toda coluna de `profiles`, `site_config` e `blocked_words`. A RLS
-  nega tudo (sondado: 0 linhas afetadas, e nada entrou), então não está aberto —
-  mas privilégio que ninguém usa é superfície que ninguém revisa.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não

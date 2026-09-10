@@ -268,6 +268,31 @@ const SUPERFICIE_ANONIMA = {
   // de coluna e irrelevante. A primeira tentativa rodou SEM ERRO e nao mudou
   // nada — so o teste em ROLLBACK pegou. A correcao e derrubar o grant de
   // tabela e reconceder coluna a coluna.
+  // `[10/09]` SEC-004 e SEC-005 — a superficie anonima que nao servia a ninguem.
+  //
+  // A wordlist inteira (322 palavras + severidade) era legivel SEM CONTA: o
+  // mapa exato do que o filtro pega. Quem le de verdade e `useBlockedWords`
+  // (aviso antes de publicar) e o `WordlistManager` — os dois exigem conta.
+  blocked_words: {
+    pode: [],
+    naoPode: ['word', 'severity', 'created_by'],
+    estrago: 'a wordlist inteira, com a severidade de cada palavra — o mapa de '
+      + 'como contornar o filtro',
+  },
+
+  // `site_config.updated_by` estava ABERTO no backlog desde 01/09. Fechou
+  // agora porque duas coisas mudaram: profiles foi revogado de anon (o UUID ja
+  // nao vira nome) e nenhuma das telas publicas le essa coluna.
+  //
+  // `key` e `value` PRECISAM continuar abertos: FeatureGate, GlobalBanner e
+  // MaintenancePage rodam para o visitante. Estao em `pode` para pegar a queda
+  // silenciosa — um revoke amplo que feche a landing junto.
+  site_config: {
+    pode: ['key', 'value'],
+    naoPode: ['updated_by'],
+    estrago: 'o UUID de quem mexeu na configuracao do site',
+  },
+
   game_keys: {
     // A vitrine continua publica de proposito: o problema era o segredo, e o
     // §22 manda a MENOR alteracao que o resolve. Estas colunas aqui existem
