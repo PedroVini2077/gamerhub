@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**34 itens abertos** (+ 1 ideia sem compromisso)
+**32 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -104,48 +104,23 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 
 ---
 
-## 🔴 ACHADO DE SEGURANÇA ABERTO — `[10/09]`
+## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
-- ⬜ `[10/09]` 🟠 **SEC-001 · `game_keys.key_code` é legível SEM CONTA.**
-  *Estado: **CONFIRMADO**, reproduzido em `ROLLBACK` assumindo o papel `anon`.
-  **Espera decisão de produto do dono para fechar.***
+- ✅ **SEC-001 · `game_keys.key_code` legível sem conta** — **FECHADO**.
+  Migration `key_code_deixa_de_ser_legivel_sem_conta`, trava em
+  `e2e/portas-do-banco.mjs`. Reproduzido antes, reconferido depois.
+- ✅ **SEC-002 · `SEGURANCA.md` afirmava que `anon` via `(id, username)` de
+  `profiles`** — **FECHADO**. Já não era verdade; texto corrigido com a
+  evidência (`information_schema.column_privileges`).
+- ✅ **SEC-003 · `TRUNCATE` concedido a `anon` em 27 de 29 tabelas** —
+  **FECHADO**. Migration `revogar_truncate_de_anon_e_authenticated`, com
+  `ALTER DEFAULT PRIVILEGES` para as tabelas futuras.
 
-  | Camada | O que ela faz |
-  | --- | --- |
-  | policy `Public keys` | `SELECT` para `{public}` com `USING (true)` — todas as linhas |
-  | grant de coluna | `anon` lê `key_code` (uma das 9 colunas concedidas) |
-  | dados reais | **3 linhas** com `is_promo = false` e `key_code` preenchido (até 22 caracteres) |
-  | `components/admin/KeysPanel.jsx` | o campo *"Código da key"* só aparece **quando não é promo** — `key_code` é a chave de verdade do jogo |
-  | `components/layout/RightPanel.jsx` | quem exibe a key é o painel do **site logado** |
-
-  **A contradição que define o achado:** a interface exige login para ver a
-  chave; **a policy não exige nada**. Um `curl` no endpoint REST devolve as três.
-
-  **Por que o filtro do frontend não protege:** existe `select('*')` em
-  `hooks/useAdminData.js` e a decisão do que mostrar acontece no JavaScript.
-  Decidir segredo no cliente nunca protegeu nada (§1.3) — quem usa o endpoint
-  direto não passa pelo nosso código.
-
-  **Severidade 🟠 e não 🔴:** não compromete conta nem escala privilégio. Mas é
-  exposição de segredo real, e o dono marcou como prioridade alta se existisse.
-
-  **Amostra mascarada**, conforme a ordem dele de nunca expor chave real:
-  `CY******************`. Nenhuma chave foi copiada para lugar nenhum.
-
-  **O que falta para fechar, e é decisão DELE, não minha:** quem deve poder ver
-  `key_code` — qualquer pessoa logada, ou só a equipe? A correção é migration
-  nova separando promo de não-promo na policy, mais regressão provando que
-  `anon` deixa de ler.
-
-- ⬜ `[10/09]` 🔵 **SEC-002 · o `SEGURANCA.md` afirma algo que deixou de ser
-  verdade.** *Estado: CONFIRMADO (documentação), não é brecha.*
-
-  Ele diz que **`anon` enxerga `(id, username)` de `profiles`**. Hoje `anon`
-  **não tem `SELECT` nenhum** em `profiles` — a checagem de username no cadastro
-  migrou para a RPC `username_disponivel`, e o texto ficou para trás. Confirmar o
-  caminho antes de corrigir o texto (§6.2, camada 3).
-
----
+> **A auditoria CONTINUA.** As três primeiras frentes fecharam, mas o piso do
+> §6 pede muito mais: as **48 funções alcançáveis** uma a uma, as **12 policies
+> com `USING (true)`**, os fluxos de role/ban/moderação, IDOR, upsert, mass
+> assignment e o isolamento de sessão. O que já foi apurado está em
+> `db/2026-09-10-auditoria-seguranca.md`.
 
 ## 🎯 O BLOCO DE 10/09 — o que o dono mandou de uma vez
 

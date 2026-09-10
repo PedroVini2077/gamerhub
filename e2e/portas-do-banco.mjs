@@ -251,6 +251,33 @@ const SUPERFICIE_ANONIMA = {
     estrago: 'a lista de todos os usuarios, com o UUID e o nome de cada um — o '
       + 'que liga site_config.updated_by a uma pessoa',
   },
+
+  // `[10/09]` SEC-001, achado e fechado na auditoria de seguranca.
+  //
+  // `key_code` era legivel SEM CONTA: a policy `Public keys` e SELECT para
+  // {public} com USING (true), e a coluna estava no grant de `anon`. Provado
+  // assumindo o papel anon em ROLLBACK — 3 chaves reais, as de is_promo=false.
+  //
+  // A contradicao que definia o achado: a TELA exige login (`/keys` esta atras
+  // de RequireAuth, o RightPanel so existe logado), e a POLICY nao exigia nada.
+  // O filtro `!k.is_promo` acontecia no JavaScript, sobre um `select('*')` —
+  // e quem chama o REST direto nao passa pelo nosso codigo (§1.3).
+  //
+  // CUIDADO ao "consertar" isso com REVOKE de coluna: nao funciona. Enquanto
+  // existir grant no nivel de TABELA, ele cobre todas as colunas e o privilegio
+  // de coluna e irrelevante. A primeira tentativa rodou SEM ERRO e nao mudou
+  // nada — so o teste em ROLLBACK pegou. A correcao e derrubar o grant de
+  // tabela e reconceder coluna a coluna.
+  game_keys: {
+    // A vitrine continua publica de proposito: o problema era o segredo, e o
+    // §22 manda a MENOR alteracao que o resolve. Estas colunas aqui existem
+    // para pegar a QUEDA SILENCIOSA — um revoke amplo que feche a vitrine
+    // junto deixaria este teste verde sem elas.
+    pode: ['id', 'game_title', 'platform', 'is_promo', 'discount_percent'],
+    naoPode: ['key_code'],
+    estrago: 'as chaves de jogo de verdade — o campo que o painel so mostra '
+      + 'quando a linha NAO e promocao',
+  },
 };
 
 for (const [tabela, { pode, naoPode, estrago }] of Object.entries(SUPERFICIE_ANONIMA)) {

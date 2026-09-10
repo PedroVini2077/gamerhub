@@ -71,6 +71,16 @@ export const TERRITORIO = {
     'src/lib/realtimeTables.js',
     'src/lib/tabelasSemUpdate.js',
   ],
+  // `[10/09]` A pasta da identidade visual. O território dela é o que EXIBE a
+  // marca — se o favicon, o manifesto ou o componente do logo mudarem, o índice
+  // das referências precisa ser reconferido. As artes em si são referência
+  // artística e não mudam sozinhas; o que envelhece é a relação entre elas e o
+  // que o site realmente usa.
+  'docs/identidade/README.md': [
+    'index.html',
+    'public',
+  ],
+
   'docs/SEGURANCA.md': [
     'supabase/functions',
     'src/hooks/useAuth.jsx',

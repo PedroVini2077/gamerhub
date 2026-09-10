@@ -65,7 +65,34 @@
   **uma** barra: `//host`, `/\host`, `/%2f%2fhost`, esquema absoluto e caractere
   de controle são recusados, e o botão cai na landing. Trava:
   `voltarNaoEhRedirecionador.test.jsx`, provada reinjetando a checagem ingênua.
-- **`anon` só enxerga `(id, username)` de `profiles`** — o suficiente para a
+- **`[10/09]` `anon` NÃO enxerga NADA de `profiles`.** Esta linha dizia que ele
+  via `(id, username)`, e **deixou de ser verdade**: a checagem de username
+  duplicado no cadastro virou a RPC `username_disponivel`, que responde a mesma
+  pergunta sem devolver a lista de perfis, e o grant foi revogado. Conferido no
+  `information_schema.column_privileges` — `anon` não aparece para `profiles`.
+  O parágrafo abaixo fica como **histórico**, porque explica por que o desenho é
+  por RPC e não por RLS.
+- **`[10/09]` `game_keys.key_code` deixou de ser legível sem conta** (SEC-001).
+  A policy `Public keys` é `SELECT` para `{public}` com `USING (true)` e a
+  coluna estava no grant de `anon` — 3 chaves reais eram coletáveis por qualquer
+  pessoa da internet. A vitrine (jogo, plataforma, desconto, link) continua
+  pública **de propósito**; só o código saiu. Trava: `game_keys` em
+  `SUPERFICIE_ANONIMA`, em `e2e/portas-do-banco.mjs`.
+
+  > **A armadilha que quase me enganou, e ela vale para qualquer revoke daqui
+  > em diante:** `REVOKE SELECT (coluna)` **não faz nada** enquanto existir
+  > grant no nível de TABELA — o grant de tabela cobre todas as colunas. A
+  > primeira tentativa rodou sem erro e a falha continuou aberta; só o teste em
+  > `ROLLBACK` pegou. O certo é derrubar o grant de tabela e reconceder coluna a
+  > coluna.
+- **`[10/09]` `TRUNCATE` foi revogado de `anon` e `authenticated`** (SEC-003).
+  Estava concedido em **27 de 29 tabelas**, e **RLS não se aplica a TRUNCATE** —
+  provado: `anon` truncou `game_keys` de 6 para 0 linhas. Não era 🔴 porque o
+  PostgREST não expõe esse verbo e o `DELETE`, que ele expõe, foi testado nas 29
+  tabelas e apagou zero (a RLS segurou). Era **defesa em profundidade zero**. A
+  origem não é código nosso: é o grant padrão do template do Supabase. O
+  `ALTER DEFAULT PRIVILEGES` fecha para as tabelas que ainda vão nascer.
+- *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por
   coluna; a restrição correta aqui é privilégio de coluna.
