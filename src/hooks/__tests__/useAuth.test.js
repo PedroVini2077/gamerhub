@@ -8,7 +8,7 @@ import { join } from 'node:path';
  * ── O que motivou ──────────────────────────────────────────────────────────
  *
  * O dono relatou demora ao clicar em "Sair agora" na `BannedScreen`. A causa
- * foi **medida**, não suposta: `signOutBanned` esperava
+ * foi **medida**, não suposta: `encerrarSessaoDeBanido` esperava
  * `supabase.auth.signOut()` no escopo global — uma ida ao servidor para
  * revogar refresh tokens — antes de trocar de página. Cinco medições contra o
  * projeto de produção deram **0,30 s a 1,08 s**, a partir de um datacenter com
@@ -18,7 +18,7 @@ import { join } from 'node:path';
  *
  * | Caminho | Escopo | Por quê |
  * | --- | --- | --- |
- * | `signOutBanned` | `local` | a conta está banida: o token não abre nada, a RLS nega tudo, e a sessão que reaparecer cai na `BannedScreen` de novo |
+ * | `encerrarSessaoDeBanido` | `local` | a conta está banida: o token não abre nada, a RLS nega tudo, e a sessão que reaparecer cai na `BannedScreen` de novo |
  * | `signOut` (botão "Sair") | global (padrão) | usuário legítimo, possivelmente em aparelho compartilhado — revogar de verdade importa |
  *
  * Trocar qualquer um dos dois é regressão silenciosa: ninguém vê, o site
@@ -34,24 +34,28 @@ import { join } from 'node:path';
  */
 
 const FONTE = readFileSync(
-  join(import.meta.dirname, '../useAuth.jsx'), 'utf8',
+  join(import.meta.dirname, '../saidasDaSessao.js'), 'utf8',
 );
 
 /** O corpo de uma função declarada no arquivo. */
+// `[10/09]` O extrator passou a aceitar PARAMETRO e o `export`. As duas saidas
+// foram para `saidasDaSessao.js` quando o §4 mandou dividir o useAuth, e la
+// elas recebem o que precisam por argumento em vez de ler estado — entao
+// `async function nome()` com parenteses vazios deixou de casar.
 function corpoDe(nome) {
-  const m = FONTE.match(new RegExp(`async function ${nome}\\(\\)[\\s\\S]*?\\n  \\}`));
+  const m = FONTE.match(new RegExp(`export async function ${nome}\\([\\s\\S]*?\\n\\}`));
   return m ? m[0] : '';
 }
 
 describe('useAuth — os dois logouts', () => {
   it('acha as duas funções (guarda contra o regex quebrar em silêncio)', () => {
-    expect(corpoDe('signOut'), 'não achei signOut').toContain('supabase.auth.signOut');
-    expect(corpoDe('signOutBanned'), 'não achei signOutBanned').toContain('window.location');
+    expect(corpoDe('encerrarSessao'), 'não achei signOut').toContain('supabase.auth.signOut');
+    expect(corpoDe('encerrarSessaoDeBanido'), 'não achei encerrarSessaoDeBanido').toContain('window.location');
   });
 
   it('o logout do BANIDO usa escopo local — não espera a rede', () => {
     expect(
-      corpoDe('signOutBanned'),
+      corpoDe('encerrarSessaoDeBanido'),
       'O logout do banido voltou a esperar a ida ao servidor.\n'
       + 'Medido em 28/08: 0,30 s a 1,08 s de datacenter, muito pior no 4G — e a\n'
       + 'tela fica parada esse tempo todo depois do clique em "Sair agora".\n'
@@ -62,14 +66,14 @@ describe('useAuth — os dois logouts', () => {
 
   it('o logout do banido troca de página logo depois', () => {
     expect(
-      corpoDe('signOutBanned'),
+      corpoDe('encerrarSessaoDeBanido'),
       'sem o redirect, a tela de banido continuaria montada sobre uma sessão morta',
     ).toMatch(/window\.location\.replace\('\/'\)/);
   });
 
   it('a saída do banido vai para a LANDING, nunca para o /login', () => {
     expect(
-      corpoDe('signOutBanned'),
+      corpoDe('encerrarSessaoDeBanido'),
       'A landing é a porta de entrada e a única página que não depende do banco.\n'
       + 'Mandar quem acabou de ser recusado para o formulário de login sugere\n'
       + 'tentar de novo o que não vai dar certo.',
@@ -100,7 +104,7 @@ describe('useAuth — os dois logouts', () => {
    */
   it('o logout COMUM também é local — decisão do dono em 05/09', () => {
     expect(
-      corpoDe('signOut'),
+      corpoDe('encerrarSessao'),
       'O botao "Sair" do Header voltou ao escopo GLOBAL (que e o padrao do\n'
       + 'supabase-js quando nao se passa nada, entao isso acontece sozinho ao\n'
       + 'escrever `signOut()`).\n\n'

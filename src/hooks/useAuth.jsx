@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
 import { marcarEntradaAgora, cancelarEntradaAgora } from '../lib/boasVindas';
 import { logAudit } from '../lib/auditLog';
+import { encerrarSessao, encerrarSessaoDeBanido } from './saidasDaSessao';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
 import { usePresenca } from './usePresenca';
 import { criarConta } from '../services/cadastroService';
@@ -218,60 +219,16 @@ export function AuthProvider({ children }) {
    * `{ scope }` daqui devolve o comportamento sem nada acusar — logout que
    * derruba o outro aparelho é silencioso do lado de quem fica (§1.5).
    */
-  async function signOut() {
-    if (profile?.username) {
-      logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
-    }
-    await supabase.auth.signOut({ scope: 'local' });
-    setProfile(null);
-  }
+  const signOut = () => encerrarSessao({
+    username: profile?.username,
+    aoLimpar: () => setProfile(null),
+  });
 
   async function refreshProfile() {
     if (user) await fetchProfile();
   }
 
-  // Logout do usuário banido: encerra a sessão e força recarregar a página,
-  // garantindo que o overlay suma e o estado fique limpo independente de
-  // qualquer race.
-  //
-  // O destino é a LANDING, não o `/login`. Ela é a porta de entrada do site e a
-  // única página que não depende do banco — é para onde o `dbHealth` manda todo
-  // mundo quando o Supabase cai. Jogar quem acabou de sair direto no formulário
-  // de login é um passo a mais sem motivo, e para o banido é pior ainda:
-  // sugere tentar de novo o que acabou de ser recusado.
-  async function signOutBanned() {
-    // `[28/08]` NÃO espera a ida ao servidor, e o motivo está medido.
-    //
-    // O dono relatou demora ao clicar em "Sair agora". A causa era esta função
-    // chamar `signOut()`, que faz `await supabase.auth.signOut()` com o escopo
-    // **global** — uma ida ao servidor para revogar os refresh tokens — e só
-    // então trocar de página.
-    //
-    // Medido contra o projeto de produção, 5 chamadas: **0,30 s a 1,08 s** só
-    // de ida e volta, e isso a partir de um datacenter com conexão quente. No
-    // 4G de um celular é bem pior. A tela ficava parada nesse tempo todo.
-    //
-    // O escopo **local** limpa a sessão do navegador sem falar com o servidor,
-    // então a troca de página é imediata.
-    //
-    // ── Por que abrir mão da revogação global AQUI é seguro ────────────────
-    //
-    // O refresh token continua válido até expirar — e não serve para nada. A
-    // conta está BANIDA: a RLS nega tudo no banco, e qualquer sessão que
-    // reapareça cai na `BannedScreen` de novo pelo `applyBannedCheck`. Além
-    // disso é o token da própria pessoa, no aparelho dela: ela poderia
-    // simplesmente não clicar em sair e mantê-lo do mesmo jeito.
-    //
-    // `[05/09]` Esta função e o `signOut()` comum passaram a usar o MESMO
-    // escopo, por caminhos diferentes: aqui era por velocidade (medida acima),
-    // lá virou decisão de produto do dono. O parágrafo que dizia *"o `signOut()`
-    // comum continua global"* deixou de ser verdade — ver o cabeçalho dele.
-    if (profile?.username) {
-      logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
-    }
-    try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* o redirect abaixo garante o estado limpo */ }
-    window.location.replace('/');
-  }
+  const signOutBanned = () => encerrarSessaoDeBanido({ username: profile?.username });
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, onlineCount, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>

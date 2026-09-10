@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**31 itens abertos** (+ 1 ideia sem compromisso)
+**33 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -130,6 +130,44 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 > com `USING (true)`**, os fluxos de role/ban/moderação, IDOR, upsert, mass
 > assignment e o isolamento de sessão. O que já foi apurado está em
 > `db/2026-09-10-auditoria-seguranca.md`.
+
+## 🟡 DOIS ACHADOS OPERACIONAIS — `[10/09]`
+
+*Encontrados durante a auditoria de segurança, e **fora do escopo dela**. Estão
+aqui, e não corrigidos junto, porque o §21 do protocolo proíbe expandir tarefa
+por oportunidade — e nenhum dos dois é brecha.*
+
+- ⬜ `[10/09]` 🟡 **`e2e/artes-da-arena.mjs` é instável no CI.** Falhou com
+  *"cadastro tem 4 lutador(es), esperava 2"* — que é o **fade cruzado** flagrado
+  no meio: `AnimatePresence` mantém as duas artes por lado durante a troca.
+
+  **Não é regressão:** rodei **três vezes** localmente e deu **5/5** nas três; e
+  nada nesta sessão tocou na arena. O passo 2 lê o estado que deveria estar
+  estável e às vezes pega a transição.
+
+  Conserto provável: o passo 2 esperar a animação terminar, como o passo 5 já
+  faz de propósito. **Portão que falha sozinho ensina a ignorar o CI** (§0.2,
+  4ª regra) — e este acabou de me fazer perder tempo procurando uma regressão
+  que não existia.
+
+- ⬜ `[10/09]` 🟡 **O orçamento de bytes dá resultado DIFERENTE aqui e no CI.**
+  Local, com `npm ci` (mesmo lockfile do CI): **222,4 kB gzip**, acima do teto
+  de 222 → reprova. No CI, o mesmo passo **passa**.
+
+  **Medido, não suposto:** com `git stash` das minhas mudanças, o número local é
+  **222,4 antes e depois** — ou seja, o que eu fiz custou **0 kB gzip**, e o
+  estouro local não é meu.
+
+  A causa provável é a versão do `zlib`/Node mudando a compressão em alguns
+  bytes. **Portão que dá veredito diferente por ambiente não é portão** — ele
+  reprova quem roda local e libera quem roda no CI, ou o contrário. Vale medir a
+  diferença e, se for isso, comparar com uma tolerância explícita em vez de um
+  número seco.
+
+  **Não subi o teto**, que seria o conserto errado (§6.1): o número é a decisão,
+  não o obstáculo.
+
+---
 
 ## 🎯 O BLOCO DE 10/09 — o que o dono mandou de uma vez
 

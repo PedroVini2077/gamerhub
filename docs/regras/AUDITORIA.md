@@ -48,8 +48,8 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->347<!--/n--> arquivos · <!--n:src.linhas-->34.794<!--/n--> linhas |
-| dividido em | `lib` <!--n:src.lib.arquivos-->99<!--/n--> · `components` <!--n:src.components.arquivos-->165<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->41<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
+| código em `src/` | <!--n:src.arquivos-->348<!--/n--> arquivos · <!--n:src.linhas-->34.841<!--/n--> linhas |
+| dividido em | `lib` <!--n:src.lib.arquivos-->99<!--/n--> · `components` <!--n:src.components.arquivos-->165<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->42<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
 | rede de testes | <!--n:testes.arquivos-->71<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->8<!--/n--> |
 | banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
@@ -64,8 +64,8 @@ digitado à mão:
 > `[03/09]` **Esta seção mudou, e a mudança foi aprovada pelo dono.** Ela dizia
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
-> **dobrou** — <!--n:src.arquivos-->347<!--/n--> arquivos,
-> <!--n:src.linhas-->34.794<!--/n--> linhas, 73 funções `SECURITY DEFINER` — e a
+> **dobrou** — <!--n:src.arquivos-->348<!--/n--> arquivos,
+> <!--n:src.linhas-->34.841<!--/n--> linhas, 73 funções `SECURITY DEFINER` — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
 >
@@ -115,8 +115,8 @@ com leitura parcial.
 ### Honestidade sobre o método
 
 **Ao relatar, dizer qual método foi usado e o número real de cobertura** —
-"li <!--n:src.arquivos-->347<!--/n--> de <!--n:src.arquivos-->347<!--/n-->
-arquivos" ou "li 40 de <!--n:src.arquivos-->347<!--/n-->, parei em X". Nunca deixar parecer
+"li <!--n:src.arquivos-->348<!--/n--> de <!--n:src.arquivos-->348<!--/n-->
+arquivos" ou "li 40 de <!--n:src.arquivos-->348<!--/n-->, parei em X". Nunca deixar parecer
 que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
 não concluída.
 
