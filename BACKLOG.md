@@ -72,18 +72,73 @@ não é ambição em cima de quem tem aparelho fraco.
 
 #### As etapas
 
-1. ⬜ geometria do raio **em código**: metade superior + núcleo + metade inferior,
-   com fissura pequena, núcleo hexagonal vazado e as duas asas — a silhueta que
-   as referências fixam;
-2. ⬜ `ShaderMaterial` de cristal: Fresnel, energia interna, ruído procedural,
-   transparência variável;
-3. ⬜ o núcleo como estrutura cristalina que **pulsa e ilumina as faces internas**
-   — as duas metades reagem (sobe/desce), sem explosão;
-4. ⬜ família de fragmentos derivada da linguagem do raio (verde dominante, cyan
-   perto do núcleo, roxo longe, âmbar raro e pontual);
-5. ⬜ **timeline central** de entrada em 9 tempos, e depois estado de repouso —
-   substituindo os `useFrame` independentes;
+1. ✅ geometria do raio **em código** (`geometriaDoRaio.js`): contorno medido da
+   arte, metade superior + núcleo + metade inferior, furo central, corte
+   Sutherland–Hodgman na horizontal;
+2. ✅ `ShaderMaterial` de cristal (`materialDeCristal.js`): Fresnel, energia
+   interna por ruído de valor, rampa cromática, luz do núcleo;
+3. ✅ núcleo como bipirâmide hexagonal que pulsa e ilumina as faces internas;
+4. ✅ fragmentos cortados do **próprio contorno** do raio, cor pela profundidade;
+5. ✅ **timeline central** (`linhaDoTempo.js`) em 9 fases + repouso, um único
+   `useFrame` (`RaioCristalino.jsx`);
 6. ⬜ medir antes/depois no mesmo aparelho (§0.3) e reavaliar cada otimização.
+
+#### `[10/09]` A RECONSTRUÇÃO DA GEOMETRIA — dois prompts novos do dono
+
+**O diagnóstico dele, na letra:** *"não está parecido com as imagens que te
+mandei, está totalmente deformado"*. E o prompt: *"quando digo qualidade 3D, não
+estou falando apenas de textura, glow ou shader — estou falando da própria
+malha, geometria, vértices, arestas, faces, topologia, silhueta"*.
+
+| Etapa | Estado |
+| --- | --- |
+| ✅ silhueta MEDIDA (`scripts/silhueta-da-marca.mjs`, `contornoDaMarca.js`) | 3.133 pontos brutos → 81 + 38 do furo |
+| ✅ sólido com chanfro, subdivisão e seção de lâmina (`solidoDeCristal.js`) | 436 → **8.220** triângulos · profundidade 0,137 → **0,372** |
+| ✅ núcleo em duas peças concêntricas, dimensionado pela LARGURA do furo | antes nascia com o dobro da largura do buraco |
+| ✅ fissura fina no lugar do vão | o corte era nas bordas do furo (21% da altura) |
+| ✅ ferramenta de OLHAR (`scripts/olhar-a-cena3d.mjs`) | 4 ângulos, com e sem material |
+| ✅ enquadramento medido do print da landing | topo caía atrás do cabeçalho: `scale 0.62/y 1.15` → `0.50/1.12` |
+| ✅ cristal SÓLIDO em vez de vidro | `depthWrite` e `FrontSide` de volta: as faces de trás atravessavam as da frente |
+| ✅ as faces respondem à luz | luz-chave fixa no shader; `uCorBase` já era o verde máximo e tudo clipava em 1.0 |
+| ✅ trava da crase no GLSL (`craseNoShader.test.js`) | o mesmo erro 3× na mesma sessão |
+| ⬜ **o que ainda não está bom** | ver abaixo |
+
+**O que continua aberto na peça**, conferido olhando o print da landing:
+
+- o raio ainda é **pequeno** na composição e a ponta de baixo encosta na linha
+  "sua base de operações gamer";
+- os fragmentos ainda não foram reavaliados depois da mudança de linguagem;
+- a rotação de repouso (±17°) faz a peça, que é fina, virar quase de perfil em
+  parte do ciclo;
+- **a arte `11-mestre-3d.webp` não foi usada como fonte de silhueta** — o brilho
+  verde saturado dela não se separa do cristal verde. Se a silhueta dela for
+  diferente da `01` de propósito, isso precisa vir do dono, não de limiar;
+- **custo por quadro não medido** com a malha nova (era a etapa 6, continua).
+
+**Do prompt dele que NÃO foi feito, e por quê:**
+
+| Pedido | Estado |
+| --- | --- |
+| pipeline Blender (retopologia, weighted normals, KTX2) | **não existe Blender neste ambiente**. A geometria é construída em código, que custa **zero byte** — um GLB otimizado do modelo dele daria 234 KB + 29 KB de decodificador |
+| ACES tone mapping + bloom moderado | não avaliado ainda |
+| fallback 2D premium com SVG oficial + GSAP | não avaliado ainda |
+| favicon/PWA/Open Graph a partir da identidade | pendente, e o dono já reprovou uma tentativa |
+
+#### O que foi entregue e **ainda não está bom** — palavra do dono
+
+> *"faz só o commit e faz o merge, assim mesmo, ainda não tá bonito, depois
+> vemos outras ferramentas e outras maneiras, pq não tá bonito"*.
+
+Mergeado nesse estado a pedido dele. Os defeitos conhecidos, escritos para não
+sumirem na conversa:
+
+| Defeito | Estado |
+| --- | --- |
+| o raio é **cortado no topo** pelo enquadramento | não corrigido |
+| o núcleo lê **pálido**, não como fonte de energia | não corrigido |
+| os fragmentos lêem como **cápsulas**, não como lascas | não corrigido |
+| a dramaturgia das 9 fases **nunca foi conferida quadro a quadro** | não verificado |
+| `eslint-disable react-hooks/immutability` no topo de `RaioCristalino.jsx` | **supressão, não conserto** (§6.1). O conserto: `<shaderMaterial>` como filho JSX + `ShaderMaterial` no `extend()` — custa o `extend()` seletivo, que segura o chunk |
 
 **O que NÃO pode morrer:** `IntersectionObserver`, `frameloop` controlado, DPR
 limitado, `ResizeObserver`, `root.unmount()`, carregamento sob demanda, o
@@ -1155,8 +1210,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.503<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.600<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.820<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

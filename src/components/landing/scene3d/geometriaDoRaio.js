@@ -1,73 +1,35 @@
 import * as THREE from 'three';
 
-// A geometria do raio — CONSTRUÍDA EM CÓDIGO, a partir do contorno medido.
-//
-// ── A ordem do dono, e por que ela mudou ────────────────────────────────────
-//
-// `[10/09]` *"A cena 3D principal precisa ser CONSTRUÍDA À MÃO EM CÓDIGO…
-// **NÃO use a imagem da lightning como substituta da geometria 3D**"*. A arte
-// aprovada continua mandando em silhueta, proporção, cor e sensação de
-// material — mas ela é o mapa, não a peça.
-//
-// ── De onde vêm estes números, e por que NÃO foram desenhados a olho ────────
-//
-// Eles são o **contorno real de `08-raio-nucleo-aceso.webp`**, extraído do
-// canal alfa da arte: varredura de Moore no limite do alfa (2.669 pontos
-// brutos), simplificada por Douglas-Peucker.
-//
-// Isso importa por um motivo concreto: em 10/09 eu reconstruí a silhueta a olho
-// para o ícone e o dono reprovou. O erro técnico daquela tentativa foi de
-// PROPORÇÃO — eu desenhei num quadrado e a marca leu como shuriken. O contorno
-// medido aqui dá **largura/altura = 0,5084**, ou seja quase 1:2, e é essa
-// proporção que faz as duas lâminas dominarem as duas asas.
-//
-// O furo hexagonal também é medido: um `flood fill` a partir da borda separa
-// "vazio de fora" de "vazio cercado", e sobraram **12.095 pixels** de furo.
-//
-// **O que isto NÃO é:** a imagem em runtime. Nenhum pixel da arte chega ao
-// navegador por este caminho — só coordenadas, que viram malha com volume,
-// facetas e espessura de verdade.
-//
-// Para regenerar (se a arte mudar), o procedimento está em
-// `docs/identidade/README.md`.
+import {
+  CONTORNO, FURO, CENTRO_DO_NUCLEO, LARGURA_DO_FURO,
+  CORTE_SUPERIOR, CORTE_INFERIOR,
+} from './contornoDaMarca';
+import { construirSolido } from './solidoDeCristal';
 
-/** Contorno externo, normalizado: altura 2, centrado, Y para cima. */
-const CONTORNO = [
-  [0.3269, 1], [0.0925, 0.2652], [0.1189, 0.2546], [0.4467, 0.2564],
-  [0.5084, 0.2458], [0.2581, -0.126], [0.3057, -0.1665], [0.2846, -0.2035],
-  [-0.3833, -1], [-0.2511, -0.6035], [-0.1471, -0.1912], [-0.2018, -0.1612],
-  [-0.3463, -0.1242], [-0.5066, 0.0097], [-0.5031, 0.0291], [-0.1982, 0.4079],
-];
+export { CENTRO_DO_NUCLEO, CORTE_SUPERIOR, CORTE_INFERIOR };
 
-/** O furo hexagonal do núcleo, na mesma escala. */
-const FURO = [
-  [-0.0537, 0.1031], [0.0414, 0.0573], [0.0502, -0.0467], [0.0308, -0.0837],
-  [-0.052, -0.1295], [-0.1542, -0.0714], [-0.1595, -0.0449], [-0.1524, 0.052],
-];
-
-/**
- * Onde o raio se parte, e por que a fissura é ESTREITA.
- *
- * Ordem dele: *"o gap deve ser pequeno o suficiente para que a silhueta
- * continue sendo percebida imediatamente como um único raio"*. Um corte largo
- * transforma o raio em duas peças que por acaso estão perto.
- *
- * Os dois valores são assimétricos de propósito: o furo do núcleo não é
- * centrado em zero (vai de +0,103 a −0,130), e cortar simétrico deixaria uma
- * das metades com um pedaço de furo maior que a outra.
- */
-export const CORTE_SUPERIOR = 0.055;
-export const CORTE_INFERIOR = -0.085;
-
-/** O centro do furo — onde o núcleo fica suspenso. */
-export const CENTRO_DO_NUCLEO = (() => {
-  const xs = FURO.map((p) => p[0]);
-  const ys = FURO.map((p) => p[1]);
-  return [
-    (Math.min(...xs) + Math.max(...xs)) / 2,
-    (Math.min(...ys) + Math.max(...ys)) / 2,
-  ];
-})();
+// A geometria do raio — montada a partir do contorno medido.
+//
+// ── O que mudou em `[10/09]`, e o número que justifica ──────────────────────
+//
+// A primeira versão foi entregue e o dono disse: *"não está parecido com as
+// imagens que te mandei, está totalmente deformado"*. Dois erros, e o segundo
+// só apareceu quando eu finalmente **olhei** a peça:
+//
+// | Erro | O que era | O que é agora |
+// | --- | --- | --- |
+// | silhueta | contorno simplificado a **16 pontos** — sem entalhe, sem degrau | **81 pontos** medidos (`contornoDaMarca.js`) |
+// | volume | extrusão chapada, **436 triângulos** no conjunto | sólido moldado com seção de lâmina (`solidoDeCristal.js`) |
+//
+// O modelo de referência que ele mandou tem 15.805 triângulos e uma seção de
+// lâmina. A conta de 36× de diferença é o que explica o "deformado" melhor do
+// que qualquer ajuste de shader teria explicado.
+//
+// ── Este arquivo só MONTA ───────────────────────────────────────────────────
+//
+// Os dados moram em `contornoDaMarca.js` e a construção do sólido em
+// `solidoDeCristal.js`. Aqui ficam as três peças da cena e o corte que as
+// separa — e mais nada, para o arquivo não voltar a acumular papel (§4).
 
 /**
  * Corta um polígono por uma reta horizontal (Sutherland–Hodgman).
@@ -75,7 +37,7 @@ export const CENTRO_DO_NUCLEO = (() => {
  * `acima = true` mantém o que está em `y >= corte`.
  *
  * Meia-reta é região convexa, que é a condição do algoritmo — o polígono de
- * entrada pode ser côncavo, e o do raio é.
+ * entrada pode ser côncavo, e o do raio é bastante.
  */
 function cortarNaHorizontal(poligono, corte, acima) {
   const dentro = (p) => (acima ? p[1] >= corte : p[1] <= corte);
@@ -101,48 +63,55 @@ function cortarNaHorizontal(poligono, corte, acima) {
   return saida;
 }
 
-/** Um `THREE.Shape` a partir de uma lista de pontos, com furos opcionais. */
-function paraShape(contorno, furos = []) {
-  const shape = new THREE.Shape();
-  contorno.forEach(([x, y], i) => (i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y)));
-  shape.closePath();
-
-  for (const furo of furos) {
-    if (furo.length < 3) continue;
-    const caminho = new THREE.Path();
-    furo.forEach(([x, y], i) => (i === 0 ? caminho.moveTo(x, y) : caminho.lineTo(x, y)));
-    caminho.closePath();
-    shape.holes.push(caminho);
+/** Área com sinal — serve para descartar sobra degenerada do corte. */
+function area(poligono) {
+  let a = 0;
+  for (let i = 0; i < poligono.length; i++) {
+    const [x1, y1] = poligono[i];
+    const [x2, y2] = poligono[(i + 1) % poligono.length];
+    a += x1 * y2 - x2 * y1;
   }
-  return shape;
+  return a / 2;
 }
 
 /**
- * As opções de extrusão — é aqui que nasce o VOLUME e as FACETAS.
+ * Um furo só entra na metade se sobrar furo de verdade depois do corte.
  *
- * O `bevel` não é enfeite: sem ele o raio é uma placa reta, e placa reta não
- * pega luz de lado nenhum. Com chanfro, cada aresta vira uma faceta que
- * responde ao Fresnel do shader — é o que separa "cristal" de "adesivo grosso".
- *
- * `bevelSegments: 2` e não mais: cada segmento multiplica os triângulos das
- * bordas, e o ganho visual satura rápido num objeto deste tamanho na tela.
+ * O corte passa **rente** à borda do furo (é ela que define onde a peça se
+ * parte), então o resto do outro lado é uma lasca de área quase zero. Extrudar
+ * essa lasca produz parede interna com espessura de nada — que aparece como
+ * artefato preto piscando na aresta, e não como detalhe.
  */
-const EXTRUSAO = {
-  depth: 0.34,
-  bevelEnabled: true,
-  bevelThickness: 0.055,
-  bevelSize: 0.045,
-  bevelOffset: 0,
-  bevelSegments: 2,
-  curveSegments: 1,
+const AREA_MINIMA_DE_FURO = 1e-3;
+
+function furoUtil(poligono) {
+  return poligono.length >= 3 && Math.abs(area(poligono)) > AREA_MINIMA_DE_FURO;
+}
+
+/**
+ * Espessura e afinamento — os números que dão a seção de LÂMINA.
+ *
+ * `alcance` é a distância, a partir da borda, em que a peça atinge a espessura
+ * cheia. Baixo demais e a peça vira uma placa com a aresta lixada; alto demais
+ * e ela vira uma lente, perdendo a face.
+ *
+ * `afinarLonge` é o que faz as pontas ficarem finas e o miolo cheio, medido a
+ * partir do núcleo — a peça é mais densa onde a energia mora.
+ */
+const LAMINA = {
+  espessura: 0.46,
+  alcance: 0.12,
+  chanfro: 0.014,
+  segmentosDeChanfro: 3,
+  subdivisoes: 1,
+  afinarLonge: { centro: CENTRO_DO_NUCLEO, alcance: 1.45, minimo: 0.26 },
 };
 
 /**
  * As duas metades do raio, já com volume.
  *
- * Cada uma é centrada em X e Z mas **mantém o Y original**: é isso que permite
- * ao núcleo pulsar e as metades se afastarem sem que a silhueta se desmonte —
- * elas já nascem no lugar certo em relação uma à outra.
+ * Cada uma mantém o **X e o Y originais**: a posição relativa das duas metades
+ * *é* a silhueta. Centralizar cada uma sozinha desmontaria o raio.
  */
 export function construirMetades() {
   const superior = cortarNaHorizontal(CONTORNO, CORTE_SUPERIOR, true);
@@ -151,84 +120,109 @@ export function construirMetades() {
   const furoSuperior = cortarNaHorizontal(FURO, CORTE_SUPERIOR, true);
   const furoInferior = cortarNaHorizontal(FURO, CORTE_INFERIOR, false);
 
-  const geoSuperior = new THREE.ExtrudeGeometry(paraShape(superior, [furoSuperior]), EXTRUSAO);
-  const geoInferior = new THREE.ExtrudeGeometry(paraShape(inferior, [furoInferior]), EXTRUSAO);
-
-  // Centraliza só em Z, para a peça ficar simétrica em profundidade. X e Y
-  // ficam como estão: a posição relativa das duas metades É a silhueta.
-  for (const g of [geoSuperior, geoInferior]) {
-    g.translate(0, 0, -EXTRUSAO.depth / 2);
-    g.computeVertexNormals();
-  }
-
-  return { superior: geoSuperior, inferior: geoInferior };
+  return {
+    superior: construirSolido(superior, furoUtil(furoSuperior) ? [furoSuperior] : [], LAMINA),
+    inferior: construirSolido(inferior, furoUtil(furoInferior) ? [furoInferior] : [], LAMINA),
+  };
 }
 
 /**
- * O núcleo — uma estrutura cristalina, e **não uma esfera genérica**.
+ * O núcleo — uma estrutura cristalina, e **não uma esfera brilhante**.
  *
- * Ordem dele: *"o core não deve ser uma esfera genérica. Construa-o como uma
- * pequena estrutura energética/cristalina"*.
+ * Ordem dele: *"o core não deve ser uma esfera genérica. Crie uma pequena
+ * estrutura cristalina/energética… camada externa, núcleo interno"*.
  *
- * É um prisma hexagonal **bipiramidal**: o mesmo hexágono do furo, extrudado e
- * com as duas pontas puxadas em Z. Assim ele pertence à mesma família
- * geométrica do raio em vez de ser um sólido importado de outra linguagem.
+ * São **duas** peças concêntricas, e é essa a diferença para a versão anterior:
+ *
+ * | Peça | O que é | Por que |
+ * | --- | --- | --- |
+ * | casca | hexágono da largura do furo, com chanfro forte | é a face que o furo emoldura — a mesma família geométrica da peça |
+ * | miolo | o mesmo hexágono a 46%, girado 30° | as arestas de um cruzam as faces do outro, e é isso que lê como "gerando energia" em vez de "aceso" |
+ *
+ * `[10/09]` O raio antigo saía de `max(largura, altura)` do furo — e o furo tem
+ * 0,214 de largura por 0,419 de altura, então o núcleo nascia com **o dobro da
+ * largura do buraco** e atravessava a peça. Agora sai da LARGURA, que é a
+ * dimensão que o aperta.
  */
-export function construirNucleo() {
-  const raio = 0.5 * Math.max(
-    Math.max(...FURO.map((p) => p[0])) - Math.min(...FURO.map((p) => p[0])),
-    Math.max(...FURO.map((p) => p[1])) - Math.min(...FURO.map((p) => p[1])),
-  );
-
-  // Hexágono no plano XY, apontando para cima — a mesma orientação do furo.
-  const hexagono = [];
+function hexagono(raio, giro = 0) {
+  const pontos = [];
   for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
-    hexagono.push([Math.cos(a) * raio, Math.sin(a) * raio]);
+    const a = (i / 6) * Math.PI * 2 + Math.PI / 6 + giro;
+    pontos.push([Math.cos(a) * raio, Math.sin(a) * raio]);
   }
+  return pontos;
+}
 
-  const geo = new THREE.ExtrudeGeometry(paraShape(hexagono), {
-    depth: raio * 0.9,
-    bevelEnabled: true,
-    bevelThickness: raio * 0.45,
-    bevelSize: raio * 0.42,
-    bevelSegments: 1,
-    curveSegments: 1,
+export function construirNucleo() {
+  const raio = LARGURA_DO_FURO * 0.47;
+  const casca = construirSolido(hexagono(raio), [], {
+    espessura: raio * 1.5, alcance: raio * 0.75, chanfro: raio * 0.12,
+    segmentosDeChanfro: 2, subdivisoes: 1,
   });
-  geo.center();
+  const miolo = construirSolido(hexagono(raio * 0.46, Math.PI / 6), [], {
+    espessura: raio * 1.1, alcance: raio * 0.4, chanfro: raio * 0.06,
+    segmentosDeChanfro: 1, subdivisoes: 1,
+  });
+  // `mergeGeometries` mora em `three/addons`, não no namespace — e trazer o
+  // addon quebraria o `extend()` seletivo que segura o tamanho deste chunk.
+  // Juntar duas malhas não indexadas de um atributo só é uma concatenação.
+  const geo = juntar([casca, miolo]);
+  casca.dispose(); miolo.dispose();
   geo.computeVertexNormals();
   return geo;
 }
 
+/** Junta geometrias não indexadas de mesmo atributo — `three` puro, sem addons. */
+function juntar(geometrias) {
+  const total = geometrias.reduce((s, g) => s + g.attributes.position.array.length, 0);
+  const posicoes = new Float32Array(total);
+  let off = 0;
+  for (const g of geometrias) {
+    posicoes.set(g.attributes.position.array, off);
+    off += g.attributes.position.array.length;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(posicoes, 3));
+  return geo;
+}
+
 /**
- * A família de fragmentos — derivada da linguagem do raio, não sólidos prontos.
+ * A família de fragmentos — lascas do PRÓPRIO raio.
  *
- * Ordem dele: *"não quero simplesmente torus, cubo, esfera, octaedro,
- * icosaedro espalhados pela tela sem propósito"*.
+ * Ordem dele: *"não reutilize simplesmente BoxGeometry, SphereGeometry,
+ * TorusGeometry, IcosahedronGeometry como objetos decorativos genéricos"*.
  *
- * Cada lasca é uma fatia irregular do PRÓPRIO contorno do raio: pega-se um
- * trecho de 3 a 4 vértices consecutivos, fecha-se no centro e extruda-se fino.
- * O resultado tem as mesmas arestas e os mesmos ângulos da peça principal —
- * que é o que faz parecer que se desprenderam dela.
+ * Cada lasca é uma cunha tirada de um trecho do contorno: quatro vértices
+ * consecutivos da borda, fechados num ponto puxado para dentro. O resultado
+ * herda os ângulos da peça — que é o que faz parecer que se desprendeu dela, e
+ * não que veio de outra caixa de ferramentas.
+ *
+ * `[10/09]` Antes eram trechos de 3 pontos encolhidos 50% em volta do próprio
+ * centro, o que produzia lascas quase equiláteras — o dono viu "cápsulas". A
+ * cunha tem uma ponta afiada, que é a linguagem do raio.
  */
 export function construirLascas() {
   const lascas = [];
-  for (let i = 0; i < CONTORNO.length; i += 3) {
-    const trecho = CONTORNO.slice(i, i + 3);
-    if (trecho.length < 3) continue;
+  const passo = 11;                          // 81 pontos -> 7 lascas distintas
+  for (let i = 0; i < CONTORNO.length - 3; i += passo) {
+    const trecho = CONTORNO.slice(i, i + 4);
+    if (trecho.length < 4) continue;
 
-    // Fecha o trecho num triângulo/quadrilátero puxando para o centro da peça.
     const cx = trecho.reduce((s, p) => s + p[0], 0) / trecho.length;
     const cy = trecho.reduce((s, p) => s + p[1], 0) / trecho.length;
-    const pontos = trecho.map(([x, y]) => [(x - cx) * 0.5, (y - cy) * 0.5]);
+    // A borda fica; a ponta vai para o lado de DENTRO, além do centro. É o que
+    // transforma um pedaço de contorno numa cunha.
+    const pontos = [
+      ...trecho.map(([x, y]) => [x - cx, y - cy]),
+      [-cx * 0.55, -cy * 0.55],
+    ];
+    if (Math.abs(area(pontos)) < 1e-4) continue;
+    const orientado = area(pontos) < 0 ? pontos.reverse() : pontos;
 
-    const geo = new THREE.ExtrudeGeometry(paraShape(pontos), {
-      depth: 0.06, bevelEnabled: true,
-      bevelThickness: 0.03, bevelSize: 0.025, bevelSegments: 1, curveSegments: 1,
-    });
-    geo.center();
-    geo.computeVertexNormals();
-    lascas.push(geo);
+    lascas.push(construirSolido(orientado, [], {
+      espessura: 0.075, alcance: 0.05, chanfro: 0.008,
+      segmentosDeChanfro: 2, subdivisoes: 0,
+    }));
   }
   return lascas;
 }

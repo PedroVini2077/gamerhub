@@ -5,7 +5,7 @@ import {
   DodecahedronGeometry, Group, IcosahedronGeometry, Line, LineBasicMaterial,
   Mesh, MeshStandardMaterial, OctahedronGeometry, PointLight, TorusGeometry,
 } from 'three';
-import { LogoBolt, FloatingShapes } from './SceneObjects';
+import RaioCristalino from './RaioCristalino';
 import Lightning from './Lightning';
 
 /**
@@ -107,14 +107,17 @@ function useVisivel(ref) {
 function Conteudo() {
   return (
     <>
-      <ambientLight intensity={0.35} />
-      {/* Luz principal branca em ângulo: cria sombreado nas faces e realça a
-          profundidade da extrusão enquanto o logo gira. */}
-      <directionalLight position={[3, 4, 5]} intensity={1.6} color="#eafff0" />
-      <pointLight position={[4, 3, 4]} intensity={1.2} color="#39ff14" />
-      <pointLight position={[-4, -2, 3]} intensity={1.1} color="#bf00ff" />
-      <LogoBolt />
-      <FloatingShapes />
+      {/* `[10/09]` As luzes ficaram, mas MAIS FRACAS. O material do raio agora
+          é um `ShaderMaterial` que gera a própria luz (Fresnel + energia
+          interna + o brilho do núcleo). Com as intensidades antigas, a luz
+          externa lavava o cristal e a peça voltava a ler como plástico verde.
+
+          A direcional continua porque ela é quem revela as FACETAS da
+          extrusão — sem uma luz em ângulo, o chanfro não aparece. */}
+      <directionalLight position={[3, 4, 5]} intensity={0.55} color="#eafff0" />
+      <pointLight position={[4, 3, 4]} intensity={0.4} color="#39ff14" />
+      <pointLight position={[-4, -2, 3]} intensity={0.35} color="#bf00ff" />
+      <RaioCristalino />
       <Lightning />
     </>
   );

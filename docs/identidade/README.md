@@ -36,6 +36,7 @@ impede uma versão pequena de virar outra marca.
 | `08-raio-nucleo-aceso.webp` | o raio com o **núcleo aceso** — a leitura de "o core é a fonte" |
 | `09-cristal-alta-resolucao.webp` | material cristalino em detalhe: facetas, profundidade, luz interna |
 | `10-cena-da-landing.webp` | **a referência da cena da Landing**: o artefato suspenso, os fragmentos orbitando, a atmosfera |
+| `[10/09]` `11-mestre-3d.webp` | **a mestra do 3D**, nomeada assim pelo dono: é ela que manda em faceta, volume, espessura e material. Não manda em silhueta — ver a seção da extração, mais abaixo |
 
 ## O que ficou de fora, e por quê
 
@@ -85,6 +86,44 @@ background para fingir 3D, galeria, slideshow, copia-e-cola.
 Quem usa hoje: `src/components/landing/Scene2D.jsx` — **e isso é estado
 intermediário**. A 2D só aparece para quem não recebe a 3D, e a direção dela
 será revista quando a cena em código estiver de pé.
+
+## `[10/09]` A silhueta deixou de ser digitada — `scripts/silhueta-da-marca.mjs`
+
+**O erro que essa ferramenta existe para não deixar repetir.** A primeira cena
+3D construída em código partiu de um contorno de **16 pontos que eu digitei
+lendo a arte de olho**. O resultado, na palavra do dono: *"não está parecido com
+as imagens que te mandei, está totalmente deformado"*. Não foi o shader nem a
+luz — a forma estava errada na origem.
+
+O script lê a arte, **mede** a silhueta e devolve o polígono:
+
+```
+node scripts/silhueta-da-marca.mjs <arte> [limiar] [eps] [saturacao] [fechar]
+```
+
+| Etapa | O que faz |
+| --- | --- |
+| máscara | luminância acima do limiar; opcionalmente **saturação** mínima, para arte com brilho ao redor |
+| fundo | preenchimento a partir da borda — o que a borda **não** alcança é peça ou furo |
+| peça | o **maior** componente, não o primeiro: arte com brilho tem partículas soltas, e a primeira versão morria numa delas em `(792, 1)` |
+| fechamento | dilata e erode (opcional): tapa a fenda que uma linha escura entre facetas abre na borda |
+| contorno | Moore neighborhood, e o mesmo traçado para cada furo interno |
+| simplificação | Douglas–Peucker, com `eps` em pixels |
+
+**O resultado atual, de `01-simbolo-mestre.webp`:** 3.133 pontos brutos →
+**81 no contorno externo** + **38 no furo hexagonal**, proporção
+largura/altura **0,4939**.
+
+### Por que a silhueta sai da arte `01` e não da `11-mestre-3d`
+
+`11-mestre-3d.webp` é a arte que o dono nomeou como mestra **do 3D**, e é ela
+que manda em faceta, volume, espessura e material. Mas ela vem com **brilho
+verde saturado** ao redor da peça, e brilho verde não se separa de cristal verde
+nem por luminância nem por saturação — três tentativas de limiar produziram
+máscara que era o halo, não o raio. A `01` está sobre preto puro e extrai limpa.
+
+**As duas são a mesma silhueta.** O que a `11` acrescenta não é contorno — é o
+que um polígono não carrega de qualquer jeito.
 
 ## Paleta
 

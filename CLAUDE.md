@@ -693,6 +693,7 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `voltarNaoEhRedirecionador.test.jsx` | `npm test`, **reprova** | o `?de=` do botão "Voltar" aceitando destino de FORA do site — redirecionamento aberto |
 | `logoutEhLocal.test.js` | `npm test`, **reprova** | ponto de saída com o escopo errado. O `supabase-js` usa **global por omissão**, então sair no celular volta a derrubar o PC só por escrever `signOut()` |
 | `documentosLegais.test.js` (impressão) | `npm test`, **reprova** | texto de documento legal mudando **por baixo de quem já aceitou** — cobre a lista de arquivos de cada documento |
+| `craseNoShader.test.js` | `npm test`, **reprova** | **crase dentro de bloco GLSL** — ela fecha o template literal do JS, e o erro que aparece fala de *"número com zero à esquerda"*, nunca de crase. Aconteceu 3× numa sessão só |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 

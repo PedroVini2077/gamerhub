@@ -23,8 +23,13 @@
  *
  * ── Como ele mede ───────────────────────────────────────────────────────────
  *
- * Envolve `gl.drawElements` e conta as chamadas. É o desenho de fato, não uma
- * proxy: se o WebGL está desenhando, este contador sobe.
+ * Envolve **todas** as chamadas de desenho do WebGL — `drawElements`,
+ * `drawArrays` e as duas variantes instanciadas — e conta. É o desenho de fato,
+ * não uma proxy: se o WebGL está desenhando, este contador sobe.
+ *
+ * `[10/09]` Ele envolvia só `drawElements`, e isso era um buraco: geometria sem
+ * `setIndex()` desenha por `drawArrays`, então a trava reprovou uma cena que
+ * estava desenhando. Ver o comentário em `medirDesenhos`.
  *
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/cena-3d.mjs
  */
@@ -99,8 +104,18 @@ function medirDesenhos(ms) {
     const gl = cv.getContext('webgl2') || cv.getContext('webgl');
     if (!gl) return resolve(-2);
     let n = 0;
-    const original = gl.drawElements.bind(gl);
-    gl.drawElements = (...args) => { n++; return original(...args); };
+    // `[10/09]` Os DOIS caminhos de desenho, e essa é a correção de um buraco
+    // real: geometria **indexada** desenha por `drawElements`, geometria **não
+    // indexada** por `drawArrays`. Esta trava só envolvia o primeiro, e o dia em
+    // que a cena passou a usar `BufferGeometry` construída em código — sem
+    // `setIndex()` — ela reprovou um site que estava desenhando normalmente.
+    // Alarme falso ensina a ignorar o canal (`CLAUDE.md` §0.2, 4ª regra), então
+    // o conserto é contar as duas portas, não trocar de porta.
+    for (const nome of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) {
+      if (typeof gl[nome] !== 'function') continue;
+      const original = gl[nome].bind(gl);
+      gl[nome] = (...args) => { n++; return original(...args); };
+    }
     setTimeout(() => resolve(n), duracao);
   }), ms);
 }

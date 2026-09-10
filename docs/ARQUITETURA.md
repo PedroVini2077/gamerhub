@@ -392,12 +392,27 @@ src/
     │   │                  # anéis, fragmentos e as três profundidades. Saiu do
     │   │                  # Scene2D para o componente não virar um paredão de
     │   │                  # coordenadas
-    │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
-    │                      # SceneObjects (LogoBolt/FloatingShapes) e
-    │                      # geometriaDoRaio.js — a malha do raio construída EM
-    │                      # CÓDIGO a partir do contorno MEDIDO da arte
-    │                      # aprovada (Moore no canal alfa + Douglas-Peucker).
-    │                      # Nenhum pixel da arte chega ao navegador por aqui
+    │   └── scene3d/       # A cena 3D, construída à mão em código `[10/09]`:
+    │                      # LandingScene (createRoot + extend seletivo) ·
+    │                      # Lightning · SceneObjects (legado, ainda não
+    │                      # removido) e as SEIS peças novas —
+    │                      # contornoDaMarca.js: SÓ OS DADOS. 81 pontos do
+    │                      #   contorno + 38 do furo, medidos da arte oficial
+    │                      #   por scripts/silhueta-da-marca.mjs. Nenhum pixel
+    │                      #   da arte chega ao navegador — só coordenadas
+    │                      # solidoDeCristal.js: transforma contorno 2D em
+    │                      #   SÓLIDO — extruda com chanfro, subdivide, e molda
+    │                      #   o Z pela distância à borda (seção de lâmina).
+    │                      #   Nesta ordem: subdividir antes de moldar, senão
+    │                      #   não há vértice interno para abaular
+    │                      # geometriaDoRaio.js: MONTA as três peças (metades,
+    │                      #   núcleo, lascas) e faz o corte da fissura
+    │                      # materialDeCristal.js: o ShaderMaterial próprio
+    │                      #   (Fresnel, energia interna, ruído, luz do núcleo).
+    │                      #   Zero byte de biblioteca: é three puro
+    │                      # linhaDoTempo.js: a timeline CENTRAL das 9 fases.
+    │                      #   Substitui o GSAP e os useFrame espalhados
+    │                      # RaioCristalino.jsx: monta tudo, com UM só useFrame
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
     │                      # InputWrap, LoginSemBanco (o que a tela de login diz
     │                      # quando o banco está fora), e os dois porteiros de
