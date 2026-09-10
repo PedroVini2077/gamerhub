@@ -230,10 +230,63 @@ dependência técnica real** que decide o resto:
   sessões**. Vale o §0.1: se o contexto acabar, **registro onde parei** e retomo;
   nunca declaro fase concluída com leitura parcial.
 
-  **FORA DO ESCOPO:** não é hora de refatorar, redesenhar tela, mexer em
-  desempenho ou tocar na Landing. Achado que não for brecha explorável vira item,
-  não conserto (§6 — *"achado que eu decidir não corrigir vai pro BACKLOG com o
-  motivo"*).
+  ### PARTE 2 — caminhos indiretos, RLS e escalada
+
+  **A entrega central: a matriz REAL de permissões, reconstruída DO BANCO.**
+  29 ações × 4 papéis, e depois o confronto que é o ponto —
+  **documentação × frontend × RPC × RLS × grants**. Qualquer divergência é achado.
+
+  | Frente | O que procurar, e o que ele proíbe assumir |
+  | --- | --- |
+  | **escalada vertical** | **todos** os caminhos que alteram `profiles.role`, por busca semântica — não basta achar `owner_set_role`. Inclui `role_change_requests`, nomeações, trial, promoção, rebaixamento, e função antiga preservada por migration |
+  | **IDOR / BOLA** | toda função que recebe UUID: *"se um usuário normal trocar esse UUID pelo de outra pessoa, o que acontece?"*. **Classe prioritária** — já aconteceu aqui, em `check_staff_eligibility` |
+  | **objeto + ação** | *"caller é admin"* não basta. Admin pode moderar outro admin? super_admin? owner? A checagem tem que olhar o **alvo** |
+  | **parâmetros** | classificar A/B/C/D. **C (determina autorização) e D (altera privilégio) pedem revisão manual** |
+  | **grants** | *"função verifica autorização internamente"* ≠ *"função deveria estar exposta"*. São coisas diferentes |
+  | **`search_path`** | função por função, **sem substituição mecânica** |
+  | **retornos** | `RETURNS public.profiles`, `SETOF`, `SELECT *` — coluna nova no futuro não pode virar dado exposto por RPC antiga |
+  | **RLS** | por tabela: enabled? **FORCE**? policy por comando? `USING (true)`? dá para inserir em nome de outro? dá para trocar o `user_id`? |
+  | **`admin_logs`** | *"uma auditoria não é confiável se o próprio usuário consegue reescrever a história"* — admin pode apagar o próprio rastro? `actor_id` vem de `auth.uid()` ou do cliente? |
+  | **false success** | `if (error) return fallback` transformando *permission denied* em `[]`, `0` ou `false`. É o §1.5 nosso, do lado do frontend |
+  | **legacy** | função antiga com `EXECUTE` ainda concedido é **porta aberta**, mesmo que o frontend nunca a chame |
+  | **migration drift** | reconstruir o **estado final** do banco. *"O que o banco é hoje"* vale mais que *"o que uma migration antiga dizia"* |
+  | **race condition** | TOCTOU: verifica autorização → outra transação muda o alvo → escreve. Só onde houver risco real; nada de lock indiscriminado |
+
+  **`game_keys` é o candidato mais provável a achado real, e eu já sei por quê:**
+  o frontend faz `game_keys?select=*` e filtra `!k.is_promo` **no JavaScript**.
+  Se a tabela tem `key_code` e a RLS não separa promo de não-promo, o filtro é só
+  UX — e basta remover o filtro. Ele marcou como **prioridade alta se houver
+  exposição de segredo**, com uma ordem junto: **não expor nenhuma chave real
+  durante os testes**.
+
+  **Testes: a matriz por papel, e os NEGATIVOS são obrigatórios.** *"O teste mais
+  importante é o que tenta quebrar a regra."* Não basta *"admin consegue banir
+  user"*; precisa existir *"admin NÃO consegue banir super_admin"* e *"admin NÃO
+  consegue alterar role de owner"*. Com tampering de parâmetro: UUID próprio, de
+  terceiro, de admin, de owner, inexistente, `NULL`; número em `-1`, `0`, máximo,
+  máximo+1, gigante; enum inválido, vazio, `NULL`.
+
+  **O método, e ele proíbe o meu atalho:** reproduzir → identificar a causa →
+  corrigir a causa → reproduzir de novo → **regressão** → auditar caminhos
+  alternativos. Nada de *"achei SECURITY DEFINER → reescrevi"* ou *"achei
+  `SELECT *` → removi"*.
+
+  **Correção sempre por migration NOVA.** *"Nunca reescreva migrations históricas
+  para fingir que o problema nunca existiu."*
+
+  **Classificação dos achados:** 🔴 crítico · 🟠 alto · 🟡 médio · 🔵 baixo ·
+  ⚪ informativo. E uma trava contra o meu alarmismo: **o spoof do `role` no
+  frontend fica como *"client-side trust / expected tamperability"*** enquanto não
+  houver consequência no backend.
+
+  **FORA DO ESCOPO** — e a parte 2 acrescenta a metade de baixo:
+  - não refatorar, redesenhar tela, mexer em desempenho ou tocar na Landing;
+  - achado que não for brecha explorável vira item, não conserto;
+  - **não** tentar bloquear DevTools, detectar Network aberto, ofuscar código ou
+    criptografar `role` no cliente — *"isso não é segurança real"*;
+  - **não** trocar todos os 400 por 403 automaticamente: o requisito é *"operação
+    não autorizada não acontece"*, o código HTTP é secundário;
+  - **não** trocar 1 consulta por 20 em nome de hardening.
 
 - ⬜ `[10/09]` 🟠 **1. TESTAR O BREVO.** *O dono já criou a conta e configurou —
   falta a metade que é minha.*
