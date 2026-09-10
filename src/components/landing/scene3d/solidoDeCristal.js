@@ -38,18 +38,52 @@ function distanciaAoSegmento(px, py, a, b) {
 }
 
 /**
- * Distância até a borda MAIS PRÓXIMA, contando o furo.
+ * Prepara as arestas com a caixa de cada uma, para poder DESCARTAR sem medir.
  *
- * O furo conta como borda de propósito: sem isso a peça engrossaria por cima do
- * buraco do núcleo, e a parede interna dele perderia a aresta.
+ * `[10/09]` Medido: sem isso, uma montagem da cena custa **76 ms** de thread
+ * principal (102 ms na primeira, com o JIT frio). A conta era
+ * `vértices × arestas` — 24.660 × 119 dá 2,9 milhões de distâncias ponto-a-
+ * segmento por peça, e a maioria delas para arestas do outro lado da figura.
+ *
+ * O furo entra na lista de propósito: sem ele a peça engrossaria por cima do
+ * buraco do núcleo, e a parede interna perderia a aresta.
  */
-function distanciaAteABorda(px, py, aneis) {
-  let menor = Infinity;
+function prepararArestas(aneis) {
+  const arestas = [];
   for (const anel of aneis) {
     for (let i = 0; i < anel.length; i++) {
-      const d = distanciaAoSegmento(px, py, anel[i], anel[(i + 1) % anel.length]);
-      if (d < menor) menor = d;
+      const a = anel[i];
+      const b = anel[(i + 1) % anel.length];
+      arestas.push({
+        a,
+        b,
+        minX: Math.min(a[0], b[0]),
+        maxX: Math.max(a[0], b[0]),
+        minY: Math.min(a[1], b[1]),
+        maxY: Math.max(a[1], b[1]),
+      });
     }
+  }
+  return arestas;
+}
+
+/**
+ * Distância até a borda mais próxima.
+ *
+ * O corte por caixa não é aproximação: a distância de um ponto à CAIXA de um
+ * segmento nunca é maior que a distância ao segmento. Se a caixa já está mais
+ * longe do que o melhor achado, o segmento também está — e sai sem cálculo.
+ */
+function distanciaAteABorda(px, py, arestas) {
+  let menor = Infinity;
+  for (let i = 0; i < arestas.length; i++) {
+    const e = arestas[i];
+    const dx = px < e.minX ? e.minX - px : (px > e.maxX ? px - e.maxX : 0);
+    if (dx >= menor) continue;
+    const dy = py < e.minY ? e.minY - py : (py > e.maxY ? py - e.maxY : 0);
+    if (dx * dx + dy * dy >= menor * menor) continue;
+    const d = distanciaAoSegmento(px, py, e.a, e.b);
+    if (d < menor) menor = d;
   }
   return menor;
 }
@@ -133,12 +167,12 @@ export function construirSolido(externo, furos, {
   for (let i = 0; i < subdivisoes; i++) posicoes = subdividir(posicoes);
 
   // ── Moldar ────────────────────────────────────────────────────────────────
-  const aneis = [externo, ...furos];
+  const arestas = prepararArestas([externo, ...furos]);
   for (let i = 0; i < posicoes.length; i += 3) {
     const x = posicoes[i];
     const y = posicoes[i + 1];
     const lado = Math.sign(posicoes[i + 2]) || 1;
-    const d = distanciaAteABorda(x, y, aneis);
+    const d = distanciaAteABorda(x, y, arestas);
     let z = lado * (espessura / 2) * perfilDaLamina(d, alcance);
     // A peça é mais grossa perto do núcleo e afina nas pontas — é a seção que
     // o modelo de referência mostra de perfil, e o que impede as duas lâminas

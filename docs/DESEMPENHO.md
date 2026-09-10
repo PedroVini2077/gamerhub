@@ -19,6 +19,36 @@
 
 ---
 
+### `[10/09]` Construir a malha custava 76 ms de thread principal, e caiu para 30
+
+A geometria nova é moldada por **distância até a borda**: cada vértice mede a
+que distância está do contorno para saber quanta espessura recebe. A conta
+ingênua é `vértices × arestas`, e com 24.660 vértices contra 119 arestas isso dá
+**2,9 milhões** de distâncias ponto-a-segmento por peça — a maioria delas para
+arestas do outro lado da figura.
+
+Medido num Chromium de verdade, 5 montagens seguidas:
+
+| | 1ª (JIT frio) | regime |
+| --- | --- | --- |
+| antes | 102 ms | **76 ms** |
+| depois | 61 ms | **30 ms** |
+
+**O que mudou:** cada aresta carrega a própria caixa, e a distância do ponto até
+a CAIXA nunca é maior que a distância até o segmento. Se a caixa já está mais
+longe do que o melhor achado, o segmento também está — e sai sem cálculo
+nenhum. Não é aproximação.
+
+**A prova de que nada mudou visualmente:** o PNG renderizado antes e depois tem
+o **mesmo md5** (`173966e6…`). Otimização que muda o resultado não é otimização;
+é outra coisa acontecendo.
+
+**Por que 30 ms ainda importa:** é thread principal bloqueada na primeira
+pintura de quem chega. A cena é lazy e fica atrás do portão de aparelho, então
+só desktop paga — mas paga.
+
+---
+
 ### `[10/09]` A cena 3D construída à mão custou **6,6 kB brutos** — e o número surpreende
 
 O `LogoBolt` (`ExtrudeGeometry` de um `Shape` de 6 pontos + `meshStandardMaterial`),
