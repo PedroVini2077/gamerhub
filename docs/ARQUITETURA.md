@@ -393,7 +393,11 @@ src/
     │   │                  # Scene2D para o componente não virar um paredão de
     │   │                  # coordenadas
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
-    │                      # SceneObjects (LogoBolt/FloatingShapes)
+    │                      # SceneObjects (LogoBolt/FloatingShapes) e
+    │                      # geometriaDoRaio.js — a malha do raio construída EM
+    │                      # CÓDIGO a partir do contorno MEDIDO da arte
+    │                      # aprovada (Moore no canal alfa + Douglas-Peucker).
+    │                      # Nenhum pixel da arte chega ao navegador por aqui
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
     │                      # InputWrap, LoginSemBanco (o que a tela de login diz
     │                      # quando o banco está fora), e os dois porteiros de

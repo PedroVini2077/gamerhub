@@ -35,17 +35,66 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*(vazia — tudo do dia fechou nos PRs #165, #121, #120, #118, #167 e #168. As
-duas decisões que esperavam o dono foram tomadas por ele em 05/09: o painel da
-landing foi **descartado** e o logout deixou de ser global; as duas viraram
-registro em [DECISOES.md](docs/DECISOES.md).)*
+### `[10/09]` A CENA 3D CONSTRUÍDA À MÃO — a direção corrigida pelo dono
+
+**Objetivo, na frase dele:** *"a cena 3D principal precisa ser CONSTRUÍDA À MÃO
+EM CÓDIGO… NÃO use a imagem da lightning como substituta da geometria 3D"*.
+A arte segue mandando em silhueta, proporção, cor e sensação de material.
+
+#### A ANÁLISE (etapa que ele exigiu antes de codar) — feita
+
+| O que existe | Estado |
+| --- | --- |
+| `createRoot` + `extend()` **seletivo** (13 classes) | é o que segura o tamanho do chunk. `<Canvas>` traria o sistema de eventos inteiro |
+| `IntersectionObserver` → `frameloop` on/off | laço parado fora da viewport |
+| `ResizeObserver` → `configure({ size })` · `root.unmount()` | ciclo de vida completo |
+| `DPR [1, 1.5]`, `antialias`, `alpha` | voltou ao original em 29/08; o que foi desfeito está documentado no topo do arquivo |
+| **o raio de hoje** | `ExtrudeGeometry` de um `Shape` de 6 pontos com bevel — raio **genérico**, sem núcleo hexagonal e sem asas |
+| **material de hoje** | `meshStandardMaterial` + `emissive` — é o *"objeto verde com emissiveIntensity"* que ele critica |
+| **fragmentos de hoje** | `icosahedron`/`torus`/`octahedron`/`dodecahedron` em wireframe — os "objetos genéricos" que ele mandou substituir |
+| dependências 3D | **só** `three` + `@react-three/fiber`. Sem drei, sem postprocessing, sem GSAP, sem pixi |
+| peso do chunk | **708 kB bruto · 189 kB gzip**, e ele **NÃO** entra no orçamento de bytes (que só mede o JS inicial) |
+
+**O fato que muda o cálculo de custo:** a 3D só carrega para quem passa no
+portão de `lib/cena3D.js` — desktop, ≥1024 px, ≥2 núcleos, sem
+`prefers-reduced-motion`. **Celular nunca paga por ela.** Então ambição na 3D
+não é ambição em cima de quem tem aparelho fraco.
+
+#### As dependências — cada uma com justificativa, como ele exigiu
+
+| Biblioteca | Decisão | Por quê |
+| --- | --- | --- |
+| **GLSL / `ShaderMaterial`** | **SIM** | **zero byte extra** — é `three` puro. É de onde saem Fresnel, energia interna, ruído e a variação de transparência. Melhor relação valor/custo de longe, e é exatamente onde ele pediu para explorar a GPU |
+| **`@react-three/drei`** | **NÃO** (por ora) | o que atrairia é o `MeshTransmissionMaterial`, e ele **renderiza a cena para um buffer a cada quadro**. Além do custo, quebra o `extend()` seletivo que segura o chunk. Fresnel + refração *aproximada* em shader próprio dá quase o mesmo a custo ~0 |
+| **postprocessing / bloom** | **NÃO no primeiro corte** | exige `EffectComposer` e um passe de tela cheia. A alternativa barata é glow em geometria de casca com blending aditivo. **Medir primeiro**; só entra se a medição mostrar que o shader não alcança |
+| **GSAP** | **NÃO** | a crítica dele é certa — dezenas de `useFrame` descoordenados é arquitetura ruim. Mas o conserto é **uma timeline central**, e ela cabe em ~40 linhas. 25 kB gzip por 40 linhas não se justifica, e ele mesmo escreveu *"não adicione bibliotecas apenas porque são tecnicamente interessantes"* |
+| **PixiJS** (fallback 2D) | **NÃO** | a 2D existe para quem o portão recusou — máquina fraca. Trocar CSS de custo zero por um runtime de canvas é o oposto do motivo dela existir |
+
+#### As etapas
+
+1. ⬜ geometria do raio **em código**: metade superior + núcleo + metade inferior,
+   com fissura pequena, núcleo hexagonal vazado e as duas asas — a silhueta que
+   as referências fixam;
+2. ⬜ `ShaderMaterial` de cristal: Fresnel, energia interna, ruído procedural,
+   transparência variável;
+3. ⬜ o núcleo como estrutura cristalina que **pulsa e ilumina as faces internas**
+   — as duas metades reagem (sobe/desce), sem explosão;
+4. ⬜ família de fragmentos derivada da linguagem do raio (verde dominante, cyan
+   perto do núcleo, roxo longe, âmbar raro e pontual);
+5. ⬜ **timeline central** de entrada em 9 tempos, e depois estado de repouso —
+   substituindo os `useFrame` independentes;
+6. ⬜ medir antes/depois no mesmo aparelho (§0.3) e reavaliar cada otimização.
+
+**O que NÃO pode morrer:** `IntersectionObserver`, `frameloop` controlado, DPR
+limitado, `ResizeObserver`, `root.unmount()`, carregamento sob demanda, o
+portão de aparelho e o fallback 2D.
 
 ---
 
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**33 itens abertos** (+ 1 ideia sem compromisso)
+**34 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -767,6 +816,24 @@ dependência técnica real** que decide o resto:
   **Corrigido:** `profiles` **nunca tinha sido analisada** (`last_analyze` e
   `last_autoanalyze` NULL) — a estatística dizia 0 linhas onde há 5, e ela é
   lida em toda policy de RLS. `ANALYZE` em 10 tabelas.
+
+- ⬜ `[10/09]` 🟡 **`blocked_words` ficou SEM PORTÃO do lado logado.**
+
+  O `e2e/portas-do-banco.mjs` vigiava a lista de palavrão pelo lado anônimo. O
+  SEC-004 fechou `blocked_words` para `anon` — corretamente: os quatro lugares
+  que chamam `useBlockedWords` e o painel de moderação vivem **todos** atrás de
+  `RequireAuth`, conferido rota a rota no `App.jsx`. `authenticated` manteve as
+  5 colunas.
+
+  **O que se perde:** aquele arquivo roda com a chave anônima, então ele deixou
+  de conseguir enxergar a tabela. O risco que a linha guardava continua vivo do
+  lado logado — se a lista sumir, `checkContent` **aprova tudo em silêncio**, e
+  é a falha muda clássica (§1.5): nada estoura, nada loga, e a moderação
+  simplesmente para de acontecer.
+
+  **Onde ele caberia:** o job `fluxos autenticados` do CI já faz login. Uma
+  asserção lá — "a wordlist carregou com N > 0 palavras" — fecharia o buraco
+  sem credencial nova.
 
 - ⬜ `[10/09]` 🔵 **A consulta de índice não usado da §6.1 é inócua neste
   volume.** `select ... where idx_scan = 0` devolve **36 dos índices**, e o

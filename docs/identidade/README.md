@@ -46,35 +46,45 @@ e achar que era parte do sistema.
 
 ## Como usar
 
-> ### `[10/09]` O DONO INVERTEU ESTA REGRA. Leia os dois parágrafos.
+> ### `[10/09]` ESTA REGRA MUDOU TRÊS VEZES NO MESMO DIA. Vale a terceira.
+>
+> Está escrito assim, com as três, porque decisão revertida em silêncio volta
+> como "conserto" daqui a dois meses (§6.2, regra 4) — e porque quem ler só a
+> última não entende por que o código tem as duas coisas.
 
-**A regra ANTIGA era:** *"como referência artística, nunca como asset de
-runtime"*, com a ordem dele: *"não coloque a imagem diretamente na Landing, não
-use como background, não use como textura, não dependa da imagem em runtime"*.
+| # | O que ele disse | Efeito |
+| --- | --- | --- |
+| 1ª | *"referência artística, **nunca** como asset de runtime — não coloque a imagem na Landing, não use como background, não use como textura"* | a cena nasceu 100% em código |
+| 2ª | *"quero que você **USE ESSAS IMAGENS COMO BASE REAL DA EXPERIÊNCIA visual**, em vez de tentar recriar tudo do zero"* | a cena 2D foi reconstruída com a arte no centro |
+| **3ª — a que vale** | *"a cena 3D principal precisa ser **CONSTRUÍDA À MÃO EM CÓDIGO**… **NÃO use a imagem da lightning como substituta da geometria 3D**"* | ver abaixo |
 
-**A regra de HOJE**, também dele, e ela vale: *"quero ajustar a abordagem…
-quero que você **USE ESSAS IMAGENS COMO BASE REAL DA EXPERIÊNCIA visual**, em
-vez de tentar recriar tudo do zero"*.
+### A regra de HOJE, e ela NÃO é a volta da primeira
 
-**O que continua proibido**, porque ele repetiu na mesma mensagem: a imagem
-entrar como `<img>` solto, como background, como "copia e cola", ou virar
-galeria/slideshow. *"Quero que você construa uma composição visual em torno
-dessas imagens."*
+A terceira não desfaz a segunda — ela **separa por destino**, e essa é a
+distinção que importa:
 
-Então a distinção não é mais "imagem sim ou não" — é **artefato dentro de uma
-composição** contra **figura colada na tela**.
+| Onde | O que vale |
+| --- | --- |
+| **a cena 3D principal** | geometria, materiais, shaders, iluminação e animação **em código**. A arte serve de referência para silhueta, proporção, cor e sensação de material — nunca como plano, sprite ou background |
+| **favicon · PWA · Open Graph · previews · assets estáticos** | a arte aprovada entra **direto**, e é para isso que ela existe |
+| **textura secundária na cena** | permitido, mas só *"caso exista uma razão técnica clara"* |
 
-### O que isso mudou na prática
+**O que segue proibido nas três versões:** `<img>` solto no centro, imagem como
+background para fingir 3D, galeria, slideshow, copia-e-cola.
 
-`src/assets/marca/` guarda os derivados de runtime, gerados de
-`08-raio-nucleo-aceso.webp`. Duas medições decidiram o formato:
+### O estado do código agora
+
+`src/assets/marca/` guarda os derivados de runtime gerados de
+`08-raio-nucleo-aceso.webp`, e duas medições decidiram o formato:
 
 | | |
 | --- | --- |
 | a arte tem alfa REAL (82,8% do quadro) | usá-lo custava **67 kB** — o canal alfa domina a compressão WebP |
 | a página é quase preta e o raio BRILHA | composta sobre preto e desenhada com `screen`, a mesma arte custa **18,9 kB** |
 
-Quem usa: `src/components/landing/Scene2D.jsx`.
+Quem usa hoje: `src/components/landing/Scene2D.jsx` — **e isso é estado
+intermediário**. A 2D só aparece para quem não recebe a 3D, e a direção dela
+será revista quando a cena em código estiver de pé.
 
 ## Paleta
 
