@@ -117,6 +117,9 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   `ALTER DEFAULT PRIVILEGES` para as tabelas futuras.
 - ✅ **SEC-004 · a wordlist inteira era legível sem conta** (322 palavras com a
   severidade — o mapa de como contornar o filtro) — **FECHADO**. 🔵
+- ✅ **SEC-006 · o cache do React Query atravessava a troca de conta** —
+  **FECHADO**. 🟡 Era a consequência de backend que faltava para o spoof de
+  `role` do DevTools deixar de ser inofensivo.
 - ✅ **SEC-005 · `site_config.updated_by` legível por `anon`** — **FECHADO**, e
   com ele o item 🔵 que estava **aberto no backlog desde 01/09**. Deu para
   fechar sem decisão nova porque duas coisas mudaram: `profiles` foi revogado de

@@ -23,6 +23,7 @@ maior descoberta do dia **não estava em nenhum deles**.
 | SEC-003 | `TRUNCATE` para `anon` em 27 de 29 tabelas | 🟠 | **FECHADO** |
 | SEC-004 | a wordlist inteira legível sem conta | 🔵 | **FECHADO** |
 | SEC-005 | `site_config.updated_by` legível por `anon` | 🔵 | **FECHADO** |
+| SEC-006 | o cache do React Query **atravessava a troca de conta** | 🟡 | **FECHADO** |
 
 ### SEC-001 — a contradição entre a tela e a policy
 
@@ -250,6 +251,49 @@ comportamentalmente (role, ban, suspensão, staff). As duas restantes:
 - **`contato_registrar_resposta`** — exige `is_staff()`; responder qualquer
   mensagem é o desenho.
 
+## SEC-006 — a consequência que faltava para o spoof de `role`
+
+**Este é o achado mais interessante do dia**, porque ele liga a ponta que o
+próprio prompt tinha deixado em aberto.
+
+O prompt classificou o spoof de `role` no DevTools como *"client-side trust /
+expected tamperability"* — **enquanto não houvesse consequência no backend**. E
+mandava não inflar. Estava certo.
+
+**Só que havia uma consequência, e ela não estava no banco: estava no cache.**
+
+O React Query guarda em **memória**, e várias chaves privilegiadas **não levam o
+usuário dentro delas**: `['owner_users']`, `['owner_audit_logs']`,
+`['owner_stats']`, `['reports']`, `['role_change_requests','pending']`.
+
+Sair do site **não recarrega a página** — só a saída do banido faz `replace`. E
+nada limpava o cache: `signOut()` fazia `signOut` no Supabase e
+`setProfile(null)`, mais nada.
+
+**A cadeia completa:**
+
+1. o dono entra, abre o painel — cache preenchido com a lista de usuários;
+2. sai (sem recarregar a aba);
+3. outra pessoa entra na **mesma aba**;
+4. forja `role: owner` no DevTools — o teste que o dono já fez;
+5. o painel monta;
+6. **o React Query serve o cache antes de qualquer refetch ser negado.**
+
+O passo 6 é o que faltava. As RPCs continuam negando — mas o dado renderizado
+não veio delas, veio da memória.
+
+**Severidade 🟡:** exige a mesma aba, logo após a saída de alguém privilegiado,
+e DevTools. Não é acesso remoto. Mas é o cenário exato do §67 do prompt ("teste
+de session switch"), e o custo de fechar foi de três linhas.
+
+**A correção limpa por IDENTIDADE, não por evento.** `onAuthStateChange` também
+dispara em `TOKEN_REFRESHED`, e limpar ali faria o site refazer todas as
+consultas de hora em hora — egress à toa, que é a cota mais apertada do plano.
+
+**Trava:** `cacheNaoAtravessaTrocaDeConta.test.js`, provada reinjetando as duas
+metades — sem o `clear()`, e com ele disparando a cada evento. Ela vigia também
+a **deriva**: chave de painel nova que nasça sem identidade reprova.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
@@ -262,7 +306,8 @@ CONSEGUI PROVAR"*.
   **role** e o **ban/suspensão** foram auditados e estão acima;
 - **RPC chaining** e **confused deputy** — upsert e mass assignment foram
   auditados e estão acima;
-- **isolamento de sessão**: cache, logout, role stale, downgrade;
+- **role stale** e **downgrade durante sessão ativa** — o cache foi auditado e
+  está acima (SEC-006);
 - a **matriz de permissões** 29 ações × 4 papéis.
 
 Nada disso está "provavelmente ok". Está **não verificado**.

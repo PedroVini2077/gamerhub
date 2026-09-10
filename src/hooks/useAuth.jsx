@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
+import { queryClient } from '../lib/queryClient';
 import { marcarEntradaAgora, cancelarEntradaAgora } from '../lib/boasVindas';
 import { logAudit } from '../lib/auditLog';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
@@ -15,6 +16,10 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bannedScreen, setBannedScreen] = useState(null);
+  // Quem estava logado no evento anterior. `useRef` e não estado: mudar isto
+  // não pode causar render, e o valor precisa sobreviver entre os disparos do
+  // `onAuthStateChange` sem entrar em nenhuma lista de dependência.
+  const idAnterior = useRef(null);
 
   // Via RPC, não `select('*')`: as colunas sensíveis de `profiles`
   // (birth_date, ban_reason, notif_*, …) foram revogadas de `authenticated`,
@@ -61,6 +66,32 @@ export function AuthProvider({ children }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const idNovo = session?.user?.id ?? null;
+
+      // `[10/09]` SEC-006 — o cache não pode atravessar uma troca de conta.
+      //
+      // O React Query guarda em MEMÓRIA, e várias chaves privilegiadas não
+      // levam o usuário dentro delas: `['owner_users']`, `['owner_audit_logs']`,
+      // `['owner_stats']`, `['reports']`, `['role_change_requests','pending']`.
+      // Sair não recarregava a página (só a saída do banido faz `replace`), e
+      // nada limpava o cache — então o dado do dono continuava na memória da
+      // aba quando outra pessoa entrava nela.
+      //
+      // Sozinho isso não vazava: a tela do painel não monta para quem não é
+      // owner. Mas é EXATAMENTE a consequência de backend que faltava para o
+      // spoof de `role` do DevTools deixar de ser inofensivo — com o painel
+      // montado à força, o React Query serviria o cache antes de qualquer
+      // refetch ser negado.
+      //
+      // Limpa quando a IDENTIDADE muda, não a cada evento: o
+      // `onAuthStateChange` também dispara em `TOKEN_REFRESHED`, e limpar ali
+      // faria o site refazer todas as consultas de hora em hora — egress à toa,
+      // que é a cota mais apertada do plano (§0.2).
+      if (idNovo !== idAnterior.current) {
+        idAnterior.current = idNovo;
+        queryClient.clear();
+      }
+
       setUser(session?.user ?? null);
       // Não checa ban aqui: o SIGNED_IN do login de uma conta banida é transitório.
       if (session?.user) fetchProfile();
