@@ -83,6 +83,42 @@ não é ambição em cima de quem tem aparelho fraco.
    `useFrame` (`RaioCristalino.jsx`);
 6. ⬜ medir antes/depois no mesmo aparelho (§0.3) e reavaliar cada otimização.
 
+#### `[10/09]` A RECONSTRUÇÃO DA GEOMETRIA — dois prompts novos do dono
+
+**O diagnóstico dele, na letra:** *"não está parecido com as imagens que te
+mandei, está totalmente deformado"*. E o prompt: *"quando digo qualidade 3D, não
+estou falando apenas de textura, glow ou shader — estou falando da própria
+malha, geometria, vértices, arestas, faces, topologia, silhueta"*.
+
+| Etapa | Estado |
+| --- | --- |
+| ✅ silhueta MEDIDA (`scripts/silhueta-da-marca.mjs`, `contornoDaMarca.js`) | 3.133 pontos brutos → 81 + 38 do furo |
+| ✅ sólido com chanfro, subdivisão e seção de lâmina (`solidoDeCristal.js`) | 436 → **8.220** triângulos · profundidade 0,137 → **0,372** |
+| ✅ núcleo em duas peças concêntricas, dimensionado pela LARGURA do furo | antes nascia com o dobro da largura do buraco |
+| ✅ fissura fina no lugar do vão | o corte era nas bordas do furo (21% da altura) |
+| ✅ ferramenta de OLHAR (`scripts/olhar-a-cena3d.mjs`) | 4 ângulos, com e sem material |
+| ⬜ **o que ainda não está bom** | ver abaixo |
+
+**O que continua aberto na peça**, conferido olhando:
+
+- a região ao redor do núcleo tem lascas finas do corte, que aparecem como
+  brilho estourado em três quartos;
+- o núcleo lê como hexágono claro, não como fonte gerando energia;
+- os fragmentos ainda não foram reavaliados depois da mudança de linguagem;
+- **a arte `11-mestre-3d.webp` não foi usada como fonte de silhueta** — o brilho
+  verde saturado dela não se separa do cristal verde. Se a silhueta dela for
+  diferente da `01` de propósito, isso precisa vir do dono, não de limiar;
+- **custo por quadro não medido** com a malha nova (era a etapa 6, continua).
+
+**Do prompt dele que NÃO foi feito, e por quê:**
+
+| Pedido | Estado |
+| --- | --- |
+| pipeline Blender (retopologia, weighted normals, KTX2) | **não existe Blender neste ambiente**. A geometria é construída em código, que custa **zero byte** — um GLB otimizado do modelo dele daria 234 KB + 29 KB de decodificador |
+| ACES tone mapping + bloom moderado | não avaliado ainda |
+| fallback 2D premium com SVG oficial + GSAP | não avaliado ainda |
+| favicon/PWA/Open Graph a partir da identidade | pendente, e o dono já reprovou uma tentativa |
+
 #### O que foi entregue e **ainda não está bom** — palavra do dono
 
 > *"faz só o commit e faz o merge, assim mesmo, ainda não tá bonito, depois
