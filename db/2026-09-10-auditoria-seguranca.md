@@ -161,14 +161,45 @@ alvo é escolhido inteiramente por quem chama.
 As duas estão concedidas **só a `authenticated`** — `anon` foi revogado na
 migration de 05/09, e continua revogado.
 
+## Ban e suspensão — a frente com histórico de falha real aqui
+
+Testado com **fixture dentro da transação**: um `user` foi promovido a `admin` e
+outro a `super_admin` só para o teste, e o `ROLLBACK` desfez tudo. Nenhum dado
+real foi alterado (§94).
+
+| Tentativa, como `admin` | Resultado |
+| --- | --- |
+| banir o **owner** | negado — *"cannot ban equal or higher"* |
+| suspender o **owner** | negado — *"cannot suspend equal or higher"* |
+| banir um **super_admin** | negado — *"cannot ban equal or higher"* |
+| suspender por **36.500 dias** | negado — *"deve ser de 1 a 30 dias"* |
+| suspender com `p_days = NULL` | **negado** — *"deve ser de 1 a 30 dias"* |
+| desbanir o owner | negado — *"super_admin required"* |
+| **estado do owner no fim** | `banned=false` · `suspenso=null` |
+
+**As duas linhas que mais importam:**
+
+O **36.500** é a falha histórica deste projeto — a suspensão que virou ano 2126
+e, sem inversa, virou banimento permanente pulando a hierarquia. **Continua
+fechada.**
+
+O **`NULL`** é a armadilha do SQL que o `BANCO.md` documenta: `NULL < 1` é
+`NULL`, e um `IF` ingênuo **não dispara**. A função trata explicitamente — se
+não tratasse, `p_days = NULL` passaria pela faixa e produziria uma suspensão sem
+data.
+
+E o `unban_user`, que meu regex não conseguiu confirmar como "checa o alvo",
+**nega pelo cargo**: desbanir exige `super_admin`. O regex era inconclusivo; o
+comportamento é claro.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
 CONSEGUI PROVAR"*.
 
 - as **48 funções alcançáveis** pelo cliente, uma a uma, com as 30 perguntas;
-- os fluxos de **ban, suspensão e moderação** (§13 e §14 do prompt 2) — a
-  escalada de **role** foi auditada e está acima;
+- o fluxo de **moderação de conteúdo** (§14 do prompt 2) — a escalada de
+  **role** e o **ban/suspensão** foram auditados e estão acima;
 - **upsert**, **mass assignment**, **RPC chaining**, **confused deputy**;
 - **isolamento de sessão**: cache, logout, role stale, downgrade;
 - a **matriz de permissões** 29 ações × 4 papéis.
