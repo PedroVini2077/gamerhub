@@ -109,13 +109,49 @@ legíveis por `anon` em 8 das 10 tabelas restantes — **mas `profiles` está
 fechado para `anon`**, então UUID não vira nome. A cadeia de identificação está
 quebrada, e é isso que rebaixa esses casos de 🟡 para ruído.
 
+## Escalada vertical — auditada, e fechada
+
+**Cinco caminhos alteram `profiles.role`**, achados por busca semântica no corpo
+das funções (não pelo nome): `owner_set_role`, `admin_set_role`,
+`decide_role_demotion`, `decide_staff_trial`, `review_staff_nomination`.
+
+`owner_set_role` chamou atenção por **não** usar `role_rank` nem `is_super` —
+mas ler o corpo mostrou que aqui a lista literal é **correta**, não bug:
+`is_super()` seria mais **fraco**, porque incluiria `super_admin`. Ela ainda
+impede auto-alteração, não aceita `'owner'` entre os destinos possíveis, protege
+o fundador e grava auditoria com o ator real.
+
+### O teste que decide, com a role conferida DEPOIS
+
+| Tentativa, como `user` | Resultado |
+| --- | --- |
+| virar `owner` via `owner_set_role` | **negado** — *"apenas o fundador pode alterar roles"* |
+| auto-promover via `admin_set_role` | **negado** — *"admin necessário"* |
+| rebaixar o fundador | **negado** |
+| `UPDATE profiles SET role='owner'` direto | **passou sem erro** |
+| **a role no fim** | **continua `user`** |
+| **a role do fundador no fim** | **continua `owner`** |
+
+**A quarta linha é a razão de este teste existir.** O comando não deu erro
+nenhum — e não mudou nada: o trigger `guard_profile_privileged_cols` reverteu
+por baixo. É a fonte de silêncio nº 3 do §1.5 ("trigger-guarda que reverte"),
+aqui trabalhando a favor.
+
+Se eu tivesse conferido só se houve erro, teria concluído errado **nos dois
+sentidos**: "passou" na quarta, e "está tudo negado" sem saber se a role mudou.
+É exatamente o que o §72 do prompt exige — *"não aceite que a função retornou
+erro sem verificar que a role permaneceu intacta"*.
+
+**Defesa em profundidade confirmada:** a RPC nega **e** o trigger reverte.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
 CONSEGUI PROVAR"*.
 
 - as **48 funções alcançáveis** pelo cliente, uma a uma, com as 30 perguntas;
-- os fluxos de **role, ban, suspensão e moderação** (§10 a §14 do prompt 2);
+- os fluxos de **ban, suspensão e moderação** (§13 e §14 do prompt 2) — a
+  escalada de **role** foi auditada e está acima;
 - **IDOR/BOLA** função a função;
 - **upsert**, **mass assignment**, **RPC chaining**, **confused deputy**;
 - **isolamento de sessão**: cache, logout, role stale, downgrade;
