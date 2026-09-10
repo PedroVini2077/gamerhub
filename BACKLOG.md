@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**32 itens abertos** (+ 1 ideia sem compromisso)
+**34 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -101,6 +101,49 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 > **Esperando você:** três decisões de custo (HIBP, plano Team, sair do Gmail),
 > a escolha do React Query, o desenho do aviso na landing, repostar um vídeo e
 > repetir o PageSpeed do desktop no preset padrão.
+
+---
+
+## 🔴 ACHADO DE SEGURANÇA ABERTO — `[10/09]`
+
+- ⬜ `[10/09]` 🟠 **SEC-001 · `game_keys.key_code` é legível SEM CONTA.**
+  *Estado: **CONFIRMADO**, reproduzido em `ROLLBACK` assumindo o papel `anon`.
+  **Espera decisão de produto do dono para fechar.***
+
+  | Camada | O que ela faz |
+  | --- | --- |
+  | policy `Public keys` | `SELECT` para `{public}` com `USING (true)` — todas as linhas |
+  | grant de coluna | `anon` lê `key_code` (uma das 9 colunas concedidas) |
+  | dados reais | **3 linhas** com `is_promo = false` e `key_code` preenchido (até 22 caracteres) |
+  | `components/admin/KeysPanel.jsx` | o campo *"Código da key"* só aparece **quando não é promo** — `key_code` é a chave de verdade do jogo |
+  | `components/layout/RightPanel.jsx` | quem exibe a key é o painel do **site logado** |
+
+  **A contradição que define o achado:** a interface exige login para ver a
+  chave; **a policy não exige nada**. Um `curl` no endpoint REST devolve as três.
+
+  **Por que o filtro do frontend não protege:** existe `select('*')` em
+  `hooks/useAdminData.js` e a decisão do que mostrar acontece no JavaScript.
+  Decidir segredo no cliente nunca protegeu nada (§1.3) — quem usa o endpoint
+  direto não passa pelo nosso código.
+
+  **Severidade 🟠 e não 🔴:** não compromete conta nem escala privilégio. Mas é
+  exposição de segredo real, e o dono marcou como prioridade alta se existisse.
+
+  **Amostra mascarada**, conforme a ordem dele de nunca expor chave real:
+  `CY******************`. Nenhuma chave foi copiada para lugar nenhum.
+
+  **O que falta para fechar, e é decisão DELE, não minha:** quem deve poder ver
+  `key_code` — qualquer pessoa logada, ou só a equipe? A correção é migration
+  nova separando promo de não-promo na policy, mais regressão provando que
+  `anon` deixa de ler.
+
+- ⬜ `[10/09]` 🔵 **SEC-002 · o `SEGURANCA.md` afirma algo que deixou de ser
+  verdade.** *Estado: CONFIRMADO (documentação), não é brecha.*
+
+  Ele diz que **`anon` enxerga `(id, username)` de `profiles`**. Hoje `anon`
+  **não tem `SELECT` nenhum** em `profiles` — a checagem de username no cadastro
+  migrou para a RPC `username_disponivel`, e o texto ficou para trás. Confirmar o
+  caminho antes de corrigir o texto (§6.2, camada 3).
 
 ---
 
@@ -287,6 +330,60 @@ dependência técnica real** que decide o resto:
   - **não** trocar todos os 400 por 403 automaticamente: o requisito é *"operação
     não autorizada não acontece"*, o código HTTP é secundário;
   - **não** trocar 1 consulta por 20 em nome de hardening.
+
+  ### PARTE 3 — execução, e ela proíbe pular para a correção
+
+  **A ordem é `AUDIT → PLAN → IMPLEMENT → VALIDATE → REPORT`**, em 17 fases, com
+  a instrução final explícita: *"NÃO pule diretamente para a FASE 11"* (que é
+  implementar). A primeira ação é reconstruir o modelo de autorização **sem
+  alterar arquivo nenhum**.
+
+  **Todo achado usa estado, não adjetivo:** `CONFIRMADO` · `PROVÁVEL` ·
+  `SUSPEITO` · `NÃO REPRODUZIDO` · `MITIGADO` · `CORRIGIDO` · `INFORMATIVO` ·
+  `FALSO POSITIVO`. E é a nossa regra §1.1 com outro nome: *"'profiles?select=id
+  retorna 200' não significa 'profiles está vulnerável'; 'Response não carregou'
+  não significa 'servidor retornou []'"*.
+
+  **Classes de ataque que a parte 3 acrescenta**, e são as que eu não teria
+  procurado sozinho:
+
+  | Classe | O que é |
+  | --- | --- |
+  | **confused deputy** | função privilegiada que aceita *"execute em nome de X"* sem verificar se o caller pode representar X. O parâmetro nunca substitui `auth.uid()` |
+  | **segunda ordem** | altera um estado inocente → usa esse estado para ganhar privilégio. Ex.: cria nomination → manipula status → chama approve → ganha role |
+  | **mass assignment** | `update(payload)` com objeto vindo do formulário — *"o cliente consegue enviar campos que a UI não possui?"* |
+  | **upsert** | *"frequentemente esquecido porque parece um INSERT"*: dá para usar conflito de chave para alterar o que não se poderia `UPDATE`? |
+  | **RPC chaining** | A chama B chama C — **B não está protegida só porque A está** |
+  | **isolamento de sessão** | cache/React Query: dado de admin sobrevive ao logout? conta seguinte herda? role stale? downgrade durante sessão ativa? |
+
+  **Regressões que ele quer nominalmente:** as quatro RPCs negando; `owner` não
+  rebaixável por admin nem por super_admin, nem por caminho indireto;
+  auto-promoção negada **com a role conferida intacta depois** (*"não aceite que
+  a função retornou erro sem verificar que a role permaneceu"*); matriz
+  caller-rank × target-rank × new-role; IDOR por conta.
+
+  **Regra absoluta contra ação perigosa:** não apagar dado real, não alterar role
+  de gente real, não banir ninguém real, não revelar segredo, **não desativar RLS
+  nem abrir permissão "para testar"**. Teste destrutivo só em fixture.
+
+  **`CLOSED` tem 8 requisitos** — causa, correção, teste positivo, teste
+  negativo, caminho alternativo revisado, migration validada, documentação, diff
+  revisado. Sem os oito: `PARTIALLY MITIGATED` ou `OPEN`.
+
+  **E a instrução que eu mais preciso obedecer:** *"se não conseguir provar, diga
+  NÃO CONSEGUI PROVAR. Não invente."* O relatório não pode dizer *"projeto
+  seguro"* — no máximo *"não foram encontradas vulnerabilidades críticas nas
+  superfícies auditadas"*, dizendo o que foi testado, o que não foi, e o que
+  permanece em aberto.
+
+  > **`[10/09]` O AVISO DO DONO, e ele muda como eu leio os três prompts:** eles
+  > foram escritos **pelo ChatGPT**, com acesso parcial ao repositório. *"Vamos
+  > seguir as nossas regras e sempre verificar o que é verdade ou não."*
+  > Toda afirmação técnica dentro deles — que `get_own_profile` é assim, que
+  > `admin_list_users` exige rank ≥ 2, que o frontend filtra `!k.is_promo` — é
+  > **hipótese até eu conferir na fonte** (§1.4). Vale inclusive para os quatro
+  > `400` que ele observou: são evidência do que aconteceu **naquele momento**,
+  > não prova do estado atual do banco.
 
 - ⬜ `[10/09]` 🟠 **1. TESTAR O BREVO.** *O dono já criou a conta e configurou —
   falta a metade que é minha.*
