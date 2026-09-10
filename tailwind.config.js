@@ -41,6 +41,14 @@ export default {
         // resto do carregamento, que era exatamente o problema da cena 3D.
         "bolt-float": "boltFloat 7s ease-in-out infinite",
         "shape-drift": "shapeDrift 9s ease-in-out infinite",
+        // `[10/09]` A cena nova da Landing (`landing/Scene2D.jsx`), construída
+        // em volta da arte da identidade. Todas mexem SÓ em `transform` e
+        // `opacity` — compositor, main thread livre, que é a propriedade que
+        // separa esta cena da 3D de 887 kB.
+        "anel-orbita": "anelOrbita 30s linear infinite",
+        "nucleo-pulsa": "nucleoPulsa 4.5s ease-in-out infinite",
+        "raio-respira": "raioRespira 9s ease-in-out infinite",
+        "fragmento-flutua": "fragmentoFlutua 16s ease-in-out infinite",
         // Fundo da página "Sobre" (`sobre/FundoAnimado.jsx`). Atravessa a tela
         // devagar. Só `transform` e `opacity`: as duas rodam no compositor, e
         // é isso que separa "enfeite de graça" de "laço queimando CPU numa
@@ -102,6 +110,38 @@ export default {
         boltFloat: {
           "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
           "50%": { transform: "translateY(-14px) rotate(2deg)" },
+        },
+        // `[10/09]` Os anéis giram no próprio eixo. A inclinação de cada um vem
+        // do `transform` da elipse (em `pecasDaCena.js`); aqui só o giro, para
+        // os dois não brigarem pela mesma propriedade.
+        anelOrbita: {
+          "0%":   { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        // O núcleo respira. É a "fonte de energia" da composição — quem pulsa
+        // é ele, e o resto responde.
+        nucleoPulsa: {
+          "0%, 100%": { transform: "translate(-50%, -50%) scale(1)",    opacity: 0.62 },
+          "50%":      { transform: "translate(-50%, -50%) scale(1.11)", opacity: 0.92 },
+        },
+        // O raio flutua MENOS que os fragmentos, de propósito: o protagonista
+        // fica quase parado e o entorno se move. Invertido, a cena embrulha.
+        raioRespira: {
+          "0%, 100%": { transform: "translateX(-50%) translateY(0)      scale(1)" },
+          "50%":      { transform: "translateX(-50%) translateY(-10px) scale(1.012)" },
+        },
+        // Os fragmentos derivam devagar, cada um com fase própria pelo
+        // `animationDelay` negativo.
+        //
+        // **Este keyframe só translada, e isso é obrigatório.** `transform` de
+        // `@keyframes` SUBSTITUI o `transform` do elemento por inteiro — se o
+        // giro de cada fragmento estivesse no mesmo elemento, ele sumiria no
+        // primeiro quadro. Por isso o `Fragmento` usa dois divs: o de fora
+        // posiciona e gira, o de dentro anima. É a mesma pegadinha que já tinha
+        // descentralizado o raio da cena antiga.
+        fragmentoFlutua: {
+          "0%, 100%": { transform: "translate3d(0, 0, 0)" },
+          "50%":      { transform: "translate3d(6px, -26px, 0)" },
         },
         // As formas de contorno derivam com amplitude maior e fase própria
         // (cada uma recebe um `animationDelay` negativo diferente).

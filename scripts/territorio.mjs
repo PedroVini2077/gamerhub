@@ -79,6 +79,20 @@ export const TERRITORIO = {
   'docs/identidade/README.md': [
     'index.html',
     'public',
+    // `[10/09]` A cena da Landing passou a USAR a arte da identidade como asset
+    // de runtime, e não só como referência. Daqui em diante, mexer na cena ou
+    // nos derivados torna este documento suspeito.
+    'src/assets/marca',
+    'src/components/landing/Scene2D.jsx',
+    'src/components/landing/cena',
+  ],
+
+  // O registro do que foi REPROVADO. Ele envelhece junto com a marca: se o
+  // raio mudar, o motivo de cada tentativa ter sido recusada precisa ser
+  // relido antes de alguém repetir a mesma.
+  'docs/identidade/tentativas/README.md': [
+    'docs/identidade/tentativas',
+    'src/assets/marca',
   ],
 
   'docs/SEGURANCA.md': [

@@ -46,12 +46,35 @@ e achar que era parte do sistema.
 
 ## Como usar
 
-**Como referência artística, nunca como asset de runtime.** Ordem explícita do
-dono para a Landing: *"não coloque a imagem diretamente na Landing, não use como
-background, não use como textura, não dependa da imagem em runtime"*.
+> ### `[10/09]` O DONO INVERTEU ESTA REGRA. Leia os dois parágrafos.
 
-A construção é em código — SVG para o símbolo, geometria em código para a cena.
-Estas imagens são o **mapa**; o código é a construção.
+**A regra ANTIGA era:** *"como referência artística, nunca como asset de
+runtime"*, com a ordem dele: *"não coloque a imagem diretamente na Landing, não
+use como background, não use como textura, não dependa da imagem em runtime"*.
+
+**A regra de HOJE**, também dele, e ela vale: *"quero ajustar a abordagem…
+quero que você **USE ESSAS IMAGENS COMO BASE REAL DA EXPERIÊNCIA visual**, em
+vez de tentar recriar tudo do zero"*.
+
+**O que continua proibido**, porque ele repetiu na mesma mensagem: a imagem
+entrar como `<img>` solto, como background, como "copia e cola", ou virar
+galeria/slideshow. *"Quero que você construa uma composição visual em torno
+dessas imagens."*
+
+Então a distinção não é mais "imagem sim ou não" — é **artefato dentro de uma
+composição** contra **figura colada na tela**.
+
+### O que isso mudou na prática
+
+`src/assets/marca/` guarda os derivados de runtime, gerados de
+`08-raio-nucleo-aceso.webp`. Duas medições decidiram o formato:
+
+| | |
+| --- | --- |
+| a arte tem alfa REAL (82,8% do quadro) | usá-lo custava **67 kB** — o canal alfa domina a compressão WebP |
+| a página é quase preta e o raio BRILHA | composta sobre preto e desenhada com `screen`, a mesma arte custa **18,9 kB** |
+
+Quem usa: `src/components/landing/Scene2D.jsx`.
 
 ## Paleta
 

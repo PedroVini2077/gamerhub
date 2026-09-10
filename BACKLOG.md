@@ -614,10 +614,54 @@ dependência técnica real** que decide o resto:
   | **2D** | **não é versão pobre da 3D** — é interpretação gráfica da mesma identidade, em SVG + CSS, com a mesma dramaturgia |
   | **arquitetura** | um **controlador central** de animação (timeline de estados), não lógica espalhada por objeto |
 
-  **A regra mais importante, e ela é dele em maiúsculas:** a imagem 3D é
-  **referência, não asset**. Nada de pôr a imagem na Landing, usar como
-  background, textura, sprite ou plano. *"A imagem é o mapa. O código é a
-  construção."*
+  > ### `[10/09]` A REGRA DA IMAGEM FOI INVERTIDA PELO DONO
+  >
+  > **Estava escrito aqui:** *"a imagem 3D é **referência, não asset** — nada de
+  > pôr a imagem na Landing, usar como background, textura, sprite ou plano"*.
+  >
+  > **Ele mudou:** *"quero ajustar a abordagem… quero que você **USE ESSAS
+  > IMAGENS COMO BASE REAL DA EXPERIÊNCIA visual**, em vez de tentar recriar
+  > tudo do zero"*.
+  >
+  > **O que continua valendo da regra antiga**, porque ele repetiu junto: nada
+  > de `<img>` solto, background, "copia e cola", galeria ou slideshow. A
+  > exigência virou *"construa uma composição visual em torno dessas imagens"*.
+  >
+  > Registrado assim, com as duas versões, porque decisão revertida em silêncio
+  > volta como "conserto" daqui a dois meses (§6.2, regra 4).
+
+  ### `[10/09]` ETAPA FEITA: a cena 2D
+
+  **A 2D está construída e é a versão que TODO MUNDO recebe.** Quatro camadas de
+  profundidade lidas da referência (atmosfera · fragmentos longe · anéis + raio ·
+  fragmentos perto desfocados e cortados pela borda), com o raio como brasão
+  acima do título.
+
+  | Medido | |
+  | --- | --- |
+  | custo de JavaScript | **0 kB** — A/B com `git stash`: 735,1 kB / 222,5 kB gzip **com e sem** a cena |
+  | asset desktop | 18,9 kB · celular 9,5 kB (só um carrega por aparelho) |
+  | animação | só `transform`/`opacity`, no compositor — nenhum `rAF`, nenhum estado |
+
+  **Três defeitos meus que só o print pegou**, registrados para não voltarem:
+
+  1. **retângulo preto tapando o grid** — `Landing.jsx` embrulha tudo num
+     `z-10`, e `z-index` cria contexto de empilhamento: o `mix-blend-mode:
+     screen` nunca alcançava o fundo da página. Três tentativas até eu parar de
+     chutar e instrumentar a cadeia de ancestrais (§1.2). Tirar o `z-10`
+     quebraria a ordem de pintura; a saída foi máscara elíptica;
+  2. **anéis 13vh abaixo do núcleo** — tamanho do raio e centro de órbita
+     digitados separados. Agora tudo deriva por `calc()` ancorado no núcleo;
+  3. **no celular o raio ocupava metade da largura** — `vh` não sabe nada sobre
+     largura. Virou `min(42vh, 56vmin)`.
+
+  ### O que FALTA nesta tarefa
+
+  - **a 3D** — a metade que ele pediu junto e que não foi feita;
+  - **a dramaturgia de entrada** (vazio → vórtice → convergência → core →
+    materialização → estabilização). Hoje a cena já nasce estabilizada;
+  - **a leitura dele sobre a linguagem visual da 2D** antes de a 3D ser
+    construída em cima dela.
 
   **O que NÃO pode morrer na reconstrução** — é infraestrutura, não estética:
   `IntersectionObserver`, suspensão fora da viewport, `ResizeObserver`, cleanup,

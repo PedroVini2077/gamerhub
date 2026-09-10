@@ -388,6 +388,10 @@ src/
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
     │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
+    │   ├── cena/          # `[10/09]` Os números da cena 2D (pecasDaCena.js):
+    │   │                  # anéis, fragmentos e as três profundidades. Saiu do
+    │   │                  # Scene2D para o componente não virar um paredão de
+    │   │                  # coordenadas
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
     │                      # SceneObjects (LogoBolt/FloatingShapes)
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
