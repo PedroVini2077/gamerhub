@@ -58,6 +58,7 @@ const fragmentShader = /* glsl */ `
   uniform float uOpacidade;
   uniform float uMaterializacao; // 0..1 — quanto da peça já existe
   uniform float uBranco;         // quanto a luz do núcleo puxa para o branco
+  uniform vec3  uLuz;            // direção da luz-chave, em espaço de MUNDO
 
   varying vec3 vNormalMundo;
   varying vec3 vParaCamera;
@@ -112,7 +113,25 @@ const fragmentShader = /* glsl */ `
     float lado = clamp(vNormalMundo.x * 0.5 + 0.5, 0.0, 1.0);
     vec3  cromatica = mix(uCorBorda, uCorFuga, lado);
 
-    vec3 cor = uCorBase;
+    // ── As FACES respondem à luz, e sem isto nada disso aparece ──────────
+    //
+    // [10/09] O pedido dele: "as faces precisam responder à luz de maneira
+    // diferente". Nao respondiam. uCorBase e #39ff14, que ja e o verde no
+    // maximo — somar Fresnel, veios e nucleo em cima disso estoura tudo em 1.0
+    // e a peca vira uma silhueta chapada. Quanto mais faceta a malha ganhou,
+    // menos se via, porque todas as facetas clipavam no mesmo valor.
+    //
+    // Um ShaderMaterial cru NAO recebe luz de cena — os uniforms de luz nem
+    // existem no programa. Entao a luz-chave e um vetor fixo aqui dentro, e o
+    // Lambert contra ele e o que separa uma faceta da vizinha. O piso de 0,16
+    // existe para a face virada ao contrario nao virar buraco preto: e cristal
+    // aceso por dentro, nao pedra.
+    //
+    // (Sem crase neste bloco DE PROPOSITO: ele mora dentro de um template
+    //  literal de JS, e uma crase aqui FECHA a string. Ja aconteceu 3x — ha um
+    //  teste que reprova se voltar: craseNoShader.test.js.)
+    float chave = clamp(dot(normalize(vNormalMundo), normalize(uLuz)), 0.0, 1.0);
+    vec3 cor = uCorBase * (0.16 + 0.84 * chave * chave);
     cor = mix(cor, cromatica, fresnel * 0.55);           // aresta cromática
     cor += uCorBase * veia * 0.55;                        // veios internos
     cor += mix(uCorBase, vec3(1.0), uBranco) * doNucleo;  // luz do core
@@ -142,17 +161,28 @@ export const PALETA = {
 /**
  * Cria o material do cristal.
  *
- * `transparent` com `depthWrite: false` é o par que evita a peça se recortar
- * contra si mesma — sem isso, a metade de trás some atrás da da frente em
- * ângulos rasos.
+ * ── `[10/09]` `depthWrite` VOLTOU a ser `true`, e a razão está num print ─────
+ *
+ * O par `transparent` + `depthWrite: false` foi escolhido para a peça não se
+ * recortar contra si mesma. Só que ele tem o custo oposto, e ele apareceu na
+ * landing renderizada: **toda** face desenha e soma, então as faces de trás
+ * atravessam as da frente e o raio lê como vidro quebrado em vez de cristal.
+ * Quanto mais faceta a malha ganhou, pior ficou — 8.220 triângulos somando.
+ *
+ * A arte é um cristal SÓLIDO com detalhe interno, não um vidro. Então:
+ * opacidade alta, `depthWrite: true`, e `FrontSide`. O que dá a leitura de
+ * translucidez continua vindo do Fresnel e dos veios, que são do shader.
+ *
+ * `transparent` fica ligado porque a MATERIALIZAÇÃO da entrada precisa dele —
+ * a peça nasce de baixo para cima variando alfa.
  */
-export function criarMaterialDeCristal({ nucleo = [0, 0, 0], opacidade = 0.34, branco = 0.35 } = {}) {
+export function criarMaterialDeCristal({ nucleo = [0, 0, 0], opacidade = 0.78, branco = 0.35 } = {}) {
   return new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
     transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
+    depthWrite: true,
+    side: THREE.FrontSide,
     uniforms: {
       uTempo: { value: 0 },
       uPulso: { value: 0 },
@@ -163,6 +193,7 @@ export function criarMaterialDeCristal({ nucleo = [0, 0, 0], opacidade = 0.34, b
       uOpacidade: { value: opacidade },
       uMaterializacao: { value: 0 },
       uBranco: { value: branco },
+      uLuz: { value: new THREE.Vector3(0.45, 0.72, 0.53).normalize() },
     },
   });
 }
@@ -190,9 +221,8 @@ export function criarMaterialDoNucleo() {
   // futura com `meshStandardMaterial` a usam; o que mudou é que o brilho do
   // núcleo passou a vir de onde ele pode vir, que é daqui.
   const material = criarMaterialDeCristal({
-    nucleo: [0, 0, 0], opacidade: 0.55, branco: 0.04,
+    nucleo: [0, 0, 0], opacidade: 0.92, branco: 0.04,
   });
   material.uniforms.uCorBase.value = new THREE.Color('#6dff3a');
-  material.depthWrite = true;
   return material;
 }

@@ -87,7 +87,7 @@ export default function RaioCristalino() {
   //
   const r = useMemo(() => {
     const matsFragmento = FRAGMENTOS.map((f, i) => {
-      const m = criarMaterialDeCristal({ nucleo: [0, 0, 0], opacidade: 0.26 });
+      const m = criarMaterialDeCristal({ nucleo: [0, 0, 0], opacidade: 0.72 });
       m.uniforms.uCorBase.value = corDoFragmento(i, f.pos[2]).clone();
       return m;
     });
@@ -180,13 +180,18 @@ export default function RaioCristalino() {
   });
 
   return (
-    // `[10/09]` ESCALA e POSIÇÃO, e as duas vieram do print.
+    // `[10/09]` ESCALA e POSIÇÃO, e as duas vieram de MEDIR o print da landing
+    // de verdade, não da peça isolada.
     //
-    // O raio nasce com 2 unidades de altura (é como o contorno foi
-    // normalizado) e a câmera está em z=5.5 com fov 42 — na primeira versão
-    // ele cobria a manchete inteira. Aqui ele encolhe e sobe, ficando como
-    // BRASÃO acima do título, que é a mesma composição da cena 2D.
-    <group ref={grupo} scale={0.62} position={[0, 1.15, 0]}>
+    // Câmera em `z = 5.5` com `fov 42` dá meia-altura visível de
+    // `5,5 · tan(21°) = 2,11`. A faixa livre acima da linha "sua base de
+    // operações gamer" vai de `y ≈ 1,62` a `y ≈ 0,62` — 1 unidade. Com o raio
+    // nascendo com 2 de altura, é `scale 0.50` centrado em `1.12`.
+    //
+    // A versão anterior usava `0.62` em `1.15`, e o topo caía em `y = 1,77`:
+    // a ponta ficava ATRÁS da barra do cabeçalho e a peça encostava no texto.
+    // Está no print de 10/09.
+    <group ref={grupo} scale={0.50} position={[0, 1.12, 0]}>
       {/* Luz interna: o núcleo é a fonte, então a luz mora NELE. */}
       <pointLight position={[CENTRO_DO_NUCLEO[0], CENTRO_DO_NUCLEO[1], 0.35]}
         color="#8dff7a" intensity={3.4} distance={4.6} />

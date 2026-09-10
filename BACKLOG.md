@@ -97,14 +97,19 @@ malha, geometria, vértices, arestas, faces, topologia, silhueta"*.
 | ✅ núcleo em duas peças concêntricas, dimensionado pela LARGURA do furo | antes nascia com o dobro da largura do buraco |
 | ✅ fissura fina no lugar do vão | o corte era nas bordas do furo (21% da altura) |
 | ✅ ferramenta de OLHAR (`scripts/olhar-a-cena3d.mjs`) | 4 ângulos, com e sem material |
+| ✅ enquadramento medido do print da landing | topo caía atrás do cabeçalho: `scale 0.62/y 1.15` → `0.50/1.12` |
+| ✅ cristal SÓLIDO em vez de vidro | `depthWrite` e `FrontSide` de volta: as faces de trás atravessavam as da frente |
+| ✅ as faces respondem à luz | luz-chave fixa no shader; `uCorBase` já era o verde máximo e tudo clipava em 1.0 |
+| ✅ trava da crase no GLSL (`craseNoShader.test.js`) | o mesmo erro 3× na mesma sessão |
 | ⬜ **o que ainda não está bom** | ver abaixo |
 
-**O que continua aberto na peça**, conferido olhando:
+**O que continua aberto na peça**, conferido olhando o print da landing:
 
-- a região ao redor do núcleo tem lascas finas do corte, que aparecem como
-  brilho estourado em três quartos;
-- o núcleo lê como hexágono claro, não como fonte gerando energia;
+- o raio ainda é **pequeno** na composição e a ponta de baixo encosta na linha
+  "sua base de operações gamer";
 - os fragmentos ainda não foram reavaliados depois da mudança de linguagem;
+- a rotação de repouso (±17°) faz a peça, que é fina, virar quase de perfil em
+  parte do ciclo;
 - **a arte `11-mestre-3d.webp` não foi usada como fonte de silhueta** — o brilho
   verde saturado dela não se separa do cristal verde. Se a silhueta dela for
   diferente da `01` de propósito, isso precisa vir do dono, não de limiar;
@@ -1205,8 +1210,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.503<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.600<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.820<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
