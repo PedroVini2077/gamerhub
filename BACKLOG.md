@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**34 itens abertos** (+ 1 ideia sem compromisso)
+**33 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -149,6 +149,10 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   cargo plano (`is_staff()` / `role_rank >= 2`). Corrigido nas seis policies,
   cada cenário testado em `ROLLBACK` (moderação segue viva, autor segue
   editando). Trava `hierarquiaNoConteudo.test.js`.
+- ✅ **SEC-010 · a trilha atribuía ao AUTOR a ação feita por outra pessoa** —
+  **FECHADO**. 🟡 `log_post_event` gravava o dono do post como ator. Agora grava
+  `auth.uid()` (caindo para o autor quando não há sessão — o cron), nomeia os
+  dois no texto e sobe para `warning` quando quem age não é o autor.
 
 > **A auditoria CONTINUA.** As três primeiras frentes fecharam, mas o piso do
 > §6 pede muito mais: as **48 funções alcançáveis** uma a uma, as **12 policies
@@ -173,15 +177,16 @@ por oportunidade — e nenhum deles é brecha.*
   linha diferente da do `.update(`. O `contatoService.js` já estava certo e foi
   contado como faltando.
 
-- ⬜ `[10/09]` 🟡 **A trilha atribui ao AUTOR a edição feita por outra pessoa.**
-  `log_post_event` grava `actor_id := NEW.user_id` no `UPDATE` e
-  `OLD.user_id` no `DELETE` — então staff editando ou apagando post alheio
-  aparece na trilha como se o **próprio autor** tivesse feito.
+- ✅ `[10/09]` 🟡 **A trilha atribuía ao AUTOR a ação feita por outra pessoa** —
+  **FECHADO** (SEC-010). `log_post_event` gravava `actor_id := NEW.user_id`, e
+  staff editando ou apagando post alheio aparecia como se o próprio autor
+  tivesse feito, com `severity = info`. Agora o ator é `auth.uid()` (com queda
+  para o autor quando não há sessão — o cron), o texto nomeia os dois, e a
+  severidade vira `warning` quando quem age não é o autor.
 
-  É a mesma família do SEC-007 (a trilha não pode mentir), e ficou de fora
-  daquele conserto porque é mudança de **trigger**, não de tela. Consequência
-  prática hoje: não dá para auditar se alguém usou a brecha do SEC-009 antes de
-  ela ser fechada.
+  **O que isso NÃO recupera:** a trilha **anterior** a hoje. Não dá para saber,
+  olhando `admin_logs`, se alguém usou a brecha do SEC-009 antes de ela ser
+  fechada — as linhas antigas dizem "o autor fez".
 
 - ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
   diferentes: `liveService.unsilenceUser({postId, userId})` e

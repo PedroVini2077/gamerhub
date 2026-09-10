@@ -531,6 +531,37 @@ Mais `game_keys`, `reports`, `profiles` (perfil e preferência de notificação)
 > Agora o trecho para no `;` que fecha o statement, e a reinjeção falha nomeando
 > `src/services/moderationService.js:31`.
 
+## SEC-010 — a trilha atribuía ao AUTOR a ação feita por outra pessoa
+
+🟡 **Médio.** Mesma família do SEC-007 — a trilha não pode mentir — e é o que
+impediu de responder a pergunta anterior.
+
+`log_post_event` gravava `actor_id := NEW.user_id` no `UPDATE` e `OLD.user_id`
+no `DELETE`: **o dono do post**, nunca quem executou. Staff apagando ou editando
+post alheio entrava em `admin_logs` como se o próprio autor tivesse feito, com
+`severity = info`.
+
+**Corrigido:** o ator passa a ser `auth.uid()`, com queda para o autor quando
+não há sessão — que é o caso do cron (`cleanup-expired-posts`) e de qualquer
+caminho de service role. O texto nomeia os dois, e a severidade vira `warning`
+quando quem age não é o autor. Ação de staff sobre conteúdo alheio merece
+destaque; a pessoa apagando o próprio post continua `info`, senão vira o alarme
+que grita à toa (§0.2, 4ª regra).
+
+**Provado em `ROLLBACK`**, buscando por `metadata->>'post_id'`:
+
+```
+1_staff_apaga   ator="claudestaff"  sev=warning :: Post "ALVO-STAFF" de @claudetester excluído por @claudestaff
+2_autor_apaga   ator="claudetester" sev=info    :: Post "ALVO-PROPRIO" de @claudetester excluído pelo próprio autor
+3_staff_edita   ator="claudestaff"  sev=warning :: Post "ALVO-EDIT" de @claudetester editado por @claudestaff
+```
+
+> **O primeiro teste foi descartado, e o motivo vale registrar:** ele deu os
+> dois casos **idênticos**. `now()` é constante dentro de uma transação, então
+> `ORDER BY created_at DESC LIMIT 1` escolhia qualquer uma das duas linhas. Não
+> era o conserto falhando — era o teste não distinguindo. Se eu tivesse lido
+> como falha, teria "consertado" o que estava certo.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
@@ -555,10 +586,9 @@ CONSEGUI PROVAR"*.
   próximo carregamento, o rebaixado veria a interface (sem conseguir executar
   nada — o banco nega). Isso é comportamento de front, e exige teste de
   navegador com duas sessões;
-- se algum staff **reescreveu conteúdo alheio antes de 10/09**. A brecha existiu
-  e não dá para saber pela trilha: `log_post_event` grava a edição com
-  `actor_id := NEW.user_id`, ou seja, **atribuída ao autor**, não a quem editou.
-  Está no `BACKLOG.md`.
+- se algum staff **reescreveu conteúdo alheio antes de 10/09**. A trilha passou
+  a dizer a verdade (SEC-010 abaixo), mas **só daqui para frente**: as linhas
+  antigas de `admin_logs` afirmam que o autor fez, e isso não se recupera.
 
 Do que estava nesta lista na versão anterior, saíram duas frentes: o fluxo de
 **moderação de conteúdo** (§14 do prompt 2), que produziu o SEC-007, e **RPC
