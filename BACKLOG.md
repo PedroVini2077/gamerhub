@@ -35,17 +35,66 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*(vazia — tudo do dia fechou nos PRs #165, #121, #120, #118, #167 e #168. As
-duas decisões que esperavam o dono foram tomadas por ele em 05/09: o painel da
-landing foi **descartado** e o logout deixou de ser global; as duas viraram
-registro em [DECISOES.md](docs/DECISOES.md).)*
+### `[10/09]` A CENA 3D CONSTRUÍDA À MÃO — a direção corrigida pelo dono
+
+**Objetivo, na frase dele:** *"a cena 3D principal precisa ser CONSTRUÍDA À MÃO
+EM CÓDIGO… NÃO use a imagem da lightning como substituta da geometria 3D"*.
+A arte segue mandando em silhueta, proporção, cor e sensação de material.
+
+#### A ANÁLISE (etapa que ele exigiu antes de codar) — feita
+
+| O que existe | Estado |
+| --- | --- |
+| `createRoot` + `extend()` **seletivo** (13 classes) | é o que segura o tamanho do chunk. `<Canvas>` traria o sistema de eventos inteiro |
+| `IntersectionObserver` → `frameloop` on/off | laço parado fora da viewport |
+| `ResizeObserver` → `configure({ size })` · `root.unmount()` | ciclo de vida completo |
+| `DPR [1, 1.5]`, `antialias`, `alpha` | voltou ao original em 29/08; o que foi desfeito está documentado no topo do arquivo |
+| **o raio de hoje** | `ExtrudeGeometry` de um `Shape` de 6 pontos com bevel — raio **genérico**, sem núcleo hexagonal e sem asas |
+| **material de hoje** | `meshStandardMaterial` + `emissive` — é o *"objeto verde com emissiveIntensity"* que ele critica |
+| **fragmentos de hoje** | `icosahedron`/`torus`/`octahedron`/`dodecahedron` em wireframe — os "objetos genéricos" que ele mandou substituir |
+| dependências 3D | **só** `three` + `@react-three/fiber`. Sem drei, sem postprocessing, sem GSAP, sem pixi |
+| peso do chunk | **708 kB bruto · 189 kB gzip**, e ele **NÃO** entra no orçamento de bytes (que só mede o JS inicial) |
+
+**O fato que muda o cálculo de custo:** a 3D só carrega para quem passa no
+portão de `lib/cena3D.js` — desktop, ≥1024 px, ≥2 núcleos, sem
+`prefers-reduced-motion`. **Celular nunca paga por ela.** Então ambição na 3D
+não é ambição em cima de quem tem aparelho fraco.
+
+#### As dependências — cada uma com justificativa, como ele exigiu
+
+| Biblioteca | Decisão | Por quê |
+| --- | --- | --- |
+| **GLSL / `ShaderMaterial`** | **SIM** | **zero byte extra** — é `three` puro. É de onde saem Fresnel, energia interna, ruído e a variação de transparência. Melhor relação valor/custo de longe, e é exatamente onde ele pediu para explorar a GPU |
+| **`@react-three/drei`** | **NÃO** (por ora) | o que atrairia é o `MeshTransmissionMaterial`, e ele **renderiza a cena para um buffer a cada quadro**. Além do custo, quebra o `extend()` seletivo que segura o chunk. Fresnel + refração *aproximada* em shader próprio dá quase o mesmo a custo ~0 |
+| **postprocessing / bloom** | **NÃO no primeiro corte** | exige `EffectComposer` e um passe de tela cheia. A alternativa barata é glow em geometria de casca com blending aditivo. **Medir primeiro**; só entra se a medição mostrar que o shader não alcança |
+| **GSAP** | **NÃO** | a crítica dele é certa — dezenas de `useFrame` descoordenados é arquitetura ruim. Mas o conserto é **uma timeline central**, e ela cabe em ~40 linhas. 25 kB gzip por 40 linhas não se justifica, e ele mesmo escreveu *"não adicione bibliotecas apenas porque são tecnicamente interessantes"* |
+| **PixiJS** (fallback 2D) | **NÃO** | a 2D existe para quem o portão recusou — máquina fraca. Trocar CSS de custo zero por um runtime de canvas é o oposto do motivo dela existir |
+
+#### As etapas
+
+1. ⬜ geometria do raio **em código**: metade superior + núcleo + metade inferior,
+   com fissura pequena, núcleo hexagonal vazado e as duas asas — a silhueta que
+   as referências fixam;
+2. ⬜ `ShaderMaterial` de cristal: Fresnel, energia interna, ruído procedural,
+   transparência variável;
+3. ⬜ o núcleo como estrutura cristalina que **pulsa e ilumina as faces internas**
+   — as duas metades reagem (sobe/desce), sem explosão;
+4. ⬜ família de fragmentos derivada da linguagem do raio (verde dominante, cyan
+   perto do núcleo, roxo longe, âmbar raro e pontual);
+5. ⬜ **timeline central** de entrada em 9 tempos, e depois estado de repouso —
+   substituindo os `useFrame` independentes;
+6. ⬜ medir antes/depois no mesmo aparelho (§0.3) e reavaliar cada otimização.
+
+**O que NÃO pode morrer:** `IntersectionObserver`, `frameloop` controlado, DPR
+limitado, `ResizeObserver`, `root.unmount()`, carregamento sob demanda, o
+portão de aparelho e o fallback 2D.
 
 ---
 
 ---
 
-**Última conferência contra o sistema:** 05/09/2026 ·
-**27 itens abertos** (+ 1 ideia sem compromisso)
+**Última conferência contra o sistema:** 10/09/2026 ·
+**34 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -104,6 +153,610 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 
 ---
 
+## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
+
+- ✅ **SEC-001 · `game_keys.key_code` legível sem conta** — **FECHADO**.
+  Migration `key_code_deixa_de_ser_legivel_sem_conta`, trava em
+  `e2e/portas-do-banco.mjs`. Reproduzido antes, reconferido depois.
+- ✅ **SEC-002 · `SEGURANCA.md` afirmava que `anon` via `(id, username)` de
+  `profiles`** — **FECHADO**. Já não era verdade; texto corrigido com a
+  evidência (`information_schema.column_privileges`).
+- ✅ **SEC-003 · `TRUNCATE` concedido a `anon` em 27 de 29 tabelas** —
+  **FECHADO**. Migration `revogar_truncate_de_anon_e_authenticated`, com
+  `ALTER DEFAULT PRIVILEGES` para as tabelas futuras.
+- ✅ **SEC-004 · a wordlist inteira era legível sem conta** (322 palavras com a
+  severidade — o mapa de como contornar o filtro) — **FECHADO**. 🔵
+- ✅ **SEC-006 · o cache do React Query atravessava a troca de conta** —
+  **FECHADO**. 🟡 Era a consequência de backend que faltava para o spoof de
+  `role` do DevTools deixar de ser inofensivo.
+- ✅ **SEC-005 · `site_config.updated_by` legível por `anon`** — **FECHADO**, e
+  com ele o item 🔵 que estava **aberto no backlog desde 01/09**. Deu para
+  fechar sem decisão nova porque duas coisas mudaram: `profiles` foi revogado de
+  `anon` (o UUID já não vira nome) e nenhuma tela pública lê essa coluna.
+- ✅ **SEC-007 · a moderação de conteúdo dizia ter apagado o que não apagou** —
+  **FECHADO**. 🟡 Ver a lixeira é `role_rank >= 2` (plana), apagar é
+  `can_moderate_content` (hierarquia estrita): o admin **enxerga** o post do
+  owner e não pode apagá-lo, e a RLS recusa com **0 linhas e nenhum erro**. O
+  toast dizia "apagado permanentemente" e a trilha gravava a exclusão. Medido em
+  `ROLLBACK` (a tela contava 176, o banco apagava 175). Varrido por CLASSE: dos
+  17 `delete()` de `src/`, **6 corrigidos** e 4 marcados como 0-linhas legítimo.
+  Trava `apagarConfereLinhas.test.js`, provada reinjetando o bug.
+- ✅ **SEC-008 · o período de avaliação de staff podia acabar no ano 12020** —
+  **FECHADO**. 🟡 `review_staff_nomination(p_trial_days)` e
+  `decide_staff_trial(p_extend_days)` tinham piso e **nenhum teto** — a mesma
+  falha da suspensão até 2126. Importa porque o trial é o que autoriza um super
+  admin a promover **sem o fundador**, e nada cobra o vencimento por máquina
+  (não há cron sobre `trial_review_date`). Provado em `ROLLBACK`: 3.650.000 dias
+  aceitos, cargo virou `admin`, revisão para 12020-01-20. Faixa de 7–180 dias
+  (extensão 1–90, total 365) **e** `CHECK` no banco — a trava que torna o dado
+  errado impossível, e que sobrevive a alguém reescrever a função.
+- ✅ **SEC-009 · o UPDATE de conteúdo ignorava a hierarquia que o DELETE
+  respeita** — **FECHADO**. 🟠 O mais sério do dia: um admin **reescreveu e
+  ocultou** um post do fundador por `PATCH` direto, enquanto o
+  `soft_delete_post` recusava o mesmo post por falta de permissão. As três
+  tabelas de conteúdo tinham `DELETE` com hierarquia estrita e `UPDATE` com
+  cargo plano (`is_staff()` / `role_rank >= 2`). Corrigido nas seis policies,
+  cada cenário testado em `ROLLBACK` (moderação segue viva, autor segue
+  editando). Trava `hierarquiaNoConteudo.test.js`.
+- ✅ **SEC-010 · a trilha atribuía ao AUTOR a ação feita por outra pessoa** —
+  **FECHADO**. 🟡 `log_post_event` gravava o dono do post como ator. Agora grava
+  `auth.uid()` (caindo para o autor quando não há sessão — o cron), nomeia os
+  dois no texto e sobe para `warning` quando quem age não é o autor.
+
+> **A auditoria CONTINUA.** As três primeiras frentes fecharam, mas o piso do
+> §6 pede muito mais: as **48 funções alcançáveis** uma a uma, as **12 policies
+> com `USING (true)`**, os fluxos de role/ban/moderação, IDOR, upsert, mass
+> assignment e o isolamento de sessão. O que já foi apurado está em
+> `db/2026-09-10-auditoria-seguranca.md`.
+
+## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
+
+*Encontrados durante a auditoria de segurança, e **fora do escopo dela**. Estão
+aqui, e não corrigidos junto, porque o §21 do protocolo proíbe expandir tarefa
+por oportunidade — e nenhum deles é brecha.*
+
+- ✅ `[10/09]` 🟠 **Os `update()` que não conferiam quantas linhas mudaram** —
+  **FECHADO**, junto do SEC-009. **6 corrigidos**, sendo dois graves: o item da
+  fila de moderação podia não sair de `pending` depois de o conteúdo já ter sido
+  ocultado (voltava para a fila e era tratado de novo), e os dois pedidos de
+  reativação de live não conferiam **nem `error`, nem contagem**.
+
+  **O número "13" desta linha estava errado, e é correção minha:** o `grep` era
+  por LINHA, e chamada quebrada em várias linhas põe o `{ count: 'exact' }` numa
+  linha diferente da do `.update(`. O `contatoService.js` já estava certo e foi
+  contado como faltando.
+
+- ✅ `[10/09]` 🟡 **A trilha atribuía ao AUTOR a ação feita por outra pessoa** —
+  **FECHADO** (SEC-010). `log_post_event` gravava `actor_id := NEW.user_id`, e
+  staff editando ou apagando post alheio aparecia como se o próprio autor
+  tivesse feito, com `severity = info`. Agora o ator é `auth.uid()` (com queda
+  para o autor quando não há sessão — o cron), o texto nomeia os dois, e a
+  severidade vira `warning` quando quem age não é o autor.
+
+  **O que isso NÃO recupera:** a trilha **anterior** a hoje. Não dá para saber,
+  olhando `admin_logs`, se alguém usou a brecha do SEC-009 antes de ela ser
+  fechada — as linhas antigas dizem "o autor fez".
+
+- ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
+  diferentes: `liveService.unsilenceUser({postId, userId})` e
+  `useAdminLiveActions.unsilenceUser(id)`. Os dois foram corrigidos junto no
+  SEC-007, mas **cópia diverge** (§4, fonte única) — foi assim com os ícones de
+  log, os rótulos de cargo e a regra de bloqueio de login. Unificar exige
+  decidir uma assinatura só, e o hook apaga por `id` da linha enquanto o serviço
+  apaga por par: não é troca mecânica.
+
+- ✅ `[10/09]` 🟡 **`e2e/artes-da-arena.mjs` era instável no CI** — **FECHADO**.
+  Falhava com *"cadastro tem 4 lutador(es), esperava 2"*: o fade cruzado
+  flagrado no meio.
+
+  **A causa raiz:** a espera pedia só *"existem 2 `.arena-troca`"*, e isso é
+  verdade em **dois** estados — antes de a troca começar (com as artes do
+  login) e depois de ela terminar. Fallback silencioso na versão temporal (§4).
+
+  **A janela foi provada**: clicando de dentro da página e lendo a condição na
+  mesma tarefa de JS, ela responde `true` com as artes do login ainda na tela.
+  Mas **a falha não reproduziu aqui** — pelo caminho real do Playwright a
+  condição antiga levou **728 ms**, já com as artes novas: o clique é mais lento
+  que o render nesta máquina, e no CI a corrida deu para o outro lado.
+
+  O conserto diz **o que se espera ver**, não quantos elementos: os `src` têm
+  que ser diferentes dos de antes. A prova é estrutural, não estatística — 5
+  rodadas verdes aqui não valem nada, porque **antes** do conserto também davam
+  5/5.
+
+- ⬜ `[10/09]` 🟡 **O orçamento de bytes dá resultado DIFERENTE aqui e no CI.**
+  Local, com `npm ci` (mesmo lockfile do CI): **222,4 kB gzip**, acima do teto
+  de 222 → reprova. No CI, o mesmo passo **passa**.
+
+  **Medido, não suposto:** com `git stash` das minhas mudanças, o número local é
+  **222,4 antes e depois** — ou seja, o que eu fiz custou **0 kB gzip**, e o
+  estouro local não é meu.
+
+  A causa provável é a versão do `zlib`/Node mudando a compressão em alguns
+  bytes. **Portão que dá veredito diferente por ambiente não é portão** — ele
+  reprova quem roda local e libera quem roda no CI, ou o contrário. Vale medir a
+  diferença e, se for isso, comparar com uma tolerância explícita em vez de um
+  número seco.
+
+  **Não subi o teto**, que seria o conserto errado (§6.1): o número é a decisão,
+  não o obstáculo.
+
+---
+
+## 🎯 O BLOCO DE 10/09 — o que o dono mandou de uma vez
+
+> **Como isto chegou.** Ele mandou um **protocolo de trabalho** e **dois pedidos
+> grandes** numa sequência só, com a ordem: *"grava tudo no backlog por ordem de
+> prioridade… não deixa nada na memória da sessão"*. E avisou que **as condições
+> do Brevo já estão feitas — falta testar**.
+>
+> As artes da identidade vieram **dentro da conversa**, que morre com a sessão.
+> Foram salvas em [`docs/identidade/`](docs/identidade/README.md) antes de
+> qualquer outra coisa, com o índice do papel de cada uma.
+
+### A ordem que eu recomendo, e o porquê dela
+
+Não é a ordem em que ele mandou. É a que a régua do projeto produz — camada mais
+externa primeiro (§0.4), risco operacional antes de estética (§0), e **uma
+dependência técnica real** que decide o resto:
+
+| # | O quê | Por que nesta posição |
+| --- | --- | --- |
+| **0** | **Testar o Brevo** | 15 minutos, e ele já fez a parte dele. Vem antes por ser **curto**, não por ser mais importante |
+| **1** | **AUDITORIA PROFUNDA DE SEGURANÇA** | o §0 é explícito: segurança antes de tudo. Consome **várias sessões** |
+| **2** | **Identidade de ícones** | camada 1, e produz o **SVG mestre do raio** |
+| **3** | **Reconstrução da Landing 3D + 2D** | camada 1, a maior — e **consome** o SVG mestre do item 2 |
+| **4** | Integrar o protocolo às regras | é meta-trabalho; muda como eu trabalho, não o que o site faz |
+
+> **A dependência que decide a ordem 2 → 3, e ela é técnica, não preferência.**
+> O item 3 pede um *"novo raio 2D dividido em metade superior, core e metade
+> inferior, em SVG"*. O item 2 pede *"um sistema visual único com adaptações
+> técnicas"*. Fazer a Landing antes criaria um **segundo desenho do raio**, feito
+> por outro caminho — exatamente a duplicação que os dois pedidos proíbem (§4,
+> fonte única). O raio 2D da Landing tem que ser o **mesmo** SVG mestre, dividido.
+
+---
+
+- ⬜ `[10/09]` 🟠 **AUDITORIA PROFUNDA DE SEGURANÇA + HARDENING.** *Pedido dele
+  em 3 partes — **a parte 1 está registrada abaixo; as partes 2 e 3 ainda não
+  chegaram**. Auditoria autorizada do próprio site.*
+
+  **O que ele já testou, e o resultado é BOM — mas precisa virar regressão.**
+  Ele adulterou a resposta de `get_own_profile` no DevTools (`"role": "user"` →
+  `"owner"`), o frontend acreditou, e então chamou as RPCs administrativas
+  direto:
+
+  | RPC chamada com role falsificado | Resposta |
+  | --- | --- |
+  | `admin_list_users` | 400 · P0001 · *"Acesso negado."* |
+  | `owner_get_stats` | 400 · P0001 · *"Acesso negado."* |
+  | `admin_get_unconfirmed_users` | 400 · P0001 · *"Acesso negado."* |
+  | `get_blocked_logins` | 400 · P0001 · *"Acesso negado: exige super_admin ou fundador."* |
+
+  **A leitura dele está certa, e vale repetir para eu não errar depois:** isso
+  **não é escalada de privilégio**. Estado de autorização adulterável no cliente
+  é esperado numa SPA. Só vira vulnerabilidade se **alguma ação sensível confiar
+  nesse estado**. A ordem é explícita: *"não tente proteger o frontend contra
+  DevTools como se isso fosse a barreira principal"*.
+
+  **`npm test` precisa passar a provar esses quatro 400.** Hoje nada impede uma
+  migration futura de afrouxar uma delas em silêncio.
+
+  ### A regra do método, e ela proíbe o meu atalho favorito
+
+  *"NÃO faça uma caça superficial por palavras como SECURITY DEFINER, role,
+  admin ou owner. Leia o fluxo completo."* Para cada operação sensível:
+
+      frontend → service/hook → chamada Supabase → REST/RPC → função PL/pgSQL
+      → tabela/view → GRANT → RLS → trigger → auditoria → o que o cliente vê
+
+  E: **se existe mais de uma porta para a mesma ação, comparar todas.** *"Uma
+  autorização segura não pode depender de o usuário não conhecer uma segunda
+  porta."*
+
+  ### As três frentes da parte 1
+
+  **A. As 10 tabelas administrativas que aparecem no Network de conta comum** —
+  `admin_notifications`, `admin_notification_reads`, `admin_logs`,
+  `moderation_queue`, `unban_requests`, `live_chat_timeouts`,
+  `live_reactivation_requests`, `contact_messages`, `staff_nominations`,
+  `role_change_requests`. Todas responderam **200 `[]`**.
+
+  > **Ele explicitamente proíbe as duas conclusões fáceis:** `200 []` **não**
+  > prova que a RLS está certa, e **não** prova vazamento. Pode ser RLS
+  > filtrando, tabela vazia, ou grant/policy impedindo linha. **Só o banco
+  > responde.** São 13 perguntas por tabela — inclusive *"existe motivo para o
+  > frontend de usuário normal consultar isto?"* e *"trocando IDs, filtros ou
+  > status, aparece alguma coisa?"*.
+
+  **B. `profiles?select=id`** — respondeu 200, mas o DevTools mostrou *"Failed to
+  load response data"*. **Não há evidência do conteúdo**, e ele proíbe
+  classificar como `[]` ou como lista de IDs (§1.1: ausência de evidência não é
+  evidência de ausência). Mapear **todas** as consultas diretas a `profiles`:
+  `select('id')`, `select('*')`, joins `profiles(...)`, filtros por `user_id`,
+  `count/head`, `update`, `insert`, `delete` — e cruzar com grants e policies.
+
+  **C. Auditoria de CORPO de cada `SECURITY DEFINER`** — 30 perguntas por
+  função, e o motivo está no nosso próprio histórico: *"houve funções que
+  pareciam seguras olhando só nome, role, grants, SECURITY DEFINER e
+  search_path — mas o corpo revelou vulnerabilidades"*. Entre elas: o alvo é
+  validado? há autorização objeto-a-objeto? IDs podem ser trocados? o retorno
+  expõe além do necessário? grava auditoria com o **ator real**? deveria estar
+  num schema não exposto?
+
+  ### Duas análises que ele pediu SEM autorizar a mudança
+
+  - **`get_own_profile` devolve `public.profiles` inteiro.** O risco é **schema
+    drift**: uma coluna sensível nova passa a ser exposta **automaticamente**,
+    sem ninguém revisar. Ele quer a análise de impacto de trocar por
+    `RETURNS TABLE` explícito — e diz *"NÃO mude automaticamente"*.
+  - **`admin_list_users`** — admin pode ver owner e super_admin? cada nível
+    precisa dos mesmos campos? `p_limit` aceita valor abusivo (DoS)? há
+    paginação? `SETOF public.profiles` expõe demais?
+
+  ### O que NÃO pode ser desfeito
+
+  A migration `20260821164914_restrict_profile_columns_for_authenticated.sql`
+  fechou um vazamento **real** de `birth_date` e histórico de moderação. O
+  desenho por RPC continua certo — o que ele quer é saber se ele **continua
+  válido depois de todas as migrations posteriores**.
+
+  ### O tamanho disto, dito antes de começar
+
+  São **78 funções `SECURITY DEFINER`** hoje. A Fase 2 de 05/09 cobriu **21** —
+  as alcançáveis por quem tem conta sem passar por `is_super`/`is_staff` — e
+  achou dois problemas. Aplicar 30 perguntas às 78 é trabalho de **várias
+  sessões**. Vale o §0.1: se o contexto acabar, **registro onde parei** e retomo;
+  nunca declaro fase concluída com leitura parcial.
+
+  ### PARTE 2 — caminhos indiretos, RLS e escalada
+
+  **A entrega central: a matriz REAL de permissões, reconstruída DO BANCO.**
+  29 ações × 4 papéis, e depois o confronto que é o ponto —
+  **documentação × frontend × RPC × RLS × grants**. Qualquer divergência é achado.
+
+  | Frente | O que procurar, e o que ele proíbe assumir |
+  | --- | --- |
+  | **escalada vertical** | **todos** os caminhos que alteram `profiles.role`, por busca semântica — não basta achar `owner_set_role`. Inclui `role_change_requests`, nomeações, trial, promoção, rebaixamento, e função antiga preservada por migration |
+  | **IDOR / BOLA** | toda função que recebe UUID: *"se um usuário normal trocar esse UUID pelo de outra pessoa, o que acontece?"*. **Classe prioritária** — já aconteceu aqui, em `check_staff_eligibility` |
+  | **objeto + ação** | *"caller é admin"* não basta. Admin pode moderar outro admin? super_admin? owner? A checagem tem que olhar o **alvo** |
+  | **parâmetros** | classificar A/B/C/D. **C (determina autorização) e D (altera privilégio) pedem revisão manual** |
+  | **grants** | *"função verifica autorização internamente"* ≠ *"função deveria estar exposta"*. São coisas diferentes |
+  | **`search_path`** | função por função, **sem substituição mecânica** |
+  | **retornos** | `RETURNS public.profiles`, `SETOF`, `SELECT *` — coluna nova no futuro não pode virar dado exposto por RPC antiga |
+  | **RLS** | por tabela: enabled? **FORCE**? policy por comando? `USING (true)`? dá para inserir em nome de outro? dá para trocar o `user_id`? |
+  | **`admin_logs`** | *"uma auditoria não é confiável se o próprio usuário consegue reescrever a história"* — admin pode apagar o próprio rastro? `actor_id` vem de `auth.uid()` ou do cliente? |
+  | **false success** | `if (error) return fallback` transformando *permission denied* em `[]`, `0` ou `false`. É o §1.5 nosso, do lado do frontend |
+  | **legacy** | função antiga com `EXECUTE` ainda concedido é **porta aberta**, mesmo que o frontend nunca a chame |
+  | **migration drift** | reconstruir o **estado final** do banco. *"O que o banco é hoje"* vale mais que *"o que uma migration antiga dizia"* |
+  | **race condition** | TOCTOU: verifica autorização → outra transação muda o alvo → escreve. Só onde houver risco real; nada de lock indiscriminado |
+
+  **`game_keys` é o candidato mais provável a achado real, e eu já sei por quê:**
+  o frontend faz `game_keys?select=*` e filtra `!k.is_promo` **no JavaScript**.
+  Se a tabela tem `key_code` e a RLS não separa promo de não-promo, o filtro é só
+  UX — e basta remover o filtro. Ele marcou como **prioridade alta se houver
+  exposição de segredo**, com uma ordem junto: **não expor nenhuma chave real
+  durante os testes**.
+
+  **Testes: a matriz por papel, e os NEGATIVOS são obrigatórios.** *"O teste mais
+  importante é o que tenta quebrar a regra."* Não basta *"admin consegue banir
+  user"*; precisa existir *"admin NÃO consegue banir super_admin"* e *"admin NÃO
+  consegue alterar role de owner"*. Com tampering de parâmetro: UUID próprio, de
+  terceiro, de admin, de owner, inexistente, `NULL`; número em `-1`, `0`, máximo,
+  máximo+1, gigante; enum inválido, vazio, `NULL`.
+
+  **O método, e ele proíbe o meu atalho:** reproduzir → identificar a causa →
+  corrigir a causa → reproduzir de novo → **regressão** → auditar caminhos
+  alternativos. Nada de *"achei SECURITY DEFINER → reescrevi"* ou *"achei
+  `SELECT *` → removi"*.
+
+  **Correção sempre por migration NOVA.** *"Nunca reescreva migrations históricas
+  para fingir que o problema nunca existiu."*
+
+  **Classificação dos achados:** 🔴 crítico · 🟠 alto · 🟡 médio · 🔵 baixo ·
+  ⚪ informativo. E uma trava contra o meu alarmismo: **o spoof do `role` no
+  frontend fica como *"client-side trust / expected tamperability"*** enquanto não
+  houver consequência no backend.
+
+  **FORA DO ESCOPO** — e a parte 2 acrescenta a metade de baixo:
+  - não refatorar, redesenhar tela, mexer em desempenho ou tocar na Landing;
+  - achado que não for brecha explorável vira item, não conserto;
+  - **não** tentar bloquear DevTools, detectar Network aberto, ofuscar código ou
+    criptografar `role` no cliente — *"isso não é segurança real"*;
+  - **não** trocar todos os 400 por 403 automaticamente: o requisito é *"operação
+    não autorizada não acontece"*, o código HTTP é secundário;
+  - **não** trocar 1 consulta por 20 em nome de hardening.
+
+  ### PARTE 3 — execução, e ela proíbe pular para a correção
+
+  **A ordem é `AUDIT → PLAN → IMPLEMENT → VALIDATE → REPORT`**, em 17 fases, com
+  a instrução final explícita: *"NÃO pule diretamente para a FASE 11"* (que é
+  implementar). A primeira ação é reconstruir o modelo de autorização **sem
+  alterar arquivo nenhum**.
+
+  **Todo achado usa estado, não adjetivo:** `CONFIRMADO` · `PROVÁVEL` ·
+  `SUSPEITO` · `NÃO REPRODUZIDO` · `MITIGADO` · `CORRIGIDO` · `INFORMATIVO` ·
+  `FALSO POSITIVO`. E é a nossa regra §1.1 com outro nome: *"'profiles?select=id
+  retorna 200' não significa 'profiles está vulnerável'; 'Response não carregou'
+  não significa 'servidor retornou []'"*.
+
+  **Classes de ataque que a parte 3 acrescenta**, e são as que eu não teria
+  procurado sozinho:
+
+  | Classe | O que é |
+  | --- | --- |
+  | **confused deputy** | função privilegiada que aceita *"execute em nome de X"* sem verificar se o caller pode representar X. O parâmetro nunca substitui `auth.uid()` |
+  | **segunda ordem** | altera um estado inocente → usa esse estado para ganhar privilégio. Ex.: cria nomination → manipula status → chama approve → ganha role |
+  | **mass assignment** | `update(payload)` com objeto vindo do formulário — *"o cliente consegue enviar campos que a UI não possui?"* |
+  | **upsert** | *"frequentemente esquecido porque parece um INSERT"*: dá para usar conflito de chave para alterar o que não se poderia `UPDATE`? |
+  | **RPC chaining** | A chama B chama C — **B não está protegida só porque A está** |
+  | **isolamento de sessão** | cache/React Query: dado de admin sobrevive ao logout? conta seguinte herda? role stale? downgrade durante sessão ativa? |
+
+  **Regressões que ele quer nominalmente:** as quatro RPCs negando; `owner` não
+  rebaixável por admin nem por super_admin, nem por caminho indireto;
+  auto-promoção negada **com a role conferida intacta depois** (*"não aceite que
+  a função retornou erro sem verificar que a role permaneceu"*); matriz
+  caller-rank × target-rank × new-role; IDOR por conta.
+
+  **Regra absoluta contra ação perigosa:** não apagar dado real, não alterar role
+  de gente real, não banir ninguém real, não revelar segredo, **não desativar RLS
+  nem abrir permissão "para testar"**. Teste destrutivo só em fixture.
+
+  **`CLOSED` tem 8 requisitos** — causa, correção, teste positivo, teste
+  negativo, caminho alternativo revisado, migration validada, documentação, diff
+  revisado. Sem os oito: `PARTIALLY MITIGATED` ou `OPEN`.
+
+  **E a instrução que eu mais preciso obedecer:** *"se não conseguir provar, diga
+  NÃO CONSEGUI PROVAR. Não invente."* O relatório não pode dizer *"projeto
+  seguro"* — no máximo *"não foram encontradas vulnerabilidades críticas nas
+  superfícies auditadas"*, dizendo o que foi testado, o que não foi, e o que
+  permanece em aberto.
+
+  > **`[10/09]` O AVISO DO DONO, e ele muda como eu leio os três prompts:** eles
+  > foram escritos **pelo ChatGPT**, com acesso parcial ao repositório. *"Vamos
+  > seguir as nossas regras e sempre verificar o que é verdade ou não."*
+  > Toda afirmação técnica dentro deles — que `get_own_profile` é assim, que
+  > `admin_list_users` exige rank ≥ 2, que o frontend filtra `!k.is_promo` — é
+  > **hipótese até eu conferir na fonte** (§1.4). Vale inclusive para os quatro
+  > `400` que ele observou: são evidência do que aconteceu **naquele momento**,
+  > não prova do estado atual do banco.
+
+- 🔄 `[10/09]` 🟠 **1. TESTAR O BREVO — a metade minha está FEITA, falta a dele.**
+
+  **`[10/09]` A Edge Function foi reimplantada** (v33 → v34), com autorização
+  dele nesta sessão. A v33 em produção era de ~25/08 e estava **sem duas
+  correções que já estavam no repositório desde 05/09**: o relay SMTP e o
+  discriminador de severidade. §9.9 na veia — *commit não é deploy*.
+
+  **Provado que a v34 está no ar**, e não pelo número de versão: forcei um tipo
+  de falha que não era registrado desde 27/08 (`carimbo de tempo fora da
+  janela`, para escapar do limite de 1 linha por hora) e a linha nova trouxe
+  `corpo_parece_gotrue: false` — campo que **não existe** na linha de 27/08.
+
+  **O que FALTA, e é só ele que pode fazer:** um **cadastro de verdade** com um
+  endereço de teste. Nenhuma trava cobre isso —
+  `envioDeEmailTemDoisCaminhos.test.js` garante que as propriedades do código
+  não sumam, **não** que o e-mail chega, que a senha do relay está certa, nem
+  que o remetente foi aceito no provedor.
+
+  **Se falhar, a mensagem em `admin_logs` diz qual caminho estava em uso**
+  (`relay <host>` ou `gmail`) — antes mandaria investigar o provedor errado. E a
+  volta é apagar o segredo `SMTP_HOST`: sem ele o código cai no Gmail sozinho,
+  sem deploy.
+
+- ⬜ `[10/09]` 🟠 **Nada vigia se uma Edge Function em produção é a do
+  repositório.** É o buraco que deixou as duas correções da `send-email` mortas
+  por 5 dias enquanto a documentação as descrevia como vivas — inclusive um
+  comentário no `e2e/portas-fechadas.mjs` que explicava um comportamento que
+  produção não tinha.
+
+  `scripts/espelho-de-migrations.mjs` faz exatamente isso para migrations. Para
+  as <!--n:edge.funcoes-->8<!--/n--> Edge Functions não existe equivalente.
+
+  **O desenho que eu recomendo, e por que ele evita credencial no CI:** a API de
+  gerenciamento exigiria um token — trocar incerteza por credencial exposta é a
+  conta ruim do §0.2. Em vez disso, cada função responde a um `GET` com a
+  própria versão (`{ versao: "2026-09-05" }`, sem segredo nenhum), e o CI compara
+  com uma constante no repositório. Editar a função sem reimplantar passa a
+  reprovar o PR.
+
+- ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
+  *Referências em [`docs/identidade/`](docs/identidade/README.md).*
+
+  **O objetivo, na frase dele:** *"não quero cinco logos diferentes, quero um
+  sistema visual único com adaptações técnicas"*. Logo mestre, favicon, ícone
+  PWA, monocromático e animação — todos o **mesmo raio**.
+
+  **Hierarquia que decide qualquer conflito:** geometria do raio → silhueta →
+  consistência com o que já existe → legibilidade em tamanho pequeno → cor →
+  glow. *Se removermos o glow, a marca ainda funciona. Se removermos a cor, ainda
+  funciona.*
+
+  **O que eu JÁ SEI, e é o coração da tarefa:** o "raio" que aparece hoje no
+  Login e no cabeçalho é o ícone **`Zap` do `lucide-react`** — um raio genérico
+  de biblioteca, **não** o raio da identidade. Trocar isso é o que faz o sistema
+  existir, e toca vários componentes.
+
+  **Etapas, na ordem que ele definiu:** auditar (o que existe em `index.html`,
+  favicon, manifest, PWA, logos, componentes) → comparar com as referências →
+  mapear *asset atual → asset correto → onde é usado* → planejar a **menor**
+  mudança → implementar → validar → segunda passada procurando inconsistência.
+
+  **FORA DO ESCOPO, e é obrigatório estar escrito:**
+  - não criar identidade nova, não fazer rebranding;
+  - não substituir o raio por gamepad, headset, escudo, letra G/GH ou qualquer
+    símbolo genérico de esports/SaaS;
+  - não alterar componentes que não exibem a marca;
+  - não refatorar nada "já que estou aqui";
+  - não mexer em autenticação, banco, RLS ou permissões.
+
+  **O que depende dele:** eu vou precisar **reconstruir a silhueta em SVG** (as
+  artes são PNG, e favicon 16 px pede vetor). Isso é **eu redesenhando** — ele
+  precisa olhar e aprovar antes de eu espalhar pelo site.
+
+  ### `[10/09]` A AUDITORIA (etapa 1) — feita, e ela confirma o diagnóstico dele
+
+  O inventário achou **duas marcas diferentes, em cores diferentes**, e nenhuma
+  das duas é o raio das referências:
+
+  | Onde | O que está lá hoje |
+  | --- | --- |
+  | aba do navegador (`public/favicon.svg`) | um raio **roxo/azul** — `#7e14ff` ×10, `#863bff`, `#47bfff` ×2. **Zero verde** |
+  | dentro do site (8 componentes) | o `Zap` do `lucide-react`, **verde** `#39ff14` |
+  | ícone de app / PWA | **não existe** — não há `manifest`, nem `apple-touch-icon` |
+  | prévia ao compartilhar link | **não existe** — não há `og:image` nem `twitter:image` |
+
+  Os 8 componentes que exibem a marca: `SplashScreen`, `landing/Hero`,
+  `landing/FinalCTA`, `landing/LandingFooter`, `landing/LandingNav`,
+  `layout/Sidebar`, `pages/AuthConfirm` — mais o `public/favicon.svg`.
+
+  **Fica FORA:** o `Zap` em `lib/ranks.js` é ícone de **rank**, não a marca. O
+  escopo dele diz *"não alterar componentes que não exibem a marca"*.
+
+  ### `[10/09]` A minha reconstrução em SVG foi REPROVADA pelo dono
+
+  Reconstruí a silhueta em SVG (4 pontas — duas lâminas longas em ziguezague,
+  duas asas curtas — com o núcleo hexagonal vazado) e mandei a folha de prova.
+  Resposta dele, na letra: ***"já aviso, não gostei…. mas depois vemos isso"***.
+
+  **Nada foi espalhado pelo site** — nenhum componente tocado, nenhum asset
+  trocado. O favicon roxo e os 8 `Zap` continuam exatamente como estavam.
+
+  **O que fica registrado para a próxima tentativa não repetir a mesma:**
+
+  - o desenho reprovado está em
+    `docs/identidade/tentativas/2026-09-10-raio-v3.svg`, **como registro do que
+    NÃO passou** — não é asset, não é para usar;
+  - o erro técnico que eu já tinha corrigido no caminho: a primeira versão foi
+    desenhada num quadrado e leu como **shuriken**. A referência é quase **duas
+    vezes mais alta que larga** (~1:1.9), e é a proporção que faz as lâminas
+    dominarem e a marca ler como raio;
+  - **o que ainda não sei, e é o que trava a próxima tentativa:** *o que* nele
+    não serviu. Silhueta? proporção? o furo? o peso das asas? Sem isso, tentar
+    de novo é chutar (§1.2) — e chute em cima de identidade custa rodada dele.
+
+  **Antes de redesenhar, perguntar a ele qual das quatro estava errada.**
+
+  **Um achado técnico da folha que sobrevive à reprovação**, porque vale para
+  qualquer desenho que venha: a **16 px o furo do hexágono quase fecha**. O
+  `docs/identidade/README.md` já prevê isso ao dizer que a versão mono é
+  *"deliberadamente mais simples"* — o certo é uma variante de 16 px com o furo
+  **maior**, não espremer a mesma geometria.
+
+- ⬜ `[10/09]` 🟠 **3. RECONSTRUÇÃO RADICAL DA LANDING — 3D e 2D.** *A maior das
+  três. Referência da cena: `docs/identidade/referencias/10-cena-da-landing.webp`.*
+
+  **Não é evolução incremental.** A camada visual da cena é desmontada e
+  reconstruída; o que fica é a **infraestrutura de performance**.
+
+  **O conceito, na frase dele:** *"um artefato cristalino de energia que está
+  vivo"*. O raio é a identidade, o cristal é o material, o núcleo é a fonte, o
+  vórtice é o nascimento, os fragmentos são a consequência.
+
+  | O que muda | Em uma linha |
+  | --- | --- |
+  | **raio dividido** | metade superior + **core** + metade inferior, com uma **fissura visível mas pequena** — lê como um raio primeiro, dividido depois |
+  | **core** | pertence à mesma linguagem geométrica; pulsa, ilumina as faces internas e **sustenta** as duas metades |
+  | **entrada** | 7 fases: vazio → vórtice → convergência → core → formação do raio → ruptura curta → estabilização |
+  | **idle** | o vórtice quase some; o core é o coração da animação |
+  | **fragmentos** | acabam o torus/octaedro/dodecaedro/icosaedro nos quatro cantos; entram fragmentos da **mesma família cristalina**, distribuídos em **profundidade** |
+  | **2D** | **não é versão pobre da 3D** — é interpretação gráfica da mesma identidade, em SVG + CSS, com a mesma dramaturgia |
+  | **arquitetura** | um **controlador central** de animação (timeline de estados), não lógica espalhada por objeto |
+
+  > ### `[10/09]` A REGRA DA IMAGEM FOI INVERTIDA PELO DONO
+  >
+  > **Estava escrito aqui:** *"a imagem 3D é **referência, não asset** — nada de
+  > pôr a imagem na Landing, usar como background, textura, sprite ou plano"*.
+  >
+  > **Ele mudou:** *"quero ajustar a abordagem… quero que você **USE ESSAS
+  > IMAGENS COMO BASE REAL DA EXPERIÊNCIA visual**, em vez de tentar recriar
+  > tudo do zero"*.
+  >
+  > **O que continua valendo da regra antiga**, porque ele repetiu junto: nada
+  > de `<img>` solto, background, "copia e cola", galeria ou slideshow. A
+  > exigência virou *"construa uma composição visual em torno dessas imagens"*.
+  >
+  > Registrado assim, com as duas versões, porque decisão revertida em silêncio
+  > volta como "conserto" daqui a dois meses (§6.2, regra 4).
+
+  ### `[10/09]` ETAPA FEITA: a cena 2D
+
+  **A 2D está construída e é a versão que TODO MUNDO recebe.** Quatro camadas de
+  profundidade lidas da referência (atmosfera · fragmentos longe · anéis + raio ·
+  fragmentos perto desfocados e cortados pela borda), com o raio como brasão
+  acima do título.
+
+  | Medido | |
+  | --- | --- |
+  | custo de JavaScript | **0 kB** — A/B com `git stash`: 735,1 kB / 222,5 kB gzip **com e sem** a cena |
+  | asset desktop | 18,9 kB · celular 9,5 kB (só um carrega por aparelho) |
+  | animação | só `transform`/`opacity`, no compositor — nenhum `rAF`, nenhum estado |
+
+  **Três defeitos meus que só o print pegou**, registrados para não voltarem:
+
+  1. **retângulo preto tapando o grid** — `Landing.jsx` embrulha tudo num
+     `z-10`, e `z-index` cria contexto de empilhamento: o `mix-blend-mode:
+     screen` nunca alcançava o fundo da página. Três tentativas até eu parar de
+     chutar e instrumentar a cadeia de ancestrais (§1.2). Tirar o `z-10`
+     quebraria a ordem de pintura; a saída foi máscara elíptica;
+  2. **anéis 13vh abaixo do núcleo** — tamanho do raio e centro de órbita
+     digitados separados. Agora tudo deriva por `calc()` ancorado no núcleo;
+  3. **no celular o raio ocupava metade da largura** — `vh` não sabe nada sobre
+     largura. Virou `min(42vh, 56vmin)`.
+
+  ### O que FALTA nesta tarefa
+
+  - **a 3D** — a metade que ele pediu junto e que não foi feita;
+  - **a dramaturgia de entrada** (vazio → vórtice → convergência → core →
+    materialização → estabilização). Hoje a cena já nasce estabilizada;
+  - **a leitura dele sobre a linguagem visual da 2D** antes de a 3D ser
+    construída em cima dela.
+
+  **O que NÃO pode morrer na reconstrução** — é infraestrutura, não estética:
+  `IntersectionObserver`, suspensão fora da viewport, `ResizeObserver`, cleanup,
+  `root.unmount()`, controle de DPR, resolução adaptativa, o portão de bytes e o
+  fallback. Reavaliar cada uma; substituir só conscientemente e por algo
+  equivalente ou melhor.
+
+  **FORA DO ESCOPO:**
+  - não alterar autenticação, autorização, banco, RLS, roles, permissões ou API;
+  - não mexer em páginas sem relação com a Landing;
+  - não trocar bibliotecas nem atualizar dependência sem necessidade;
+  - não aproveitar para reorganizar o projeto;
+  - achado de segurança incidental **documenta, não corrige aqui**.
+
+  **Restrição de processo, explícita:** *"não faça commit nem push sem minha
+  autorização"*. Pode criar, alterar, remover, testar e analisar — **para antes
+  do commit**.
+
+  > **O que eu preciso dizer antes de começar, não depois.** Este item é grande
+  > e a régua do §0.1 vale: se o contexto acabar no meio, o certo é **parar num
+  > ponto íntegro e registrar onde parei**, nunca empurrar cena pela metade. E há
+  > uma tensão real entre *"faça bonito"* e o orçamento de bytes do CI — se o
+  > resultado bonito não couber no teto, quem decide é ele, não eu sozinho.
+
+- ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
+  regras.** *Documento estrutural → precisa de proposta (§6.2).*
+
+  **O que ele traz de genuinamente novo** — o resto já existe, e duplicar regra
+  cria duas fontes de verdade que divergem (§4):
+
+  | Novo | O que muda |
+  | --- | --- |
+  | **FORA DO ESCOPO obrigatório** | hoje eu delimito o que **vou** fazer, nunca o que deliberadamente **não** vou |
+  | **Descoberta ≠ ação** | *"descobrir um problema não significa receber autorização para corrigi-lo"* |
+  | **Validação em camadas** | validar proporcional ao risco, em vez da bateria inteira sempre |
+  | **Expansão mínima declarada** | quando expandir, nomear a **menor** expansão possível |
+  | **Relatório final estruturado** | com *"o que NÃO foi alterado"* como campo fixo |
+
+  **O conflito que eu preciso resolver por escrito, e não pode ficar implícito:**
+  o `CLAUDE.md` §0 manda **tratar** dívida que está no caminho, e o §4 manda
+  **dividir agora** arquivo que eu mesmo inchei. O protocolo §21 proíbe *"já que
+  estou aqui"*. Não são a mesma coisa — sujeira que **eu acabei de fazer** é
+  limpeza do meu próprio trabalho, não descoberta —, mas a fronteira precisa
+  estar escrita, senão vira brecha nos dois sentidos: ou eu paro de dividir
+  arquivo que inchei, ou eu uso o §4 como desculpa para refatorar o que quiser.
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 - ⬜ `[05/09]` 🟠 **O "Esqueci o código" do cofre ANULA o cofre — achado do
@@ -143,9 +796,54 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   medir a idade **por fase**. É limitação minha, encontrada por mim, e está
   aqui para não depender de eu lembrar.
 
-- ⬜ `[05/09]` 🟠 **Rodar FASE 1 e FASE 3 da auditoria.** Paradas desde
-  **21/08** (`db/2026-08-21-auditoria-seguranca.md`). As Fases 2 e 4 rodaram em
-  05/09; estas duas não. Consome uma sessão inteira, então a hora é do dono.
+- ✅ `[05/09]` 🟠 **Rodar FASE 1 e FASE 3 da auditoria** — **FEITAS em 10/09**.
+  Relatório em `db/2026-09-10-auditoria-fases-1-e-3.md`.
+
+  **Fase 1:** build/lint/testes limpos; zero `dangerouslySetInnerHTML`, zero
+  `target="_blank"` sem `rel`, zero `window.confirm`, zero emoji, zero timer ou
+  canal sem cleanup, zero botão só-ícone sem nome acessível. O `innerHTML` do
+  `supabase.js` e o `<iframe src>` do `EmbedPlayer` foram auditados e são
+  seguros — no segundo, porque as regexes de `lib/embed.js` capturam o id em
+  classe fechada que não aceita `/`, `?`, `#`, `:` nem `@`.
+
+  **Corrigido:** duas corridas de `useEffect` (`useBloqueioDeLogin` e
+  `FeatureGate`) — resposta antiga podia pintar a tela do estado novo.
+
+  **Fase 3:** RLS ligada nas **29** tabelas, zero FK sem índice, a lista da
+  trava `tabelasSemUpdate.js` confere com o banco linha a linha, e nenhuma
+  tabela que o site apaga está sem policy de DELETE.
+
+  **Corrigido:** `profiles` **nunca tinha sido analisada** (`last_analyze` e
+  `last_autoanalyze` NULL) — a estatística dizia 0 linhas onde há 5, e ela é
+  lida em toda policy de RLS. `ANALYZE` em 10 tabelas.
+
+- ⬜ `[10/09]` 🟡 **`blocked_words` ficou SEM PORTÃO do lado logado.**
+
+  O `e2e/portas-do-banco.mjs` vigiava a lista de palavrão pelo lado anônimo. O
+  SEC-004 fechou `blocked_words` para `anon` — corretamente: os quatro lugares
+  que chamam `useBlockedWords` e o painel de moderação vivem **todos** atrás de
+  `RequireAuth`, conferido rota a rota no `App.jsx`. `authenticated` manteve as
+  5 colunas.
+
+  **O que se perde:** aquele arquivo roda com a chave anônima, então ele deixou
+  de conseguir enxergar a tabela. O risco que a linha guardava continua vivo do
+  lado logado — se a lista sumir, `checkContent` **aprova tudo em silêncio**, e
+  é a falha muda clássica (§1.5): nada estoura, nada loga, e a moderação
+  simplesmente para de acontecer.
+
+  **Onde ele caberia:** o job `fluxos autenticados` do CI já faz login. Uma
+  asserção lá — "a wordlist carregou com N > 0 palavras" — fecharia o buraco
+  sem credencial nova.
+
+- ⬜ `[10/09]` 🔵 **A consulta de índice não usado da §6.1 é inócua neste
+  volume.** `select ... where idx_scan = 0` devolve **36 dos índices**, e o
+  motivo está medido: `posts` tem 188 linhas, `profiles` 5, `reports` 2. Em
+  tabela desse tamanho o planejador escolhe varredura sequencial e **está
+  certo** — o índice não é inútil, é para quando crescer.
+
+  Não é para "consertar" agora: derrubar índice com base nisso seria o erro.
+  Fica anotado para ninguém reabrir a mesma conclusão daqui a dois meses, e
+  porque o sinal só passa a valer depois de tráfego real.
 
 - ⬜ `[05/09]` 🔵 **A tela de APARELHOS CONECTADOS.** *Ideia do dono, nascida
   de dentro da decisão do logout — ver
@@ -285,53 +983,6 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   regressão deste projeto, e este ambiente renderiza WebGL por software — não dá
   para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
   no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
-
-- ⬜ `[01/09]` 🔵 **UUID de staff exposto ao anônimo em `site_config.updated_by`.**
-  *`[03/09]` **Rebaixado de 🟡 para 🔵** — a metade grave foi fechada, e o que
-  sobrou é o item original, agora com a justificativa CERTA.*
-
-  **O que foi fechado em 03/09:** a cadeia que ligava o UUID a uma pessoa.
-  `profiles?select=id,username` devolvia as 5 linhas e transformava
-  `site_config.updated_by` num nome. Hoje responde **401** — a checagem de
-  username do cadastro virou a RPC `username_disponivel`, e o `SELECT` de `anon`
-  em `profiles` foi revogado. Conferido na produção, depois do merge.
-
-  **O que sobra:** `site_config.updated_by` continua legível, e agora é
-  **de fato** só um UUID sem nome — que era o que o item dizia em 01/09, só que
-  na época era falso. Impacto real: ligar mudanças de config a *uma* conta, sem
-  saber qual.
-
-  > **Por que a justificativa antiga era falsa, e vale guardar.** Ela dizia
-  > *"`profiles` responde 401 ao anônimo"*. O 401 valia para `select=*` —
-  > privilégio no Postgres é **por coluna**, e um `select=*` negado prova apenas
-  > que *alguma* coluna está fechada. O portão `portas-do-banco.mjs` cometia o
-  > mesmo erro e por isso dava verde; desde 02/09 ele sonda **coluna a coluna**.
-
-  **`blocked_words.created_by`** é lida pelo anônimo mas está **nula nas 322
-  linhas** — vaza estrutura, não dado.
-
-  **A dependência já está checada** (a consulta de "quem lê" do
-  [POSTURA.md](docs/regras/POSTURA.md)): **nenhuma policy** usa
-  `updated_by`/`created_by`, e a única função que os toca é
-  `owner_set_site_config`, `SECURITY DEFINER`, que não passa por esses
-  privilégios. O `REVOKE` das duas colunas é seguro — só não é urgente.
-
-  > **A lição que ficou, e é a mais cara desta rodada.** Eu propus revogar
-  > `id`/`username` dizendo que a dependência estava checada. Estava — mas a
-  > consulta de "quem lê" procura **policy e função no banco**, e quem lia era
-  > **o cliente**: o cadastro. O revoke teria sido a **quarta** queda do site
-  > por revoke bem-intencionado. A consulta do POSTURA.md precisa incluir
-  > `grep` no `src/`, e não só o Postgres.
-
-  **Bônus a decidir junto:** a lista inteira de 322 palavras bloqueadas é
-  pública. É consequência do filtro rodar no cliente, não descuido — mas entrega
-  o dicionário exato a quem quiser burlar. Vale registrar como decisão em
-  `DECISOES.md`, ou mudar de abordagem.
-
-  **Defesa em profundidade, sem pressa:** `anon` tem privilégio de INSERT/UPDATE
-  em quase toda coluna de `profiles`, `site_config` e `blocked_words`. A RLS
-  nega tudo (sondado: 0 linhas afetadas, e nada entrou), então não está aberto —
-  mas privilégio que ninguém usa é superfície que ninguém revisa.
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
@@ -504,10 +1155,10 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->99<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.220<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.503<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.771<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.820<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

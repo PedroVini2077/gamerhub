@@ -48,9 +48,9 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->346<!--/n--> arquivos · <!--n:src.linhas-->34.656<!--/n--> linhas |
-| dividido em | `lib` <!--n:src.lib.arquivos-->99<!--/n--> · `components` <!--n:src.components.arquivos-->165<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->40<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
-| rede de testes | <!--n:testes.arquivos-->70<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador |
+| código em `src/` | <!--n:src.arquivos-->352<!--/n--> arquivos · <!--n:src.linhas-->35.687<!--/n--> linhas |
+| dividido em | `lib` <!--n:src.lib.arquivos-->101<!--/n--> · `components` <!--n:src.components.arquivos-->167<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->42<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
+| rede de testes | <!--n:testes.arquivos-->73<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->8<!--/n--> |
 | banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
 
@@ -64,10 +64,17 @@ digitado à mão:
 > `[03/09]` **Esta seção mudou, e a mudança foi aprovada pelo dono.** Ela dizia
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
-> **dobrou** — <!--n:src.arquivos-->346<!--/n--> arquivos,
-> <!--n:src.linhas-->34.656<!--/n--> linhas, 73 funções `SECURITY DEFINER` — e a
+> **dobrou** — <!--n:src.arquivos-->352<!--/n--> arquivos,
+> <!--n:src.linhas-->35.687<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
+>
+> > **`[10/09]` Os dois primeiros números desta frase são VIVOS** (o portão os
+> > reescreve) **e o terceiro era congelado sem dizer que era** — lidos em fila,
+> > os três pareciam igualmente atuais. É a mesma armadilha que a seção logo
+> > acima descreve ao explicar por que número de banco não entra na tabela: aqui
+> > ele entrou pela porta dos fundos, no meio de uma frase.
 >
 > **Por que não bastava manter o 100% e aceitar várias sessões.** Essa era a
 > outra opção, e ela é honesta — mas auditoria que nunca termina é auditoria que
@@ -83,7 +90,7 @@ digitado à mão:
 
 | Sempre 100% | Por quê |
 | --- | --- |
-| **corpo** das funções `SECURITY DEFINER` (73 hoje) | metadados provam cobertura, não corretude: 6 falhas reais passaram por eles com os guards "certos" — `admin_unlock_login` barrando o próprio fundador, `soft_delete_post` sem hierarquia, `total_xp` nunca preenchido |
+| **corpo** das funções `SECURITY DEFINER` (**77 em 10/09** — cresce; medir na hora com a consulta da Fase 0) | metadados provam cobertura, não corretude: 6 falhas reais passaram por eles com os guards "certos" — `admin_unlock_login` barrando o próprio fundador, `soft_delete_post` sem hierarquia, `total_xp` nunca preenchido |
 | **enumeração** de tabelas, policies, FKs, índices e triggers | é a Fase 3 inteira, e já era enumeração |
 | **tudo que `anon` alcança** | é a superfície de quem não tem conta |
 | `hooks/useAuth*`, `lib/roles.js`, `lib/url.js`, `services/*` | auth, permissão, hierarquia e toda conversa com o banco |
@@ -95,7 +102,7 @@ digitado à mão:
 
 Componente de apresentação, página, animação, enfeite. A regra é uma só:
 **dizer o número e o critério**, sempre. *"Li 40 de
-<!--n:src.components.arquivos-->165<!--/n--> de `components/`, escolhidos pelos
+<!--n:src.components.arquivos-->167<!--/n--> de `components/`, escolhidos pelos
 que mudaram nos últimos 30 dias"* é aceitável; *"revisei os componentes"* não é.
 
 A seção "Honestidade sobre o método", logo abaixo, deixa de ser nota de rodapé
@@ -115,8 +122,8 @@ com leitura parcial.
 ### Honestidade sobre o método
 
 **Ao relatar, dizer qual método foi usado e o número real de cobertura** —
-"li <!--n:src.arquivos-->346<!--/n--> de <!--n:src.arquivos-->346<!--/n-->
-arquivos" ou "li 40 de <!--n:src.arquivos-->346<!--/n-->, parei em X". Nunca deixar parecer
+"li <!--n:src.arquivos-->352<!--/n--> de <!--n:src.arquivos-->352<!--/n-->
+arquivos" ou "li 40 de <!--n:src.arquivos-->352<!--/n-->, parei em X". Nunca deixar parecer
 que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
 não concluída.
 

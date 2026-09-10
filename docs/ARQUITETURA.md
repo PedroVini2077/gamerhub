@@ -54,6 +54,9 @@ src/
 ├── hooks/
 │   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
 │   │                      # árvore e o arquivo de maior risco do projeto (§7)
+│   ├── saidasDaSessao.js  # As DUAS maneiras de encerrar sessão (o "Sair" comum
+│   │                      # e a saída de quem foi banido) e por que cada uma é
+│   │                      # `scope: 'local'`. Saiu do useAuth em 10/09 (§4)
 │   ├── useVigiaDeBanimento.js # Realtime + poll de 60 s que detectam ban durante
 │   │                      # o uso. Saiu do useAuth em 29/08 — testável isolado
 │   ├── usePresenca.js     # Canal de presence: quantos estão online agora
@@ -385,8 +388,16 @@ src/
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
     │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
+    │   ├── cena/          # `[10/09]` Os números da cena 2D (pecasDaCena.js):
+    │   │                  # anéis, fragmentos e as três profundidades. Saiu do
+    │   │                  # Scene2D para o componente não virar um paredão de
+    │   │                  # coordenadas
     │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
-    │                      # SceneObjects (LogoBolt/FloatingShapes)
+    │                      # SceneObjects (LogoBolt/FloatingShapes) e
+    │                      # geometriaDoRaio.js — a malha do raio construída EM
+    │                      # CÓDIGO a partir do contorno MEDIDO da arte
+    │                      # aprovada (Moore no canal alfa + Douglas-Peucker).
+    │                      # Nenhum pixel da arte chega ao navegador por aqui
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
     │                      # InputWrap, LoginSemBanco (o que a tela de login diz
     │                      # quando o banco está fora), e os dois porteiros de

@@ -22,7 +22,15 @@ export function useAdminLiveActions({
     logAudit(action, details, { category: 'admin', severity });
 
   async function unsilenceUser(id) {
-    await supabase.from('live_chat_timeouts').delete().eq('id', id);
+    // `[10/09]` A trilha registrava "silêncio removido" mesmo quando a RLS
+    // recusava — 0 linhas e nenhum erro. A pessoa continuava calada, e o log
+    // dizia o contrário (§1.5; BANCO.md: a trilha não pode mentir).
+    const { error, count } = await supabase
+      .from('live_chat_timeouts').delete({ count: 'exact' }).eq('id', id);
+    if (error || !count) {
+      toast.error('Não foi possível remover o silêncio — sem permissão, ou ele já expirou.');
+      return;
+    }
     await log('admin_unsilence_chat', `Silêncio de chat removido por @${username}`);
     fetchLiveMod();
   }
@@ -77,8 +85,16 @@ export function useAdminLiveActions({
   async function handleApproveRequest(req) {
     const err = await mudarLive(req.post_id, true);
     if (err) { toast.error('Erro ao reativar post: ' + err.message); return; }
-    await supabase.from('live_reactivation_requests')
-      .update({ status: 'approved', ...reviewFields() }).eq('id', req.id);
+    // `[10/09]` Este UPDATE nao conferia NADA — nem `error`, nem contagem. A
+    // live era reativada, o pedido continuava `pending`, e o painel dizia
+    // "Aprovado". No próximo carregamento o pedido reaparecia na fila.
+    const { error, count } = await supabase.from('live_reactivation_requests')
+      .update({ status: 'approved', ...reviewFields() }, { count: 'exact' }).eq('id', req.id);
+    if (error || !count) {
+      toast.error('A live foi reativada, mas o pedido não pôde ser marcado como aprovado.');
+      fetchLiveMod();
+      return;
+    }
     toast.success('Aprovado — live reativada!');
     await log('reactivation_approved',
       `Super admin aprovou reativação de "${req.post_title}" (solicitado por ${req.admin_username})`);
@@ -87,8 +103,13 @@ export function useAdminLiveActions({
   }
 
   async function handleDenyRequest(req) {
-    await supabase.from('live_reactivation_requests')
-      .update({ status: 'denied', ...reviewFields() }).eq('id', req.id);
+    const { error, count } = await supabase.from('live_reactivation_requests')
+      .update({ status: 'denied', ...reviewFields() }, { count: 'exact' }).eq('id', req.id);
+    if (error || !count) {
+      toast.error('Não foi possível negar o pedido — sem permissão, ou ele já foi decidido.');
+      fetchLiveMod();
+      return;
+    }
     toast.success('Solicitação negada');
     await log('reactivation_denied',
       `Super admin negou reativação de "${req.post_title}" (solicitado por ${req.admin_username})`);

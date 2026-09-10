@@ -65,7 +65,94 @@
   **uma** barra: `//host`, `/\host`, `/%2f%2fhost`, esquema absoluto e caractere
   de controle são recusados, e o botão cai na landing. Trava:
   `voltarNaoEhRedirecionador.test.jsx`, provada reinjetando a checagem ingênua.
-- **`anon` só enxerga `(id, username)` de `profiles`** — o suficiente para a
+- **`[10/09]` `anon` NÃO enxerga NADA de `profiles`.** Esta linha dizia que ele
+  via `(id, username)`, e **deixou de ser verdade**: a checagem de username
+  duplicado no cadastro virou a RPC `username_disponivel`, que responde a mesma
+  pergunta sem devolver a lista de perfis, e o grant foi revogado. Conferido no
+  `information_schema.column_privileges` — `anon` não aparece para `profiles`.
+  O parágrafo abaixo fica como **histórico**, porque explica por que o desenho é
+  por RPC e não por RLS.
+- **`[10/09]` `game_keys.key_code` deixou de ser legível sem conta** (SEC-001).
+  A policy `Public keys` é `SELECT` para `{public}` com `USING (true)` e a
+  coluna estava no grant de `anon` — 3 chaves reais eram coletáveis por qualquer
+  pessoa da internet. A vitrine (jogo, plataforma, desconto, link) continua
+  pública **de propósito**; só o código saiu. Trava: `game_keys` em
+  `SUPERFICIE_ANONIMA`, em `e2e/portas-do-banco.mjs`.
+
+  > **A armadilha que quase me enganou, e ela vale para qualquer revoke daqui
+  > em diante:** `REVOKE SELECT (coluna)` **não faz nada** enquanto existir
+  > grant no nível de TABELA — o grant de tabela cobre todas as colunas. A
+  > primeira tentativa rodou sem erro e a falha continuou aberta; só o teste em
+  > `ROLLBACK` pegou. O certo é derrubar o grant de tabela e reconceder coluna a
+  > coluna.
+- **`[10/09]` `TRUNCATE` foi revogado de `anon` e `authenticated`** (SEC-003).
+  Estava concedido em **27 de 29 tabelas**, e **RLS não se aplica a TRUNCATE** —
+  provado: `anon` truncou `game_keys` de 6 para 0 linhas. Não era 🔴 porque o
+  PostgREST não expõe esse verbo e o `DELETE`, que ele expõe, foi testado nas 29
+  tabelas e apagou zero (a RLS segurou). Era **defesa em profundidade zero**. A
+  origem não é código nosso: é o grant padrão do template do Supabase. O
+  `ALTER DEFAULT PRIVILEGES` fecha para as tabelas que ainda vão nascer.
+- **`[10/09]` A lixeira do painel MOSTRA o que a hierarquia não deixa apagar**
+  (SEC-007). Não é brecha — as duas policies de `posts` estão certas, e é a
+  combinação que engana:
+
+  | operação | regra | tipo |
+  | --- | --- | --- |
+  | ver post com `deleted_at` | `role_rank(...) >= 2` | **plana** |
+  | `DELETE` | `can_moderate_content(user_id)` | hierarquia **estrita** |
+
+  O admin enxerga o post do owner na lixeira e não consegue apagá-lo — e a RLS
+  recusa com **0 linhas e nenhum erro**. Sem `count: 'exact'`, o site dizia
+  *"apagado permanentemente"* e gravava `admin_permanent_delete_post` em
+  `admin_logs`: **exclusão que nunca aconteceu, escrita na trilha de auditoria**.
+  Medido em `ROLLBACK` — a tela contava 176, o banco apagava 175. Corrigido em
+  6 chamadas (a varredura de classe achou 8 `delete()` sem contagem; 4 eram o
+  caso legítimo de descurtir). Trava: `apagarConfereLinhas.test.js`.
+
+  **A hierarquia não foi contornada em momento nenhum** — o que falhou foi o
+  site relatar o resultado dela.
+- **`[10/09]` O período de avaliação de staff ganhou FAIXA e trava no banco**
+  (SEC-008). `review_staff_nomination(p_trial_days)` e
+  `decide_staff_trial(p_extend_days)` tinham piso e nenhum teto — provado em
+  `ROLLBACK` com 3.650.000 dias, que promoveu a `admin` e marcou a revisão para
+  **12020-01-20**.
+
+  Importa porque o trial é o que autoriza um super admin a promover **sem o
+  fundador** (`owner_set_role` exige `owner`), e o vencimento não é cobrado por
+  máquina nenhuma — não há cron sobre `trial_review_date`; quem cobra é uma
+  pessoa lendo o `TrialCard`. Hoje: 7 a 180 dias, extensão de 1 a 90, total de
+  365 — **e** a constraint `staff_nominations_trial_max_365d`, que mantém o teto
+  mesmo se a função for reescrita sem ele.
+
+  **Verificado junto, e passou:** nenhuma função e nenhuma policy tira o
+  **cargo** do JWT. A varredura por `request.jwt`/`auth.jwt()` em `pg_proc` e
+  `pg_policies` achou só `notify_admin_new_live`, que lê o `sub` (identidade,
+  não papel). Um rebaixamento vale na chamada seguinte, sem esperar refresh.
+- **`[10/09]` Escrever em conteúdo alheio passou a respeitar a hierarquia**
+  (SEC-009). 🟠 As três tabelas de conteúdo tinham `DELETE` com hierarquia
+  estrita e `UPDATE` com cargo **plano**:
+
+  | tabela | DELETE | UPDATE (antes) |
+  | --- | --- | --- |
+  | `posts` | `can_moderate_content(user_id)` | `... OR is_staff()` |
+  | `comments` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+  | `community_posts` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+
+  Medido em `ROLLBACK`: um admin **reescreveu e ocultou** um post do fundador
+  por `PATCH` direto, enquanto o `soft_delete_post` recusava o mesmo post. O
+  caminho oficial barrava e o PostgREST passava.
+
+  Hoje as seis usam `can_moderate_content`. A moderação continua alcançando quem
+  está abaixo — ocultar é `UPDATE hidden_at`, então esta policy **é** o caminho
+  da moderação; o que mudou foi só o alcance. Trava:
+  `hierarquiaNoConteudo.test.js`.
+
+  **Verificado no caminho e passou:** `profiles` **não** tem a mesma brecha. O
+  `guard_profile_privileged_cols` reverte `role`, `banned` e `suspended_until`
+  para **todo** chamador `authenticated`, sem condição de cargo — testado com um
+  admin tentando rebaixar, banir e se autopromover: os três `UPDATE` responderam
+  "1 linha, sem erro" e **nada mudou**.
+- *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por
   coluna; a restrição correta aqui é privilégio de coluna.

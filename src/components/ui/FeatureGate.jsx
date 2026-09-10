@@ -6,8 +6,16 @@ export default function FeatureGate({ flag, children }) {
   const [on, setOn] = useState(null);
 
   useEffect(() => {
+    // Mesma guarda do `useBloqueioDeLogin`: se a `flag` mudar durante a ida ao
+    // servidor, a resposta da flag ANTIGA chegaria depois e decidiria a tela da
+    // nova. Aqui a janela é estreita (a flag costuma ser fixa por montagem),
+    // mas o custo da guarda é uma linha e o erro seria mudo (§1.5).
+    let valendo = true;
     supabase.from('site_config').select('value').eq('key', flag).maybeSingle()
-      .then(({ data, error }) => setOn(error || !data ? true : data.value !== 'false'));
+      .then(({ data, error }) => {
+        if (valendo) setOn(error || !data ? true : data.value !== 'false');
+      });
+    return () => { valendo = false; };
   }, [flag]);
 
   if (on === null) return (

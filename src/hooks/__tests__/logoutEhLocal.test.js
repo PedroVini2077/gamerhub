@@ -37,7 +37,10 @@ import { describe, expect, it } from 'vitest';
  */
 const SAIDAS = [
   {
-    arquivo: 'src/hooks/useAuth.jsx',
+    // `[10/09]` As duas saidas mudaram de arquivo: o useAuth passou de 274 para
+    // 305 linhas com o SEC-006 e o §4 mandou dividir. Elas foram para
+    // `saidasDaSessao.js` — mesmas funcoes, mesmo escopo, outro endereco.
+    arquivo: 'src/hooks/saidasDaSessao.js',
     quantas: 2,
     escopo: "{scope:'local'}",
     porque: 'o botão "Sair" e a saída de quem foi banido encerram a sessão '

@@ -125,15 +125,66 @@ const molduraDaDireita = () => page.evaluate(() => {
  * cruzamento entrou: o teste media no meio da troca sem querer. Esperar um
  * tempo fixo seria adivinhação; esperar o número certo de artes é o fato.
  */
-const esperarArtes = async () => {
+/**
+ * `[10/09]` A espera era satisfeita por DOIS estados diferentes, e por isso
+ * falhava sozinha no CI.
+ *
+ * A condição era só "existem 2 `.arena-troca`". Logo depois do clique em
+ * "Registrar" isso já é verdade — mas com as artes do LOGIN, porque o React
+ * ainda não reagiu. A espera passava na hora, o `medir()` rodava, e pegava o
+ * cruzamento em curso: **4 artes, esperava 2**.
+ *
+ * É a família do fallback silencioso (§4), na versão temporal: uma condição
+ * que responde "pronto" para "ainda não começou" e para "já terminou".
+ *
+ * ── O que foi MEDIDO, e o que a medição desmentiu ───────────────────────────
+ *
+ * A janela vulnerável **existe**: clicando em "Registrar" de dentro da página e
+ * lendo a condição na mesma tarefa de JS, ela responde `true` com as artes do
+ * LOGIN ainda na tela (`verde-guarda` e `roxo-guarda`). Esse é o estado que
+ * produz "4 artes, esperava 2" — o `medir()` roda e pega o cruzamento em curso.
+ *
+ * **Mas eu não reproduzi a falha aqui, e isso precisa estar escrito.** Medindo
+ * pelo caminho real do teste, a condição antiga levou **728 ms** para passar,
+ * já com as artes novas: a ida e volta do clique do Playwright é mais lenta do
+ * que o primeiro render do React nesta máquina, então o poll cai *depois* da
+ * janela. No CI a corrida deu para o outro lado. Rodei 5× aqui depois do
+ * conserto e deu 5/5 — o que não prova nada, porque **antes** do conserto também
+ * dava 5/5.
+ *
+ * A prova, então, é estrutural e não estatística: a condição nova **não pode**
+ * ser satisfeita pelo estado acima, porque ele tem as artes de antes. Portão que
+ * falha sozinho ensina a ignorar o canal (§0.2, 4ª regra), e este me custou uma
+ * caçada a uma regressão que não existia.
+ *
+ * O conserto é dizer O QUE SE ESPERA VER, não quantos elementos: quando a troca
+ * de aba tem artes novas, esperar que os `src` sejam **diferentes** dos de
+ * antes. Sem isso não há como distinguir os dois estados — o número é o mesmo.
+ *
+ * @param {string[]} [anteriores] os `src` de antes da troca. Omitido na
+ *   primeira carga, quando não existe "antes".
+ */
+const esperarArtes = async (anteriores) => {
   await page.waitForSelector('.arena-troca', { timeout: 15000 });
-  await page.waitForFunction(() => {
+  await page.waitForFunction((antes) => {
     const trocas = document.querySelectorAll('.arena-troca');
     if (trocas.length !== 2) return false;
     const imgs = [...document.querySelectorAll('img.arena-figura')];
-    return imgs.length === 2 && imgs.every((i) => i.complete && i.naturalWidth > 0);
-  }, null, { timeout: 15000 });
+    if (imgs.length !== 2) return false;
+    if (!imgs.every((i) => i.complete && i.naturalWidth > 0)) return false;
+    // A parte que faltava: com `antes` na mão, só está pronto quando NENHUMA
+    // das artes na tela é uma das anteriores.
+    if (antes?.length) {
+      const agora = imgs.map((i) => i.currentSrc || i.src);
+      if (agora.some((src) => antes.includes(src))) return false;
+    }
+    return true;
+  }, anteriores ?? null, { timeout: 15000 });
 };
+
+/** Os `src` que estão na tela agora — a fotografia que a espera compara. */
+const artesNaTela = () => page.evaluate(() =>
+  [...document.querySelectorAll('img.arena-figura')].map((i) => i.currentSrc || i.src));
 
 const conferir = async (rota) => {
   const medidas = await medir();
@@ -178,8 +229,9 @@ try {
   // O cadastro é ABA, não rota: `mode` é estado do Login.jsx. Ir por URL não
   // alcançaria a segunda composição, e o teste passaria medindo duas vezes a
   // mesma coisa — o tipo de cobertura que não cobre (§1.5).
+  const artesDoLogin = await artesNaTela();
   await page.getByRole('button', { name: /^Registrar$/i }).click();
-  await esperarArtes();
+  await esperarArtes(artesDoLogin);
   const noCadastro = await conferir('cadastro');
   const molduraNoCadastro = await molduraDaDireita();
 

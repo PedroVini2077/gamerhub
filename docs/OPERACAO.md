@@ -134,6 +134,21 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   > No **relay**, nesta ordem: o remetente ainda está verificado no provedor? a
   > chave SMTP foi revogada? a cota do plano estourou?
 
+  > **`[10/09]` Este parágrafo descrevia o relay como se ele estivesse no ar, e
+  > ele NÃO estava.** A `send-email` em produção era a **v33, de ~25/08** — sem
+  > o relay e sem o discriminador de severidade, ambos no repositório desde
+  > 05/09. Reimplantada hoje (v34), com autorização do dono.
+  >
+  > **Nada vigia isso**, e é o buraco que vale registrar: o
+  > `espelho-de-migrations.mjs` reprova o PR quando uma migration existe no banco
+  > e não no repositório, mas para as <!--n:edge.funcoes-->8<!--/n--> Edge
+  > Functions não há equivalente. Enquanto isso, três lugares afirmavam o
+  > comportamento novo — este documento, o comentário de 05/09 em
+  > `e2e/portas-fechadas.mjs`, e o próprio código.
+  >
+  > É o §9.9 em estado puro: *commit não é deploy*. O desenho de portão proposto
+  > está no `BACKLOG.md` — e ele evita token no CI de propósito (§0.2).
+
   > **`[05/09]` A função aceita DOIS provedores, e a troca é ação de painel.**
   > Se `SMTP_HOST` existir, ela usa o relay (`SMTP_PORT`, `SMTP_USER`,
   > `SMTP_PASS`, `SMTP_FROM`); se não existir, segue no Gmail. Foi feito assim
@@ -954,8 +969,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->346<!--/n--> arquivos e
-<!--n:src.linhas-->34.656<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->352<!--/n--> arquivos e
+<!--n:src.linhas-->35.687<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -979,7 +994,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->346<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->352<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1004,6 +1019,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->12.435<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.160<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
