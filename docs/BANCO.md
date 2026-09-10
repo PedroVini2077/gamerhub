@@ -300,6 +300,33 @@ fallback individual para onde o post chega solto (painel admin, moderação).
 > Não recrie o contador: conte de `post_likes`, que é a fonte de verdade.
 > `xpNaoLeColunaMorta.test.js` reprova quem voltar a somar.
 
+### `[10/09]` O autovacuum NÃO analisa tabela pequena — e `profiles` era uma
+
+Achado da Fase 3 da auditoria, e apareceu porque um número era **impossível**:
+`pg_stat_user_tables` dizia que `profiles` tinha **0 linhas**, e `profiles` tem
+**5**. Conferido: `last_analyze` **e** `last_autoanalyze` eram **NULL** — a
+tabela nunca tinha sido analisada desde que existe.
+
+**Não é defeito do Postgres, é o limiar dele.** O autovacuum só analisa depois de
+`autovacuum_analyze_threshold` (50) + 10% das linhas — com 5 linhas e pouca
+escrita, `profiles` nunca chegou perto de disparar. O mesmo valia para
+`notifications`, `reports` e mais sete.
+
+**Por que importa nesta tabela mais do que em qualquer outra:** `profiles` é
+lida em **toda policy de RLS** (`role_rank((SELECT role FROM profiles WHERE id =
+auth.uid()))`). São **29.013 varreduras sequenciais** acumuladas nela. Com 5
+linhas o plano seria o mesmo de qualquer jeito — o risco é o planejador seguir
+acreditando em "0 linhas" **conforme o site crescer**, que é exatamente o tipo
+de coisa que só dói quando já dói.
+
+**O que foi feito:** `ANALYZE` em 10 tabelas. Não altera dado nenhum, só
+estatística. `profiles` 0 → 5, `notifications` 0 → 21, `reports` 0 → 2.
+
+> **Se o site crescer e uma consulta ficar lenta sem motivo aparente, olhe isto
+> primeiro:** `select relname, n_live_tup, last_analyze, last_autoanalyze from
+> pg_stat_user_tables where schemaname='public'`. Estatística mentindo faz o
+> planejador escolher o plano errado, e nada nisso aparece como erro.
+
 ### React Query
 
 Cache client-side via `@tanstack/react-query` (`lib/queryClient.js`):

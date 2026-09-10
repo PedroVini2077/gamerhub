@@ -564,15 +564,35 @@ dependência técnica real** que decide o resto:
   **Fica FORA:** o `Zap` em `lib/ranks.js` é ícone de **rank**, não a marca. O
   escopo dele diz *"não alterar componentes que não exibem a marca"*.
 
-  **A silhueta foi reconstruída em SVG** (4 pontas — duas lâminas longas em
-  ziguezague, duas asas curtas — com o núcleo hexagonal vazado), e a folha de
-  prova foi ao dono em 10/09. **Aguardando aprovação dele.**
+  ### `[10/09]` A minha reconstrução em SVG foi REPROVADA pelo dono
 
-  **Um achado da própria folha, que ele precisa decidir junto:** a **16 px o
-  furo do hexágono quase fecha**. A referência já prevê isso — o
-  `docs/identidade/README.md` diz que a versão mono é *"deliberadamente mais
-  simples"* —, então o certo é uma variante de 16 px com o furo **maior**, e não
-  espremer a mesma geometria. Isso é adaptação técnica, não marca nova.
+  Reconstruí a silhueta em SVG (4 pontas — duas lâminas longas em ziguezague,
+  duas asas curtas — com o núcleo hexagonal vazado) e mandei a folha de prova.
+  Resposta dele, na letra: ***"já aviso, não gostei…. mas depois vemos isso"***.
+
+  **Nada foi espalhado pelo site** — nenhum componente tocado, nenhum asset
+  trocado. O favicon roxo e os 8 `Zap` continuam exatamente como estavam.
+
+  **O que fica registrado para a próxima tentativa não repetir a mesma:**
+
+  - o desenho reprovado está em
+    `docs/identidade/tentativas/2026-09-10-raio-v3.svg`, **como registro do que
+    NÃO passou** — não é asset, não é para usar;
+  - o erro técnico que eu já tinha corrigido no caminho: a primeira versão foi
+    desenhada num quadrado e leu como **shuriken**. A referência é quase **duas
+    vezes mais alta que larga** (~1:1.9), e é a proporção que faz as lâminas
+    dominarem e a marca ler como raio;
+  - **o que ainda não sei, e é o que trava a próxima tentativa:** *o que* nele
+    não serviu. Silhueta? proporção? o furo? o peso das asas? Sem isso, tentar
+    de novo é chutar (§1.2) — e chute em cima de identidade custa rodada dele.
+
+  **Antes de redesenhar, perguntar a ele qual das quatro estava errada.**
+
+  **Um achado técnico da folha que sobrevive à reprovação**, porque vale para
+  qualquer desenho que venha: a **16 px o furo do hexágono quase fecha**. O
+  `docs/identidade/README.md` já prevê isso ao dizer que a versão mono é
+  *"deliberadamente mais simples"* — o certo é uma variante de 16 px com o furo
+  **maior**, não espremer a mesma geometria.
 
 - ⬜ `[10/09]` 🟠 **3. RECONSTRUÇÃO RADICAL DA LANDING — 3D e 2D.** *A maior das
   três. Referência da cena: `docs/identidade/referencias/10-cena-da-landing.webp`.*
@@ -683,9 +703,36 @@ dependência técnica real** que decide o resto:
   medir a idade **por fase**. É limitação minha, encontrada por mim, e está
   aqui para não depender de eu lembrar.
 
-- ⬜ `[05/09]` 🟠 **Rodar FASE 1 e FASE 3 da auditoria.** Paradas desde
-  **21/08** (`db/2026-08-21-auditoria-seguranca.md`). As Fases 2 e 4 rodaram em
-  05/09; estas duas não. Consome uma sessão inteira, então a hora é do dono.
+- ✅ `[05/09]` 🟠 **Rodar FASE 1 e FASE 3 da auditoria** — **FEITAS em 10/09**.
+  Relatório em `db/2026-09-10-auditoria-fases-1-e-3.md`.
+
+  **Fase 1:** build/lint/testes limpos; zero `dangerouslySetInnerHTML`, zero
+  `target="_blank"` sem `rel`, zero `window.confirm`, zero emoji, zero timer ou
+  canal sem cleanup, zero botão só-ícone sem nome acessível. O `innerHTML` do
+  `supabase.js` e o `<iframe src>` do `EmbedPlayer` foram auditados e são
+  seguros — no segundo, porque as regexes de `lib/embed.js` capturam o id em
+  classe fechada que não aceita `/`, `?`, `#`, `:` nem `@`.
+
+  **Corrigido:** duas corridas de `useEffect` (`useBloqueioDeLogin` e
+  `FeatureGate`) — resposta antiga podia pintar a tela do estado novo.
+
+  **Fase 3:** RLS ligada nas **29** tabelas, zero FK sem índice, a lista da
+  trava `tabelasSemUpdate.js` confere com o banco linha a linha, e nenhuma
+  tabela que o site apaga está sem policy de DELETE.
+
+  **Corrigido:** `profiles` **nunca tinha sido analisada** (`last_analyze` e
+  `last_autoanalyze` NULL) — a estatística dizia 0 linhas onde há 5, e ela é
+  lida em toda policy de RLS. `ANALYZE` em 10 tabelas.
+
+- ⬜ `[10/09]` 🔵 **A consulta de índice não usado da §6.1 é inócua neste
+  volume.** `select ... where idx_scan = 0` devolve **36 dos índices**, e o
+  motivo está medido: `posts` tem 188 linhas, `profiles` 5, `reports` 2. Em
+  tabela desse tamanho o planejador escolhe varredura sequencial e **está
+  certo** — o índice não é inútil, é para quando crescer.
+
+  Não é para "consertar" agora: derrubar índice com base nisso seria o erro.
+  Fica anotado para ninguém reabrir a mesma conclusão daqui a dois meses, e
+  porque o sinal só passa a valer depois de tráfego real.
 
 - ⬜ `[05/09]` 🔵 **A tela de APARELHOS CONECTADOS.** *Ideia do dono, nascida
   de dentro da decisão do logout — ver

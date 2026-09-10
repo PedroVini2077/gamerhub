@@ -48,7 +48,7 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->350<!--/n--> arquivos · <!--n:src.linhas-->35.226<!--/n--> linhas |
+| código em `src/` | <!--n:src.arquivos-->350<!--/n--> arquivos · <!--n:src.linhas-->35.241<!--/n--> linhas |
 | dividido em | `lib` <!--n:src.lib.arquivos-->101<!--/n--> · `components` <!--n:src.components.arquivos-->165<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->42<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
 | rede de testes | <!--n:testes.arquivos-->73<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->8<!--/n--> |
@@ -65,9 +65,16 @@ digitado à mão:
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
 > **dobrou** — <!--n:src.arquivos-->350<!--/n--> arquivos,
-> <!--n:src.linhas-->35.226<!--/n--> linhas, 73 funções `SECURITY DEFINER` — e a
+> <!--n:src.linhas-->35.241<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
+>
+> > **`[10/09]` Os dois primeiros números desta frase são VIVOS** (o portão os
+> > reescreve) **e o terceiro era congelado sem dizer que era** — lidos em fila,
+> > os três pareciam igualmente atuais. É a mesma armadilha que a seção logo
+> > acima descreve ao explicar por que número de banco não entra na tabela: aqui
+> > ele entrou pela porta dos fundos, no meio de uma frase.
 >
 > **Por que não bastava manter o 100% e aceitar várias sessões.** Essa era a
 > outra opção, e ela é honesta — mas auditoria que nunca termina é auditoria que
@@ -83,7 +90,7 @@ digitado à mão:
 
 | Sempre 100% | Por quê |
 | --- | --- |
-| **corpo** das funções `SECURITY DEFINER` (73 hoje) | metadados provam cobertura, não corretude: 6 falhas reais passaram por eles com os guards "certos" — `admin_unlock_login` barrando o próprio fundador, `soft_delete_post` sem hierarquia, `total_xp` nunca preenchido |
+| **corpo** das funções `SECURITY DEFINER` (**77 em 10/09** — cresce; medir na hora com a consulta da Fase 0) | metadados provam cobertura, não corretude: 6 falhas reais passaram por eles com os guards "certos" — `admin_unlock_login` barrando o próprio fundador, `soft_delete_post` sem hierarquia, `total_xp` nunca preenchido |
 | **enumeração** de tabelas, policies, FKs, índices e triggers | é a Fase 3 inteira, e já era enumeração |
 | **tudo que `anon` alcança** | é a superfície de quem não tem conta |
 | `hooks/useAuth*`, `lib/roles.js`, `lib/url.js`, `services/*` | auth, permissão, hierarquia e toda conversa com o banco |
