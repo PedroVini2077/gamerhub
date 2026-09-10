@@ -144,6 +144,23 @@ erro sem verificar que a role permaneceu intacta"*.
 
 **Defesa em profundidade confirmada:** a RPC nega **e** o trigger reverte.
 
+## IDOR / BOLA — a classe prioritária, auditada
+
+O §11 marcou como **classe prioritária** porque já aconteceu aqui, em
+`check_staff_eligibility`. O recorte que importa: função **alcançável pelo
+cliente**, que recebe **UUID**, e que **não usa `auth.uid()`** — ou seja, cujo
+alvo é escolhido inteiramente por quem chama.
+
+**São duas, e as duas se sustentam:**
+
+| Função | Por que não é IDOR |
+| --- | --- |
+| `contato_dados_para_resposta(p_id)` | primeira linha é `IF NOT is_staff() THEN RAISE`. Ler qualquer mensagem **é** o desenho — a equipe responde o contato |
+| `get_user_xp(p_user_id)` | devolve o mesmo XP que a tela `/ranks` já mostra a quem tem conta. Não há dado novo em passar o UUID de outra pessoa |
+
+As duas estão concedidas **só a `authenticated`** — `anon` foi revogado na
+migration de 05/09, e continua revogado.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
@@ -152,7 +169,6 @@ CONSEGUI PROVAR"*.
 - as **48 funções alcançáveis** pelo cliente, uma a uma, com as 30 perguntas;
 - os fluxos de **ban, suspensão e moderação** (§13 e §14 do prompt 2) — a
   escalada de **role** foi auditada e está acima;
-- **IDOR/BOLA** função a função;
 - **upsert**, **mass assignment**, **RPC chaining**, **confused deputy**;
 - **isolamento de sessão**: cache, logout, role stale, downgrade;
 - a **matriz de permissões** 29 ações × 4 papéis.
