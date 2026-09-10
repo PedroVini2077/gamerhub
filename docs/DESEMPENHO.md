@@ -710,9 +710,19 @@ longe dela**. Ninguém vê, e a CPU paga.
 | Cena visível | 125 |
 | Cena fora da tela | **0** |
 
-Travado por `e2e/cena-3d.mjs`, que roda no CI e envolve `gl.drawElements` para
-contar desenho de fato. Provado nos dois sentidos: com o `frameloop` fixo em
-`always`, o teste falha acusando 140 desenhos fora da tela.
+Travado por `e2e/cena-3d.mjs`, que roda no CI e envolve **todas as chamadas de
+desenho do WebGL** para contar desenho de fato. Provado nos dois sentidos: com o
+`frameloop` fixo em `always`, o teste falha acusando 140 desenhos fora da tela.
+
+> **`[10/09]` A trava envolvia só `gl.drawElements`, e isso era um buraco.**
+> Geometria **indexada** desenha por `drawElements`; geometria **não indexada**,
+> por `drawArrays`. No dia em que a cena passou a usar `BufferGeometry`
+> construída em código — sem `setIndex()` —, a trava reprovou um site que estava
+> desenhando 658 quadros em 2 s. Alarme falso ensina a ignorar o canal (§0.2, 4ª
+> regra), então o conserto foi **contar as quatro portas** (`drawElements`,
+> `drawArrays` e as duas instanciadas), não trocar de porta. Provado nos dois
+> sentidos: a versão antiga reprova a cena atual, e a versão nova continua
+> reprovando um `frameloop: 'never'` de verdade.
 
 > **Por que não `frameloop="demand"`:** `demand` só desenha quando alguém pede
 > um quadro, e esta cena é animada por natureza — ela congelaria justamente
