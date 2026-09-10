@@ -208,12 +208,56 @@ consentimento da LGPD — se desse para inserir em nome de outro, a trilha intei
 passaria a mentir, e o projeto perderia justamente o que o desenho de 02/09 foi
 construído para garantir.
 
+## Escalada de SEGUNDA ORDEM — a classe que o §62 marcou como prioridade
+
+O ataque que o prompt descreve: *"cria nomination → manipula status → chama
+approve → ganha role"*. Alterar um estado aparentemente inocente e depois usá-lo
+para obter privilégio.
+
+**Primeira tentativa, e ela não provou nada:** a indicação nem chegou a ser
+criada — o candidato não passa nos critérios de elegibilidade. Registrei como
+**NÃO TESTADO**, e não como "seguro", porque a barreira que atuou foi outra.
+
+**Segunda tentativa, forçando a condição exata:** a indicação foi inserida por
+fora, já com `nominated_by` = o próprio admin que ia revisar.
+
+| Passo | Resultado |
+| --- | --- |
+| aprovar a **própria** indicação | **negado** — *"apenas super admins ou o fundador podem analisar"* |
+| status da indicação | continua `pending` |
+| role do candidato | continua `user` |
+| `UPDATE staff_nominations SET status='approved'` | **passou sem erro** |
+| status depois do UPDATE | **continua `pending`** |
+
+**Há separação de poderes de verdade:** admin **indica**, super_admin ou o
+fundador **aprovam**. A cadeia de segunda ordem quebra no elo do meio.
+
+E a última linha repete o padrão que já apareceu duas vezes nesta auditoria: o
+comando passa **sem erro** e não muda nada — `staff_nominations` não tem policy
+de `UPDATE`, então a RLS nega devolvendo zero linhas. Escrita ali só por RPC.
+
+## As funções de escrita com UUID — o recorte das classes C e D
+
+Em vez de ler 48 corpos, o §15 pede classificação por risco. O recorte que
+importa: **alcançável pelo cliente + escreve + recebe UUID + checa cargo mas
+não usa `can_moderate_content`**. Deu **nove**, e sete já estavam auditadas
+comportamentalmente (role, ban, suspensão, staff). As duas restantes:
+
+- **`admin_delete_unconfirmed_user`** — apaga conta, então foi lida inteira.
+  **Valida o alvo de verdade:** `WHERE p.id = p_user_id AND u.confirmed_at IS
+  NULL`. Só apaga cadastro **nunca confirmado**, e explode com mensagem clara
+  se for outra coisa. Grava auditoria com o ator real.
+- **`contato_registrar_resposta`** — exige `is_staff()`; responder qualquer
+  mensagem é o desenho.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
 CONSEGUI PROVAR"*.
 
-- as **48 funções alcançáveis** pelo cliente, uma a uma, com as 30 perguntas;
+- as funções alcançáveis **fora** do recorte de classe C/D acima — as que não
+  escrevem, ou que não recebem UUID. São a maioria das 48, e o risco delas é
+  menor por construção, mas **não foram lidas uma a uma**;
 - o fluxo de **moderação de conteúdo** (§14 do prompt 2) — a escalada de
   **role** e o **ban/suspensão** foram auditados e estão acima;
 - **RPC chaining** e **confused deputy** — upsert e mass assignment foram
