@@ -132,6 +132,15 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
   `ROLLBACK` (a tela contava 176, o banco apagava 175). Varrido por CLASSE: dos
   17 `delete()` de `src/`, **6 corrigidos** e 4 marcados como 0-linhas legítimo.
   Trava `apagarConfereLinhas.test.js`, provada reinjetando o bug.
+- ✅ **SEC-008 · o período de avaliação de staff podia acabar no ano 12020** —
+  **FECHADO**. 🟡 `review_staff_nomination(p_trial_days)` e
+  `decide_staff_trial(p_extend_days)` tinham piso e **nenhum teto** — a mesma
+  falha da suspensão até 2126. Importa porque o trial é o que autoriza um super
+  admin a promover **sem o fundador**, e nada cobra o vencimento por máquina
+  (não há cron sobre `trial_review_date`). Provado em `ROLLBACK`: 3.650.000 dias
+  aceitos, cargo virou `admin`, revisão para 12020-01-20. Faixa de 7–180 dias
+  (extensão 1–90, total 365) **e** `CHECK` no banco — a trava que torna o dado
+  errado impossível, e que sobrevive a alguém reescrever a função.
 
 > **A auditoria CONTINUA.** As três primeiras frentes fecharam, mas o piso do
 > §6 pede muito mais: as **48 funções alcançáveis** uma a uma, as **12 policies

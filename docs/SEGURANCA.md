@@ -111,6 +111,23 @@
 
   **A hierarquia não foi contornada em momento nenhum** — o que falhou foi o
   site relatar o resultado dela.
+- **`[10/09]` O período de avaliação de staff ganhou FAIXA e trava no banco**
+  (SEC-008). `review_staff_nomination(p_trial_days)` e
+  `decide_staff_trial(p_extend_days)` tinham piso e nenhum teto — provado em
+  `ROLLBACK` com 3.650.000 dias, que promoveu a `admin` e marcou a revisão para
+  **12020-01-20**.
+
+  Importa porque o trial é o que autoriza um super admin a promover **sem o
+  fundador** (`owner_set_role` exige `owner`), e o vencimento não é cobrado por
+  máquina nenhuma — não há cron sobre `trial_review_date`; quem cobra é uma
+  pessoa lendo o `TrialCard`. Hoje: 7 a 180 dias, extensão de 1 a 90, total de
+  365 — **e** a constraint `staff_nominations_trial_max_365d`, que mantém o teto
+  mesmo se a função for reescrita sem ele.
+
+  **Verificado junto, e passou:** nenhuma função e nenhuma policy tira o
+  **cargo** do JWT. A varredura por `request.jwt`/`auth.jwt()` em `pg_proc` e
+  `pg_policies` achou só `notify_admin_new_live`, que lê o `sub` (identidade,
+  não papel). Um rebaixamento vale na chamada seguinte, sem esperar refresh.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

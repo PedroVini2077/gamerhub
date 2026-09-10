@@ -359,6 +359,77 @@ reinjetando o bug: ela falhou nomeando
 O marcador de dispensa **exige motivo escrito** de propósito: silenciar a trava
 tem que custar uma frase, senão vira o `eslint-disable` que a §6.1 proíbe.
 
+## SEC-008 — o período de avaliação de staff podia acabar no ano 12020
+
+🟡 **Médio.** Achado pela frente de **RPC chaining / confused deputy**, e a
+cadeia é `nominate_staff` → `review_staff_nomination` → `decide_staff_trial`.
+
+**Primeiro, o que a varredura encontrou de BOM**, porque isso também é
+resultado. Das 9 funções alcançáveis que chamam outra privilegiada, as quatro
+que recebem UUID do chamador estão corretas:
+
+| função | o UUID que ela recebe é… | guarda |
+| --- | --- | --- |
+| `request_unban(p_user_id)` | o **alvo banido**, nunca o ator | `is_staff()`, e o ator sai de `auth.uid()` |
+| `contato_dados_para_resposta(p_id)` | a mensagem, não a pessoa | `is_staff()` antes de ler |
+| `check_staff_eligibility(p_user_id)` | qualquer um | `p_user_id <> auth.uid() and role_rank < 2` → nega |
+| `nominate_staff(p_candidate_id)` | o candidato | só cria linha `pending`; não promove |
+
+E a **separação de poderes está correta e é deliberada**: `nominate_staff` exige
+`v_caller_role = 'super_admin'` (string exata, que exclui o `owner`) para
+indicar a super admin — parece a falha de "lista de papéis escrita à mão" que
+este projeto já teve três vezes, mas **não é**: a própria mensagem de erro
+explica que *"o fundador é o avaliador independente dessas indicações"*. Quem
+indica não decide.
+
+### O que estava errado
+
+`review_staff_nomination(p_trial_days)` e `decide_staff_trial(p_extend_days)`
+tinham **piso e nenhum teto**:
+
+```
+if p_trial_days is null or p_trial_days < 1 then raise ...
+```
+
+É a regra do [BANCO.md](../docs/regras/BANCO.md) — *"toda entrada de RPC precisa
+de FAIXA, não só de tipo"* — e a **mesma** falha que virou uma suspensão até
+2126. Provado em `ROLLBACK`:
+
+```
+1_trial_absurdo  ACEITO — 3.650.000 dias
+2_consequencia   cargo virou "admin" e a revisao ficou para 12020-01-20
+```
+
+**Por que importa, se quem chama já é super admin.** Porque o trial é
+exatamente o que autoriza um super admin a promover **sem o fundador**:
+`owner_set_role` exige `owner`, e este caminho aceita `role_rank >= 3` *porque o
+cargo entra em avaliação*. Um trial que vence no ano 12020 é uma promoção
+definitiva com outro nome.
+
+E o vencimento **não é cobrado por máquina nenhuma** — não há cron sobre
+`trial_review_date`, conferido em `cron.job`. Quem cobra é uma pessoa vendo o
+`TrialCard`, que mostra `daysUntil(trial_review_date)`. Data absurda tira o caso
+da frente dessa pessoa para sempre.
+
+**E "a tela não oferece esse número" não protege:** o `roleNominationService`
+**nem envia** os dois parâmetros — usa os defaults (45 e 15). O site usa a
+`anon key`, e a REST API aceita o que o frontend nunca manda. Efeito colateral
+bom: como nenhuma tela envia esses valores, a faixa não quebrou caminho algum.
+
+### As duas correções, e por que são duas
+
+1. **Faixa nos parâmetros** — trial de 7 a 180 dias, extensão de 1 a 90, e o
+   trial inteiro limitado a 365 dias contados do início (senão extensões
+   repetidas reconstroem o problema em parcelas). Os limites são decisão de
+   produto e estão **escritos no SQL**, como manda o BANCO.md.
+2. **`CHECK` no banco** — `staff_nominations_trial_max_365d`. Pela tabela do §2,
+   é a trava mais forte: torna o dado errado **impossível de existir**, e é a
+   única que continua valendo se alguém amanhã reescrever a função e esquecer o
+   teto. Testada em `ROLLBACK` nas três pontas: 0 linhas existentes recusadas
+   pelo `ALTER`, o trial absurdo recusado, o de 180 dias aceito.
+
+`get_advisors` depois da mudança: **nenhum aviso novo**.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
@@ -367,16 +438,28 @@ CONSEGUI PROVAR"*.
 - as funções alcançáveis **fora** do recorte de classe C/D acima — as que não
   escrevem, ou que não recebem UUID. São a maioria das 48, e o risco delas é
   menor por construção, mas **não foram lidas uma a uma**;
-- **RPC chaining** e **confused deputy** — upsert e mass assignment foram
-  auditados e estão acima;
-- **role stale** e **downgrade durante sessão ativa** — o cache foi auditado e
-  está acima (SEC-006);
-- a **matriz de permissões** 29 ações × 4 papéis;
+- a **matriz de permissões** 29 ações × 4 papéis — não foi levantada;
+- **role stale** e **downgrade durante sessão ativa** — auditado **em parte**, e
+  a parte que falta é do lado do navegador.
+
+  **O lado do banco está provado:** nenhuma função e nenhuma policy tira o
+  **cargo** do JWT. A varredura por `request.jwt`, `jwt_claims` e `auth.jwt()`
+  em `pg_proc` e `pg_policies` devolveu **uma única** ocorrência —
+  `notify_admin_new_live`, que lê o `sub` (a identidade, que não envelhece num
+  rebaixamento), não o papel. Todo o resto relê `profiles.role` a cada chamada,
+  então um `admin` rebaixado perde o poder na chamada seguinte, sem esperar
+  refresh de token.
+
+  **O que NÃO foi verificado:** a tela. Se o painel continua montado até o
+  próximo carregamento, o rebaixado veria a interface (sem conseguir executar
+  nada — o banco nega). Isso é comportamento de front, e exige teste de
+  navegador com duas sessões;
 - os **13 `update()`** de `src/` sem `count: 'exact'`. São a mesma classe do
   SEC-007 e o número é conhecido; auditá-los um a um é bloco próprio, e está no
   `BACKLOG.md` com o número escrito. **Não** foram verificados.
 
-Do que estava nesta lista na versão anterior, saiu o fluxo de **moderação de
-conteúdo** (§14 do prompt 2): ele foi auditado e produziu o SEC-007 acima.
+Do que estava nesta lista na versão anterior, saíram duas frentes: o fluxo de
+**moderação de conteúdo** (§14 do prompt 2), que produziu o SEC-007, e **RPC
+chaining / confused deputy**, que produziu o SEC-008.
 
 Nada disso está "provavelmente ok". Está **não verificado**.
