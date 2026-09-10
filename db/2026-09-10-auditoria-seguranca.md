@@ -192,6 +192,22 @@ E o `unban_user`, que meu regex não conseguiu confirmar como "checa o alvo",
 **nega pelo cargo**: desbanir exige `super_admin`. O regex era inconclusivo; o
 comportamento é claro.
 
+## Upsert e mass assignment — auditados
+
+O §53 avisa que **upsert é esquecido em auditoria porque parece um INSERT**.
+São dois no projeto, e o §63 aponta um `update(form)`:
+
+| Onde | Veredito |
+| --- | --- |
+| `aceiteService` → `policy_acceptances` | **correto**. `WITH CHECK (user_id = auth.uid())` torna **impossível** registrar aceite em nome de outra pessoa |
+| `useAdminNotifications` → `admin_notification_reads` | **correto**. `WITH CHECK` exige ser staff **e** `admin_id = auth.uid()` — dupla checagem |
+| `KeyEditor` → `update(form)` | **baixo**. `game_keys` exige `is_staff()` no UPDATE, e a tabela não tem coluna de privilégio: mandar campo a mais não escala nada |
+
+**O primeiro é o que mais importava.** `policy_acceptances` é a prova de
+consentimento da LGPD — se desse para inserir em nome de outro, a trilha inteira
+passaria a mentir, e o projeto perderia justamente o que o desenho de 02/09 foi
+construído para garantir.
+
 ## O que NÃO foi auditado, e é a maior parte
 
 Dito explicitamente porque o §97 manda: *"se não conseguir provar, diga NÃO
@@ -200,7 +216,8 @@ CONSEGUI PROVAR"*.
 - as **48 funções alcançáveis** pelo cliente, uma a uma, com as 30 perguntas;
 - o fluxo de **moderação de conteúdo** (§14 do prompt 2) — a escalada de
   **role** e o **ban/suspensão** foram auditados e estão acima;
-- **upsert**, **mass assignment**, **RPC chaining**, **confused deputy**;
+- **RPC chaining** e **confused deputy** — upsert e mass assignment foram
+  auditados e estão acima;
 - **isolamento de sessão**: cache, logout, role stale, downgrade;
 - a **matriz de permissões** 29 ações × 4 papéis.
 
