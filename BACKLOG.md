@@ -45,7 +45,7 @@ registro em [DECISOES.md](docs/DECISOES.md).)*
 ---
 
 **Última conferência contra o sistema:** 05/09/2026 ·
-**31 itens abertos** (+ 1 ideia sem compromisso)
+**32 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -123,9 +123,10 @@ dependência técnica real** que decide o resto:
 
 | # | O quê | Por que nesta posição |
 | --- | --- | --- |
-| **1** | **Testar o Brevo** | ele já fez a parte dele; é o mais barato da fila e fecha um risco que quebra o cadastro **em silêncio** |
+| **0** | **Testar o Brevo** | 15 minutos, e ele já fez a parte dele. Vem antes por ser **curto**, não por ser mais importante |
+| **1** | **AUDITORIA PROFUNDA DE SEGURANÇA** | o §0 é explícito: segurança antes de tudo. Consome **várias sessões** |
 | **2** | **Identidade de ícones** | camada 1, e produz o **SVG mestre do raio** |
-| **3** | **Reconstrução da Landing 3D + 2D** | camada 1, a maior das três — e **consome** o SVG mestre do item 2 |
+| **3** | **Reconstrução da Landing 3D + 2D** | camada 1, a maior — e **consome** o SVG mestre do item 2 |
 | **4** | Integrar o protocolo às regras | é meta-trabalho; muda como eu trabalho, não o que o site faz |
 
 > **A dependência que decide a ordem 2 → 3, e ela é técnica, não preferência.**
@@ -136,6 +137,103 @@ dependência técnica real** que decide o resto:
 > fonte única). O raio 2D da Landing tem que ser o **mesmo** SVG mestre, dividido.
 
 ---
+
+- ⬜ `[10/09]` 🟠 **AUDITORIA PROFUNDA DE SEGURANÇA + HARDENING.** *Pedido dele
+  em 3 partes — **a parte 1 está registrada abaixo; as partes 2 e 3 ainda não
+  chegaram**. Auditoria autorizada do próprio site.*
+
+  **O que ele já testou, e o resultado é BOM — mas precisa virar regressão.**
+  Ele adulterou a resposta de `get_own_profile` no DevTools (`"role": "user"` →
+  `"owner"`), o frontend acreditou, e então chamou as RPCs administrativas
+  direto:
+
+  | RPC chamada com role falsificado | Resposta |
+  | --- | --- |
+  | `admin_list_users` | 400 · P0001 · *"Acesso negado."* |
+  | `owner_get_stats` | 400 · P0001 · *"Acesso negado."* |
+  | `admin_get_unconfirmed_users` | 400 · P0001 · *"Acesso negado."* |
+  | `get_blocked_logins` | 400 · P0001 · *"Acesso negado: exige super_admin ou fundador."* |
+
+  **A leitura dele está certa, e vale repetir para eu não errar depois:** isso
+  **não é escalada de privilégio**. Estado de autorização adulterável no cliente
+  é esperado numa SPA. Só vira vulnerabilidade se **alguma ação sensível confiar
+  nesse estado**. A ordem é explícita: *"não tente proteger o frontend contra
+  DevTools como se isso fosse a barreira principal"*.
+
+  **`npm test` precisa passar a provar esses quatro 400.** Hoje nada impede uma
+  migration futura de afrouxar uma delas em silêncio.
+
+  ### A regra do método, e ela proíbe o meu atalho favorito
+
+  *"NÃO faça uma caça superficial por palavras como SECURITY DEFINER, role,
+  admin ou owner. Leia o fluxo completo."* Para cada operação sensível:
+
+      frontend → service/hook → chamada Supabase → REST/RPC → função PL/pgSQL
+      → tabela/view → GRANT → RLS → trigger → auditoria → o que o cliente vê
+
+  E: **se existe mais de uma porta para a mesma ação, comparar todas.** *"Uma
+  autorização segura não pode depender de o usuário não conhecer uma segunda
+  porta."*
+
+  ### As três frentes da parte 1
+
+  **A. As 10 tabelas administrativas que aparecem no Network de conta comum** —
+  `admin_notifications`, `admin_notification_reads`, `admin_logs`,
+  `moderation_queue`, `unban_requests`, `live_chat_timeouts`,
+  `live_reactivation_requests`, `contact_messages`, `staff_nominations`,
+  `role_change_requests`. Todas responderam **200 `[]`**.
+
+  > **Ele explicitamente proíbe as duas conclusões fáceis:** `200 []` **não**
+  > prova que a RLS está certa, e **não** prova vazamento. Pode ser RLS
+  > filtrando, tabela vazia, ou grant/policy impedindo linha. **Só o banco
+  > responde.** São 13 perguntas por tabela — inclusive *"existe motivo para o
+  > frontend de usuário normal consultar isto?"* e *"trocando IDs, filtros ou
+  > status, aparece alguma coisa?"*.
+
+  **B. `profiles?select=id`** — respondeu 200, mas o DevTools mostrou *"Failed to
+  load response data"*. **Não há evidência do conteúdo**, e ele proíbe
+  classificar como `[]` ou como lista de IDs (§1.1: ausência de evidência não é
+  evidência de ausência). Mapear **todas** as consultas diretas a `profiles`:
+  `select('id')`, `select('*')`, joins `profiles(...)`, filtros por `user_id`,
+  `count/head`, `update`, `insert`, `delete` — e cruzar com grants e policies.
+
+  **C. Auditoria de CORPO de cada `SECURITY DEFINER`** — 30 perguntas por
+  função, e o motivo está no nosso próprio histórico: *"houve funções que
+  pareciam seguras olhando só nome, role, grants, SECURITY DEFINER e
+  search_path — mas o corpo revelou vulnerabilidades"*. Entre elas: o alvo é
+  validado? há autorização objeto-a-objeto? IDs podem ser trocados? o retorno
+  expõe além do necessário? grava auditoria com o **ator real**? deveria estar
+  num schema não exposto?
+
+  ### Duas análises que ele pediu SEM autorizar a mudança
+
+  - **`get_own_profile` devolve `public.profiles` inteiro.** O risco é **schema
+    drift**: uma coluna sensível nova passa a ser exposta **automaticamente**,
+    sem ninguém revisar. Ele quer a análise de impacto de trocar por
+    `RETURNS TABLE` explícito — e diz *"NÃO mude automaticamente"*.
+  - **`admin_list_users`** — admin pode ver owner e super_admin? cada nível
+    precisa dos mesmos campos? `p_limit` aceita valor abusivo (DoS)? há
+    paginação? `SETOF public.profiles` expõe demais?
+
+  ### O que NÃO pode ser desfeito
+
+  A migration `20260821164914_restrict_profile_columns_for_authenticated.sql`
+  fechou um vazamento **real** de `birth_date` e histórico de moderação. O
+  desenho por RPC continua certo — o que ele quer é saber se ele **continua
+  válido depois de todas as migrations posteriores**.
+
+  ### O tamanho disto, dito antes de começar
+
+  São **78 funções `SECURITY DEFINER`** hoje. A Fase 2 de 05/09 cobriu **21** —
+  as alcançáveis por quem tem conta sem passar por `is_super`/`is_staff` — e
+  achou dois problemas. Aplicar 30 perguntas às 78 é trabalho de **várias
+  sessões**. Vale o §0.1: se o contexto acabar, **registro onde parei** e retomo;
+  nunca declaro fase concluída com leitura parcial.
+
+  **FORA DO ESCOPO:** não é hora de refatorar, redesenhar tela, mexer em
+  desempenho ou tocar na Landing. Achado que não for brecha explorável vira item,
+  não conserto (§6 — *"achado que eu decidir não corrigir vai pro BACKLOG com o
+  motivo"*).
 
 - ⬜ `[10/09]` 🟠 **1. TESTAR O BREVO.** *O dono já criou a conta e configurou —
   falta a metade que é minha.*
