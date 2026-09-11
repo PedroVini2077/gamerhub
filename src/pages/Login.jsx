@@ -12,6 +12,7 @@ import RegisterSuccess from '../components/auth/RegisterSuccess';
 import ForgotForm from '../components/auth/ForgotForm';
 import LoginSemBanco from '../components/auth/LoginSemBanco';
 import ArenaDeEntrada from '../components/auth/ArenaDeEntrada';
+import { prepararArtesDe } from '../lib/artesDaArena';
 import CardQueAcompanhaAltura from '../components/auth/CardQueAcompanhaAltura';
 import { fadeTab } from '../lib/motion';
 import { useDbOffline } from '../hooks/useDbOffline';
@@ -219,6 +220,7 @@ export default function Login() {
                     onSubmit={handleSubmit}
                     onForgot={() => switchMode('forgot')}
                     onSwitchToRegister={() => switchMode('register')}
+                    onPrepararOutraAba={() => prepararArtesDe('register')}
                   />
                 )}
                 {mode === 'register' && (
@@ -237,6 +239,7 @@ export default function Login() {
                       loading={loading}
                       onSubmit={handleSubmit}
                       onSwitchToLogin={() => switchMode('login')}
+                      onPrepararOutraAba={() => prepararArtesDe('login')}
                     />
                   )
                 )}

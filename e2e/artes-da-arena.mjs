@@ -180,6 +180,97 @@ try {
       + '  `.arena-lado` e `.arena-fenda` (900ms, mesma curva).');
   }
   ok(`no meio da troca: 2 artes por lado, e a faixa a ${distancia.toFixed(1)}px da fenda`);
+
+  // ── O BURACO da PRIMEIRA troca de aba ─────────────────────────────────────
+  //
+  // `[11/09]` Relato do dono: *"ao entrar no login e clicar na aba cadastro,
+  // aquele problema da transição aparece... é apenas quando o usuário entra
+  // pela primeira vez"*.
+  //
+  // A causa não era a moldura (medi: a `opacity` dela rampa liso em 17 quadros).
+  // Era que `roxo-costas` e `verde-frente` só começam a ser baixados NO CLIQUE,
+  // e a arte velha saía na hora enquanto a nova esperava o `load`. Resultado
+  // filmado a 1,5 Mbps: o lado roxo ficava VAZIO por ~1 s.
+  //
+  // Duas coisas que este passo faz de propósito, e sem as duas ele não pega
+  // nada:
+  //
+  //   CONTEXTO NOVO  cache frio. No contexto de cima as artes já foram
+  //                  baixadas pelos passos anteriores, e a primeira troca —
+  //                  que é a única que quebra — não existe mais.
+  //   REDE FREADA    em localhost a arte chega em ~50 ms e o buraco não cabe
+  //                  num quadro. O defeito é de TEMPO; sem freio, o teste
+  //                  passaria sempre e não vigiaria coisa nenhuma.
+  const frio = await navegador.newContext();
+  const pagFria = await frio.newPage();
+  const cdp = await frio.newCDPSession(pagFria);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions', {
+    offline: false, latency: 150,
+    downloadThroughput: (1.5 * 1024 * 1024) / 8, uploadThroughput: (750 * 1024) / 8,
+  });
+
+  await pagFria.goto(`${BASE}/login`, { waitUntil: 'load', timeout: 30000 });
+
+  // Espera a cena de LOGIN existir de verdade antes de clicar, e isso não é
+  // zelo: na primeira versão deste passo eu esperava 1.800 ms fixos e o teste
+  // reprovava um site consertado. A medição mostrou por quê — no clique a arte
+  // do PRÓPRIO login ainda estava baixando (`complete: false`, opacidade 0), e
+  // o passo media um buraco que ele mesmo tinha criado.
+  //
+  // `waitUntil: 'load'` não cobre isso: o React monta DEPOIS do evento `load`,
+  // então as artes só começam a ser buscadas quando ele já passou. Perguntar
+  // pelo fato — a arte está carregada e visível? — é o que separa "a cena ainda
+  // está entrando" de "a cena perdeu a figura".
+  await pagFria.waitForFunction(() =>
+    [...document.querySelectorAll('.arena-lutador-roxo .arena-troca')].some((env) => {
+      const img = env.querySelector('img');
+      return img?.complete && img.naturalWidth > 0
+        && Number(getComputedStyle(env).opacity) > 0.9;
+    }), null, { timeout: 30000 });
+
+  const vazios = await pagFria.evaluate(async () => {
+    // Um quadro conta como VAZIO quando nenhuma arte do lado roxo está ao mesmo
+    // tempo carregada e visível. Exigir as duas coisas é o ponto: `<img>` que
+    // ainda não chegou tem caixa, mas não tem figura.
+    const ladoOcupado = () => [...document.querySelectorAll('.arena-lutador-roxo .arena-troca')]
+      .some((env) => {
+        const img = env.querySelector('img');
+        return img?.complete && img.naturalWidth > 0
+          && Number(getComputedStyle(env).opacity) > 0.05;
+      });
+
+    [...document.querySelectorAll('button')]
+      .find((b) => b.textContent.trim() === 'Registrar')?.click();
+
+    let semArte = 0;
+    let total = 0;
+    await new Promise((resolve) => {
+      const fim = performance.now() + 1500;
+      const laco = () => {
+        total += 1;
+        if (!ladoOcupado()) semArte += 1;
+        if (performance.now() < fim) requestAnimationFrame(laco); else resolve();
+      };
+      requestAnimationFrame(laco);
+    });
+    return { semArte, total };
+  });
+
+  await frio.close();
+
+  if (vazios.semArte > 0) {
+    throw new Error(
+      `na PRIMEIRA troca de aba o lado roxo ficou SEM ARTE em ${vazios.semArte}\n`
+      + `  de ${vazios.total} quadros (rede a 1,5 Mbps, cache frio).\n`
+      + '  A arte do cadastro só é baixada no clique, então soltar a arte VELHA\n'
+      + '  antes de a nova estar pronta abre um buraco de ~1 s onde não há\n'
+      + '  lutador nenhum — e some sozinho na segunda troca, porque aí o cache\n'
+      + '  já tem tudo. Foi exatamente o que o dono relatou em 11/09.\n'
+      + '  Confira se o `Lutador` (ArenaDeEntrada.jsx) ainda SEGURA a arte\n'
+      + '  exibida até a nova terminar o `decode()`.');
+  }
+  ok(`primeira troca em rede freada: ${vazios.total} quadros, nenhum sem arte`);
 } catch (e) {
   console.error(`\n  FALHOU no passo ${passo + 1}: ${e.message}\n`);
   await salvarEvidencia(page);

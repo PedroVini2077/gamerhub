@@ -116,12 +116,33 @@ export default function IntroLightning({ onComplete }) {
           `stroke-dasharray` do CSS passa a trabalhar em unidades de 1, sem
           ninguém precisar medir o caminho em JavaScript. É o que torna o
           desenho possível sem uma única linha de script. */}
+      {/* ── `[11/09]` `meet` e tamanho próprio, e NÃO `slice` em tela cheia ───
+          Relato do dono, com print do celular: *"essa logo tá enorme"*. Ele
+          estava vendo a marca sair pelos quatro lados de um aparelho de 400 px.
+
+          A causa é medível e é minha, de hoje: o caminho da marca ocupa o
+          viewBox INTEIRO (x de 0 a 100, y de 0,5 a 99,2), e `slice` escala para
+          COBRIR — num 400×800 o fator vira 8, ou seja, uma marca de 800 px de
+          largura numa tela de 400. Metade dela ficava fora.
+
+          O `slice` não era um erro de digitação: ele veio do RAIO, que este SVG
+          desenhava até hoje de manhã. Raio era enfeite sangrando pela tela, e
+          recortar era o efeito. **Marca é outra coisa** — logo cortada deixa de
+          ser reconhecível, que é a única função dela.
+
+          `meet` contém em vez de cobrir, e o tamanho passa a ser explícito:
+          `min(46vmin, 300px)` cabe em pé e deitado, no celular e no monitor,
+          sem nenhum ramo de `@media`. */}
       <svg
         aria-hidden
         viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 w-full h-full"
-        style={{ filter: 'drop-shadow(0 0 2px #00ed54) drop-shadow(0 0 9px #009dfc)' }}
+        preserveAspectRatio="xMidYMid meet"
+        className="relative"
+        style={{
+          width: 'min(46vmin, 300px)',
+          height: 'min(46vmin, 300px)',
+          filter: 'drop-shadow(0 0 2px #00ed54) drop-shadow(0 0 9px #009dfc)',
+        }}
       >
         <defs>
           <linearGradient id="intro-marca" x1="0%" y1="0%" x2="100%" y2="0%">

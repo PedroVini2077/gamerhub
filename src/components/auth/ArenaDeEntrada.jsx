@@ -1,14 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import verdeGuarda340 from '../../assets/auth/verde-guarda-340.webp';
-import verdeGuarda720 from '../../assets/auth/verde-guarda-720.webp';
-import roxoGuarda340 from '../../assets/auth/roxo-guarda-340.webp';
-import roxoGuarda720 from '../../assets/auth/roxo-guarda-720.webp';
-import verdeFrente340 from '../../assets/auth/verde-frente-340.webp';
-import verdeFrente720 from '../../assets/auth/verde-frente-720.webp';
-import roxoCostas340 from '../../assets/auth/roxo-costas-340.webp';
-import roxoCostas720 from '../../assets/auth/roxo-costas-720.webp';
+import { ARTES_POR_MODO, TAMANHOS } from '../../lib/artesDaArena';
 
 /**
  * O fundo do login e do cadastro — dois lutadores na paleta do site, verde de
@@ -71,14 +64,6 @@ import roxoCostas720 from '../../assets/auth/roxo-costas-720.webp';
  * `window.innerWidth` lido no render erra na primeira pintura e não acompanha o
  * giro do aparelho.
  */
-/**
- * O `sizes` do `srcset`, num lugar só — os dois lados usam o mesmo.
- *
- * Duas cópias divergindo fariam um lado escolher um arquivo e o outro escolher
- * outro, na mesma tela, sem nada acusar.
- */
-const TAMANHOS = '(max-width: 767px) 68vw, 620px';
-
 /** O cruzamento das artes. Mais lento que a troca do formulário de propósito:
  *  o fundo é o que dá a sensação de cena mudando, e cena não corta. */
 const CRUZAMENTO = { duration: 0.55, ease: [0.4, 0, 0.2, 1] };
@@ -94,12 +79,9 @@ export default function ArenaDeEntrada({ modo = 'login' }) {
   const cadastro = modo === 'register';
   const eixo = cadastro ? '68%' : '50%';
 
-  const verde = cadastro
-    ? { p: verdeFrente340, g: verdeFrente720 }
-    : { p: verdeGuarda340, g: verdeGuarda720 };
-  const roxo = cadastro
-    ? { p: roxoCostas340, g: roxoCostas720 }
-    : { p: roxoGuarda340, g: roxoGuarda720 };
+  // As artes vêm de `lib/artesDaArena.js`, que é a mesma lista que o preparo por
+  // intenção usa. Duas listas divergiriam em silêncio — ver o módulo.
+  const { verde, roxo } = ARTES_POR_MODO[modo] ?? ARTES_POR_MODO.login;
 
 
   return (
@@ -168,18 +150,79 @@ export default function ArenaDeEntrada({ modo = 'login' }) {
   );
 }
 
+/** Teto absoluto da espera pela arte nova. Ver `Lutador`. */
+const TETO_DA_ESPERA = 2500;
+
 /**
  * Um lutador, com fade cruzado quando a arte troca.
  *
  * `AnimatePresence` sem `mode="wait"`: as duas artes precisam existir ao mesmo
  * tempo para se cruzarem. Com `wait`, a que sai termina antes de a que entra
  * começar — e aí não é cruzamento, é piscada.
+ *
+ * ── `[11/09]` O BURACO da primeira troca de aba, e por que ele existia ──────
+ *
+ * Relato do dono: *"ao entrar no login e clicar na aba cadastro, aquele problema
+ * da transição aparece, mas quando volto pra aba do login funciona... é apenas
+ * quando o usuário entra pela primeira vez"*.
+ *
+ * **O sintoma era dele, a causa não.** Ele atribuiu à moldura roxa, que foi o
+ * que consertamos por último. Medi a `opacity` computada dela quadro a quadro:
+ * ela rampa liso em 17 quadros, dentro e fora da janela da animação de entrada.
+ * A moldura estava certa.
+ *
+ * O que estava errado é que `roxo-costas` e `verde-frente` **só começam a ser
+ * baixados no clique** — medido: numa visita ao login eles nunca aparecem na
+ * lista de recursos. Filmado a 1,5 Mbps, o lado roxo ficava **vazio** 300 ms
+ * depois do clique e só voltava a ter figura perto de 1,4 s. Na segunda troca
+ * as artes já estão no cache e a figura nova está lá em 300 ms — que é
+ * exatamente o "na volta funciona" que ele descreveu.
+ *
+ * A causa raiz é uma assimetria que eu mesmo escrevi: o `ArteCruzada` faz a
+ * arte NOVA esperar o `load` (certo), mas a VELHA saía na hora. Segurar uma
+ * ponta e soltar a outra não é cruzamento — é apagar e depois acender.
+ *
+ * ── A correção ─────────────────────────────────────────────────────────────
+ *
+ * A arte velha fica na tela até a nova estar **decodificada**. Só então as duas
+ * trocam, e aí o cruzamento é de verdade: nunca existe um quadro sem figura.
+ * Custo: **zero byte** — é a mesma imagem, só que esperada antes de trocar.
+ *
+ * **O teto de 2,5 s é obrigatório** (§0.3, regra 3): se a arte nunca chegar —
+ * rede caiu, arquivo sumiu —, sem teto o fundo ficaria preso na pose do login
+ * para sempre, com o formulário de cadastro na frente. Enfeite que trava calado
+ * é §1.5. Estourado o teto, a troca acontece assim mesmo: volta a ser o defeito
+ * antigo, que é ruim, mas é melhor do que uma cena mentindo sobre o modo.
  */
 function Lutador({ lado, arte }) {
+  // A arte que está NA TELA — não necessariamente a que o modo pede.
+  const [exibida, setExibida] = useState(arte);
+
+  useEffect(() => {
+    if (arte.g === exibida.g) return undefined;
+
+    let vivo = true;
+    const trocar = () => { if (vivo) setExibida(arte); };
+
+    const img = new Image();
+    img.sizes = TAMANHOS;
+    img.srcset = `${arte.p} 340w, ${arte.g} 720w`;
+    img.src = arte.g;
+
+    // `decode()` e não só `onload`: `load` diz que os bytes chegaram, não que a
+    // imagem está pronta para pintar. Trocar entre os dois põe a decodificação
+    // no primeiro quadro do fade, que é onde ela aparece como engasgo.
+    if (img.decode) img.decode().then(trocar, trocar);
+    else { img.onload = trocar; img.onerror = trocar; }
+
+    const teto = setTimeout(trocar, TETO_DA_ESPERA);
+    return () => { vivo = false; clearTimeout(teto); };
+  }, [arte, exibida.g]);
+
   return (
     <div className={`arena-lutador arena-lutador-${lado}`}>
       <AnimatePresence initial={false}>
-        <ArteCruzada key={arte.g} arte={arte} />
+        <ArteCruzada key={exibida.g} arte={exibida} />
       </AnimatePresence>
     </div>
   );
