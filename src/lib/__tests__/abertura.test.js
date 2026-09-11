@@ -89,6 +89,53 @@ describe('a posição combinada entre a abertura e o hero', () => {
   });
 });
 
+describe('a marca do hero para quando ninguém está vendo', () => {
+  it('TODA animação dela está na regra de pausa', () => {
+    // `[11/09]` A lição mais cara do projeto: a cena 3D continuava desenhando
+    // 60x/s para quem já tinha rolado para longe, e isso apareceu como 29.441 ms
+    // de thread principal num PageSpeed. Aqui o custo é menor, mas a falha é a
+    // mesma e é MUDA — nada quebra, a página fica bonita, e só o consumo sobe.
+    //
+    // O risco real não é a regra de hoje estar errada: é alguém acrescentar uma
+    // quarta animação à marca e esquecer de pô-la na pausa.
+    const css = FONTE(CSS);
+
+    const animadas = [...css.matchAll(/^\.(marca-flutuante-[\w-]+)\s*\{([^}]*)\}/gm)]
+      .filter(([, , corpo]) => /animation:/.test(corpo))
+      .map(([, classe]) => classe);
+
+    expect(
+      animadas.length,
+      'Nenhuma classe `.marca-flutuante-*` com `animation:` encontrada em '
+      + CSS + '. Se elas mudaram de nome, ajuste esta trava — senão ela aprova '
+      + 'sem olhar nada.',
+    ).toBeGreaterThanOrEqual(3);
+
+    const regraDaPausa = css.slice(css.indexOf('.marca-flutuante-parada'));
+    const blocoDaPausa = regraDaPausa.slice(0, regraDaPausa.indexOf('}'));
+
+    for (const classe of animadas) {
+      expect(
+        blocoDaPausa.includes(classe),
+        `\`.${classe}\` tem animação mas NÃO está na regra de pausa.\n`
+        + '  Ela vai continuar rodando depois que o hero sair da tela, para\n'
+        + '  sempre, sem nada quebrar e sem ninguém ver — é a falha que custou\n'
+        + '  29.441 ms de thread principal na cena 3D (§0.3).\n'
+        + '  Acrescente-a ao bloco `.marca-flutuante-parada` em ' + CSS + '.',
+      ).toBe(true);
+    }
+  });
+
+  it('quem pausa é o componente, e ele observa a tela', () => {
+    expect(
+      FONTE(MARCA_HERO),
+      'A `MarcaFlutuante` deixou de usar `IntersectionObserver`.\n'
+      + '  Sem ele a classe de pausa nunca é aplicada, e a regra do CSS vira\n'
+      + '  decoração: as animações rodam para sempre, inclusive fora da tela.',
+    ).toContain('IntersectionObserver');
+  });
+});
+
 describe('o ponteiro tem UM ouvinte só', () => {
   it('nenhum outro arquivo escuta `pointermove`', () => {
     const encontrados = [];

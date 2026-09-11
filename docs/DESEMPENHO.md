@@ -1020,3 +1020,28 @@ aviso aparece e o teste reprova.
 > suspeito mais provável. Se o crescimento for intencional, suba o teto **no
 > próprio script** e explique no commit por que o site precisou engordar — o
 > limite existe para forçar essa frase.
+
+### `[11/09]` A marca do hero PARA quando ninguém está vendo
+
+O dono pediu que o reflexo da abertura voltasse na marca do hero — *"ela passa
+de vez em quando"*. Isso cria a primeira animação **infinita** da landing desde
+que a cena 3D saiu, e é exatamente o formato que já custou caro aqui.
+
+**O precedente, medido em 28/08:** a cena 3D continuava desenhando 60×/s para
+quem já tinha rolado para longe, e o PageSpeed acusou **29.441 ms** de thread
+principal em "Other" — o laço de animação, não o tamanho do arquivo.
+
+**O que foi feito antes de a animação existir**, e não depois:
+
+| | |
+| --- | --- |
+| ciclo de 11 s, com a passagem ocupando **12%** dele | nos outros 88% a faixa está parada fora da marca |
+| `IntersectionObserver` com margem de 200 px | `animation-play-state: paused` quando o hero sai da tela |
+| trava que exige **toda** classe animada da marca na regra de pausa | provada reinjetando: uma quarta animação esquecida reprova nomeando a classe |
+
+**O que NÃO foi medido, e é honesto dizer:** o custo por quadro da faixa dentro
+da máscara SVG. Este ambiente não tem GPU e rasteriza por CPU, então qualquer
+número daqui seria artefato (§1.1). O que dá para afirmar é o desenho: só
+`transform` anima, e a animação não roda fora da tela. A medição de campo
+continua no backlog e depende do dono.
+

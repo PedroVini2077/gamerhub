@@ -177,11 +177,50 @@
   50%       { transform: translate3d(-1.6%, -1.9%, 0) scale(1.045); }
 }
 
+/* ── O REFLEXO que volta de vez em quando ──────────────────────────────────
+ *
+ * `[11/09]` Pedido do dono depois de ver a abertura pronta: *"sabe esse brilho
+ * na animação? será que vc pode adicionar ela nessa logo na landing page? ela
+ * passa de vez em quando"*.
+ *
+ * É a MESMA faixa, a MESMA inclinação e o MESMO recorte pela marca — só que em
+ * laço longo. Repetir o desenho é o ponto: não é um efeito novo, é o reflexo da
+ * abertura voltando.
+ *
+ * **O ciclo é 11 s e a passagem ocupa 12% dele.** Os outros 88% a faixa fica
+ * parada fora da marca, e é isso que faz o brilho ser um acontecimento em vez
+ * de um pisca-pisca. Enfeite que se repete depressa vira ruído — e ruído numa
+ * página onde a pessoa está lendo é o oposto do que o briefing pede. */
+.marca-flutuante-brilho {
+  animation: marcaBrilha 11s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+}
+@keyframes marcaBrilha {
+  0%, 88% { transform: translateX(-46px); }
+  100%    { transform: translateX(150px); }
+}
+
+/* ── As animações PARAM quando o hero sai da tela ──────────────────────────
+ *
+ * Não é zelo: é a lição mais cara deste projeto. A cena 3D continuava
+ * desenhando 60×/s para quem já tinha rolado para longe, e isso apareceu como
+ * **29.441 ms** de thread principal num PageSpeed (§0.3). Aqui o custo é muito
+ * menor, mas a regra é a mesma — enfeite que ninguém está vendo não deve custar
+ * nada.
+ *
+ * `animation-play-state` e não `display: none`: pausar mantém a posição, então
+ * ao voltar o movimento continua de onde estava em vez de saltar para o início. */
+.marca-flutuante-parada .marca-flutuante-deriva,
+.marca-flutuante-parada .marca-flutuante-respiro,
+.marca-flutuante-parada .marca-flutuante-brilho {
+  animation-play-state: paused;
+}
+
 /* Sem movimento nenhum para quem pediu menos movimento — mas a marca FICA.
  * Apagá-la tiraria o alvo dos trajetos do fundo, e a composição perderia o
  * sentido para quem já não vê o movimento que a explica. */
 @media (prefers-reduced-motion: reduce) {
   .marca-flutuante-deriva,
-  .marca-flutuante-respiro { animation: none; }
+  .marca-flutuante-respiro,
+  .marca-flutuante-brilho { animation: none; }
   .marca-flutuante-ponteiro { translate: none; transition: none; }
 }
