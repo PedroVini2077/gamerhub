@@ -81,17 +81,30 @@ dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 | 8 | XP/ranks — o scroll como progressão | não | espera a 3 |
 | 9 | O fecho, na porta do login | não | espera as anteriores |
 
-**As PERGUNTAS que eu fiz e ele ainda não respondeu** — gravadas porque pergunta
-que vive só na conversa some com a sessão, e foi assim que quatro pedidos dele
-se perderam em 01/09:
+**As PERGUNTAS que eu fiz, e onde cada uma parou.** Gravadas porque pergunta que
+vive só na conversa some com a sessão — foi assim que quatro pedidos dele se
+perderam em 01/09.
 
-| # | Pergunta | Estado |
+| # | Pergunta | Resposta |
 | --- | --- | --- |
-| 1 | Qual frase aparece com a marca na abertura? | **em aberto** — 3 propostas no briefing, com recomendação |
-| 2 | Quanto tempo a abertura pode durar, e a 2ª visita ganha versão curta? | **em aberto** — ele disse que depende do resto |
-| 3 | O que "montar" quer dizer no desenho? | **em aberto** — 3 leituras no briefing, com recomendação |
-| 4 | As artes que ele vai gerar são FUNDO (cena inteira, UI desenhada dentro) ou PEÇAS (elementos que eu componho com a UI real por cima)? | **em aberto** — decide o que dá para construir antes de elas chegarem |
-| 5 | O molde `FeatureSection` morre, ou sobrevive nas seções menores para criar contraste? | **em aberto** — ele pediu para eu reexplicar a pergunta |
+| 1 | Qual frase aparece com a marca na abertura? | ✅ **"Aqui o jogo continua."** |
+| 2 | Quanto tempo a abertura pode durar, e a 2ª visita ganha versão curta? | 🟡 **em aberto** — proposta de 2,15 s e versão curta no briefing, esperando ele |
+| 3 | O que "montar" quer dizer no desenho? | ✅ **pintada**, e depois o brilho de objeto polido |
+| 4 | As artes que ele vai gerar são FUNDO ou PEÇAS? | 🟡 **em aberto** — *"cada print vai ter sua arte própria"* sugere composição, mas ele não respondeu a pergunta diretamente |
+| 5 | O molde `FeatureSection` morre, ou fica nas seções menores? | ✅ **morre** — *"cada print vai ter sua arte própria"* |
+
+**`[11/09]` O TETO DE AMBIÇÃO da landing, na palavra dele:** *"na landing é onde
+eu mais quero gastar... não precisa ser pesado, mas tem que ter impactante"*.
+
+Isso muda uma calibragem que eu vinha usando errado. Eu tratava "não pode
+pesar" como "faça o mínimo"; ele está dizendo outra coisa — **a landing é onde o
+esforço deve se concentrar**, e o limite é o *peso*, não a *ambição*. As duas
+coisas não são a mesma: o `ConvergenciaDoHub` é impactante e custa 3,2 kB.
+
+**Por que isso fica escrito aqui e não só na conversa:** na hora de escolher
+entre uma cena mais simples e uma mais ousada, é esta frase que decide o empate
+— e sem ela registrada, eu escolheria a simples achando que estou sendo
+responsável.
 
 **Por que a 3 vem antes das cenas, e não depois:** cena presa é MECANISMO —
 altura reservada, progresso, o que acontece no celular, o que acontece com
