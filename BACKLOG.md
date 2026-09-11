@@ -654,12 +654,13 @@ dependência técnica real** que decide o resto:
   A conta do site tem foto; a que a API usa mostra só a inicial. É configuração
   no painel do Brevo (o avatar do remetente), não código nosso.
 
-- ⬜ `[11/09]` 🟢 **Branches desatualizadas no GitHub — portão ou gatilho.**
-  *Pedido dele: "vivo vendo os bots e as outras branch's desatualizadas".*
+- ⬜ `[11/09]` 🟢 **Ligar "Automatically delete head branches".** *Ação de
+  painel — eu não alcanço.*
 
-  As branches do Dependabot e as `claude/*` ficam para trás da `main` e ninguém
-  percebe até abrir a lista. Precisa de uma varredura que **diga quais** estão
-  atrás e há quanto tempo.
+  `Settings → General → Pull Requests`. É a correção de RAIZ do entulho de
+  branches: com ela ligada, branch de PR fechado some sozinha e o robô semanal
+  para de ter o que reportar. Hoje há **7 branches órfãs** do Dependabot, de
+  PRs já fechados.
 
 - ⬜ `[05/09]` 🟢 **O lembrete de auditoria não enxerga fase parada.** Ele
   compara a data do relatório **mais recente** com 90 dias. Como as Fases 2 e 4

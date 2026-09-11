@@ -577,6 +577,50 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 > 150 linhas (§6.2 regra 5) e porque são dois trabalhos diferentes: aqui fica o
 > **portão** que reprova o PR; lá, a **investigação** que decide onde mexer.
 
+## `[11/09]` Branches que sobram — varredura semanal, e a correção de um clique
+
+**O que o dono viu:** *"tenho percebido que os commits lá no GitHub não tem
+estado todos sincronizados... eu vivo vendo os bots e as outras branch's
+desatualizadas"*.
+
+**Medido antes de escrever qualquer coisa:** 9 branches do Dependabot, até
+**119 commits** atrás da `main` — e apenas **2 PRs abertos**. Sete eram restos
+de PR já fechado.
+
+### O critério, e por que "estar atrás" não serve
+
+Toda branch fica atrás no instante em que alguém mergeia outra coisa. Gritar por
+isso seria alarme diário à toa. A pergunta que separa é outra:
+
+| Situação | O que é | O que fazer |
+| --- | --- | --- |
+| atrás **e sem PR aberto** | resto de PR fechado | apagar |
+| atrás **com PR aberto** | trabalho em fila | nada — o autor rebaseia |
+
+### Issue, não build vermelho
+
+`.github/workflows/branches-abandonadas.yml` roda na segunda de manhã e abre (ou
+comenta em) **uma** issue. Não reprova PR nenhum: branch órfã não quebra o site,
+não quebra o build e não expõe nada. Reprovar por isso é o alarme que ensina a
+ignorar o canal (§0.2, 4ª regra) — mesmo raciocínio do lembrete de auditoria.
+
+Usa o `GITHUB_TOKEN` que o Actions injeta sozinho: **nenhuma credencial nova**
+entra no repositório por causa disto.
+
+### A correção de RAIZ é do dono, e é um clique
+
+`Settings → General → Pull Requests → Automatically delete head branches`.
+
+Com ela ligada, branch de PR fechado some sozinha e o robô para de ter o que
+reportar. Ele existe porque essa opção é ação de painel — e porque ela não apaga
+o que já está lá.
+
+> **O risco que o próprio script cria** está travado por teste: se a branch de
+> trabalho do §8 sair da lista de protegidas, o relatório passaria a sugerir
+> apagar justamente onde o trabalho vive. Entre um merge e o
+> `--force-with-lease` que a realinha, ela tem exatamente a assinatura de uma
+> órfã.
+
 ## Portão de qualidade automático
 
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
@@ -1068,6 +1112,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->14.449<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.495<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

@@ -1,0 +1,108 @@
+# Varredura semanal de branches que sobraram.
+#
+# ── Por que existe ──────────────────────────────────────────────────────────
+#
+# `[11/09]` Pedido do dono: *"tenho percebido que os commits lá no GitHub não
+# tem estado todos sincronizados... eu vivo vendo os bots e as outras branch's
+# desatualizadas"*.
+#
+# Medido antes de escrever: **9 branches do Dependabot**, até 119 commits atrás
+# da `main`, e apenas **2 PRs abertos**. Sete eram restos de PR já fechado.
+#
+# ── Por que ISSUE e não portão que reprova ──────────────────────────────────
+#
+# Branch órfã não quebra o site, não quebra o build e não expõe nada. Reprovar
+# PR por causa disso seria o alarme que grita à toa — e alarme assim ensina a
+# ignorar o canal onde a falha de verdade vai aparecer (`CLAUDE.md` §0.2, 4ª
+# regra). É o mesmo raciocínio do lembrete de auditoria e do de documentação:
+# indício vira issue, veredito vira build vermelho.
+#
+# ── E a correção de RAIZ continua sendo do dono ─────────────────────────────
+#
+# `Settings -> General -> Pull Requests -> Automatically delete head branches`.
+# Um clique, e o entulho deixa de nascer. Este robô existe porque essa opção é
+# ação de painel (que eu não alcanço) e porque ela não apaga o que já está lá.
+name: Branches abandonadas
+
+on:
+  schedule:
+    # Segunda de manhã: a lista chega quando alguém vai olhar o repositório,
+    # não no meio da madrugada de sábado.
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  varrer:
+    name: quais branches sobraram
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Listar as branches sem PR aberto
+        id: varredura
+        env:
+          # O token que o Actions injeta sozinho. Nenhuma credencial nova entra
+          # no repositório por causa disto (§0.2).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node scripts/branches-abandonadas.mjs | tee /tmp/relatorio.txt
+          # A contagem decide se vale abrir issue. `|| true` porque `grep` sem
+          # casar sai com 1 e derrubaria o passo.
+          n=$(grep -cE '^    [a-zA-Z]' /tmp/relatorio.txt || true)
+          echo "orfas=$n" >> $GITHUB_OUTPUT
+
+      - name: Abrir issue se houver entulho
+        if: steps.varredura.outputs.orfas != '0'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const relatorio = fs.readFileSync('/tmp/relatorio.txt', 'utf8');
+            const TITULO = 'Branches sobrando no repositório';
+
+            // Confere se ja existe uma aberta ANTES de criar. Lembrete semanal
+            // repetido vira ruido, e ruido ensina a ignorar o canal — o mesmo
+            // cuidado do lembrete de auditoria.
+            const abertas = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'manutencao',
+            });
+            const jaExiste = abertas.data.find((i) => i.title === TITULO);
+
+            const corpo = [
+              'Varredura automática semanal.',
+              '',
+              '```',
+              relatorio.trim(),
+              '```',
+              '',
+              '**Isto não é um erro do site.** Branch órfã não quebra nada — é',
+              'arrumação. O que ela atrapalha é a leitura do repositório, que foi',
+              'exatamente a reclamação que originou este robô.',
+              '',
+              '**A correção de raiz é de um clique, e é sua:**',
+              '`Settings → General → Pull Requests → Automatically delete head branches`.',
+              'Com ela ligada, o entulho deixa de nascer — e esta issue deixa de voltar.',
+            ].join('\n');
+
+            if (jaExiste) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: jaExiste.number, body: corpo,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title: TITULO, body: corpo, labels: ['manutencao'],
+              });
+            }

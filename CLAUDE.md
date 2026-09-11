@@ -695,6 +695,7 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `documentosLegais.test.js` (impressão) | `npm test`, **reprova** | texto de documento legal mudando **por baixo de quem já aceitou** — cobre a lista de arquivos de cada documento |
 | `aceiteNasceComAConta.test.js` | `npm test`, **reprova** | deriva entre o documento que o CLIENTE manda no cadastro e o que o `handle_new_user` aceita. O trigger pula item desconhecido de propósito (para não derrubar o cadastro), então a divergência faz o aceite sumir **em silêncio** |
 | `cofre.test.js` (reset) | `npm test`, **reprova** | o "Esqueci o código" do cofre voltando a ser **dois cliques** — cobre as duas pontas: a tela abrir o `ResetDoCofre`, e ele conferir a senha no SERVIDOR **antes** de confirmar |
+| `scripts/branches-abandonadas.mjs` + `branchesAbandonadas.test.js` | segunda, **abre issue** · `npm test`, **reprova** | branch que sobrou de PR fechado. A issue é semanal e **não reprova** — branch órfã não quebra nada. O teste reprova outra coisa: a branch de trabalho do §8 sair da lista de protegidas, o que faria o robô sugerir apagar onde o trabalho vive |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 
