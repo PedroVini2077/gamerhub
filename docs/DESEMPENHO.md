@@ -103,6 +103,32 @@ desktop, ≥1024 px, ≥2 núcleos. Celular nunca paga por ela.
 
 ---
 
+### `[11/09]` O orçamento de bytes passou a medir o site que as pessoas recebem
+
+O portão media um build **sem** as variáveis do site, e a diferença não era
+detalhe: **26,7 kB gzip**, ou 12% do carregamento inicial.
+
+| | bruto | gzip |
+| --- | --- | --- |
+| sem as variáveis — o que o CI media | 640,8 kB | 195,5 kB |
+| com as variáveis — o que a Vercel serve | 735,1 kB | **222,5 kB** |
+
+Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, a guarda de configuração no
+topo de `lib/supabase.js` vira condição constante e o empacotador poda 94 kB do
+chunk `index` como código morto. `vendor-supabase` é idêntico nos dois — a
+diferença inteira está no código da aplicação.
+
+**O que mudou, e o que NÃO mudou.** O job passou a construir com as variáveis, e
+os tetos subiram para 760 kB / 228 kB gzip. **O site não engordou:** ele sempre
+serviu 222,5 kB. O que acabou foi o portão dar verde sobre um build que ninguém
+recebe — a falha do §1.5 dentro da ferramenta que existe para pegá-la.
+
+**A medição de uma otimização futura muda de base junto.** Qualquer "emagreci X
+kB" daqui em diante compara contra 222,5, não contra 195,5 — senão o ganho
+apareceria inflado em 26,7 kB sem ninguém ter feito nada.
+
+---
+
 ### `[04/09]` As artes da arena: 5 MB de PNG viraram 60–282 KB, e o portão que faltava
 
 **O que foi medido.** O dono gerou duas artes com fundo transparente para o

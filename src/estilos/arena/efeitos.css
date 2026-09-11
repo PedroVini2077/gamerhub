@@ -52,8 +52,19 @@
   background-size: cover;
   mix-blend-mode: screen;
   opacity: 0.55;
-  /* Entra depois dos lutadores: a arena monta de dentro para fora. */
-  animation: arenaMolduraAcende 900ms ease-out 420ms both;
+  /* Entra depois dos lutadores: a arena monta de dentro para fora.
+   *
+   * `[11/09]` `backwards`, e NÃO `both`. Medido: com `both`, a `opacity` desta
+   * caixa ficava presa no último quadro da animação, e **animação sempre vence
+   * transição** — a moldura roxa pulava de 0,55 para 0 em 60 ms enquanto o
+   * `transform` da mesma regra transicionava normalmente. Era o mesmo defeito
+   * que o comentário do `@keyframes` aqui embaixo descreve, só que pelo outro
+   * lado: lá o `to` fixava o valor, aqui o `forwards` fixava.
+   *
+   * `backwards` mantém o que importava — a moldura fica invisível durante os
+   * 420 ms de espera, sem piscar antes da hora — e **solta** a `opacity`
+   * quando a animação acaba, que é quando a transição precisa dela. */
+  animation: arenaMolduraAcende 900ms ease-out 420ms backwards;
 }
 
 /* A máscara é obrigatória, não enfeite. `background-size: cover` numa caixa
@@ -97,7 +108,39 @@
  * história diferente de "ele venceu". Borda direita vazia deixa o perdedor na
  * penumbra, que é exatamente o que a cena quer dizer. */
 .arena-selecionado .arena-moldura-roxo {
-  display: none;
+  /* `[11/09]` Era `display: none`, e o dono viu o defeito: *"na transição da
+   * aba login para o cadastro, ele simplesmente some, não tem uma transição
+   * legal como tudo na cena"*.
+   *
+   * A causa é literal: **`display` não transiciona.** Não existe estado
+   * intermediário entre `block` e `none`, então a moldura saía de estalo
+   * enquanto a fenda, os lados e as partículas levavam 900 ms.
+   *
+   * As duas saídas que ele propôs — fade, ou empurrar para a direita — estão
+   * as duas aqui, e não por indecisão: elas contam a MESMA coisa por dois
+   * canais. O lado roxo encolhe quando a fenda vai para 68%, então o deslize
+   * acompanha um movimento que já acontece; e o fade é o que a cena já dizia
+   * em `display: none`, só que agora legível — a luz do perdedor se apaga em
+   * vez de desaparecer.
+   *
+   * `opacity` e `transform` de propósito: as duas rodam no compositor, e esta
+   * caixa tem 30vw de arte com `mix-blend-mode`. `width` ou `right` fariam o
+   * navegador repintar 30% da tela a cada quadro (§0.3). */
+  opacity: 0;
+  transform: translateX(22%);
+}
+
+/* A transição mora no elemento, não na classe que o esconde: sem isto a VOLTA
+ * (cadastro -> login) não teria transição nenhuma, porque a regra acima deixa
+ * de valer de uma vez. É o mesmo cuidado do `.arena-lado`. */
+.arena-moldura-roxo {
+  transition: opacity 620ms ease, transform 620ms ease;
+}
+
+/* Quem pediu menos movimento recebe o corte seco, que é o comportamento
+ * anterior — e ali ele é a resposta certa, não um defeito. */
+@media (prefers-reduced-motion: reduce) {
+  .arena-moldura-roxo { transition: none; }
 }
 
 /* ── As partículas ───────────────────────────────────────────────────────────

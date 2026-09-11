@@ -549,11 +549,23 @@ combate, só que na ferramenta que deveria pegá-la.
 reconstrução da cena 3D: os mesmos 735,1 kB / 222,5 kB. O número é antigo; o que
 é novo é alguém ter olhado.
 
-**Por que não foi consertado na hora.** Fazer o CI construir com as variáveis é
-uma linha — e no segundo seguinte a `main` fica vermelha, porque 222,5 > 222. A
-saída depois disso é uma decisão de produto que não é minha: **subir o teto**
-(aceitando o tamanho de hoje como a nova base) ou **emagrecer o `index`** antes.
-Está no `BACKLOG.md` esperando o dono.
+**`[11/09]` CONSERTADO, com a decisão do dono.** Ele autorizou tratar o item, e
+a saída foi a honesta nos dois lados:
+
+| O que mudou | Onde |
+| --- | --- |
+| o job `build · lint · testes` passou a construir **com** `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` | `.github/workflows/ci.yml` |
+| os tetos subiram para **760 kB brutos / 228 kB gzip** | `scripts/orcamento-de-bytes.mjs` |
+
+**E é preciso ser exato sobre o que esse número significa, senão ele mente de
+outro jeito:** o site **não engordou**. O que mudou foi a medição. O valor real
+sempre foi 222,5 kB gzip — o portão é que olhava um build de 195,5 e dava verde.
+Os tetos de hoje são o tamanho real mais uma folga pequena.
+
+> A regra do script — *"ao subir um destes números, escreva no commit por que o
+> site precisou engordar"* — não previa este caso, e por isso a exceção está
+> escrita no próprio script: aqui não houve ganho de peso, houve o fim de uma
+> mentira de medição.
 
 **Ele não diz se o site está rápido.** Diz se ficou mais pesado, que é o que dá
 para afirmar sem margem de erro. Para saber se está rápido, o Lighthouse no
@@ -1056,6 +1068,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->14.403<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.449<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

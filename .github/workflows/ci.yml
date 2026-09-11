@@ -74,8 +74,24 @@ jobs:
             exit 1
           fi
 
+      # `[11/09]` O build do PORTAO passa a usar as MESMAS variaveis do site.
+      #
+      # Sem elas, a guarda de configuracao no topo de `lib/supabase.js` vira
+      # condicao constante e o empacotador poda como codigo morto 94 kB do
+      # chunk que a producao realmente entrega. Medido em A/B na mesma maquina:
+      #
+      #   sem as variaveis (o que este job media)  640,8 kB  ->  195,5 kB gzip
+      #   com as variaveis (o que a Vercel serve)  735,1 kB  ->  222,5 kB gzip
+      #
+      # O teto era conferido contra o build MENOR: 26,5 kB de folga que nao era
+      # folga. O portao dava verde sobre um site que ninguem recebe — a mesma
+      # familia de falha que a §1.5 combate, dentro da ferramenta que deveria
+      # pega-la.
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
 
       # O CI barrava build quebrado, lint, teste, rota fora do ar e PR sem
       # documentação — mas não barrava o site ficar mais pesado. Dava para

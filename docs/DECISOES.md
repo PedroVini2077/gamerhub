@@ -1692,3 +1692,51 @@ poderia bloquear o login do fundador, e o remédio seria pior que a doença.
 Quem tem a senha continua entrando — e deve mesmo, é o dono. E quem já tem a
 sessão continua com tudo o que a sessão dá; o cofre nunca protegeu contra isso,
 e o aviso embaixo do campo continua dizendo isso na tela.
+
+---
+
+## `[11/09]` A moldura roxa sai com fade E deslize — as duas ideias dele, juntas
+
+**O que ele viu:** *"a moldura roxa do personagem roxo, na transição da aba
+login para o cadastro, ele simplesmente some, não tem uma transição legal como
+tudo na cena"*. E ele mesmo trouxe as duas saídas: fade, ou empurrar para a
+direita.
+
+**A causa era literal:** a regra era `display: none`, e **`display` não
+transiciona**. Não existe estado intermediário entre `block` e `none` — a
+moldura saía de estalo enquanto a fenda, os lados e as partículas levavam
+900 ms.
+
+### Por que as duas, e não uma
+
+Não foi indecisão: elas contam a mesma coisa por dois canais.
+
+| Ideia dele | O que ela apoia |
+| --- | --- |
+| **deslize para a direita** | o lado roxo **encolhe** quando a fenda vai para 68%. O deslize acompanha um movimento que já acontece na cena |
+| **fade** | é o que o `display: none` já dizia, agora legível: a luz do perdedor **se apaga** em vez de desaparecer — e a penumbra do lado direito no cadastro é intencional (`[04/09]`) |
+
+`opacity` e `transform` de propósito: as duas rodam no compositor. `width` ou
+`right` fariam o navegador repintar 30% da tela por quadro, numa caixa de 30vw
+com `mix-blend-mode` (§0.3).
+
+### O defeito ESCONDIDO que apareceu ao medir
+
+Com a transição escrita, `transform` animava e **`opacity` continuava pulando**
+— 0,55 para 0 em 60 ms. A causa: `animation: arenaMolduraAcende 900ms ease-out
+420ms **both**`. O `forwards` do `both` prende a `opacity` no último quadro, e
+**animação sempre vence transição**.
+
+É o mesmo defeito que o comentário do `@keyframes` do arquivo já descrevia, pelo
+outro lado: lá um `to` fixava o valor, aqui o `forwards` fixava.
+
+`backwards` no lugar de `both` mantém o que importava — a moldura fica invisível
+durante os 420 ms de espera, sem piscar antes da hora — e **solta** a `opacity`
+quando a animação acaba.
+
+**Medido no navegador, nos dois sentidos:** ida `0,55 → 0,51 → 0,00` com o
+deslize `0 → 6 → 95 px`; volta `0,00 → 0,02 → 0,55` com `95 → 92 → 0 px`.
+
+> **Só eu ter escrito a transição não teria funcionado.** Ela estava lá, no CSS,
+> e a `opacity` continuava pulando. Foi a medição que mostrou — e é por isso que
+> a evidência está aqui e não um "ficou suave".
