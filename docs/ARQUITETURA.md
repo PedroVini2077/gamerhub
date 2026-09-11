@@ -171,6 +171,14 @@ src/
 │   │                      # conexão do pool que ainda não vê a linha — o feed
 │   │                      # engolia o post e nada estourava (§1.5)
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
+│   ├── artesDaArena.js    # `[11/09]` As 8 artes da tela de entrada e o `sizes`
+│   │                      # do srcset, em UM lugar — a cena e o preparo por
+│   │                      # intenção precisam escolher o MESMO arquivo, e duas
+│   │                      # listas divergiriam em silêncio. Traz também
+│   │                      # `prepararArtesDe(modo)`, que busca o par da outra
+│   │                      # aba quando o ponteiro encosta no botão: baixá-lo
+│   │                      # junto com a página custaria 215 KB para todo mundo
+│   │                      # e metade das pessoas nunca troca de aba
 │   ├── boasVindas.js      # `[04/09]` As duas marcas da tela de boas-vindas:
 │   │                      # "acabou de entrar" (sessionStorage — morre ao
 │   │                      # fechar a aba, e é isso que impede a tela de voltar

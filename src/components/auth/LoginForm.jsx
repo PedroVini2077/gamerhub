@@ -2,7 +2,7 @@ import { Mail } from 'lucide-react';
 import { InputWrap } from './InputWrap';
 import CampoDeSenha from '../ui/CampoDeSenha';
 
-export default function LoginForm({ email, setEmail, password, setPassword, loading, onSubmit, onForgot, onSwitchToRegister }) {
+export default function LoginForm({ email, setEmail, password, setPassword, loading, onSubmit, onForgot, onSwitchToRegister, onPrepararOutraAba }) {
 
   return (
     <>
@@ -10,7 +10,12 @@ export default function LoginForm({ email, setEmail, password, setPassword, load
         <button type="button" className="flex-1 py-2.5 text-xs font-display tracking-widest uppercase bg-neon-green/10 text-neon-green">
           Entrar
         </button>
+        {/* `onPointerEnter`/`onFocus`: a arte da outra aba pesa 218 KB e só
+            começava a ser baixada NO CLIQUE — ver `lib/artesDaArena.js`. Quem
+            põe o ponteiro aqui está prestes a clicar, então o custo recai só
+            sobre quem vai usar. */}
         <button type="button" onClick={onSwitchToRegister}
+          onPointerEnter={onPrepararOutraAba} onFocus={onPrepararOutraAba}
           className="flex-1 py-2.5 text-xs font-display tracking-widest uppercase text-gray-500 hover:text-gray-300">
           Registrar
         </button>

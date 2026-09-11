@@ -3,6 +3,12 @@
 > **Por que este arquivo existe.** Ordem dele, na letra: *"salva tudo isso e o
 > outro prompt no backlog, pra não se perder, e as imagens tbm, grava tudo"*.
 > Conversa morre com a sessão; este arquivo não.
+>
+> **`[11/09]` Existe um segundo briefing, e ele é de outro assunto.** Este aqui
+> decide a **marca** (o G, o GH, a palavra). A **experiência de navegar a
+> landing** — scroll storytelling, cenas presas, ritmo — está em
+> [`BRIEFING-LANDING-2026-09.md`](BRIEFING-LANDING-2026-09.md). Os dois se
+> cruzam no hero e em nenhum outro lugar.
 
 ## O que ele decidiu, e encerra uma pergunta minha
 

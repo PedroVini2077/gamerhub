@@ -15,7 +15,7 @@ export default function RegisterForm({
   birthDate, setBirthDate,
   uf, setUf,
   selectedPlatform, setSelectedPlatform,
-  loading, onSubmit, onSwitchToLogin,
+  loading, onSubmit, onSwitchToLogin, onPrepararOutraAba,
   aceitouDocumentos, setAceitouDocumentos,
 }) {
   const passwordStrength = getPasswordStrength(password);
@@ -23,7 +23,11 @@ export default function RegisterForm({
   return (
     <>
       <div className="flex border border-dark-400 rounded overflow-hidden mb-6">
+        {/* Mesmo preparo por intenção do `LoginForm`: a volta também troca as
+            duas artes, e quem chega pelo link de cadastro nunca baixou o par do
+            login. Ver `lib/artesDaArena.js`. */}
         <button type="button" onClick={onSwitchToLogin}
+          onPointerEnter={onPrepararOutraAba} onFocus={onPrepararOutraAba}
           className="flex-1 py-2.5 text-xs font-display tracking-widest uppercase text-gray-500 hover:text-gray-300">
           Entrar
         </button>

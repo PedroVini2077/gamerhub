@@ -108,6 +108,20 @@ export const TERRITORIO = {
     'docs/identidade/referencias',
   ],
 
+  // `[11/09]` O briefing da EXPERIENCIA da landing (scroll storytelling). O
+  // territorio dele e a landing inteira: no dia em que uma cena for
+  // implementada, a distancia entre o que ele propoe e o que o site faz muda, e
+  // o documento precisa dizer qual fatia ja saiu do papel.
+  //
+  // As imagens de referencia dele ainda NAO existem — o dono avisou que vai
+  // gerar. Quando chegarem, elas entram em `docs/identidade/referencias` e este
+  // caminho passa a valer para as duas coisas.
+  'docs/identidade/BRIEFING-LANDING-2026-09.md': [
+    'src/pages/Landing.jsx',
+    'src/components/landing',
+    'docs/identidade/referencias',
+  ],
+
   'docs/SEGURANCA.md': [
     'supabase/functions',
     'src/hooks/useAuth.jsx',

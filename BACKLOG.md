@@ -46,12 +46,35 @@ deixar a página mais impressionante"*.
 **Objetivo:** a landing dos três atos — a fenda, o que converge, você já está
 dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 
-| Fatia | O que é | Estado |
-| --- | --- | --- |
-| **1** | Matar a cena 3D e trocar o fundo do hero por **convergência** em SVG/CSS | **feita** |
-| 2 | A intro (`IntroLightning`) ainda desenha o RAIO — é a primeira coisa que alguém vê | a fazer |
-| 3 | Ato 2: as features deixam de ser lista e viram o que CHEGA ao hub | a fazer |
-| 4 | Ato 3: a interface de verdade como prova, e o fecho na porta do login | a fazer |
+> **`[11/09]` A fila abaixo foi REESCRITA.** Ele mandou um segundo briefing, bem
+> mais ambicioso — a landing como **experiência de scroll**, não como sequência
+> de seções. Está inteiro em
+> [`docs/identidade/BRIEFING-LANDING-2026-09.md`](docs/identidade/BRIEFING-LANDING-2026-09.md),
+> com a análise do que existe hoje e a direção proposta.
+>
+> **Ele avisou que as imagens de referência ainda NÃO existem** — *"eu não tenho
+> elas agora, eu vou ter que gerar, deixa isso pendente"* —, e que o plano pode
+> mudar quando chegarem: *"provavelmente vamos ter que mudar o que estamos
+> fazendo, mas vamos só estruturar antes de fazer"*. Por isso a fila é ordenada
+> pelo que **não** depende delas.
+
+| Fatia | O que é | Depende das imagens? | Estado |
+| --- | --- | --- | --- |
+| **1** | Matar a cena 3D e trocar o fundo do hero por **convergência** em SVG/CSS | não | **feita** |
+| 2 | A abertura (`IntroLightning`) — **ele já descreveu como quer**: tela escura, a marca se montando aos poucos, uma frase junto, e só então a landing. Sem clarão. Ver o briefing | não | a fazer — o TAMANHO já foi corrigido |
+| 3 | **O mecanismo de cena presa** (sticky + progresso de scroll), sem arte nova | não | a fazer — é a fundação das outras |
+| 4 | Comunidade: *"tem gente aqui"* | em parte | espera a 3 |
+| 5 | Feed vivo | em parte | espera a 3 |
+| 6 | Lives — a cena mais cinematográfica | **sim** | espera as imagens |
+| 7 | Keys & Promos — descoberta | **sim** | espera as imagens |
+| 8 | XP/ranks — o scroll como progressão | não | espera a 3 |
+| 9 | O fecho, na porta do login | não | espera as anteriores |
+
+**Por que a 3 vem antes das cenas, e não depois:** cena presa é MECANISMO —
+altura reservada, progresso, o que acontece no celular, o que acontece com
+`prefers-reduced-motion`. Construir uma vez com teste e reusar é o oposto de
+escrever cinco animações parecidas que divergem (§4). Fazer as Lives primeiro e
+extrair o mecanismo depois é o caminho que produz duplicação.
 
 **Critério de sucesso da fatia 1:** nenhum raio na landing, o orçamento de bytes
 cai, e o hero conta "ponto de encontro" sem depender de 3D.
@@ -1078,8 +1101,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.531<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.613<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

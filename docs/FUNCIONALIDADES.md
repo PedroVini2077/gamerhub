@@ -153,6 +153,23 @@ transições discretas das páginas internas.
   mais alto que o de login) e **os lutadores do fundo se cruzam em fade** em vez
   de trocar de estalo. A primeira pintura da página não anima: o formulário
   aparece pronto.
+  > **`[11/09]` A PRIMEIRA troca abria um buraco, e só a primeira.** Relato do
+  > dono: *"ao entrar no login e clicar na aba cadastro, aquele problema da
+  > transição aparece, mas quando volto pra aba do login funciona"*.
+  >
+  > **A causa não era a moldura roxa**, que foi o que consertamos por último —
+  > medida quadro a quadro, a opacidade dela rampa liso. Era que as artes do
+  > cadastro **só começam a ser baixadas no clique**, e a arte velha saía na
+  > hora enquanto a nova esperava terminar de carregar. Filmado a 1,5 Mbps: o
+  > lado roxo ficava **vazio por cerca de 1 segundo**. Na segunda troca as artes
+  > já estão no cache — que é exatamente o *"na volta funciona"*.
+  >
+  > Agora a arte que está na tela **fica lá até a nova estar pronta**, e só
+  > então as duas se cruzam: nunca existe um quadro sem lutador. E o par da
+  > outra aba começa a ser buscado quando o ponteiro encosta no botão, o que
+  > encurta a espera sem custar nada para quem nunca troca de aba. Travado por
+  > `e2e/artes-da-arena.mjs`, que refaz a primeira troca com **cache frio e rede
+  > freada** — sem as duas condições o teste passaria sempre sem vigiar nada.
 - **`[05/09]` Conquistas no perfil.** Oito, fixas, calculadas em cima do que a
   pessoa já fez: primeiro post, 10 posts, primeira live, primeira curtida
   recebida, 25 curtidas, 10 comentários, perfil completo e um mês de conta. As
