@@ -22,7 +22,9 @@
  * Exige E2E_EMAIL e E2E_PASSWORD (conta comum, nunca de staff — ver passo 3).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
-import { publicarEEsperarNoFeed, marcaDeTeste, REGEX_DE_SOBRA } from './publicarPost.mjs';
+import {
+  publicarEEsperarNoFeed, marcaDeTeste, REGEX_DE_SOBRA, sobrasAntigas, IDADE_DE_SOBRA_MS,
+} from './publicarPost.mjs';
 import { comentarEEsperarNaLista } from './comentar.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -287,14 +289,23 @@ try {
   // o `[painel `. Um post do teste de painel ficou visível no site desde 10/09
   // com este detector ligado e verde. Agora o padrão vem de
   // `PREFIXOS_DE_TESTE`, que é a lista única.
-  const sobras = await main.locator('h2').filter({ hasText: REGEX_DE_SOBRA })
-    .filter({ hasNotText: MARCA }).count();
-  if (sobras > 0) {
+  //
+  // `[11/09]` E o filtro passou a ser por IDADE, porque ver os dois prefixos
+  // sozinho produziu alarme falso: o job `painel de admin` roda EM PARALELO
+  // contra o mesmo banco, e o post dele estava no feed legitimamente. O
+  // porquê do corte de 30 min está em `IDADE_DE_SOBRA_MS`.
+  const titulos = await main.locator('h2').filter({ hasText: REGEX_DE_SOBRA })
+    .filter({ hasNotText: MARCA }).allInnerTexts();
+  const sobras = sobrasAntigas(titulos);
+  if (sobras.length > 0) {
     throw new Error(
-      `${sobras} post(s) de teste sobrando no feed de execucoes anteriores.\n`
+      `${sobras.length} post(s) de teste sobrando no feed de execucoes anteriores:\n`
+      + sobras.map((t) => `    ${t}`).join('\n') + '\n'
       + '  Alguma rodada morreu antes do passo que apaga, e o lixo ficou no ar\n'
       + '  para quem usa o site. Apague pelo painel admin (aba Posts) e veja\n'
-      + '  POR QUE aquela rodada quebrou — o post sobrando e o sintoma, nao a causa.');
+      + '  POR QUE aquela rodada quebrou — o post sobrando e o sintoma, nao a causa.\n'
+      + `  (So conta o que tem mais de ${IDADE_DE_SOBRA_MS / 60000} min: o job do\n`
+      + '   painel roda em paralelo, e o post DELE nao e sobra.)');
   }
   ok('nenhum post de teste sobrando de execuções anteriores');
 

@@ -116,3 +116,47 @@ export function marcaDeTeste(prefixo) {
 export const REGEX_DE_SOBRA = new RegExp(
   PREFIXOS_DE_TESTE.map((p) => p.replace(/[[\]]/g, '\\$&')).join('|'),
 );
+
+/**
+ * Há quanto tempo uma marca precisa existir para ser considerada SOBRA.
+ *
+ * ── O alarme falso que este número apaga ────────────────────────────────────
+ *
+ * `[11/09]` O detector nasceu enxergando os dois prefixos — que era o conserto
+ * certo, porque ver só `[e2e ` deixou um post do painel no ar desde 10/09. Só
+ * que os jobs `fluxos autenticados` e `painel de admin` rodam **em paralelo**,
+ * contra o MESMO banco de produção. O primeiro PR com o detector novo reprovou
+ * na hora: o `fluxos` viu `[painel 1789128844574]` no feed e chamou de sobra o
+ * post que o outro job estava usando **naquele segundo**.
+ *
+ * É o alarme que grita à toa (§0.2, 4ª regra), e eu mesmo o criei — de novo.
+ *
+ * ── Por que IDADE, e não "cada um olha só o seu prefixo" ────────────────────
+ *
+ * Essa era a saída fácil, e ela devolve o buraco original: com cada roteiro
+ * vigiando só o próprio prefixo, ninguém vigia o prefixo de um roteiro que
+ * morreu antes de chegar na conferência — que é exatamente o caso que deixa
+ * lixo no ar.
+ *
+ * A marca carrega o relógio (`marcaDeTeste`), então a pergunta certa tem
+ * resposta: **este post é de uma rodada que já devia ter terminado?** Uma
+ * execução inteira leva ~1 minuto; 30 é folga de sobra para qualquer job
+ * concorrente, e ainda pega a sobra na rodada seguinte.
+ */
+export const IDADE_DE_SOBRA_MS = 30 * 60 * 1000;
+
+/**
+ * Dos títulos na tela, quais são sobra de uma rodada ANTIGA.
+ *
+ * Título sem relógio legível **conta como sobra**: a marca é gerada por
+ * `marcaDeTeste`, que sempre põe o número — então um `[e2e ` sem ele é lixo de
+ * outra origem, e engolir o desconhecido seria o fallback silencioso do §4.
+ */
+export function sobrasAntigas(titulos, agora = Date.now()) {
+  return titulos.filter((t) => {
+    if (!REGEX_DE_SOBRA.test(t)) return false;
+    const m = t.match(/\[(?:e2e|painel) (\d+)\]/);
+    if (!m) return true;
+    return agora - Number(m[1]) > IDADE_DE_SOBRA_MS;
+  });
+}
