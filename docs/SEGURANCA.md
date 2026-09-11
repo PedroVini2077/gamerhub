@@ -65,7 +65,94 @@
   **uma** barra: `//host`, `/\host`, `/%2f%2fhost`, esquema absoluto e caractere
   de controle são recusados, e o botão cai na landing. Trava:
   `voltarNaoEhRedirecionador.test.jsx`, provada reinjetando a checagem ingênua.
-- **`anon` só enxerga `(id, username)` de `profiles`** — o suficiente para a
+- **`[10/09]` `anon` NÃO enxerga NADA de `profiles`.** Esta linha dizia que ele
+  via `(id, username)`, e **deixou de ser verdade**: a checagem de username
+  duplicado no cadastro virou a RPC `username_disponivel`, que responde a mesma
+  pergunta sem devolver a lista de perfis, e o grant foi revogado. Conferido no
+  `information_schema.column_privileges` — `anon` não aparece para `profiles`.
+  O parágrafo abaixo fica como **histórico**, porque explica por que o desenho é
+  por RPC e não por RLS.
+- **`[10/09]` `game_keys.key_code` deixou de ser legível sem conta** (SEC-001).
+  A policy `Public keys` é `SELECT` para `{public}` com `USING (true)` e a
+  coluna estava no grant de `anon` — 3 chaves reais eram coletáveis por qualquer
+  pessoa da internet. A vitrine (jogo, plataforma, desconto, link) continua
+  pública **de propósito**; só o código saiu. Trava: `game_keys` em
+  `SUPERFICIE_ANONIMA`, em `e2e/portas-do-banco.mjs`.
+
+  > **A armadilha que quase me enganou, e ela vale para qualquer revoke daqui
+  > em diante:** `REVOKE SELECT (coluna)` **não faz nada** enquanto existir
+  > grant no nível de TABELA — o grant de tabela cobre todas as colunas. A
+  > primeira tentativa rodou sem erro e a falha continuou aberta; só o teste em
+  > `ROLLBACK` pegou. O certo é derrubar o grant de tabela e reconceder coluna a
+  > coluna.
+- **`[10/09]` `TRUNCATE` foi revogado de `anon` e `authenticated`** (SEC-003).
+  Estava concedido em **27 de 29 tabelas**, e **RLS não se aplica a TRUNCATE** —
+  provado: `anon` truncou `game_keys` de 6 para 0 linhas. Não era 🔴 porque o
+  PostgREST não expõe esse verbo e o `DELETE`, que ele expõe, foi testado nas 29
+  tabelas e apagou zero (a RLS segurou). Era **defesa em profundidade zero**. A
+  origem não é código nosso: é o grant padrão do template do Supabase. O
+  `ALTER DEFAULT PRIVILEGES` fecha para as tabelas que ainda vão nascer.
+- **`[10/09]` A lixeira do painel MOSTRA o que a hierarquia não deixa apagar**
+  (SEC-007). Não é brecha — as duas policies de `posts` estão certas, e é a
+  combinação que engana:
+
+  | operação | regra | tipo |
+  | --- | --- | --- |
+  | ver post com `deleted_at` | `role_rank(...) >= 2` | **plana** |
+  | `DELETE` | `can_moderate_content(user_id)` | hierarquia **estrita** |
+
+  O admin enxerga o post do owner na lixeira e não consegue apagá-lo — e a RLS
+  recusa com **0 linhas e nenhum erro**. Sem `count: 'exact'`, o site dizia
+  *"apagado permanentemente"* e gravava `admin_permanent_delete_post` em
+  `admin_logs`: **exclusão que nunca aconteceu, escrita na trilha de auditoria**.
+  Medido em `ROLLBACK` — a tela contava 176, o banco apagava 175. Corrigido em
+  6 chamadas (a varredura de classe achou 8 `delete()` sem contagem; 4 eram o
+  caso legítimo de descurtir). Trava: `apagarConfereLinhas.test.js`.
+
+  **A hierarquia não foi contornada em momento nenhum** — o que falhou foi o
+  site relatar o resultado dela.
+- **`[10/09]` O período de avaliação de staff ganhou FAIXA e trava no banco**
+  (SEC-008). `review_staff_nomination(p_trial_days)` e
+  `decide_staff_trial(p_extend_days)` tinham piso e nenhum teto — provado em
+  `ROLLBACK` com 3.650.000 dias, que promoveu a `admin` e marcou a revisão para
+  **12020-01-20**.
+
+  Importa porque o trial é o que autoriza um super admin a promover **sem o
+  fundador** (`owner_set_role` exige `owner`), e o vencimento não é cobrado por
+  máquina nenhuma — não há cron sobre `trial_review_date`; quem cobra é uma
+  pessoa lendo o `TrialCard`. Hoje: 7 a 180 dias, extensão de 1 a 90, total de
+  365 — **e** a constraint `staff_nominations_trial_max_365d`, que mantém o teto
+  mesmo se a função for reescrita sem ele.
+
+  **Verificado junto, e passou:** nenhuma função e nenhuma policy tira o
+  **cargo** do JWT. A varredura por `request.jwt`/`auth.jwt()` em `pg_proc` e
+  `pg_policies` achou só `notify_admin_new_live`, que lê o `sub` (identidade,
+  não papel). Um rebaixamento vale na chamada seguinte, sem esperar refresh.
+- **`[10/09]` Escrever em conteúdo alheio passou a respeitar a hierarquia**
+  (SEC-009). 🟠 As três tabelas de conteúdo tinham `DELETE` com hierarquia
+  estrita e `UPDATE` com cargo **plano**:
+
+  | tabela | DELETE | UPDATE (antes) |
+  | --- | --- | --- |
+  | `posts` | `can_moderate_content(user_id)` | `... OR is_staff()` |
+  | `comments` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+  | `community_posts` | `can_moderate_content(user_id)` | `role_rank(...) >= 2` |
+
+  Medido em `ROLLBACK`: um admin **reescreveu e ocultou** um post do fundador
+  por `PATCH` direto, enquanto o `soft_delete_post` recusava o mesmo post. O
+  caminho oficial barrava e o PostgREST passava.
+
+  Hoje as seis usam `can_moderate_content`. A moderação continua alcançando quem
+  está abaixo — ocultar é `UPDATE hidden_at`, então esta policy **é** o caminho
+  da moderação; o que mudou foi só o alcance. Trava:
+  `hierarquiaNoConteudo.test.js`.
+
+  **Verificado no caminho e passou:** `profiles` **não** tem a mesma brecha. O
+  `guard_profile_privileged_cols` reverte `role`, `banned` e `suspended_until`
+  para **todo** chamador `authenticated`, sem condição de cargo — testado com um
+  admin tentando rebaixar, banir e se autopromover: os três `UPDATE` responderam
+  "1 linha, sem erro" e **nada mudou**.
+- *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por
   coluna; a restrição correta aqui é privilégio de coluna.
@@ -351,6 +438,44 @@ equipe**, e para avisar ele precisava primeiro parar de mentir.
 Verificado em transação com `ROLLBACK`, 8 checagens: falha conta 1→2→3, acerto
 apaga a linha, evento malformado devolve `continue`, e nem `anon` nem
 `authenticated` conseguem chamar qualquer uma das duas funções.
+
+> ### `[11/09]` O TÍTULO ACIMA DIZ "CORRIGIDO", E O CONTADOR ESTÁ DESLIGADO
+>
+> Queixa do dono: *"não tá contando os logins errado e tá aparecendo apenas o
+> erro de credenciais inválidas"*. **Ele está certo.**
+>
+> Medido, não deduzido — três fontes independentes:
+>
+> | O que olhei | O que achei |
+> | --- | --- |
+> | `select count(*) from login_attempts` | **0 linhas**, `max(updated_at)` = *nunca* |
+> | logs do GoTrue, 24 h | **9 logins** em `/token`, e o único `run_hook` registrado é o da `send-email` |
+> | `pg_proc` + `routine_privileges` | a função **existe** e tem `GRANT` para `supabase_auth_admin` |
+>
+> **A causa é a última linha da migration, não um bug no código.** Ela avisa na
+> própria abertura: *"esta migration sozinha não liga nada"*. O hook só passa a
+> ser chamado depois de apontado em `Authentication → Hooks → Password
+> Verification` para `public.hook_de_verificacao_de_senha` — e esse passo, que
+> é ação de painel, nunca foi dado. Ficou **14 dias** escrito como corrigido e
+> desligado na prática.
+>
+> **Por que nada acusou, e é a lição.** É §1.5 em estado puro: o silêncio aqui é
+> indistinguível de "ninguém errou a senha". Tabela vazia é a resposta certa nos
+> dois mundos, e nenhum dos portões do projeto olhava para a diferença.
+>
+> **A função em si está boa** — reprovado o palpite de que houvesse defeito
+> nela. Provado em `ROLLBACK` hoje, com o hook chamado exatamente como o GoTrue
+> o chama: 4 erradas levam `attempts` a 4 sem bloquear, a 5ª bloqueia por **15
+> minutos**, acertar apaga a linha, e evento lixo ou usuário inexistente
+> devolvem `continue`. Ligar o hook **não** pode trancar ninguém: ele responde
+> `continue` sempre e engole exceção, como o parágrafo acima explica.
+>
+> **A trava entra depois de ligado**, e a ordem é proposital: um roteiro que
+> erra a senha de propósito uma vez, confere que o contador andou, e loga certo
+> em seguida — o acerto zera a linha, então nada se acumula. Escrita hoje, ela
+> reprovaria todo PR por uma chave que só o dono pode virar, e portão assim
+> ensina a ignorar o canal (§0.2, 4ª regra). Está no `BACKLOG.md`, presa a esse
+> passo.
 
 ### `[28/08]` O hook está pronto e **não pode ser ligado no plano Free**
 

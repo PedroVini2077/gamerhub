@@ -134,6 +134,21 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   > No **relay**, nesta ordem: o remetente ainda está verificado no provedor? a
   > chave SMTP foi revogada? a cota do plano estourou?
 
+  > **`[10/09]` Este parágrafo descrevia o relay como se ele estivesse no ar, e
+  > ele NÃO estava.** A `send-email` em produção era a **v33, de ~25/08** — sem
+  > o relay e sem o discriminador de severidade, ambos no repositório desde
+  > 05/09. Reimplantada hoje (v34), com autorização do dono.
+  >
+  > **Nada vigia isso**, e é o buraco que vale registrar: o
+  > `espelho-de-migrations.mjs` reprova o PR quando uma migration existe no banco
+  > e não no repositório, mas para as <!--n:edge.funcoes-->8<!--/n--> Edge
+  > Functions não há equivalente. Enquanto isso, três lugares afirmavam o
+  > comportamento novo — este documento, o comentário de 05/09 em
+  > `e2e/portas-fechadas.mjs`, e o próprio código.
+  >
+  > É o §9.9 em estado puro: *commit não é deploy*. O desenho de portão proposto
+  > está no `BACKLOG.md` — e ele evita token no CI de propósito (§0.2).
+
   > **`[05/09]` A função aceita DOIS provedores, e a troca é ação de painel.**
   > Se `SMTP_HOST` existir, ela usa o relay (`SMTP_PORT`, `SMTP_USER`,
   > `SMTP_PASS`, `SMTP_FROM`); se não existir, segue no Gmail. Foi feito assim
@@ -142,6 +157,50 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   > segredo**. O `secure` do TLS sai da porta (465 implícito, 587 STARTTLS);
   > fixá-lo trava o handshake sem mensagem útil, e a trava
   > `envioDeEmailTemDoisCaminhos.test.js` existe por causa disso.
+
+  > **`[11/09]` A FOTO DO REMETENTE — por que ela é a letra "G", e o que muda
+  > isso.**
+  >
+  > Pergunta do dono: *"a minha conta que criei só pro site tem uma foto
+  > bonitinha, agora a que é enviada pela api só tem a letra G"*.
+  >
+  > **O painel do Brevo não tem essa configuração, e nenhum relay tem.** O
+  > avatar não viaja no e-mail: quem o desenha é o programa de quem RECEBE. O
+  > Gmail busca em dois lugares, nesta ordem, e cai na inicial do nome de
+  > exibição quando não acha nenhum — o nosso é `GamerHub`, daí o "G". O código
+  > monta `from: \`GamerHub <${remetente}>\``, e o `remetente` é o `SMTP_FROM`.
+  >
+  > | Caminho | O que o Gmail mostra | Custo | Alcance |
+  > | --- | --- | --- | --- |
+  > | **perfil Google do endereço que assina** | a foto daquela conta | zero | só quem recebe no Gmail |
+  > | **BIMI** | o logo do site, com selo | **VMC pago (~US$1.000/ano)** e domínio próprio | Gmail, Yahoo, Apple |
+  >
+  > **O passo a passo do caminho de graça** — vale quando o `SMTP_FROM` é o
+  > endereço Gmail que já tem a foto:
+  >
+  > 1. No Brevo: `Senders, Domains & Dedicated IPs → Senders → Add a sender`,
+  >    com **aquele** endereço. O Brevo manda um e-mail de confirmação para ele;
+  >    é preciso clicar no link. Sem essa verificação o relay recusa o envio.
+  > 2. Na conta Google **daquele** endereço: a foto do perfil é a que aparece.
+  >    Se já tem a foto bonita, não há o que fazer aqui.
+  > 3. No Supabase: `Edge Functions → send-email → Secrets`, apontar `SMTP_FROM`
+  >    para esse endereço. **Só isso** — `SMTP_USER` e `SMTP_PASS` continuam
+  >    sendo os do Brevo, porque são o login do relay, não o remetente.
+  > 4. Conferir com um cadastro de teste, olhando o e-mail no Gmail.
+  >
+  > **O preço deste caminho, dito antes de alguém seguir por ele.** Assinando
+  > como `@gmail.com` através de um relay de terceiro, o SPF e o DKIM alinham
+  > com o domínio do **Brevo**, não com `gmail.com` — o DMARC do `gmail.com`
+  > hoje é `p=none`, então a mensagem entrega, mas fica mais fácil de cair em
+  > spam do que hoje. É a troca: foto agora × entregabilidade. **Não medi essa
+  > perda neste projeto** — é o comportamento documentado do DMARC, não uma
+  > medição nossa (§1.1).
+  >
+  > **A recomendação, e o motivo:** deixar como está até o site ter domínio
+  > próprio. Com domínio, o remetente passa a ser `algo@seudominio`, o DKIM
+  > alinha de verdade, e aí BIMI vira uma escolha real em vez de um contorno.
+  > Entregar o e-mail de confirmação vale mais do que a foto ao lado dele — se
+  > ele cai no spam, ninguém termina o cadastro.
 
   > **`[28/08]` E esta trilha já pagou o próprio custo.** O dono publicou um
   > post com 4 imagens e "não deu em nada". A linha
@@ -501,7 +560,56 @@ engorda. Ele confere quatro coisas:
 máquina: as duas medições de 27/08 discordaram **4×** no TBT sobre o mesmo site.
 Portão que balança vira alarme falso, e alarme que grita à toa ensina a ignorar
 o canal (`CLAUDE.md` §0.2). Byte é determinístico — o mesmo commit dá o mesmo
-número em qualquer máquina.
+número em qualquer máquina **com a mesma configuração**, e essa última parte não
+estava escrita aqui. Ver logo abaixo.
+
+### `[11/09]` O portão mede um site que NINGUÉM recebe — e por 27 kB gzip
+
+**Como apareceu.** O `npm run fim` reprovou o orçamento numa máquina onde o CI
+tinha acabado de aprovar o **mesmo commit**. Dois veredictos opostos sobre o
+mesmo código é a definição de portão que não mede o que diz medir.
+
+**A causa, medida em A/B na mesma máquina**, tirando e pondo o `.env.local`:
+
+| | bruto | gzip | o chunk `index` |
+| --- | --- | --- | --- |
+| **sem** as variáveis do site — é o que o CI constrói | 640,8 kB | **195,5 kB** | 153,8 kB |
+| **com** as variáveis — é o que a Vercel serve | 735,1 kB | **222,5 kB** | 247,8 kB |
+| diferença | 94,3 kB | **26,7 kB** | 94,0 kB |
+
+O job `build · lint · testes` roda `npm run build` **sem** `VITE_SUPABASE_URL` e
+`VITE_SUPABASE_ANON_KEY`. Sem elas, a guarda de configuração no topo de
+`lib/supabase.js` vira condição constante, e o empacotador poda como código
+morto 94 kB do chunk da aplicação que a produção **realmente entrega**.
+`vendor-supabase` é idêntico nos dois — a diferença inteira está no `index`.
+
+**A consequência, com todas as letras:** o teto de 222 kB gzip está sendo
+conferido contra um build de 195,5 kB. Existem **26,5 kB de folga que não é
+folga** — o site em produção já serve 222,5 kB, acima do teto, e o portão dá
+verde. Isso não é um erro de calibragem: é a mesma família de falha que a §1.5
+combate, só que na ferramenta que deveria pegá-la.
+
+**Não é regressão de nenhum PR recente.** Medido em `f7ed0bd`, antes da
+reconstrução da cena 3D: os mesmos 735,1 kB / 222,5 kB. O número é antigo; o que
+é novo é alguém ter olhado.
+
+**`[11/09]` CONSERTADO, com a decisão do dono.** Ele autorizou tratar o item, e
+a saída foi a honesta nos dois lados:
+
+| O que mudou | Onde |
+| --- | --- |
+| o job `build · lint · testes` passou a construir **com** `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` | `.github/workflows/ci.yml` |
+| os tetos subiram para **760 kB brutos / 228 kB gzip** | `scripts/orcamento-de-bytes.mjs` |
+
+**E é preciso ser exato sobre o que esse número significa, senão ele mente de
+outro jeito:** o site **não engordou**. O que mudou foi a medição. O valor real
+sempre foi 222,5 kB gzip — o portão é que olhava um build de 195,5 e dava verde.
+Os tetos de hoje são o tamanho real mais uma folga pequena.
+
+> A regra do script — *"ao subir um destes números, escreva no commit por que o
+> site precisou engordar"* — não previa este caso, e por isso a exceção está
+> escrita no próprio script: aqui não houve ganho de peso, houve o fim de uma
+> mentira de medição.
 
 **Ele não diz se o site está rápido.** Diz se ficou mais pesado, que é o que dá
 para afirmar sem margem de erro. Para saber se está rápido, o Lighthouse no
@@ -512,6 +620,50 @@ mesmo aparelho e o Vercel Speed Insights (campo).
 > [DESEMPENHO.md](DESEMPENHO.md).** Saiu daqui em 29/08 porque a seção passou de
 > 150 linhas (§6.2 regra 5) e porque são dois trabalhos diferentes: aqui fica o
 > **portão** que reprova o PR; lá, a **investigação** que decide onde mexer.
+
+## `[11/09]` Branches que sobram — varredura semanal, e a correção de um clique
+
+**O que o dono viu:** *"tenho percebido que os commits lá no GitHub não tem
+estado todos sincronizados... eu vivo vendo os bots e as outras branch's
+desatualizadas"*.
+
+**Medido antes de escrever qualquer coisa:** 9 branches do Dependabot, até
+**119 commits** atrás da `main` — e apenas **2 PRs abertos**. Sete eram restos
+de PR já fechado.
+
+### O critério, e por que "estar atrás" não serve
+
+Toda branch fica atrás no instante em que alguém mergeia outra coisa. Gritar por
+isso seria alarme diário à toa. A pergunta que separa é outra:
+
+| Situação | O que é | O que fazer |
+| --- | --- | --- |
+| atrás **e sem PR aberto** | resto de PR fechado | apagar |
+| atrás **com PR aberto** | trabalho em fila | nada — o autor rebaseia |
+
+### Issue, não build vermelho
+
+`.github/workflows/branches-abandonadas.yml` roda na segunda de manhã e abre (ou
+comenta em) **uma** issue. Não reprova PR nenhum: branch órfã não quebra o site,
+não quebra o build e não expõe nada. Reprovar por isso é o alarme que ensina a
+ignorar o canal (§0.2, 4ª regra) — mesmo raciocínio do lembrete de auditoria.
+
+Usa o `GITHUB_TOKEN` que o Actions injeta sozinho: **nenhuma credencial nova**
+entra no repositório por causa disto.
+
+### A correção de RAIZ é do dono, e é um clique
+
+`Settings → General → Pull Requests → Automatically delete head branches`.
+
+Com ela ligada, branch de PR fechado some sozinha e o robô para de ter o que
+reportar. Ele existe porque essa opção é ação de painel — e porque ela não apaga
+o que já está lá.
+
+> **O risco que o próprio script cria** está travado por teste: se a branch de
+> trabalho do §8 sair da lista de protegidas, o relatório passaria a sugerir
+> apagar justamente onde o trabalho vive. Entre um merge e o
+> `--force-with-lease` que a realinha, ela tem exatamente a assinatura de uma
+> órfã.
 
 ## Portão de qualidade automático
 
@@ -632,7 +784,23 @@ mesmo aparelho e o Vercel Speed Insights (campo).
   o `srcset` escolheu, e não o arquivo da pasta. O terceiro passo confere que
   login e cadastro servem pares **diferentes** — se o `modo` parar de chegar no
   componente, as contagens continuariam zeradas e ninguém notaria.
-- job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
+
+  > **`[11/09]` Os medidores moram em `e2e/arena/medidas.mjs`.** O roteiro
+  > passou de 300 linhas quando a conferência da moldura ganhou espera de
+  > animação, e o §4 manda dividir. O corte é por responsabilidade: em
+  > `medidas.mjs` mora **como se mede** (canvas, estilo computado, esperas); no
+  > roteiro fica **o que se exige** — os limites e as mensagens de falha.
+  >
+  > **A conferência da moldura espera a animação TERMINAR antes de medir**, via
+  > `getAnimations()`. Sem isso ela lia um quadro do meio: a moldura entra com
+  > `420 ms` de espera e `fill-mode: backwards`, então aos **280 ms** — quando
+  > as artes já carregaram e o passo media — a opacidade ainda é **0**. Medido:
+  > 0 aos 280 ms, 0,125 aos 741 ms, 0,55 aos 1.665 ms. Perguntar ao navegador,
+  > e não esperar tempo fixo, é o que mantém a trava válida quando a duração
+  > mudar no CSS.
+- job de **fluxos autenticados** (`e2e/fluxos.mjs`, com a conferência da
+  entrada em `e2e/portaoDeEntrada.mjs` desde `[11/09]`, quando o roteiro passou
+  de 300 linhas) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
   `/admin` e `/owner` **negados** para `role = 'user'`, **o fundo decorativo
   estando dentro da janela**, publicar → conferir no feed → **comentar** → apagar, e logout.
@@ -954,8 +1122,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->346<!--/n--> arquivos e
-<!--n:src.linhas-->34.656<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->352<!--/n--> arquivos e
+<!--n:src.linhas-->35.533<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -979,7 +1147,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->346<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->352<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1004,6 +1172,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->12.435<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.750<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.

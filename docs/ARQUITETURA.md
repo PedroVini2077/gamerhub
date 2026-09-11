@@ -54,6 +54,9 @@ src/
 ├── hooks/
 │   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
 │   │                      # árvore e o arquivo de maior risco do projeto (§7)
+│   ├── saidasDaSessao.js  # As DUAS maneiras de encerrar sessão (o "Sair" comum
+│   │                      # e a saída de quem foi banido) e por que cada uma é
+│   │                      # `scope: 'local'`. Saiu do useAuth em 10/09 (§4)
 │   ├── useVigiaDeBanimento.js # Realtime + poll de 60 s que detectam ban durante
 │   │                      # o uso. Saiu do useAuth em 29/08 — testável isolado
 │   ├── usePresenca.js     # Canal de presence: quantos estão online agora
@@ -234,6 +237,10 @@ src/
 │   │                      # dois bugs se esconderam lá dentro (o UPDATE que
 │   │                      # rodava como `anon` e afetava 0 linhas em silêncio,
 │   │                      # e o `select` que mantinha `profiles` aberto)
+│   │                      # `[11/09]` O TERCEIRO bug era da mesma família: o
+│   │                      # aceite dos documentos era gravado aqui, e a RLS
+│   │                      # recusava sempre. Hoje as coordenadas vão no
+│   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
@@ -365,6 +372,13 @@ src/
     │   │                  # painel. CENOGRÁFICA, e o aviso disso está impresso
     │   │                  # embaixo do campo — a autorização real é do banco
     │   ├── DiscoDoCofre.jsx # o disco que gira ao destrancar (SVG próprio)
+    │   ├── ResetDoCofre.jsx # `[11/09]` esquecer o código EXIGE a senha da
+    │   │                  # conta. Antes eram dois cliques, e o dono apontou:
+    │   │                  # "se alguém pega meu PC ligado e não souber a
+    │   │                  # senha, ele só vai redefinir". A conferência é a
+    │   │                  # RPC `confere_a_propria_senha`, e NÃO
+    │   │                  # `signInWithPassword` — esta trocaria a sessão, e
+    │   │                  # `useAuth` é o arquivo de maior risco (§7)
     │   └── usuarios/      # UserRow, UserFilters, RoleOverride (o cargo de
     │                      # fundador NÃO se atribui por override)
     ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,
@@ -385,8 +399,15 @@ src/
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
     │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
-    │   └── scene3d/       # LandingScene (createRoot + extend seletivo), Lightning,
-    │                      # SceneObjects (LogoBolt/FloatingShapes)
+    │   └── scene3d/       # A cena 3D do Hero: LandingScene (createRoot +
+    │                      # extend seletivo), SceneObjects (LogoBolt e as
+    │                      # FloatingShapes) e Lightning
+    │                      #
+    │                      # `[11/09]` Entre 10 e 11/09 esta pasta teve seis
+    │                      # peças a mais — uma reconstrução do símbolo em
+    │                      # código, com shader de cristal e timeline própria.
+    │                      # Foi CANCELADA pelo dono e o código voltou ao que
+    │                      # está descrito acima. Ver docs/DECISOES.md
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
     │                      # InputWrap, LoginSemBanco (o que a tela de login diz
     │                      # quando o banco está fora), e os dois porteiros de

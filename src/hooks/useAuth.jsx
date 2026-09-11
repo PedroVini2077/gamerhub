@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import { supabase } from '../lib/supabase';
+import { queryClient } from '../lib/queryClient';
 import { marcarEntradaAgora, cancelarEntradaAgora } from '../lib/boasVindas';
 import { logAudit } from '../lib/auditLog';
+import { encerrarSessao, encerrarSessaoDeBanido } from './saidasDaSessao';
 import { useVigiaDeBanimento } from './useVigiaDeBanimento';
 import { usePresenca } from './usePresenca';
 import { criarConta } from '../services/cadastroService';
@@ -15,6 +17,10 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bannedScreen, setBannedScreen] = useState(null);
+  // Quem estava logado no evento anterior. `useRef` e não estado: mudar isto
+  // não pode causar render, e o valor precisa sobreviver entre os disparos do
+  // `onAuthStateChange` sem entrar em nenhuma lista de dependência.
+  const idAnterior = useRef(null);
 
   // Via RPC, não `select('*')`: as colunas sensíveis de `profiles`
   // (birth_date, ban_reason, notif_*, …) foram revogadas de `authenticated`,
@@ -61,6 +67,32 @@ export function AuthProvider({ children }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const idNovo = session?.user?.id ?? null;
+
+      // `[10/09]` SEC-006 — o cache não pode atravessar uma troca de conta.
+      //
+      // O React Query guarda em MEMÓRIA, e várias chaves privilegiadas não
+      // levam o usuário dentro delas: `['owner_users']`, `['owner_audit_logs']`,
+      // `['owner_stats']`, `['reports']`, `['role_change_requests','pending']`.
+      // Sair não recarregava a página (só a saída do banido faz `replace`), e
+      // nada limpava o cache — então o dado do dono continuava na memória da
+      // aba quando outra pessoa entrava nela.
+      //
+      // Sozinho isso não vazava: a tela do painel não monta para quem não é
+      // owner. Mas é EXATAMENTE a consequência de backend que faltava para o
+      // spoof de `role` do DevTools deixar de ser inofensivo — com o painel
+      // montado à força, o React Query serviria o cache antes de qualquer
+      // refetch ser negado.
+      //
+      // Limpa quando a IDENTIDADE muda, não a cada evento: o
+      // `onAuthStateChange` também dispara em `TOKEN_REFRESHED`, e limpar ali
+      // faria o site refazer todas as consultas de hora em hora — egress à toa,
+      // que é a cota mais apertada do plano (§0.2).
+      if (idNovo !== idAnterior.current) {
+        idAnterior.current = idNovo;
+        queryClient.clear();
+      }
+
       setUser(session?.user ?? null);
       // Não checa ban aqui: o SIGNED_IN do login de uma conta banida é transitório.
       if (session?.user) fetchProfile();
@@ -187,60 +219,16 @@ export function AuthProvider({ children }) {
    * `{ scope }` daqui devolve o comportamento sem nada acusar — logout que
    * derruba o outro aparelho é silencioso do lado de quem fica (§1.5).
    */
-  async function signOut() {
-    if (profile?.username) {
-      logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
-    }
-    await supabase.auth.signOut({ scope: 'local' });
-    setProfile(null);
-  }
+  const signOut = () => encerrarSessao({
+    username: profile?.username,
+    aoLimpar: () => setProfile(null),
+  });
 
   async function refreshProfile() {
     if (user) await fetchProfile();
   }
 
-  // Logout do usuário banido: encerra a sessão e força recarregar a página,
-  // garantindo que o overlay suma e o estado fique limpo independente de
-  // qualquer race.
-  //
-  // O destino é a LANDING, não o `/login`. Ela é a porta de entrada do site e a
-  // única página que não depende do banco — é para onde o `dbHealth` manda todo
-  // mundo quando o Supabase cai. Jogar quem acabou de sair direto no formulário
-  // de login é um passo a mais sem motivo, e para o banido é pior ainda:
-  // sugere tentar de novo o que acabou de ser recusado.
-  async function signOutBanned() {
-    // `[28/08]` NÃO espera a ida ao servidor, e o motivo está medido.
-    //
-    // O dono relatou demora ao clicar em "Sair agora". A causa era esta função
-    // chamar `signOut()`, que faz `await supabase.auth.signOut()` com o escopo
-    // **global** — uma ida ao servidor para revogar os refresh tokens — e só
-    // então trocar de página.
-    //
-    // Medido contra o projeto de produção, 5 chamadas: **0,30 s a 1,08 s** só
-    // de ida e volta, e isso a partir de um datacenter com conexão quente. No
-    // 4G de um celular é bem pior. A tela ficava parada nesse tempo todo.
-    //
-    // O escopo **local** limpa a sessão do navegador sem falar com o servidor,
-    // então a troca de página é imediata.
-    //
-    // ── Por que abrir mão da revogação global AQUI é seguro ────────────────
-    //
-    // O refresh token continua válido até expirar — e não serve para nada. A
-    // conta está BANIDA: a RLS nega tudo no banco, e qualquer sessão que
-    // reapareça cai na `BannedScreen` de novo pelo `applyBannedCheck`. Além
-    // disso é o token da própria pessoa, no aparelho dela: ela poderia
-    // simplesmente não clicar em sair e mantê-lo do mesmo jeito.
-    //
-    // `[05/09]` Esta função e o `signOut()` comum passaram a usar o MESMO
-    // escopo, por caminhos diferentes: aqui era por velocidade (medida acima),
-    // lá virou decisão de produto do dono. O parágrafo que dizia *"o `signOut()`
-    // comum continua global"* deixou de ser verdade — ver o cabeçalho dele.
-    if (profile?.username) {
-      logAudit('auth_logout', `@${profile.username} fez logout`, { category: 'auth' });
-    }
-    try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* o redirect abaixo garante o estado limpo */ }
-    window.location.replace('/');
-  }
+  const signOutBanned = () => encerrarSessaoDeBanido({ username: profile?.username });
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, onlineCount, signInWithEmail, signUpWithEmail, signOut, refreshProfile }}>

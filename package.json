@@ -28,6 +28,8 @@
     "mutacao": "stryker run",
     "numeros": "node scripts/numeros-do-projeto.mjs",
     "docs": "node scripts/documentacao-a-revisar.mjs",
+    "impressao-edges": "node scripts/impressao-das-edges.mjs",
+    "edges": "node scripts/edges-implantadas.mjs",
     "test:migrations": "node scripts/espelho-de-migrations.mjs",
     "test:e2e:terceiro": "node e2e/terceiro-no-contato.mjs"
   },

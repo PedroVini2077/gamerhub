@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { ok, fail, from } from './result';
+import { ok, fail, from, fromCount } from './result';
 
 export async function fetchLiveMessages(postId) {
   const { data, error } = await supabase
@@ -56,6 +56,9 @@ export async function deleteChatMessage(messageId, isMod, userId) {
 
 export async function silenceUser({ postId, userId, minutes, createdBy }) {
   const expires = new Date(Date.now() + minutes * 60000).toISOString();
+  // 0-linhas-ok: limpa um silêncio anterior ANTES de gravar o novo. Na maioria
+  // das vezes não existe silêncio anterior — 0 linhas é o caso comum, e quem
+  // decide se deu certo é o `insert` logo abaixo.
   await supabase.from('live_chat_timeouts').delete().eq('post_id', postId).eq('user_id', userId);
   return from(await supabase.from('live_chat_timeouts').insert({
     post_id: postId,
@@ -66,5 +69,14 @@ export async function silenceUser({ postId, userId, minutes, createdBy }) {
 }
 
 export async function unsilenceUser({ postId, userId }) {
-  return from(await supabase.from('live_chat_timeouts').delete().eq('post_id', postId).eq('user_id', userId));
+  // `[10/09]` Sem contar as linhas, a RLS recusando devolvia 0 e NENHUM erro: o
+  // moderador via "silêncio removido" e a pessoa continuava calada até o
+  // `expires_at`. É o mesmo silêncio que escondeu a moderação de comentário por
+  // meses (§1.5). Aqui 0 é falha de verdade — quem clica em "remover silêncio"
+  // está olhando um silêncio que existe na tela.
+  return fromCount(
+    await supabase.from('live_chat_timeouts')
+      .delete({ count: 'exact' }).eq('post_id', postId).eq('user_id', userId),
+    'Não foi possível remover o silêncio — sem permissão, ou ele já havia expirado.',
+  );
 }

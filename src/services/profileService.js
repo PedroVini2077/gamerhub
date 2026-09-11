@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { ok, fail, from } from './result';
+import { ok, fail, fromCount } from './result';
 
 // Perfil público de OUTRA pessoa. Via RPC porque as colunas sensíveis foram
 // revogadas de `authenticated` — e porque a página mostra a IDADE, não a data
@@ -49,8 +49,17 @@ export async function fetchProfileStats(userId) {
   return ok({ posts: ids.length, likes: await countLikesOnPosts(ids), xp: xp || null });
 }
 
+// `[10/09]` `count: 'exact'` porque a RLS nega em silêncio. E há um segundo
+// silêncio aqui, específico desta tabela: o trigger
+// `guard_profile_privileged_cols` REVERTE `role`, `banned` e `suspended_until`
+// para todo chamador `authenticated` — o UPDATE "passa", conta 1 linha, e a
+// coluna não muda (§1.5, fonte de silêncio nº 3). Por isso cargo, ban e
+// suspensão só se mexem pelas RPCs próprias, nunca por aqui.
 export async function updateProfile(userId, fields) {
-  return from(await supabase.from('profiles').update(fields).eq('id', userId));
+  return fromCount(
+    await supabase.from('profiles').update(fields, { count: 'exact' }).eq('id', userId),
+    'Não foi possível salvar o perfil — sem permissão para alterar este cadastro.',
+  );
 }
 
 export async function uploadAvatar(userId, file) {
@@ -71,5 +80,9 @@ export async function uploadAvatar(userId, file) {
 // duas junto sobrescreveria a outra com o valor que estava em memória.
 export async function updateNotifPref(userId, campo, valor) {
   const coluna = campo === 'likes' ? 'notif_likes' : 'notif_comments';
-  return from(await supabase.from('profiles').update({ [coluna]: valor }).eq('id', userId));
+  return fromCount(
+    await supabase.from('profiles')
+      .update({ [coluna]: valor }, { count: 'exact' }).eq('id', userId),
+    'Não foi possível salvar a preferência.',
+  );
 }

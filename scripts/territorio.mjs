@@ -71,6 +71,28 @@ export const TERRITORIO = {
     'src/lib/realtimeTables.js',
     'src/lib/tabelasSemUpdate.js',
   ],
+  // `[10/09]` A pasta da identidade visual. O território dela é o que EXIBE a
+  // marca — se o favicon, o manifesto ou o componente do logo mudarem, o índice
+  // das referências precisa ser reconferido. As artes em si são referência
+  // artística e não mudam sozinhas; o que envelhece é a relação entre elas e o
+  // que o site realmente usa.
+  'docs/identidade/README.md': [
+    'index.html',
+    'public',
+    // `[11/09]` A cena da Landing chegou a USAR a arte como asset de runtime
+    // (`src/assets/marca`, `landing/cena`), e isso foi CANCELADO pelo dono — o
+    // código voltou ao anterior e as pastas deixaram de existir. Sobra a cena
+    // 2D, que continua sendo o que aparece para quem não recebe a 3D.
+    'src/components/landing/Scene2D.jsx',
+  ],
+
+  // O registro do que foi REPROVADO. Ele envelhece junto com a marca: se o
+  // raio mudar, o motivo de cada tentativa ter sido recusada precisa ser
+  // relido antes de alguém repetir a mesma.
+  'docs/identidade/tentativas/README.md': [
+    'docs/identidade/tentativas',
+  ],
+
   'docs/SEGURANCA.md': [
     'supabase/functions',
     'src/hooks/useAuth.jsx',

@@ -31,12 +31,19 @@ export function useBloqueioDeLogin(email) {
 
   useEffect(() => {
     if (!bloqueado || !email.trim()) return;
+    // `[10/09]` `clearInterval` para o RELÓGIO, não a consulta que já saiu.
+    // Sem esta guarda: a pessoa está bloqueada, o intervalo dispara, e ela
+    // troca o e-mail durante a ida ao servidor — a resposta do e-mail ANTIGO
+    // volta e pinta a tela como se fosse do novo. Estado de bloqueio errado é
+    // pior do que nenhum: manda investigar a conta errada (§1.5).
+    let valendo = true;
     const t = setInterval(async () => {
       const { data } = await supabase.rpc('check_login_status', { p_email: email.trim() });
+      if (!valendo) return;
       if (!data?.blocked) setBloqueio(null);
       else setBloqueio({ permanent: data.permanent, blocked_until: data.blocked_until });
     }, 8000);
-    return () => clearInterval(t);
+    return () => { valendo = false; clearInterval(t); };
   }, [bloqueado, email]);
 
   return [bloqueio, setBloqueio];

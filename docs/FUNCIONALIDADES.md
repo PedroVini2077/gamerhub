@@ -88,6 +88,11 @@ estado de autenticação.
   (`SHAPE_STAGGER = 0.16s`).
 - **`Lightning`**: raios 3D animados cruzando a cena.
 
+  > **Correção `[11/09]`:** entre 10 e 11/09 este trecho descreveu uma cena
+  > reconstruída (`RaioCristalino`, shader de cristal, timeline de 9 fases). Ela
+  > foi **cancelada pelo dono** e o código voltou ao que está descrito acima. O
+  > motivo está em [DECISOES.md](DECISOES.md).
+
 **Intro de abertura** (`IntroLightning`):
 - Overlay `fixed inset-0 z-[60]` que cobre tudo no primeiro carregamento.
 - SVG de raio principal + bifurcação desenhado via `pathLength` 0→1 (0.3s).

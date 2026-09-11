@@ -19,6 +19,116 @@
 
 ---
 
+### `[10/09]` Construir a malha custava 76 ms de thread principal, e caiu para 30
+
+> **`[11/09]` Esta medição é de código que NÃO EXISTE MAIS.** A reconstrução da
+> cena 3D foi cancelada pelo dono e o código voltou ao estado anterior ao PR
+> #177 — ver [DECISOES.md](DECISOES.md). O número continua aqui porque este
+> arquivo é o histórico das medições, e o que ele ensina sobre *como medir*
+> sobrevive ao código que foi medido. Mas ele **não descreve o site de hoje**.
+
+
+A geometria nova é moldada por **distância até a borda**: cada vértice mede a
+que distância está do contorno para saber quanta espessura recebe. A conta
+ingênua é `vértices × arestas`, e com 24.660 vértices contra 119 arestas isso dá
+**2,9 milhões** de distâncias ponto-a-segmento por peça — a maioria delas para
+arestas do outro lado da figura.
+
+Medido num Chromium de verdade, 5 montagens seguidas:
+
+| | 1ª (JIT frio) | regime |
+| --- | --- | --- |
+| antes | 102 ms | **76 ms** |
+| depois | 61 ms | **30 ms** |
+
+**O que mudou:** cada aresta carrega a própria caixa, e a distância do ponto até
+a CAIXA nunca é maior que a distância até o segmento. Se a caixa já está mais
+longe do que o melhor achado, o segmento também está — e sai sem cálculo
+nenhum. Não é aproximação.
+
+**A prova de que nada mudou visualmente:** o PNG renderizado antes e depois tem
+o **mesmo md5** (`173966e6…`). Otimização que muda o resultado não é otimização;
+é outra coisa acontecendo.
+
+**Por que 30 ms ainda importa:** é thread principal bloqueada na primeira
+pintura de quem chega. A cena é lazy e fica atrás do portão de aparelho, então
+só desktop paga — mas paga.
+
+---
+
+### `[10/09]` A cena 3D construída à mão custou **6,6 kB brutos** — e o número surpreende
+
+> **`[11/09]` Esta medição é de código que NÃO EXISTE MAIS.** A reconstrução da
+> cena 3D foi cancelada pelo dono e o código voltou ao estado anterior ao PR
+> #177 — ver [DECISOES.md](DECISOES.md). O número continua aqui porque este
+> arquivo é o histórico das medições, e o que ele ensina sobre *como medir*
+> sobrevive ao código que foi medido. Mas ele **não descreve o site de hoje**.
+
+
+O `LogoBolt` (`ExtrudeGeometry` de um `Shape` de 6 pontos + `meshStandardMaterial`),
+o `FloatingShapes` (icosaedro, toro, octaedro, dodecaedro) e o `Lightning` saíram.
+Entraram no lugar: contorno medido da arte com corte Sutherland–Hodgman, um
+`ShaderMaterial` GLSL escrito à mão, uma timeline central de 9 fases e lascas
+derivadas do próprio contorno.
+
+Medido no mesmo dia, na mesma máquina, com a mesma ferramenta (§0.3, regra 5) —
+o "antes" veio de um `git worktree` no `HEAD`, não de um número lembrado:
+
+| | bruto | gzip |
+| --- | --- | --- |
+| antes (`LogoBolt` + `FloatingShapes`) | 708,25 kB | 189,13 kB |
+| depois (`RaioCristalino`) | **714,85 kB** | **192,01 kB** |
+| diferença | **+6,60 kB** | **+2,88 kB** |
+
+**Por que tão pouco, sendo que a cena ficou muito mais elaborada.** Porque o
+custo do chunk é dominado pelo `three`, não pelo que a gente escreve em cima
+dele — os ~708 kB de base já estavam lá antes de qualquer geometria nossa
+existir. E as três escolhas que pareciam caras não custam bytes:
+
+| Escolha | Custo em bytes |
+| --- | --- |
+| `ShaderMaterial` GLSL em vez de `MeshTransmissionMaterial` do drei | **zero de biblioteca** — GLSL é `three` puro, e o shader inteiro é texto |
+| timeline central própria em vez de GSAP | **zero** — ~40 linhas de interpolação contra ~25 kB gzip |
+| geometria por contorno em vez de primitivas | **zero** — `BufferGeometry` construída em tempo de execução; o que entra no bundle são os 24 pares de coordenadas |
+
+**O que este número NÃO diz**, e é a parte que importa: bytes medem
+*carregamento*, e o custo desta cena é **por pixel**, não por byte — está medido
+em *"A cena 3D em regime permanente"*, mais abaixo. `+6,6 kB` não autoriza
+concluir que a troca foi barata em quadro. **Isso não foi medido** e está no
+`BACKLOG.md` como a etapa 6 que ficou aberta.
+
+E o chunk continua **fora do orçamento de bytes**: o portão mede só o JavaScript
+inicial, e a cena 3D é lazy atrás do portão de aparelho de `lib/cena3D.js` —
+desktop, ≥1024 px, ≥2 núcleos. Celular nunca paga por ela.
+
+---
+
+### `[11/09]` O orçamento de bytes passou a medir o site que as pessoas recebem
+
+O portão media um build **sem** as variáveis do site, e a diferença não era
+detalhe: **26,7 kB gzip**, ou 12% do carregamento inicial.
+
+| | bruto | gzip |
+| --- | --- | --- |
+| sem as variáveis — o que o CI media | 640,8 kB | 195,5 kB |
+| com as variáveis — o que a Vercel serve | 735,1 kB | **222,5 kB** |
+
+Sem `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`, a guarda de configuração no
+topo de `lib/supabase.js` vira condição constante e o empacotador poda 94 kB do
+chunk `index` como código morto. `vendor-supabase` é idêntico nos dois — a
+diferença inteira está no código da aplicação.
+
+**O que mudou, e o que NÃO mudou.** O job passou a construir com as variáveis, e
+os tetos subiram para 760 kB / 228 kB gzip. **O site não engordou:** ele sempre
+serviu 222,5 kB. O que acabou foi o portão dar verde sobre um build que ninguém
+recebe — a falha do §1.5 dentro da ferramenta que existe para pegá-la.
+
+**A medição de uma otimização futura muda de base junto.** Qualquer "emagreci X
+kB" daqui em diante compara contra 222,5, não contra 195,5 — senão o ganho
+apareceria inflado em 26,7 kB sem ninguém ter feito nada.
+
+---
+
 ### `[04/09]` As artes da arena: 5 MB de PNG viraram 60–282 KB, e o portão que faltava
 
 **O que foi medido.** O dono gerou duas artes com fundo transparente para o
@@ -670,9 +780,25 @@ longe dela**. Ninguém vê, e a CPU paga.
 | Cena visível | 125 |
 | Cena fora da tela | **0** |
 
-Travado por `e2e/cena-3d.mjs`, que roda no CI e envolve `gl.drawElements` para
-contar desenho de fato. Provado nos dois sentidos: com o `frameloop` fixo em
-`always`, o teste falha acusando 140 desenhos fora da tela.
+Travado por `e2e/cena-3d.mjs`, que roda no CI e envolve **todas as chamadas de
+desenho do WebGL** para contar desenho de fato. Provado nos dois sentidos: com o
+`frameloop` fixo em `always`, o teste falha acusando 140 desenhos fora da tela.
+
+> **`[10/09]` A trava envolvia só `gl.drawElements`, e isso era um buraco.**
+> Geometria **indexada** desenha por `drawElements`; geometria **não indexada**,
+> por `drawArrays`. No dia em que a cena passou a usar `BufferGeometry`
+> construída em código — sem `setIndex()` —, a trava reprovou um site que estava
+> desenhando 658 quadros em 2 s. Alarme falso ensina a ignorar o canal (§0.2, 4ª
+> regra), então o conserto foi **contar as quatro portas** (`drawElements`,
+> `drawArrays` e as duas instanciadas), não trocar de porta. Provado nos dois
+> sentidos: a versão antiga reprova a cena atual, e a versão nova continua
+> reprovando um `frameloop: 'never'` de verdade.
+>
+> **`[11/09]` A cena que expôs o buraco foi revertida; o conserto FICOU.** A
+> geometria não indexada saiu junto com a reconstrução cancelada, então hoje o
+> site volta a desenhar por `drawElements` — mas a trava continua contando as
+> quatro portas, porque o buraco era dela, não da cena. Desfazer o conserto
+> seria reabrir um alarme falso à espera da próxima geometria não indexada.
 
 > **Por que não `frameloop="demand"`:** `demand` só desenha quando alguém pede
 > um quadro, e esta cena é animada por natureza — ela congelaria justamente

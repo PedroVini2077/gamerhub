@@ -74,14 +74,51 @@ const FECHADAS = [
 /**
  * ABERTAS DE PROPÓSITO — e que precisam CONTINUAR abertas.
  *
- * O site lê estas duas antes de qualquer login. Revogar uma delas não dá erro
+ * O site lê estas ANTES de qualquer login. Revogar uma delas não dá erro
  * visível: a landing simplesmente para de funcionar direito, em silêncio.
+ *
+ * ── `[10/09]` Este portão acusou, e a acusação estava DESATUALIZADA ─────────
+ *
+ * Ele reprovou o PR dizendo que `site_config` e `blocked_words` tinham
+ * "FECHADO". Investigado antes de mexer em qualquer linha, porque a regra é que
+ * portão que grita costuma estar certo — e aqui ele não estava:
+ *
+ * | O que ele sondava | O que o site faz de verdade |
+ * | --- | --- |
+ * | `site_config?select=*` → **401** | `select('value')` e `select('key, value')` → **200** |
+ *
+ * A causa é a mesma pegadinha que já custou tempo nesta base: **privilégio no
+ * Postgres é por COLUNA**, e `select=*` falha inteiro se UMA coluna for negada.
+ * O SEC-005 negou só `updated_by`. Provado com a requisição real do anônimo:
+ * as três consultas que a landing faz devolvem 200 com dado.
+ *
+ * **A sonda passou a pedir as COLUNAS QUE O SITE LÊ.** É mais estrita, não
+ * menos: se amanhã alguém revogar `value`, isto reprova — e o `select=*`
+ * reprovaria por uma coluna que ninguém usa.
+ *
+ * ── `blocked_words` SAIU desta lista, e o motivo é de escopo ────────────────
+ *
+ * Ela nunca foi lida por anônimo. Os quatro lugares que chamam
+ * `useBlockedWords` (`MuralForm`, `CommentSection`, `useLiveChat`,
+ * `usePostComposer`) e o painel de moderação vivem **todos** atrás de
+ * `RequireAuth` — conferido rota a rota no `App.jsx`. O SEC-004 fechou para
+ * `anon` de propósito, e `authenticated` manteve as 5 colunas.
+ *
+ * **O que se perde, e está dito com todas as letras:** este arquivo roda com a
+ * chave anônima, então ele deixa de conseguir vigiar `blocked_words`. O risco
+ * que a linha guardava — a lista sumir e o filtro passar a aprovar tudo em
+ * silêncio — continua existindo do lado logado, e agora **sem portão**. Está
+ * registrado no `BACKLOG.md`.
  */
 const ABERTAS = [
-  ['site_config', 'a landing lê o modo manutenção e os feature gates daqui; '
-    + 'sem isto o site não sabe se deve se mostrar'],
-  ['blocked_words', 'o filtro de palavrão do cliente carrega a lista daqui '
-    + '(`useBlockedWords`); sem ela o filtro passa a aprovar tudo em silêncio'],
+  {
+    tabela: 'site_config',
+    // As colunas que o site REALMENTE lê: `FeatureGate` pede `value`,
+    // `GlobalBanner` e `useConfigDoSite` pedem `key, value`.
+    colunas: 'key,value',
+    porque: 'a landing lê o modo manutenção e os feature gates daqui; '
+      + 'sem isto o site não sabe se deve se mostrar',
+  },
 ];
 
 /**
@@ -180,15 +217,17 @@ for (const [tabela, estrago] of FECHADAS) {
 }
 
 // ── 2. Tabelas que precisam CONTINUAR abertas ──────────────────────────────
-for (const [tabela, porque] of ABERTAS) {
-  const { status, corpo } = await pegar(`/rest/v1/${tabela}?select=*&limit=1`);
+for (const { tabela, colunas, porque } of ABERTAS) {
+  // Pede as COLUNAS QUE O SITE LÊ, e não `select=*`: privilégio é por coluna,
+  // e `*` reprovaria por uma coluna que ninguém usa. Ver o bloco em `ABERTAS`.
+  const { status, corpo } = await pegar(`/rest/v1/${tabela}?select=${colunas}&limit=1`);
   const linhas = Array.isArray(corpo) ? corpo.length : null;
 
   if (status === 200 && linhas > 0) {
-    ok(`${tabela.padEnd(18)} continua legível pelo visitante`);
+    ok(`${tabela.padEnd(18)} continua legível pelo visitante (${colunas})`);
   } else {
     falhou(`${tabela.padEnd(18)} FECHOU (HTTP ${status}, ${linhas} linha(s))`,
-      `\`${tabela}\` PAROU de ser legível pelo visitante.\n`
+      `\`${tabela}\` PAROU de responder a \`select=${colunas}\` para o visitante.\n`
       + `    Por que ela precisa estar aberta: ${porque}.\n`
       + '    Isto quase certamente foi um revoke bem-intencionado. Em\n'
       + '    docs/regras/POSTURA.md estao TRES quedas do site pela mesma causa —\n'
@@ -250,6 +289,58 @@ const SUPERFICIE_ANONIMA = {
       'suspended_until', 'birth_date', 'bio', 'created_at'],
     estrago: 'a lista de todos os usuarios, com o UUID e o nome de cada um — o '
       + 'que liga site_config.updated_by a uma pessoa',
+  },
+
+  // `[10/09]` SEC-001, achado e fechado na auditoria de seguranca.
+  //
+  // `key_code` era legivel SEM CONTA: a policy `Public keys` e SELECT para
+  // {public} com USING (true), e a coluna estava no grant de `anon`. Provado
+  // assumindo o papel anon em ROLLBACK — 3 chaves reais, as de is_promo=false.
+  //
+  // A contradicao que definia o achado: a TELA exige login (`/keys` esta atras
+  // de RequireAuth, o RightPanel so existe logado), e a POLICY nao exigia nada.
+  // O filtro `!k.is_promo` acontecia no JavaScript, sobre um `select('*')` —
+  // e quem chama o REST direto nao passa pelo nosso codigo (§1.3).
+  //
+  // CUIDADO ao "consertar" isso com REVOKE de coluna: nao funciona. Enquanto
+  // existir grant no nivel de TABELA, ele cobre todas as colunas e o privilegio
+  // de coluna e irrelevante. A primeira tentativa rodou SEM ERRO e nao mudou
+  // nada — so o teste em ROLLBACK pegou. A correcao e derrubar o grant de
+  // tabela e reconceder coluna a coluna.
+  // `[10/09]` SEC-004 e SEC-005 — a superficie anonima que nao servia a ninguem.
+  //
+  // A wordlist inteira (322 palavras + severidade) era legivel SEM CONTA: o
+  // mapa exato do que o filtro pega. Quem le de verdade e `useBlockedWords`
+  // (aviso antes de publicar) e o `WordlistManager` — os dois exigem conta.
+  blocked_words: {
+    pode: [],
+    naoPode: ['word', 'severity', 'created_by'],
+    estrago: 'a wordlist inteira, com a severidade de cada palavra — o mapa de '
+      + 'como contornar o filtro',
+  },
+
+  // `site_config.updated_by` estava ABERTO no backlog desde 01/09. Fechou
+  // agora porque duas coisas mudaram: profiles foi revogado de anon (o UUID ja
+  // nao vira nome) e nenhuma das telas publicas le essa coluna.
+  //
+  // `key` e `value` PRECISAM continuar abertos: FeatureGate, GlobalBanner e
+  // MaintenancePage rodam para o visitante. Estao em `pode` para pegar a queda
+  // silenciosa — um revoke amplo que feche a landing junto.
+  site_config: {
+    pode: ['key', 'value'],
+    naoPode: ['updated_by'],
+    estrago: 'o UUID de quem mexeu na configuracao do site',
+  },
+
+  game_keys: {
+    // A vitrine continua publica de proposito: o problema era o segredo, e o
+    // §22 manda a MENOR alteracao que o resolve. Estas colunas aqui existem
+    // para pegar a QUEDA SILENCIOSA — um revoke amplo que feche a vitrine
+    // junto deixaria este teste verde sem elas.
+    pode: ['id', 'game_title', 'platform', 'is_promo', 'discount_percent'],
+    naoPode: ['key_code'],
+    estrago: 'as chaves de jogo de verdade — o campo que o painel so mostra '
+      + 'quando a linha NAO e promocao',
   },
 };
 

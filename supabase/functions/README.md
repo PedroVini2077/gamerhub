@@ -76,3 +76,73 @@ daqui seja igual ao de lá; garante que a parte que mais dói não regrediu.
 Não há setup local neste projeto (sem Supabase CLI). Para inspecionar o que
 está de fato implantado, use o MCP do Supabase (`get_edge_function`) ou o
 dashboard.
+
+---
+
+## `[11/09]` A IMPRESSÃO — como saber se o que está no ar é este código
+
+### Por que existe
+
+As duas correções da `send-email` ficaram **5 dias mortas** em produção enquanto
+a documentação, um comentário no `e2e/portas-fechadas.mjs` e o próprio código as
+descreviam como vivas. Ninguém escreveu nada errado: é o §9.9 puro, *commit não
+é deploy*. `scripts/espelho-de-migrations.mjs` já fazia essa pergunta para
+migrations; para as Edge Functions não existia equivalente.
+
+### Como funciona
+
+Cada `index.ts` carrega uma constante, e um ramo de `GET` que a devolve:
+
+```ts
+const IMPRESSAO_DESTE_CODIGO = "ed63a8793e53a519";
+
+if (req.method === "GET") {
+  return new Response(JSON.stringify({ impressao: IMPRESSAO_DESTE_CODIGO }), {
+    headers: { "Content-Type": "application/json" },
+  });
+}
+```
+
+O valor é **derivado do código**, nunca digitado: `npm run impressao-edges`
+calcula o sha256 de todos os arquivos da pasta — inclusive os irmãos como
+`politica.ts` e `email-template.ts`, que vão no mesmo bundle — com a linha da
+própria constante neutralizada, para não morder o próprio rabo.
+
+Uma constante `VERSAO = '2026-09-11'` escrita à mão teria o defeito de
+reproduzir o problema: editar o corpo, esquecer de subir a data, e os dois lados
+passam a concordar num número velho.
+
+### Os dois elos, e quem guarda cada um
+
+| Elo | Pergunta | Quem reprova |
+| --- | --- | --- |
+| código ↔ impressão escrita | editei a função e a impressão ficou velha? | `npm test` (`impressaoDasEdges.test.js`) |
+| impressão escrita ↔ produção | implantei o que editei? | `npm run edges` (`edges-implantadas.mjs`) |
+
+### Por que um GET, e não a API de gerenciamento
+
+A API de gerenciamento devolve o `ezbr_sha256` de cada função implantada — e
+exige um **token de gerenciamento** guardado como segredo do CI. Trocar
+incerteza de monitoramento por credencial exposta é a conta ruim do `CLAUDE.md`
+§0.2, a mesma que deixou o alerta de cota do Sentry de fora.
+
+O `GET` revela um hash de 16 caracteres: **não revela código**, não aceita
+entrada, não toca banco e não gasta provedor. Na `send-email` ele sai **antes**
+do `motivoParaRecusar`, de propósito — senão cada visita do portão viraria uma
+linha de "chamada recusada" em `admin_logs`, que foi a fadiga de alarme de 27/08.
+
+### O estado de hoje, dito com todas as letras
+
+Só a `cleanup-orphans` está implantada com o marcador. As outras 7 esperam um
+`SUPABASE_ACCESS_TOKEN` — ver o item no `BACKLOG.md`. **O portão ainda não está
+no CI** justamente por isso.
+
+### Ao criar uma função nova
+
+1. Acrescente o marcador e o ramo de `GET` (receita acima).
+2. `npm run impressao-edges` e commite.
+3. Implante.
+4. `npm run edges` para conferir.
+
+Sem o passo 1 a função fica **fora** da vigilância — e o `npm test` reprova,
+porque a trava exige o marcador em toda função da pasta.

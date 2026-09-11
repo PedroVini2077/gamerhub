@@ -15,11 +15,14 @@ export default function KeyEditor({ item, onUpdate }) {
   });
 
   async function handleSave() {
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from('game_keys')
-      .update(form)
+      .update(form, { count: 'exact' })
       .eq('id', item.id);
     if (error) toast.error('Erro ao salvar');
+    // `[10/09]` A RLS recusa devolvendo 0 linhas e NENHUM erro — sem esta
+    // checagem o modal fechava dizendo "Atualizado!" e a key seguia igual.
+    else if (!count) toast.error('Nada foi salvo — sem permissão, ou o item já não existe.');
     else {
       toast.success('Atualizado!');
       setOpen(false);

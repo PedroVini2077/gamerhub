@@ -212,6 +212,18 @@ que é justamente a situação para a qual o cofre existe.
 
 **Se você esquecer o código:** tem um link **"Esqueci o código deste
 navegador"** embaixo do botão. Ele apaga o código guardado ali e pede um novo na
-hora. Como o cofre não guarda permissão nenhuma, isso não abre porta que já não
-estivesse aberta — e sem esse caminho uma tranca cenográfica poderia trancar de
-verdade, que é a pior combinação possível.
+hora. Sem esse caminho, uma tranca cenográfica poderia trancar de verdade — que
+é a pior combinação possível.
+
+> **`[11/09]` Agora ele pede a SENHA DA CONTA.** Antes eram dois cliques, e o
+> dono apontou o buraco: *"se alguém pega meu PC ou celular ligado na tela e não
+> souber a senha, ele só vai redefinir"*. O cofre protegia contra ninguém.
+>
+> A senha é conferida **no servidor**, pela RPC `confere_a_propria_senha` — não
+> por um `if` no navegador, que qualquer um contorna pelo DevTools. Ela só
+> confere a senha de quem chama, só responde para o fundador, e devolve
+> sim/não: nada do hash sai dela.
+>
+> **Errar a senha aqui não bloqueia o seu login.** Foi checado antes de
+> escolher este caminho — a contagem de tentativa falha foi removida em 28/08
+> por ser forjável. O porquê inteiro está em [DECISOES.md](DECISOES.md).
