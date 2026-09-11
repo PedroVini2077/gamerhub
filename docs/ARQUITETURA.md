@@ -237,6 +237,10 @@ src/
 │   │                      # dois bugs se esconderam lá dentro (o UPDATE que
 │   │                      # rodava como `anon` e afetava 0 linhas em silêncio,
 │   │                      # e o `select` que mantinha `profiles` aberto)
+│   │                      # `[11/09]` O TERCEIRO bug era da mesma família: o
+│   │                      # aceite dos documentos era gravado aqui, e a RLS
+│   │                      # recusava sempre. Hoje as coordenadas vão no
+│   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências

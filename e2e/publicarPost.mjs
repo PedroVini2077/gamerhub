@@ -83,3 +83,36 @@ export async function publicarEEsperarNoFeed(page, {
     + '    (nada)                    -> o clique nao chegou no botao, ou a pagina\n'
     + '                                 nao era o feed. Veja a evidencia salva.');
 }
+
+/**
+ * Os prefixos que marcam post criado por TESTE — fonte única.
+ *
+ * ── Por que isto virou constante compartilhada ──────────────────────────────
+ *
+ * `[11/09]` Um post `[painel ...]` ficou **visível no site** desde 10/09, e o
+ * detector de sobras existia. Ele só não olhava para aquele prefixo: procurava
+ * `[e2e ` e nada mais, enquanto o `painel-admin.mjs` publica com `[painel `.
+ *
+ * É varredura de CASO, não de classe (§1.3) — e a lista escrita à mão num
+ * lugar só ia divergir do dia em que o segundo prefixo nasceu. Divergiu.
+ *
+ * Quem publicar com um prefixo novo acrescenta aqui, e o detector passa a
+ * enxergar sozinho.
+ */
+export const PREFIXOS_DE_TESTE = ['[e2e ', '[painel '];
+
+/** A marca desta execução: prefixo + relógio, para não colidir entre rodadas. */
+export function marcaDeTeste(prefixo) {
+  if (!PREFIXOS_DE_TESTE.includes(prefixo)) {
+    throw new Error(
+      `Prefixo de teste "${prefixo}" nao esta em PREFIXOS_DE_TESTE, em `
+      + 'e2e/publicarPost.mjs. Sem ele na lista, o detector de sobras NAO ve o '
+      + 'post desta marca — e um post de teste fica no ar sem ninguem saber.');
+  }
+  return `${prefixo}${Date.now()}]`;
+}
+
+/** Um seletor que casa QUALQUER marca de teste, para o detector de sobras. */
+export const REGEX_DE_SOBRA = new RegExp(
+  PREFIXOS_DE_TESTE.map((p) => p.replace(/[[\]]/g, '\\$&')).join('|'),
+);

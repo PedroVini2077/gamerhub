@@ -86,7 +86,15 @@ describe('o cadastro não pode voltar a depender de profiles', () => {
       + '  sessao ainda) e afeta 0 LINHAS, SEM ERRO — foi assim que birth_date\n'
       + '  nunca chegou ao banco e a idade minima de 13 anos deixou de ser\n'
       + '  imposta, enquanto a politica de privacidade dizia que era.')
-      .toMatch(/options:\s*\{\s*data:\s*\{\s*username,\s*\.\.\.extras\s*\}/);
+      // `[11/09]` O padrão exigia que `...extras` fosse a ÚLTIMA chave do
+      // metadata (`\}` logo depois). Isso confundia duas coisas diferentes: o
+      // que a trava protege é os extras irem em `options.data` em vez de num
+      // UPDATE posterior — e não que nada mais possa viajar junto.
+      //
+      // Quando o `aceites` entrou na mesma chave (o aceite dos documentos
+      // passou a nascer com a conta), a trava reprovou uma mudança correta.
+      // Trava que barra o certo ensina a desligar trava.
+      .toMatch(/options:\s*\{\s*data:\s*\{\s*username,\s*\.\.\.extras\b/);
 
     expect(codigo,
       'voltou um UPDATE em profiles dentro do cadastro — ele afeta 0 linhas\n'

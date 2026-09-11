@@ -1,6 +1,5 @@
-import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
-import { registrarAceiteDosDocumentos } from './aceiteService';
+import { aceitesParaGravar } from '../lib/documentosLegais';
 
 /**
  * O CADASTRO — criar conta, do zero até a prova do aceite.
@@ -112,32 +111,30 @@ export async function criarConta(email, password, username, extraFields = {}) {
     Object.entries(extraFields).filter(([k, v]) => permitidos.includes(k) && v),
   );
 
+  // `[11/09]` O ACEITE vai no metadata, e quem grava é o banco.
+  //
+  // A versão anterior chamava `registrarAceiteDosDocumentos` logo depois do
+  // `signUp` — e ela **falhava sempre**, num site com confirmação de email
+  // ligada. O motivo: `signUp` cria o usuário e NÃO abre sessão, então o
+  // cliente continua sendo `anon`, e a policy de INSERT de
+  // `policy_acceptances` é `TO authenticated` com `user_id = auth.uid()`.
+  //
+  // Provado em ROLLBACK, nos dois papéis: `anon` recebe
+  // "permission denied for table policy_acceptances" e `authenticated` sem
+  // `sub` recebe violação de RLS. E o dado confirmou: a conta criada em 28/08
+  // tem 0 aceites, contra 3, 4 e 8 das anteriores.
+  //
+  // Agora o `handle_new_user` escreve o aceite na MESMA transação que cria a
+  // conta. Só as coordenadas viajam no metadata — `documento` e `versao` —, e
+  // o trigger valida cada uma contra os `CHECK` da tabela antes de gravar.
+  const aceites = aceitesParaGravar('x').map(({ documento, versao }) => ({ documento, versao }));
+
   const { data, error } = await supabase.auth.signUp({
     email: email.trim(),
     password,
-    options: { data: { username, ...extras } },
+    options: { data: { username, ...extras, aceites } },
   });
   if (error) return { error };
-
-  // `[02/09]` A PROVA do consentimento. A caixinha do formulário é como a
-  // pessoa expressa a escolha; esta linha é o que sobra dela — com qual
-  // VERSÃO de cada documento, e quando.
-  //
-  // Não derruba o cadastro se falhar, e não fica em silêncio se falhar. Os
-  // dois extremos são ruins: estourar deixaria a pessoa com uma conta pela
-  // metade (o `auth.users` já existe neste ponto) por causa de uma linha de
-  // auditoria; engolir deixaria uma conta sem registro de aceite, que é a
-  // única coisa que prova o consentimento (§1.5).
-  //
-  // O aviso vai para a tela porque é o único canal disponível: `admin_logs`
-  // só aceita `service_role`, e o console não é tratamento.
-  if (data?.user?.id) {
-    const { error: aceiteErro } = await registrarAceiteDosDocumentos(data.user.id);
-    if (aceiteErro) {
-      toast.error('Sua conta foi criada, mas o registro do aceite dos '
-        + 'documentos falhou. Avise a equipe pelo /contato.', { duration: 10000 });
-    }
-  }
 
   return { data };
 }

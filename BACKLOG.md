@@ -46,7 +46,7 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**35 itens abertos** (+ 1 ideia sem compromisso)
+**38 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -648,6 +648,27 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[11/09]` 🟡 **A moldura roxa some na transição login → cadastro.** *Pedido
+  dele; ele já trouxe as duas saídas possíveis.*
+
+  Na troca de aba, a moldura do personagem roxo **desaparece de uma vez**, sem
+  transição — destoa do resto da cena, que é toda animada. As duas ideias dele:
+  *"ou num fade in e fade out como tudo, ou ela ser empurrada pra direita quando
+  a aba for pro cadastro e voltar quando voltar ao login"*.
+
+- ⬜ `[11/09]` 🟡 **A foto do remetente do Brevo é a letra "G".** *Ação de painel
+  — eu não alcanço.*
+
+  A conta do site tem foto; a que a API usa mostra só a inicial. É configuração
+  no painel do Brevo (o avatar do remetente), não código nosso.
+
+- ⬜ `[11/09]` 🟢 **Branches desatualizadas no GitHub — portão ou gatilho.**
+  *Pedido dele: "vivo vendo os bots e as outras branch's desatualizadas".*
+
+  As branches do Dependabot e as `claude/*` ficam para trás da `main` e ninguém
+  percebe até abrir a lista. Precisa de uma varredura que **diga quais** estão
+  atrás e há quanto tempo.
+
 - ⬜ `[11/09]` 🟠 **O orçamento de bytes mede um site que ninguém recebe — 26,7 kB
   gzip de diferença.** *Precisa de decisão porque as duas saídas são opostas.*
 
@@ -1076,10 +1097,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.503<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.618<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.820<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

@@ -22,7 +22,7 @@
  * Exige E2E_EMAIL e E2E_PASSWORD (conta comum, nunca de staff — ver passo 3).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
-import { publicarEEsperarNoFeed } from './publicarPost.mjs';
+import { publicarEEsperarNoFeed, marcaDeTeste, REGEX_DE_SOBRA } from './publicarPost.mjs';
 import { comentarEEsperarNaLista } from './comentar.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -32,7 +32,7 @@ const SENHA = process.env.E2E_PASSWORD;
 
 // Título único por execução: nunca mexe num post que não seja o desta rodada,
 // mesmo se uma execução anterior tiver morrido no meio.
-const MARCA  = `[e2e ${Date.now()}]`;
+const MARCA  = marcaDeTeste('[e2e ');
 const TITULO = `${MARCA} post automatico`;
 const CORPO  = 'Publicado pelo teste automatizado. Se este post ficou no ar, o E2E falhou na limpeza.';
 const COMENTARIO = `${MARCA} comentario automatico`;
@@ -283,7 +283,11 @@ try {
   //
   // Por que aqui e não num script próprio: só uma conta LOGADA enxerga o feed
   // (o anônimo leva 401), e este é o único teste que tem sessão.
-  const sobras = await main.locator('h2').filter({ hasText: /\[e2e / })
+  // `[11/09]` O filtro era `/\[e2e /` escrito à mão, e por isso NÃO enxergava
+  // o `[painel `. Um post do teste de painel ficou visível no site desde 10/09
+  // com este detector ligado e verde. Agora o padrão vem de
+  // `PREFIXOS_DE_TESTE`, que é a lista única.
+  const sobras = await main.locator('h2').filter({ hasText: REGEX_DE_SOBRA })
     .filter({ hasNotText: MARCA }).count();
   if (sobras > 0) {
     throw new Error(
