@@ -740,6 +740,20 @@ o que já está lá.
   o `srcset` escolheu, e não o arquivo da pasta. O terceiro passo confere que
   login e cadastro servem pares **diferentes** — se o `modo` parar de chegar no
   componente, as contagens continuariam zeradas e ninguém notaria.
+
+  > **`[11/09]` Os medidores moram em `e2e/arena/medidas.mjs`.** O roteiro
+  > passou de 300 linhas quando a conferência da moldura ganhou espera de
+  > animação, e o §4 manda dividir. O corte é por responsabilidade: em
+  > `medidas.mjs` mora **como se mede** (canvas, estilo computado, esperas); no
+  > roteiro fica **o que se exige** — os limites e as mensagens de falha.
+  >
+  > **A conferência da moldura espera a animação TERMINAR antes de medir**, via
+  > `getAnimations()`. Sem isso ela lia um quadro do meio: a moldura entra com
+  > `420 ms` de espera e `fill-mode: backwards`, então aos **280 ms** — quando
+  > as artes já carregaram e o passo media — a opacidade ainda é **0**. Medido:
+  > 0 aos 280 ms, 0,125 aos 741 ms, 0,55 aos 1.665 ms. Perguntar ao navegador,
+  > e não esperar tempo fixo, é o que mantém a trava válida quando a duração
+  > mudar no CSS.
 - job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
   `/admin` e `/owner` **negados** para `role = 'user'`, **o fundo decorativo
@@ -1112,6 +1126,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->14.495<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.509<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
