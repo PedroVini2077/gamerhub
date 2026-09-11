@@ -58,6 +58,17 @@ dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 > fazendo, mas vamos só estruturar antes de fazer"*. Por isso a fila é ordenada
 > pelo que **não** depende delas.
 
+> **`[11/09]` O MÉTODO, definido por ele:** *"vamos fazer em blocos? uma coisa
+> por vez... nesse momento não vamos implementar, vamos idealizar, anotar e
+> implementar"*. Cada fatia passa por **idealizar → anotar → implementar**, e só
+> avança quando a anterior estiver redonda: *"quando tiver redondo partimos pro
+> resto"*.
+>
+> **Bloco em idealização agora: a ABERTURA (fatia 2).** Tudo dele está em
+> [`BRIEFING-LANDING-2026-09.md`](docs/identidade/BRIEFING-LANDING-2026-09.md),
+> com as propostas de frase, as três leituras de "montar", a restrição técnica
+> que decide o desenho e os 6 pontos ainda em aberto.
+
 | Fatia | O que é | Depende das imagens? | Estado |
 | --- | --- | --- | --- |
 | **1** | Matar a cena 3D e trocar o fundo do hero por **convergência** em SVG/CSS | não | **feita** |
@@ -69,6 +80,18 @@ dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 | 7 | Keys & Promos — descoberta | **sim** | espera as imagens |
 | 8 | XP/ranks — o scroll como progressão | não | espera a 3 |
 | 9 | O fecho, na porta do login | não | espera as anteriores |
+
+**As PERGUNTAS que eu fiz e ele ainda não respondeu** — gravadas porque pergunta
+que vive só na conversa some com a sessão, e foi assim que quatro pedidos dele
+se perderam em 01/09:
+
+| # | Pergunta | Estado |
+| --- | --- | --- |
+| 1 | Qual frase aparece com a marca na abertura? | **em aberto** — 3 propostas no briefing, com recomendação |
+| 2 | Quanto tempo a abertura pode durar, e a 2ª visita ganha versão curta? | **em aberto** — ele disse que depende do resto |
+| 3 | O que "montar" quer dizer no desenho? | **em aberto** — 3 leituras no briefing, com recomendação |
+| 4 | As artes que ele vai gerar são FUNDO (cena inteira, UI desenhada dentro) ou PEÇAS (elementos que eu componho com a UI real por cima)? | **em aberto** — decide o que dá para construir antes de elas chegarem |
+| 5 | O molde `FeatureSection` morre, ou sobrevive nas seções menores para criar contraste? | **em aberto** — ele pediu para eu reexplicar a pergunta |
 
 **Por que a 3 vem antes das cenas, e não depois:** cena presa é MECANISMO —
 altura reservada, progresso, o que acontece no celular, o que acontece com

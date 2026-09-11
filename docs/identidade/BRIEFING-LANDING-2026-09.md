@@ -108,52 +108,132 @@ Quando chegarem, elas vão para `referencias/` e são citadas neste arquivo.
 
 ---
 
-## A ABERTURA — ideia do dono, `[11/09]`, ainda por estruturar
+## BLOCO 1 — A ABERTURA. `[11/09]`, em idealização
 
-**A frase dele, na letra:** *"eu pensei dessa logo nova do GamerHub ser montada
-aos poucos, sabe? e com a frase principal da landing page, sem esse estouro aí,
-tipo a pessoa vai chegar, a tela vai estar toda escura e vai ser montado a logo
-com alguma coisa escrita e aí sim a landing page aparece"*.
+> **Ordem de método, dele:** *"vamos fazer em blocos? uma coisa por vez, primeiro
+> a animação de entrada... nesse momento não vamos implementar, vamos idealizar,
+> anotar e implementar"*. Nada abaixo está construído.
 
-**O que isso muda em relação ao que existe.** A abertura de hoje é a do RAIO com
-outra figura dentro: traço se desenhando em 0,3 s, **clarão verde em tela
-cheia**, bola de luz expandindo, e o overlay some em 0,45 s. Ela foi escrita
-para um relâmpago, onde o clarão **é** o evento. A marca não é um relâmpago — é
-uma coisa que se **monta**, e o clarão é justamente o "estouro" que ele pediu
-para tirar.
+### O que ele já decidiu
 
-**O que a ideia dele pede, em três tempos:**
+| | |
+| --- | --- |
+| tela escura, **sem clarão** | *"sobre o estouro, quero descartar isso"* — ver [DECISOES.md](../DECISOES.md) |
+| a marca tem **animação de entrada** | *"não sei se ela é desenhada, estruturada"* — a forma está em aberto |
+| a frase vem **depois** da marca | *"aí depois vem a msg"* |
+| a frase é **curta** | e ele pediu ideias, listadas abaixo |
+| a abertura **vira** a landing | *"a tela ir aparecendo aos poucos e a logo ir para o centro da landing, assim como o antigo raio... uma transição suave"* |
+| a marca **fica** na landing | *"queria que a logo ficasse ali flutuando e tendo interações com o cenário ou com o mouse ou clique do usuário"* |
 
-| | | |
+### A ideia central que sai disso
+
+**A abertura deixa de ser uma tela ANTES do site e passa a ser a marca
+CHEGANDO.** Hoje são duas coisas coladas: um overlay que cobre tudo e some, e
+um hero que começa do zero atrás dele. Um corte. A ideia dele junta as duas numa
+tomada só — a marca se monta no escuro, a frase aparece, a landing materializa
+por trás, e a marca **assenta no hero e continua lá**, flutuando e reagindo.
+
+**O ganho não é só estético, e é o argumento mais forte a favor:** hoje os
+trajetos do `ConvergenciaDoHub` convergem para **espaço vazio** atrás do título.
+Com a marca morando no hero, eles passam a convergir **nela**. A metáfora do
+nome (Hub = ponto de encontro), o fundo e a marca passam a dizer a mesma coisa,
+em vez de três coisas parecidas.
+
+### As frases — ideias pedidas por ele
+
+Curtas, e nenhuma descreve funcionalidade: a explicação é trabalho do hero, que
+vem dois segundos depois. O trabalho da abertura é **prometer**.
+
+| Frase | O que ela faz |
+| --- | --- |
+| **"O ponto onde tudo se encontra."** | diz literalmente o que a animação mostra. Frase e desenho contam a mesma história em duas linguagens — é a mais coesa das três |
+| **"Aqui o jogo continua."** | diz para que o produto serve: a vida de jogador entre as partidas — feed, mural, live, chat. Curta e calorosa |
+| **"Sua base de operações."** | é a voz que o site já tem — mas é **a sobrancelha do hero**, e repeti-la dois segundos antes vira eco |
+
+**Recomendação:** a primeira, com a segunda como alternativa. A terceira só se a
+sobrancelha do hero mudar junto, senão o visitante lê a mesma frase duas vezes
+em três segundos.
+
+### Como a frase entra — e por que eu discordo das duas opções dele
+
+Ele levantou duas: *"rodando a logo, ou deslizando"*.
+
+**Texto girando em volta da marca é o efeito que o briefing dele proíbe.** Ele
+mesmo escreveu: *"por que isso está se movendo? Se a resposta for apenas 'para
+ficar bonito', provavelmente não precisa existir"*. Texto em órbita é difícil de
+ler, obriga o olho a perseguir, e a resposta para "por que gira?" é só "fica
+legal". Ele também custa: texto em caminho curvo no celular fica minúsculo.
+
+**Deslizar por baixo funciona** e é honesto — lê como legenda da marca.
+
+**A terceira, que eu proponho:** a mesma luz que acende a marca **continua** e
+revela a frase ao passar por ela. Um gesto, dois resultados, e a resposta para
+"por que isso se move?" é *"é a mesma luz, ainda andando"*. É mais barato do que
+parece: uma varredura em máscara, sem laço por quadro.
+
+### O que "montar" pode ser — três leituras, e uma delas é nova
+
+Ele disse não saber, então a decisão fica aqui escrita com o custo de cada uma.
+
+| Leitura | Como seria | Observação |
 | --- | --- | --- |
-| 1 | tela **escura**, sem clarão | **DECIDIDO** — *"sobre o estouro, quero descartar isso"* (ver [DECISOES.md](../DECISOES.md)) |
-| 2 | a marca se **montando aos poucos**, com uma frase junto | depende das 4 perguntas abaixo |
-| 3 | só então a landing aparece | já é assim hoje |
+| **desenhada** | o contorno se traça e depois preenche | é o que já acontece hoje. Funciona, mas é a linguagem do RAIO — traço de relâmpago |
+| **estruturada** | as faces do hexágono entrando em ordem | **a marca é UM caminho fechado de 39 vértices com `evenodd`** — ela não tem peças. Fazer isso exige recortar o desenho em partes, o que cria um segundo desenho que vai divergir do primeiro (§4) |
+| **convergida** | fragmentos chegam de fora e, onde se encontram, a marca aparece | usa a linguagem que a landing **já** escolheu, não exige cortar o caminho (é máscara, não geometria), e emenda direto no fundo do hero |
 
-**O que já foi feito, para ele não ficar bloqueado:** o tamanho. O print do
-celular mostrava a marca saindo pelos quatro lados, e a causa era medível — o
-caminho ocupa o viewBox inteiro e o SVG usava `slice`, que escala para
-**cobrir**. Num 400×800 isso dava uma marca de 800 px de largura. Corrigido no
-mesmo dia; hoje ela mede 184×184 no celular e 300×300 no PC, contida nos dois.
-O resto da ideia continua **por estruturar**, como ele pediu.
+**Recomendação: a terceira.** Ela responde "montada aos poucos" sem inventar uma
+segunda linguagem visual, e é a única que faz a abertura e o hero serem a mesma
+ideia em vez de duas parecidas.
 
-**O que precisa ser decidido antes de implementar:**
+### A restrição técnica que decide o desenho — conferida, não suposta
 
-1. **Qual frase.** Ele disse *"a frase principal da landing page"* — hoje o hero
-   tem duas candidatas: a sobrancelha (*"Sua base de operações gamer"*) e o
-   parágrafo. Repetir na abertura o que aparece dois segundos depois pode ler
-   como eco em vez de promessa.
-2. **Quanto tempo a abertura pode durar.** Hoje ela inteira cabe em ~0,75 s.
-   "Montar aos poucos" custa tempo, e **tempo de abertura é tempo de tela preta
-   para quem só queria entrar** — a segunda visita da mesma pessoa é a que dói.
-   Provavelmente precisa de marca de "já viu" (o `sessionStorage` de
-   `lib/boasVindas.js` já faz isso na tela de entrada).
-3. **O que "montar" quer dizer no desenho.** A marca é um monograma fechado de
-   39 vértices; ela não tem peças separáveis óbvias. Montar pode ser o contorno
-   se desenhando (é o que já acontece), as faces entrando em ordem, ou o
-   gradiente varrendo. São leituras diferentes e a escolha é dele.
-4. **`prefers-reduced-motion`**: quem pede menos movimento precisa ver a marca
-   parada e a frase, não uma tela preta.
+`IntroLightning` é importado **estaticamente** no `App.jsx` (linha 33), e a
+`Landing` é **`lazy`** (`paginasLazy.js`). Isso é deliberado e está documentado:
+em 02/09 a intro morava dentro do hero, e o raio só existia depois de o chunk da
+landing baixar — **1.320 ms a 6× de CPU**, tela preta o tempo todo.
+
+**Consequência para esta ideia:** enquanto a abertura toca, o hero pode ainda
+não existir. Então a marca **não pode voar até uma posição medida no hero** —
+medir exige o hero montado, e esperar por ele traz de volta exatamente o defeito
+que a separação consertou.
+
+**A saída é a mesma que resolveu o cruzamento das artes da arena:** uma posição
+**combinada**, escrita nas mesmas unidades dos dois lados. A abertura termina
+com a marca naquele ponto; o hero desenha a dele no mesmo ponto; a troca é um
+cruzamento, não um voo. Sem medição, sem espera, e nada quebra se a landing
+demorar.
+
+> Isso pede uma trava do tipo "contrato": um teste que falhe se os dois lados
+> deixarem de concordar sobre a posição. Deriva entre dois lugares que precisam
+> combinar é exatamente o que a Fase 4 da auditoria existe para pegar.
+
+### A marca flutuando e reagindo — o que precisa de cuidado
+
+Pedido dele: *"interações com o cenário ou com o mouse ou clique do usuário"*.
+
+**O risco não é a ideia, é o custo.** Já existe o desenho certo no projeto:
+`FluxoDeDados` reage ao ponteiro com **um ouvinte, uma variável CSS, coalescida
+por quadro**, e o deslocamento acontece no compositor. Parado, custa zero. Uma
+marca que reage precisa seguir o mesmo padrão — não um laço por quadro, que foi
+o que encareceu a cena 3D (5.877 ms de thread em 6 s de página parada).
+
+**E "clique" merece uma pergunta de produto antes de existir:** o que acontece
+ao clicar? Se não houver resposta, é um alvo que não faz nada — pior do que não
+ser clicável. Hipóteses: rola para a próxima cena, ou aciona o mesmo pulso que
+os trajetos usam. Fica em aberto.
+
+### O que continua em aberto neste bloco
+
+1. **Qual frase** — três propostas acima, com recomendação.
+2. **Como a frase entra** — deslizar, ou a varredura que eu proponho.
+3. **Qual leitura de "montar"** — três acima, com recomendação.
+4. **Duração**, e se a segunda visita da sessão ganha versão curta. Com a
+   abertura virando o hero, o tempo deixa de ser "tela preta perdida" e passa a
+   ser parte da chegada — o que **enfraquece** o argumento de encurtar, mas não
+   o elimina.
+5. **O que o clique faz**, se houver clique.
+6. **`prefers-reduced-motion`**: quem pede menos movimento vê a marca já posta e
+   a frase, sem varredura e sem flutuação.
 
 ---
 
