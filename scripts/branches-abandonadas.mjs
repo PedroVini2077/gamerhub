@@ -146,10 +146,15 @@ for (const b of abandonadas) {
 
 console.log('\n  Elas nao representam trabalho pendente: o PR delas ja foi fechado');
 console.log('  ou substituido. Cada uma pode ser apagada pela pagina de branches.');
-console.log('\n  A correcao de RAIZ, e ela e de UM CLIQUE:');
-console.log('    Settings -> General -> Pull Requests');
-console.log('    -> "Automatically delete head branches"');
-console.log('  Com isso ligado, o entulho deixa de nascer.\n');
+// `[11/09]` O rodape mandava ligar o `Automatically delete head branches`. Ele
+// JA ESTA LIGADO desde 11/09 — medido: o merge do #181 apagou a branch sozinho,
+// e o repositorio caiu de 11 para 4 branches, todas com PR aberto. Mandar ligar
+// de novo seria mensagem falsa, e mensagem falsa manda procurar no lugar errado
+// (§1.5).
+console.log('\n  O `Automatically delete head branches` JA ESTA LIGADO (desde 11/09),');
+console.log('  entao branch de PR fechado some sozinha. Se alguma apareceu aqui,');
+console.log('  ela NAO veio por esse caminho — provavelmente foi criada sem PR,');
+console.log('  ou o PR dela nunca chegou a existir. Vale olhar de onde veio.\n');
 
 // Nao reprova: branch orfa nao quebra o site nem o build. Reprovar PR por causa
 // disso seria exatamente o alarme que grita a toa (§0.2, 4a regra). Quem avisa

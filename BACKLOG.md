@@ -163,6 +163,37 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 
 ## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
 
+- ⬜ `[11/09]` 🔵 **`soft_delete_post` e `restore_post`: o guard não trata
+  `auth.uid()` NULL.** *Proposta — NÃO executei, porque não é explorável hoje
+  (§7 🟡: migration pede aprovação).*
+
+  **O risco.** As duas fazem
+  `IF auth.uid() <> v_owner AND NOT can_moderate_content(v_owner) THEN RAISE`.
+  Em SQL, `NULL <> qualquer_coisa` é **NULL**, e um `IF` com NULL **não
+  dispara** — então sem sessão o guard não barra ninguém.
+
+  **Provado em ROLLBACK**, nas duas vias:
+
+  | Papel | Resultado |
+  | --- | --- |
+  | `anon` | bloqueado — mas por `permission denied for table profiles`, **não pelo guard** |
+  | `authenticated` com JWT **sem `sub`** | **apagou post alheio** |
+
+  **O impacto hoje é ZERO**, e isso precisa estar escrito: `anon` não está na
+  ACL das funções, e um JWT com `role: authenticated` só existe assinado com o
+  segredo do projeto — e o GoTrue sempre põe `sub`. Não há caminho de fora.
+
+  **Por que mesmo assim vale corrigir:** é proteção acidental, exatamente o que
+  o §1.3 manda desconfiar. Ela depende de um `GRANT` e de um erro de privilégio
+  em `profiles` — não do guard. Este projeto já mudou grant de `anon` mais de
+  uma vez; no dia em que isso acontecer, a porta abre sem ninguém perceber.
+
+  **A solução é uma linha em cada função:**
+  `IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Sem sessão'; END IF;`
+  mais a trava: o teste em ROLLBACK acima, que hoje passa no caso (b) e
+  passaria a falhar.
+
+
 *Encontrados durante a auditoria de segurança, e **fora do escopo dela**. Estão
 aqui, e não corrigidos junto, porque o §21 do protocolo proíbe expandir tarefa
 por oportunidade — e nenhum deles é brecha.*
@@ -677,21 +708,30 @@ dependência técnica real** que decide o resto:
   registrado foi o da `send-email` — o de verificação de senha não aparece
   nenhuma vez.
 
-  **A causa não é bug de código.** A migration de 28/08 avisa na própria
-  abertura que *"esta migration sozinha não liga nada"*: o hook só é chamado
-  depois de apontado em `Authentication → Hooks → Password Verification`. A
-  função existe, está com `GRANT` para `supabase_auth_admin`, e foi **provada em
-  ROLLBACK**: 4 erradas contam, a 5ª bloqueia por 15 min, acertar limpa, e
-  evento lixo devolve `continue`.
+  **NÃO é "faltou clicar", e eu afirmei isso antes de conferir.** O
+  `Password Verification Attempt` **não existe no plano Free**: a tabela da
+  [documentação de Auth Hooks](https://supabase.com/docs/guides/auth/auth-hooks)
+  o marca como `Teams and Enterprise`, enquanto quatro outros aparecem como
+  `Free, Pro`. O projeto **já sabia** — está num comentário em
+  `src/pages/Login.jsx` desde 28/08 — e eu diagnostiquei pelo banco sem ler o
+  comentário que estava no caminho.
 
-  **Ligar não pode trancar ninguém:** o hook devolve `continue` sempre e engole
-  exceção — foi escrito assim de propósito, para que defeito nele não derrube o
-  login do site inteiro.
+  A função existe, está correta e foi **provada em ROLLBACK** (4 erradas contam,
+  a 5ª bloqueia por 15 min, acertar limpa). Ela simplesmente **nunca é chamada**.
 
-  Quando estiver ligado, a trava entra: um roteiro que erra a senha de propósito
-  uma vez, confere que o contador andou, e loga certo em seguida (o acerto zera
-  a linha). Hoje ela reprovaria por algo que só o dono pode ligar, e portão
-  assim ensina a ignorar o canal (§0.2, 4ª regra).
+  **A DECISÃO É SUA, e são duas opções honestas:**
+
+  | Opção | O que muda | Custo |
+  | --- | --- | --- |
+  | **A. Tirar a promessa da tela** | a mensagem "Conta bloqueada por excesso de tentativas" sai, e o site deixa de prometer o que não faz. A função e a migration ficam guardadas, prontas para o dia do upgrade | zero |
+  | **B. Subir de plano** | o hook liga e o contador passa a valer | mensalidade do Supabase |
+
+  **O que está fora:** contar do lado do cliente. Foi exatamente a brecha
+  fechada em 28/08 — qualquer um forjava o bloqueio de qualquer e-mail sem
+  saber a senha.
+
+  Enquanto isso, quem protege contra força bruta é o rate limit do próprio
+  GoTrue, que é server-side e não depende desta tela.
 
 - ⬜ `[11/09]` 🟡 **A foto do remetente do e-mail é a letra "G".** *Ação do dono
   — e o caminho não é o que este item dizia até hoje.*
@@ -704,14 +744,6 @@ dependência técnica real** que decide o resto:
 
   Os dois caminhos, com o custo de cada um, estão escritos em
   [`docs/OPERACAO.md`](docs/OPERACAO.md).
-
-- ⬜ `[11/09]` 🟢 **Ligar "Automatically delete head branches".** *Ação de
-  painel — eu não alcanço.*
-
-  `Settings → General → Pull Requests`. É a correção de RAIZ do entulho de
-  branches: com ela ligada, branch de PR fechado some sozinha e o robô semanal
-  para de ter o que reportar. Hoje há **7 branches órfãs** do Dependabot, de
-  PRs já fechados.
 
 - ⬜ `[05/09]` 🟢 **O lembrete de auditoria não enxerga fase parada.** Ele
   compara a data do relatório **mais recente** com 90 dias. Como as Fases 2 e 4
@@ -1099,8 +1131,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.650<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->104<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.823<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

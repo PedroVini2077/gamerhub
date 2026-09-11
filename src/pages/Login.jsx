@@ -16,6 +16,7 @@ import CardQueAcompanhaAltura from '../components/auth/CardQueAcompanhaAltura';
 import { fadeTab } from '../lib/motion';
 import { useDbOffline } from '../hooks/useDbOffline';
 import { useModoDaEntrada } from '../hooks/useModoDaEntrada';
+import { mensagemDeErroDeAuth, ID_DO_TOAST_DE_AUTH } from '../lib/errosDeAuth';
 import { useBloqueioDeLogin } from '../hooks/useBloqueioDeLogin';
 
 /**
@@ -83,7 +84,7 @@ export default function Login() {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: window.location.origin + '/auth/confirm',
       });
-      if (error) toast.error(error.message);
+      if (error) toast.error(mensagemDeErroDeAuth(error), { id: ID_DO_TOAST_DE_AUTH });
       else { toast.success('Link de recuperação enviado! Verifique seu email.'); switchMode('login'); }
       setLoading(false);
       return;
@@ -132,7 +133,7 @@ export default function Login() {
           // exclusivo do plano Team (ver BACKLOG.md). Enquanto isso, quem
           // protege contra força bruta é o rate limit do próprio GoTrue, que é
           // server-side e não precisa desta tela para nada.
-          toast.error(error.message);
+          toast.error(mensagemDeErroDeAuth(error), { id: ID_DO_TOAST_DE_AUTH });
         }
       } else {
         // await obrigatório: o builder do supabase-js é lazy — sem await o reset nunca é enviado.
@@ -163,7 +164,7 @@ export default function Login() {
       if (selectedPlatform) extraFields.platform = selectedPlatform;
 
       const { error } = await signUpWithEmail(email, password, username, extraFields);
-      if (error) toast.error(error.message);
+      if (error) toast.error(mensagemDeErroDeAuth(error), { id: ID_DO_TOAST_DE_AUTH });
       else setRegisteredEmail(email.trim());
     }
 

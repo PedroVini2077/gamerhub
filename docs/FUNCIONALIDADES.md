@@ -146,6 +146,18 @@ transições discretas das páginas internas.
   e avisa que pedir reenvio invalida o link anterior.
 - **Email de confirmação** resistente a dark mode — template em Edge Function
   com cores explícitas (não herda tema escuro do cliente de email).
+- **`[11/09]` O erro de login fala português, e não empilha.** O dono
+  fotografou a tela do celular com **cinco caixas** dizendo
+  *"Invalid login credentials"* — o texto cru do Supabase, em inglês, num site
+  inteiramente em português, uma caixa por clique. Agora `lib/errosDeAuth.js`
+  traduz por mapa explícito (*"E-mail ou senha incorretos."*) e o aviso usa um
+  id fixo, então o clique seguinte **substitui** a caixa em vez de somar outra.
+
+  Duas escolhas visíveis para quem usa: erro **sem texto** (rede caída) diz
+  *"não deu para falar com o servidor"* e nunca *"senha incorreta"* — mandar a
+  pessoa trocar uma senha certa é pior do que não dizer nada; e mensagem que o
+  mapa ainda não conhece **aparece inteira**, em vez de virar um "ocorreu um
+  erro" que esconde justamente o caso novo.
 - **`[05/09]` Ao entrar, a TELA vira um portão e ele abre.** Depois do login a
   tela inteira é uma porta blindada — não um desenho de porta com fundo em
   volta: as duas folhas ocupam metade da largura cada uma e vão de borda a

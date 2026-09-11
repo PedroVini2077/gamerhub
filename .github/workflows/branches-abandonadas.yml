@@ -90,9 +90,10 @@ jobs:
               'arrumação. O que ela atrapalha é a leitura do repositório, que foi',
               'exatamente a reclamação que originou este robô.',
               '',
-              '**A correção de raiz é de um clique, e é sua:**',
-              '`Settings → General → Pull Requests → Automatically delete head branches`.',
-              'Com ela ligada, o entulho deixa de nascer — e esta issue deixa de voltar.',
+              '**O `Automatically delete head branches` já está ligado** (desde 11/09),',
+              'então branch de PR fechado some sozinha. Se alguma apareceu nesta lista,',
+              'ela não veio por esse caminho: provavelmente foi criada sem PR, ou o PR',
+              'dela nunca chegou a existir. Vale olhar de onde ela veio.',
             ].join('\n');
 
             if (jaExiste) {

@@ -823,6 +823,24 @@ o que já está lá.
   "secret vazio": se a senha sumir das configurações num PR normal, o vermelho
   tem que aparecer (§1.5).
 
+  > **`[11/09]` E existe uma forma de rodá-lo num PR de dependência: REBASAR.**
+  > Ao atualizar a branch do PR pelo botão (ou pela API), quem empurra o commit
+  > passa a ser **você**, não o `dependabot[bot]` — e a guarda por ator deixa de
+  > pular o job. Os secrets voltam, e a bateria inteira roda.
+  >
+  > Isso foi observado nos PRs #175 e #176: antes do rebase, `fluxos` estava
+  > `skipped`; depois, `fluxos` e `painel` rodaram e passaram.
+  >
+  > **Não é um furo na proteção da plataforma** — é o contrário. A proteção
+  > existe para que código de terceiro não veja o segredo **sem alguém olhar**;
+  > rebasar é exatamente o ato de alguém olhar e assumir. A implicação prática é
+  > boa: antes de mergear PR de dependência, **rebasar é o que compra a
+  > verificação completa**, em vez de aceitar o verde parcial.
+  >
+  > A contrapartida honesta: a partir do rebase, o `npm install` daquele PR roda
+  > num ambiente com os secrets. Vale para atualização de dependência conhecida,
+  > revisada e vinda do Dependabot — não para PR de desconhecido.
+
 #### `[03/09]` A decoração precisa estar DENTRO DA JANELA, não só no DOM
 
 Esta trava nasceu de uma falha de três rodadas, e ela é sobre **método**, não
@@ -1122,8 +1140,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->352<!--/n--> arquivos e
-<!--n:src.linhas-->35.533<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->354<!--/n--> arquivos e
+<!--n:src.linhas-->35.707<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1147,7 +1165,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->352<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->354<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1172,6 +1190,87 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->14.750<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.965<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
+
+---
+
+## `[11/09]` AS DUAS TAREFAS DE PAINEL — passo a passo
+
+> Existem porque o `CLAUDE.md` §0 passou a exigir isto: *"sempre que tiver algo
+> manualmente pra eu fazer, sempre faça o passo a passo e sempre pesquisando
+> onde realmente está as opções"*. Os caminhos abaixo foram conferidos na
+> documentação oficial do Supabase em 11/09, não escritos de memória.
+
+### 1. O CONTADOR DE LOGIN — NÃO DÁ PARA LIGAR, e o motivo é o plano
+
+**Eu ia escrever um passo a passo aqui mandando o dono ligar o hook. Estava
+errado, e a própria regra que exige pesquisar o caminho foi o que pegou isso**
+— ao procurar a URL do painel, a tabela de disponibilidade apareceu junto.
+
+O `Password Verification Attempt` **não existe no plano Free**. A tabela da
+[documentação de Auth Hooks](https://supabase.com/docs/guides/auth/auth-hooks)
+marca esse hook como `Teams and Enterprise`, enquanto quatro outros aparecem
+como `Free, Pro`. Outra página da Supabase sugere Pro+; as duas concordam no
+que decide: **no Free ele não está disponível**, nem como Postgres Function,
+nem como HTTP.
+
+> **Isto já estava escrito no código**, em `src/pages/Login.jsx`: *"Contar de
+> verdade exigiria o Password Verification Hook, que é exclusivo do plano
+> Team"*. Eu li o banco, os logs e o `pg_proc`, concluí "falta ligar no painel",
+> e **não li o comentário que estava no caminho**. É o §1.4 ao contrário: desta
+> vez o documento estava certo e quem envelheceu foi a minha leitura.
+
+**O que isso significa na prática, sem maquiagem:**
+
+| | |
+| --- | --- |
+| A função `hook_de_verificacao_de_senha` | existe, está correta, **provada em ROLLBACK** — e **nunca é chamada** |
+| `login_attempts` | não recebe linha nenhuma por tentativa errada |
+| A tela "Conta bloqueada por excesso de tentativas" | **nunca aparece por tentativa de senha** |
+| Quem protege contra força bruta hoje | o rate limit do próprio GoTrue, que é server-side e não depende desta tela |
+
+**O que continua sendo decisão do dono** (está no `BACKLOG.md`): ou o site
+**para de prometer** um bloqueio que não acontece, ou o projeto sobe de plano.
+Não existe terceira saída honesta no Free — contar do lado do cliente foi
+exatamente a brecha fechada em 28/08, porque qualquer um forjava o bloqueio de
+qualquer e-mail.
+
+### 2. O TOKEN QUE ME DEIXA IMPLANTAR AS EDGE FUNCTIONS
+
+**O que isto destrava:** 7 das 8 Edge Functions esperam o marcador de impressão
+(o vigia — ver `supabase/functions/README.md`). Sem token, o único caminho que
+eu alcanço é **retranscrever ~2.100 linhas de código de produção** por uma
+chamada de ferramenta, e na `send-email` um caractere perdido derruba o
+cadastro. Com token, `npx supabase functions deploy` lê **do disco** e nada
+passa por mim.
+
+**Os passos:**
+
+1. Abra **https://supabase.com/dashboard/account/tokens**
+   *(o caminho é o seu avatar, no canto superior direito → `Account Settings` →
+   `Access Tokens`).*
+2. Clique em **`Generate new token`**.
+3. Dê um nome que diga para que serve — sugestão: `gamerhub-deploy-edge`.
+4. **Copie o token na hora.** O Supabase mostra o valor **uma única vez**; depois
+   disso não dá para ver de novo, só gerar outro.
+5. Me mande o token **por aqui**, e eu uso só nesta sessão.
+
+**O que este token é, dito com todas as letras:** ele tem **o mesmo poder da sua
+conta** na API de gerenciamento do Supabase — a própria documentação diz isso.
+Não é uma chave limitada a deploy.
+
+**Por isso, três coisas:**
+
+- ele **nunca** entra no repositório, em segredo do GitHub, em log ou em
+  commit — o portão `scripts/segredos-vazados.mjs` reprova o PR se entrar;
+- quando eu terminar de implantar as 7, **apague o token** na mesma página
+  (`Revoke`). Gerar outro depois leva 30 segundos;
+- se preferir não passar o token, o caminho alternativo é você mesmo rodar, com
+  o repositório clonado: `npx supabase login` e depois
+  `npx supabase functions deploy --project-ref yuqbdcoljlvncxdnesxk`.
+  Mais trabalhoso para você, e não exige confiar o token a ninguém.
+
+**Como conferir que funcionou:** `npm run edges` passa a dizer `OK` nas 8. Hoje
+ele diz OK só em `cleanup-orphans`.
