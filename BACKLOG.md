@@ -496,21 +496,41 @@ dependência técnica real** que decide o resto:
   volta é apagar o segredo `SMTP_HOST`: sem ele o código cai no Gmail sozinho,
   sem deploy.
 
-- ⬜ `[10/09]` 🟠 **Nada vigia se uma Edge Function em produção é a do
-  repositório.** É o buraco que deixou as duas correções da `send-email` mortas
-  por 5 dias enquanto a documentação as descrevia como vivas — inclusive um
-  comentário no `e2e/portas-fechadas.mjs` que explicava um comportamento que
-  produção não tinha.
+- ⬜ `[10/09]` 🟠 **O vigia das Edge Functions está CONSTRUÍDO e PROVADO — falta
+  implantar 7 das 8.** *`[11/09]` O que falta é uma ação do dono, e ela está
+  escrita abaixo.*
 
-  `scripts/espelho-de-migrations.mjs` faz exatamente isso para migrations. Para
-  as <!--n:edge.funcoes-->8<!--/n--> Edge Functions não existe equivalente.
+  **O que já existe e funciona**, com a prova junto:
 
-  **O desenho que eu recomendo, e por que ele evita credencial no CI:** a API de
-  gerenciamento exigiria um token — trocar incerteza por credencial exposta é a
-  conta ruim do §0.2. Em vez disso, cada função responde a um `GET` com a
-  própria versão (`{ versao: "2026-09-05" }`, sem segredo nenhum), e o CI compara
-  com uma constante no repositório. Editar a função sem reimplantar passa a
-  reprovar o PR.
+  | Peça | O que faz | Estado |
+  | --- | --- | --- |
+  | `scripts/impressao-das-edges.mjs` (`npm run impressao-edges`) | deriva a impressão do CÓDIGO de cada função | pronto |
+  | `scripts/__tests__/impressaoDasEdges.test.js` | reprova no `npm test` se a impressão escrita ficou velha | **provado** reinjetando o bug num arquivo IRMÃO (`politica.ts`) |
+  | `scripts/edges-implantadas.mjs` (`npm run edges`) | pergunta a impressão a cada função NO AR e compara | **provado**: acusou as 8, e passou a dizer OK na que foi implantada |
+
+  A impressão é derivada do código, e não uma data escrita à mão, justamente
+  porque data à mão reproduz o problema: eu edito a função, esqueço de subir o
+  número, e os dois lados concordam num valor velho — o portão fica verde no
+  caso exato que ele existe para pegar.
+
+  **O que falta, e por que eu parei aqui.** Só `cleanup-orphans` foi implantada
+  (v12, e o `npm run edges` já a marca OK). As outras 7 somam **~2.100 linhas**,
+  e o único caminho que eu alcanço é passar o código inteiro por uma chamada de
+  ferramenta — ou seja, **eu retransscrevendo 2.100 linhas de código de
+  produção**. Na `send-email` um caractere perdido derruba o cadastro. Trocar
+  isso por um portão de monitoramento é uma conta ruim, e a §0.2 é sobre
+  exatamente esse tipo de troca.
+
+  **A ação do dono, e ela resolve de vez:** gerar um *Personal Access Token* em
+  `supabase.com/dashboard/account/tokens` e me dar como `SUPABASE_ACCESS_TOKEN`.
+  Com ele, `npx supabase functions deploy <nome>` implanta **do disco**, sem
+  nada passar por mim — e aí as 7 vão de uma vez, o portão entra no CI, e toda
+  implantação futura deixa de depender de transcrição.
+
+  **Enquanto isso, o portão NÃO está no CI**, e isso é deliberado: ligá-lo hoje
+  reprovaria todo PR por 7 funções que só o dono pode destravar, e portão que
+  grita por algo que ninguém pode resolver ensina a ignorar o canal (§0.2, 4ª
+  regra). `npm run edges` responde a pergunta a qualquer momento.
 
 - ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
   *Referências em [`docs/identidade/`](docs/identidade/README.md).*

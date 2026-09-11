@@ -1,6 +1,11 @@
 // Capturado da versão 15 implantada em 23/08/2026 — ver ../README.md.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
+// mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio:
+// e assim que "editei a funcao e esqueci de implantar" passa a reprovar o PR.
+const IMPRESSAO_DESTE_CODIGO = "6e7bdb0cb02e6391";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -9,6 +14,13 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
+  }
+  // Ver o comentario do marcador acima: GET so devolve a impressao, antes de
+  // qualquer autenticacao, para o portao do CI alcancar sem segredo.
+  if (req.method === 'GET') {
+    return new Response(JSON.stringify({ impressao: IMPRESSAO_DESTE_CODIGO }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
