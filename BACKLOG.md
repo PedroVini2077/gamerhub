@@ -149,7 +149,7 @@ portão de aparelho e o fallback 2D.
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**34 itens abertos** (+ 1 ideia sem compromisso)
+**35 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -813,6 +813,38 @@ dependência técnica real** que decide o resto:
   arquivo que inchei, ou eu uso o §4 como desculpa para refatorar o que quiser.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[11/09]` 🟠 **O orçamento de bytes mede um site que ninguém recebe — 26,7 kB
+  gzip de diferença.** *Precisa de decisão porque as duas saídas são opostas.*
+
+  O `npm run fim` reprovou o orçamento num commit que o CI tinha **acabado de
+  aprovar**. Medido em A/B na mesma máquina, tirando e pondo o `.env.local`:
+
+  | | bruto | gzip |
+  | --- | --- | --- |
+  | sem as variáveis do site — é o que o CI constrói | 640,8 kB | **195,5 kB** |
+  | com as variáveis — é o que a Vercel serve | 735,1 kB | **222,5 kB** |
+
+  Sem `VITE_SUPABASE_URL`/`ANON_KEY`, a guarda de configuração no topo de
+  `lib/supabase.js` vira condição constante e o empacotador poda 94 kB do chunk
+  `index` que a produção entrega de verdade. O teto de 222 kB está sendo
+  conferido contra um build de 195,5 — e a produção já serve 222,5, **acima do
+  teto**, com o portão verde.
+
+  **Não é regressão recente:** medido em `f7ed0bd`, antes da cena 3D nova, dá os
+  mesmos 735,1 / 222,5 kB.
+
+  **O conserto técnico é uma linha** — o job `build · lint · testes` passar a
+  construir com as mesmas variáveis que o job de navegador já usa. O que vem
+  depois é a decisão:
+
+  | Saída | O que custa |
+  | --- | --- |
+  | **subir o teto** para ~228 kB | aceita o tamanho de hoje como a nova base, e o portão volta a ser verdade na hora |
+  | **emagrecer o `index` primeiro** | 247,8 kB brutos de código próprio; a `main` fica vermelha até alguém fazer |
+
+  Eu não escolhi porque as duas são legítimas e a escolha muda o que o portão
+  significa. Ver `docs/OPERACAO.md`.
 
 - ⬜ `[05/09]` 🟠 **O "Esqueci o código" do cofre ANULA o cofre — achado do
   dono.** *Precisa de decisão porque as três saídas mudam o que o cofre é.*

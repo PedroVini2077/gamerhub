@@ -516,7 +516,44 @@ engorda. Ele confere quatro coisas:
 máquina: as duas medições de 27/08 discordaram **4×** no TBT sobre o mesmo site.
 Portão que balança vira alarme falso, e alarme que grita à toa ensina a ignorar
 o canal (`CLAUDE.md` §0.2). Byte é determinístico — o mesmo commit dá o mesmo
-número em qualquer máquina.
+número em qualquer máquina **com a mesma configuração**, e essa última parte não
+estava escrita aqui. Ver logo abaixo.
+
+### `[11/09]` O portão mede um site que NINGUÉM recebe — e por 27 kB gzip
+
+**Como apareceu.** O `npm run fim` reprovou o orçamento numa máquina onde o CI
+tinha acabado de aprovar o **mesmo commit**. Dois veredictos opostos sobre o
+mesmo código é a definição de portão que não mede o que diz medir.
+
+**A causa, medida em A/B na mesma máquina**, tirando e pondo o `.env.local`:
+
+| | bruto | gzip | o chunk `index` |
+| --- | --- | --- | --- |
+| **sem** as variáveis do site — é o que o CI constrói | 640,8 kB | **195,5 kB** | 153,8 kB |
+| **com** as variáveis — é o que a Vercel serve | 735,1 kB | **222,5 kB** | 247,8 kB |
+| diferença | 94,3 kB | **26,7 kB** | 94,0 kB |
+
+O job `build · lint · testes` roda `npm run build` **sem** `VITE_SUPABASE_URL` e
+`VITE_SUPABASE_ANON_KEY`. Sem elas, a guarda de configuração no topo de
+`lib/supabase.js` vira condição constante, e o empacotador poda como código
+morto 94 kB do chunk da aplicação que a produção **realmente entrega**.
+`vendor-supabase` é idêntico nos dois — a diferença inteira está no `index`.
+
+**A consequência, com todas as letras:** o teto de 222 kB gzip está sendo
+conferido contra um build de 195,5 kB. Existem **26,5 kB de folga que não é
+folga** — o site em produção já serve 222,5 kB, acima do teto, e o portão dá
+verde. Isso não é um erro de calibragem: é a mesma família de falha que a §1.5
+combate, só que na ferramenta que deveria pegá-la.
+
+**Não é regressão de nenhum PR recente.** Medido em `f7ed0bd`, antes da
+reconstrução da cena 3D: os mesmos 735,1 kB / 222,5 kB. O número é antigo; o que
+é novo é alguém ter olhado.
+
+**Por que não foi consertado na hora.** Fazer o CI construir com as variáveis é
+uma linha — e no segundo seguinte a `main` fica vermelha, porque 222,5 > 222. A
+saída depois disso é uma decisão de produto que não é minha: **subir o teto**
+(aceitando o tamanho de hoje como a nova base) ou **emagrecer o `index`** antes.
+Está no `BACKLOG.md` esperando o dono.
 
 **Ele não diz se o site está rápido.** Diz se ficou mais pesado, que é o que dá
 para afirmar sem margem de erro. Para saber se está rápido, o Lighthouse no
@@ -1019,6 +1056,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->14.361<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.430<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
