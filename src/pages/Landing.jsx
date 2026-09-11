@@ -1,4 +1,5 @@
 import { Newspaper, Users, Tv, Trophy, Key } from 'lucide-react';
+import usePonteiroDaPagina from '../hooks/usePonteiroDaPagina';
 import LandingNav from '../components/landing/LandingNav';
 import FluxoDeDados from '../components/landing/FluxoDeDados';
 import Hero from '../components/landing/Hero';
@@ -27,6 +28,10 @@ import ranksShot from '../assets/landing/ranks.jpg';
  *   baixo dele seria atropelo, não ambiente.
  */
 export default function Landing({ introDone = true }) {
+  // UM ouvinte de ponteiro para a landing inteira. Quem consome são o
+  // `FluxoDeDados` e a `MarcaFlutuante`, cada um no seu ramo da árvore.
+  usePonteiroDaPagina();
+
   return (
     <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay relative">
       <FluxoDeDados />

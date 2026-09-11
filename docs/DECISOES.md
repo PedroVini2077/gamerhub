@@ -1780,7 +1780,7 @@ de luz; o que entra está descrito em
 e ainda depende de quatro decisões dele.
 
 **Registrado aqui e não no backlog** porque é uma decisão sobre o produto: sem
-isto escrito, a próxima pessoa que abrir o `IntroLightning` vai achar que o
+isto escrito, a próxima pessoa que abrir a `AberturaDaMarca` vai achar que o
 clarão sumiu por descuido e vai "consertar".
 
 > ### `[11/09]`, horas depois: ele pediu um brilho que "ESTOURA" — e NÃO é o mesmo

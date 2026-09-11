@@ -46,6 +46,26 @@ deixar a página mais impressionante"*.
 **Objetivo:** a landing dos três atos — a fenda, o que converge, você já está
 dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 
+#### `[11/09]` PLANO DA FATIA 2 — em execução
+
+Ele aprovou: frase **"Aqui o jogo continua."**, marca **pintada**, **brilho de
+objeto polido** que abre a landing, **~2,15 s**, e a marca com **vai e vem
+próprio, "como se estivesse no espaço"**, mais reação ao ponteiro.
+
+| Etapa | O que é | Estado |
+| --- | --- | --- |
+| A | `lib/tempoDaAbertura.js` — o orçamento de tempo numa fonte só, lida pelo componente, pelo CSS e pelo teste | a fazer |
+| B | O ponteiro passa a ter **UM** ouvinte, escrevendo em `:root` — hoje o `FluxoDeDados` escreve no próprio contêiner e ninguém de fora enxerga | a fazer |
+| C | A abertura reescrita: pinta → frase → brilho → abre | a fazer |
+| D | `MarcaFlutuante` no hero: deriva própria + ponteiro | a fazer |
+| E | Travas e documentação | a fazer |
+
+**Sobre a memória da abertura: NÃO há o que construir.** Ele pediu que ela não
+volte ao trocar de aba, só ao fechar e abrir. Conferido em
+`src/lib/introJaVista.js`: já é `sessionStorage`, que sobrevive a recarregar e a
+navegar pelo site e **morre quando a aba fecha** — exatamente o pedido. O que
+muda é só o tempo que ela dura quando toca.
+
 > **`[11/09]` A fila abaixo foi REESCRITA.** Ele mandou um segundo briefing, bem
 > mais ambicioso — a landing como **experiência de scroll**, não como sequência
 > de seções. Está inteiro em
@@ -72,7 +92,7 @@ dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 | Fatia | O que é | Depende das imagens? | Estado |
 | --- | --- | --- | --- |
 | **1** | Matar a cena 3D e trocar o fundo do hero por **convergência** em SVG/CSS | não | **feita** |
-| 2 | A abertura (`IntroLightning`) — tela escura, a marca se montando aos poucos, uma frase junto, e só então a landing. **O clarão foi DESCARTADO por ele** (DECISOES.md). Faltam 4 decisões, no briefing | não | a fazer — o TAMANHO já foi corrigido |
+| 2 | A abertura (`AberturaDaMarca`): marca pintada por uma luz, a mesma luz revela "Aqui o jogo continua", reflexo polido, e a marca **assenta no hero** flutuando e seguindo o ponteiro | não | **feita** |
 | 3 | **O mecanismo de cena presa** (sticky + progresso de scroll), sem arte nova | não | a fazer — é a fundação das outras |
 | 4 | Comunidade: *"tem gente aqui"* | em parte | espera a 3 |
 | 5 | Feed vivo | em parte | espera a 3 |
@@ -1041,8 +1061,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.673<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->105<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.962<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

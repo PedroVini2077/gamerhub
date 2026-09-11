@@ -183,7 +183,7 @@ provado — é o `sessionStorage` de `lib/boasVindas.js`.
 
 ### A restrição técnica que decide o desenho — conferida no código, não suposta
 
-`IntroLightning` é importado **estaticamente** no `App.jsx` (linha 33); a
+`AberturaDaMarca` é importada **estaticamente** no `App.jsx` (linha 33); a
 `Landing` é **`lazy`** (`paginasLazy.js`). É deliberado: em 02/09 a intro morava
 dentro do hero e o raio só existia depois de o chunk baixar — **1.320 ms a 6× de
 CPU**, tela preta o tempo todo.
@@ -247,7 +247,7 @@ impressão. Medido em 11/09:
 | `ConvergenciaDoHub.jsx` | 187 | **novo hoje** — o fundo do hero, trajetos convergindo |
 | `BotaoDeSom.jsx` | 181 | som ambiente |
 | `LandingSidebar.jsx` | 165 | navegação lateral |
-| `IntroLightning.jsx` | 149 | a abertura; hoje desenha a marca |
+| `AberturaDaMarca.jsx` | 149 | a abertura; era `IntroLightning` e desenhava o raio |
 | `LandingFooter.jsx` | 127 | rodapé |
 | `Hero.jsx` | 125 | ato 1 |
 | `Landing.jsx` | 109 | **a página inteira**, que ordena tudo |
@@ -302,7 +302,7 @@ vê e pelo que **não depende das referências**.
 | # | Cena | Depende das imagens? | Estado |
 | --- | --- | --- | --- |
 | 1 | Hero — a convergência | não | **feita** em 11/09 |
-| 2 | A abertura (`IntroLightning`) | não | a fazer |
+| 2 | A abertura (`AberturaDaMarca`) | não | **feita** em 11/09 |
 | 3 | **O mecanismo de cena presa** (sticky + progresso), sem arte nova | não | a fazer — é a fundação das outras |
 | 4 | Comunidade: *"tem gente aqui"* | parcialmente | espera 3 |
 | 5 | Feed vivo | parcialmente | espera 3 |

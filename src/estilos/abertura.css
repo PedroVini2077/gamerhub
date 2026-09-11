@@ -1,0 +1,187 @@
+/**
+ * A ABERTURA — uma luz, três passagens.
+ *
+ * ── A ideia, decidida com o dono em 11/09 ───────────────────────────────────
+ *
+ * Ele pediu a marca aparecendo *"como se fosse pintada"* e depois *"aquele
+ * brilho de objeto polido... ele se revelar, 'estoura' um brilho e aí sim abrir
+ * a landing"*.
+ *
+ * A descoberta que fechou o desenho: **as duas coisas são o mesmo recurso** —
+ * uma faixa de luz atravessando a marca por baixo de uma máscara. Muda só a
+ * largura e a velocidade. Então a abertura inteira é UMA luz, passando três
+ * vezes, e cada passagem tem uma função:
+ *
+ *   1ª  larga e lenta ...... a marca não existe; onde a luz passa, ela FICA
+ *   2ª  a mesma, seguindo .. revela "Aqui o jogo continua."
+ *   3ª  estreita e rápida .. o reflexo polido; no fim dele a landing abre
+ *
+ * Isso importa por causa do teste que o próprio briefing dele exige — *"por que
+ * isso está se movendo?"*. Com um mecanismo só, a resposta é sempre a mesma:
+ * **é a mesma luz, ainda andando**. Três efeitos separados precisariam de três
+ * justificativas, e é assim que uma página vira demonstração de animação.
+ *
+ * ── O que SAIU, e por que não pode voltar ───────────────────────────────────
+ *
+ * O clarão verde de tela cheia (`raio-intro-flash` e `raio-intro-clarao`) foi
+ * DESCARTADO pelo dono — ver `docs/DECISOES.md`. Ele era a linguagem do RAIO,
+ * onde o clarão É o evento. Na marca ele lavava a cor: no print do celular, o
+ * verde do clarão cobria a própria marca que deveria estar aparecendo.
+ *
+ * **A regra que ficou:** luz que lava a TELA está descartada; luz que acontece
+ * NA MARCA é o que ele quer. Teste prático — se num quadro qualquer a marca não
+ * estiver visível por causa do brilho, o clarão voltou, e está errado.
+ *
+ * ── Por que CSS e não JavaScript ────────────────────────────────────────────
+ *
+ * Medido em 02/09, e é o motivo de a abertura anterior ter sido reescrita: o
+ * Framer calcula cada quadro dentro de `requestAnimationFrame`, e durante o boot
+ * da landing a thread fica ocupada — o traço **pulava** para o estado final em
+ * vez de ser desenhado, em 3 de 3 medições. Em CSS o relógio é do navegador e
+ * corre independente do JavaScript: com a thread travada ela perde quadros, mas
+ * continua na posição certa quando volta.
+ *
+ * Os tempos abaixo vêm de `src/lib/tempoDaAbertura.js` por variável de CSS. Não
+ * há número de duração escrito aqui de propósito — dois lugares divergem.
+ */
+
+.abertura-veu {
+  animation: aberturaVeuAbre var(--dur-abre) ease-in var(--em-abre) forwards;
+}
+@keyframes aberturaVeuAbre { to { opacity: 0; } }
+
+/* ── 1ª passagem: a luz PINTA a marca ──────────────────────────────────────
+ *
+ * A faixa é larga e mora numa máscara. Onde ela já passou fica branco — e
+ * branco na máscara é "mostra" —, então a marca vai ficando. O `translate` é o
+ * único valor animado, e ele roda no compositor.
+ *
+ * ── O valor final mora na REGRA, não no `forwards` ────────────────────────
+ *
+ * `[11/09]` A primeira versão usava só `backwards`, e a marca **sumia aos
+ * 550 ms**: terminada a animação, o `transform` volta ao valor base, a faixa
+ * retorna para fora da marca e a máscara esvazia. Filmado — aos 250 ms a marca
+ * estava meio pintada; aos 900 ms, tela preta com a frase sozinha.
+ *
+ * O conserto NÃO é `forwards`. `forwards` prende a propriedade no último
+ * quadro, e animação sempre vence transição — foi assim que a moldura roxa
+ * pulou de 0,55 para 0 em 60 ms enquanto o resto transicionava. Aqui o estado
+ * final é declarado na própria regra, e `backwards` só empurra o COMEÇO para
+ * fora. Terminada a animação, o valor da regra assume sozinho, sem nada preso. */
+.abertura-pincel {
+  transform: translateX(122px);
+  animation: aberturaPinta var(--dur-pinta) cubic-bezier(0.3, 0, 0.2, 1) backwards;
+}
+@keyframes aberturaPinta {
+  from { transform: translateX(-14px); }
+  to   { transform: translateX(122px); }
+}
+
+/* ── 2ª passagem: a mesma luz ESCREVE a frase ──────────────────────────────
+ *
+ * `mask-position` numa faixa 2,6× mais larga que o texto. A frase não "entra":
+ * ela é revelada, parada, já no lugar onde vai ficar — que é o que resolve a
+ * objeção de legibilidade contra o texto girando em volta da marca.
+ *
+ * Prefixo `-webkit-` obrigatório: o Safari ainda não implementa `mask-*` sem
+ * ele, e sem o prefixo a frase apareceria de estalo lá. */
+.abertura-frase {
+  -webkit-mask-image: linear-gradient(90deg, #000 0 42%, transparent 58% 100%);
+  mask-image: linear-gradient(90deg, #000 0 42%, transparent 58% 100%);
+  -webkit-mask-size: 260% 100%;
+  mask-size: 260% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: aberturaEscreve var(--dur-escreve) cubic-bezier(0.3, 0, 0.2, 1)
+             var(--em-escreve) backwards;
+}
+@keyframes aberturaEscreve {
+  from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  to   { -webkit-mask-position: 0 0;    mask-position: 0 0; }
+}
+
+/* ── 3ª passagem: o POLIMENTO ──────────────────────────────────────────────
+ *
+ * Faixa estreita e rápida, inclinada, por cima da marca já pintada. É o reflexo
+ * que corre numa superfície polida — e ele acontece DENTRO do recorte da marca,
+ * nunca na tela. */
+.abertura-polimento {
+  animation: aberturaPole var(--dur-brilho) cubic-bezier(0.45, 0, 0.3, 1)
+             var(--em-brilho) backwards;
+}
+@keyframes aberturaPole {
+  from { transform: translateX(-46px); }
+  to   { transform: translateX(150px); }
+}
+
+/* Quem pediu menos movimento nunca chega a ver isto — `deveTocarIntro()` já
+ * devolve `false` e a abertura não é montada. As regras ficam como rede: se um
+ * dia ela passar a ser montada mesmo assim, ela aparece PRONTA, e o véu abre na
+ * hora. Abertura que não termina é tela preta permanente (§1.5). */
+@media (prefers-reduced-motion: reduce) {
+  .abertura-pincel,
+  .abertura-frase,
+  .abertura-polimento { animation: none; }
+  .abertura-frase {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .abertura-veu { animation-duration: 1ms; animation-delay: 1ms; }
+}
+
+/* ── A MARCA FLUTUANTE do hero ─────────────────────────────────────────────
+ *
+ * `[11/09]` Ela é o fecho da ideia do dono: a abertura não termina, ela ASSENTA.
+ * A marca que foi pintada fica no hero, no MESMO centro combinado
+ * (`lib/marcaNoHero.js`), flutuando e reagindo ao ponteiro.
+ *
+ * Três camadas, e cada uma existe por um motivo diferente:
+ *
+ *   ponteiro .... segue o mouse. Tem `transition`, porque o evento é discreto e
+ *                 sem ela o movimento fica aos saltos
+ *   deriva ...... o "vai e vem próprio, como se estivesse no espaço"
+ *   respiro ..... uma segunda oscilação, de período PRIMO em relação à primeira
+ *
+ * **Por que duas camadas de movimento e não uma.** Uma animação sozinha volta ao
+ * ponto de partida a cada ciclo, e o olho acha a repetição em segundos — vira
+ * "gif", não "flutuando". Com 29 s e 41 s, as duas só coincidem a cada ~20
+ * minutos. É a mesma técnica das luzes de arena do site logado.
+ *
+ * **Por que camadas separadas e não um `transform` só.** Porque elas vêm de
+ * fontes diferentes: uma é animação de CSS, outra é uma variável escrita pelo
+ * JavaScript. No mesmo elemento, a animação ganharia da variável e o ponteiro
+ * deixaria de funcionar — animação sempre vence. Aninhar é o que deixa os dois
+ * movimentos se somarem. */
+.marca-flutuante-ponteiro {
+  /* `var(..., 0)` obrigatório: no celular ninguém escreve estas variáveis, e
+   * sem o padrão o `calc` inteiro morre e a marca não aparece. */
+  translate: calc(var(--ponteiro-x, 0) * 26px) calc(var(--ponteiro-y, 0) * 18px);
+  transition: translate 620ms cubic-bezier(0.2, 0, 0.2, 1);
+  will-change: translate;
+}
+
+.marca-flutuante-deriva {
+  animation: marcaDeriva 29s ease-in-out infinite;
+}
+@keyframes marcaDeriva {
+  0%,  100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  33%       { transform: translate3d(2.2%, -3.4%, 0) rotate(1.6deg); }
+  66%       { transform: translate3d(-2.8%, 2.1%, 0) rotate(-1.2deg); }
+}
+
+.marca-flutuante-respiro {
+  animation: marcaRespiro 41s ease-in-out infinite;
+}
+@keyframes marcaRespiro {
+  0%,  100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%       { transform: translate3d(-1.6%, -1.9%, 0) scale(1.045); }
+}
+
+/* Sem movimento nenhum para quem pediu menos movimento — mas a marca FICA.
+ * Apagá-la tiraria o alvo dos trajetos do fundo, e a composição perderia o
+ * sentido para quem já não vê o movimento que a explica. */
+@media (prefers-reduced-motion: reduce) {
+  .marca-flutuante-deriva,
+  .marca-flutuante-respiro { animation: none; }
+  .marca-flutuante-ponteiro { translate: none; transition: none; }
+}

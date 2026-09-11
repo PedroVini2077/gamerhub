@@ -30,7 +30,7 @@ import RequireAuth from './components/auth/RequireAuth';
 import GuestOnly from './components/auth/GuestOnly';
 
 // Carregamento imediato — páginas acessadas antes do login
-import IntroLightning from './components/landing/IntroLightning';
+import AberturaDaMarca from './components/landing/AberturaDaMarca';
 import { deveTocarIntroAgora, marcarIntroVista, introJaVista } from './lib/introJaVista';
 import Login from './pages/Login';
 import AuthConfirm from './pages/AuthConfirm';
@@ -139,7 +139,7 @@ function HomeOrLanding() {
   if (user && !semBanco) return <Layout><Home /></Layout>;
   return (
     <>
-      {!introDone && <IntroLightning onComplete={aoTerminarIntro} />}
+      {!introDone && <AberturaDaMarca onComplete={aoTerminarIntro} />}
       {/* A intro cobre a tela inteira, então ela TAMBÉM serve de fallback:
           enquanto o chunk da landing baixa, quem está olhando vê o raio em vez
           do splash. Os dois nunca aparecem juntos. */}

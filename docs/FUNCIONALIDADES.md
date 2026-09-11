@@ -63,14 +63,34 @@ estado de autenticação.
 > retrato de um sistema que não existe mais, e está marcado como tal.
 
 
-**Intro de abertura** (`IntroLightning`):
-- Overlay `fixed inset-0 z-[60]` que cobre tudo no primeiro carregamento.
-- SVG de raio principal + bifurcação desenhado via `pathLength` 0→1 (0.3s).
-- Flash verde em tela inteira: radial gradient `opacity [0, 0.85, 0]` em 0.34s.
-- Bola de clarão expandindo: `scale [0, 0.9, 2.4]` + `opacity [0, 1, 0]` em 0.72s.
-- Overlay some (`opacity 0`) em 0.45s, chama `onComplete` — libera o conteúdo do Hero.
-- Todo o conteúdo do Hero (eyebrow, título, subtítulo, CTA) fica em
-  `animate={introDone ? 'animate' : 'initial'}` até a intro terminar.
+**A abertura** (`AberturaDaMarca`) — `[11/09]`, reescrita com o dono:
+- Tela escura, e **a marca é PINTADA** por uma faixa de luz que a atravessa:
+  onde a luz passa, ela fica. Pedido dele — *"pensei dela aparecer como se fosse
+  pintada"*.
+- **A mesma luz** segue e revela a frase **"Aqui o jogo continua."** Ela não
+  desliza nem gira: aparece parada, já no lugar onde vai ficar.
+- **Um reflexo de objeto polido** corre por cima da marca já pintada, e no fim
+  dele o véu abre e a landing aparece.
+- A marca **não some**: ela assenta no hero e continua lá (ver
+  `MarcaFlutuante`, abaixo). A abertura deixou de ser uma tela ANTES do site e
+  passou a ser a marca chegando.
+- ~2,15 s no total, **uma vez por sessão do navegador**: sobrevive a recarregar
+  e a navegar pelo site, e volta quando a aba é fechada e aberta de novo.
+
+  > **O clarão verde de tela cheia SAIU**, por decisão dele. A regra que ficou:
+  > luz que lava a TELA está descartada; luz que acontece NA MARCA é o que ele
+  > quer. O porquê está em [DECISOES.md](DECISOES.md).
+
+**`MarcaFlutuante`** — a marca que fica no hero depois da abertura:
+- Flutua com movimento próprio, *"como se estivesse no espaço"*: duas
+  oscilações de períodos primos entre si (29 s e 41 s), que só coincidem a cada
+  ~20 minutos — então o olho não acha a repetição.
+- **Segue o ponteiro** no computador, na mesma linguagem da cachoeira de dados.
+  No celular não há ponteiro e ela fica parada, o que não é defeito.
+- Fica **atrás do texto e discreta de propósito**: o parágrafo do hero precisa
+  continuar legível, e o que dá presença a ela é o movimento, não o brilho.
+- É ela que dá **alvo** aos trajetos do fundo, que antes convergiam para espaço
+  vazio.
 
 **`ElectricTitle`** — título "GAMERHUB" com eletricidade:
 - Aparece com blur+letterSpacing animados via variante `heroTitle`.

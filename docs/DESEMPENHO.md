@@ -311,6 +311,24 @@ ponteiro para. No celular o ouvinte nem é registrado (`pointer: fine`).
 interatividade custa zero medido. Fica registrado para a decisão ser informada,
 e não uma redescoberta.
 
+> **`[11/09]` O ouvinte SAIU deste componente, e a medição acima continua
+> valendo — só mudou de dono.** Ele agora é `hooks/usePonteiroDaPagina.js`,
+> chamado uma vez pela `Landing`, e escreve `--ponteiro-x`/`--ponteiro-y` em
+> `:root`.
+>
+> **O motivo não foi custo, foi alcance:** escrevendo no próprio contêiner, só a
+> subárvore do `FluxoDeDados` enxergava a variável, e a marca do hero
+> (`MarcaFlutuante`) vive noutro ramo. A alternativa era um segundo ouvinte —
+> duas verdades sobre onde o ponteiro está, que divergem sem erro nenhum.
+>
+> **O que muda na conta, e o que NÃO muda.** O agrupamento em três planos
+> continua igual, e os 451 ms continuam sendo o número deles. O que passa a
+> existir é **um leitor a mais** da variável: a marca. Ela é **um** elemento
+> contra os três grupos, então a expectativa é um acréscimo pequeno — mas isso é
+> **inferência, não medição** (§1.1): este ambiente não tem GPU e mede
+> rasterização como CPU, então qualquer número daqui seria artefato. A medição
+> de campo está no backlog e depende do dono.
+
 ---
 
 ### `[02/09]` As peças de videogame custam ZERO, e o número é o ponto

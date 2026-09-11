@@ -1,6 +1,11 @@
-/* A decoração de fundo do site: a camada das páginas públicas, a intro do raio,
- * as peças de videogame, as luzes de arena do site logado, as mini explosões e
- * o aviso de banco fora do ar.
+/* A decoração de fundo do site: a camada das páginas públicas, as peças de
+ * videogame, as luzes de arena do site logado, as mini explosões, a
+ * convergência do hero e o aviso de banco fora do ar.
+ *
+ * `[11/09]` A ABERTURA saiu daqui para `abertura.css`. Ela não é decoração de
+ * fundo: é uma cena com começo, meio e fim, e com três animações que precisam
+ * concordar entre si e com `lib/tempoDaAbertura.js`. Misturada aqui, ela era o
+ * bloco que ninguém achava.
  *
  * A ARENA do login e do cadastro tem arquivo próprio (`arena.css`) por ser de
  * uma tela só e por já ter passado de 400 linhas sozinha. */
@@ -29,65 +34,6 @@
   height: 100lvh;
 }
 
-/* ── `[02/09]` A intro do raio, em CSS puro ────────────────────────────────
- *
- * Ela era animada pelo Framer Motion, e por isso NUNCA APARECIA direito. A
- * medição que mostrou isso:
- *
- *   CPU 1x .... o traco surge no DOM as 496 ms ja com stroke-dashoffset: 0
- *   CPU 4x .... surge as 894 ms, tambem ja pronto
- *   CPU 6x .... nao aparece dentro de 1,5 s
- *
- * Ou seja: em nenhuma das medicoes o traco chegou a ser DESENHADO. Ele pulava
- * direto para o estado final.
- *
- * O mecanismo: o Framer calcula cada quadro dentro de `requestAnimationFrame`.
- * Durante o boot da landing a thread principal fica ocupada (602 ms de tarefas
- * longas medidos a 4x), o rAF nao roda, e quando volta a rodar a animacao ja
- * passou do fim — ela salta em vez de correr. Foi exatamente o "as vezes corta,
- * as vezes nao aparece" que o dono relatou.
- *
- * Em CSS o relogio da animacao e do NAVEGADOR e corre independente do
- * JavaScript. Com a thread travada a animacao perde quadros — mas continua na
- * posicao certa quando volta, em vez de congelar e pular.
- *
- * A/B com a cena 3D ligada e desligada deu 602 ms contra 594 ms de bloqueio: a
- * cena 3D NAO era a causa, e o palpite de que era estava errado. */
-.raio-intro-traco {
-  /* `pathLength="1"` no SVG normaliza o comprimento: o dash trabalha em
-     unidades de 1, sem precisar medir o caminho em JS. */
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: raioDesenha 0.3s ease-in forwards, raioSome 0.75s ease-out forwards;
-}
-
-@keyframes raioDesenha { to { stroke-dashoffset: 0; } }
-@keyframes raioSome    { 0%, 50% { opacity: 1; } 100% { opacity: 0; } }
-
-/* Flash da tela inteira e clarão do impacto. `opacity` e `transform` são as
-   duas propriedades que o navegador anima no compositor — elas continuam
-   suaves mesmo com a thread principal ocupada, que é o ponto de tudo isto. */
-.raio-intro-flash {
-  opacity: 0;
-  animation: raioFlash 0.34s ease-out 0.28s forwards;
-}
-@keyframes raioFlash { 0% { opacity: 0; } 25% { opacity: 0.85; } 100% { opacity: 0; } }
-
-.raio-intro-clarao {
-  opacity: 0;
-  transform: scale(0);
-  animation: raioClarao 0.8s ease-out 0.28s forwards;
-}
-@keyframes raioClarao {
-  0%   { opacity: 0; transform: scale(0); }
-  35%  { opacity: 1; transform: scale(1.05); }
-  100% { opacity: 0; transform: scale(2.6); }
-}
-
-.raio-intro-fundo {
-  animation: raioFundoSome 0.45s ease-out 0.82s forwards;
-}
-@keyframes raioFundoSome { to { opacity: 0; } }
 
 /* ── `[02/09]` As peças de videogame do site logado ───────────────────────
  *
@@ -308,14 +254,3 @@
   .convergencia { transform: scale(1.55); transform-origin: 50% 49%; }
 }
 
-/* `[11/09]` O preenchimento da marca na abertura.
- *
- * Ele entra DEPOIS do contorno terminar de se desenhar (0,3 s) e junto com o
- * clarão (0,28 s), então a marca "acende" em vez de aparecer. Some com o resto
- * no mesmo tempo do traço, para a abertura continuar com a duração medida. */
-.intro-marca-preenche {
-  opacity: 0;
-  animation: introMarcaAcende 0.34s ease-out 0.26s forwards,
-             raioSome 0.75s ease-out forwards;
-}
-@keyframes introMarcaAcende { to { opacity: 1; } }
