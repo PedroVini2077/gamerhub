@@ -124,11 +124,11 @@ para tirar.
 
 **O que a ideia dele pede, em três tempos:**
 
-| | |
-| --- | --- |
-| 1 | tela **escura**, sem clarão |
-| 2 | a marca se **montando aos poucos**, com uma frase junto |
-| 3 | só então a landing aparece |
+| | | |
+| --- | --- | --- |
+| 1 | tela **escura**, sem clarão | **DECIDIDO** — *"sobre o estouro, quero descartar isso"* (ver [DECISOES.md](../DECISOES.md)) |
+| 2 | a marca se **montando aos poucos**, com uma frase junto | depende das 4 perguntas abaixo |
+| 3 | só então a landing aparece | já é assim hoje |
 
 **O que já foi feito, para ele não ficar bloqueado:** o tamanho. O print do
 celular mostrava a marca saindo pelos quatro lados, e a causa era medível — o
