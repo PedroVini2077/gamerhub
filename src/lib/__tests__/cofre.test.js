@@ -156,6 +156,40 @@ describe('as inversas estão ligadas a alguma tela', () => {
       + 'naquele navegador ate ele saber abrir o DevTools.',
     ).toBe(true);
   });
+
+  it('esquecer o código EXIGE a senha da conta, conferida no servidor', () => {
+    // `[11/09]` O achado do dono: "se alguem pega meu PC ligado na tela e nao
+    // souber a senha, ele so vai redefinir". Era verdade — dois cliques e o
+    // codigo sumia. Um cadeado que nao tranca e pior do que cadeado nenhum.
+    //
+    // A trava olha as DUAS pontas do caminho, porque quebrar qualquer uma
+    // devolve o bug: a tela do cofre tem que abrir o `ResetDoCofre`, e o
+    // `ResetDoCofre` tem que conferir a senha ANTES de confirmar.
+    const cofre = readFileSync('src/components/owner/CofreDoFundador.jsx', 'utf8');
+    expect(
+      cofre.includes('<ResetDoCofre'),
+      'A tela do cofre nao abre mais o `ResetDoCofre`. Se o reset voltou a ser '
+      + 'um ConfirmModal comum, esquecer o codigo voltou a ser dois cliques — e '
+      + 'o cofre volta a proteger contra ninguem.',
+    ).toBe(true);
+
+    const reset = readFileSync('src/components/owner/ResetDoCofre.jsx', 'utf8');
+    expect(
+      /rpc\(\s*'confere_a_propria_senha'/.test(reset),
+      'O `ResetDoCofre` nao chama mais `confere_a_propria_senha`. Sem a '
+      + 'conferencia no SERVIDOR, o campo de senha vira enfeite: um `if` no '
+      + 'cliente nao segura ninguem que abra o DevTools.',
+    ).toBe(true);
+
+    const posConferencia = reset.indexOf('aoConfirmar()');
+    const conferencia = reset.indexOf("rpc('confere_a_propria_senha'");
+    expect(
+      conferencia >= 0 && posConferencia > conferencia,
+      '`aoConfirmar()` aparece ANTES da conferencia da senha no '
+      + '`ResetDoCofre`. Confirmar primeiro e perguntar depois apaga o codigo '
+      + 'de quem errou a senha.',
+    ).toBe(true);
+  });
 });
 
 describe('esquecer o código — a inversa (§5)', () => {

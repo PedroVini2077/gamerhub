@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { DOCUMENTOS, DOCUMENTOS_DO_BANCO, aceitesParaGravar } from '../documentosLegais';
 
@@ -30,13 +29,12 @@ import { DOCUMENTOS, DOCUMENTOS_DO_BANCO, aceitesParaGravar } from '../documento
  * simplesmente não existe. Esta trava é o que impede isso de voltar.
  */
 
-const RAIZ = process.cwd();
-
 /** A lista que o trigger aceita, lida da migration — não de uma cópia. */
 function documentosQueOTriggerAceita() {
-  const caminho = join(RAIZ, 'supabase', 'migrations',
-    '20260911112405_aceite_dos_documentos_nasce_com_a_conta.sql');
-  const sql = readFileSync(caminho, 'utf8');
+  // Caminho relativo ao cwd, como as outras travas deste projeto — `process`
+  // não existe no ambiente de lint destes testes.
+  const sql = readFileSync(
+    'supabase/migrations/20260911112405_aceite_dos_documentos_nasce_com_a_conta.sql', 'utf8');
   const m = sql.match(/documento'\)\s*NOT IN \(([^)]+)\)/);
   if (!m) {
     throw new Error(
@@ -97,7 +95,7 @@ describe('o aceite nasce com a conta', () => {
   it('o cadastro NÃO tenta mais escrever o aceite pelo cliente', () => {
     // A chamada antiga falhava em 100% dos cadastros, porque não há sessão
     // logo após o `signUp`. Se ela voltar, o erro vermelho volta com ela.
-    const bruto = readFileSync(join(RAIZ, 'src', 'services', 'cadastroService.js'), 'utf8');
+    const bruto = readFileSync('src/services/cadastroService.js', 'utf8');
     // Sem os comentários: a primeira versão desta trava reprovava por causa do
     // comentário que EXPLICA o bug, e comentário não executa nada. Trava que
     // acusa texto em vez de código é ruído — e ruído ensina a ignorar o canal.

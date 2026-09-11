@@ -694,6 +694,7 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `logoutEhLocal.test.js` | `npm test`, **reprova** | ponto de saída com o escopo errado. O `supabase-js` usa **global por omissão**, então sair no celular volta a derrubar o PC só por escrever `signOut()` |
 | `documentosLegais.test.js` (impressão) | `npm test`, **reprova** | texto de documento legal mudando **por baixo de quem já aceitou** — cobre a lista de arquivos de cada documento |
 | `aceiteNasceComAConta.test.js` | `npm test`, **reprova** | deriva entre o documento que o CLIENTE manda no cadastro e o que o `handle_new_user` aceita. O trigger pula item desconhecido de propósito (para não derrubar o cadastro), então a divergência faz o aceite sumir **em silêncio** |
+| `cofre.test.js` (reset) | `npm test`, **reprova** | o "Esqueci o código" do cofre voltando a ser **dois cliques** — cobre as duas pontas: a tela abrir o `ResetDoCofre`, e ele conferir a senha no SERVIDOR **antes** de confirmar |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 

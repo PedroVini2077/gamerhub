@@ -46,7 +46,7 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**38 itens abertos** (+ 1 ideia sem compromisso)
+**37 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -701,34 +701,6 @@ dependência técnica real** que decide o resto:
   Eu não escolhi porque as duas são legítimas e a escolha muda o que o portão
   significa. Ver `docs/OPERACAO.md`.
 
-- ⬜ `[05/09]` 🟠 **O "Esqueci o código" do cofre ANULA o cofre — achado do
-  dono.** *Precisa de decisão porque as três saídas mudam o que o cofre é.*
-
-  Pergunta dele: *"que sentido faz ter um botão pra resetar senha? se alguém
-  pega meu PC ou celular ligado na tela e não souber a senha, ele só vai
-  redefinir"*.
-
-  **Ele está certo, e eu conferi no código:** `esquecerCodigo()` apaga o resumo
-  e o sal do `localStorage` e a tela cai em *"definir novo código"*. **Dois
-  cliques e qualquer um entra.** O cofre protege contra ninguém.
-
-  **O que isto NÃO é:** brecha de segurança. O cofre é cenográfico por decisão
-  registrada — quem protege o painel é a RLS e o `is_super()` no banco, e quem
-  pegou a máquina destravada já tem a sessão. Ver [DECISOES.md](docs/DECISOES.md).
-  **O que isto É:** um cadeado que não tranca, o que é pior do que não ter
-  cadeado — ele sugere uma proteção que não existe.
-
-  | | Saída | Custo | O que muda |
-  | --- | --- | --- | --- |
-  | **A** | **remover o botão** | zero | esquecer o código passa a exigir limpar os dados do site no navegador — mesmo efeito, mas exige intenção e saber onde mexer |
-  | **B** | **exigir a SENHA DA CONTA para resetar** | moderado | o cofre passa a valer de verdade: quem pegou a máquina aberta tem a sessão, mas normalmente **não** tem a senha |
-  | **C** | deixar como está | zero | assumir que é 100% enfeite, e escrever isso na tela |
-
-  **Minha recomendação: B.** É a única que faz o cofre significar alguma coisa,
-  e a verificação é server-side de verdade (`signInWithPassword`), não um `if`
-  no cliente. **A** é a versão de custo zero se ele preferir não gastar sessão
-  nisso.
-
 - ⬜ `[05/09]` 🟢 **O lembrete de auditoria não enxerga fase parada.** Ele
   compara a data do relatório **mais recente** com 90 dias. Como as Fases 2 e 4
   rodaram em 05/09, ele fica quieto — **mesmo com as Fases 1 e 3 paradas desde
@@ -1098,7 +1070,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.618<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->9.650<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

@@ -372,6 +372,13 @@ src/
     │   │                  # painel. CENOGRÁFICA, e o aviso disso está impresso
     │   │                  # embaixo do campo — a autorização real é do banco
     │   ├── DiscoDoCofre.jsx # o disco que gira ao destrancar (SVG próprio)
+    │   ├── ResetDoCofre.jsx # `[11/09]` esquecer o código EXIGE a senha da
+    │   │                  # conta. Antes eram dois cliques, e o dono apontou:
+    │   │                  # "se alguém pega meu PC ligado e não souber a
+    │   │                  # senha, ele só vai redefinir". A conferência é a
+    │   │                  # RPC `confere_a_propria_senha`, e NÃO
+    │   │                  # `signInWithPassword` — esta trocaria a sessão, e
+    │   │                  # `useAuth` é o arquivo de maior risco (§7)
     │   └── usuarios/      # UserRow, UserFilters, RoleOverride (o cargo de
     │                      # fundador NÃO se atribui por override)
     ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,
