@@ -1596,6 +1596,22 @@ como eram. O caminho daqui em diante é o dono modelar e animar numa ferramenta
 **A frase dele, que fecha a questão:** *"infelizmente o jeito que pensei eu
 teria que usar uma ferramenta 3d a sorte e fazer a mão, assim não tá legal"*.
 
+> **`[11/09]`, algumas horas depois: a cena 3D foi REMOVIDA INTEIRA.** Este
+> registro dizia *"o código voltou ao estado anterior ao PR #177"*, e isso
+> deixou de ser verdade no mesmo dia — não existe mais `SceneObjects`,
+> `Lightning`, `Scene3D`, `Scene2D`, `lib/cena3D.js`, `three` nem
+> `@react-three/fiber`. O hero é `ConvergenciaDoHub`, em SVG.
+>
+> **A decisão acima continua valendo e por isso ela FICA**: se um dia entrar 3D
+> no site, não será construído à mão em código, e a conta de Meshopt × Draco
+> mais abaixo continua sendo o caminho medido. O que mudou é que hoje não há
+> cena nenhuma esperando por esse modelo — o que era uma pendência virou uma
+> possibilidade, e saiu do `BACKLOG.md` por isso.
+>
+> A ordem do dono que produziu a remoção: *"eu nunca te pedi pra fazer em 3d,
+> eu acho que no prompt tá explícito isso... se precisar descartar a cena 3d
+> faça"*. Medição da remoção em [DESEMPENHO.md](DESEMPENHO.md).
+
 ### Por que a tentativa não serviu, com número
 
 Foram **duas** rodadas, e a segunda corrigiu tudo que a primeira errou de

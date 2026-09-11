@@ -84,7 +84,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**38 itens abertos** (+ 1 ideia sem compromisso)
+**35 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -661,22 +661,6 @@ dependência técnica real** que decide o resto:
   *"deliberadamente mais simples"* — o certo é uma variante de 16 px com o furo
   **maior**, não espremer a mesma geometria.
 
-- ⬜ `[11/09]` 🟡 **A cena 3D da landing só avança com um modelo feito em
-  ferramenta 3D.** *Depende do dono — eu não tenho como destravar sozinho.*
-
-  A reconstrução em código foi **cancelada por ele** em 11/09, depois de duas
-  rodadas. O código voltou ao estado anterior ao PR #177. O motivo e os números
-  das duas tentativas estão em [docs/DECISOES.md](docs/DECISOES.md).
-
-  **O que destrava:** ele modelar e animar o símbolo numa ferramenta 3D e me
-  entregar o arquivo. Daí em diante é meu: compressão, integração, portão de
-  aparelho, ciclo de vida e medição.
-
-  **O caminho técnico já está medido**, para não ser redescoberto: um GLB
-  otimizado do modelo de referência dá **234 KB** (Meshopt + WebP 1024) mais
-  **29 KB** de decodificador. Draco dá arquivo menor (189 KB) e decodificador
-  muito maior (286 KB de wasm + 59 KB de wrapper) — **Meshopt ganha** nesta
-  conta, e é a escolha quando o dia chegar.
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
 
@@ -923,27 +907,6 @@ dependência técnica real** que decide o resto:
 
 
 
-- ⬜ `[01/09]` 🟡 **Decidir se as 3 luzes dos arcos do raio viram 1 compartilhada.**
-  *Auditoria da cena 3D de 01/09. A medição inteira está em
-  [DESEMPENHO.md](docs/DESEMPENHO.md); aqui fica só a decisão que falta.*
-
-  A cena tem **7 `pointLight`**, e quatro delas são flashes que ficam apagados a
-  maior parte do tempo. No three.js, luz com `intensity = 0` **continua custando
-  shader inteiro** — ela segue no array de uniforms e é avaliada por fragmento.
-
-  **O conserto óbvio é armadilha:** alternar `visible` mudaria a contagem de
-  luzes, que faz parte da chave do cache de programas — cada troca recompila
-  shader. Custo constante viraria engasgo a cada 0,6 s.
-
-  **A proposta viável:** uma `pointLight` compartilhada pelos três arcos (7 → 5).
-  **O risco é específico e real:** quando dois arcos disparam dentro da mesma
-  janela de 0,36 s, hoje são duas luzes e passariam a ser uma.
-
-  **Por que não implementei:** *"a luz verde não fica tão forte"* já foi uma
-  regressão deste projeto, e este ambiente renderiza WebGL por software — não dá
-  para medir aqui se o ganho paga o risco. **Precisa de comparação lado a lado
-  no aparelho do dono.** Sem isso, alterar seria chute com passos extras.
-
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
   sabia o que sugerir além do "Sobre" — quando quiser, trago uma proposta do que
@@ -956,33 +919,6 @@ dependência técnica real** que decide o resto:
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
-
-
-- ⬜ `[02/09]` 🟠 **A cena 3D: o custo é por PIXEL, e a próxima medição é no
-  aparelho do dono.** *Primeira medição de regime permanente feita em 02/09 —
-  ver [DESEMPENHO.md](docs/DESEMPENHO.md).*
-
-  **O que já se sabe, medido:** o custo da cena escala com **pixels**, não com
-  JavaScript. Com 4× menos pixels o bloqueio cai de 5583 ms para **zero** — um
-  penhasco, não uma ladeira. E o lado JS é pequeno: a 0,256 Mpx a cena roda
-  6 s sem uma única tarefa longa.
-
-  **Por que isso não fecha o assunto:** a medição é num Chromium **sem GPU**,
-  onde a CPU faz o trabalho da placa. Num PC de verdade quem paga esse custo é
-  a GPU, e eu não meço isso daqui. Usar esse número para julgar o aparelho do
-  dono seria artefato de ambiente vendido como fato (§1.1).
-
-  **O que resolve:** abrir o painel de desempenho do navegador **na máquina
-  dele**, com a landing aberta, e olhar o tempo de GPU por quadro. Depende dele.
-
-  **Para onde olhar depois disso**, se confirmar: resolução (`dpr` adaptativo,
-  que já existe), **overdraw** (camadas transparentes pintadas umas sobre as
-  outras) e custo de shader. **Não** é "menos objetos" nem "menos JavaScript" —
-  era para lá que eu ia, e a medição desviou.
-
-  **O que NÃO pode:** reduzir qualidade visual para ganhar FPS. O dono já
-  recusou aposentar a cena duas vezes — ver [DECISOES.md](docs/DECISOES.md).
-
 
 
 - ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail.** *`[05/09]` O
@@ -1069,6 +1005,21 @@ dependência técnica real** que decide o resto:
   ferramenta, mesmo aparelho). O portão do CI continua sendo **byte**
   (`scripts/orcamento-de-bytes.mjs`), porque tempo de laboratório oscila e
   portão que balança vira alarme falso.
+
+  **A limitação do meu ambiente, e ela vale para qualquer medição futura:** este
+  Chromium **não tem GPU** — a CPU faz o trabalho da placa. Todo número de
+  renderização que eu produzir daqui é artefato de ambiente, e usá-lo para
+  julgar a máquina dele seria vender inferência como fato (§1.1). É por isso que
+  a medição de campo depende dele, e não de mim.
+
+  > **`[11/09]` Este item substitui TRÊS que foram removidos hoje**, todos sobre
+  > a cena 3D que deixou de existir: o custo por pixel (`[02/09]` 🟠), as sete
+  > `pointLight` dos arcos (`[01/09]` 🟡) e o modelo em ferramenta 3D externa
+  > (`[11/09]` 🟡). Nenhuma medição se perdeu — a de pixel e a das luzes estão em
+  > [`DESEMPENHO.md`](docs/DESEMPENHO.md), e a conta de Meshopt × Draco está em
+  > [`DECISOES.md`](docs/DECISOES.md). O que saiu foi a **fila**: pendência sobre
+  > código apagado não é pendência, é entulho que faz o backlog parecer maior do
+  > que é (§6.2, regra 2).
 
 
 ## 🔵 Só quando o volume crescer
