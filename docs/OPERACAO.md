@@ -798,7 +798,9 @@ o que já está lá.
   > 0 aos 280 ms, 0,125 aos 741 ms, 0,55 aos 1.665 ms. Perguntar ao navegador,
   > e não esperar tempo fixo, é o que mantém a trava válida quando a duração
   > mudar no CSS.
-- job de **fluxos autenticados** (`e2e/fluxos.mjs`) — loga com uma conta
+- job de **fluxos autenticados** (`e2e/fluxos.mjs`, com a conferência da
+  entrada em `e2e/portaoDeEntrada.mjs` desde `[11/09]`, quando o roteiro passou
+  de 300 linhas) — loga com uma conta
   descartável e percorre: todas as telas internas com conteúdo de verdade,
   `/admin` e `/owner` **negados** para `role = 'user'`, **o fundo decorativo
   estando dentro da janela**, publicar → conferir no feed → **comentar** → apagar, e logout.
