@@ -1780,6 +1780,28 @@ de luz; o que entra está descrito em
 e ainda depende de quatro decisões dele.
 
 **Registrado aqui e não no backlog** porque é uma decisão sobre o produto: sem
-isto escrito, a próxima pessoa que abrir o `IntroLightning` vai achar que o
+isto escrito, a próxima pessoa que abrir a `AberturaDaMarca` vai achar que o
 clarão sumiu por descuido e vai "consertar".
+
+> ### `[11/09]`, horas depois: ele pediu um brilho que "ESTOURA" — e NÃO é o mesmo
+>
+> **A frase nova:** *"depois ela brilhar... sabe aquele brilho de objeto polido?
+> ele se revelar, 'estoura' um brilho e aí sim abrir a landing page"*.
+>
+> **Isto NÃO reverte a decisão acima, e a distinção é o motivo desta nota
+> existir.** Lidas fora de contexto, as duas frases se contradizem — e quem
+> abrir este arquivo daqui a seis meses vai ter que escolher uma. São coisas
+> diferentes:
+>
+> | O clarão DESCARTADO | O brilho PEDIDO |
+> | --- | --- |
+> | verde, **em tela cheia**, por cima de tudo | um reflexo **no objeto**, do tamanho da marca |
+> | a marca **desaparecia** dentro dele — foi o que o print do celular mostrou | a marca é **revelada** por ele |
+> | linguagem de **relâmpago**: o clarão é o evento | linguagem de **superfície polida**: o brilho é a luz passando por cima de algo que já existe |
+> | tirava a cor da marca | corre por cima e deixa a marca intacta |
+>
+> **A regra que fica das duas juntas:** luz que **lava a tela** está descartada;
+> luz que **acontece na marca** é o que ele quer. O teste prático é simples — se
+> num quadro qualquer a marca não estiver visível por causa do brilho, é o
+> clarão de novo, e está errado.
 

@@ -105,32 +105,20 @@ const GRUPOS = [
 export default function FluxoDeDados({ acento = null, parallax = true }) {
   const camada = useRef(null);
 
-  useEffect(() => {
-    const alvo = camada.current;
-    if (!parallax) return undefined;
-    // Sem ponteiro fino (celular) o parallax não faz sentido: não há para onde
-    // apontar. Não registrar o ouvinte é melhor do que registrá-lo e nunca usar.
-    if (!alvo || !window.matchMedia?.('(pointer: fine)').matches) return undefined;
-
-    let agendado = false;
-    let ultimoX = 0;
-
-    const aplicar = () => {
-      agendado = false;
-      // −1 a 1: o quanto o ponteiro está à esquerda ou à direita do centro.
-      alvo.style.setProperty('--desvio', String(ultimoX));
-    };
-
-    const aoMover = (e) => {
-      ultimoX = (e.clientX / window.innerWidth) * 2 - 1;
-      // Coalescer é o ponto: o navegador dispara `pointermove` muitas vezes por
-      // quadro, e escrever a variável em todas seria trabalho jogado fora.
-      if (!agendado) { agendado = true; requestAnimationFrame(aplicar); }
-    };
-
-    window.addEventListener('pointermove', aoMover, { passive: true });
-    return () => window.removeEventListener('pointermove', aoMover);
-  }, [parallax]);
+  // `[11/09]` O OUVINTE DE PONTEIRO SAIU DAQUI, e o motivo é alcance.
+  //
+  // Ele escrevia `--desvio` em `alvo.style` — o próprio contêiner desta camada.
+  // Funcionava, e era barato. Mas só a subárvore deste elemento enxergava a
+  // variável, e quando a marca do hero precisou seguir o ponteiro também
+  // (pedido do dono: *"queria algo nessa vibe"*), ela não tinha como ler: vive
+  // noutro ramo da árvore.
+  //
+  // Hoje quem escuta é `usePonteiroDaPagina`, chamado UMA vez pela `Landing`,
+  // escrevendo `--ponteiro-x`/`--ponteiro-y` em `:root`. Dois ouvintes na mesma
+  // página seriam duas verdades sobre onde o ponteiro está (§4).
+  //
+  // O desenho não mudou — um ouvinte, uma variável, coalescida por quadro, e o
+  // deslocamento no compositor. Mudou só ONDE a variável mora.
 
   // ── `[02/09]` Parallax de ROLAGEM ─────────────────────────────────────────
   //
@@ -182,7 +170,6 @@ export default function FluxoDeDados({ acento = null, parallax = true }) {
       className="camada-de-fundo fixed top-0 left-0 w-full z-0 overflow-hidden
                  pointer-events-none motion-reduce:hidden"
       style={{
-        '--desvio': 0,
         '--rolagem': 0,
         // A rolagem move a camada INTEIRA, num elemento só e SEM transição.
         // Um `translate` composto por quadro é o que o navegador já faz para
@@ -216,7 +203,10 @@ export default function FluxoDeDados({ acento = null, parallax = true }) {
             // scroll é o mais perceptível que existe.
             //
             // Rolagem não precisa de suavização: ela já é o movimento.
-            translate: `calc(var(--desvio) * ${grupo.profundidade * 22}px) 0`,
+            // `var(..., 0)` é obrigatório: no site logado ninguém chama
+            // `usePonteiroDaPagina`, a variável não existe, e sem o padrão o
+            // `calc` inteiro morre — a camada sumiria da tela.
+            translate: `calc(var(--ponteiro-x, 0) * ${grupo.profundidade * 22}px) 0`,
             transition: 'translate 320ms ease-out',
             willChange: 'transform',
           }}

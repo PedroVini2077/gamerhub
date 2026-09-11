@@ -6,6 +6,7 @@ import { motivoDaPausa } from '../../lib/pauseReason';
 import { heroFade } from '../../lib/landingMotion';
 import ElectricTitle from './ElectricTitle';
 import ConvergenciaDoHub from './ConvergenciaDoHub';
+import MarcaFlutuante from './MarcaFlutuante';
 import MarcaGH from '../ui/MarcaGH';
 
 export default function Hero({ introDone = true }) {
@@ -42,6 +43,14 @@ export default function Hero({ introDone = true }) {
           marca que foi aposentada. No lugar dela, o que o NOME promete:
           trajetos chegando de fora e pousando onde o nome está. */}
       <ConvergenciaDoHub className="absolute inset-0 z-[1]" />
+
+      {/* `[11/09]` A marca que a abertura pintou ASSENTA aqui — mesmo centro,
+          combinado em `lib/marcaNoHero.js`, para a troca ser um cruzamento e
+          não um voo até uma posição medida.
+
+          Ela fica ENTRE a convergência e o texto: os trajetos convergem nela em
+          vez de convergirem para espaço vazio, e o texto continua por cima. */}
+      <MarcaFlutuante className="z-[2]" />
 
       <div className="relative z-10 flex flex-col items-center">
         <motion.div variants={heroFade(0)} initial="initial" animate={show} className="flex items-center gap-2 mb-5">

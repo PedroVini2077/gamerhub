@@ -85,7 +85,8 @@ export const TERRITORIO = {
     // índice das referências envelhecer.
     'src/components/ui/MarcaGH.jsx',
     'src/lib/marca.js',
-    'src/components/landing/IntroLightning.jsx',
+    'src/components/landing/AberturaDaMarca.jsx',
+    'src/components/landing/MarcaFlutuante.jsx',
     'scripts/gerar-icones.mjs',
   ],
 

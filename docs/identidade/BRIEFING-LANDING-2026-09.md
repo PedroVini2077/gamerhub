@@ -108,52 +108,131 @@ Quando chegarem, elas vão para `referencias/` e são citadas neste arquivo.
 
 ---
 
-## A ABERTURA — ideia do dono, `[11/09]`, ainda por estruturar
+## BLOCO 1 — A ABERTURA. `[11/09]` — DECIDIDA, pronta para implementar
 
-**A frase dele, na letra:** *"eu pensei dessa logo nova do GamerHub ser montada
-aos poucos, sabe? e com a frase principal da landing page, sem esse estouro aí,
-tipo a pessoa vai chegar, a tela vai estar toda escura e vai ser montado a logo
-com alguma coisa escrita e aí sim a landing page aparece"*.
+> **Método, definido por ele:** *"vamos fazer em blocos? uma coisa por vez...
+> idealizar, anotar e implementar"*, e *"quando tiver redondo partimos pro
+> resto"*. Esta seção é o "redondo" do bloco 1. **Nada está construído.**
 
-**O que isso muda em relação ao que existe.** A abertura de hoje é a do RAIO com
-outra figura dentro: traço se desenhando em 0,3 s, **clarão verde em tela
-cheia**, bola de luz expandindo, e o overlay some em 0,45 s. Ela foi escrita
-para um relâmpago, onde o clarão **é** o evento. A marca não é um relâmpago — é
-uma coisa que se **monta**, e o clarão é justamente o "estouro" que ele pediu
-para tirar.
+### O que ficou DECIDIDO
 
-**O que a ideia dele pede, em três tempos:**
+| | |
+| --- | --- |
+| **A frase** | **"Aqui o jogo continua."** — *"eu gostei da frase"* |
+| **Como a marca aparece** | **pintada** — *"pensei dela aparecer como se fosse pintada"*. Não é o contorno se traçando (linguagem do raio): é o preenchimento surgindo, como tinta passando |
+| **O brilho** | depois de pintada, ela **brilha como objeto polido** — *"ele se revelar, 'estoura' um brilho e aí sim abrir a landing"*. É reflexo NO objeto, não clarão na tela (ver [DECISOES.md](../DECISOES.md)) |
+| **A ordem** | marca pintada → frase → brilho → landing |
+| **A interação** | **não é clique.** *"queria algo nessa vibe"* da cachoeira de dados, que segue o ponteiro no PC |
+| **Onde a marca fica** | no hero, depois da abertura, flutuando e respondendo ao ponteiro |
 
-| | | |
+### A ideia central
+
+**A abertura deixa de ser uma tela ANTES do site e passa a ser a marca
+CHEGANDO.** Hoje são duas coisas coladas — um overlay que cobre tudo e some, e
+um hero que começa do zero atrás dele. Um corte. A ideia dele junta as duas numa
+tomada só, e a marca não sai de cena no fim: ela **assenta no hero e fica**.
+
+**O ganho que não é estético:** hoje os trajetos do `ConvergenciaDoHub`
+convergem para **espaço vazio** atrás do título. Com a marca morando lá, eles
+passam a convergir **nela**.
+
+### UMA LUZ, TRÊS PASSAGENS — o mecanismo que junta tudo o que ele pediu
+
+A descoberta que fecha o bloco: **"pintada" e "brilho de objeto polido" são o
+mesmo recurso técnico** — uma faixa de luz atravessando a marca por baixo de uma
+máscara. Muda só a largura e a velocidade. Então a abertura inteira é **uma luz
+só, passando três vezes**, e cada passagem tem uma função diferente:
+
+| Passagem | Largura e ritmo | O que ela FAZ |
 | --- | --- | --- |
-| 1 | tela **escura**, sem clarão | **DECIDIDO** — *"sobre o estouro, quero descartar isso"* (ver [DECISOES.md](../DECISOES.md)) |
-| 2 | a marca se **montando aos poucos**, com uma frase junto | depende das 4 perguntas abaixo |
-| 3 | só então a landing aparece | já é assim hoje |
+| **1ª — pinta** | larga, lenta | a marca não existe; onde a luz passa, ela fica. É o "pintada" dele |
+| **2ª — escreve** | a mesma luz, seguindo | passa por baixo da marca e deixa **"Aqui o jogo continua."** |
+| **3ª — pole** | estreita, rápida | o reflexo de superfície polida. **No pico dela, a landing abre** |
 
-**O que já foi feito, para ele não ficar bloqueado:** o tamanho. O print do
-celular mostrava a marca saindo pelos quatro lados, e a causa era medível — o
-caminho ocupa o viewBox inteiro e o SVG usava `slice`, que escala para
-**cobrir**. Num 400×800 isso dava uma marca de 800 px de largura. Corrigido no
-mesmo dia; hoje ela mede 184×184 no celular e 300×300 no PC, contida nos dois.
-O resto da ideia continua **por estruturar**, como ele pediu.
+**Por que isso é melhor do que três efeitos separados**, e é o teste que o
+próprio briefing dele exige (*"por que isso está se movendo?"*): a resposta é
+sempre a mesma — **"é a mesma luz, ainda andando"**. Três efeitos distintos
+precisariam de três justificativas, e é assim que uma página vira demonstração
+de animação.
 
-**O que precisa ser decidido antes de implementar:**
+**E resolve o problema de leitura da frase.** Ele tinha levantado *"rodando a
+logo, ou deslizando"*; texto em órbita é difícil de ler, persegue o olho e fica
+minúsculo no celular — exatamente o que o briefing dele proíbe. Com a luz, a
+frase não "entra": ela é **revelada**, parada, no lugar onde vai ficar.
 
-1. **Qual frase.** Ele disse *"a frase principal da landing page"* — hoje o hero
-   tem duas candidatas: a sobrancelha (*"Sua base de operações gamer"*) e o
-   parágrafo. Repetir na abertura o que aparece dois segundos depois pode ler
-   como eco em vez de promessa.
-2. **Quanto tempo a abertura pode durar.** Hoje ela inteira cabe em ~0,75 s.
-   "Montar aos poucos" custa tempo, e **tempo de abertura é tempo de tela preta
-   para quem só queria entrar** — a segunda visita da mesma pessoa é a que dói.
-   Provavelmente precisa de marca de "já viu" (o `sessionStorage` de
-   `lib/boasVindas.js` já faz isso na tela de entrada).
-3. **O que "montar" quer dizer no desenho.** A marca é um monograma fechado de
-   39 vértices; ela não tem peças separáveis óbvias. Montar pode ser o contorno
-   se desenhando (é o que já acontece), as faces entrando em ordem, ou o
-   gradiente varrendo. São leituras diferentes e a escolha é dele.
-4. **`prefers-reduced-motion`**: quem pede menos movimento precisa ver a marca
-   parada e a frase, não uma tela preta.
+### O orçamento de tempo — proposta, para ele reagir com número
+
+| | |
+| --- | --- |
+| pinta a marca | 0,55 s |
+| respiro | 0,15 s |
+| revela a frase | 0,35 s |
+| leitura | 0,45 s |
+| o brilho polido | 0,35 s |
+| a landing abre | 0,30 s |
+| **total** | **≈ 2,15 s** |
+
+Hoje a abertura inteira dura **0,75 s**, então isto é quase o triplo. **O
+argumento a favor mudou de natureza:** com a abertura virando o hero, esse tempo
+deixa de ser "tela preta antes do site" e passa a ser a chegada — mas continua
+sendo tempo em que ninguém clica em nada.
+
+**Proposta:** completa na **primeira visita da sessão**; nas seguintes, a marca
+já aparece posta no hero, sem overlay. O mecanismo de "já viu" já existe e está
+provado — é o `sessionStorage` de `lib/boasVindas.js`.
+
+### A restrição técnica que decide o desenho — conferida no código, não suposta
+
+`AberturaDaMarca` é importada **estaticamente** no `App.jsx` (linha 33); a
+`Landing` é **`lazy`** (`paginasLazy.js`). É deliberado: em 02/09 a intro morava
+dentro do hero e o raio só existia depois de o chunk baixar — **1.320 ms a 6× de
+CPU**, tela preta o tempo todo.
+
+**Consequência:** enquanto a abertura toca, o hero pode não existir. A marca
+**não pode voar até uma posição medida no hero** — medir exige o hero montado, e
+esperar por ele traz de volta o defeito que a separação consertou.
+
+**A saída, e é a mesma que resolveu o cruzamento das artes da arena:** uma
+posição **combinada**, escrita nas mesmas unidades dos dois lados. A abertura
+termina com a marca ali; o hero desenha a dele no mesmo ponto; a troca é um
+cruzamento, não um voo. Sem medição, sem espera, e nada quebra se a landing
+demorar.
+
+> **Isso pede trava de contrato.** Dois lugares que precisam concordar para
+> sempre divergem na primeira mudança — é a definição da Fase 4 da auditoria.
+
+### A interação com o ponteiro — e o conserto que ela exige antes
+
+Ele reparou certo: *"a cachoeira de dados no PC tem interação com o mouse, elas
+seguem o mouse"*. É o `FluxoDeDados`, e o desenho dele é o barato: **um ouvinte,
+uma variável CSS, coalescida por quadro**, deslocamento no compositor. Parado,
+custa zero.
+
+**Mas há um detalhe que impede reusar direto, e ele foi conferido:** a variável
+`--desvio` é escrita em `alvo.style`, onde `alvo` é o **próprio contêiner** do
+`FluxoDeDados` (linha 121). Só a subárvore dele enxerga. A marca vive no hero,
+fora dessa árvore — então ela não tem acesso.
+
+**As duas saídas, e a segunda é a errada:**
+
+| | |
+| --- | --- |
+| **subir a variável** para um ancestral comum, e os dois lados lerem dela | **um** ouvinte serve os dois |
+| dar um ouvinte próprio à marca | **dois** ouvintes de ponteiro na mesma página, e duas verdades sobre onde o ponteiro está (§4) |
+
+**No celular não há ponteiro**, e o `FluxoDeDados` já trata isso da forma certa:
+sem `(pointer: fine)` ele **nem registra** o ouvinte. A marca herda a mesma
+regra — no toque ela fica parada, e isso não é defeito.
+
+### O que ainda está em aberto neste bloco
+
+1. **O tempo total** — 2,15 s é proposta minha; ele decide.
+2. **A versão curta na segunda visita** — proposta minha; ele decide.
+3. **A flutuação da marca no hero** (o vai-e-vem lento, independente do
+   ponteiro): existe ou a marca fica parada e só responde ao ponteiro?
+4. **`prefers-reduced-motion`**: quem pede menos movimento vê a marca já
+   pintada e a frase, sem luz e sem flutuação. Precisa continuar liberando a
+   landing — abertura que não termina é tela preta permanente (§1.5).
 
 ---
 
@@ -168,7 +247,7 @@ impressão. Medido em 11/09:
 | `ConvergenciaDoHub.jsx` | 187 | **novo hoje** — o fundo do hero, trajetos convergindo |
 | `BotaoDeSom.jsx` | 181 | som ambiente |
 | `LandingSidebar.jsx` | 165 | navegação lateral |
-| `IntroLightning.jsx` | 149 | a abertura; hoje desenha a marca |
+| `AberturaDaMarca.jsx` | 149 | a abertura; era `IntroLightning` e desenhava o raio |
 | `LandingFooter.jsx` | 127 | rodapé |
 | `Hero.jsx` | 125 | ato 1 |
 | `Landing.jsx` | 109 | **a página inteira**, que ordena tudo |
@@ -223,7 +302,7 @@ vê e pelo que **não depende das referências**.
 | # | Cena | Depende das imagens? | Estado |
 | --- | --- | --- | --- |
 | 1 | Hero — a convergência | não | **feita** em 11/09 |
-| 2 | A abertura (`IntroLightning`) | não | a fazer |
+| 2 | A abertura (`AberturaDaMarca`) | não | **feita** em 11/09 |
 | 3 | **O mecanismo de cena presa** (sticky + progresso), sem arte nova | não | a fazer — é a fundação das outras |
 | 4 | Comunidade: *"tem gente aqui"* | parcialmente | espera 3 |
 | 5 | Feed vivo | parcialmente | espera 3 |

@@ -165,6 +165,20 @@ o cartão de compartilhamento. Para mudar a marca, troca-se a arte e roda-se
 O conjunto pesa **97 kB**, contra 195 kB do conjunto anterior: ficou mais leve
 apesar de ter ganhado um arquivo a mais e um corpo mais elaborado.
 
+#### `[11/09]` Onde a marca aparece ANIMADA
+
+Além dos ícones estáticos, a marca agora tem duas aparições com movimento, e as
+duas saem do mesmo `CAMINHO_DA_MARCA`:
+
+| Onde | O que acontece |
+| --- | --- |
+| `AberturaDaMarca` | ela é **pintada** por uma faixa de luz, a mesma luz revela a frase, e um **reflexo de objeto polido** corre por cima antes de a landing abrir |
+| `MarcaFlutuante` | ela **fica** no hero depois da abertura, flutuando com movimento próprio e seguindo o ponteiro |
+
+As duas usam a **mesma posição combinada** (`lib/marcaNoHero.js`), porque a
+troca entre elas é um cruzamento e não um voo — a abertura é estática e a
+`Landing` é `lazy`, então o hero pode não existir enquanto a abertura toca.
+
 #### `[11/09]` O CORPO do ícone, e o defeito que ele consertou
 
 Renderizados nos tamanhos de uso e sobre cinco papéis de parede, os ícones

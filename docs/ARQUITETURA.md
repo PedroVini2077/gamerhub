@@ -52,6 +52,11 @@ src/
 │                          # moldura de circuito das bordas. A cor NÃO é escolha
 │                          # livre — é a identidade do site (ver DECISOES.md)
 ├── hooks/
+│   ├── usePonteiroDaPagina.js # `[11/09]` O ÚNICO ouvinte de `pointermove` do
+│   │                      # projeto. Escreve `--ponteiro-x/y` em `:root`, e quem
+│   │                      # precisa lê de lá com valor padrão. Antes o
+│   │                      # FluxoDeDados escutava no próprio contêiner, e nada
+│   │                      # de fora daquele ramo enxergava a posição
 │   ├── useAuth.jsx        # Sessão, perfil e ações de autenticação. É a raiz da
 │   │                      # árvore e o arquivo de maior risco do projeto (§7)
 │   ├── saidasDaSessao.js  # As DUAS maneiras de encerrar sessão (o "Sair" comum
@@ -171,6 +176,16 @@ src/
 │   │                      # conexão do pool que ainda não vê a linha — o feed
 │   │                      # engolia o post e nada estourava (§1.5)
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
+│   ├── marcaNoHero.js     # `[11/09]` A POSIÇÃO COMBINADA da marca — o contrato
+│   │                      # entre a abertura e o hero. A marca não voa até um
+│   │                      # ponto medido: os dois lados concordam de antemão,
+│   │                      # porque a abertura é estática e a Landing é lazy,
+│   │                      # então o hero pode não existir enquanto ela toca
+│   ├── tempoDaAbertura.js # `[11/09]` O orçamento de tempo da abertura numa
+│   │                      # fonte só. Três animações de CSS e um temporizador
+│   │                      # de JS precisam concordar; escritos em dois lugares
+│   │                      # eles divergem, e o sintoma é o véu abrindo por cima
+│   │                      # de uma animação pela metade — sem erro nenhum
 │   ├── artesDaArena.js    # `[11/09]` As 8 artes da tela de entrada e o `sizes`
 │   │                      # do srcset, em UM lugar — a cena e o preparo por
 │   │                      # intenção precisam escolher o MESMO arquivo, e duas
@@ -399,7 +414,8 @@ src/
     │                      # e vídeo dentro da fila)
     │   └── queueLabels.js # TRAVA: todo tipo da fila precisa existir nos três
     │                      # mapas — foi um tipo novo sem entrada que travou a tela
-    ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
+    ├── landing/           # Hero, ElectricTitle, AberturaDaMarca, MarcaFlutuante,
+    │                      # FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot
     │   ├── ConvergenciaDoHub.jsx # `[11/09]` O fundo do Hero: trajetos que
