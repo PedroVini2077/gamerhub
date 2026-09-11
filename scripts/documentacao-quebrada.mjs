@@ -68,6 +68,16 @@ const CITACOES_HISTORICAS = new Map([
   ['resolucaoDaCena.js',
     'apagado no PR #105; citado em OPERACAO.md como o caso que motivou o portao '
     + 'de cobertura de territorio (scripts/territorio-coberto.mjs)'],
+
+  // `[11/09]` Conferido com `ls`: o arquivo NAO existe mais. Apagado junto com o
+  // bloqueio de login por tentativas, que saiu da tela porque o hook que o
+  // alimentaria e exclusivo dos planos pagos — `login_attempts` nunca recebia
+  // uma linha. O DECISOES-FERRAMENTAL o cita porque ele foi o PRIMEIRO achado do
+  // teste de mutacao: 0,00% de mutantes mortos dentro de uma suite verde.
+  // Tirar o nome destruiria o exemplo, que e sobre ESTE modulo.
+  ['loginBlock.js',
+    'apagado em 11/09 com o bloqueio por tentativas; citado em '
+    + 'DECISOES-FERRAMENTAL.md como o primeiro achado do teste de mutacao'],
 ]);
 
 /** Extensões que valem a pena conferir. Documento cita muito nome solto. */

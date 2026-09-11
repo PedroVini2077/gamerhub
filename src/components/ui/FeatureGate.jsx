@@ -6,7 +6,7 @@ export default function FeatureGate({ flag, children }) {
   const [on, setOn] = useState(null);
 
   useEffect(() => {
-    // Mesma guarda do `useBloqueioDeLogin`: se a `flag` mudar durante a ida ao
+    // Guarda contra resposta velha: se a `flag` mudar durante a ida ao
     // servidor, a resposta da flag ANTIGA chegaria depois e decidiria a tela da
     // nova. Aqui a janela é estreita (a flag costuma ser fixa por montagem),
     // mas o custo da guarda é uma linha e o erro seria mudo (§1.5).

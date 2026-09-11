@@ -102,9 +102,6 @@ src/
 │   ├── useModoDaEntrada.js # A aba da tela de entrada, guardada na URL
 │   │                      # (`?modo=cadastro`). Estado do React morre na
 │   │                      # navegação; a URL sobrevive à ida e à volta
-│   ├── useBloqueioDeLogin.js # O bloqueio por tentativas e a consulta de 8s que
-│   │                      # reflete o desbloqueio feito no painel. Só LÊ —
-│   │                      # nada nesta tela move o contador
 │   └── useVisiblePoll.js  # Repete uma chamada, mas SÓ com a aba visível
 ├── lib/
 │   ├── supabase.js        # Cliente Supabase
@@ -191,7 +188,6 @@ src/
 │   │                      # tela, não autorização. O código nunca é guardado,
 │   │                      # só um resumo SHA-256 com sal por aparelho.
 │   │                      # A tabela de o que ele protege está no cabeçalho
-│   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
 │   ├── pauseReason.js     # Motivo da pausa, guardado no navegador
 │   ├── ehFalhaDeRede.js   # `[03/09]` Este erro é queda de REDE ou defeito do

@@ -17,7 +17,6 @@ import { fadeTab } from '../lib/motion';
 import { useDbOffline } from '../hooks/useDbOffline';
 import { useModoDaEntrada } from '../hooks/useModoDaEntrada';
 import { mensagemDeErroDeAuth, ID_DO_TOAST_DE_AUTH } from '../lib/errosDeAuth';
-import { useBloqueioDeLogin } from '../hooks/useBloqueioDeLogin';
 
 /**
  * A frase abaixo do logo, por modo.
@@ -55,7 +54,6 @@ export default function Login() {
   const [loading, setLoading]               = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState(null); // email pendente de confirmação (mostra tela "verifique seu email")
 
-  const [block, setBlock] = useBloqueioDeLogin(email);
 
   // Uma chave só para as duas coisas que precisam dela: o `AnimatePresence`
   // (que conteúdo está na tela) e o card (quando animar a altura). Duas
@@ -91,20 +89,25 @@ export default function Login() {
     }
 
     if (mode === 'login') {
-      // A tentativa de login vem PRIMEIRO, de propósito, e desde 28/08 quem
-      // conta a falha é o BANCO, não esta tela.
+      // `[11/09]` Esta tela NÃO fala mais em bloqueio por tentativas, porque
+      // ele nunca chegou a existir de verdade.
       //
-      // Antes existia um `register_login_attempt` que o frontend chamava para
-      // reportar a própria falha. Duas coisas estavam erradas nisso, as duas
-      // medidas: quem ataca não usa nosso frontend, então força bruta real não
-      // era contada; e a RPC era chamável por anônimo, então bastava um script
-      // chamar com o email da vítima para fabricar alerta de segurança e
-      // marcar a conta como bloqueada, sem nunca saber a senha.
+      // Em 28/08 a contagem forjável foi removida — era chamável por anônimo, e
+      // bastava um script com o e-mail da vítima para trancar a conta dela sem
+      // nunca saber a senha. O substituto seria o Password Verification Hook do
+      // GoTrue, e ele e exclusivo dos planos pagos: no Free, `login_attempts`
+      // nunca recebe uma linha.
       //
-      // Agora o Password Verification Hook do Supabase avisa o banco a cada
-      // verificação de senha, com o veredicto do próprio GoTrue. Aqui a tela só
-      // LÊ o resultado — `check_login_status` é leitura pura. Nada que esta
-      // página faça consegue mover o contador.
+      // Por 14 dias esta página consultou, a cada falha, um contador que não
+      // podia responder outra coisa senão "não bloqueado" — uma ida ao banco
+      // por tentativa, e um reset por login bem-sucedido, os dois sobre uma
+      // tabela sempre vazia.
+      //
+      // Quem protege contra força bruta é o rate limit do próprio GoTrue, que é
+      // server-side e não precisa desta tela para nada. Trazer o bloqueio de
+      // volta exige ou o plano pago, ou uma RPC de bloqueio MANUAL pela equipe
+      // — que é ferramenta de moderação, não proteção automática (BACKLOG.md).
+      // A trava `semPromessaDeBloqueio.test.js` guarda esta decisão.
       const { error, banned } = await signInWithEmail(email, password);
       if (banned) {
         // Sem toast: o `useAuth` já subiu a `BannedScreen`, que mostra o motivo,
@@ -114,31 +117,8 @@ export default function Login() {
         return;
       }
       if (error) {
-        const { data: after } = await supabase.rpc('check_login_status', { p_email: email.trim() });
-        if (after?.blocked) {
-          setBlock({ permanent: after.permanent, blocked_until: after.blocked_until });
-          toast.error(after.permanent
-            ? 'Conta bloqueada por excesso de tentativas. Contate o suporte ou redefina sua senha.'
-            : 'Muitas tentativas falhas. Conta bloqueada por 15 minutos.');
-        } else {
-          // Sem contagem de tentativa aqui, e isso é honestidade, não falta.
-          //
-          // Existia um "(N tentativas até o bloqueio)" nesta mensagem. Ele parou
-          // de ser verdade em 28/08, quando a contagem forjável foi removida:
-          // `attempts` passou a ser sempre 0, então o aviso dizia "5 tentativas"
-          // para sempre, sem nunca descer. Contador que não conta é pior que
-          // contador nenhum — manda a pessoa confiar num número inventado.
-          //
-          // Contar de verdade exigiria o Password Verification Hook, que é
-          // exclusivo do plano Team (ver BACKLOG.md). Enquanto isso, quem
-          // protege contra força bruta é o rate limit do próprio GoTrue, que é
-          // server-side e não precisa desta tela para nada.
-          toast.error(mensagemDeErroDeAuth(error), { id: ID_DO_TOAST_DE_AUTH });
-        }
+        toast.error(mensagemDeErroDeAuth(error), { id: ID_DO_TOAST_DE_AUTH });
       } else {
-        // await obrigatório: o builder do supabase-js é lazy — sem await o reset nunca é enviado.
-        await supabase.rpc('reset_login_attempts');
-        setBlock(null);
         navigate('/');
       }
     }
@@ -234,7 +214,7 @@ export default function Login() {
                   <LoginForm
                     email={email} setEmail={setEmail}
                     password={password} setPassword={setPassword}
-                    loading={loading} block={block} setBlock={setBlock}
+                    loading={loading}
                     onSubmit={handleSubmit}
                     onForgot={() => switchMode('forgot')}
                     onSwitchToRegister={() => switchMode('register')}
