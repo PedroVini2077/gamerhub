@@ -418,7 +418,11 @@ src/
     │                      # InputWrap, LoginSemBanco (o que a tela de login diz
     │                      # quando o banco está fora), e os dois porteiros de
     │                      # rota: RequireAuth (barra visitante) e GuestOnly
-    │                      # (barra logado — só com o banco de pé, ver OPERACAO)
+    │                      # (barra logado — só com o banco de pé, ver OPERACAO).
+    │                      # ArenaDeEntrada COMPÕE a cena de fundo (lados, fenda,
+    │                      # moldura, partículas, VS) e LutadorDaArena cuida da
+    │                      # única parte difícil dela: trocar a arte de um
+    │                      # lutador sem abrir buraco na tela (`[11/09]`, §4)
     ├── layout/            # Header e RightPanel do site logado
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard,
     │                      # CommentComposer, EditCountdown (janela de edição)

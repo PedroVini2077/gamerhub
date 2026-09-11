@@ -61,7 +61,7 @@ dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 | Fatia | O que é | Depende das imagens? | Estado |
 | --- | --- | --- | --- |
 | **1** | Matar a cena 3D e trocar o fundo do hero por **convergência** em SVG/CSS | não | **feita** |
-| 2 | A abertura (`IntroLightning`) — **ele já descreveu como quer**: tela escura, a marca se montando aos poucos, uma frase junto, e só então a landing. Sem clarão. Ver o briefing | não | a fazer — o TAMANHO já foi corrigido |
+| 2 | A abertura (`IntroLightning`) — tela escura, a marca se montando aos poucos, uma frase junto, e só então a landing. **O clarão foi DESCARTADO por ele** (DECISOES.md). Faltam 4 decisões, no briefing | não | a fazer — o TAMANHO já foi corrigido |
 | 3 | **O mecanismo de cena presa** (sticky + progresso de scroll), sem arte nova | não | a fazer — é a fundação das outras |
 | 4 | Comunidade: *"tem gente aqui"* | em parte | espera a 3 |
 | 5 | Feed vivo | em parte | espera a 3 |
@@ -107,7 +107,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**35 itens abertos** (+ 1 ideia sem compromisso)
+**34 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -588,102 +588,6 @@ dependência técnica real** que decide o resto:
   param de brigar e passam a se encontrar — custo zero, é narrativa) e a **troca
   da fonte de display**, que pode esperar porque atinge o site inteiro.
 
-- ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
-  *Referências em [`docs/identidade/`](docs/identidade/README.md).*
-
-  **O objetivo, na frase dele:** *"não quero cinco logos diferentes, quero um
-  sistema visual único com adaptações técnicas"*. Logo mestre, favicon, ícone
-  PWA, monocromático e animação — todos o **mesmo raio**.
-
-  > **`[11/09]` A segunda tentativa foi construída e CANCELADA antes de
-  > commitar.** Ela gerava tudo das artes oficiais por script, sem desenhar
-  > nada: `.ico` com 16/32/48 dentro, apple-touch 180, PWA 192/512 + maskable,
-  > card de compartilhamento 1200×630 e a marca com alfa para os 7 componentes
-  > que hoje mostram o `Zap` do lucide. Custo medido no carregamento inicial:
-  > **+0,2 kB brutos**, depois de tirar o webp do embutimento em base64.
-  >
-  > **Nada disso existe no repositório** — o dono cancelou junto com a landing.
-  > O que sobrevive é o aprendizado, e ele está em
-  > [docs/DECISOES.md](docs/DECISOES.md): a folha de especificação dele manda
-  > usar a versão **chapada** nos tamanhos pequenos (*"funciona em 16×16"*) e a
-  > de cristal do 180 px para cima.
-
-  **Hierarquia que decide qualquer conflito:** geometria do raio → silhueta →
-  consistência com o que já existe → legibilidade em tamanho pequeno → cor →
-  glow. *Se removermos o glow, a marca ainda funciona. Se removermos a cor, ainda
-  funciona.*
-
-  **O que eu JÁ SEI, e é o coração da tarefa:** o "raio" que aparece hoje no
-  Login e no cabeçalho é o ícone **`Zap` do `lucide-react`** — um raio genérico
-  de biblioteca, **não** o raio da identidade. Trocar isso é o que faz o sistema
-  existir, e toca vários componentes.
-
-  **Etapas, na ordem que ele definiu:** auditar (o que existe em `index.html`,
-  favicon, manifest, PWA, logos, componentes) → comparar com as referências →
-  mapear *asset atual → asset correto → onde é usado* → planejar a **menor**
-  mudança → implementar → validar → segunda passada procurando inconsistência.
-
-  **FORA DO ESCOPO, e é obrigatório estar escrito:**
-  - não criar identidade nova, não fazer rebranding;
-  - não substituir o raio por gamepad, headset, escudo, letra G/GH ou qualquer
-    símbolo genérico de esports/SaaS;
-  - não alterar componentes que não exibem a marca;
-  - não refatorar nada "já que estou aqui";
-  - não mexer em autenticação, banco, RLS ou permissões.
-
-  **O que depende dele:** eu vou precisar **reconstruir a silhueta em SVG** (as
-  artes são PNG, e favicon 16 px pede vetor). Isso é **eu redesenhando** — ele
-  precisa olhar e aprovar antes de eu espalhar pelo site.
-
-  ### `[10/09]` A AUDITORIA (etapa 1) — feita, e ela confirma o diagnóstico dele
-
-  O inventário achou **duas marcas diferentes, em cores diferentes**, e nenhuma
-  das duas é o raio das referências:
-
-  | Onde | O que está lá hoje |
-  | --- | --- |
-  | aba do navegador (`public/favicon.svg`) | um raio **roxo/azul** — `#7e14ff` ×10, `#863bff`, `#47bfff` ×2. **Zero verde** |
-  | dentro do site (8 componentes) | o `Zap` do `lucide-react`, **verde** `#39ff14` |
-  | ícone de app / PWA | **não existe** — não há `manifest`, nem `apple-touch-icon` |
-  | prévia ao compartilhar link | **não existe** — não há `og:image` nem `twitter:image` |
-
-  Os 8 componentes que exibem a marca: `SplashScreen`, `landing/Hero`,
-  `landing/FinalCTA`, `landing/LandingFooter`, `landing/LandingNav`,
-  `layout/Sidebar`, `pages/AuthConfirm` — mais o `public/favicon.svg`.
-
-  **Fica FORA:** o `Zap` em `lib/ranks.js` é ícone de **rank**, não a marca. O
-  escopo dele diz *"não alterar componentes que não exibem a marca"*.
-
-  ### `[10/09]` A minha reconstrução em SVG foi REPROVADA pelo dono
-
-  Reconstruí a silhueta em SVG (4 pontas — duas lâminas longas em ziguezague,
-  duas asas curtas — com o núcleo hexagonal vazado) e mandei a folha de prova.
-  Resposta dele, na letra: ***"já aviso, não gostei…. mas depois vemos isso"***.
-
-  **Nada foi espalhado pelo site** — nenhum componente tocado, nenhum asset
-  trocado. O favicon roxo e os 8 `Zap` continuam exatamente como estavam.
-
-  **O que fica registrado para a próxima tentativa não repetir a mesma:**
-
-  - o desenho reprovado está em
-    `docs/identidade/tentativas/2026-09-10-raio-v3.svg`, **como registro do que
-    NÃO passou** — não é asset, não é para usar;
-  - o erro técnico que eu já tinha corrigido no caminho: a primeira versão foi
-    desenhada num quadrado e leu como **shuriken**. A referência é quase **duas
-    vezes mais alta que larga** (~1:1.9), e é a proporção que faz as lâminas
-    dominarem e a marca ler como raio;
-  - **o que ainda não sei, e é o que trava a próxima tentativa:** *o que* nele
-    não serviu. Silhueta? proporção? o furo? o peso das asas? Sem isso, tentar
-    de novo é chutar (§1.2) — e chute em cima de identidade custa rodada dele.
-
-  **Antes de redesenhar, perguntar a ele qual das quatro estava errada.**
-
-  **Um achado técnico da folha que sobrevive à reprovação**, porque vale para
-  qualquer desenho que venha: a **16 px o furo do hexágono quase fecha**. O
-  `docs/identidade/README.md` já prevê isso ao dizer que a versão mono é
-  *"deliberadamente mais simples"* — o certo é uma variante de 16 px com o furo
-  **maior**, não espremer a mesma geometria.
-
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
 
@@ -1102,7 +1006,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.613<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->9.673<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

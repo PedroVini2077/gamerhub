@@ -1756,3 +1756,30 @@ deslize `0 → 6 → 95 px`; volta `0,00 → 0,02 → 0,55` com `95 → 92 → 0
 > **Só eu ter escrito a transição não teria funcionado.** Ela estava lá, no CSS,
 > e a `opacity` continuava pulando. Foi a medição que mostrou — e é por isso que
 > a evidência está aqui e não um "ficou suave".
+
+## `[11/09]` O CLARÃO da abertura foi DESCARTADO — decisão do dono
+
+**A frase dele:** *"sobre o estouro, quero descartar isso"*, depois de descrever
+como quer a abertura: *"a pessoa vai chegar, a tela vai estar toda escura e vai
+ser montado a logo com alguma coisa escrita e aí sim a landing page aparece"*.
+
+**O que é o "estouro".** A abertura tem hoje um **clarão verde em tela cheia**
+(`opacity [0, 0.85, 0]` em 0,34 s) mais uma bola de luz expandindo. Os dois
+foram escritos para um **relâmpago**, que era a marca do site até 11/09 — num
+raio, o clarão *é* o evento.
+
+**Por que descartar é coerente, e não capricho.** A marca nova não é um
+relâmpago: é um monograma que se monta. Clarão em cima dela conta a história
+errada, e ainda por cima lava a cor — no print do celular o verde do clarão
+cobria a própria marca que deveria estar aparecendo.
+
+**O que NÃO muda com isso:** a abertura continua existindo, continua tendo a
+marca, e continua liberando a landing ao terminar. O que sai é o clarão e a bola
+de luz; o que entra está descrito em
+[`identidade/BRIEFING-LANDING-2026-09.md`](identidade/BRIEFING-LANDING-2026-09.md)
+e ainda depende de quatro decisões dele.
+
+**Registrado aqui e não no backlog** porque é uma decisão sobre o produto: sem
+isto escrito, a próxima pessoa que abrir o `IntroLightning` vai achar que o
+clarão sumiu por descuido e vai "consertar".
+

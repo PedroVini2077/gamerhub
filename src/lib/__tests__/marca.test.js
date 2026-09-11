@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { CAMINHO_DA_MARCA, PARADAS_DO_GRADIENTE } from '../marca';
@@ -40,6 +40,66 @@ describe('a marca', () => {
       + '  e isso não aparece em teste de tela nenhum — ninguém olha o favicon.\n'
       + '  Rode `npm run icones` para regerar tudo da fonte única.',
     ).toContain(CAMINHO_DA_MARCA);
+  });
+
+  it('toda imagem que o manifesto e o index.html citam EXISTE', () => {
+    // `[11/09]` Ícone que some não quebra nada: o navegador mostra o ícone
+    // genérico dele, o site continua funcionando, e ninguém percebe até alguém
+    // olhar a tela de início. É §1.5 puro — e quase aconteceu hoje, quando os
+    // três ícones do manifesto viraram `.webp` e o `manifest.webmanifest`
+    // continuava apontando para `.png`.
+    const manifesto = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'));
+    const html = readFileSync('index.html', 'utf8');
+
+    const citados = [
+      ...manifesto.icons.map((i) => i.src),
+      ...[...html.matchAll(/<link[^>]+(?:rel="icon"|rel="apple-touch-icon")[^>]+href="([^"]+)"/g)]
+        .map((m) => m[1]),
+      // O cartão de compartilhamento é citado por URL ABSOLUTA, porque quem o
+      // busca é o servidor da rede social. Sem esta linha ele ficaria fora da
+      // conferência — e ele é justamente o que ninguém olha no dia a dia.
+      ...[...html.matchAll(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/g)]
+        .map((m) => m[1]),
+    ].map((caminho) => caminho.replace(/^https?:\/\/[^/]+/, '').replace(/^\//, ''));
+
+    // Sem isto, um `index.html` reescrito sem `<link rel="icon">` deixaria a
+    // lista curta e o teste passaria achando que conferiu tudo.
+    expect(
+      citados.length,
+      'Esperava pelo menos 6 imagens citadas (3 do manifesto + favicon + '
+      + 'apple-touch + og:image). Achei ' + citados.length + ': '
+      + citados.join(', ')
+      + '. Se a lista encolheu, alguma <meta> ou <link> sumiu do index.html.',
+    ).toBeGreaterThanOrEqual(6);
+
+    for (const caminho of citados) {
+      expect(
+        existsSync(join('public', caminho)),
+        `\`${caminho}\` é citado mas NÃO existe em public/.\n`
+        + '  O navegador não reclama disso: ele cai no ícone genérico dele e o\n'
+        + '  site segue funcionando, então ninguém percebe até abrir a tela de\n'
+        + '  início. Rode `npm run icones` e confira se o manifesto e o\n'
+        + '  index.html citam os nomes que o gerador realmente escreve.',
+      ).toBe(true);
+    }
+  });
+
+  it('o tipo declarado no manifesto bate com o arquivo de verdade', () => {
+    // Declarar `image/png` num arquivo WebP faz alguns instaladores de PWA
+    // recusarem o ícone — e recusar em silêncio, caindo no genérico.
+    const manifesto = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8'));
+    const porExtensao = { '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml' };
+
+    for (const icone of manifesto.icons) {
+      const ext = icone.src.slice(icone.src.lastIndexOf('.'));
+      expect(
+        icone.type,
+        `${icone.src} está declarado como \`${icone.type}\` no manifesto, mas a `
+        + `extensão diz \`${porExtensao[ext]}\`.\n`
+        + '  Instalador de PWA que confia no `type` pode recusar o ícone e cair\n'
+        + '  no genérico, sem erro nenhum.',
+      ).toBe(porExtensao[ext]);
+    }
   });
 
   it('as paradas do gradiente estão em ordem e cobrem as pontas', () => {

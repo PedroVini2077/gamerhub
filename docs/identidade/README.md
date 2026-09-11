@@ -147,13 +147,43 @@ seis faixas, o eixo é **horizontal** e o verde ocupa os primeiros ~30%.
 
 ### A fonte única
 
-`src/lib/marca.js` guarda o caminho e as paradas. Dele saem o componente React,
-o `favicon.svg` e os três PNGs do PWA — **cinco lugares, uma fonte**. Para mudar
-a marca, troca-se a arte e roda-se `npm run icones`; nunca se edita um ícone.
+`src/lib/marca.js` guarda o caminho e as paradas. Dele sai **tudo**: o
+componente React, o `favicon.svg`, os três ícones do PWA, o `apple-touch-icon` e
+o cartão de compartilhamento. Para mudar a marca, troca-se a arte e roda-se
+`npm run icones`; nunca se edita um ícone.
+
+#### `[11/09]` O que o gerador escreve hoje, e por que cada formato
+
+| Arquivo | Formato | Por quê |
+| --- | --- | --- |
+| `favicon.svg` | SVG · 1,9 kB | nítido em qualquer densidade |
+| `icone-192.webp` · `icone-512.webp` | WebP · 4 e 10 kB | o corpo novo é um gradiente suave, e **PNG comprime gradiente muito mal**: o de 512 dava 274 kB, contra 13 kB em WebP |
+| `icone-maskable-512.webp` | WebP · 9 kB | idem, e sem cantos arredondados — quem desenha a forma é o Android |
+| `apple-touch-icon.png` | PNG · 37 kB | **exceção obrigatória**: o iOS não aceita WebP neste `<link>` |
+| `cartao-1200x630.jpg` | JPEG · 31 kB | o `og:image`. JPEG porque o rastreador do Facebook ainda falha com WebP em parte dos casos, **e a falha é muda** — o link volta a aparecer sem imagem |
+
+O conjunto pesa **97 kB**, contra 195 kB do conjunto anterior: ficou mais leve
+apesar de ter ganhado um arquivo a mais e um corpo mais elaborado.
+
+#### `[11/09]` O CORPO do ícone, e o defeito que ele consertou
+
+Renderizados nos tamanhos de uso e sobre cinco papéis de parede, os ícones
+antigos mostraram um problema que não aparecia em tamanho grande: **sobre papel
+de parede preto o quadrado `#060608` funde com o fundo**, e sobra a marca
+flutuando, sem silhueta — adesivo recortado, não ícone. Foi o que o dono
+resumiu como *"a do pwa tem que ser bonitinho poxa"*.
+
+O corpo passou a ter gradiente vertical, um brilho verde de um lado e roxo do
+outro (as duas pontas do gradiente da própria marca) e uma borda interna quase
+transparente, que é o que desenha a silhueta no preto. Nada disso toca o
+desenho da marca.
 
 Travas em `src/lib/__tests__/marca.test.js`: o favicon tem que conter o mesmo
-caminho do componente, o raio não pode voltar como marca, e ninguém pode copiar
-o `d` para dentro de outro componente.
+caminho do componente; o raio não pode voltar como marca; ninguém pode copiar o
+`d` para dentro de outro componente; **toda imagem citada pelo manifesto e pelo
+`index.html` tem que existir**; e o `type` declarado no manifesto tem que bater
+com a extensão do arquivo. As duas últimas existem porque ícone que some **não
+quebra nada** — o navegador cai no genérico dele e ninguém percebe.
 
 ### O que NÃO deu certo, e está registrado para não ser tentado de novo
 

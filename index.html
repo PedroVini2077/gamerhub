@@ -21,7 +21,22 @@
     <meta property="og:title" content="GamerHub — a comunidade gamer brasileira" />
     <meta property="og:description" content="Feed, mural, lives com chat ao vivo, keys grátis e ranks por XP. Entra no Hub." />
     <meta property="og:locale" content="pt_BR" />
-    <meta name="twitter:card" content="summary" />
+    <!-- `[11/09]` O cartão de compartilhamento. Ele NÃO existia: link do site
+         colado no WhatsApp ou no Discord vinha sem imagem nenhuma. Gerado da
+         mesma fonte da marca por `npm run icones` — não é editado à mão.
+         A URL é ABSOLUTA de propósito: WhatsApp, Discord e Twitter buscam a
+         imagem do servidor deles, sem página nenhuma aberta, e caminho
+         relativo não resolve nesse contexto.
+         JPEG e não WebP: o rastreador do Facebook ainda falha com WebP em
+         parte dos casos, e a falha é MUDA — o link volta a aparecer sem
+         imagem. Ver o comentário em `scripts/gerar-icones.mjs`. -->
+    <meta property="og:image" content="https://gamerhub-nine.vercel.app/cartao-1200x630.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A marca do GamerHub" />
+    <!-- `summary_large_image` e não `summary`: com imagem de 1200x630, o
+         `summary` a recortaria num quadradinho ao lado do texto. -->
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="GamerHub — a comunidade gamer brasileira" />
     <meta name="twitter:description" content="Feed, mural, lives com chat ao vivo, keys grátis e ranks por XP. Entra no Hub." />
 
