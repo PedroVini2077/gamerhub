@@ -39,13 +39,7 @@ export default function Hero({ introDone = true }) {
       />
 
       {/* Logo 3D + objetos flutuantes — só essa página, carregado sob demanda */}
-      {/* `[10/09]` SEM `z-index` de propósito. `z-index` em elemento posicionado
-          cria contexto de empilhamento, e o `mix-blend-mode: screen` da cena 2D
-          só enxerga o fundo de dentro do próprio contexto — com ele, o preto da
-          arte virava um retângulo opaco tapando o grid da página. A ordem de
-          pintura continua correta pela ordem do DOM: a cena vem depois dos
-          borrões de ambiente e antes do conteúdo, que tem `z-10`. */}
-      <Scene3D className="absolute inset-0" />
+      <Scene3D className="absolute inset-0 z-[1] opacity-90" />
 
       <div className="relative z-10 flex flex-col items-center">
         <motion.div variants={heroFade(0)} initial="initial" animate={show} className="flex items-center gap-2 mb-5">

@@ -21,6 +21,13 @@
 
 ### `[10/09]` Construir a malha custava 76 ms de thread principal, e caiu para 30
 
+> **`[11/09]` Esta medição é de código que NÃO EXISTE MAIS.** A reconstrução da
+> cena 3D foi cancelada pelo dono e o código voltou ao estado anterior ao PR
+> #177 — ver [DECISOES.md](DECISOES.md). O número continua aqui porque este
+> arquivo é o histórico das medições, e o que ele ensina sobre *como medir*
+> sobrevive ao código que foi medido. Mas ele **não descreve o site de hoje**.
+
+
 A geometria nova é moldada por **distância até a borda**: cada vértice mede a
 que distância está do contorno para saber quanta espessura recebe. A conta
 ingênua é `vértices × arestas`, e com 24.660 vértices contra 119 arestas isso dá
@@ -50,6 +57,13 @@ só desktop paga — mas paga.
 ---
 
 ### `[10/09]` A cena 3D construída à mão custou **6,6 kB brutos** — e o número surpreende
+
+> **`[11/09]` Esta medição é de código que NÃO EXISTE MAIS.** A reconstrução da
+> cena 3D foi cancelada pelo dono e o código voltou ao estado anterior ao PR
+> #177 — ver [DECISOES.md](DECISOES.md). O número continua aqui porque este
+> arquivo é o histórico das medições, e o que ele ensina sobre *como medir*
+> sobrevive ao código que foi medido. Mas ele **não descreve o site de hoje**.
+
 
 O `LogoBolt` (`ExtrudeGeometry` de um `Shape` de 6 pontos + `meshStandardMaterial`),
 o `FloatingShapes` (icosaedro, toro, octaedro, dodecaedro) e o `Lightning` saíram.
@@ -753,6 +767,12 @@ desenho do WebGL** para contar desenho de fato. Provado nos dois sentidos: com o
 > `drawArrays` e as duas instanciadas), não trocar de porta. Provado nos dois
 > sentidos: a versão antiga reprova a cena atual, e a versão nova continua
 > reprovando um `frameloop: 'never'` de verdade.
+>
+> **`[11/09]` A cena que expôs o buraco foi revertida; o conserto FICOU.** A
+> geometria não indexada saiu junto com a reconstrução cancelada, então hoje o
+> site volta a desenhar por `drawElements` — mas a trava continua contando as
+> quatro portas, porque o buraco era dela, não da cena. Desfazer o conserto
+> seria reabrir um alarme falso à espera da próxima geometria não indexada.
 
 > **Por que não `frameloop="demand"`:** `demand` só desenha quando alguém pede
 > um quadro, e esta cena é animada por natureza — ela congelaria justamente

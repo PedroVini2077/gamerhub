@@ -388,31 +388,15 @@ src/
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
     │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
-    │   ├── cena/          # `[10/09]` Os números da cena 2D (pecasDaCena.js):
-    │   │                  # anéis, fragmentos e as três profundidades. Saiu do
-    │   │                  # Scene2D para o componente não virar um paredão de
-    │   │                  # coordenadas
-    │   └── scene3d/       # A cena 3D, construída à mão em código `[10/09]`:
-    │                      # LandingScene (createRoot + extend seletivo) ·
-    │                      # Lightning · SceneObjects (legado, ainda não
-    │                      # removido) e as SEIS peças novas —
-    │                      # contornoDaMarca.js: SÓ OS DADOS. 81 pontos do
-    │                      #   contorno + 38 do furo, medidos da arte oficial
-    │                      #   por scripts/silhueta-da-marca.mjs. Nenhum pixel
-    │                      #   da arte chega ao navegador — só coordenadas
-    │                      # solidoDeCristal.js: transforma contorno 2D em
-    │                      #   SÓLIDO — extruda com chanfro, subdivide, e molda
-    │                      #   o Z pela distância à borda (seção de lâmina).
-    │                      #   Nesta ordem: subdividir antes de moldar, senão
-    │                      #   não há vértice interno para abaular
-    │                      # geometriaDoRaio.js: MONTA as três peças (metades,
-    │                      #   núcleo, lascas) e faz o corte da fissura
-    │                      # materialDeCristal.js: o ShaderMaterial próprio
-    │                      #   (Fresnel, energia interna, ruído, luz do núcleo).
-    │                      #   Zero byte de biblioteca: é three puro
-    │                      # linhaDoTempo.js: a timeline CENTRAL das 9 fases.
-    │                      #   Substitui o GSAP e os useFrame espalhados
-    │                      # RaioCristalino.jsx: monta tudo, com UM só useFrame
+    │   └── scene3d/       # A cena 3D do Hero: LandingScene (createRoot +
+    │                      # extend seletivo), SceneObjects (LogoBolt e as
+    │                      # FloatingShapes) e Lightning
+    │                      #
+    │                      # `[11/09]` Entre 10 e 11/09 esta pasta teve seis
+    │                      # peças a mais — uma reconstrução do símbolo em
+    │                      # código, com shader de cristal e timeline própria.
+    │                      # Foi CANCELADA pelo dono e o código voltou ao que
+    │                      # está descrito acima. Ver docs/DECISOES.md
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
     │                      # InputWrap, LoginSemBanco (o que a tela de login diz
     │                      # quando o banco está fora), e os dois porteiros de

@@ -35,114 +35,11 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[10/09]` A CENA 3D CONSTRUÍDA À MÃO — a direção corrigida pelo dono
+### `[11/09]` Nada em execução
 
-**Objetivo, na frase dele:** *"a cena 3D principal precisa ser CONSTRUÍDA À MÃO
-EM CÓDIGO… NÃO use a imagem da lightning como substituta da geometria 3D"*.
-A arte segue mandando em silhueta, proporção, cor e sensação de material.
-
-#### A ANÁLISE (etapa que ele exigiu antes de codar) — feita
-
-| O que existe | Estado |
-| --- | --- |
-| `createRoot` + `extend()` **seletivo** (13 classes) | é o que segura o tamanho do chunk. `<Canvas>` traria o sistema de eventos inteiro |
-| `IntersectionObserver` → `frameloop` on/off | laço parado fora da viewport |
-| `ResizeObserver` → `configure({ size })` · `root.unmount()` | ciclo de vida completo |
-| `DPR [1, 1.5]`, `antialias`, `alpha` | voltou ao original em 29/08; o que foi desfeito está documentado no topo do arquivo |
-| **o raio de hoje** | `ExtrudeGeometry` de um `Shape` de 6 pontos com bevel — raio **genérico**, sem núcleo hexagonal e sem asas |
-| **material de hoje** | `meshStandardMaterial` + `emissive` — é o *"objeto verde com emissiveIntensity"* que ele critica |
-| **fragmentos de hoje** | `icosahedron`/`torus`/`octahedron`/`dodecahedron` em wireframe — os "objetos genéricos" que ele mandou substituir |
-| dependências 3D | **só** `three` + `@react-three/fiber`. Sem drei, sem postprocessing, sem GSAP, sem pixi |
-| peso do chunk | **708 kB bruto · 189 kB gzip**, e ele **NÃO** entra no orçamento de bytes (que só mede o JS inicial) |
-
-**O fato que muda o cálculo de custo:** a 3D só carrega para quem passa no
-portão de `lib/cena3D.js` — desktop, ≥1024 px, ≥2 núcleos, sem
-`prefers-reduced-motion`. **Celular nunca paga por ela.** Então ambição na 3D
-não é ambição em cima de quem tem aparelho fraco.
-
-#### As dependências — cada uma com justificativa, como ele exigiu
-
-| Biblioteca | Decisão | Por quê |
-| --- | --- | --- |
-| **GLSL / `ShaderMaterial`** | **SIM** | **zero byte extra** — é `three` puro. É de onde saem Fresnel, energia interna, ruído e a variação de transparência. Melhor relação valor/custo de longe, e é exatamente onde ele pediu para explorar a GPU |
-| **`@react-three/drei`** | **NÃO** (por ora) | o que atrairia é o `MeshTransmissionMaterial`, e ele **renderiza a cena para um buffer a cada quadro**. Além do custo, quebra o `extend()` seletivo que segura o chunk. Fresnel + refração *aproximada* em shader próprio dá quase o mesmo a custo ~0 |
-| **postprocessing / bloom** | **NÃO no primeiro corte** | exige `EffectComposer` e um passe de tela cheia. A alternativa barata é glow em geometria de casca com blending aditivo. **Medir primeiro**; só entra se a medição mostrar que o shader não alcança |
-| **GSAP** | **NÃO** | a crítica dele é certa — dezenas de `useFrame` descoordenados é arquitetura ruim. Mas o conserto é **uma timeline central**, e ela cabe em ~40 linhas. 25 kB gzip por 40 linhas não se justifica, e ele mesmo escreveu *"não adicione bibliotecas apenas porque são tecnicamente interessantes"* |
-| **PixiJS** (fallback 2D) | **NÃO** | a 2D existe para quem o portão recusou — máquina fraca. Trocar CSS de custo zero por um runtime de canvas é o oposto do motivo dela existir |
-
-#### As etapas
-
-1. ✅ geometria do raio **em código** (`geometriaDoRaio.js`): contorno medido da
-   arte, metade superior + núcleo + metade inferior, furo central, corte
-   Sutherland–Hodgman na horizontal;
-2. ✅ `ShaderMaterial` de cristal (`materialDeCristal.js`): Fresnel, energia
-   interna por ruído de valor, rampa cromática, luz do núcleo;
-3. ✅ núcleo como bipirâmide hexagonal que pulsa e ilumina as faces internas;
-4. ✅ fragmentos cortados do **próprio contorno** do raio, cor pela profundidade;
-5. ✅ **timeline central** (`linhaDoTempo.js`) em 9 fases + repouso, um único
-   `useFrame` (`RaioCristalino.jsx`);
-6. ⬜ medir antes/depois no mesmo aparelho (§0.3) e reavaliar cada otimização.
-
-#### `[10/09]` A RECONSTRUÇÃO DA GEOMETRIA — dois prompts novos do dono
-
-**O diagnóstico dele, na letra:** *"não está parecido com as imagens que te
-mandei, está totalmente deformado"*. E o prompt: *"quando digo qualidade 3D, não
-estou falando apenas de textura, glow ou shader — estou falando da própria
-malha, geometria, vértices, arestas, faces, topologia, silhueta"*.
-
-| Etapa | Estado |
-| --- | --- |
-| ✅ silhueta MEDIDA (`scripts/silhueta-da-marca.mjs`, `contornoDaMarca.js`) | 3.133 pontos brutos → 81 + 38 do furo |
-| ✅ sólido com chanfro, subdivisão e seção de lâmina (`solidoDeCristal.js`) | 436 → **8.220** triângulos · profundidade 0,137 → **0,372** |
-| ✅ núcleo em duas peças concêntricas, dimensionado pela LARGURA do furo | antes nascia com o dobro da largura do buraco |
-| ✅ fissura fina no lugar do vão | o corte era nas bordas do furo (21% da altura) |
-| ✅ ferramenta de OLHAR (`scripts/olhar-a-cena3d.mjs`) | 4 ângulos, com e sem material |
-| ✅ enquadramento medido do print da landing | topo caía atrás do cabeçalho: `scale 0.62/y 1.15` → `0.50/1.12` |
-| ✅ cristal SÓLIDO em vez de vidro | `depthWrite` e `FrontSide` de volta: as faces de trás atravessavam as da frente |
-| ✅ as faces respondem à luz | luz-chave fixa no shader; `uCorBase` já era o verde máximo e tudo clipava em 1.0 |
-| ✅ trava da crase no GLSL (`craseNoShader.test.js`) | o mesmo erro 3× na mesma sessão |
-| ⬜ **o que ainda não está bom** | ver abaixo |
-
-**O que continua aberto na peça**, conferido olhando o print da landing:
-
-- o raio ainda é **pequeno** na composição e a ponta de baixo encosta na linha
-  "sua base de operações gamer";
-- os fragmentos ainda não foram reavaliados depois da mudança de linguagem;
-- a rotação de repouso (±17°) faz a peça, que é fina, virar quase de perfil em
-  parte do ciclo;
-- **a arte `11-mestre-3d.webp` não foi usada como fonte de silhueta** — o brilho
-  verde saturado dela não se separa do cristal verde. Se a silhueta dela for
-  diferente da `01` de propósito, isso precisa vir do dono, não de limiar;
-- **custo por quadro não medido** com a malha nova (era a etapa 6, continua).
-
-**Do prompt dele que NÃO foi feito, e por quê:**
-
-| Pedido | Estado |
-| --- | --- |
-| pipeline Blender (retopologia, weighted normals, KTX2) | **não existe Blender neste ambiente**. A geometria é construída em código, que custa **zero byte** — um GLB otimizado do modelo dele daria 234 KB + 29 KB de decodificador |
-| ACES tone mapping + bloom moderado | não avaliado ainda |
-| fallback 2D premium com SVG oficial + GSAP | não avaliado ainda |
-| favicon/PWA/Open Graph a partir da identidade | pendente, e o dono já reprovou uma tentativa |
-
-#### O que foi entregue e **ainda não está bom** — palavra do dono
-
-> *"faz só o commit e faz o merge, assim mesmo, ainda não tá bonito, depois
-> vemos outras ferramentas e outras maneiras, pq não tá bonito"*.
-
-Mergeado nesse estado a pedido dele. Os defeitos conhecidos, escritos para não
-sumirem na conversa:
-
-| Defeito | Estado |
-| --- | --- |
-| o raio é **cortado no topo** pelo enquadramento | não corrigido |
-| o núcleo lê **pálido**, não como fonte de energia | não corrigido |
-| os fragmentos lêem como **cápsulas**, não como lascas | não corrigido |
-| a dramaturgia das 9 fases **nunca foi conferida quadro a quadro** | não verificado |
-| `eslint-disable react-hooks/immutability` no topo de `RaioCristalino.jsx` | **supressão, não conserto** (§6.1). O conserto: `<shaderMaterial>` como filho JSX + `ShaderMaterial` no `extend()` — custa o `extend()` seletivo, que segura o chunk |
-
-**O que NÃO pode morrer:** `IntersectionObserver`, `frameloop` controlado, DPR
-limitado, `ResizeObserver`, `root.unmount()`, carregamento sob demanda, o
-portão de aparelho e o fallback 2D.
+A reconstrução da cena 3D/2D da landing foi **cancelada pelo dono** e o código
+voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
+[docs/DECISOES.md](docs/DECISOES.md) — decisão não é backlog (§6.2, regra 4).
 
 ---
 
@@ -622,6 +519,19 @@ dependência técnica real** que decide o resto:
   sistema visual único com adaptações técnicas"*. Logo mestre, favicon, ícone
   PWA, monocromático e animação — todos o **mesmo raio**.
 
+  > **`[11/09]` A segunda tentativa foi construída e CANCELADA antes de
+  > commitar.** Ela gerava tudo das artes oficiais por script, sem desenhar
+  > nada: `.ico` com 16/32/48 dentro, apple-touch 180, PWA 192/512 + maskable,
+  > card de compartilhamento 1200×630 e a marca com alfa para os 7 componentes
+  > que hoje mostram o `Zap` do lucide. Custo medido no carregamento inicial:
+  > **+0,2 kB brutos**, depois de tirar o webp do embutimento em base64.
+  >
+  > **Nada disso existe no repositório** — o dono cancelou junto com a landing.
+  > O que sobrevive é o aprendizado, e ele está em
+  > [docs/DECISOES.md](docs/DECISOES.md): a folha de especificação dele manda
+  > usar a versão **chapada** nos tamanhos pequenos (*"funciona em 16×16"*) e a
+  > de cristal do 180 px para cima.
+
   **Hierarquia que decide qualquer conflito:** geometria do raio → silhueta →
   consistência com o que já existe → legibilidade em tamanho pequeno → cor →
   glow. *Se removermos o glow, a marca ainda funciona. Se removermos a cor, ainda
@@ -698,98 +608,22 @@ dependência técnica real** que decide o resto:
   *"deliberadamente mais simples"* — o certo é uma variante de 16 px com o furo
   **maior**, não espremer a mesma geometria.
 
-- ⬜ `[10/09]` 🟠 **3. RECONSTRUÇÃO RADICAL DA LANDING — 3D e 2D.** *A maior das
-  três. Referência da cena: `docs/identidade/referencias/10-cena-da-landing.webp`.*
+- ⬜ `[11/09]` 🟡 **A cena 3D da landing só avança com um modelo feito em
+  ferramenta 3D.** *Depende do dono — eu não tenho como destravar sozinho.*
 
-  **Não é evolução incremental.** A camada visual da cena é desmontada e
-  reconstruída; o que fica é a **infraestrutura de performance**.
+  A reconstrução em código foi **cancelada por ele** em 11/09, depois de duas
+  rodadas. O código voltou ao estado anterior ao PR #177. O motivo e os números
+  das duas tentativas estão em [docs/DECISOES.md](docs/DECISOES.md).
 
-  **O conceito, na frase dele:** *"um artefato cristalino de energia que está
-  vivo"*. O raio é a identidade, o cristal é o material, o núcleo é a fonte, o
-  vórtice é o nascimento, os fragmentos são a consequência.
+  **O que destrava:** ele modelar e animar o símbolo numa ferramenta 3D e me
+  entregar o arquivo. Daí em diante é meu: compressão, integração, portão de
+  aparelho, ciclo de vida e medição.
 
-  | O que muda | Em uma linha |
-  | --- | --- |
-  | **raio dividido** | metade superior + **core** + metade inferior, com uma **fissura visível mas pequena** — lê como um raio primeiro, dividido depois |
-  | **core** | pertence à mesma linguagem geométrica; pulsa, ilumina as faces internas e **sustenta** as duas metades |
-  | **entrada** | 7 fases: vazio → vórtice → convergência → core → formação do raio → ruptura curta → estabilização |
-  | **idle** | o vórtice quase some; o core é o coração da animação |
-  | **fragmentos** | acabam o torus/octaedro/dodecaedro/icosaedro nos quatro cantos; entram fragmentos da **mesma família cristalina**, distribuídos em **profundidade** |
-  | **2D** | **não é versão pobre da 3D** — é interpretação gráfica da mesma identidade, em SVG + CSS, com a mesma dramaturgia |
-  | **arquitetura** | um **controlador central** de animação (timeline de estados), não lógica espalhada por objeto |
-
-  > ### `[10/09]` A REGRA DA IMAGEM FOI INVERTIDA PELO DONO
-  >
-  > **Estava escrito aqui:** *"a imagem 3D é **referência, não asset** — nada de
-  > pôr a imagem na Landing, usar como background, textura, sprite ou plano"*.
-  >
-  > **Ele mudou:** *"quero ajustar a abordagem… quero que você **USE ESSAS
-  > IMAGENS COMO BASE REAL DA EXPERIÊNCIA visual**, em vez de tentar recriar
-  > tudo do zero"*.
-  >
-  > **O que continua valendo da regra antiga**, porque ele repetiu junto: nada
-  > de `<img>` solto, background, "copia e cola", galeria ou slideshow. A
-  > exigência virou *"construa uma composição visual em torno dessas imagens"*.
-  >
-  > Registrado assim, com as duas versões, porque decisão revertida em silêncio
-  > volta como "conserto" daqui a dois meses (§6.2, regra 4).
-
-  ### `[10/09]` ETAPA FEITA: a cena 2D
-
-  **A 2D está construída e é a versão que TODO MUNDO recebe.** Quatro camadas de
-  profundidade lidas da referência (atmosfera · fragmentos longe · anéis + raio ·
-  fragmentos perto desfocados e cortados pela borda), com o raio como brasão
-  acima do título.
-
-  | Medido | |
-  | --- | --- |
-  | custo de JavaScript | **0 kB** — A/B com `git stash`: 735,1 kB / 222,5 kB gzip **com e sem** a cena |
-  | asset desktop | 18,9 kB · celular 9,5 kB (só um carrega por aparelho) |
-  | animação | só `transform`/`opacity`, no compositor — nenhum `rAF`, nenhum estado |
-
-  **Três defeitos meus que só o print pegou**, registrados para não voltarem:
-
-  1. **retângulo preto tapando o grid** — `Landing.jsx` embrulha tudo num
-     `z-10`, e `z-index` cria contexto de empilhamento: o `mix-blend-mode:
-     screen` nunca alcançava o fundo da página. Três tentativas até eu parar de
-     chutar e instrumentar a cadeia de ancestrais (§1.2). Tirar o `z-10`
-     quebraria a ordem de pintura; a saída foi máscara elíptica;
-  2. **anéis 13vh abaixo do núcleo** — tamanho do raio e centro de órbita
-     digitados separados. Agora tudo deriva por `calc()` ancorado no núcleo;
-  3. **no celular o raio ocupava metade da largura** — `vh` não sabe nada sobre
-     largura. Virou `min(42vh, 56vmin)`.
-
-  ### O que FALTA nesta tarefa
-
-  - **a 3D** — a metade que ele pediu junto e que não foi feita;
-  - **a dramaturgia de entrada** (vazio → vórtice → convergência → core →
-    materialização → estabilização). Hoje a cena já nasce estabilizada;
-  - **a leitura dele sobre a linguagem visual da 2D** antes de a 3D ser
-    construída em cima dela.
-
-  **O que NÃO pode morrer na reconstrução** — é infraestrutura, não estética:
-  `IntersectionObserver`, suspensão fora da viewport, `ResizeObserver`, cleanup,
-  `root.unmount()`, controle de DPR, resolução adaptativa, o portão de bytes e o
-  fallback. Reavaliar cada uma; substituir só conscientemente e por algo
-  equivalente ou melhor.
-
-  **FORA DO ESCOPO:**
-  - não alterar autenticação, autorização, banco, RLS, roles, permissões ou API;
-  - não mexer em páginas sem relação com a Landing;
-  - não trocar bibliotecas nem atualizar dependência sem necessidade;
-  - não aproveitar para reorganizar o projeto;
-  - achado de segurança incidental **documenta, não corrige aqui**.
-
-  **Restrição de processo, explícita:** *"não faça commit nem push sem minha
-  autorização"*. Pode criar, alterar, remover, testar e analisar — **para antes
-  do commit**.
-
-  > **O que eu preciso dizer antes de começar, não depois.** Este item é grande
-  > e a régua do §0.1 vale: se o contexto acabar no meio, o certo é **parar num
-  > ponto íntegro e registrar onde parei**, nunca empurrar cena pela metade. E há
-  > uma tensão real entre *"faça bonito"* e o orçamento de bytes do CI — se o
-  > resultado bonito não couber no teto, quem decide é ele, não eu sozinho.
-
+  **O caminho técnico já está medido**, para não ser redescoberto: um GLB
+  otimizado do modelo de referência dá **234 KB** (Meshopt + WebP 1024) mais
+  **29 KB** de decodificador. Draco dá arquivo menor (189 KB) e decodificador
+  muito maior (286 KB de wasm + 59 KB de wrapper) — **Meshopt ganha** nesta
+  conta, e é a escolha quando o dia chegar.
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
 
@@ -1242,8 +1076,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.600<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.503<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.820<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

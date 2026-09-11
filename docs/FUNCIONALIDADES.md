@@ -72,32 +72,26 @@ estado de autenticação.
   > `effectiveType` foi **removido** no mesmo dia: era o único que mudava com o
   > tempo, então a mesma máquina trocava de modo entre visitas. Ver
   > [DECISOES.md](DECISOES.md).
-- **`[10/09]` `RaioCristalino`** — substituiu `LogoBolt` e `FloatingShapes`. A
-  peça é **construída em código**, não extrudada de um `Shape` de 6 pontos:
-  `geometriaDoRaio.js` parte de um contorno medido na arte oficial (16 pontos +
-  8 do furo central), corta o corpo em duas metades por Sutherland–Hodgman e
-  deixa uma fissura entre elas; o núcleo é uma bipirâmide hexagonal própria; e
-  os fragmentos são lascas cortadas do **próprio contorno do raio**, não
-  icosaedros e toros genéricos.
-  - **Material** (`materialDeCristal.js`): `ShaderMaterial` escrito à mão —
-    Fresnel, energia interna por ruído de valor em três oitavas, rampa
-    cromática (ciano de um lado, roxo do outro) e o termo `doNucleo`, que faz o
-    pulso do núcleo **iluminar as faces internas** das metades. Zero byte de
-    biblioteca: é `three` puro.
-  - **Ritmo** (`linhaDoTempo.js`): uma timeline central de 9 fases — vazio,
-    vórtice, convergência, núcleo, metades, fragmentos, estabilização, pulso,
-    repouso — em vez de um `useFrame` por objeto. O relógio é acumulado do
-    `delta` porque o fiber **zera** `clock.elapsedTime` a cada troca de
-    `frameloop`, e a cena troca toda vez que sai e volta para a viewport.
-  - **Um único `useFrame`** (`RaioCristalino.jsx`), no topo: ele avança a
-    timeline e escreve em `ref`s e `uniforms`. Nenhum filho tem laço próprio —
-    é o que torna o portão de viewport confiável, porque parar a cena passa a
-    ser parar uma coisa.
+- **`LogoBolt`**: raio 3D sólido extrudado (silhueta do ícone Zap da marca),
+  cresce de escala 0→1 com `easeOutCubic` ao aparecer; acompanhado por um
+  `pointLight` (`flashRef`) que estoura no nascimento (intensidade 14→0) e
+  decai rápido — "primeiro a luz, depois a forma se revela". Roda
+  continuamente no eixo Y, revelando a profundidade da extrusão; zumbido neon
+  suave de `emissiveIntensity` sem flickering.
+- **`FloatingShapes`**: formas geométricas 3D wireframe flutuantes nos quatro
+  cantos — **gem** (dois icosaedros contra-rotativos, verde-neon), **ring**
+  (toro, roxo), **diamond** (octaedro, laranja) e **dodeca** (dodecaedro,
+  ciano). Todos com `wireframe: true` e `depthWrite: false` para ficarem
+  visualmente atrás do raio. O `LogoBolt` usa `renderOrder={1}` para garantir
+  que sempre renderize por cima, independente da posição Z. Cada forma
+  materializa com overshoot (`easeOutBack`) em cascata temporal
+  (`SHAPE_STAGGER = 0.16s`).
+- **`Lightning`**: raios 3D animados cruzando a cena.
 
-  > **`[10/09]` Isto está no ar e o dono disse que "ainda não tá bonito".**
-  > Mergeado nesse estado a pedido dele. Os defeitos conhecidos — raio cortado
-  > no topo, núcleo pálido, fragmentos lendo como cápsulas, dramaturgia das 9
-  > fases nunca conferida quadro a quadro — estão no `BACKLOG.md`, não aqui.
+  > **Correção `[11/09]`:** entre 10 e 11/09 este trecho descreveu uma cena
+  > reconstruída (`RaioCristalino`, shader de cristal, timeline de 9 fases). Ela
+  > foi **cancelada pelo dono** e o código voltou ao que está descrito acima. O
+  > motivo está em [DECISOES.md](DECISOES.md).
 
 **Intro de abertura** (`IntroLightning`):
 - Overlay `fixed inset-0 z-[60]` que cobre tudo no primeiro carregamento.
