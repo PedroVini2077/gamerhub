@@ -148,6 +148,18 @@ Cada achado sai com as três: **risco** (o que dá para fazer), **impacto** (o q
 acontece se fizerem) e **solução** (o que fecha). Sem impacto não dá para
 decidir; sem solução é só susto.
 
+> **`[11/09]` Os exemplos desta tabela são HISTÓRICOS, e um deles já nem existe
+> mais.** Conferido contra o sistema por causa da issue automática de
+> documentação (#166): `cleanup-expired-posts` **não está** entre as
+> <!--n:edge.funcoes-->8<!--/n--> Edge Functions de hoje. Ela continua aqui de
+> propósito — a coluna se chama "exemplo real deste projeto", e o valor dela é
+> mostrar como era cada severidade quando doeu. Quem quiser o inventário do que
+> existe **agora** olha `supabase/functions/`.
+>
+> Conferido junto, e continua verdade: `role_rank()`, `is_staff()` e
+> `is_super()` existem as três, então a regra "hierarquia nunca se escreve à
+> mão", logo abaixo, continua executável.
+
 **Nunca escrever "está seguro" sem evidência que sustente.** O certo é dizer o
 que foi verificado e como — "testei o ataque X e recebi 401" vale; "revisei e
 parece ok" não é garantia, é impressão. Ver o quadro de fato/inferência/hipótese
