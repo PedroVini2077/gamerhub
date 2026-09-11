@@ -46,7 +46,7 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**37 itens abertos** (+ 1 ideia sem compromisso)
+**38 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -562,6 +562,26 @@ dependência técnica real** que decide o resto:
   reprovaria todo PR por 7 funções que só o dono pode destravar, e portão que
   grita por algo que ninguém pode resolver ensina a ignorar o canal (§0.2, 4ª
   regra). `npm run edges` responde a pergunta a qualquer momento.
+
+- ⬜ `[11/09]` 🟠 **A MARCA E A LANDING — briefing gravado, esperando UMA decisão.**
+  *Tudo em [`docs/identidade/BRIEFING-2026-09.md`](docs/identidade/BRIEFING-2026-09.md);
+  as duas imagens dele em `docs/identidade/referencias/12-` e `13-`.*
+
+  **O que o dono já decidiu:** *"eu queria realmente usar GamerHub, G e o GH
+  como marca em lugares distintos"* — não é escolher um, é um **sistema** com os
+  três. Isso encerra a pergunta que eu tinha feito.
+
+  **O que eu já entreguei:** veredicto sobre as 8 propostas dele (quais eu
+  consigo executar e quais não), os três construídos na paleta do site, e duas
+  recomendações — marca **03 + 08** (espaço negativo com disciplina minimalista)
+  e landing em **três atos**, com a marca se montando na frente de quem chega.
+
+  **O que trava tudo, e é dele:** qual forma do G fica. Refinar três candidatas
+  gasta dois terços do esforço no que vai ser descartado.
+
+  Duas decisões menores esperam junto: a **tese da fenda** (o verde e o roxo
+  param de brigar e passam a se encontrar — custo zero, é narrativa) e a **troca
+  da fonte de display**, que pode esperar porque atinge o site inteiro.
 
 - ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
   *Referências em [`docs/identidade/`](docs/identidade/README.md).*
