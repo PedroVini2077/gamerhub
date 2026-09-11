@@ -261,3 +261,61 @@
 #root {
   padding-top: var(--altura-do-aviso, 0px);
 }
+
+/* ── `[11/09]` A CONVERGÊNCIA do hero ────────────────────────────────────────
+ *
+ * O que sobrou depois de a cena 3D sair: trajetos chegando de fora e pousando
+ * no centro, onde o nome está. A regra aqui é uma só — nada anima fora de
+ * `transform` e `opacity`, que rodam no compositor. A cena que saiu pesava
+ * 708 kB e ocupava a thread principal; isto custa markup.
+ */
+.convergencia-ponto {
+  /* O `animateMotion` do SVG move o ponto; o CSS só cuida do brilho ao chegar.
+   * Separar as duas coisas é o que permite desligar o movimento sem apagar o
+   * desenho quando alguém pede menos animação. */
+  animation-name: convergenciaPulso;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+  filter: drop-shadow(0 0 1.2px currentColor);
+}
+
+@keyframes convergenciaPulso {
+  0%   { opacity: 0; }
+  12%  { opacity: 0.7; }
+  82%  { opacity: 0.7; }
+  /* Some ao pousar: o ponto não se acumula no centro, ele é absorvido. */
+  100% { opacity: 0; }
+}
+
+/* Quem pediu menos movimento recebe a composição PARADA, não uma tela vazia:
+ * as linhas e o núcleo continuam contando a mesma coisa. */
+@media (prefers-reduced-motion: reduce) {
+  .convergencia-ponto { animation: none; opacity: 0.55; }
+  .convergencia animateMotion { display: none; }
+}
+
+/* A zona limpa da convergência é uma elipse proporcional ao hero — e no celular
+ * o bloco de TEXTO fica proporcionalmente mais largo: o parágrafo quebra em
+ * três linhas e ocupa quase toda a largura, enquanto no desktop ele cabe em
+ * duas e sobra margem dos dois lados. Medido no print de 400×800: um traço
+ * passava rente a "ranks e XP".
+ *
+ * Afastar tudo por `scale` resolve sem JavaScript e sem estado: a escala
+ * empurra a zona limpa E os traços na mesma proporção, então a geometria
+ * continua consistente — o que muda é só quanto dela sobra dentro da tela.
+ * A origem é o ponto de convergência, não o centro do elemento. */
+@media (max-width: 640px) {
+  .convergencia { transform: scale(1.55); transform-origin: 50% 49%; }
+}
+
+/* `[11/09]` O preenchimento da marca na abertura.
+ *
+ * Ele entra DEPOIS do contorno terminar de se desenhar (0,3 s) e junto com o
+ * clarão (0,28 s), então a marca "acende" em vez de aparecer. Some com o resto
+ * no mesmo tempo do traço, para a abertura continuar com a duração medida. */
+.intro-marca-preenche {
+  opacity: 0;
+  animation: introMarcaAcende 0.34s ease-out 0.26s forwards,
+             raioSome 0.75s ease-out forwards;
+}
+@keyframes introMarcaAcende { to { opacity: 1; } }

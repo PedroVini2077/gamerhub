@@ -19,6 +19,57 @@
 
 ---
 
+### `[11/09]` A cena 3D saiu inteira — e o que ela custava NÃO era carregamento
+
+**O que mudou.** O hero deixou de ser uma cena WebGL e passou a ser
+`ConvergenciaDoHub`: SVG estático com animação de `opacity` e `animateMotion`.
+Saíram do projeto `three`, `@react-three/fiber`, `Scene3D`, `Scene2D`,
+`scene3d/`, `BotaoCena3D`, `lib/cena3D.js`, `lib/ritmoDoRaio.js` e
+`e2e/cena-3d.mjs`.
+
+**O número que NÃO mudou, e ele é o mais importante desta entrada:**
+
+| | Antes | Depois |
+| --- | --- | --- |
+| carregamento inicial | 735,0 kB · 222,9 kB gzip | **735,0 kB · 222,9 kB gzip** |
+| chunk da `Landing` | 17,9 kB | **21,1 kB** |
+| chunk da cena | 708 kB, sob demanda | **não existe** |
+
+O carregamento inicial não melhorou **um byte**, e a `Landing` ficou 3,2 kB
+*maior* — porque o SVG novo mora nela. Isso é exatamente o que a documentação
+antiga já dizia e que era verdade: a cena era `lazy` e ficava atrás do portão
+por aparelho, então ela nunca esteve no caminho crítico.
+
+**O que se ganhou é o que este arquivo passou três rodadas medindo:** os 708 kB
+que **quem recebia a cena** baixava, os 887 kB descompactados que o navegador
+tinha de parsear e compilar, e o laço de animação — 5.877 ms de thread bloqueada
+em 6 s de página parada, medido em 02/09. Tudo isso virou zero por remoção, não
+por otimização.
+
+> **A lição de método, e ela custou três rodadas.** Eu passei de 27/08 a 10/09
+> otimizando a cena: resolução adaptativa (desfeita pelo dono), `createRoot` no
+> lugar do `<Canvas>` (−20%), malha construída em código (76 → 30 ms), laço
+> parando fora da tela. Cada rodada tinha medição própria e ganho real.
+>
+> **Nenhuma delas fez a pergunta que resolveu o problema:** *isto precisa
+> existir?* O dono fez, e a resposta estava no briefing dele desde o começo —
+> *"prefiro isso a adicionar 3D apenas para deixar a página mais
+> impressionante"*. A cena ainda desenhava o **raio**, que é a marca aposentada.
+>
+> Otimizar mede *quanto custa*. Só a pergunta anterior mede *se vale*.
+
+**O portão mudou junto.** `orcamento-de-bytes.mjs` tinha uma exceção nominal
+para o chunk da cena (`CHUNK_PESADO_PERMITIDO`) e exigia que ele existisse como
+arquivo separado. As duas saíram: sem a exceção, o teto de 320 kB por arquivo
+passa a valer para **todo** chunk sem furo — o maior hoje é o `index`, com
+247,6 kB. A lista de fronteiras de `lazy()` que precisam sobreviver não ficou
+vazia (lista vazia é portão que aprova tudo): aponta agora para `Admin` e
+`Owner`, cujo vazamento para o pacote inicial faria todo visitante anônimo
+baixar o código da equipe. Provado reinjetando a falha — some com o chunk do
+`Admin` e o portão sai com código 1 nomeando o arquivo.
+
+---
+
 ### `[10/09]` Construir a malha custava 76 ms de thread principal, e caiu para 30
 
 > **`[11/09]` Esta medição é de código que NÃO EXISTE MAIS.** A reconstrução da
@@ -780,9 +831,20 @@ longe dela**. Ninguém vê, e a CPU paga.
 | Cena visível | 125 |
 | Cena fora da tela | **0** |
 
-Travado por `e2e/cena-3d.mjs`, que roda no CI e envolve **todas as chamadas de
-desenho do WebGL** para contar desenho de fato. Provado nos dois sentidos: com o
-`frameloop` fixo em `always`, o teste falha acusando 140 desenhos fora da tela.
+Foi travado por `e2e/cena-3d.mjs`, que rodava no CI e envolvia **todas as
+chamadas de desenho do WebGL** para contar desenho de fato. Provado nos dois
+sentidos na época: com o `frameloop` fixo em `always`, o teste falhava acusando
+140 desenhos fora da tela.
+
+> **`[11/09]` O verbo acima estava no presente, e deixou de ser verdade hoje.**
+> A cena 3D foi removida, e `e2e/cena-3d.mjs` saiu com ela — junto com o job do
+> CI que o rodava. Portão que vigia um componente inexistente só consegue ficar
+> verde, e verde sobre nada é a falha do §1.5 dentro da própria ferramenta que
+> existe para pegá-la.
+>
+> A medição fica: 125 desenhos com a cena visível contra **0** fora da tela é o
+> que provou que o custo era o laço, não o arquivo. O que não fica é a frase
+> dizendo que alguma coisa continua vigiando isso.
 
 > **`[10/09]` A trava envolvia só `gl.drawElements`, e isso era um buraco.**
 > Geometria **indexada** desenha por `drawElements`; geometria **não indexada**,

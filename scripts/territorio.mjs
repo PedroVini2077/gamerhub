@@ -79,11 +79,14 @@ export const TERRITORIO = {
   'docs/identidade/README.md': [
     'index.html',
     'public',
-    // `[11/09]` A cena da Landing chegou a USAR a arte como asset de runtime
-    // (`src/assets/marca`, `landing/cena`), e isso foi CANCELADO pelo dono — o
-    // código voltou ao anterior e as pastas deixaram de existir. Sobra a cena
-    // 2D, que continua sendo o que aparece para quem não recebe a 3D.
-    'src/components/landing/Scene2D.jsx',
+    // `[11/09]` Aqui apontava para `Scene2D.jsx`, a cena de fallback — apagada
+    // junto com a 3D quando o hero virou `ConvergenciaDoHub`. O que exibe a
+    // marca hoje é o componente dela e a abertura, e são esses que fazem o
+    // índice das referências envelhecer.
+    'src/components/ui/MarcaGH.jsx',
+    'src/lib/marca.js',
+    'src/components/landing/IntroLightning.jsx',
+    'scripts/gerar-icones.mjs',
   ],
 
   // O registro do que foi REPROVADO. Ele envelhece junto com a marca: se o
@@ -144,15 +147,21 @@ export const TERRITORIO = {
   ],
   'docs/OPERACAO.md': ['.github/workflows', 'scripts'],
   // Investigação de desempenho: envelhece quando o que ela mede muda de forma —
-  // a cena 3D, o orçamento de bytes e o build.
+  // o fundo do hero, o orçamento de bytes e o build.
   'docs/DESEMPENHO.md': [
-    'src/components/landing/scene3d',
-    // `resolucaoDaCena.js` esteve aqui e foi APAGADO no PR #105 ("desfaz a
-    // otimização de resolução"). A entrada sobreviveu ao arquivo, e como o
+    // `[11/09]` Aqui apontava para `landing/scene3d` e `lib/cena3D.js`, os dois
+    // apagados com a cena. O que o `DESEMPENHO.md` mede no hero passou a ser o
+    // fundo em SVG e a camada de fluxo — é o custo deles que a próxima medição
+    // precisa confrontar.
+    //
+    // `resolucaoDaCena.js` esteve nesta lista e foi APAGADO no PR #105 ("desfaz
+    // a otimização de resolução"). A entrada sobreviveu ao arquivo, e como o
     // relatório pula caminho inexistente, `DESEMPENHO.md` ficou meio vigiado
     // desde então sem nada acusar. É o apodrecimento que o portão de cobertura
-    // passou a pegar.
-    'src/lib/cena3D.js',
+    // passou a pegar — e é a mesma armadilha que as duas entradas acima
+    // reproduziriam se eu só as tivesse removido sem pôr as sucessoras.
+    'src/components/landing/ConvergenciaDoHub.jsx',
+    'src/components/landing/FluxoDeDados.jsx',
     'scripts/orcamento-de-bytes.mjs',
     'vite.config.js',
   ],

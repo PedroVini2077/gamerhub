@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { CAMINHO_DA_MARCA, PARADAS_DO_GRADIENTE } from '../../lib/marca';
+
 /**
  * A abertura do Hero: um raio verde cai do topo, estoura num clarão e some,
  * liberando o conteúdo.
@@ -45,8 +47,22 @@ import { useEffect, useRef } from 'react';
  */
 
 // Raio principal + uma bifurcação, em viewBox 0..100 (slice cobre a tela).
-const BOLT = 'M 55 -6 L 46 18 L 54 21 L 44 40 L 52 43 L 47 56';
-const FORK = 'M 54 21 L 61 33 L 56 36';
+/**
+ * `[11/09]` A abertura deixou de ser um raio e passou a ser A MARCA se
+ * desenhando.
+ *
+ * O raio foi aposentado quando o dono trouxe o monograma GH, e a intro era o
+ * último lugar onde ele sobrevivia — e o pior de todos, porque é **a primeira
+ * coisa que alguém vê** ao chegar no site.
+ *
+ * A técnica não mudou, e isso é de propósito: o `stroke-dashoffset` em CSS foi
+ * escolhido por medição (ver o cabeçalho acima), e serve à marca melhor ainda
+ * do que servia ao raio — um contorno fechado de 39 vértices se desenha
+ * inteiro, sem começo nem fim aparentes.
+ *
+ * O caminho é o MESMO do favicon e do cabeçalho: `lib/marca.js`. Se a arte
+ * mudar, esta abertura muda junto, sem ninguém lembrar de vir aqui.
+ */
 
 /** 0,82 s de espera + 0,45 s de fade — o mesmo tempo da versão anterior. */
 const DURACAO_MS = 1270;
@@ -105,19 +121,27 @@ export default function IntroLightning({ onComplete }) {
         viewBox="0 0 100 100"
         preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 w-full h-full"
-        style={{ filter: 'drop-shadow(0 0 2px #39ff14) drop-shadow(0 0 7px #39ff14)' }}
+        style={{ filter: 'drop-shadow(0 0 2px #00ed54) drop-shadow(0 0 9px #009dfc)' }}
       >
+        <defs>
+          <linearGradient id="intro-marca" x1="0%" y1="0%" x2="100%" y2="0%">
+            {PARADAS_DO_GRADIENTE.map(({ pos, cor }) => (
+              <stop key={pos} offset={`${pos}%`} stopColor={cor} />
+            ))}
+          </linearGradient>
+        </defs>
+
+        {/* Primeiro o contorno se desenha… */}
         <path
           className="raio-intro-traco"
           pathLength="1"
-          d={BOLT} fill="none" stroke="#39ff14" strokeWidth="1.4"
+          d={CAMINHO_DA_MARCA} fill="none" stroke="url(#intro-marca)" strokeWidth="1.6"
           strokeLinecap="round" strokeLinejoin="round"
         />
+        {/* …e então a marca se preenche, no instante do clarão. */}
         <path
-          className="raio-intro-traco"
-          pathLength="1"
-          d={FORK} fill="none" stroke="#7dff5e" strokeWidth="0.9"
-          strokeLinecap="round" strokeLinejoin="round"
+          className="intro-marca-preenche"
+          d={CAMINHO_DA_MARCA} fill="url(#intro-marca)" fillRule="evenodd"
         />
       </svg>
     </div>

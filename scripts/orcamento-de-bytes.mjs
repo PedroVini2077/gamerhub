@@ -92,15 +92,26 @@ const TETO_GZIP_KB = 228;
 // não via nada. Medido: o chunk da Landing foi de 17,9 kB para **907 kB**.
 const TETO_POR_CHUNK_KB = 320;
 
-// A cena 3D é a única exceção ao teto acima: 887 kB, deliberadamente sob
-// demanda e atrás dos portões de aparelho (`lib/cena3D.js`).
-const CHUNK_PESADO_PERMITIDO = 'LandingScene';
+// `[11/09]` A cena 3D era a única exceção ao teto acima — 887 kB sob demanda,
+// atrás dos portões de aparelho. **Ela não existe mais**: o hero passou a ser
+// `ConvergenciaDoHub`, SVG estático, e nada mais importa `three`. Com a exceção
+// removida, o teto por arquivo passa a valer para TODO chunk sem furo.
+//
+// Medido depois da remoção: o maior chunk é o `index` com 247,6 kB — 72 kB de
+// folga até o teto, e nenhum candidato perto dele.
 
-// E ela precisa CONTINUAR existindo como arquivo separado. Se o `lazy()` virar
-// `import` estático, este chunk simplesmente some — foi o que aconteceu no
-// teste acima. Arquivo que deveria existir e não existe é falha silenciosa:
-// nada quebra, o site funciona, e só o carregamento fica três vezes mais caro.
-const PRECISA_TER_CHUNK_PROPRIO = ['LandingScene'];
+// As fronteiras de `lazy()` que precisam CONTINUAR existindo como arquivo
+// separado. Se um `lazy()` virar `import` estático, o chunk simplesmente some —
+// nada quebra, o site funciona, e só o carregamento fica mais caro. Falha
+// silenciosa clássica (§1.5), e foi assim que a cena 3D furou o orçamento.
+//
+// `[11/09]` A lista deixou de apontar para `LandingScene`, que foi apagado.
+// **Lista vazia não era opção**: um portão que não vigia nada passa para sempre
+// e parece vigiar — o mesmo vício de vacuidade que o `varrerFontes.js` fecha nas
+// travas. Ela aponta agora para os dois painéis, que são a maior superfície lazy
+// que sobrou (`Admin` 113 kB, `Owner` 47 kB) e cujo vazamento para o pacote
+// inicial faria todo VISITANTE ANÔNIMO baixar o código da equipe.
+const PRECISA_TER_CHUNK_PROPRIO = ['Admin', 'Owner'];
 
 function kb(n) { return (n / 1024).toFixed(1); }
 
@@ -165,7 +176,6 @@ if (comprimido / 1024 > TETO_GZIP_KB) {
 const todosOsChunks = readdirSync(join(DIST, 'assets')).filter(n => n.endsWith('.js'));
 
 for (const nome of todosOsChunks) {
-  if (nome.includes(CHUNK_PESADO_PERMITIDO)) continue;
   const tamanho = statSync(join(DIST, 'assets', nome)).size;
   if (tamanho / 1024 > TETO_POR_CHUNK_KB) {
     falhas.push(
@@ -184,8 +194,11 @@ for (const esperado of PRECISA_TER_CHUNK_PROPRIO) {
       `não existe nenhum chunk \`${esperado}-*.js\` em dist/assets.\n`
       + '    Isso significa que o código dele foi absorvido por outro arquivo, ou seja,\n'
       + '    o `lazy(() => import(...))` virou `import` estático em algum lugar.\n'
-      + '    Verificado: quando isso acontece com a cena 3D, o chunk da Landing vai\n'
-      + '    de 17,9 kB para 907 kB e o visitante baixa tudo antes de ver a página.');
+      + '    Procure por `import X from` onde deveria haver `lazy(() => import(X))`\n'
+      + '    — o suspeito de sempre é `src/paginasLazy.js`.\n'
+      + '    Custo: os painéis da equipe passam a viajar no pacote que TODO\n'
+      + '    visitante anônimo baixa. Já aconteceu com a cena 3D, e o chunk da\n'
+      + '    Landing foi de 17,9 kB para 907 kB sem nada quebrar.');
   }
 }
 

@@ -350,9 +350,16 @@ chunk da cena 3D tinha 236 KB comprimidos e **887 KB** depois de descompactar.
 E se ela vem inteira: `three` entra com o renderer WebGL completo mesmo quando
 o código usa cinco símbolos. Tree-shaking não alcança tudo.
 
-**2. Decoração cara é opcional, e a decisão nunca é minha sozinha.** Portão por
-aparelho (`lib/cena3D.js`) decide o padrão; **a escolha explícita do visitante
-vence o portão**. Palpite de heurística não passa por cima de quem clicou.
+**2. Decoração cara é opcional, e a decisão nunca é minha sozinha.** Quando
+existir portão por aparelho, ele decide o **padrão**; a escolha explícita do
+visitante **vence o portão**. Palpite de heurística não passa por cima de quem
+clicou.
+
+> **`[11/09]` O exemplo que sustentava esta regra era a cena 3D da landing, e
+> ela FOI REMOVIDA** — o dono lembrou que o briefing dele já dizia *"prefiro
+> isso a adicionar 3D apenas para deixar a página mais impressionante"*. A regra
+> continua valendo para a próxima decoração cara; o que mudou é que hoje não há
+> nenhuma. Custo medido da remoção: **−708 kB** de chunk.
 
 **3. Toda espera precisa de teto absoluto.** Adiar carregamento até `load`, até
 `requestIdleCallback` ou até qualquer evento cria o caso em que o evento não
