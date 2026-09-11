@@ -93,6 +93,18 @@ export const TERRITORIO = {
     'docs/identidade/tentativas',
   ],
 
+  // `[11/09]` O briefing da reformulacao da marca e da landing. O territorio
+  // dele e a LANDING e a tela de entrada — os dois lugares onde a marca aparece
+  // para quem chega. No dia em que a direcao for escolhida e implementada, este
+  // documento passa a descrever uma decisao tomada em vez de uma em aberto, e
+  // precisa ser relido. As imagens de referencia nao mudam sozinhas; o que
+  // envelhece e a distancia entre o que ele propoe e o que o site faz.
+  'docs/identidade/BRIEFING-2026-09.md': [
+    'src/components/landing',
+    'src/components/auth',
+    'docs/identidade/referencias',
+  ],
+
   'docs/SEGURANCA.md': [
     'supabase/functions',
     'src/hooks/useAuth.jsx',

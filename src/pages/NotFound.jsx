@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Zap } from 'lucide-react';
+import MarcaGH from '../components/ui/MarcaGH';
 
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 grid-bg">
       <div className="text-center">
         <div className="flex items-center justify-center gap-2 mb-6">
-          <Zap size={24} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 8px #39ff14)' }} />
+          <MarcaGH tamanho={24} />
           <span className="font-display font-bold text-xl text-neon-green">GAMER</span>
           <span className="font-display font-bold text-xl text-white">HUB</span>
         </div>

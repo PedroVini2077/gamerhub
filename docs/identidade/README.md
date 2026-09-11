@@ -110,3 +110,59 @@ sai qualquer derivado. O motivo do cancelamento está em
 | `#060608` | fundo | quase preto |
 
 Não introduzir paleta nova. Não transformar o símbolo em arco-íris.
+
+---
+
+## `[11/09]` A MARCA NOVA — o monograma GH
+
+> As referências `01`–`11` acima são a identidade do **raio**, aposentada em
+> 11/09. Ficam como histórico. O que vale agora é esta seção.
+
+### Como ela entrou no site, e por que não foi desenhada por mim
+
+O dono trouxe a arte pronta e pediu uma coisa só: *"pelo amor de Deus, eu
+preciso de fidelidade nisso aqui"*. Eu já tinha tentado desenhar marca aqui duas
+vezes e as duas foram recusadas — a última com a palavra dele: *"muito
+gradadão"*. Redesenhar no olho seria a terceira tentativa do mesmo erro.
+
+O caminho foi outro: **derivar a geometria dos pixels da arte**.
+
+| Etapa | Ferramenta |
+| --- | --- |
+| traçar o contorno da versão monocromática | `scripts/tracar-marca.mjs` |
+| provar que o traço é fiel | `scripts/conferir-fidelidade.mjs` |
+| gerar favicon e ícones do PWA | `scripts/gerar-icones.mjs` (`npm run icones`) |
+
+**O número da fidelidade:** 2.316 pontos de contorno viraram **39 vértices**, e
+a diferença contra a arte é de **1,80% da área da marca** — toda ela na borda de
+1 px do anti-serrilhado, que é o limite do que vetorizar bitmap alcança.
+
+**O gradiente também foi medido, não escolhido.** A primeira versão usava eixo
+diagonal e três paradas; renderizada ao lado da arte, o verde virava um cantinho
+enquanto no original ele domina a esquerda. Medindo 7.754 pixels de marca em
+seis faixas, o eixo é **horizontal** e o verde ocupa os primeiros ~30%.
+
+### A fonte única
+
+`src/lib/marca.js` guarda o caminho e as paradas. Dele saem o componente React,
+o `favicon.svg` e os três PNGs do PWA — **cinco lugares, uma fonte**. Para mudar
+a marca, troca-se a arte e roda-se `npm run icones`; nunca se edita um ícone.
+
+Travas em `src/lib/__tests__/marca.test.js`: o favicon tem que conter o mesmo
+caminho do componente, o raio não pode voltar como marca, e ninguém pode copiar
+o `d` para dentro de outro componente.
+
+### O que NÃO deu certo, e está registrado para não ser tentado de novo
+
+**A marca não sobrevive à extrusão 3D.** A peça central do hero era o raio
+extrudado (`scene3d/SceneObjects.jsx`), e trocá-la pelo GH foi tentado duas
+vezes em 11/09:
+
+| Tentativa | Resultado |
+| --- | --- |
+| chanfro do raio (`bevelSize: 0.04`) | virou um **borrão verde arredondado** — o chanfro engoliu as contraformas, que no GH têm ~0.1 de largura |
+| chanfro mínimo (`0.008`) | as contraformas apareceram, mas a peça continua ilegível girando, e **sólida em verde** |
+
+A razão é de forma, não de ajuste: o GH é um monograma **plano**, de traços
+finos, cuja identidade é o **gradiente**. Sólido verde em rotação destrói as
+três coisas. A mudança foi revertida e a decisão está no `BACKLOG.md`.

@@ -1,13 +1,14 @@
 import { createElement } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, PencilLine, Zap, ArrowRight, Gamepad2 } from 'lucide-react';
+import { ArrowLeft, PencilLine, ArrowRight, Gamepad2 } from 'lucide-react';
 import { BLOCOS } from '../components/sobre/conteudoDoSobre';
 import { iconeDoBloco } from '../components/sobre/iconesDoSobre';
 import LandingFooter from '../components/landing/LandingFooter';
 import FundoAnimado from '../components/conteudo/FundoAnimado';
 import CreditosDeMidia from '../components/sobre/CreditosDeMidia';
 import { fadeUpReveal, VIEWPORT } from '../lib/landingMotion';
+import MarcaGH from '../components/ui/MarcaGH';
 
 /**
  * A página "Sobre", pedida pelo dono como primeira aba da navegação lateral.
@@ -110,7 +111,7 @@ export default function Sobre() {
           className="space-y-3"
         >
           <div className="flex items-center gap-2">
-            <Zap size={14} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
+            <MarcaGH tamanho={14} />
             <p className="font-display text-xs tracking-widest uppercase text-neon-green">
               Sobre o projeto
             </p>

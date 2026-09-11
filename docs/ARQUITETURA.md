@@ -102,9 +102,6 @@ src/
 │   ├── useModoDaEntrada.js # A aba da tela de entrada, guardada na URL
 │   │                      # (`?modo=cadastro`). Estado do React morre na
 │   │                      # navegação; a URL sobrevive à ida e à volta
-│   ├── useBloqueioDeLogin.js # O bloqueio por tentativas e a consulta de 8s que
-│   │                      # reflete o desbloqueio feito no painel. Só LÊ —
-│   │                      # nada nesta tela move o contador
 │   └── useVisiblePoll.js  # Repete uma chamada, mas SÓ com a aba visível
 ├── lib/
 │   ├── supabase.js        # Cliente Supabase
@@ -112,6 +109,9 @@ src/
 │   ├── image.js           # Compressão/resize client-side antes do upload (economia de egress)
 │   ├── storage.js         # Remoção de arquivos do bucket ao deletar post/mural
 │   ├── auditLog.js        # logAudit() -> RPC log_audit_event
+│   ├── marca.js           # FONTE ÚNICA do caminho da marca e do gradiente,
+│   │                      # derivados da arte por medição. Não editar à mão:
+│   │                      # saem de scripts/tracar-marca.mjs
 │   ├── errosDeAuth.js     # Erro do Supabase Auth em PORTUGUÊS, por mapa
 │   │                      # explícito. O desconhecido aparece inteiro, em
 │   │                      # vez de virar um genérico que esconde o caso novo
@@ -191,7 +191,6 @@ src/
 │   │                      # tela, não autorização. O código nunca é guardado,
 │   │                      # só um resumo SHA-256 com sal por aparelho.
 │   │                      # A tabela de o que ele protege está no cabeçalho
-│   ├── loginBlock.js      # Fonte única do estado de bloqueio de login
 │   ├── dbHealth.js        # Detecta banco fora do ar e leva o site para a landing
 │   ├── pauseReason.js     # Motivo da pausa, guardado no navegador
 │   ├── ehFalhaDeRede.js   # `[03/09]` Este erro é queda de REDE ou defeito do
@@ -357,6 +356,10 @@ src/
     │                      # EligibilityChecklist, DecisionButton
     ├── ui/                # ConfirmModal, ReasonModal, BannedScreen, …
     │   ├── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
+    │   ├── MarcaGH.jsx     # `[11/09]` A MARCA — o monograma GH, em SVG
+    │   │                  # derivado da arte por medição (1,80% de diferença,
+    │   │                  # toda na borda do anti-serrilhado). Variantes
+    │   │                  # `gradiente` e `mono`; `useId` para duas na mesma tela
     │   │                  # olho de mostrar/ocultar. O olho é nosso: o nativo
     │   │                  # só existe em alguns navegadores de Android, e o
     │   │                  # CSS o esconde para não ficarem dois

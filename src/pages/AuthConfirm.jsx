@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Zap, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
+import { CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
 import { getPasswordStrength, STRENGTH_LABELS, STRENGTH_COLORS } from '../lib/password';
 import { marcarEntradaAgora } from '../lib/boasVindas';
 import CampoDeSenha from '../components/ui/CampoDeSenha';
+import MarcaGH from '../components/ui/MarcaGH';
 
 export default function AuthConfirm() {
   const [searchParams] = useSearchParams();
@@ -122,7 +123,7 @@ export default function AuthConfirm() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md text-center">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <Zap size={28} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 10px #39ff14)' }} />
+          <MarcaGH tamanho={28} />
           <span className="font-display font-bold text-3xl text-neon-green tracking-wider">GAMER</span>
           <span className="font-display font-bold text-3xl text-white tracking-wider">HUB</span>
         </div>

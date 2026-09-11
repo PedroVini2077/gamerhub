@@ -28,10 +28,16 @@ responde a pergunta que importa: *"o teste DETECTA a mudança errada?"*. Ele
 altera o código de propósito e exige que alguma asserção quebre.
 
 **A prova de que não era teoria.** Na primeiríssima execução ele deu **0,00%**
-para `lib/loginBlock.js` — a fonte única de *"esta pessoa pode entrar no site?"*,
-usada pela página de login e pelo formulário — porque **não havia teste nenhum**
-ali. A suíte inteira estava verde. Escrever os testes levou o módulo a 92,86% e
-o total de 63,76% para 71,07%.
+para o então `lib/loginBlock.js` — que era a fonte única de *"esta pessoa pode
+entrar no site?"* — porque **não havia teste nenhum** ali. A suíte inteira estava
+verde. Escrever os testes levou o módulo a 92,86% e o total de 63,76% para
+71,07%.
+
+> **`[11/09]` Aquele arquivo não existe mais**, e o motivo não desmente nada
+> disto: o bloqueio por tentativas foi **removido da tela**, porque o hook que o
+> alimentaria é exclusivo dos planos pagos e `login_attempts` nunca recebia uma
+> linha. O episódio continua valendo como prova do que a ferramenta enxerga —
+> ela achou código sem teste nenhum dentro de uma suíte verde.
 
 #### Escopo pequeno de propósito
 
@@ -62,8 +68,9 @@ bater.
 #### A coluna que mais informa não é o score
 
 É `# no cov`: mutantes em código que **nenhum teste toca**. Foi ela que
-denunciou o `loginBlock.js`. Restam 65 nessa coluna, concentrados em `date.js`
-e `roles.js` — anotado no `BACKLOG.md`.
+denunciou o antigo módulo de bloqueio de login (hoje removido — ver acima).
+Restam 65 nessa coluna, concentrados em `date.js` e `roles.js` — anotado no
+`BACKLOG.md`.
 
 #### O que ele NÃO faz
 

@@ -46,7 +46,7 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**37 itens abertos** (+ 1 ideia sem compromisso)
+**39 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -562,6 +562,53 @@ dependência técnica real** que decide o resto:
   reprovaria todo PR por 7 funções que só o dono pode destravar, e portão que
   grita por algo que ninguém pode resolver ensina a ignorar o canal (§0.2, 4ª
   regra). `npm run edges` responde a pergunta a qualquer momento.
+
+- ⬜ `[11/09]` 🟠 **O RAIO 3D no hero contradiz a marca nova.** *Decisão de
+  produto — eu parei depois de duas tentativas (§1.2).*
+
+  A marca nova está no cabeçalho, no favicon, nos ícones do PWA e em 11 telas.
+  **A peça central do hero continua sendo o raio**, que foi aposentado. Quem
+  chega vê o GH em cima e um raio gigante girando logo abaixo.
+
+  **Tentei trocar a peça 3D pelo GH, duas vezes, e não funciona:**
+
+  | Tentativa | Resultado |
+  | --- | --- |
+  | extrusão com o chanfro do raio | borrão verde — o chanfro engoliu as contraformas |
+  | chanfro mínimo | as formas aparecem, mas continua ilegível girando, e sólida em verde |
+
+  A razão é de forma: o GH é **plano**, de traços finos, e a identidade dele é o
+  **gradiente**. Sólido verde em rotação destrói as três coisas. Não é questão
+  de afinar parâmetro — prints das duas tentativas foram mostrados ao dono.
+
+  **As três saídas, e a escolha é dele:**
+
+  | Saída | O que muda | Custo |
+  | --- | --- | --- |
+  | **Tirar a peça 3D do hero** (mantendo as formas flutuantes) | some a contradição; o hero passa a ser tipografia + formas | zero, e é reversível |
+  | **Desligar a cena 3D inteira** | **−708 kB** do carregamento — o maior item de bytes do site | some o efeito que ele gostava |
+  | **Peça nova, feita para 3D** | precisa de arte 3D de verdade, que eu não produzo | depende de ferramenta externa |
+
+- ⬜ `[11/09]` 🟠 **A MARCA E A LANDING — briefing gravado, esperando UMA decisão.**
+  *Tudo em [`docs/identidade/BRIEFING-2026-09.md`](docs/identidade/BRIEFING-2026-09.md);
+  as duas imagens dele em `docs/identidade/referencias/12-` e `13-`.*
+
+  **O que o dono já decidiu:** *"eu queria realmente usar GamerHub, G e o GH
+  como marca em lugares distintos"* — não é escolher um, é um **sistema** com os
+  três. Isso encerra a pergunta que eu tinha feito.
+
+  **`[11/09]` A MARCA ESTÁ IMPLANTADA.** O dono trouxe a arte pronta e escolheu
+  a proposta 03; ela foi derivada por medição (não redesenhada) e está no
+  favicon, nos ícones do PWA, no cabeçalho e em 11 telas. Ver
+  `docs/identidade/README.md`.
+
+  **O que sobra deste item é a LANDING**, que continua a estrutura antiga: a
+  recomendação dos três atos — a fenda, o que converge, e você já está dentro —
+  não foi implementada. E a decisão do raio 3D no hero está no item acima.
+
+  Duas decisões menores esperam junto: a **tese da fenda** (o verde e o roxo
+  param de brigar e passam a se encontrar — custo zero, é narrativa) e a **troca
+  da fonte de display**, que pode esperar porque atinge o site inteiro.
 
 - ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
   *Referências em [`docs/identidade/`](docs/identidade/README.md).*
@@ -1131,8 +1178,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->104<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.823<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->105<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.979<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Zap, ChevronDown, PauseCircle, ShieldQuestion } from 'lucide-react';
+import { ChevronDown, PauseCircle, ShieldQuestion } from 'lucide-react';
 import { useDbOffline } from '../../hooks/useDbOffline';
 import { motivoDaPausa } from '../../lib/pauseReason';
 import { heroFade } from '../../lib/landingMotion';
 import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
 import BotaoCena3D from './BotaoCena3D';
+import MarcaGH from '../ui/MarcaGH';
 
 export default function Hero({ introDone = true }) {
   const foraDoAr = useDbOffline();
@@ -43,7 +44,7 @@ export default function Hero({ introDone = true }) {
 
       <div className="relative z-10 flex flex-col items-center">
         <motion.div variants={heroFade(0)} initial="initial" animate={show} className="flex items-center gap-2 mb-5">
-          <Zap size={20} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 10px #39ff14)' }} />
+          <MarcaGH tamanho={20} />
           <span className="font-mono text-xs tracking-[0.3em] text-neon-green uppercase">
             Sua base de operações gamer
           </span>
