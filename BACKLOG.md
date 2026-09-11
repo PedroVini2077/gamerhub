@@ -46,7 +46,7 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**35 itens abertos** (+ 1 ideia sem compromisso)
+**37 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -648,11 +648,42 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[11/09]` 🟡 **A foto do remetente do Brevo é a letra "G".** *Ação de painel
-  — eu não alcanço.*
+- ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
+  de painel — eu não alcanço.*
 
-  A conta do site tem foto; a que a API usa mostra só a inicial. É configuração
-  no painel do Brevo (o avatar do remetente), não código nosso.
+  Queixa do dono: *"não tá contando os logins errado"*. **Ele está certo, e
+  medido:** `login_attempts` tem **0 linhas** e `max(updated_at)` é *nunca*. Nos
+  logs do GoTrue das últimas 24 h houve **9 logins** e o único `run_hook`
+  registrado foi o da `send-email` — o de verificação de senha não aparece
+  nenhuma vez.
+
+  **A causa não é bug de código.** A migration de 28/08 avisa na própria
+  abertura que *"esta migration sozinha não liga nada"*: o hook só é chamado
+  depois de apontado em `Authentication → Hooks → Password Verification`. A
+  função existe, está com `GRANT` para `supabase_auth_admin`, e foi **provada em
+  ROLLBACK**: 4 erradas contam, a 5ª bloqueia por 15 min, acertar limpa, e
+  evento lixo devolve `continue`.
+
+  **Ligar não pode trancar ninguém:** o hook devolve `continue` sempre e engole
+  exceção — foi escrito assim de propósito, para que defeito nele não derrube o
+  login do site inteiro.
+
+  Quando estiver ligado, a trava entra: um roteiro que erra a senha de propósito
+  uma vez, confere que o contador andou, e loga certo em seguida (o acerto zera
+  a linha). Hoje ela reprovaria por algo que só o dono pode ligar, e portão
+  assim ensina a ignorar o canal (§0.2, 4ª regra).
+
+- ⬜ `[11/09]` 🟡 **A foto do remetente do e-mail é a letra "G".** *Ação do dono
+  — e o caminho não é o que este item dizia até hoje.*
+
+  **Correção de informação errada minha (§6.2):** este item afirmava que era
+  *"configuração no painel do Brevo (o avatar do remetente)"*. Não é — o Brevo
+  não controla isso. O que o Gmail desenha ao lado do remetente vem do **perfil
+  Google do endereço que assina o `From:`**, ou de **BIMI**. Sem um dos dois, o
+  Gmail cai na inicial do nome de exibição — e o nosso é `GamerHub`, daí o "G".
+
+  Os dois caminhos, com o custo de cada um, estão escritos em
+  [`docs/OPERACAO.md`](docs/OPERACAO.md).
 
 - ⬜ `[11/09]` 🟢 **Ligar "Automatically delete head branches".** *Ação de
   painel — eu não alcanço.*
@@ -993,6 +1024,24 @@ dependência técnica real** que decide o resto:
   dois mil, não uma porcentagem.
 
 ## 🔵 Só quando o volume crescer
+
+- ⬜ `[11/09]` 🔵 **Post apagado fica na tabela para sempre — sem prazo de
+  retenção.**
+
+  Medido hoje, ao conferir a queixa do dono sobre o post de teste no ar: os
+  roteiros do CI deixam **214 linhas** em `posts` marcadas com `[e2e ` ou
+  `[painel `, desde 30/08. **Nenhuma aparece no feed** — todas têm `deleted_at`
+  preenchido, porque o apagar do site é SUAVE. Ou seja: a limpeza dos testes
+  funciona, e o que sobra é linha morta.
+
+  O `cleanup_old_data` tem prazo para `admin_logs`, `notifications`,
+  `login_attempts`, `live_chat` e `contact_messages` — e **nenhum** para post
+  apagado (§6.1, item 5: tabela que só cresce).
+
+  **Por que não fiz agora:** 214 linhas não pesam em nada, e o prazo certo é
+  decisão de produto, não minha — "quantos dias um post apagado ainda pode ser
+  restaurado?" é uma pergunta de moderação. É uma linha no `cleanup_old_data`
+  quando o dono disser o número.
 
 - ⬜ `[02/09]` 🔵 **Mensagem marcada como SPAM não precisa de 2 anos.**
   *Refinamento do prazo decidido em 02/09, não correção dele.*

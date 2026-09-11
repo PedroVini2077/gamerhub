@@ -439,6 +439,44 @@ Verificado em transação com `ROLLBACK`, 8 checagens: falha conta 1→2→3, ac
 apaga a linha, evento malformado devolve `continue`, e nem `anon` nem
 `authenticated` conseguem chamar qualquer uma das duas funções.
 
+> ### `[11/09]` O TÍTULO ACIMA DIZ "CORRIGIDO", E O CONTADOR ESTÁ DESLIGADO
+>
+> Queixa do dono: *"não tá contando os logins errado e tá aparecendo apenas o
+> erro de credenciais inválidas"*. **Ele está certo.**
+>
+> Medido, não deduzido — três fontes independentes:
+>
+> | O que olhei | O que achei |
+> | --- | --- |
+> | `select count(*) from login_attempts` | **0 linhas**, `max(updated_at)` = *nunca* |
+> | logs do GoTrue, 24 h | **9 logins** em `/token`, e o único `run_hook` registrado é o da `send-email` |
+> | `pg_proc` + `routine_privileges` | a função **existe** e tem `GRANT` para `supabase_auth_admin` |
+>
+> **A causa é a última linha da migration, não um bug no código.** Ela avisa na
+> própria abertura: *"esta migration sozinha não liga nada"*. O hook só passa a
+> ser chamado depois de apontado em `Authentication → Hooks → Password
+> Verification` para `public.hook_de_verificacao_de_senha` — e esse passo, que
+> é ação de painel, nunca foi dado. Ficou **14 dias** escrito como corrigido e
+> desligado na prática.
+>
+> **Por que nada acusou, e é a lição.** É §1.5 em estado puro: o silêncio aqui é
+> indistinguível de "ninguém errou a senha". Tabela vazia é a resposta certa nos
+> dois mundos, e nenhum dos portões do projeto olhava para a diferença.
+>
+> **A função em si está boa** — reprovado o palpite de que houvesse defeito
+> nela. Provado em `ROLLBACK` hoje, com o hook chamado exatamente como o GoTrue
+> o chama: 4 erradas levam `attempts` a 4 sem bloquear, a 5ª bloqueia por **15
+> minutos**, acertar apaga a linha, e evento lixo ou usuário inexistente
+> devolvem `continue`. Ligar o hook **não** pode trancar ninguém: ele responde
+> `continue` sempre e engole exceção, como o parágrafo acima explica.
+>
+> **A trava entra depois de ligado**, e a ordem é proposital: um roteiro que
+> erra a senha de propósito uma vez, confere que o contador andou, e loga certo
+> em seguida — o acerto zera a linha, então nada se acumula. Escrita hoje, ela
+> reprovaria todo PR por uma chave que só o dono pode virar, e portão assim
+> ensina a ignorar o canal (§0.2, 4ª regra). Está no `BACKLOG.md`, presa a esse
+> passo.
+
 ### `[28/08]` O hook está pronto e **não pode ser ligado no plano Free**
 
 Conferido no painel: em *Authentication → Hooks*, o **Password Verification

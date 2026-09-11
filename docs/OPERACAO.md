@@ -158,6 +158,50 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   > fixá-lo trava o handshake sem mensagem útil, e a trava
   > `envioDeEmailTemDoisCaminhos.test.js` existe por causa disso.
 
+  > **`[11/09]` A FOTO DO REMETENTE — por que ela é a letra "G", e o que muda
+  > isso.**
+  >
+  > Pergunta do dono: *"a minha conta que criei só pro site tem uma foto
+  > bonitinha, agora a que é enviada pela api só tem a letra G"*.
+  >
+  > **O painel do Brevo não tem essa configuração, e nenhum relay tem.** O
+  > avatar não viaja no e-mail: quem o desenha é o programa de quem RECEBE. O
+  > Gmail busca em dois lugares, nesta ordem, e cai na inicial do nome de
+  > exibição quando não acha nenhum — o nosso é `GamerHub`, daí o "G". O código
+  > monta `from: \`GamerHub <${remetente}>\``, e o `remetente` é o `SMTP_FROM`.
+  >
+  > | Caminho | O que o Gmail mostra | Custo | Alcance |
+  > | --- | --- | --- | --- |
+  > | **perfil Google do endereço que assina** | a foto daquela conta | zero | só quem recebe no Gmail |
+  > | **BIMI** | o logo do site, com selo | **VMC pago (~US$1.000/ano)** e domínio próprio | Gmail, Yahoo, Apple |
+  >
+  > **O passo a passo do caminho de graça** — vale quando o `SMTP_FROM` é o
+  > endereço Gmail que já tem a foto:
+  >
+  > 1. No Brevo: `Senders, Domains & Dedicated IPs → Senders → Add a sender`,
+  >    com **aquele** endereço. O Brevo manda um e-mail de confirmação para ele;
+  >    é preciso clicar no link. Sem essa verificação o relay recusa o envio.
+  > 2. Na conta Google **daquele** endereço: a foto do perfil é a que aparece.
+  >    Se já tem a foto bonita, não há o que fazer aqui.
+  > 3. No Supabase: `Edge Functions → send-email → Secrets`, apontar `SMTP_FROM`
+  >    para esse endereço. **Só isso** — `SMTP_USER` e `SMTP_PASS` continuam
+  >    sendo os do Brevo, porque são o login do relay, não o remetente.
+  > 4. Conferir com um cadastro de teste, olhando o e-mail no Gmail.
+  >
+  > **O preço deste caminho, dito antes de alguém seguir por ele.** Assinando
+  > como `@gmail.com` através de um relay de terceiro, o SPF e o DKIM alinham
+  > com o domínio do **Brevo**, não com `gmail.com` — o DMARC do `gmail.com`
+  > hoje é `p=none`, então a mensagem entrega, mas fica mais fácil de cair em
+  > spam do que hoje. É a troca: foto agora × entregabilidade. **Não medi essa
+  > perda neste projeto** — é o comportamento documentado do DMARC, não uma
+  > medição nossa (§1.1).
+  >
+  > **A recomendação, e o motivo:** deixar como está até o site ter domínio
+  > próprio. Com domínio, o remetente passa a ser `algo@seudominio`, o DKIM
+  > alinha de verdade, e aí BIMI vira uma escolha real em vez de um contorno.
+  > Entregar o e-mail de confirmação vale mais do que a foto ao lado dele — se
+  > ele cai no spam, ninguém termina o cadastro.
+
   > **`[28/08]` E esta trilha já pagou o próprio custo.** O dono publicou um
   > post com 4 imagens e "não deu em nada". A linha
   > `Falha em moderate-image: provedor openai nao respondeu` foi o único sinal
@@ -1126,6 +1170,6 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->14.509<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.640<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
