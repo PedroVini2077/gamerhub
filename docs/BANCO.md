@@ -168,6 +168,13 @@ transforma esta pegadinha em bug silencioso (§4).
 **Triggers:**
 
 - `handle_new_user` / `handle_user_confirmed` (em `auth.users`) — cria perfil.
+  `[11/09]` O `handle_new_user` passou a gravar **também o aceite dos
+  documentos**, lendo `raw_user_meta_data->'aceites'`. Motivo: logo após o
+  `signUp` não há sessão, então o cliente é `anon` e a RLS de
+  `policy_acceptances` recusa a escrita — todo cadastro novo ficava sem a prova
+  do consentimento. Entrada inválida é pulada (nunca derruba o cadastro), e cada
+  item é validado contra os dois `CHECK` da tabela antes de entrar. Ver
+  [PRIVACIDADE.md](PRIVACIDADE.md).
 - `guard_profile_privileged_cols` (profiles UPDATE) — impede auto-promoção de
   role/auto-desban direto via UPDATE na tabela.
 - `notify_admin_new_user` (profiles INSERT) — notifica admins.

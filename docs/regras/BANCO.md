@@ -165,9 +165,24 @@ e migration exigem esse nível. Registrado para quando deixar de exigir.
   próprio, nada do alheio" não se expressa com nenhum dos dois sozinho — precisa
   de RPC `SECURITY DEFINER` (ver `get_own_profile`, `admin_list_users`,
   `get_public_profile`).
-- Toda `SECURITY DEFINER` precisa de `SET search_path = public`. Sem isso, a
-  resolução de nomes segue o `search_path` de quem chama — vetor clássico de
+- Toda `SECURITY DEFINER` precisa de `SET search_path` **explícito**. Sem isso,
+  a resolução de nomes segue o `search_path` de quem chama — vetor clássico de
   escalada.
+
+  > **`[11/09]` O valor quase sempre é `public`, e a palavra que manda é
+  > "explícito", não "public".** Medido hoje: das 78 funções `SECURITY DEFINER`,
+  > **76 usam `search_path=public`, nenhuma está sem**, e uma precisa de mais —
+  > `confere_a_propria_senha` usa `public, extensions, auth`, porque chama
+  > `extensions.crypt` e lê `auth.users`.
+  >
+  > Escrever `= public` numa função que precisa de outro schema **não é mais
+  > seguro: é quebrado** — ela falha em tempo de execução com "function does not
+  > exist", que manda procurar no lugar errado. A regra é listar os schemas de
+  > que a função precisa, e **só** esses.
+  >
+  > *(Esta linha foi ajustada porque eu mesmo escrevi hoje a primeira função que
+  > não cabia no texto literal — e o texto, lido daqui a seis meses, mandaria
+  > "consertar" uma função correta.)*
 - Funções admin/owner: `REVOKE ... FROM PUBLIC, anon` + `GRANT ... TO
   authenticated`, **além** da checagem interna por `auth.uid()`.
 - **Curtida se conta de `post_likes`, nunca de contador em `posts`.**

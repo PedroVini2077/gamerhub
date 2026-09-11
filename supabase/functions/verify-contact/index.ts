@@ -50,6 +50,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
+// mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio:
+// e assim que "editei a funcao e esqueci de implantar" passa a reprovar o PR.
+const IMPRESSAO_DESTE_CODIGO = "fa7baf461cbba94a";
+
 const SUPABASE_URL   = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON  = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE   = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -134,6 +139,15 @@ async function conferirNoCloudflare(token: string): Promise<"ok" | "recusado" | 
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+  // O GET so devolve a impressao, e vem ANTES de qualquer autenticacao de
+  // proposito: o portao do CI precisa alcanca-lo sem segredo nenhum. Nada aqui
+  // le corpo, toca banco ou chama provedor — e o valor nao revela codigo, so
+  // muda quando o codigo muda.
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ impressao: IMPRESSAO_DESTE_CODIGO }), {
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
+  }
   if (req.method !== "POST") return responder({ error: "Metodo nao permitido" }, 405);
 
   let body: {

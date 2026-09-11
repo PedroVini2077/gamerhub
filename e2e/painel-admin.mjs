@@ -35,7 +35,7 @@
  * Exige E2E_STAFF_EMAIL e E2E_STAFF_PASSWORD (conta de cargo `admin`).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
-import { publicarEEsperarNoFeed } from './publicarPost.mjs';
+import { publicarEEsperarNoFeed, marcaDeTeste } from './publicarPost.mjs';
 
 import { MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -119,7 +119,7 @@ try {
   //
   // Criando o próprio post, a aba Posts sempre tem o que listar, e o teste
   // volta a provar o que promete. É o mesmo padrão do `fluxos.mjs`.
-  const MARCA_PAINEL = `[painel ${Date.now()}]`;
+  const MARCA_PAINEL = marcaDeTeste('[painel ');
   // `[02/09]` Passou a usar o helper compartilhado. Antes, quando este passo
   // falhava, a mensagem era só "waiting for locator(...)" — o que nao
   // aconteceu, e nada sobre por que. O helper vigia os avisos da tela enquanto

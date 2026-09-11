@@ -218,6 +218,40 @@ português.
 > desproporcional para este site. O que mudou é que o piso declarado passou a
 > ser real no sistema, em vez de existir só no formulário e no texto.
 
+#### `[11/09]` O MESMO mecanismo mordeu a prova do consentimento
+
+A causa é idêntica à de cima, e é o motivo de estar escrita aqui e não no
+backlog: **logo após o `signUp` não existe sessão.** O cliente continua sendo
+`anon`, e toda escrita com RLS `TO authenticated` é recusada.
+
+O aceite dos documentos era gravado ali, pelo cliente. Resultado: **todo
+cadastro novo ficava sem a prova do consentimento**, e a pessoa via um erro
+vermelho dizendo isso.
+
+Provado em `ROLLBACK`, nos dois papéis:
+
+| Papel | O que o banco respondeu |
+| --- | --- |
+| `anon` | `permission denied for table policy_acceptances` |
+| `authenticated` sem `sub` no jwt | `new row violates row-level security policy` |
+
+E o dado confirmou antes de eu mexer em nada: a conta criada em 28/08 está com
+**0 aceites**, contra 3, 4 e 8 das anteriores.
+
+**A correção é a mesma de antes:** as coordenadas do aceite (`documento` e
+`versao`) viajam no `options.data` do `signUp`, e o `handle_new_user` grava as
+linhas na **mesma transação** que cria a conta. Ou existem os dois, ou não
+existe nenhum.
+
+**Entrada inválida é pulada, nunca derruba o cadastro** — deixar a pessoa sem
+conta por causa de uma linha de auditoria seria trocar um problema por um pior.
+E o silêncio tem canal: sem o aceite, o `AvisoDeAceite` aparece no primeiro
+login, porque a lista de pendentes deixa de bater.
+
+> **O que isto NÃO conserta:** as contas que já existem sem aceite continuam
+> sem. Elas veem o aviso ao entrar e registram ali — que é o caminho que já
+> existia para quem se cadastrou antes de 02/09.
+
 #### `[03/09]` E a página pública continuou dizendo que estava pendente
 
 O dono abriu a `/privacidade` no celular e viu o bloco **Idade mínima** com o

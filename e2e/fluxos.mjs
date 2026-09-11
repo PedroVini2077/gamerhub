@@ -22,8 +22,11 @@
  * Exige E2E_EMAIL e E2E_PASSWORD (conta comum, nunca de staff — ver passo 3).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
-import { publicarEEsperarNoFeed } from './publicarPost.mjs';
+import {
+  publicarEEsperarNoFeed, marcaDeTeste, REGEX_DE_SOBRA, sobrasAntigas, IDADE_DE_SOBRA_MS,
+} from './publicarPost.mjs';
 import { comentarEEsperarNaLista } from './comentar.mjs';
+import { conferirPortaoDeEntrada } from './portaoDeEntrada.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
 const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
@@ -32,7 +35,7 @@ const SENHA = process.env.E2E_PASSWORD;
 
 // Título único por execução: nunca mexe num post que não seja o desta rodada,
 // mesmo se uma execução anterior tiver morrido no meio.
-const MARCA  = `[e2e ${Date.now()}]`;
+const MARCA  = marcaDeTeste('[e2e ');
 const TITULO = `${MARCA} post automatico`;
 const CORPO  = 'Publicado pelo teste automatizado. Se este post ficou no ar, o E2E falhou na limpeza.';
 const COMENTARIO = `${MARCA} comentario automatico`;
@@ -76,76 +79,7 @@ try {
   // /entrar/i, e o Playwright recusa seletor ambíguo (ainda bem).
   await page.getByRole('button', { name: '// ENTRAR' }).click();
 
-  // ── O PORTÃO DE BOAS-VINDAS ─────────────────────────────────────────────
-  //
-  // Ele é o único canal que prova que a tela de boas-vindas funciona: se ela
-  // parar de aparecer, nada quebra, nada loga, e o site continua entrando
-  // normalmente (§1.5 — as três respostas seriam "nada").
-  //
-  // A espera é por SELETOR, não por tempo: ele fica na tela entre 700 ms e
-  // 2,5 s dependendo de quanto o perfil demora, e cravar um número aqui seria
-  // adivinhar o tempo do banco.
-  //
-  // Se ele NÃO aparecer, a mensagem tem que dizer o que investigar — a marca
-  // de "acabou de entrar" é `sessionStorage`, e ela é o elo que mais some.
-  try {
-    await page.locator('.portao').waitFor({ state: 'visible', timeout: 4000 });
-    ok('o portão de boas-vindas cobriu a entrada');
-  } catch {
-    throw new Error(
-      'o portão de boas-vindas NAO apareceu depois do login.\n'
-      + '  Ele deveria cobrir a tela entre 700 ms e 2,5 s enquanto o perfil\n'
-      + '  carrega. Confira, nesta ordem:\n'
-      + '   1. `marcarEntradaAgora()` ainda é chamado ANTES do\n'
-      + '      `signInWithPassword` (src/hooks/useAuth.jsx) — e nenhum\n'
-      + '      `cancelarEntradaAgora()` novo esta apagando a marca no caminho\n'
-      + '      feliz;\n'
-      + '   2. `<PortaoDeBoasVindas />` continua montado no App.jsx, FORA do\n'
-      + '      <Routes> — dentro de uma rota ele desmonta com a tela de login;\n'
-      + '   3. o navegador nao esta bloqueando `sessionStorage`.\n'
-      + '  Nada disso quebra o login: some so a tela.');
-  }
-
-  // ── A porta é A TELA INTEIRA ────────────────────────────────────────────
-  //
-  // `[05/09]` Exigência do dono, na letra: *"a porta é pra ser a tela inteira,
-  // entendeu? A TELA INTEIRA! não uma imagem abrindo, é pra ter imersão"*. Ele
-  // recusou quatro versões, e a quarta falhou justamente por ser um desenho
-  // BONITO dentro de uma tela com fundo em volta.
-  //
-  // Isso não se verifica por byte nem por unidade: é geometria em tela de
-  // verdade. As duas folhas somadas têm que cobrir a janela inteira — se um dia
-  // alguém puser `max-height` de volta, aqui quebra.
-  const cobertura = await page.evaluate(() => {
-    const folhas = [...document.querySelectorAll('.porta-folha')];
-    if (folhas.length !== 2) return { folhas: folhas.length };
-    const caixas = folhas.map((f) => f.getBoundingClientRect());
-    return {
-      folhas: 2,
-      esquerda: Math.round(Math.min(...caixas.map((c) => c.left))),
-      direita: Math.round(Math.max(...caixas.map((c) => c.right))),
-      topo: Math.round(Math.min(...caixas.map((c) => c.top))),
-      base: Math.round(Math.max(...caixas.map((c) => c.bottom))),
-      janela: { largura: innerWidth, altura: innerHeight },
-    };
-  });
-
-  const cobreTudo = cobertura.folhas === 2
-    && cobertura.esquerda <= 0 && cobertura.topo <= 0
-    && cobertura.direita >= cobertura.janela.largura
-    && cobertura.base >= cobertura.janela.altura;
-
-  if (!cobreTudo) {
-    throw new Error(
-      'o portão NAO cobre a tela inteira.\n'
-      + `  medido: ${JSON.stringify(cobertura)}\n`
-      + '  As duas .porta-folha somadas precisam ir de (0,0) ate\n'
-      + '  (innerWidth, innerHeight). Sobrar fundo em volta transforma a porta\n'
-      + '  num DESENHO de porta, que foi a versao recusada em 05/09.\n'
-      + '  Suspeitos: `max-height`/`width` em .porta-svg ou .porta-folha,\n'
-      + '  um `padding` no .portao, ou o texto empurrando as folhas.');
-  }
-  ok('a porta ocupa a tela inteira');
+  await conferirPortaoDeEntrada(page, ok);
 
   // O composer só monta depois de a sessão resolver, o perfil carregar e o
   // chunk do feed baixar. Ele aparecer prova três coisas de uma vez: sessão
@@ -283,14 +217,27 @@ try {
   //
   // Por que aqui e não num script próprio: só uma conta LOGADA enxerga o feed
   // (o anônimo leva 401), e este é o único teste que tem sessão.
-  const sobras = await main.locator('h2').filter({ hasText: /\[e2e / })
-    .filter({ hasNotText: MARCA }).count();
-  if (sobras > 0) {
+  // `[11/09]` O filtro era `/\[e2e /` escrito à mão, e por isso NÃO enxergava
+  // o `[painel `. Um post do teste de painel ficou visível no site desde 10/09
+  // com este detector ligado e verde. Agora o padrão vem de
+  // `PREFIXOS_DE_TESTE`, que é a lista única.
+  //
+  // `[11/09]` E o filtro passou a ser por IDADE, porque ver os dois prefixos
+  // sozinho produziu alarme falso: o job `painel de admin` roda EM PARALELO
+  // contra o mesmo banco, e o post dele estava no feed legitimamente. O
+  // porquê do corte de 30 min está em `IDADE_DE_SOBRA_MS`.
+  const titulos = await main.locator('h2').filter({ hasText: REGEX_DE_SOBRA })
+    .filter({ hasNotText: MARCA }).allInnerTexts();
+  const sobras = sobrasAntigas(titulos);
+  if (sobras.length > 0) {
     throw new Error(
-      `${sobras} post(s) de teste sobrando no feed de execucoes anteriores.\n`
+      `${sobras.length} post(s) de teste sobrando no feed de execucoes anteriores:\n`
+      + sobras.map((t) => `    ${t}`).join('\n') + '\n'
       + '  Alguma rodada morreu antes do passo que apaga, e o lixo ficou no ar\n'
       + '  para quem usa o site. Apague pelo painel admin (aba Posts) e veja\n'
-      + '  POR QUE aquela rodada quebrou — o post sobrando e o sintoma, nao a causa.');
+      + '  POR QUE aquela rodada quebrou — o post sobrando e o sintoma, nao a causa.\n'
+      + `  (So conta o que tem mais de ${IDADE_DE_SOBRA_MS / 60000} min: o job do\n`
+      + '   painel roda em paralelo, e o post DELE nao e sobra.)');
   }
   ok('nenhum post de teste sobrando de execuções anteriores');
 

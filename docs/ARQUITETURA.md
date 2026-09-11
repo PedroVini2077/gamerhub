@@ -237,6 +237,10 @@ src/
 │   │                      # dois bugs se esconderam lá dentro (o UPDATE que
 │   │                      # rodava como `anon` e afetava 0 linhas em silêncio,
 │   │                      # e o `select` que mantinha `profiles` aberto)
+│   │                      # `[11/09]` O TERCEIRO bug era da mesma família: o
+│   │                      # aceite dos documentos era gravado aqui, e a RLS
+│   │                      # recusava sempre. Hoje as coordenadas vão no
+│   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
 │   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
@@ -368,6 +372,13 @@ src/
     │   │                  # painel. CENOGRÁFICA, e o aviso disso está impresso
     │   │                  # embaixo do campo — a autorização real é do banco
     │   ├── DiscoDoCofre.jsx # o disco que gira ao destrancar (SVG próprio)
+    │   ├── ResetDoCofre.jsx # `[11/09]` esquecer o código EXIGE a senha da
+    │   │                  # conta. Antes eram dois cliques, e o dono apontou:
+    │   │                  # "se alguém pega meu PC ligado e não souber a
+    │   │                  # senha, ele só vai redefinir". A conferência é a
+    │   │                  # RPC `confere_a_propria_senha`, e NÃO
+    │   │                  # `signInWithPassword` — esta trocaria a sessão, e
+    │   │                  # `useAuth` é o arquivo de maior risco (§7)
     │   └── usuarios/      # UserRow, UserFilters, RoleOverride (o cargo de
     │                      # fundador NÃO se atribui por override)
     ├── moderation/        # ModerationPanel, ModerationQueue, ReportsList,

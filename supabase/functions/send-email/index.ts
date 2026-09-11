@@ -53,6 +53,11 @@ import nodemailer from "npm:nodemailer@6";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getEmailContent, buildEmail } from "./email-template.ts";
 
+// A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
+// mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio:
+// e assim que "editei a funcao e esqueci de implantar" passa a reprovar o PR.
+const IMPRESSAO_DESTE_CODIGO = "3902c34dfc0a8c1d";
+
 const GMAIL_USER         = Deno.env.get("GMAIL_USER") ?? "";
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD") ?? "";
 const SMTP_HOST          = Deno.env.get("SMTP_HOST") ?? "";
@@ -220,6 +225,20 @@ const RECUSADO = () => new Response(
 );
 
 Deno.serve(async (req: Request) => {
+  // O GET vem ANTES de tudo, e aqui isso importa mais do que nas outras: esta
+  // funcao e a porta de entrada do cadastro, e o `motivoParaRecusar` abaixo
+  // grava em `admin_logs` toda chamada recusada. Sem esta saida antecipada,
+  // cada visita do portao do CI viraria uma linha de "chamada recusada" — que
+  // foi exatamente a fadiga de alarme de 27/08 (§0.2, 4a regra).
+  //
+  // Nao le corpo, nao toca banco, nao envia e-mail. O caminho do hook do GoTrue
+  // (POST assinado) segue intocado logo abaixo.
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ impressao: IMPRESSAO_DESTE_CODIGO }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const rawBody = await req.text();
 
   const recusa = await motivoParaRecusar(req, rawBody);

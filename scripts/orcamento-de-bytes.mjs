@@ -55,8 +55,31 @@ const DIST = 'dist';
 //
 // **Ao subir um destes números, escreva no commit por que o site precisou
 // engordar.** O limite existe para forçar essa frase, não para ser inatingível.
-const TETO_BRUTO_KB = 740;
-const TETO_GZIP_KB = 222;
+//
+// ── `[11/09]` Os tetos foram RECALIBRADOS, e o site não engordou ────────────
+//
+// Esta é a exceção que a frase acima não previa, e ela precisa estar escrita
+// aqui: **o número que mudou foi o da MEDIÇÃO, não o do site.**
+//
+// O job do CI rodava `npm run build` **sem** `VITE_SUPABASE_URL` e
+// `VITE_SUPABASE_ANON_KEY`. Sem elas, a guarda de configuração no topo de
+// `lib/supabase.js` vira condição constante, e o empacotador poda como código
+// morto 94 kB do chunk que a produção realmente entrega. Medido em A/B na
+// mesma máquina, tirando e pondo o `.env.local`:
+//
+//     sem as variáveis (o que o CI media)      640,8 kB  ->  195,5 kB gzip
+//     com as variáveis (o que a Vercel serve)  735,1 kB  ->  222,5 kB gzip
+//
+// O teto de 222 estava sendo conferido contra um build de 195,5. Havia 26,5 kB
+// de folga que **não era folga** — e a produção já servia 222,5, acima do teto,
+// com o portão verde. Portão que dá certificado sobre um site que ninguém
+// recebe é a falha do §1.5 dentro da ferramenta que deveria pegá-la.
+//
+// Os tetos abaixo são o tamanho REAL de hoje mais uma folga pequena. Não houve
+// ganho nem perda de peso: houve o fim de uma mentira de medição. O histórico
+// e a evidência estão em `docs/OPERACAO.md`.
+const TETO_BRUTO_KB = 760;
+const TETO_GZIP_KB = 228;
 
 // Teto por arquivo, para QUALQUER chunk — inclusive os de rota, que não estão
 // no conjunto ansioso.

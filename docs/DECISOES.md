@@ -1635,3 +1635,108 @@ O trabalho não chegou a ser commitado. O site continua com o `favicon.svg`
 roxo — que **não é a marca** (`#7e14ff` dez vezes, zero verde) —, sem ícone de
 app, sem manifest e sem prévia ao compartilhar. Isso volta a ser item aberto no
 [BACKLOG.md](../BACKLOG.md), como era antes.
+
+---
+
+## `[11/09]` O cofre passou a exigir a SENHA DA CONTA para ser resetado
+
+**A decisão:** a saída **B** das três que estavam registradas em 05/09 — o
+"Esqueci o código" exige a senha da conta, conferida no servidor. Aprovada pelo
+dono: *"pode fazer a mudança no esqueci o código do cofre tbm, vc tinha me
+recomendado usar a senha da conta, pode fazer"*.
+
+**O que era:** `esquecerCodigo()` apagava o resumo e o sal do `localStorage` e a
+tela caía em "definir novo código". Dois cliques, e qualquer um entrava. O
+achado é dele: *"se alguém pega meu PC ou celular ligado na tela e não souber a
+senha, ele só vai redefinir"*.
+
+**O que isto não era, e continua não sendo:** brecha de segurança. O cofre é
+cenográfico por decisão registrada, e a autorização real mora na RLS com
+`is_super()`. O problema era outro: **um cadeado que não tranca é pior do que
+cadeado nenhum**, porque sugere uma proteção que não existe e muda o
+comportamento de quem confia nela.
+
+### Por que uma RPC, e não `signInWithPassword`
+
+Esta é a parte que não era óbvia, e ela é sobre risco, não sobre elegância.
+
+`signInWithPassword` **substitui a sessão**. `useAuth.jsx` é o arquivo de maior
+risco do projeto (§7) — quebrá-lo derruba o site inteiro para quem está logado.
+Trocar a sessão para responder uma pergunta de sim/não é efeito colateral
+grande demais para o tamanho da pergunta.
+
+`confere_a_propria_senha` responde `true`/`false` e não encosta na sessão.
+
+| Trava | O que ela impede |
+| --- | --- |
+| `u.id = auth.uid()` | conferir a senha de **outra** pessoa |
+| `AND public.is_super()` | virar um oráculo de senha para o site inteiro — usuário comum recebe `false` **mesmo com a senha certa** |
+| retorno `boolean` | qualquer vazamento do hash ou da senha |
+| sem `EXECUTE` para `anon` | uso sem conta |
+| `SET search_path` explícito | escalada por resolução de nome |
+
+**Provado em `ROLLBACK`, três vias:** dono com senha certa `true`; dono com
+senha errada `false`; usuário comum com a senha certa **`false`**.
+
+### O risco que eu chequei ANTES de escolher
+
+Senha errada no cofre **não tranca ninguém fora do site**. A contagem de
+tentativa falha foi removida em 28/08 por ser forjável, e o freio que resta é o
+rate limit do próprio GoTrue — server-side, e que não depende desta tela.
+
+Se a contagem existisse, esta decisão seria outra: errar a senha do cofre
+poderia bloquear o login do fundador, e o remédio seria pior que a doença.
+
+### O que ela NÃO promete
+
+Quem tem a senha continua entrando — e deve mesmo, é o dono. E quem já tem a
+sessão continua com tudo o que a sessão dá; o cofre nunca protegeu contra isso,
+e o aviso embaixo do campo continua dizendo isso na tela.
+
+---
+
+## `[11/09]` A moldura roxa sai com fade E deslize — as duas ideias dele, juntas
+
+**O que ele viu:** *"a moldura roxa do personagem roxo, na transição da aba
+login para o cadastro, ele simplesmente some, não tem uma transição legal como
+tudo na cena"*. E ele mesmo trouxe as duas saídas: fade, ou empurrar para a
+direita.
+
+**A causa era literal:** a regra era `display: none`, e **`display` não
+transiciona**. Não existe estado intermediário entre `block` e `none` — a
+moldura saía de estalo enquanto a fenda, os lados e as partículas levavam
+900 ms.
+
+### Por que as duas, e não uma
+
+Não foi indecisão: elas contam a mesma coisa por dois canais.
+
+| Ideia dele | O que ela apoia |
+| --- | --- |
+| **deslize para a direita** | o lado roxo **encolhe** quando a fenda vai para 68%. O deslize acompanha um movimento que já acontece na cena |
+| **fade** | é o que o `display: none` já dizia, agora legível: a luz do perdedor **se apaga** em vez de desaparecer — e a penumbra do lado direito no cadastro é intencional (`[04/09]`) |
+
+`opacity` e `transform` de propósito: as duas rodam no compositor. `width` ou
+`right` fariam o navegador repintar 30% da tela por quadro, numa caixa de 30vw
+com `mix-blend-mode` (§0.3).
+
+### O defeito ESCONDIDO que apareceu ao medir
+
+Com a transição escrita, `transform` animava e **`opacity` continuava pulando**
+— 0,55 para 0 em 60 ms. A causa: `animation: arenaMolduraAcende 900ms ease-out
+420ms **both**`. O `forwards` do `both` prende a `opacity` no último quadro, e
+**animação sempre vence transição**.
+
+É o mesmo defeito que o comentário do `@keyframes` do arquivo já descrevia, pelo
+outro lado: lá um `to` fixava o valor, aqui o `forwards` fixava.
+
+`backwards` no lugar de `both` mantém o que importava — a moldura fica invisível
+durante os 420 ms de espera, sem piscar antes da hora — e **solta** a `opacity`
+quando a animação acaba.
+
+**Medido no navegador, nos dois sentidos:** ida `0,55 → 0,51 → 0,00` com o
+deslize `0 → 6 → 95 px`; volta `0,00 → 0,02 → 0,55` com `95 → 92 → 0 px`.
+
+> **Só eu ter escrito a transição não teria funcionado.** Ela estava lá, no CSS,
+> e a `opacity` continuava pulando. Foi a medição que mostrou — e é por isso que
+> a evidência está aqui e não um "ficou suave".

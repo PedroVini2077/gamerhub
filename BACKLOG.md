@@ -46,7 +46,7 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**35 itens abertos** (+ 1 ideia sem compromisso)
+**37 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -496,21 +496,41 @@ dependência técnica real** que decide o resto:
   volta é apagar o segredo `SMTP_HOST`: sem ele o código cai no Gmail sozinho,
   sem deploy.
 
-- ⬜ `[10/09]` 🟠 **Nada vigia se uma Edge Function em produção é a do
-  repositório.** É o buraco que deixou as duas correções da `send-email` mortas
-  por 5 dias enquanto a documentação as descrevia como vivas — inclusive um
-  comentário no `e2e/portas-fechadas.mjs` que explicava um comportamento que
-  produção não tinha.
+- ⬜ `[10/09]` 🟠 **O vigia das Edge Functions está CONSTRUÍDO e PROVADO — falta
+  implantar 7 das 8.** *`[11/09]` O que falta é uma ação do dono, e ela está
+  escrita abaixo.*
 
-  `scripts/espelho-de-migrations.mjs` faz exatamente isso para migrations. Para
-  as <!--n:edge.funcoes-->8<!--/n--> Edge Functions não existe equivalente.
+  **O que já existe e funciona**, com a prova junto:
 
-  **O desenho que eu recomendo, e por que ele evita credencial no CI:** a API de
-  gerenciamento exigiria um token — trocar incerteza por credencial exposta é a
-  conta ruim do §0.2. Em vez disso, cada função responde a um `GET` com a
-  própria versão (`{ versao: "2026-09-05" }`, sem segredo nenhum), e o CI compara
-  com uma constante no repositório. Editar a função sem reimplantar passa a
-  reprovar o PR.
+  | Peça | O que faz | Estado |
+  | --- | --- | --- |
+  | `scripts/impressao-das-edges.mjs` (`npm run impressao-edges`) | deriva a impressão do CÓDIGO de cada função | pronto |
+  | `scripts/__tests__/impressaoDasEdges.test.js` | reprova no `npm test` se a impressão escrita ficou velha | **provado** reinjetando o bug num arquivo IRMÃO (`politica.ts`) |
+  | `scripts/edges-implantadas.mjs` (`npm run edges`) | pergunta a impressão a cada função NO AR e compara | **provado**: acusou as 8, e passou a dizer OK na que foi implantada |
+
+  A impressão é derivada do código, e não uma data escrita à mão, justamente
+  porque data à mão reproduz o problema: eu edito a função, esqueço de subir o
+  número, e os dois lados concordam num valor velho — o portão fica verde no
+  caso exato que ele existe para pegar.
+
+  **O que falta, e por que eu parei aqui.** Só `cleanup-orphans` foi implantada
+  (v12, e o `npm run edges` já a marca OK). As outras 7 somam **~2.100 linhas**,
+  e o único caminho que eu alcanço é passar o código inteiro por uma chamada de
+  ferramenta — ou seja, **eu retransscrevendo 2.100 linhas de código de
+  produção**. Na `send-email` um caractere perdido derruba o cadastro. Trocar
+  isso por um portão de monitoramento é uma conta ruim, e a §0.2 é sobre
+  exatamente esse tipo de troca.
+
+  **A ação do dono, e ela resolve de vez:** gerar um *Personal Access Token* em
+  `supabase.com/dashboard/account/tokens` e me dar como `SUPABASE_ACCESS_TOKEN`.
+  Com ele, `npx supabase functions deploy <nome>` implanta **do disco**, sem
+  nada passar por mim — e aí as 7 vão de uma vez, o portão entra no CI, e toda
+  implantação futura deixa de depender de transcrição.
+
+  **Enquanto isso, o portão NÃO está no CI**, e isso é deliberado: ligá-lo hoje
+  reprovaria todo PR por 7 funções que só o dono pode destravar, e portão que
+  grita por algo que ninguém pode resolver ensina a ignorar o canal (§0.2, 4ª
+  regra). `npm run edges` responde a pergunta a qualquer momento.
 
 - ⬜ `[10/09]` 🟠 **2. IDENTIDADE VISUAL DE ÍCONES — o sistema, não cinco logos.**
   *Referências em [`docs/identidade/`](docs/identidade/README.md).*
@@ -648,65 +668,50 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[11/09]` 🟠 **O orçamento de bytes mede um site que ninguém recebe — 26,7 kB
-  gzip de diferença.** *Precisa de decisão porque as duas saídas são opostas.*
+- ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
+  de painel — eu não alcanço.*
 
-  O `npm run fim` reprovou o orçamento num commit que o CI tinha **acabado de
-  aprovar**. Medido em A/B na mesma máquina, tirando e pondo o `.env.local`:
+  Queixa do dono: *"não tá contando os logins errado"*. **Ele está certo, e
+  medido:** `login_attempts` tem **0 linhas** e `max(updated_at)` é *nunca*. Nos
+  logs do GoTrue das últimas 24 h houve **9 logins** e o único `run_hook`
+  registrado foi o da `send-email` — o de verificação de senha não aparece
+  nenhuma vez.
 
-  | | bruto | gzip |
-  | --- | --- | --- |
-  | sem as variáveis do site — é o que o CI constrói | 640,8 kB | **195,5 kB** |
-  | com as variáveis — é o que a Vercel serve | 735,1 kB | **222,5 kB** |
+  **A causa não é bug de código.** A migration de 28/08 avisa na própria
+  abertura que *"esta migration sozinha não liga nada"*: o hook só é chamado
+  depois de apontado em `Authentication → Hooks → Password Verification`. A
+  função existe, está com `GRANT` para `supabase_auth_admin`, e foi **provada em
+  ROLLBACK**: 4 erradas contam, a 5ª bloqueia por 15 min, acertar limpa, e
+  evento lixo devolve `continue`.
 
-  Sem `VITE_SUPABASE_URL`/`ANON_KEY`, a guarda de configuração no topo de
-  `lib/supabase.js` vira condição constante e o empacotador poda 94 kB do chunk
-  `index` que a produção entrega de verdade. O teto de 222 kB está sendo
-  conferido contra um build de 195,5 — e a produção já serve 222,5, **acima do
-  teto**, com o portão verde.
+  **Ligar não pode trancar ninguém:** o hook devolve `continue` sempre e engole
+  exceção — foi escrito assim de propósito, para que defeito nele não derrube o
+  login do site inteiro.
 
-  **Não é regressão recente:** medido em `f7ed0bd`, antes da cena 3D nova, dá os
-  mesmos 735,1 / 222,5 kB.
+  Quando estiver ligado, a trava entra: um roteiro que erra a senha de propósito
+  uma vez, confere que o contador andou, e loga certo em seguida (o acerto zera
+  a linha). Hoje ela reprovaria por algo que só o dono pode ligar, e portão
+  assim ensina a ignorar o canal (§0.2, 4ª regra).
 
-  **O conserto técnico é uma linha** — o job `build · lint · testes` passar a
-  construir com as mesmas variáveis que o job de navegador já usa. O que vem
-  depois é a decisão:
+- ⬜ `[11/09]` 🟡 **A foto do remetente do e-mail é a letra "G".** *Ação do dono
+  — e o caminho não é o que este item dizia até hoje.*
 
-  | Saída | O que custa |
-  | --- | --- |
-  | **subir o teto** para ~228 kB | aceita o tamanho de hoje como a nova base, e o portão volta a ser verdade na hora |
-  | **emagrecer o `index` primeiro** | 247,8 kB brutos de código próprio; a `main` fica vermelha até alguém fazer |
+  **Correção de informação errada minha (§6.2):** este item afirmava que era
+  *"configuração no painel do Brevo (o avatar do remetente)"*. Não é — o Brevo
+  não controla isso. O que o Gmail desenha ao lado do remetente vem do **perfil
+  Google do endereço que assina o `From:`**, ou de **BIMI**. Sem um dos dois, o
+  Gmail cai na inicial do nome de exibição — e o nosso é `GamerHub`, daí o "G".
 
-  Eu não escolhi porque as duas são legítimas e a escolha muda o que o portão
-  significa. Ver `docs/OPERACAO.md`.
+  Os dois caminhos, com o custo de cada um, estão escritos em
+  [`docs/OPERACAO.md`](docs/OPERACAO.md).
 
-- ⬜ `[05/09]` 🟠 **O "Esqueci o código" do cofre ANULA o cofre — achado do
-  dono.** *Precisa de decisão porque as três saídas mudam o que o cofre é.*
+- ⬜ `[11/09]` 🟢 **Ligar "Automatically delete head branches".** *Ação de
+  painel — eu não alcanço.*
 
-  Pergunta dele: *"que sentido faz ter um botão pra resetar senha? se alguém
-  pega meu PC ou celular ligado na tela e não souber a senha, ele só vai
-  redefinir"*.
-
-  **Ele está certo, e eu conferi no código:** `esquecerCodigo()` apaga o resumo
-  e o sal do `localStorage` e a tela cai em *"definir novo código"*. **Dois
-  cliques e qualquer um entra.** O cofre protege contra ninguém.
-
-  **O que isto NÃO é:** brecha de segurança. O cofre é cenográfico por decisão
-  registrada — quem protege o painel é a RLS e o `is_super()` no banco, e quem
-  pegou a máquina destravada já tem a sessão. Ver [DECISOES.md](docs/DECISOES.md).
-  **O que isto É:** um cadeado que não tranca, o que é pior do que não ter
-  cadeado — ele sugere uma proteção que não existe.
-
-  | | Saída | Custo | O que muda |
-  | --- | --- | --- | --- |
-  | **A** | **remover o botão** | zero | esquecer o código passa a exigir limpar os dados do site no navegador — mesmo efeito, mas exige intenção e saber onde mexer |
-  | **B** | **exigir a SENHA DA CONTA para resetar** | moderado | o cofre passa a valer de verdade: quem pegou a máquina aberta tem a sessão, mas normalmente **não** tem a senha |
-  | **C** | deixar como está | zero | assumir que é 100% enfeite, e escrever isso na tela |
-
-  **Minha recomendação: B.** É a única que faz o cofre significar alguma coisa,
-  e a verificação é server-side de verdade (`signInWithPassword`), não um `if`
-  no cliente. **A** é a versão de custo zero se ele preferir não gastar sessão
-  nisso.
+  `Settings → General → Pull Requests`. É a correção de RAIZ do entulho de
+  branches: com ela ligada, branch de PR fechado some sozinha e o robô semanal
+  para de ter o que reportar. Hoje há **7 branches órfãs** do Dependabot, de
+  PRs já fechados.
 
 - ⬜ `[05/09]` 🟢 **O lembrete de auditoria não enxerga fase parada.** Ele
   compara a data do relatório **mais recente** com 90 dias. Como as Fases 2 e 4
@@ -1040,6 +1045,24 @@ dependência técnica real** que decide o resto:
 
 ## 🔵 Só quando o volume crescer
 
+- ⬜ `[11/09]` 🔵 **Post apagado fica na tabela para sempre — sem prazo de
+  retenção.**
+
+  Medido hoje, ao conferir a queixa do dono sobre o post de teste no ar: os
+  roteiros do CI deixam **214 linhas** em `posts` marcadas com `[e2e ` ou
+  `[painel `, desde 30/08. **Nenhuma aparece no feed** — todas têm `deleted_at`
+  preenchido, porque o apagar do site é SUAVE. Ou seja: a limpeza dos testes
+  funciona, e o que sobra é linha morta.
+
+  O `cleanup_old_data` tem prazo para `admin_logs`, `notifications`,
+  `login_attempts`, `live_chat` e `contact_messages` — e **nenhum** para post
+  apagado (§6.1, item 5: tabela que só cresce).
+
+  **Por que não fiz agora:** 214 linhas não pesam em nada, e o prazo certo é
+  decisão de produto, não minha — "quantos dias um post apagado ainda pode ser
+  restaurado?" é uma pergunta de moderação. É uma linha no `cleanup_old_data`
+  quando o dono disser o número.
+
 - ⬜ `[02/09]` 🔵 **Mensagem marcada como SPAM não precisa de 2 anos.**
   *Refinamento do prazo decidido em 02/09, não correção dele.*
 
@@ -1076,10 +1099,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.503<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->102<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.650<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.820<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

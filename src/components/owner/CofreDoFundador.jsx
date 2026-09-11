@@ -4,7 +4,7 @@ import { Lock, Unlock, ShieldAlert, KeyRound, RotateCcw } from 'lucide-react';
 import CampoDeSenha from '../ui/CampoDeSenha';
 
 import DiscoDoCofre from './DiscoDoCofre';
-import ConfirmModal from '../ui/ConfirmModal';
+import ResetDoCofre from './ResetDoCofre';
 import {
   MINIMO_DO_CODIGO, abrirCofre, cofreArmado, conferirCodigo, definirCodigo,
   esquecerCodigo,
@@ -71,12 +71,13 @@ export default function CofreDoFundador({ aoAbrir }) {
    * O §5 pede a inversa de toda ação de estado, e pede junto "quem pode
    * executá-la". Uma função exportada que nenhuma tela chama não cumpre isso:
    * o dono que esquecesse o código ficaria sem o painel naquele navegador até
-   * saber abrir o DevTools — uma tranca cenográfica trancando de verdade, que é
-   * a pior combinação possível.
+   * saber abrir o DevTools — uma tranca cenográfica trancando de verdade.
    *
-   * Não é brecha: como o cofre não guarda permissão nenhuma, apagar daqui não
-   * abre porta que já não estivesse aberta. Quem chega nesta tela já passou pela
-   * checagem de cargo, que é a que vale.
+   * `[11/09]` **Mas ela não podia ser de graça**, e essa era a segunda metade
+   * do problema, apontada pelo dono: o botão apagava o código em dois cliques,
+   * então o cofre protegia contra ninguém. Hoje o `ResetDoCofre` exige a SENHA
+   * DA CONTA, conferida no servidor — é a única coisa que quem senta na máquina
+   * destravada normalmente não tem.
    */
   function reiniciarCofre() {
     esquecerCodigo();
@@ -141,17 +142,9 @@ export default function CofreDoFundador({ aoAbrir }) {
       )}
 
       {confirmandoReset && (
-        <ConfirmModal
-          title="Esquecer o código deste navegador"
-          icon={RotateCcw}
-          accent="orange"
-          message={'O código guardado aqui será apagado e você vai criar um novo agora. '
-            + 'Isso vale só neste navegador — os outros aparelhos continuam com o código deles. '
-            + 'Nenhuma permissão sua muda: o cofre é uma tranca de tela.'}
-          confirmLabel="Apagar e criar outro"
-          confirmIcon={RotateCcw}
-          onConfirm={reiniciarCofre}
-          onClose={() => setConfirmandoReset(false)}
+        <ResetDoCofre
+          aoConfirmar={reiniciarCofre}
+          aoFechar={() => setConfirmandoReset(false)}
         />
       )}
 
