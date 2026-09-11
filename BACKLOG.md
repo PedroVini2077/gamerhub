@@ -46,7 +46,7 @@ voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**37 itens abertos** (+ 1 ideia sem compromisso)
+**36 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
@@ -704,14 +704,6 @@ dependência técnica real** que decide o resto:
 
   Os dois caminhos, com o custo de cada um, estão escritos em
   [`docs/OPERACAO.md`](docs/OPERACAO.md).
-
-- ⬜ `[11/09]` 🟢 **Ligar "Automatically delete head branches".** *Ação de
-  painel — eu não alcanço.*
-
-  `Settings → General → Pull Requests`. É a correção de RAIZ do entulho de
-  branches: com ela ligada, branch de PR fechado some sozinha e o robô semanal
-  para de ter o que reportar. Hoje há **7 branches órfãs** do Dependabot, de
-  PRs já fechados.
 
 - ⬜ `[05/09]` 🟢 **O lembrete de auditoria não enxerga fase parada.** Ele
   compara a data do relatório **mais recente** com 90 dias. Como as Fases 2 e 4
