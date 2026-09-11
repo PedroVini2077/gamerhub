@@ -78,6 +78,35 @@ const CITACOES_HISTORICAS = new Map([
   ['loginBlock.js',
     'apagado em 11/09 com o bloqueio por tentativas; citado em '
     + 'DECISOES-FERRAMENTAL.md como o primeiro achado do teste de mutacao'],
+
+  // `[11/09]` A CENA 3D da landing inteira. Conferido com `ls`: nenhum destes
+  // existe mais. Foram removidos quando o dono lembrou que o briefing dele ja
+  // dizia "prefiro isso a adicionar 3D apenas para deixar a pagina mais
+  // impressionante" — e a cena ainda desenhava o RAIO, a marca aposentada.
+  //
+  // Os documentos continuam citando os nomes porque o que eles contam sobrevive
+  // a cena: que o custo de WebGL e por PIXEL, que dois PageSpeed do mesmo site
+  // discordaram em 31 s, e que o R3F zera o relogio ao trocar de `frameloop`.
+  // Reescrever para tirar os nomes destruiria os exemplos.
+  ['cena3D.js', 'cena 3D removida em 11/09; citada em DESEMPENHO/DECISOES/ARQUITETURA como o portao por aparelho'],
+  ['LandingScene.jsx', 'cena 3D removida em 11/09; citada em DESEMPENHO.md na medicao de custo por pixel'],
+  ['SceneObjects.jsx', 'cena 3D removida em 11/09; citada em DESEMPENHO e FUNCIONALIDADES'],
+  ['Lightning.jsx', 'cena 3D removida em 11/09; citada em DESEMPENHO.md'],
+  ['ritmoDoRaio.js', 'orfao apos a remocao da cena 3D em 11/09; citado em FUNCIONALIDADES.md'],
+  ['ritmoDoRaio.test.js', 'removido com a cena 3D em 11/09; citado em FUNCIONALIDADES e SEGURANCA'],
+
+  // `[11/09]` Conferido com `ls`: o arquivo NAO existe mais. Era o roteiro de
+  // navegador que provava o laco da cena parar fora da tela; saiu junto com a
+  // cena, e o job do CI que o rodava saiu junto com ele — portao que vigia algo
+  // inexistente so pode ficar verde, que e a falha do §1.5 dentro da ferramenta.
+  //
+  // DESEMPENHO e DECISOES continuam citando o nome porque ele e a PROVA das
+  // duas medicoes: 125 desenhos com a cena visivel contra 0 fora da tela, e o
+  // ResizeObserver conferido nos dois sentidos. Tirar o nome apagaria a
+  // evidencia e deixaria so a afirmacao.
+  ['cena-3d.mjs',
+    'removido em 11/09 com a cena 3D e o job do CI que o rodava; citado em '
+    + 'DESEMPENHO/DECISOES/FUNCIONALIDADES como a prova das medicoes do laco'],
 ]);
 
 /** Extensões que valem a pena conferir. Documento cita muito nome solto. */

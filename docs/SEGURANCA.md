@@ -556,7 +556,7 @@ para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
 | Documentação | `documentacao-quebrada`, `mapa-de-arquivos`, `documentacao-envelhecida` | que arquivo novo entre no `ARQUITETURA.md` e que nenhum doc cite arquivo morto | não |
 | Conteúdo visível | `conteudo-visivel.mjs` | que nada com tamanho real fique em `opacity: 0` numa janela de celular | não |
 | Navegação | `navegacao.mjs` | topo ao trocar de página, âncora funcionando das duas páginas, e voltar preservando o lugar | não |
-| Cena 3D | `cena-3d.mjs`, `ritmoDoRaio.test.js` | que o laço pare fora da tela, e que ninguém agende contra o relógio que o R3F zera | não |
+| Fronteira de `lazy()` | `orcamento-de-bytes.mjs` | que o chunk dos painéis (`Admin`, `Owner`) continue existindo separado — se um `lazy()` virar `import` estático o arquivo some, nada quebra, e o código da equipe passa a viajar no pacote de todo visitante anônimo | não |
 
 **A coluna do meio é a que faltava**, e o dono tinha razão em cobrá-la: sem
 dizer o que o portão **exige**, "existe portão" vira contagem — e contagem não

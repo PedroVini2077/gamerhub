@@ -139,8 +139,6 @@ src/
 │   ├── vozesSintetizadas.js # O plano B, quando o arquivo não chega (rede
 │   │                      # fora, codec ausente). Silêncio aqui daria um
 │   │                      # botão "ligado" sem som — a tela mentindo
-│   ├── ritmoDoRaio.js     # TRAVA: tempo por delta, porque o R3F ZERA o relógio
-│   │                      # da cena a cada mudança de frameloop
 │   ├── rotasComSom.js     # Onde o som ambiente toca. Lista FECHADA: rota
 │   │                      # desconhecida é silêncio, não música — a regra
 │   │                      # invertida faria toda página nova nascer tocando
@@ -395,7 +393,10 @@ src/
     │                      # mapas — foi um tipo novo sem entrada que travou a tela
     ├── landing/           # Hero, ElectricTitle, IntroLightning, FeatureSection,
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
-    │                      # LandingShot, Scene2D, Scene3D, BotaoCena3D
+    │                      # LandingShot
+    │   ├── ConvergenciaDoHub.jsx # `[11/09]` O fundo do Hero: trajetos que
+    │   │                  # chegam de fora e pousam no centro, onde o nome
+    │   │                  # está. SVG + CSS. Substituiu a cena 3D (−708 kB)
     │   ├── FluxoDeDados.jsx # Traços de dados subindo atrás da landing.
     │   │                  # Parallax por variável CSS + UM ouvinte de ponteiro,
     │   │                  # agrupado em 3 planos por custo medido
@@ -405,15 +406,6 @@ src/
     │   ├── secoesDaLanding.js # Fonte única das seções: faixa, rodapé e gaveta
     │   ├── dimensoesDosPrints.js # Tamanho real de cada print, em pixels
     │   ├── LandingSidebar.jsx # Navegação lateral (gaveta) da landing
-    │   └── scene3d/       # A cena 3D do Hero: LandingScene (createRoot +
-    │                      # extend seletivo), SceneObjects (LogoBolt e as
-    │                      # FloatingShapes) e Lightning
-    │                      #
-    │                      # `[11/09]` Entre 10 e 11/09 esta pasta teve seis
-    │                      # peças a mais — uma reconstrução do símbolo em
-    │                      # código, com shader de cristal e timeline própria.
-    │                      # Foi CANCELADA pelo dono e o código voltou ao que
-    │                      # está descrito acima. Ver docs/DECISOES.md
     ├── auth/              # LoginForm, RegisterForm, RegisterSuccess, ForgotForm,
     │                      # InputWrap, LoginSemBanco (o que a tela de login diz
     │                      # quando o banco está fora), e os dois porteiros de
@@ -557,11 +549,8 @@ trabalho de CPU são contas diferentes.
 
 | Regra | Onde vive | Por quê |
 | --- | --- | --- |
-| `lazy()` separa o chunk, **não adia o download** | `landing/Scene3D.jsx` | O componente montava com o Hero, então o pedido saía no primeiro instante. Era caminho crítico com outro nome |
-| Decoração cara é **opcional por aparelho** | `Scene3D.decidirModo()` | Tela < 1024px, `saveData`, 2g/3g, ≤ 2 núcleos ou `reduce-motion` recebem a `Scene2D` (SVG + CSS, custo de JS zero) |
 | `@import` de CSS externo cria **cadeia serial** | `index.html` | `preconnect` economiza handshake, não descoberta. O CSS de fonte agora é `<link>` com `media="print"`/`onload` |
 | `manualChunks` **vence** `import()` dinâmico | `vite.config.js` | Os caminhos casam `/node_modules/<pacote>/` inteiro. A regra antiga (`/react/`) arrastava `@sentry/react` para o `vendor-react` |
-| **O custo de uma cena WebGL é por PIXEL**, não por byte nem por objeto | `scene3d/LandingScene.jsx` | Cinco chamadas de desenho por quadro, e ainda assim a thread principal ficava 99% ocupada. A correção que saiu disso foi desfeita — ver abaixo |
 
 **Toda espera precisa de teto absoluto.** As duas esperas introduzidas aqui —
 a cena 3D e o Sentry — liberam sozinhas se o gatilho não vier. A primeira
@@ -603,8 +592,12 @@ do TBT. Não é um degrau, é um penhasco, porque o custo é proporcional a pixe
 
 Isso também resolve a contradição dos dois PageSpeed do dono: o do **celular**
 marcou TBT **0 ms** e o do **desktop**, 31 s. Não é inconsistência de medição —
-a cena não sobe abaixo de 1024px (`lib/cena3D.js`), então o celular nunca pagou
-por ela.
+a cena não subia abaixo de 1024px, então o celular nunca pagou por ela.
+
+> **`[11/09]` A cena 3D foi removida inteira** — `Scene3D`, `Scene2D`,
+> `scene3d/` e o portão por aparelho. Este trecho fica como histórico: ele
+> explica por que dois PageSpeed do mesmo site discordavam em 31 segundos, e
+> essa lição sobrevive à cena.
 
 > **`[29/08]` A resolução adaptativa foi DESFEITA, e é o registro que importa.**
 >

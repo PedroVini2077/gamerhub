@@ -4,9 +4,8 @@ import { ChevronDown, PauseCircle, ShieldQuestion } from 'lucide-react';
 import { useDbOffline } from '../../hooks/useDbOffline';
 import { motivoDaPausa } from '../../lib/pauseReason';
 import { heroFade } from '../../lib/landingMotion';
-import Scene3D from './Scene3D';
 import ElectricTitle from './ElectricTitle';
-import BotaoCena3D from './BotaoCena3D';
+import ConvergenciaDoHub from './ConvergenciaDoHub';
 import MarcaGH from '../ui/MarcaGH';
 
 export default function Hero({ introDone = true }) {
@@ -39,8 +38,10 @@ export default function Hero({ introDone = true }) {
         className="absolute -bottom-28 -right-24 w-80 h-80 rounded-full bg-neon-purple/10 blur-3xl pointer-events-none"
       />
 
-      {/* Logo 3D + objetos flutuantes — só essa página, carregado sob demanda */}
-      <Scene3D className="absolute inset-0 z-[1] opacity-90" />
+      {/* `[11/09]` Aqui morava a cena 3D com o raio — 708 kB para desenhar a
+          marca que foi aposentada. No lugar dela, o que o NOME promete:
+          trajetos chegando de fora e pousando onde o nome está. */}
+      <ConvergenciaDoHub className="absolute inset-0 z-[1]" />
 
       <div className="relative z-10 flex flex-col items-center">
         <motion.div variants={heroFade(0)} initial="initial" animate={show} className="flex items-center gap-2 mb-5">
@@ -94,7 +95,6 @@ export default function Hero({ introDone = true }) {
             que trocar — em desktop rodando o padrão (que já é 3D) ele some
             sozinho, para não poluir a landing. Ver `lib/cena3D.js`. */}
         <motion.div variants={heroFade(0.6)} initial="initial" animate={show}>
-          <BotaoCena3D />
         </motion.div>
 
         {/* O aviso de pausa era um texto FIXO no código: para tirar ou trocar,

@@ -475,21 +475,6 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
-      # A cena 3D precisa PARAR de desenhar quando sai da tela. Em 28/08 o
-      # PageSpeed mostrou 29.441 ms de thread principal em "Other" (o laço de
-      # animação) contra 789 ms de execução de script — ou seja, o custo nunca
-      # foi o tamanho do arquivo, era o laço rodando para quem já tinha rolado
-      # para longe.
-      #
-      # Só um navegador de verdade prova isso: IntersectionObserver,
-      # requestAnimationFrame e WebGL não existem no Vitest. E a regressão é
-      # invisível — a página continua bonita e funcionando, só volta a queimar
-      # CPU (§1.5).
-      - name: A cena 3D para de animar fora da tela
-        run: npm run test:e2e:cena3d
-        env:
-          SMOKE_BASE: http://127.0.0.1:4173
-
       # A extração de quadros só falha num navegador de verdade — ela depende
       # de decodificação de vídeo e de `<canvas>`, que não existem no Vitest.
       # Em 28/08 ela devolveu lista vazia para um vídeo real e o conteúdo subiu

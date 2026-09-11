@@ -33,65 +33,35 @@ O `owner` tem um rank especial de **Fundador** (laranja), exibido na página
 logados) ao acessar `/`. Decide-se em `HomeOrLanding` no `App.jsx` com base no
 estado de autenticação.
 
-**Cena 3D do Hero** (`Scene3D` + `scene3d/`):
-- Canvas React Three Fiber carregado sob demanda (lazy) com `Suspense`. É o
-  maior asset do site (~183 KB gzip, 708 KB descompactados) e é puramente
-  decorativo, então `Scene3D` nem baixa o chunk quando não vai ser aproveitado.
-  A decisão inteira mora em `lib/cena3D.js`, e os portões são:
-  `prefers-reduced-motion`, `navigator.connection.saveData`, `deviceMemory ≤ 1`,
-  `hardwareConcurrency ≤ 2` e largura de janela `< 1024px`. Todas as APIs são
-  opcionais — quando uma não existe, ela não opina.
-- **A escolha do visitante vence o portão.** `BotaoCena3D` deixa ativar ou
-  desativar a cena, e a preferência fica no navegador (é de aparelho, não de
-  pessoa).
-- **`[28/08]` O laço de animação para quando a cena sai da tela.** Um
-  `IntersectionObserver` desliga o `frameloop` do `<Canvas>`. Sem isso a cena
-  continuava desenhando 60×/s para quem já tinha rolado para longe. Travado por
-  `e2e/cena-3d.mjs`.
-- **`[29/08]` O `<Canvas>` do fiber saiu; a cena é montada por `createRoot`.**
-  Ele trazia junto o sistema de eventos de ponteiro (raycasting a cada
-  movimento), e esta cena não tem um único manipulador de clique — é decoração.
-  Vale −20% do chunk (888 → 708 kB) e −18% da thread principal atribuível a ela
-  (520 → 428 ms, sob freio de CPU de 4×). Em troca, medir o contêiner ao
-  redimensionar passou a ser nosso: é um `ResizeObserver`, com teste próprio.
-- **`[29/08]` A resolução adaptativa foi DESFEITA.** Ela chegou a existir — a
-  cena ajustava o `dpr` sozinha — e o dono reprovou em três rodadas, testando:
-  *"começa muito pixelada"*, *"a luz verde não fica tão forte"*, *"o raio às
-  vezes é cortado pela metade"*. O `dpr` e o `antialias` voltaram a ser os de
-  antes. O que ficou de otimização é invisível: o laço parado fora da tela e o
-  chunk 20% menor.
-- **`[29/08]` (histórico) O que a medição mostrou, e o que se decidiu fazer com
-  ela.** Com a cena visível, cada quadro custava ~92 ms e a thread principal
-  ficava **99% ocupada** (8.066 ms de bloqueio numa janela de 8 s, medido em
-  navegador de verdade). O custo de uma cena WebGL é por **pixel**.
-  A correção que saiu disso — baixar a resolução — foi desfeita pelo dono, e o
-  raciocínio inteiro está em [DESEMPENHO.md](DESEMPENHO.md). O custo em thread
-  principal é uma troca aceita: enfeite bonito vale mais que nota de laboratório.
+**Fundo do Hero — a convergência** (`ConvergenciaDoHub`):
+- Trajetos finos chegando de fora e parando num anel em volta do bloco de
+  texto. É o nome do produto desenhado: **Hub** é um ponto onde as coisas se
+  encontram. Verde vindo da esquerda, roxo da direita.
+- **A zona limpa é geometria, não calibragem.** Nenhum traço entra na elipse
+  que envolve o texto — o ponto interno de cada um é a interseção do raio com
+  essa elipse, resolvida em `useTrajetos`. A primeira versão desenhava a reta
+  inteira até o centro e tentava sumir com o texto por opacidade; no print as
+  linhas cruzavam o título assim mesmo, porque reta que aponta para o centro
+  passa por cima do que está no centro.
+- **SVG estático + CSS, sem laço por quadro.** A animação é `opacity` e
+  `animateMotion`, e `prefers-reduced-motion` desliga o movimento sem apagar o
+  desenho — quem pede menos animação continua vendo a composição.
+- No celular a composição inteira é afastada por `scale` (`decoracao.css`),
+  porque o parágrafo quebra em três linhas e ocupa quase toda a largura.
 
-  > **Correção `[28/08]`:** este trecho listava "conexão 2g/3g" como portão. O
-  > `effectiveType` foi **removido** no mesmo dia: era o único que mudava com o
-  > tempo, então a mesma máquina trocava de modo entre visitas. Ver
-  > [DECISOES.md](DECISOES.md).
-- **`LogoBolt`**: raio 3D sólido extrudado (silhueta do ícone Zap da marca),
-  cresce de escala 0→1 com `easeOutCubic` ao aparecer; acompanhado por um
-  `pointLight` (`flashRef`) que estoura no nascimento (intensidade 14→0) e
-  decai rápido — "primeiro a luz, depois a forma se revela". Roda
-  continuamente no eixo Y, revelando a profundidade da extrusão; zumbido neon
-  suave de `emissiveIntensity` sem flickering.
-- **`FloatingShapes`**: formas geométricas 3D wireframe flutuantes nos quatro
-  cantos — **gem** (dois icosaedros contra-rotativos, verde-neon), **ring**
-  (toro, roxo), **diamond** (octaedro, laranja) e **dodeca** (dodecaedro,
-  ciano). Todos com `wireframe: true` e `depthWrite: false` para ficarem
-  visualmente atrás do raio. O `LogoBolt` usa `renderOrder={1}` para garantir
-  que sempre renderize por cima, independente da posição Z. Cada forma
-  materializa com overshoot (`easeOutBack`) em cascata temporal
-  (`SHAPE_STAGGER = 0.16s`).
-- **`Lightning`**: raios 3D animados cruzando a cena.
+> **`[11/09]` Aqui morava a CENA 3D, e ela foi REMOVIDA.** Eram 708 kB de
+> `three` + `@react-three/fiber` para desenhar um raio — que é a marca
+> **aposentada** desde que o monograma GH entrou. Saíram com ela `Scene3D`,
+> `Scene2D`, `scene3d/`, `BotaoCena3D`, `lib/cena3D.js`, `lib/ritmoDoRaio.js` e
+> o `e2e/cena-3d.mjs` que vigiava o laço de animação.
+>
+> A decisão é do dono, e a frase dele é o registro: *"eu nunca te pedi pra fazer
+> em 3d, eu acho que no prompt tá explícito isso"*. O briefing dele dizia, na
+> letra, *"prefiro isso a adicionar 3D apenas para deixar a página mais
+> impressionante"* — e eu tinha construído 3D assim mesmo. O histórico de tudo o
+> que foi medido na cena continua em [DESEMPENHO.md](DESEMPENHO.md); ele é
+> retrato de um sistema que não existe mais, e está marcado como tal.
 
-  > **Correção `[11/09]`:** entre 10 e 11/09 este trecho descreveu uma cena
-  > reconstruída (`RaioCristalino`, shader de cristal, timeline de 9 fases). Ela
-  > foi **cancelada pelo dono** e o código voltou ao que está descrito acima. O
-  > motivo está em [DECISOES.md](DECISOES.md).
 
 **Intro de abertura** (`IntroLightning`):
 - Overlay `fixed inset-0 z-[60]` que cobre tudo no primeiro carregamento.
@@ -639,9 +609,17 @@ não sabe nada de relógio absoluto e não tem como ser zerado por baixo. Fica e
 (animação). O teto de 1 s por quadro protege do salto que o navegador entrega
 quando a aba volta do segundo plano.
 
-**A trava:** `ritmoDoRaio.test.js` varre `scene3d/` e reprova qualquer
+**A trava:** `ritmoDoRaio.test.js` varria `scene3d/` e reprovava qualquer
 `clock.elapsedTime` em código. Testar só o helper seria "teste que não consegue
 falhar" — alguém reescreveria a cena com o relógio e o teste seguiria verde.
+
+> **`[11/09]` A cena 3D foi REMOVIDA, e a trava saiu com ela.** O que fica desta
+> seção é a lição, que não depende da cena: o `@react-three/fiber` zera
+> `clock.elapsedTime` a cada troca de `frameloop`, e quem depende dele salta de
+> fase. Se um dia entrar outra cena, o erro está documentado antes de acontecer.
+>
+> O que o hero desenha hoje é `ConvergenciaDoHub` — SVG e CSS, sem relógio de
+> JavaScript para zerar.
 Provada reinjetando o bug na entrada da logo: reprovou apontando
 `SceneObjects.jsx:82` e explicando as duas consequências.
 

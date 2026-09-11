@@ -35,75 +35,56 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[11/09]` Nada em execução
+### `[11/09]` REFORMULAÇÃO DA LANDING — em fatias, mergeando cada uma
 
-A reconstrução da cena 3D/2D da landing foi **cancelada pelo dono** e o código
-voltou ao estado anterior ao PR #177. O motivo e o que se aprendeu estão em
-[docs/DECISOES.md](docs/DECISOES.md) — decisão não é backlog (§6.2, regra 4).
+**Ordem do dono:** *"eu realmente quero reformular toda a landing, não só a
+cena, vai fazendo o que pode e a gente vai ajeitando no decorrer"*. E a correção
+dele, que eu precisava ouvir: *"eu nunca te pedi pra fazer em 3D, acho que no
+prompt tá explícito"* — e estava: *"prefiro isso a adicionar 3D apenas para
+deixar a página mais impressionante"*.
+
+**Objetivo:** a landing dos três atos — a fenda, o que converge, você já está
+dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
+
+| Fatia | O que é | Estado |
+| --- | --- | --- |
+| **1** | Matar a cena 3D e trocar o fundo do hero por **convergência** em SVG/CSS | **feita** |
+| 2 | A intro (`IntroLightning`) ainda desenha o RAIO — é a primeira coisa que alguém vê | a fazer |
+| 3 | Ato 2: as features deixam de ser lista e viram o que CHEGA ao hub | a fazer |
+| 4 | Ato 3: a interface de verdade como prova, e o fecho na porta do login | a fazer |
+
+**Critério de sucesso da fatia 1:** nenhum raio na landing, o orçamento de bytes
+cai, e o hero conta "ponto de encontro" sem depender de 3D.
+
+**Fatia 1 — FEITA, com o que ela custou e o que ela NÃO rendeu.** Saiu a cena
+inteira (wrapper, fallback 2D, a pasta, o botão de escolha, o portão por
+aparelho), `three`, `@react-three/fiber`, `lib/ritmoDoRaio.js` e o
+`e2e/cena-3d.mjs` com o job de CI que o rodava. A intro deixou de desenhar o
+raio: hoje é a marca que se desenha. No lugar do hero entrou
+`ConvergenciaDoHub`.
+
+**Sinceridade sobre o critério de sucesso que eu mesmo escrevi acima:** ele
+dizia *"o orçamento de bytes cai"*, e **não caiu** — carregamento inicial em
+735,0 kB / 222,9 kB gzip, exatamente o de antes, e o chunk da `Landing` subiu
+17,9 → 21,1 kB porque o SVG novo mora nele. O critério estava errado, não a
+entrega: a cena era `lazy` atrás do portão por aparelho, então nunca esteve no
+carregamento inicial. O que sumiu foram os 708 kB de quem **recebia** a cena e
+os 5.877 ms de thread em 6 s de página parada. Medição em
+[`DESEMPENHO.md`](docs/DESEMPENHO.md).
+
+**Calibragem da convergência, em dois passos, cada um a partir de um print.** A
+1ª versão traçava a reta inteira até o centro e sumia o texto por opacidade — as
+linhas cruzavam o título assim mesmo. A correção é geométrica: cada traço para
+na borda de uma elipse que envolve o texto. A 2ª versão tinha 11 pontos
+animados ao mesmo tempo, o elemento mais brilhante da tela; hoje 1 em cada 3
+trajetos leva ponto. Conferido em 1280×800 e em 400×800.
+
+---
 
 ---
 
----
-
-**Última conferência contra o sistema:** 10/09/2026 ·
-**39 itens abertos** (+ 1 ideia sem compromisso)
-
-> **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
-> erradas, e nenhuma delas se corrigiria sozinha:
->
-> | O que estava escrito | O que o sistema respondeu |
-> | --- | --- |
-> | *"`profiles` responde 401 ao anônimo, então não há como mapear UUID → pessoa"* | `select=id,username` responde **200 com as 5 linhas**. A cadeia `site_config.updated_by` → nome fecha. Item subiu de 🔵 para 🟡 |
-> | *"UUID de staff exposto em **duas** tabelas"* | `blocked_words.created_by` está **nula nas 322 linhas**. Só `site_config` vaza pessoa |
-> | as duas conferências de fila "daqui a alguns dias" | fila com **20 itens, todos resolvidos**, zero pendentes — mas **nada foi postado desde 28/08**, então o zero é falta de amostra, não veredito |
->
-> **E um defeito meu, encontrado e corrigido na mesma passada:** o dono aceitou
-> a política de privacidade às 19:58 de 02/09, e o PR #140 reescreveu o bloco de
-> retenção depois disso **sem subir a versão**. O registro de aceite passou a
-> apontar para um texto que ele não leu. Corrigido: versão `2026-09-02-2`, o
-> `CHECK` do banco passou a aceitar revisão no mesmo dia, e entrou a trava de
-> impressão de conteúdo — ver [PRIVACIDADE.md](docs/PRIVACIDADE.md).
-
-> **O que esta rodada fechou** (29/08): a cena 3D deixou de ocupar 99% da thread
-> principal enquanto visível — 8.066 ms → 52 ms de bloqueio numa janela de 8 s,
-> medido em navegador de verdade e travado no CI; o `HUB` do título (elemento de
-> LCP) deixou de animar `text-shadow`, que não roda no compositor; e a falha de
-> extração de quadros de vídeo passou a chegar ao `admin_logs` com o motivo, o
-> tipo do arquivo e o navegador.
->
-> **O buraco encontrado no caminho, e ele era o pior dos três:** `drawImage` com
-> um vídeo não decodificado **não lança** — saía um JPEG válido e transparente,
-> a IA respondia `score 0`, e o vídeo ficava registrado como **analisado e
-> limpo**. Análise falsa é pior que ausência de análise: a ausência aparece como
-> pendência, a falsa afirma que alguém olhou.
->
-> **A correção que eu tinha declarado e estava pela metade:** o `frameloop` de
-> 28/08 resolvia a cena desenhando **fora** da tela, e eu li isso como "o
-> problema de desempenho da cena está corrigido". Nunca tinha medido o caso "na
-> tela", que era o caro. Registrado no item do chunk 3D.
->
-> **Fechado com a permissão que você deu** ("pode fazer todas elas"): o
-> "Carregar mais" do painel. Escolhi a saída mais correta das três — cada
-> sub-aba pagina a si mesma — e não a mais barata, porque as outras duas
-> deixavam o clique podendo não mudar nada. Custo: uma consulta a mais na carga
-> inicial, dentro do mesmo `Promise.all`.
->
-> **Fechado também:** o chunk da cena 3D, que era 🔵. Ele deixou de ser "bytes
-> para rede lenta" quando o A/B mostrou que a cena responde por 520 ms de thread
-> principal e que, depois da resolução adaptativa, esses 520 ms são quase todos
-> CARGA. Trocar `<Canvas>` por `createRoot` deu −20,2% de bytes e −18% de thread.
-> A justificativa antiga do item (`extend(THREE)`) estava errada — conferida na
-> fonte e corrigida em [DESEMPENHO.md](docs/DESEMPENHO.md).
->
-> **Viraram decisão** (§6.2 regra 4): resolução adaptativa em vez de `dpr` fixo,
-> o brilho do título por `opacity`, e o `<Canvas>` saindo em favor do
-> `createRoot` → [DECISOES.md](docs/DECISOES.md).
->
-> **Esperando você:** três decisões de custo (HIBP, plano Team, sair do Gmail),
-> a escolha do React Query, o desenho do aviso na landing, repostar um vídeo e
-> repetir o PageSpeed do desktop no preset padrão.
-
----
+**Última conferência contra o sistema:** 11/09/2026 ·
+**38 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -562,32 +543,6 @@ dependência técnica real** que decide o resto:
   reprovaria todo PR por 7 funções que só o dono pode destravar, e portão que
   grita por algo que ninguém pode resolver ensina a ignorar o canal (§0.2, 4ª
   regra). `npm run edges` responde a pergunta a qualquer momento.
-
-- ⬜ `[11/09]` 🟠 **O RAIO 3D no hero contradiz a marca nova.** *Decisão de
-  produto — eu parei depois de duas tentativas (§1.2).*
-
-  A marca nova está no cabeçalho, no favicon, nos ícones do PWA e em 11 telas.
-  **A peça central do hero continua sendo o raio**, que foi aposentado. Quem
-  chega vê o GH em cima e um raio gigante girando logo abaixo.
-
-  **Tentei trocar a peça 3D pelo GH, duas vezes, e não funciona:**
-
-  | Tentativa | Resultado |
-  | --- | --- |
-  | extrusão com o chanfro do raio | borrão verde — o chanfro engoliu as contraformas |
-  | chanfro mínimo | as formas aparecem, mas continua ilegível girando, e sólida em verde |
-
-  A razão é de forma: o GH é **plano**, de traços finos, e a identidade dele é o
-  **gradiente**. Sólido verde em rotação destrói as três coisas. Não é questão
-  de afinar parâmetro — prints das duas tentativas foram mostrados ao dono.
-
-  **As três saídas, e a escolha é dele:**
-
-  | Saída | O que muda | Custo |
-  | --- | --- | --- |
-  | **Tirar a peça 3D do hero** (mantendo as formas flutuantes) | some a contradição; o hero passa a ser tipografia + formas | zero, e é reversível |
-  | **Desligar a cena 3D inteira** | **−708 kB** do carregamento — o maior item de bytes do site | some o efeito que ele gostava |
-  | **Peça nova, feita para 3D** | precisa de arte 3D de verdade, que eu não produzo | depende de ferramenta externa |
 
 - ⬜ `[11/09]` 🟠 **A MARCA E A LANDING — briefing gravado, esperando UMA decisão.**
   *Tudo em [`docs/identidade/BRIEFING-2026-09.md`](docs/identidade/BRIEFING-2026-09.md);
@@ -1088,39 +1043,33 @@ dependência técnica real** que decide o resto:
 
 
 
-- ⬜ `[29/08]` **Repetir o PageSpeed do desktop, agora no preset padrão.**
-  *A causa do 58 foi encontrada e corrigida; falta o antes/depois de campo.*
+- ⬜ `[11/09]` **Medir a landing NOVA em campo — o antes/depois que sobrou.**
+  *A cena 3D saiu; falta o número de usuário real do que ficou no lugar.*
 
-  **O que a rodada de 29/08 achou.** O PageSpeed do dono acusava 31,3 s de
-  thread principal, dos quais **30.182 ms em "Other"** — e byte nenhum explicava
-  aquilo, porque o custo de uma cena WebGL é por **pixel**. Medido num navegador
-  de verdade, janela de 8 s com o Hero na tela:
+  **Por que o item de 29/08 foi reescrito.** Ele pedia repetir o PageSpeed "no
+  preset padrão" para fechar o antes/depois da cena 3D, e trazia toda a
+  investigação de por que 30.182 ms caíam em "Other": o custo de uma cena WebGL
+  é por **pixel**, não por byte. Nada disso é acionável hoje — **a cena foi
+  removida em 11/09**, junto com `three`, `@react-three/fiber` e o
+  `e2e/cena-3d.mjs` que vigiava o laço de animação. O raciocínio inteiro está
+  guardado em [DESEMPENHO.md](docs/DESEMPENHO.md), que é onde medição mora.
 
-  | Configuração | Long tasks | Thread bloqueada |
-  | --- | --- | --- |
-  | como estava (`dpr` até 1,5 + `antialias`) | 88 | **8.066 ms de 8.000 ms** |
-  | resolução adaptativa (como está) | 1 | **52 ms** |
-
-  A thread principal ficava 99% ocupada enquanto a cena estivesse visível. Isso
-  também explica a contradição dos dois prints do dono: o do celular deu **TBT
-  0 ms** porque a cena 3D não sobe abaixo de 1024px — o celular nunca pagou.
-  Detalhes em [ARQUITETURA.md](docs/ARQUITETURA.md).
-
-  **O que falta, e por que é do dono:** o print do desktop mostrava
-  *"Limitação personalizada"*. Comparar uma medição de preset customizado com
-  outra não diz nada (§0.3, regra 5). O pedido é: **PageSpeed, aba Desktop,
-  janela anônima**, e comparar com o próximo — sempre no mesmo preset.
+  **O que continua valendo, e é o único pedaço vivo:** o site nunca teve
+  medição de campo do hero. O laboratório oscila — duas medições do mesmo site
+  em 27/08 discordaram **4×** no TBT —, e o Vercel Speed Insights já está
+  instalado e é o único que responde por quem TEM GPU.
 
   | Onde | Como |
   | --- | --- |
+  | **Vercel Speed Insights** | já instalado; é o único que mede usuário real |
   | **PageSpeed Insights** | `pagespeed.web.dev`, colar a URL, aba Desktop |
   | **Chrome no PC** | F12 → Lighthouse → Desktop + Performance → Analyze page load |
-  | **Vercel Speed Insights** | já instalado; é o único que mede usuário real, e o único que responde se a cena incomoda quem TEM GPU |
 
-  O portão do CI continua sendo **byte** (`scripts/orcamento-de-bytes.mjs`),
-  porque tempo de laboratório oscila. A exceção nova é `e2e/cena-3d.mjs`, que
-  agora barra bloqueio de thread acima de 800 ms — ali a margem é zero contra
-  dois mil, não uma porcentagem.
+  Sempre no mesmo preset e em **janela anônima** (§0.3, regra 5: mesma
+  ferramenta, mesmo aparelho). O portão do CI continua sendo **byte**
+  (`scripts/orcamento-de-bytes.mjs`), porque tempo de laboratório oscila e
+  portão que balança vira alarme falso.
+
 
 ## 🔵 Só quando o volume crescer
 
@@ -1178,8 +1127,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->105<!--/n--> arq ·
-  <!--n:src.lib.linhas-->9.979<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->101<!--/n--> arq ·
+  <!--n:src.lib.linhas-->9.531<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

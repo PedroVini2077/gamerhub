@@ -83,9 +83,12 @@ background para fingir 3D, galeria, slideshow, copia-e-cola.
 | a arte tem alfa REAL (82,8% do quadro) | usá-lo custava **67 kB** — o canal alfa domina a compressão WebP |
 | a página é quase preta e o raio BRILHA | composta sobre preto e desenhada com `screen`, a mesma arte custa **18,9 kB** |
 
-Quem usa hoje: `src/components/landing/Scene2D.jsx` — **e isso é estado
-intermediário**. A 2D só aparece para quem não recebe a 3D, e a direção dela
-será revista quando a cena em código estiver de pé.
+Quem usava era a cena 2D da landing — **e ela não existe mais**. Em 11/09 a
+cena 3D e o fallback 2D foram removidos junto com o raio, quando o dono lembrou
+que o briefing dele já dizia *"prefiro isso a adicionar 3D apenas para deixar a
+página mais impressionante"*. O hero passou a ser `ConvergenciaDoHub` (SVG+CSS),
+e a medição acima fica como o que ela é: a prova de que compor sobre preto com
+`screen` custa 3,5× menos do que carregar o alfa.
 
 ## `[11/09]` A reconstrução do símbolo foi CANCELADA
 
