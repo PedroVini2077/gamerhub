@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Zap, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import LandingSidebar from './LandingSidebar';
+import MarcaGH from '../ui/MarcaGH';
 
 /**
  * A barra fixa do topo da landing.
@@ -28,7 +29,7 @@ export default function LandingNav() {
       >
         <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Zap size={20} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 8px #39ff14)' }} />
+            <MarcaGH tamanho={20} />
             <span className="font-display font-bold text-lg text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-lg text-white tracking-wider">HUB</span>
           </Link>

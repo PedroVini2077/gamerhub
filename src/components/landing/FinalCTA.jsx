@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Zap } from 'lucide-react';
 import { fadeUpReveal, VIEWPORT } from '../../lib/landingMotion';
+import MarcaGH from '../ui/MarcaGH';
 
 export default function FinalCTA() {
   return (
@@ -16,7 +16,7 @@ export default function FinalCTA() {
           transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           className="inline-flex"
         >
-          <Zap size={30} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 14px #39ff14)' }} />
+          <MarcaGH tamanho={30} />
         </motion.div>
         <h2 className="font-display text-2xl md:text-3xl font-bold text-white">
           Pronto pra entrar pro <span className="text-neon-green">Hub</span>?

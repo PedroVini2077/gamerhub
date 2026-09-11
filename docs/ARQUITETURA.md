@@ -109,6 +109,9 @@ src/
 │   ├── image.js           # Compressão/resize client-side antes do upload (economia de egress)
 │   ├── storage.js         # Remoção de arquivos do bucket ao deletar post/mural
 │   ├── auditLog.js        # logAudit() -> RPC log_audit_event
+│   ├── marca.js           # FONTE ÚNICA do caminho da marca e do gradiente,
+│   │                      # derivados da arte por medição. Não editar à mão:
+│   │                      # saem de scripts/tracar-marca.mjs
 │   ├── errosDeAuth.js     # Erro do Supabase Auth em PORTUGUÊS, por mapa
 │   │                      # explícito. O desconhecido aparece inteiro, em
 │   │                      # vez de virar um genérico que esconde o caso novo
@@ -353,6 +356,10 @@ src/
     │                      # EligibilityChecklist, DecisionButton
     ├── ui/                # ConfirmModal, ReasonModal, BannedScreen, …
     │   ├── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
+    │   ├── MarcaGH.jsx     # `[11/09]` A MARCA — o monograma GH, em SVG
+    │   │                  # derivado da arte por medição (1,80% de diferença,
+    │   │                  # toda na borda do anti-serrilhado). Variantes
+    │   │                  # `gradiente` e `mono`; `useId` para duas na mesma tela
     │   │                  # olho de mostrar/ocultar. O olho é nosso: o nativo
     │   │                  # só existe em alguns navegadores de Android, e o
     │   │                  # CSS o esconde para não ficarem dois

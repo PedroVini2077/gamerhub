@@ -9,8 +9,9 @@ import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
 import { useRealtime } from '../hooks/useRealtime';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { Zap, Search, X, ArrowUp } from 'lucide-react';
+import { Search, X, ArrowUp } from 'lucide-react';
 import { apenasData } from '../services/result';
+import MarcaGH from '../components/ui/MarcaGH';
 
 const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
 
@@ -101,7 +102,7 @@ export default function Home() {
           <div className="absolute inset-0 grid-bg opacity-50" />
           <div className="relative">
             <div className="flex items-center gap-2 mb-2">
-              <Zap size={18} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
+              <MarcaGH tamanho={18} />
               <span className="font-display text-xs text-neon-green tracking-widest uppercase">GamerHub // Feed</span>
             </div>
             <h1 className="font-display text-2xl font-bold text-white mb-1">

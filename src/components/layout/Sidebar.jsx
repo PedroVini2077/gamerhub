@@ -1,6 +1,6 @@
 import { Tv, Trophy, Gem } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Key, User, Zap, X, Shield, Settings } from 'lucide-react';
+import { Home, Users, Key, User, X, Shield, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { formatNumber } from '../../lib/format';
 import { fetchSiteStats, SITE_STATS_KEY } from '../../services/keyService';
 import { apenasData } from '../../services/result';
+import MarcaGH from '../ui/MarcaGH';
 
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuth();
@@ -46,7 +47,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-5 border-b border-dark-500">
           <div className="flex items-center gap-2">
-            <Zap size={20} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
+            <MarcaGH tamanho={20} />
             <span className="font-display font-bold text-lg text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-lg text-white tracking-wider">HUB</span>
           </div>

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { Zap, Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail, FileText } from 'lucide-react';
+import { Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail, FileText } from 'lucide-react';
 // Marca vem do `react-icons/fa6`, não do lucide (§4 da convenção de UI) — e o
 // lucide nem tem mais `Github`, ele saiu do pacote junto com os outros ícones
 // de marca.
 import { FaGithub } from 'react-icons/fa6';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
+import MarcaGH from '../ui/MarcaGH';
 
 /**
  * O rodapé da landing.
@@ -55,7 +56,7 @@ export default function LandingFooter() {
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 grid gap-10 md:grid-cols-4">
         <div className="space-y-3 md:col-span-1">
           <div className="flex items-center gap-2">
-            <Zap size={18} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }} />
+            <MarcaGH tamanho={18} />
             <span className="font-display font-bold text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-white tracking-wider">HUB</span>
           </div>

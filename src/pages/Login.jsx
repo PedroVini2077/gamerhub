@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Zap, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { calcAge, MIN_SIGNUP_AGE } from '../lib/date';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
@@ -17,6 +17,7 @@ import { fadeTab } from '../lib/motion';
 import { useDbOffline } from '../hooks/useDbOffline';
 import { useModoDaEntrada } from '../hooks/useModoDaEntrada';
 import { mensagemDeErroDeAuth, ID_DO_TOAST_DE_AUTH } from '../lib/errosDeAuth';
+import MarcaGH from '../components/ui/MarcaGH';
 
 /**
  * A frase abaixo do logo, por modo.
@@ -168,7 +169,7 @@ export default function Login() {
         </Link>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <Zap size={28} className="text-neon-green" style={{ filter: 'drop-shadow(0 0 10px #39ff14)' }} />
+            <MarcaGH tamanho={28} />
             <span className="font-display font-bold text-3xl text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-3xl text-white tracking-wider">HUB</span>
           </div>
