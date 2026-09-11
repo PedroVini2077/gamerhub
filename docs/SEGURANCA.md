@@ -452,12 +452,22 @@ apaga a linha, evento malformado devolve `continue`, e nem `anon` nem
 > | logs do GoTrue, 24 h | **9 logins** em `/token`, e o único `run_hook` registrado é o da `send-email` |
 > | `pg_proc` + `routine_privileges` | a função **existe** e tem `GRANT` para `supabase_auth_admin` |
 >
-> **A causa é a última linha da migration, não um bug no código.** Ela avisa na
-> própria abertura: *"esta migration sozinha não liga nada"*. O hook só passa a
-> ser chamado depois de apontado em `Authentication → Hooks → Password
-> Verification` para `public.hook_de_verificacao_de_senha` — e esse passo, que
-> é ação de painel, nunca foi dado. Ficou **14 dias** escrito como corrigido e
-> desligado na prática.
+> **A causa NÃO é "faltou clicar", e eu afirmei isso antes de conferir.** Meu
+> primeiro diagnóstico foi *"falta apontar o hook em `Authentication → Hooks`"*.
+> Está errado: o `Password Verification Attempt` **não existe no plano Free**.
+> A tabela da [documentação de Auth Hooks](https://supabase.com/docs/guides/auth/auth-hooks)
+> marca esse hook como `Teams and Enterprise`, enquanto quatro outros aparecem
+> como `Free, Pro`.
+>
+> **O projeto já sabia disso, num comentário em `src/pages/Login.jsx`:**
+> *"Contar de verdade exigiria o Password Verification Hook, que é exclusivo do
+> plano Team"*. Eu li o banco, os logs e o `pg_proc` — e não li o comentário que
+> estava no caminho do código que eu estava diagnosticando. É o §1.4 pelo
+> avesso: o documento estava certo, e quem envelheceu foi a minha leitura.
+>
+> Ficou **14 dias** escrito como "Corrigido" por um motivo diferente do que eu
+> supus: não foi um clique esquecido, foi uma migration entregue para um plano
+> que o projeto não tem.
 >
 > **Por que nada acusou, e é a lição.** É §1.5 em estado puro: o silêncio aqui é
 > indistinguível de "ninguém errou a senha". Tabela vazia é a resposta certa nos
@@ -470,12 +480,15 @@ apaga a linha, evento malformado devolve `continue`, e nem `anon` nem
 > devolvem `continue`. Ligar o hook **não** pode trancar ninguém: ele responde
 > `continue` sempre e engole exceção, como o parágrafo acima explica.
 >
-> **A trava entra depois de ligado**, e a ordem é proposital: um roteiro que
-> erra a senha de propósito uma vez, confere que o contador andou, e loga certo
-> em seguida — o acerto zera a linha, então nada se acumula. Escrita hoje, ela
-> reprovaria todo PR por uma chave que só o dono pode virar, e portão assim
-> ensina a ignorar o canal (§0.2, 4ª regra). Está no `BACKLOG.md`, presa a esse
-> passo.
+> **A trava que eu ia escrever não pode existir**, e isso precisa estar dito:
+> ela erraria a senha de propósito e conferiria que o contador andou. No Free o
+> contador nunca anda, então ela reprovaria para sempre — portão que grita por
+> algo que ninguém pode resolver ensina a ignorar o canal (§0.2, 4ª regra).
+>
+> **O que sobra é uma decisão de produto, e está no `BACKLOG.md`:** ou o site
+> para de prometer na tela um bloqueio que não acontece, ou o projeto sobe de
+> plano. Contar do lado do cliente está fora — foi exatamente a brecha fechada
+> em 28/08, em que qualquer um forjava o bloqueio de qualquer e-mail.
 
 ### `[28/08]` O hook está pronto e **não pode ser ligado no plano Free**
 

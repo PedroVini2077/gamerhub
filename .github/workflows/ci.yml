@@ -24,10 +24,36 @@ on:
   push:
     branches: [main]
 
-# PR novo cancela a execução anterior do mesmo PR — economiza minuto de runner.
+# `[11/09]` NÃO cancela mais, e isso conserta um bug que chegou ao site.
+#
+# ── O que acontecia ─────────────────────────────────────────────────────────
+#
+# Isto era `cancel-in-progress: true`, para economizar minuto de runner. Só que
+# `fluxos` e `painel` ESCREVEM em produção: eles publicam um post de teste e o
+# apagam no fim. Cancelar a execução mata o roteiro **entre as duas coisas**, e
+# o post fica no ar para quem usa o site.
+#
+# Não é hipótese — é o caso de hoje, com hora: empurrei `c0b8a24` por cima do
+# `98ddef5`, os jobs deste foram CANCELADOS, e às 12:24:54 nasceu o
+# `[painel 1789129493975]`, que o dono encontrou no feed pelo celular.
+#
+# ── Por que o guard por job NÃO protegia ────────────────────────────────────
+#
+# `fluxos` e `painel` já tinham `cancel-in-progress: false` no grupo DELES, e eu
+# lia isso como "estes jobs não são cancelados". Está errado: o grupo por job só
+# decide se um job **em fila** derruba o anterior do mesmo grupo. O
+# `concurrency` de WORKFLOW cancela a execução inteira, jobs no meio incluídos —
+# ele vence. Proteção que eu achava que existia é pior do que proteção nenhuma.
+#
+# ── O que se perde, e por que vale ──────────────────────────────────────────
+#
+# Execução superada agora termina em vez de morrer, gastando minuto de runner à
+# toa. O teto do plano é **ilimitado em repositório público** (§0.2), então o
+# custo real é tempo de fila — e os grupos por job continuam SERIALIZANDO as
+# duas contas de teste, que é o que aqueles grupos sempre quiseram dizer.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   qualidade:

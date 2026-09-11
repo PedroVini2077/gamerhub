@@ -112,6 +112,9 @@ src/
 │   ├── image.js           # Compressão/resize client-side antes do upload (economia de egress)
 │   ├── storage.js         # Remoção de arquivos do bucket ao deletar post/mural
 │   ├── auditLog.js        # logAudit() -> RPC log_audit_event
+│   ├── errosDeAuth.js     # Erro do Supabase Auth em PORTUGUÊS, por mapa
+│   │                      # explícito. O desconhecido aparece inteiro, em
+│   │                      # vez de virar um genérico que esconde o caso novo
 │   ├── url.js             # safeExternalUrl() — só http(s) vira href (anti-XSS)
 │   ├── logMeta.js         # Fonte única de categorias/ícones/retenção dos logs
 │   ├── like.js            # Curtida otimista com rollback quando o servidor recusa

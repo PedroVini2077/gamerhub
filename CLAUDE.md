@@ -129,6 +129,13 @@ decide a hora é quem paga o token.
 > repositório dizendo que passou do prazo. O dono continua decidindo se e
 > quando roda — mas deixa de precisar lembrar sozinho de que aquilo existe.
 
+### `[11/09]` Tarefa manual do dono vem com passo a passo PESQUISADO
+
+Cobrança dele: *"vc sempre pede pra eu fazer as coisas, mas nunca me dá o passo
+a passo... sempre pesquisando onde realmente está as opções"*. A regra por
+extenso — incluindo a conferência de segurança **antes** de mandar ele clicar —
+está em [`docs/regras/EXECUCAO.md`](docs/regras/EXECUCAO.md) §9.12.
+
 ### Organização é PRÉ-REQUISITO das outras regras, não estética
 
 > Observação do dono depois de uma sessão inteira: *"percebeu que quando fomos

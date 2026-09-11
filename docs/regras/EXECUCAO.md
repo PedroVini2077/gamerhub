@@ -24,7 +24,7 @@
 
 ### 9.1 Por que ele existe, com o número que decidiu o formato
 
-O projeto tem <!--n:docs.linhas-->14.742<!--/n--> linhas de documentação, e
+O projeto tem <!--n:docs.linhas-->14.923<!--/n--> linhas de documentação, e
 `CLAUDE.md` + `docs/regras/` são **injetados em toda sessão**. Isso é uma
 vantagem — o conhecimento não se perde entre sessões. Mas tentar manter tudo
 **ativo** enquanto executo uma tarefa foi o que produziu as três falhas de
@@ -189,6 +189,43 @@ Depois: o que mudou · como foi validado · **o que NÃO foi validado** ·
 pendências · impacto documental.
 
 **Profundidade proporcional ao risco.** Ajuste de texto não pede relatório.
+
+### 9.12 `[11/09]` Tarefa manual do dono SEMPRE vem com passo a passo PESQUISADO
+
+> Cobrança dele, e ela é justa: *"vc sempre pede pra eu fazer as coisas, mas
+> nunca me dá o passo a passo. Uma mini regra: sempre que tiver algo manualmente
+> pra eu fazer, sempre faça o passo a passo e **sempre pesquisando onde realmente
+> está as opções**"*.
+
+**O que eu vinha fazendo de errado.** Eu escrevia *"ligue o Password Verification
+Hook no painel"* e parava ali. Isso empurra para ele o trabalho que era meu:
+descobrir onde a opção mora, como ela se chama hoje, e o que preencher. Pior —
+`Settings → General → …` escrito de memória **envelhece**, e painel de fornecedor
+muda de lugar sem avisar. Mandar alguém procurar um menu que mudou de nome é a
+mesma família do §1.5: a informação existe, mas não chega em forma utilizável.
+
+**A regra, e ela vale para painel de fornecedor, loja de app, DNS, qualquer
+coisa que eu não alcanço:**
+
+| Obrigatório | Por quê |
+| --- | --- |
+| **Pesquisar o caminho real** (`WebFetch`/`WebSearch` na documentação oficial) antes de escrever | menu de painel muda; minha memória não é fonte (§1.4) |
+| **URL direta, já com o `project_id`/conta dele** | um clique vale mais do que cinco menus |
+| **O que ele vai VER em cada passo** — nome do campo, do botão, da aba | se a tela não bate com o texto, ele sabe na hora que algo mudou |
+| **O que preencher**, literalmente, pronto para colar | "aponte para a função" não diz qual string digitar |
+| **Como conferir que deu certo** | sem isso ele clica e fica sem saber se funcionou |
+| **O que pode dar errado, conferido ANTES** | ver abaixo |
+
+**A parte que quase ninguém faz, e é a que protege:** antes de mandar ele
+clicar, **eu verifico se o clique é seguro**. Ao escrever o passo a passo do
+Password Verification Hook, conferi no banco que `supabase_auth_admin` tinha
+`USAGE` no schema e `EXECUTE` na função — porque **se faltasse, ligar o hook
+derrubaria o login do site inteiro**, e ele descobriria isso sozinho, sem
+conta para entrar. Passo a passo sem essa conferência é armadilha bem
+formatada.
+
+**Onde o passo a passo mora:** no `OPERACAO.md`, não só no chat. Chat some; o
+documento fica, e a próxima vez que aquilo precisar ser refeito já tem receita.
 
 ### 9.11 Parar e pedir direção
 
