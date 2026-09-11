@@ -149,7 +149,7 @@ portão de aparelho e o fallback 2D.
 ---
 
 **Última conferência contra o sistema:** 10/09/2026 ·
-**34 itens abertos** (+ 1 ideia sem compromisso)
+**35 itens abertos** (+ 1 ideia sem compromisso)
 
 > **O que a conferência de 02/09 desmentiu** — três linhas daqui estavam
 > erradas, e nenhuma delas se corrigiria sozinha:
