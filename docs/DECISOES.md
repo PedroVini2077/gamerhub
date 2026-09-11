@@ -1583,3 +1583,55 @@ borda, que é o defeito oposto — e foi de onde esta sequência inteira partiu
 (*"os personagens estão muito colados na borda"*). Capa passando atrás de um
 card opaco lê como profundidade; personagem terminando rente à borda lê como
 arte cortada.
+
+---
+
+## `[11/09]` A cena 3D da landing NÃO é construída à mão — e a decisão é do dono
+
+**O que foi decidido:** parar de reconstruir o símbolo em 3D por código. O
+código voltou ao estado anterior ao PR #177 — `SceneObjects` e `Lightning`,
+como eram. O caminho daqui em diante é o dono modelar e animar numa ferramenta
+3D de verdade e me entregar o arquivo; eu entro do GLB em diante.
+
+**A frase dele, que fecha a questão:** *"infelizmente o jeito que pensei eu
+teria que usar uma ferramenta 3d a sorte e fazer a mão, assim não tá legal"*.
+
+### Por que a tentativa não serviu, com número
+
+Foram **duas** rodadas, e a segunda corrigiu tudo que a primeira errou de
+técnica — e mesmo assim não chegou lá:
+
+| | 1ª rodada | 2ª rodada |
+| --- | --- | --- |
+| contorno | 16 pontos (simplificado demais) | **81 medidos** da arte oficial |
+| triângulos | 436, extrusão chapada | **8.220**, com seção de lâmina |
+| profundidade da caixa | 0,137 | **0,372** |
+| material | `meshStandardMaterial` + `emissive` | `ShaderMaterial` próprio (Fresnel, veios, luz-chave por faceta) |
+| veredicto do dono | *"totalmente deformado"* | *"assim não tá legal"* |
+
+**A conclusão que sobra, e ela é sobre o método, não sobre o esforço:** dá para
+medir silhueta, dá para construir volume, dá para facetar e iluminar — e ainda
+assim o resultado fica na distância entre "geometricamente correto" e "bonito".
+Essa distância é trabalho de artista 3D numa ferramenta de modelagem, não de
+código.
+
+O modelo que o dono mandou como referência (Meshy, 15.805 triângulos) **renderiza
+melhor do que o que eu construí**, e é o argumento mais forte a favor desta
+decisão.
+
+### O que sobrevive ao cancelamento
+
+| O que | Onde ficou |
+| --- | --- |
+| a medição do custo de carga do chunk | [DESEMPENHO.md](DESEMPENHO.md) — ela mediu código que não existe mais, e está marcada como tal |
+| as artes oficiais que ele mandou | `docs/identidade/referencias/` — continuam sendo a identidade |
+| **o caminho técnico**, se um dia vier um GLB | um GLB otimizado do modelo dele: **234 KB** com Meshopt + WebP, mais **29 KB** de decodificador. Medido, não estimado. Draco daria arquivo menor (189 KB) e decodificador muito maior (286 KB de wasm + 59 KB) — Meshopt ganha |
+| a trava das quatro portas de desenho em `e2e/cena-3d.mjs` | **mantida de propósito** — ela vigiava só `gl.drawElements`, e geometria não indexada desenha por `drawArrays`. É buraco real, independente de qual cena está no ar |
+
+### O que NÃO foi feito, e por quê
+
+Os favicons e o sistema de ícones foram cancelados **junto**, no mesmo pedido.
+O trabalho não chegou a ser commitado. O site continua com o `favicon.svg`
+roxo — que **não é a marca** (`#7e14ff` dez vezes, zero verde) —, sem ícone de
+app, sem manifest e sem prévia ao compartilhar. Isso volta a ser item aberto no
+[BACKLOG.md](../BACKLOG.md), como era antes.

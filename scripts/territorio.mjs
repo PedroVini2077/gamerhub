@@ -79,12 +79,11 @@ export const TERRITORIO = {
   'docs/identidade/README.md': [
     'index.html',
     'public',
-    // `[10/09]` A cena da Landing passou a USAR a arte da identidade como asset
-    // de runtime, e não só como referência. Daqui em diante, mexer na cena ou
-    // nos derivados torna este documento suspeito.
-    'src/assets/marca',
+    // `[11/09]` A cena da Landing chegou a USAR a arte como asset de runtime
+    // (`src/assets/marca`, `landing/cena`), e isso foi CANCELADO pelo dono — o
+    // código voltou ao anterior e as pastas deixaram de existir. Sobra a cena
+    // 2D, que continua sendo o que aparece para quem não recebe a 3D.
     'src/components/landing/Scene2D.jsx',
-    'src/components/landing/cena',
   ],
 
   // O registro do que foi REPROVADO. Ele envelhece junto com a marca: se o
@@ -92,7 +91,6 @@ export const TERRITORIO = {
   // relido antes de alguém repetir a mesma.
   'docs/identidade/tentativas/README.md': [
     'docs/identidade/tentativas',
-    'src/assets/marca',
   ],
 
   'docs/SEGURANCA.md': [

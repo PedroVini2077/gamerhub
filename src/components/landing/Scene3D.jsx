@@ -159,22 +159,9 @@ export default function Scene3D({ className = '' }) {
         // e botão por cima, então o que se vê é o fundo escuro do site — que é
         // exatamente o que se vê depois, atrás da cena. Nada muda de lugar.
         cena3DLiberada ? (
-          // `[10/09]` A opacidade saiu do wrapper de fora e veio para cá.
-          //
-          // Ela vinha do `Hero` como `opacity-90` no elemento que envolve as
-          // DUAS cenas, e isso quebrava a cena 2D nova de um jeito que só o
-          // print mostrou: `opacity` cria **contexto de empilhamento**, e
-          // `mix-blend-mode: screen` só enxerga o fundo de dentro do próprio
-          // contexto. O preto da arte deixava de se fundir e virava um
-          // retângulo opaco tapando o grid da página.
-          //
-          // Aqui ela envolve só a 3D, então a cena 3D fica com a MESMA
-          // aparência de antes e a 2D passa a poder se fundir com a página.
-          <div className="absolute inset-0 opacity-90">
-            <Suspense fallback={null}>
-              <LandingScene />
-            </Suspense>
-          </div>
+          <Suspense fallback={null}>
+            <LandingScene />
+          </Suspense>
         ) : null
       ) : (
         <Scene2D />
