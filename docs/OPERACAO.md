@@ -823,6 +823,24 @@ o que já está lá.
   "secret vazio": se a senha sumir das configurações num PR normal, o vermelho
   tem que aparecer (§1.5).
 
+  > **`[11/09]` E existe uma forma de rodá-lo num PR de dependência: REBASAR.**
+  > Ao atualizar a branch do PR pelo botão (ou pela API), quem empurra o commit
+  > passa a ser **você**, não o `dependabot[bot]` — e a guarda por ator deixa de
+  > pular o job. Os secrets voltam, e a bateria inteira roda.
+  >
+  > Isso foi observado nos PRs #175 e #176: antes do rebase, `fluxos` estava
+  > `skipped`; depois, `fluxos` e `painel` rodaram e passaram.
+  >
+  > **Não é um furo na proteção da plataforma** — é o contrário. A proteção
+  > existe para que código de terceiro não veja o segredo **sem alguém olhar**;
+  > rebasar é exatamente o ato de alguém olhar e assumir. A implicação prática é
+  > boa: antes de mergear PR de dependência, **rebasar é o que compra a
+  > verificação completa**, em vez de aceitar o verde parcial.
+  >
+  > A contrapartida honesta: a partir do rebase, o `npm install` daquele PR roda
+  > num ambiente com os secrets. Vale para atualização de dependência conhecida,
+  > revisada e vinda do Dependabot — não para PR de desconhecido.
+
 #### `[03/09]` A decoração precisa estar DENTRO DA JANELA, não só no DOM
 
 Esta trava nasceu de uma falha de três rodadas, e ela é sobre **método**, não
@@ -1172,7 +1190,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->14.935<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->14.953<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
