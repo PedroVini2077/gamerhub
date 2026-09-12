@@ -94,7 +94,7 @@ muda é só o tempo que ela dura quando toca.
 | **1** | Matar a cena 3D e trocar o fundo do hero por convergência em SVG/CSS | **feita** |
 | **2** | A abertura: marca pintada, frase revelada, reflexo polido, e a marca assenta no hero | **feita** |
 | **3** | As CINCO CENAS com arte própria + o CTA — **no PC** | **feita** em 12/09 |
-| 4 | As mesmas cenas **no CELULAR**, com as artes que ele vai gerar em RETRATO | a fazer — bloco 2 |
+| 4 | As mesmas cenas **no CELULAR**, com as artes de RETRATO | **feita** em 12/09 |
 | 5 | O mecanismo de cena presa (sticky + progresso de scroll) | a fazer |
 | 6 | Ritmo: respiro entre as cenas, e as transições entre elas | a fazer |
 
@@ -107,10 +107,18 @@ em duas partes"*.
 **remendo**. Arte composta em retrato ganha de qualquer corte automático — o
 corte não escolhe o enquadramento, ele só descarta o que sobra.
 
-**O piso enquanto o bloco 2 não chega:** no celular a cena **empilha** — arte em
-cima, texto embaixo. Não é o desenho final, mas é legível. Medido em 400×800:
-com o texto sobreposto a coluna ficava com **128 px** de largura; empilhada, tem
-**360 px**.
+**`[12/09]` O bloco 2 fechou no mesmo dia.** Ele gerou as sete cenas em retrato e
+o `<picture>` passou a trocar de ARTE abaixo de 768 px. O empilhamento
+provisório saiu: o texto voltou a ficar por cima, agora apoiado no pé da cena,
+porque a arte em pé tem altura de sobra.
+
+**A alavanca que ficou aberta, com a medição que a resolve:** as artes são
+geradas a qualidade 0,80, e a 0,72 tira ~25% do peso — o celular cairia de
+777 kB para ~580 kB na página inteira. **Não apliquei** porque não medi se o
+artefato aparece no texto da interface DENTRO da arte, que é justamente o que
+precisa continuar legível. Trocar legibilidade por byte sem olhar desfaria o
+motivo de as artes de retrato existirem. A medição: gerar uma cena a 0,72 e
+comparar o recorte do texto lado a lado.
 
 **As PERGUNTAS que eu fiz, e onde cada uma parou.** Gravadas porque pergunta que
 vive só na conversa some com a sessão — foi assim que quatro pedidos dele se
@@ -1073,7 +1081,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->107<!--/n--> arq ·
-  <!--n:src.lib.linhas-->10.187<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->10.266<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

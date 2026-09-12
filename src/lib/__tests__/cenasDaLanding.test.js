@@ -13,27 +13,51 @@ const FONTE = (c) => readFileSync(c, 'utf8');
 const CENA = 'src/components/landing/CenaDaLanding.jsx';
 const CTA = 'src/components/landing/FinalCTA.jsx';
 const MAPA = 'src/lib/cenasDaLanding.js';
-const REFERENCIAS = 'docs/identidade/referencias/cenas';
+const REF_LARGA = 'docs/identidade/referencias/cenas';
+const REF_ALTA = 'docs/identidade/referencias/cenas-retrato';
 const GERADAS = 'src/assets/landing/cenas';
 
 describe('as artes das cenas', () => {
+  const nomesDe = (pasta) => readdirSync(pasta)
+    .filter((n) => n.endsWith('.webp'))
+    .map((n) => n.replace('.webp', ''))
+    .sort();
+
+  it('as duas pastas de referência têm as MESMAS cenas', () => {
+    // `[12/09]` Cada cena existe em duas composições: a larga (16:9, do
+    // computador) e a de retrato (do celular). Elas não são a mesma imagem
+    // redimensionada — são artes diferentes, geradas pelo dono.
+    //
+    // A falha silenciosa: acrescentar uma cena só numa das pastas. O site
+    // funciona no aparelho que tem a arte e mostra a cena ANTERIOR no outro,
+    // porque o `<picture>` escolhe uma fonte que não existe e cai no `<img>`.
+    const largas = nomesDe(REF_LARGA);
+    const altas = nomesDe(REF_ALTA);
+
+    expect(
+      largas.length,
+      `Nenhuma referência em ${REF_LARGA}. Se a pasta mudou de lugar, ajuste `
+      + 'esta trava — senão ela aprova tudo sem olhar nada.',
+    ).toBeGreaterThanOrEqual(7);
+
+    expect(
+      altas,
+      'As duas pastas de referência têm cenas diferentes.\n'
+      + `  largas:  ${largas.join(', ')}\n`
+      + `  retrato: ${altas.join(', ')}\n`
+      + '  Cena que existe só numa delas aparece num aparelho e some no outro.',
+    ).toEqual(largas);
+  });
+
   it('toda referência tem as artes geradas, e vice-versa', () => {
     // A divergência acontece assim: alguém troca uma arte em `referencias/` e
     // esquece de rodar `npm run cenas`. O site continua servindo a arte VELHA,
     // sem erro nenhum, e a pessoa jura que trocou.
-    const refs = readdirSync(REFERENCIAS)
-      .filter((n) => n.endsWith('.webp'))
-      .map((n) => n.replace('.webp', ''));
-
-    expect(
-      refs.length,
-      `Nenhuma referência em ${REFERENCIAS}. Se a pasta mudou de lugar, ajuste `
-      + 'esta trava — senão ela aprova tudo sem olhar nada.',
-    ).toBeGreaterThanOrEqual(7);
-
-    for (const nome of refs) {
-      // Três larguras largas + três altas por cena.
-      for (const sufixo of ['larga-1600', 'larga-1200', 'larga-828']) {
+    for (const nome of nomesDe(REF_LARGA)) {
+      for (const sufixo of [
+        'larga-1600', 'larga-1200', 'larga-828',
+        'alta-828', 'alta-620', 'alta-420',
+      ]) {
         expect(
           existsSync(`${GERADAS}/${nome}-${sufixo}.webp`),
           `Falta \`${nome}-${sufixo}.webp\` em ${GERADAS}.\n`
@@ -44,6 +68,19 @@ describe('as artes das cenas', () => {
         ).toBe(true);
       }
     }
+  });
+
+  it('cada cena tem as DUAS composições no mapa', () => {
+    const mapa = FONTE(MAPA);
+    // Sem `alta`, o `<picture>` não tem fonte de celular e cai na arte 16:9 —
+    // que foi medida como ilegível numa tela em pé. Funciona, aparece, e está
+    // errado.
+    expect(
+      mapa,
+      'O mapa das cenas deixou de expor a composição de RETRATO (`alta`).\n'
+      + '  Sem ela o celular volta a receber a arte 16:9 espremida, onde o texto\n'
+      + '  da interface fica com 2–3 px. Nada quebra: só fica ilegível.',
+    ).toContain('alta:');
   });
 
   it('o mapa não monta caminho por string — ele IMPORTA cada arquivo', () => {

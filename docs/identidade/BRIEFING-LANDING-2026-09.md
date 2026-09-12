@@ -139,6 +139,25 @@ tudo às cegas cortaria o assunto de metade delas.
 Sete cenas a 45 kB são **315 kB no celular**, e só a primeira precisa chegar
 junto com a página — as outras entram conforme a pessoa rola.
 
+### `[12/09]` As artes de RETRATO chegaram, e elas resolvem melhor que eu
+
+Ele gerou as sete cenas numa segunda composição, feita para a tela em pé, e
+mandou junto: *"todas as imagens do mobile estão em mãos"*. Estão em
+[`referencias/cenas-retrato/`](referencias/cenas-retrato/).
+
+**Isso encerra o recorte automático que eu tinha feito, e é melhor assim.** Meu
+recorte media melhor que encolher, mas era remendo: **corte não escolhe
+enquadramento, só descarta o que sobra**. Na versão dele o assunto está no lugar
+porque foi posto lá. O gerador deixou de recortar e passou a só redimensionar
+duas fontes.
+
+**O que a troca custou, medido:** o celular passou a pesar **777 kB** de arte na
+página inteira contra 706 kB do computador. Não é bug — a 828 px de largura, a
+arte de retrato tem três vezes mais pixels que a paisagem. O número da 1ª dobra,
+que é o que decide a primeira impressão, é **134 kB**.
+
+---
+
 ### O que eu proponho, e a decisão é dele
 
 **Não usar a `1-hero` no hero.** Ela é linda e é redundante: o hero de hoje já é

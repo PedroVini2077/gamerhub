@@ -9,51 +9,45 @@
 // ── Por que DOIS formatos por cena, e não um redimensionamento só ───────────
 //
 // Porque a pergunta do dono — *"dá para usar no PC e no celular sem perder a
-// qualidade?"* — tem resposta medida, e ela é "sim, por RECORTE".
+// qualidade?"* — tem resposta medida, e ela é NÃO, se for por encolhimento.
 //
 // Renderizado numa tela de 400 px:
 //
-//   a arte inteira encolhida .... 400x225. O texto da interface desenhada
-//                                 dentro dela fica com 2-3 px: ILEGÍVEL
-//   um recorte alto do miolo .... funciona. Dá para ler os posts, e a
-//                                 atmosfera sobrevive
+//   a arte 16:9 inteira encolhida .... 400x225. O texto da interface desenhada
+//                                      dentro dela fica com 2-3 px: ILEGÍVEL
 //
-// O problema nunca foi resolução: foi **densidade de informação por pixel de
-// tela**. No recorte, os mesmos pixels cobrem uma área menor da composição, e
-// cada detalhe fica MAIOR. É o oposto de encolher.
+// O problema nunca foi resolução: é **densidade de informação por pixel de
+// tela**. Uma composição larga espremida numa tela em pé perde o assunto.
 //
-// ── O recorte é ESCOLHIDO, cena a cena ──────────────────────────────────────
+// ── `[12/09]` O recorte automático SAIU. Cada cena tem duas ARTES ───────────
 //
-// Centralizar por padrão cortaria o assunto de metade delas: em `2-feed` o
-// miolo é o feed, em `5-ranks` é a torre de patentes, em `7-cta` são as
-// pessoas. `foco` abaixo é a fração horizontal onde o recorte se centra.
+// A primeira versão deste script recortava a arte 16:9 no miolo para produzir
+// a versão de celular. Funcionava — media melhor que encolher —, mas era
+// remendo: **corte não escolhe enquadramento, só descarta o que sobra**.
+//
+// O dono resolveu por outro caminho, e é o certo: ele **regerou as sete cenas
+// em retrato**, compostas para a tela em pé. Comparado ao recorte, o ganho não
+// é de resolução, é de COMPOSIÇÃO — na versão dele o assunto está no lugar
+// porque foi posto lá, não porque sobrou.
+//
+// Então este script agora só REDIMENSIONA duas fontes diferentes, e não
+// inventa enquadramento nenhum.
 
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 
 const CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const ORIGEM = 'docs/identidade/referencias/cenas';
+const ORIGEM_LARGA = 'docs/identidade/referencias/cenas';
+const ORIGEM_ALTA = 'docs/identidade/referencias/cenas-retrato';
 const DESTINO = 'src/assets/landing/cenas';
 
 /** As larguras servidas. O navegador escolhe pelo `sizes` do `srcset`. */
 const LARGURAS_LARGAS = [1600, 1200, 828];
 const LARGURAS_ALTAS = [828, 620, 420];
 
-/** A proporção do recorte de celular. 1:1,7 — alto, mas não uma fresta. */
-const PROPORCAO_ALTA = 1 / 1.7;
-
-/**
- * `foco` é onde o recorte alto se CENTRA, em fração da largura (0 = esquerda).
- * Escolhido olhando cada arte, não por padrão.
- */
+/** As sete cenas. Cada nome existe nas DUAS pastas de referência. */
 const CENAS = [
-  { nome: '1-hero', foco: 0.50 },
-  { nome: '2-feed', foco: 0.52 },
-  { nome: '3-comunidade', foco: 0.50 },
-  { nome: '4-keys', foco: 0.45 },
-  { nome: '5-ranks', foco: 0.52 },
-  { nome: '6-lives', foco: 0.44 },
-  { nome: '7-cta', foco: 0.47 },
+  '1-hero', '2-feed', '3-comunidade', '4-keys', '5-ranks', '6-lives', '7-cta',
 ];
 
 /** Qualidade. 0,80 num fundo escuro e detalhado é indistinguível de 0,92. */
@@ -66,65 +60,48 @@ const pagina = await (await nav.newContext()).newPage();
 let total = 0;
 const faltando = [];
 
-for (const cena of CENAS) {
-  const fonte = `${ORIGEM}/${cena.nome}.webp`;
-  if (!existsSync(fonte)) { faltando.push(fonte); continue; }
-  const b64 = readFileSync(fonte).toString('base64');
-
-  const saidas = await pagina.evaluate(async ({ b64, larguras, altas, prop, foco, q }) => {
-    const img = new Image();
-    img.src = 'data:image/webp;base64,' + b64;
-    await img.decode();
-
-    const paraWebp = (c) => c.toDataURL('image/webp', q).split(',')[1];
-    const feito = {};
-
-    // A larga: a arte inteira, só menor.
-    for (const larg of larguras) {
-      const c = document.createElement('canvas');
-      c.width = larg;
-      c.height = Math.round(larg * img.height / img.width);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      feito[`larga-${larg}`] = paraWebp(c);
-    }
-
-    // A alta: recorta a FONTE (não a versão menor) e só então redimensiona —
-    // recortar depois de encolher jogaria fora a resolução que o recorte existe
-    // para aproveitar.
-    const larguraDoRecorte = Math.round(img.height * prop);
-    let x = Math.round(img.width * foco - larguraDoRecorte / 2);
-    x = Math.max(0, Math.min(x, img.width - larguraDoRecorte));
-
-    for (const larg of altas) {
-      const c = document.createElement('canvas');
-      c.width = larg;
-      c.height = Math.round(larg / prop);
-      c.getContext('2d').drawImage(
-        img, x, 0, larguraDoRecorte, img.height, 0, 0, c.width, c.height,
-      );
-      feito[`alta-${larg}`] = paraWebp(c);
-    }
-    return feito;
-  }, {
-    b64, larguras: LARGURAS_LARGAS, altas: LARGURAS_ALTAS,
-    prop: PROPORCAO_ALTA, foco: cena.foco, q: QUALIDADE,
-  });
+for (const nome of CENAS) {
+  const larga = `${ORIGEM_LARGA}/${nome}.webp`;
+  const alta = `${ORIGEM_ALTA}/${nome}.webp`;
+  for (const f of [larga, alta]) if (!existsSync(f)) faltando.push(f);
+  if (faltando.length) continue;
 
   const pedacos = [];
-  for (const [sufixo, dados] of Object.entries(saidas)) {
-    const buf = Buffer.from(dados, 'base64');
-    writeFileSync(`${DESTINO}/${cena.nome}-${sufixo}.webp`, buf);
-    total += buf.length;
-    pedacos.push(`${sufixo.split('-')[1]}:${Math.round(buf.length / 1024)}kB`);
+  for (const [fonte, rotulo, tamanhos] of [
+    [larga, 'larga', LARGURAS_LARGAS], [alta, 'alta', LARGURAS_ALTAS],
+  ]) {
+    const b64 = readFileSync(fonte).toString('base64');
+    const saidas = await pagina.evaluate(async ({ b64, tamanhos, q }) => {
+      const img = new Image();
+      img.src = 'data:image/webp;base64,' + b64;
+      await img.decode();
+      const feito = {};
+      for (const larg of tamanhos) {
+        const c = document.createElement('canvas');
+        c.width = larg;
+        c.height = Math.round(larg * img.height / img.width);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        feito[larg] = c.toDataURL('image/webp', q).split(',')[1];
+      }
+      return feito;
+    }, { b64, tamanhos, q: QUALIDADE });
+
+    for (const [larg, dados] of Object.entries(saidas)) {
+      const buf = Buffer.from(dados, 'base64');
+      writeFileSync(`${DESTINO}/${nome}-${rotulo}-${larg}.webp`, buf);
+      total += buf.length;
+      pedacos.push(`${rotulo[0]}${larg}:${Math.round(buf.length / 1024)}kB`);
+    }
   }
-  console.log(`  ${cena.nome.padEnd(14)} ${pedacos.join('  ')}`);
+  console.log(`  ${nome.padEnd(14)} ${pedacos.join('  ')}`);
 }
 
 await nav.close();
 
 if (faltando.length) {
   console.error(`\n  FALTA a referência de: ${faltando.join(', ')}`);
-  console.error('  As artes moram em docs/identidade/referencias/cenas/.\n');
+  console.error('  As artes largas moram em docs/identidade/referencias/cenas/');
+  console.error('  e as de retrato em docs/identidade/referencias/cenas-retrato/.\n');
   process.exit(1);
 }
 

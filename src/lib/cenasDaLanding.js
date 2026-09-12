@@ -20,6 +20,28 @@ import cta1600 from '../assets/landing/cenas/7-cta-larga-1600.webp';
 import cta1200 from '../assets/landing/cenas/7-cta-larga-1200.webp';
 import cta828 from '../assets/landing/cenas/7-cta-larga-828.webp';
 
+import heroA828 from '../assets/landing/cenas/1-hero-alta-828.webp';
+import heroA620 from '../assets/landing/cenas/1-hero-alta-620.webp';
+import heroA420 from '../assets/landing/cenas/1-hero-alta-420.webp';
+import feedA828 from '../assets/landing/cenas/2-feed-alta-828.webp';
+import feedA620 from '../assets/landing/cenas/2-feed-alta-620.webp';
+import feedA420 from '../assets/landing/cenas/2-feed-alta-420.webp';
+import comunidadeA828 from '../assets/landing/cenas/3-comunidade-alta-828.webp';
+import comunidadeA620 from '../assets/landing/cenas/3-comunidade-alta-620.webp';
+import comunidadeA420 from '../assets/landing/cenas/3-comunidade-alta-420.webp';
+import keysA828 from '../assets/landing/cenas/4-keys-alta-828.webp';
+import keysA620 from '../assets/landing/cenas/4-keys-alta-620.webp';
+import keysA420 from '../assets/landing/cenas/4-keys-alta-420.webp';
+import ranksA828 from '../assets/landing/cenas/5-ranks-alta-828.webp';
+import ranksA620 from '../assets/landing/cenas/5-ranks-alta-620.webp';
+import ranksA420 from '../assets/landing/cenas/5-ranks-alta-420.webp';
+import livesA828 from '../assets/landing/cenas/6-lives-alta-828.webp';
+import livesA620 from '../assets/landing/cenas/6-lives-alta-620.webp';
+import livesA420 from '../assets/landing/cenas/6-lives-alta-420.webp';
+import ctaA828 from '../assets/landing/cenas/7-cta-alta-828.webp';
+import ctaA620 from '../assets/landing/cenas/7-cta-alta-620.webp';
+import ctaA420 from '../assets/landing/cenas/7-cta-alta-420.webp';
+
 /**
  * As artes das cenas da landing, numa fonte só.
  *
@@ -44,12 +66,32 @@ import cta828 from '../assets/landing/cenas/7-cta-larga-828.webp';
  * salto porque acontece enquanto a pessoa está lendo.
  */
 
+/** A arte LARGA (16:9), do computador. */
 export const LARGURA = 1672;
 export const ALTURA = 940;
 
-const par = (g, m, p) => ({
+/**
+ * A arte de RETRATO, do celular — `[12/09]`.
+ *
+ * Ela não é um recorte da larga: é uma **composição própria**, que o dono
+ * gerou depois de a medição mostrar que espremer 16:9 numa tela em pé deixa o
+ * texto da interface com 2–3 px. Corte não escolhe enquadramento; ele só
+ * descarta o que sobra.
+ */
+export const LARGURA_ALTA = 940;
+export const ALTURA_ALTA = 1672;
+
+const par = (g, m, p, a828, a620, a420) => ({
   src: g,
   srcSet: `${p} 828w, ${m} 1200w, ${g} 1600w`,
+  // O `<picture>` da cena escolhe esta fonte abaixo de 768 px. É **art
+  // direction**, não economia de bytes: as duas artes mostram a mesma coisa
+  // com composições diferentes, e nenhum `srcset` sozinho sabe trocar de
+  // composição — ele só troca de resolução.
+  alta: {
+    src: a828,
+    srcSet: `${a420} 420w, ${a620} 620w, ${a828} 828w`,
+  },
 });
 
 /**
@@ -58,11 +100,11 @@ const par = (g, m, p) => ({
  * navegador desenha como um retângulo vazio, sem erro nenhum (§4).
  */
 export const CENAS = {
-  hero: par(hero1600, hero1200, hero828),
-  feed: par(feed1600, feed1200, feed828),
-  comunidade: par(comunidade1600, comunidade1200, comunidade828),
-  keys: par(keys1600, keys1200, keys828),
-  ranks: par(ranks1600, ranks1200, ranks828),
-  lives: par(lives1600, lives1200, lives828),
-  cta: par(cta1600, cta1200, cta828),
+  hero: par(hero1600, hero1200, hero828, heroA828, heroA620, heroA420),
+  feed: par(feed1600, feed1200, feed828, feedA828, feedA620, feedA420),
+  comunidade: par(comunidade1600, comunidade1200, comunidade828, comunidadeA828, comunidadeA620, comunidadeA420),
+  keys: par(keys1600, keys1200, keys828, keysA828, keysA620, keysA420),
+  ranks: par(ranks1600, ranks1200, ranks828, ranksA828, ranksA620, ranksA420),
+  lives: par(lives1600, lives1200, lives828, livesA828, livesA620, livesA420),
+  cta: par(cta1600, cta1200, cta828, ctaA828, ctaA620, ctaA420),
 };

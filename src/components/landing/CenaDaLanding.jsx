@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { fadeUpReveal, VIEWPORT } from '../../lib/landingMotion';
+import { LARGURA_ALTA, ALTURA_ALTA } from '../../lib/cenasDaLanding';
 
 /**
  * Uma CENA da landing: a arte ocupa a faixa inteira, o texto vive por cima.
@@ -54,24 +55,49 @@ export default function CenaDaLanding({
       variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}
       className="relative overflow-hidden md:rounded-2xl my-8 md:my-16"
     >
-      <img
-        src={arte.src}
-        srcSet={arte.srcSet}
-        sizes="(max-width: 767px) 100vw, min(1600px, 100vw)"
-        width={largura} height={altura}
-        alt=""
-        aria-hidden="true"
-        // A primeira cena pode ser ansiosa; as outras nunca. Seis artes baixando
-        // juntas seriam ~700 kB para quem talvez pare na primeira dobra.
-        loading={prioridade ? 'eager' : 'lazy'}
-        decoding="async"
-        fetchPriority={prioridade ? 'high' : 'low'}
-        className="w-full h-full object-cover"
-      />
+      {/* `[12/09]` `<picture>` e não só `srcset`, e a diferença importa:
+          `srcset` troca de RESOLUÇÃO; `<picture>` troca de ARTE. As duas
+          versões mostram a mesma cena em composições diferentes — a de retrato
+          foi gerada pelo dono para a tela em pé, não recortada da outra. */}
+      <picture>
+        <source
+          media="(max-width: 767px)"
+          srcSet={arte.alta.srcSet}
+          sizes="100vw"
+          width={LARGURA_ALTA} height={ALTURA_ALTA}
+        />
+        <img
+          src={arte.src}
+          srcSet={arte.srcSet}
+          sizes="min(1600px, 100vw)"
+          width={largura} height={altura}
+          alt=""
+          aria-hidden="true"
+          // A primeira cena pode ser ansiosa; as outras nunca. Seis artes
+          // baixando juntas seriam ~700 kB para quem talvez pare na 1ª dobra.
+          loading={prioridade ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchPriority={prioridade ? 'high' : 'low'}
+          className="w-full h-full object-cover"
+        />
+      </picture>
 
       {/* O véu, SÓ a partir do `md`. Ele escurece o lado do texto e some no
           outro — a arte continua visível onde ela é o assunto. No celular não
           há sobreposição, então não há o que escurecer. */}
+      {/* O véu muda de EIXO com a orientação da arte, e não é detalhe:
+          no computador a arte é larga e o texto fica de lado, então o
+          escurecimento é lateral; no celular a arte é alta e o texto fica
+          embaixo, então ele sobe do pé. Um véu lateral numa arte em pé
+          apagaria uma coluna inteira da composição. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none md:hidden"
+        style={{
+          background:
+            'linear-gradient(0deg, rgba(6,6,8,0.96) 0%, rgba(6,6,8,0.88) 26%, rgba(6,6,8,0.35) 52%, rgba(6,6,8,0.04) 76%)',
+        }}
+      />
       <div
         aria-hidden
         className="hidden md:block absolute inset-0 pointer-events-none"
@@ -82,20 +108,18 @@ export default function CenaDaLanding({
         }}
       />
 
-      {/* ── `[12/09]` No CELULAR o texto fica EMBAIXO, não por cima ───────────
-          Medido em 400×800: com a arte 16:9 ocupando a largura, a cena tem
-          **225 px de altura** e a coluna de texto sobreposta ficaria com
-          **128 px de largura**. Não é apertado: é ilegível.
+      {/* ── `[12/09]` O texto fica POR CIMA nos dois, e o eixo é que muda ────
+          Enquanto a arte de celular era a 16:9 espremida, isto era impossível:
+          medido em 400×800, a cena tinha 225 px de altura e a coluna de texto
+          sobreposta ficava com **128 px** de largura. Ilegível.
 
-          A causa é a proporção, não o código — 16:9 numa tela em pé não tem
-          onde pôr texto por cima. **O bloco 2 resolve de verdade**, com artes
-          compostas em retrato, que o dono vai gerar. Até lá, empilhar é o piso:
-          a arte vira uma faixa no topo e o texto vem abaixo, legível. */}
+          Com a arte de RETRATO a conta inverte — sobra altura, e o texto se
+          apoia no pé da cena, onde o véu vertical o sustenta. */}
       <div
-        className={`md:absolute md:inset-0 flex md:items-center
+        className={`absolute inset-0 flex items-end md:items-center
                     ${textoNaEsquerda ? 'md:justify-start' : 'md:justify-end'}`}
       >
-        <div className="w-full md:w-auto md:max-w-[46%] px-5 py-6 md:py-0
+        <div className="w-full md:w-auto md:max-w-[46%] px-6 pb-8 md:pb-0
                         md:px-12 lg:px-16 space-y-2 md:space-y-4">
           <span className="font-mono text-[0.62rem] md:text-xs tracking-[0.3em] uppercase text-neon-green">
             {eyebrow}
