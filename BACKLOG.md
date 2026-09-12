@@ -297,7 +297,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**36 itens abertos** (+ 1 ideia sem compromisso)
+**39 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -310,6 +310,47 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   produção (`anon` lê só `site_config`, escreve NADA), e pela porta da frente
   (`portas-do-banco.mjs` 46/46, HTTP 401 observado). Régua escrita em
   `docs/regras/BANCO.md`; relatório em `db/2026-09-12-auditoria-bloco-a2-*.md`.
+
+- ⬜ `[12/09]` 🟡 **SEC-012 · apagar a conta é irreversível e NÃO pede a senha.**
+  *BLOCO B da auditoria. **Proposta — NÃO executei** (§7 🟡 muda contrato de RPC
+  + tela, e §7 🔴 manda alertar em perda de dado de usuário).*
+
+  `delete_own_account()` é uma linha: `DELETE FROM auth.users WHERE id =
+  auth.uid()`. A ação mais destrutiva e **irreversível** do site acontece atrás
+  de um `ConfirmModal` — validação de cliente, que o §1.3 diz não valer nada,
+  porque dá para chamar `/rest/v1/rpc/delete_own_account` direto com a
+  `anon key`. Sessão deixada aberta apaga a conta com **uma requisição**.
+
+  **O projeto já tem a peça certa, no lugar menos grave:** o `ResetDoCofre`
+  (ação **reversível**) confere a senha no SERVIDOR via
+  `confere_a_propria_senha`. A trava mais forte está na ação menos destrutiva.
+
+  **Solução:** `delete_own_account(p_senha text)` chamando
+  `confere_a_propria_senha` antes do `DELETE`, e a tela pedindo a senha.
+
+- ⬜ `[12/09]` 🟡 **SEC-013 · `notify_user` não deixa rastro.** *BLOCO B.*
+
+  A barreira de cargo está certa (`role_rank >= 2`). Falta o resto: **nenhum
+  registro em `admin_logs`**, `p_message` sem teto, `p_type` sem lista fechada
+  (cai no mapa de ícones da tela — família do fallback silencioso), e nada
+  confere se `p_user_id` existe.
+
+  **Não é XSS** — conferido, não há `dangerouslySetInnerHTML` no projeto e a
+  mensagem é texto. O que sobra é engenharia social com a voz do sistema, **sem
+  trilha** — e toda a filosofia de auditoria daqui é que ação de equipe deixa
+  rastro.
+
+- ⬜ `[12/09]` 🔵 **Cinco funções ainda escrevem a hierarquia À MÃO.** *BLOCO B.*
+
+  `unban_user`, `approve_unban_request`, `deny_unban_request`, `notify_owner` e
+  `owner_get_stats`. **As três primeiras funcionam hoje** (a lista inclui
+  `owner`) — isto não é a falha das 14 policies, é o **padrão** que a produziu,
+  ainda vivo. `notify_owner` exclui `owner`, com efeito prático nulo (é avisar a
+  si mesmo). `owner_get_stats` é métrica, não permissão: o painel conta "N
+  admins" sem o fundador — decisão de produto.
+
+  **O que vale mais que a correção:** uma trava que reprove lista literal de
+  papel em `prosrc`. Sem ela, esta seção reaparece na próxima auditoria.
 
 - ⬜ `[12/09]` 🔵 **O buraco que sobrou da régua de `anon`: `GRANT` explícito.**
   O `ALTER DEFAULT PRIVILEGES` fecha a tabela NOVA por padrão, mas não impede
