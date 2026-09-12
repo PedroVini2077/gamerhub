@@ -34,10 +34,10 @@ src/
 │   │                      # `[12/09]` Toda animação com atraso aqui declara
 │   │                      # `backwards`: sem ele o elemento nasce ACESO durante
 │   │                      # a espera. Tem trava de classe varrendo os estilos.
-│   │                      # `[12/09]` As ligações DRENAM (dashoffset até -100):
-│   │                      # a cauda entra atrás da cabeça e a linha é absorvida
-│   │                      # pelo centro. Desbotar parada deixava pedaços fracos
-│   │                      # de várias linhas no meio ao mesmo tempo
+│   │                      # `[12/09]` Havia aqui um segundo sistema — linhas
+│   │                      # convergindo para o centro da cena — e o dono mandou
+│   │                      # REMOVER ("não gostei dessas linhas não"). Só os
+│   │                      # chips e o pulso deles restaram
 │   ├── cofre.css          # `[05/09]` o giro do disco do cofre do Fundador
 │   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
 │   ├── portao/            # o portão de boas-vindas, em 3 partes
@@ -510,10 +510,11 @@ src/
     │   │                  # sobre a arte do ATO 0 — curtida, alguém digitando,
     │   │                  # gente online, key, XP, live, comentário, rank,
     │   │                  # squad. Ciclo em `@keyframes` (não em biblioteca:
-    │   │                  # são 9 laços infinitos), e as linhas que se ligam ao
-    │   │                  # centro preparam a CONVERGÊNCIA — visíveis TAMBÉM
-    │   │                  # no celular, com gradiente que acende na direção do
-    │   │                  # centro (energia chegando, não risco na tela).
+    │   │                  # são 9 laços infinitos).
+    │   │                  # `[12/09]` As LINHAS que iam daqui até o centro da
+    │   │                  # cena foram removidas a pedido do dono. Elas
+    │   │                  # preparavam a CONVERGÊNCIA (que continua existindo,
+    │   │                  # no `ConvergenciaDoHub`, mais abaixo na rolagem).
     │   │                  # `[12/09]` Cada chip se ancora pela borda de que ele
     │   │                  # se APROXIMA (`right` à direita, `left` à esquerda):
     │   │                  # com `whitespace-nowrap` ele cresce a partir da

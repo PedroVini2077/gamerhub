@@ -172,15 +172,617 @@ automática. Registrado aqui para ninguém a consertar.
 | `admin_set_role` | sete guardas: alvo existe, não é você, papel válido, alvo não é o fundador, seu cargo é maior que o do alvo **e** ≥ ao que você está dando |
 | `decide_role_demotion` | `FOR UPDATE` na linha (barra decisão dupla por corrida) e **quem pediu não pode decidir** — separação de funções de verdade |
 
+## As de BAN — dois achados, e o segundo é de arquitetura
+
+### 🟡 `ban_user` — a trilha pode ficar SEM O MOTIVO
+
+`p_reason` não tem validação nenhuma: nem nulo, nem tamanho. E o log é montado
+por concatenação:
+
+```sql
+'@' || v_target_username || ' foi banido por @' || v_caller_username
+  || '. Motivo: ' || p_reason
+```
+
+**Em SQL, `'texto' || NULL` é NULL** — medido, não deduzido. E
+`admin_logs.details` **aceita NULL** (conferido no `information_schema`). Então
+um ban com motivo nulo grava uma linha de trilha **com o detalhe inteiro vazio**:
+some o alvo, some quem baniu, some o motivo.
+
+A mesma coisa acontece na `admin_notifications` que avisa a equipe.
+
+**É o §1.5 na forma mais pura:** a ação acontece, a trilha existe, e ela não diz
+nada. E é o §5 na letra — *toda entrada de RPC precisa de FAIXA, não só de tipo*.
+
+**Conserto:** `IF p_reason IS NULL OR length(btrim(p_reason)) < 3 THEN RAISE`, e
+`coalesce` nas concatenações como defesa em profundidade.
+
+### 🟡 A INVERSA do ban existe para a marca, não para o CONTEÚDO
+
+`ban_user` faz, além de marcar o perfil:
+
+```sql
+DELETE FROM posts           WHERE user_id = p_user_id;
+DELETE FROM comments        WHERE user_id = p_user_id;
+DELETE FROM community_posts WHERE user_id = p_user_id;
+DELETE FROM live_chat       WHERE user_id = p_user_id;
+```
+
+**`DELETE` de verdade, não `soft_delete`.** O projeto TEM o caminho reversível —
+`soft_delete_post` marca `deleted_at` justamente para a moderação poder voltar
+atrás, e existe `restore_post`. O ban não usa nenhum dos dois.
+
+**O resultado é uma assimetria em duas dimensões**, e as duas contrariam a regra
+do `BANCO.md` (*"toda ação de estado precisa da INVERSA"*):
+
+| | quem pode | é reversível? |
+| --- | --- | --- |
+| marcar como banido | **admin** (rank 2) | sim — `unban_user` |
+| apagar todo o conteúdo | **admin** (rank 2) | **NÃO** |
+| desbanir | **super_admin** (rank 3) | — |
+
+Ou seja: **quem destrói é um nível ABAIXO de quem desfaz**, e a parte que ele
+destrói é justamente a que não tem volta. Um desbanimento devolve a conta e não
+devolve nada do que a pessoa escreveu — e ela não é avisada disso: a notificação
+diz *"sua conta voltou ao normal"*.
+
+**Isto pode ser intencional** — banir para purgar é uma política defensável, e
+por isso não é 🟠. Mas se for, precisa estar escrito, e a mensagem de
+desbanimento precisa parar de prometer o que não entrega. **É decisão de
+produto, e é do dono.**
+
+### 🔵 `unban_user` não confere se a pessoa está banida
+
+`lift_suspension` confere (*"Este usuario nao esta suspenso"*) — medido.
+`unban_user` **não**. Desbanir quem não está banido "funciona": os `UPDATE`
+rodam sem efeito, e a pessoa **recebe uma notificação** dizendo que o banimento
+dela foi revisto e removido. Aviso sobre um castigo que ela nunca teve.
+
 ## Cobertura declarada
 
 | | |
 | --- | --- |
-| funções `SECURITY DEFINER` alcançáveis | **24 lidas por inteiro de 50** (7 no BLOCO A + 17 aqui) |
+| funções `SECURITY DEFINER` alcançáveis | **31 lidas por inteiro de 50** (7 no BLOCO A + 24 aqui) |
 | das que ESCREVEM com barreira mais fraca | **4 de 4** |
 | das que escrevem com barreira de staff | 5 de 11 |
 | das que escrevem com barreira super/owner | 8 de 13 |
 | listas de papel à mão | **5 de 5** enumeradas |
 
-**Este bloco está PARCIAL, não concluído.** Faltam **26** funções: 6 das que
-escrevem com barreira de staff, 5 das de super/owner, e as 15 que só leem.
+**Este bloco está PARCIAL, não concluído.** Faltam **19** funções: 4 que
+escrevem (`decide_staff_trial`, `deny_unban_request`, `review_staff_nomination` e
+`contato_registrar_resposta` já lida) e 15 que só leem.
+
+---
+
+# BLOCO C — a classe do NULL, e o que ela custou
+
+> Escrito depois de aplicar. As correções deste bloco estão **no ar** e foram
+> testadas em `ROLLBACK` antes disso — o roteiro completo, com as 16 asserções,
+> está reproduzido abaixo.
+
+## O achado que virou uma classe inteira
+
+Fui atrás de um item do BLOCO B (o `unban_user` não conferir se a pessoa está
+banida) e a leitura do corpo mostrou outra coisa, maior:
+
+```sql
+IF v_caller_role NOT IN ('super_admin','owner') THEN
+  RAISE EXCEPTION 'Access denied: super_admin required';
+END IF;
+```
+
+**Medido, não deduzido:**
+
+```
+select (null::text not in ('super_admin','owner'));   -->  NULL
+select (null::text <> 'super_admin');                 -->  NULL
+select ('x' || null::text);                           -->  NULL
+select role_rank(null);                               -->  0
+```
+
+`IF NULL THEN ... END IF` **não dispara**. Então o portão está aberto para
+exatamente um perfil de chamador: **quem não tem linha em `profiles`**. O
+`SELECT role INTO v_caller_role` não acha nada, a variável fica NULL, e o guard
+vira um comentário.
+
+## A prova, e ela CORRIGIU a minha hipótese
+
+Montei o ataque em `ROLLBACK`: um `sub` no JWT sem perfil correspondente,
+chamando `unban_user` contra um alvo banido descartável.
+
+Eu previ *"o guard passa e o desbanimento acontece"*. **Metade estava certa.** O
+guard passou e a função seguiu adiante — mas o que a derrubou foi outra coisa:
+
+```
+1_unban_sem_perfil = OK: bloqueado — null value in column "admin_username"
+                     of relation "admin_logs" violates not-null constraint
+3_alvo_ainda_banido = sim (guard segurou)
+```
+
+O que segurou foi um **`NOT NULL` numa coluna de log**, que recebeu o nome do
+chamador (NULL). Isso é §1.3 na letra — *"desconfiar de proteção acidental. Se
+algo só está seguro por efeito colateral de outra regra, isso não é proteção; é
+sorte esperando expirar"*. Duas coisas seguravam, e as duas são acidentais:
+
+| O que segurava | Por que não conta como proteção |
+| --- | --- |
+| `NOT NULL` em `admin_logs.admin_username` | é uma coluna de **log**. Ela não sabe que está fazendo controle de acesso, e qualquer migration futura pode afrouxá-la. E ela só alcança porque o `INSERT` vem **depois** do `UPDATE` na mesma função — trocar a ordem abriria tudo |
+| 0 usuários de auth sem perfil hoje (medido: 5 auth / 5 perfis) | é um invariante do trigger `handle_new_user`, que vive **fora** destas funções |
+
+## A varredura de classe — cinco funções, três consertos diferentes
+
+```sql
+select p.proname, prosrc ~* 'role_rank|is_staff\(\)|is_super\(\)' as tem_rede
+from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='public' and p.prosecdef
+  and prosrc ~* '(NOT IN|<>|!=)\s*\(?\s*''(owner|super_admin|admin)''';
+```
+
+| Função | O guard | Conserto | Por quê |
+| --- | --- | --- | --- |
+| `unban_user` | `NOT IN ('super_admin','owner')` | `is_super()` | queria dizer "super **ou acima**" |
+| `approve_unban_request` | idem | `is_super()` | idem |
+| `deny_unban_request` | idem | `is_super()` | idem |
+| `notify_owner` | `NOT IN ('admin','super_admin')` | `is_staff()` | idem — **e isso incluiu o `owner`, que estava de fora** |
+| `nominate_staff` | `<> 'super_admin'` | `IS DISTINCT FROM` | queria dizer **exatamente** super_admin, e isso é desenho |
+
+**`is_super()` é NULL-safe por construção**, e essa é a razão de ele ser a
+resposta certa e não uma checagem de `IS NULL` colada em cada função:
+
+```
+role_rank(NULL) --> 0    (o CASE cai no ELSE)
+is_super()      --> 0 >= 3 --> false
+```
+
+Papel ausente passa a **negar**, que é a direção segura. É também a regra que o
+projeto já tinha escrita — *"hierarquia nunca se escreve à mão"* — e estas cinco
+eram as últimas a violá-la.
+
+**O caso do `nominate_staff` merece nota**, porque foi onde quase errei: trocar
+por `is_super()` ali teria deixado o `owner` **indicar** para super admin, e a
+própria mensagem da função explica que *"o fundador é o avaliador independente
+dessas indicações"*. `is_super()` teria destruído a separação de papéis enquanto
+consertava o NULL. `IS DISTINCT FROM` preserva o sentido literal e fecha o NULL.
+
+**`notify_owner` mudou de comportamento, de propósito.** O guard excluía o
+`owner` de uma função de equipe — ele recebia "Acesso negado". `is_staff()`
+(rank ≥ 2) o inclui. É o mesmo padrão que já mordeu três vezes aqui: lista de
+papéis escrita à mão esquecendo o `owner`.
+
+## A irmã: o mesmo NULL no PARÂMETRO — e o CHECK não segura
+
+A varredura encontrou o outro lado. O guard que valida o papel que o **cliente
+manda**:
+
+```sql
+IF p_new_role NOT IN ('user','admin','super_admin') THEN RAISE ...
+UPDATE profiles SET role = p_new_role WHERE ...
+```
+
+Com `p_new_role = NULL` o IF não dispara e o `UPDATE` grava NULL. **E o CHECK da
+coluna aprova**, o que é o detalhe que engana:
+
+```sql
+CHECK (role = ANY (ARRAY['user','admin','super_admin','owner']))
+```
+
+Constraint só reprova em **`false` explícito**. `NULL = ANY(...)` é NULL, e NULL
+não é false. Medido em `ROLLBACK`:
+
+```
+1_check_aceita_null   = SIM: role virou NULL, o CHECK nao barrou
+2_rank_do_perfil_nulo = role_rank=0
+3_owner_set_role_null = FALHOU: aceitou NULL como cargo
+4_cargo_depois        = (NULL)
+```
+
+**Um perfil de papel nulo tem rank 0 — abaixo de `user`, que é 1.** É um estado
+que nenhuma tela, policy ou função sabe que existe. O `admin_set_role` chamado
+sobre um perfil assim responde *"Usuário não encontrado"*, que é mensagem falsa
+(§1.5): manda procurar o usuário em vez do estado.
+
+🟡 **Médio, e não mais**: só o `owner` alcança o `owner_set_role`. Não é
+escalada de privilégio — é um pé de ferro que o dono pode disparar sozinho pela
+REST API, cujo estrago não tem tela que mostre nem caminho óbvio de volta.
+
+> **Uma leitura minha foi contaminada e eu a refiz.** O primeiro roteiro
+> imprimiu `nulos_hoje_em_producao = 1` — mas ele contava **dentro** da
+> transação, depois de eu mesmo ter nulado o perfil de teste. Medido de novo
+> fora: **0 perfis com `role` nulo e 0 com `banned` nulo**, em 5. Registrado
+> porque quase virou um alarme falso num relatório.
+
+## A trava é de NÍVEL 1 — o dado errado virou impossível
+
+```sql
+ALTER TABLE profiles ALTER COLUMN role   SET NOT NULL;
+ALTER TABLE profiles ALTER COLUMN banned SET NOT NULL;
+```
+
+Cabia uma checagem de `IS NULL` dentro das duas RPCs — **nível 4** na tabela do
+§2, e a próxima RPC que escrevesse em `role` nasceria sem ela. `NOT NULL` na
+coluna vale para todo caminho que existe **e para os que ainda não existem**.
+
+As duas colunas já tinham DEFAULT (`'user'` e `false`), então nada precisou
+mudar no cadastro — verificado em `ROLLBACK` que o trigger `handle_new_user`
+continua criando o perfil com `role=user banned=false`.
+
+A checagem explícita entrou **também**, mas por outro motivo: sem ela a
+mensagem que chega no toast do painel é o texto cru do Postgres.
+
+### E ela pegou um erro MEU, escrito na hora
+
+Na primeira migration eu escrevi o guard novo do `unban_user` assim:
+
+```sql
+IF NOT v_target_banned THEN RAISE EXCEPTION 'Este usuario nao esta banido.';
+```
+
+`banned` era **nullable**. `NOT NULL` (o valor) é NULL, o IF não dispara, e o
+desbanimento seguiria — **exatamente a regra que eu estava fechando, violada no
+código do conserto**. Corrigido para `IS NOT TRUE`, e a coluna virou `NOT NULL`.
+
+## SEC-014 — `ban_user` aceitava qualquer texto como motivo
+
+O `BanModal` oferece **seis** motivos numa lista fechada. A RPC aceitava `text`.
+O site usa a `anon key`, então a REST API é chamável direto — e esse texto vai
+para a trilha de auditoria, para a `BannedScreen` da pessoa banida e para a
+notificação de toda a equipe.
+
+Junto, dois buracos de alvo inexistente. `'@' || NULL || ' foi banido'` é NULL
+inteiro, e como `admin_logs.details` é **NULLABLE** isso **grava**: a trilha
+ganha uma linha `admin_ban` sem história nenhuma enquanto o `UPDATE` afetou 0
+linhas e ninguém foi banido. Sucesso na tela, nada no banco, mentira no log.
+
+Faixas que entraram: motivo em lista fechada · detalhes ≤ 300 (o `maxLength` do
+modal, que agora vale de verdade) · nota de desbanimento ≤ 500 · alerta ao owner
+≤ 2000 · alvo tem que existir · alvo tem que estar banido.
+
+## O roteiro em ROLLBACK — 16 asserções, todas verdes
+
+| | |
+| --- | --- |
+| `A1` chamador sem perfil → `unban_user` | **`Access denied: super_admin required`** (antes: erro de constraint) |
+| `A2` chamador sem perfil → `notify_owner` | `Acesso negado.` |
+| `A3` admin (rank 2) → `unban_user` | `Access denied: super_admin required` |
+| `B1` motivo inventado | `Motivo invalido: motivo inventado.` |
+| `B2` alvo inexistente | `Usuario nao encontrado.` |
+| `B3` detalhes com 301 caracteres | `Os detalhes devem ter no maximo 300 caracteres.` |
+| `B4` **ban válido** | banido |
+| `C1` admin → `notify_owner` | enviou |
+| `C2` **owner → `notify_owner`** | enviou (antes era "Acesso negado") |
+| `D1` desbanir inexistente | `Usuario nao encontrado.` |
+| `D2` desbanir quem não está banido | `Este usuario nao esta banido.` |
+| `D3` **desban válido** | desbanido |
+| `D4` chamada com 1 argumento | o `DEFAULT` de `p_note` sobreviveu |
+| `E1` estado final | `banned=false` |
+| `E2` trilha | 2 linhas, **0 com `details` NULL** |
+| `E3` aviso à pessoa | 1 notificação |
+
+> **O `D4` existe por causa de um erro que o Postgres me poupou.** Meu primeiro
+> `CREATE OR REPLACE` omitia `DEFAULT NULL::text`, e ele recusou: *"cannot
+> remove parameter defaults"*. Três destas funções têm parâmetro opcional que o
+> cliente usa. Sem essa recusa, eu teria quebrado as chamadas de um argumento.
+
+## As travas, provadas uma a uma reinjetando o bug
+
+`src/lib/__tests__/guardDePapelNaoAceitaNull.test.js`. Ela lê
+`supabase/migrations/` e reconstrói a **última** definição de cada função — o
+que é legítimo porque o portão `espelho-de-migrations.mjs` já garante que a
+pasta e o banco têm o mesmo conteúdo (conferido: **173 = 173**). Migration
+antiga com o código velho é história, não estado, e não reprova.
+
+| Bug reinjetado | A trava disse |
+| --- | --- |
+| `NOT IN` de volta no `unban_user` | *"`unban_user` (definida por último em …213000…) voltou a comparar o papel do chamador"* |
+| `IS NULL` fora do `owner_set_role` | *"valida `p_new_role` com NOT IN e sem checar IS NULL antes"* |
+| `DROP NOT NULL` em `banned` | *"profiles.role NOT NULL: true · profiles.banned NOT NULL: false"* |
+| 7º motivo só no `BanModal` | *"Os motivos de ban DIVERGIRAM"*, com as duas listas |
+| `notify_owner` renomeada | *"Não achei a definição final de `notify_owner`"* |
+
+> **Uma reinjeção "falhou" e o motivo é o desenho funcionando.** Injetei o bug
+> na migration `210000` e a trava continuou verde — porque a `213000` redefine
+> `unban_user` depois. "Último vence" estava certo; eu é que tinha mirado na
+> definição errada.
+
+## O que este bloco NÃO fez
+
+- **SEC-015** (o ban apaga conteúdo de forma irreversível; `admin` destrói e
+  `super_admin` desfaz; a notificação promete *"sua conta voltou ao normal"*)
+  continua **aberto**. É decisão de produto e é do dono.
+- **`deny_unban_request` não avisa a pessoa.** A aprovação avisa; a negativa
+  não. Quem recorreu fica sem resposta. 🔵 — anotado no `BACKLOG.md`.
+- Continuam faltando **19 de 50** funções para ler.
+
+---
+
+# BLOCO D — a leitura das funções que faltavam
+
+Enumeradas **66** funções `SECURITY DEFINER` que não são gatilho (a consulta
+exclui `pg_trigger`). Deste bloco saíram uma correção e três anotações.
+
+## O que eu suspeitei e estava ERRADO
+
+`reset_login_attempts()` — sem argumentos, escreve, e é chamável por qualquer
+`authenticated`. Pelo nome e pela assinatura, parecia o caso clássico de
+"qualquer pessoa logada zera o contador de força bruta de todo mundo". Lida por
+inteiro, ela é:
+
+```sql
+DELETE FROM public.login_attempts
+WHERE email = lower((SELECT email FROM auth.users WHERE id = auth.uid()));
+```
+
+Escopo do **próprio** email, tirado do `auth.uid()` e não de parâmetro. Não há
+o que forjar. Registrado porque quase virou achado: a assinatura assustava e o
+corpo desmentiu (§1.1 — inferência não é fato).
+
+Conferidas junto e **corretas**: `admin_unlock_login` (`role_rank < 3`,
+NULL-safe, e o `owner` passa porque rank 4 ≥ 3) · `restore_post` (rank + a
+mesma hierarquia estrita do `soft_delete_post`) · `notify_user` (faixa de 500,
+tipo em lista fechada, alvo tem que existir, e grava na trilha).
+
+## 🔵 SEC-019 · `owner_set_site_config` aceita QUALQUER chave — e é MUDO
+
+```sql
+INSERT INTO site_config (key, value, ...) VALUES (p_key, p_value, ...)
+ON CONFLICT (key) DO UPDATE SET value = p_value, ...
+```
+
+`p_key text`, sem faixa. E o `ON CONFLICT ... DO UPDATE` é o que torna isso
+silencioso em vez de barulhento: chave desconhecida **não** dá erro, ela
+**cria linha nova**.
+
+**O caminho da falha.** O dono digita `maintenence_mode` — ou um refactor
+renomeia uma chave num lado só. A RPC responde **sucesso**. O painel mostra o
+toast verde. A trilha de auditoria registra *"@dono alterou maintenence_mode:
+'false' para 'true'"*. Tudo confirma, do lado de quem clicou. Mas o site lê
+`maintenance_mode`, essa linha continua `false`, e **o site não entra em
+manutenção**.
+
+Nada estoura, nada aparece na tela, nada vai para log de erro, nenhum teste
+quebra — os três canais do §1.5 em branco, no painel cuja função é tirar o site
+do ar e devolvê-lo.
+
+**Conserto: lista fechada de 14 chaves.** Elas foram conferidas em **três**
+lugares e batem sem sobra de nenhum lado — o estado inicial do `SiteTab.jsx`, as
+14 linhas que existem hoje na tabela, e agora o SQL.
+
+Junto: `is_owner()` no lugar do `role = 'owner'` escrito à mão (era mais uma
+cópia da mesma decisão, §4), e faixa de 500 no valor — `banner_text` e
+`pause_reason` vão para a tela de todo mundo, e `text` aceita megabytes.
+
+**🔵 Baixo, e o número importa:** só o `owner` alcança esta função. Não é brecha
+de privilégio; é um comando de painel que pode mentir que funcionou.
+
+**Validado em `ROLLBACK`**, 6 asserções: chave com typo recusada nomeando a
+chave · chave nula recusada · valor de 501 recusado · **as 14 chaves reais
+aceitas** · admin recusado · a tabela continuou com 14 linhas, sem linha morta.
+
+**Trava** (`siteConfigChavesFechadas.test.js`), provada nos **dois** sentidos —
+porque fechar a lista no banco cria uma deriva nova, não só resolve uma:
+
+| Bug reinjetado | A trava disse |
+| --- | --- |
+| `feature_torneios` só no painel | *"As chaves DIVERGIRAM"*, com as duas listas e o `+ feature_torneios` |
+| a lista fechada some do SQL | *"não valida mais `p_key` com uma lista fechada"* |
+
+## O que fica anotado, e por que não virou correção agora
+
+- **`notify_user` aceita 9 tipos; o `NOTIF_META` estiliza 4.** Os outros cinco
+  (`warning`, `info`, `success`, `error`, `system`, `role`) caem no sino
+  genérico. Isso **não é bug**: o `DESCONHECIDO` é fallback deliberado e
+  visível, escrito para não fingir que era outra coisa. Mas a lista da RPC
+  promete mais do que a tela sabe desenhar, e escolher ícone é decisão de
+  design. Backlog.
+- **`restore_post` restaura post que não está apagado**, sem erro. O `UPDATE`
+  não tem `AND deleted_at IS NOT NULL`. Efeito nulo e nenhuma mentira na tela —
+  é a irmã fraca do que o `unban_user` tinha. Backlog.
+- **`KEY_LABEL[key] || key`** no `SiteTab.jsx` é fallback silencioso pelo
+  formato (§4), mas benigno: o padrão é a própria chave, que informa. Com a
+  lista agora fechada nos dois lados, o caso deixou de ser alcançável.
+
+## Cobertura declarada — acumulada dos quatro blocos
+
+| | |
+| --- | --- |
+| funções `SECURITY DEFINER` não-gatilho | **66** enumeradas |
+| lidas por inteiro | **43** |
+| das que ESCREVEM e são alcançáveis por `authenticated` | **26 de 26** — o piso do §6 está fechado |
+| das que só `service_role` alcança | 6 de 14 |
+| das que só leem | 11 de 26 |
+
+**As 23 que faltam não são o piso.** São 8 de `service_role` (moderação
+automática, limpeza agendada, o hook de senha — alcançáveis só por Edge
+Function) e 15 de leitura pura. Ainda assim: **este bloco está parcial**, e o
+que falta está nomeado, não arredondado.
+
+---
+
+# BLOCO E — 🟠 SEC-020 · um ADMIN bane o FUNDADOR por um caminho lateral
+
+**O achado mais grave desta auditoria.** Ele apareceu ao ler as funções de
+moderação automática, que estavam na lista de "só `service_role` alcança" e por
+isso pareciam de baixo risco.
+
+## A prova, os dois caminhos na mesma transação
+
+Assumi o papel de um `admin` real (rank 2) e tentei as duas rotas contra o
+`owner` (rank 4):
+
+```
+1_caminho_direto   = BARRADO (correto): Access denied: cannot ban equal or higher role
+2_caminho_indireto = o INSERT em violations PASSOU
+3_owner_depois     = banned=true motivo="Banimento automático — limite de
+                     infrações atingido (1003 pontos)"
+4_conteudo_depois  = 0 posts visiveis, 0 comentarios, 0 murais
+5_quem_desfaz      = unban_user exige is_super(). Super admins hoje: 0
+```
+
+Uma linha:
+
+```sql
+INSERT INTO violations (user_id, points, reason) VALUES ('<owner>', 999, 'forjado');
+```
+
+## A corrente — e cada elo estava certo lendo isolado
+
+Este é o ponto que vale guardar, mais do que o bug em si:
+
+| Elo | O que faz | Por que ninguém viu |
+| --- | --- | --- |
+| policy `violations_insert` | `role_rank(<autor>) >= 2` | checa **quem escreve** e nunca **contra quem** — parece uma policy de staff comum |
+| coluna `points` | `integer`, sem CHECK | tipo certo, faixa nenhuma. É o §5 literal: *"o tipo diz o formato; a faixa diz o que faz sentido"* |
+| trigger `handle_violation_escalation` | soma e compara com o limite | é aritmética; ninguém põe hierarquia num somatório |
+| `apply_mod_auto_ban` | bane e apaga o conteúdo | **zero checagem de cargo**, porque "quem chama é o sistema" |
+
+Nenhum é obviamente errado sozinho. É a **Fase 4** em estado puro — cada lado
+concorda consigo mesmo e discorda do outro — e é o motivo de ela existir.
+
+## Severidade: 🟠 Alto
+
+- **Risco:** qualquer `admin`, o cargo mais baixo da equipe, bane qualquer
+  pessoa — inclusive `super_admin` e o `owner`.
+- **Impacto:** o alvo perde a conta e o conteúdo. Posts viram `deleted_at`
+  (recuperável), mas **comentários, mural e chat são apagados de verdade**. E
+  medido agora: há **0 super admins**, e `unban_user` exige `is_super()`. Banido
+  o fundador, **não existe caminho de volta pelo site** — só pela credencial do
+  banco.
+- **Por que não 🔴:** exige uma conta de `admin`. Não é alcançável de fora.
+
+## A solução — três camadas, e a ordem importa
+
+**1 · Faixa na coluna.** `CHECK (points >= 0 AND points <= 10)`. O
+`ACTION_POINTS` do painel é `{none:0, warn:1, hide:2, suspend_1d:5,
+suspend_7d:10}` — **10 é o máximo que a tela consegue produzir**. Isto sozinho
+não protege (bastaria repetir linhas): serve para que um número absurdo não seja
+sequer representável.
+
+**2 · A policy passa a olhar o alvo.** `WITH CHECK (can_moderate_content(user_id))`
+— o mesmo auxiliar que as seis policies de conteúdo usam desde o SEC-009: rank
+do ator **estritamente maior** que o do alvo. Registrar infração é ato de
+moderação, e a hierarquia da moderação já estava escrita; esta tabela é que
+tinha ficado de fora.
+
+**3 · A escalação automática nunca alcança a equipe.** É a camada que vale mesmo
+se as outras duas caírem, e o motivo é concreto: **`service_role` ignora RLS**.
+Uma Edge Function de moderação, hoje ou amanhã, escreve em `violations` sem
+passar pela camada 2.
+
+A regra de produto, escrita porque tem que estar escrita em algum lugar:
+**membro da equipe só é punido por decisão humana com hierarquia.**
+
+E o desvio é **barulhento**: vai para `admin_logs` como `auto_ban_barrado` /
+`auto_suspend_barrado`, em `warning`. Sair em silêncio criaria a versão boa do
+mesmo problema — a equipe nunca saberia que alguém acumulou pontos suficientes
+para ser banido, e isso é informação de segurança, não ruído (§1.5).
+
+## Validado em ROLLBACK — 9 asserções
+
+| | |
+| --- | --- |
+| `A1` admin → owner, 999 pontos | recusado pela RLS |
+| `A2` admin → owner, 10 pontos (válidos) | recusado pela RLS |
+| `A3` admin → outro admin | recusado pela RLS |
+| `B1` admin → `user`, as 5 pontuações do painel | **aceitas** |
+| `B2` o `user` escalou | `banned=true suspenso=true` — a moderação legítima continua funcionando |
+| `B3` owner | intacto |
+| `C1` insert privilegiado (ignora RLS), 24 pontos no owner | entrou, como esperado |
+| `C2` **owner depois dos 24 pontos** | **`banned=false`** — a camada 3 segurou |
+| `C3` a equipe fica sabendo | `auto_*_barrado` no `admin_logs` |
+
+O par `C1`/`C2` é o que prova que a camada 3 não é redundante: mesmo com a
+linha entrando por um caminho que a RLS não vê, o fundador não cai.
+
+## A trava, provada três vezes
+
+`punicaoRespeitaHierarquia.test.js`, e ela varre a **classe**: *toda função que
+escreve punição em `profiles` consulta `role_rank`?*. Travar as duas pelo nome
+deixaria a próxima nascer sem o piso — que foi como 14 policies ficaram sem
+`owner`, três vezes.
+
+| Bug reinjetado | A trava disse |
+| --- | --- |
+| piso de rank fora do `apply_mod_auto_ban` | *"Função que PUNE sem consultar `role_rank`: apply_mod_auto_ban"* |
+| policy voltando a olhar só o autor | *"voltou a não olhar o alvo"*, imprimindo a regra |
+| `DROP CONSTRAINT` da faixa numa migration futura | *"A faixa de `violations.points` foi removida"* |
+
+**Cuidado que ela precisou ter:** `WHERE banned = true` aparece em
+`pode_publicar`, `request_unban` e `owner_get_stats`, que só **leem**. Uma
+varredura ingênua acusaria as três, e alarme que grita à toa é o mesmo problema
+do outro lado (§0.2, 4ª regra). Ela casa só `UPDATE profiles SET ... banned =
+true`.
+
+**O limite dela, escrito porque verde precisa significar algo:** confere que
+`role_rank` **aparece**, não que a comparação está certa. `>= 99` passaria. É
+trava contra o esquecimento — que foi o defeito real —, não contra erro de
+lógica.
+
+## O que este achado reforça sobre o SEC-015
+
+O `apply_mod_auto_ban` é **mais suave** que o `ban_user` humano: ele faz
+`UPDATE posts SET deleted_at` (reversível) onde o humano faz `DELETE`. O
+banimento automático preserva mais do que o manual — o inverso do que se
+esperaria. Não mexi: é a mesma decisão de produto do SEC-015, e é do dono.
+
+---
+
+# BLOCO F — os advisors, e um alarme que NÃO dá para atender
+
+Rodados depois de todas as mudanças de schema (§5 manda).
+
+## Piso do §6, conferido por consulta e não por impressão
+
+```
+80 funções SECURITY DEFINER · 0 sem `search_path` · 80 com `search_path` explícito
+```
+
+A regra do `BANCO.md` — *"toda `SECURITY DEFINER` precisa de `SET search_path`
+explícito"* — está **100% cumprida**, incluindo as sete que este dia criou ou
+reescreveu.
+
+## Security advisor — 3 avisos, e nenhum é achado novo
+
+**50 × `authenticated_security_definer_function_executable`.** É a arquitetura
+do projeto, não um defeito: cada RPC é chamável por quem tem conta e **cada uma
+tem guard interno por `auth.uid()`** — foi o que este bloco inteiro auditou.
+Revogar `EXECUTE` das 50 quebraria o site.
+
+**3 × `anon_security_definer_function_executable`**, e as três são exceções já
+decididas e escritas: `check_login_status` e `username_disponivel` (o
+deslogado precisa delas para entrar e para se cadastrar) e
+`contagem_de_migrations` (registrada em `DECISOES.md` em 12/09).
+
+## 🔵 `auth_leaked_password_protection` — e a resposta honesta é "não dá"
+
+O advisor pede para ligar a checagem contra o HaveIBeenPwned. **Pesquisado na
+documentação oficial antes de virar tarefa para o dono**, e a resposta muda
+tudo:
+
+> *"Leaked password protection is available on the Pro Plan and above."*
+
+**Este projeto roda no plano gratuito** (§0.2). Então este aviso vai continuar
+aparecendo em todo advisor, para sempre, e **não existe passo a passo que o
+dono possa executar** — é dinheiro, não configuração.
+
+Registrar isto assim é o §0 na letra: *"falta recurso pago → achar o caminho que
+existe, e escrever o que ele NÃO cobre; nunca fingir que cobre"*. E é também
+§9.12: eu quase escrevi *"ligue a proteção de senha vazada no painel"* e mandei
+ele procurar um botão que o plano dele não tem.
+
+**O que É possível no Free**, na mesma tela de Auth: comprimento mínimo e
+classes de caracteres obrigatórias. Hoje o site mede força no cliente
+(`lib/password.js` pontua a partir de 8 e de 12 caracteres) — e **validação no
+cliente não vale nada sozinha** (§1.3): quem chama a API de auth direto passa
+por cima. Conferir e endurecer o mínimo no painel é ação do dono, e essa sim
+tem caminho. Está no `BACKLOG.md`.
+
+## Performance advisor — 23 × `unused_index`, e nenhum sai
+
+Todos INFO. **Num site com 5 perfis e tráfego de teste, índice sem uso é o
+esperado** — `idx_comments_post_id` não foi usado porque quase não há
+comentários, não porque é inútil. Apagá-los agora seria otimizar contra o
+futuro: eles existem exatamente para o dia em que o volume chegar.
+
+Registrado aqui como **decisão de não otimizar, com o motivo** (§6.1). A hora de
+reavaliar é quando houver tráfego real — e aí o mesmo advisor responde de novo,
+com dado que significa alguma coisa.

@@ -21,7 +21,7 @@ import {
   Tv, Radio, MicOff, Mic, RotateCcw, CheckCircle, XCircle,
   Crown, Shield, UserCog, Image, Mail, UserMinus, Clock, ScrollText,
   Lock, Settings2, Wrench, Siren, Bell, SlidersHorizontal, Filter, EyeOff, Eye,
-  Flag, MailQuestion, MailCheck,
+  Flag, MailQuestion, MailCheck, ShieldCheck,
 } from 'lucide-react';
 
 // ─── Categorias ──────────────────────────────────────────────────────────────
@@ -77,6 +77,13 @@ export const ACTION_META = {
   user_suspended:            A(Clock,        'text-yellow-400',  '#facc15'),
   auto_suspend:              A(ShieldAlert,  'text-yellow-400',  '#facc15'),
   auto_ban:                  A(ShieldOff,    'text-red-500',     '#ef4444'),
+  // `[12/09]` SEC-020. As duas dizem que a escalação automática ENCONTROU
+  // motivo para punir e PAROU, porque o alvo é da equipe — punir staff é
+  // decisão humana com hierarquia. Escudo com visto, e não de alerta: a trava
+  // funcionou. Mas em amarelo, não verde: alguém da equipe acumulou pontos
+  // suficientes para ser banido, e isso a equipe precisa ver.
+  auto_ban_barrado:          A(ShieldCheck,  'text-yellow-400',  '#facc15'),
+  auto_suspend_barrado:      A(ShieldCheck,  'text-yellow-400',  '#facc15'),
   // `[05/09]` As onze abaixo saíram da Fase 4 da auditoria: TODAS são gravadas
   // por função do Postgres, nenhuma aparece como texto em `src/`, e nenhuma
   // tinha ícone — apareciam no painel com o genérico. A lista à mão que deveria

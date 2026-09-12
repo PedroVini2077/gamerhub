@@ -148,9 +148,12 @@ a do feed **sobe**, a da comunidade **afasta** a câmera, a das lives
 
 **A primeira tela tem sinais de vida**: fragmentos do produto — uma curtida,
 alguém digitando, gente online, uma key liberada, XP caindo, uma live no ar —
-aparecendo um de cada vez sobre a arte, e depois linhas finas que os ligam ao
-centro. É o que faz os trajetos da convergência parecerem a conclusão de algo,
-e não um efeito novo.
+aparecendo escalonados sobre a arte, cerca de três por vez. É a única tela da
+landing em que nada mais se move, e é o que a impede de ser arte + frase parada.
+
+> `[12/09]` Havia também **linhas** ligando esses sinais ao centro da cena, para
+> preparar a convergência que vem depois na rolagem. O dono as recusou por
+> leitura visual e elas saíram. A convergência continua existindo.
 
 **`[12/09]` Cada cena tem uma PERSONALIDADE de movimento**, e ela nasce do que a
 funcionalidade é — não do catálogo de efeitos:

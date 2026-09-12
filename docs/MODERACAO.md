@@ -86,6 +86,15 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   em silêncio e a escalação nunca disparava.
   Ao somar `mod_ban_threshold` (15) pontos, `apply_mod_auto_ban` **bane o usuário
   automaticamente** (com cascade da atividade, log e notificação aos admins).
+
+  > **`[12/09]` A escalação automática NÃO alcança a equipe** (SEC-020). Um
+  > `admin` conseguia banir o **fundador** com uma linha em `violations`: a
+  > policy checava o cargo de quem escreve e nunca contra quem, `points` não
+  > tinha teto, e `apply_mod_auto_ban` não comparava cargos. Hoje são três
+  > camadas — `CHECK (points 0..10)`, `can_moderate_content(user_id)` na policy,
+  > e piso de `role_rank >= 2` nas duas funções de escalação. **Staff só é
+  > punido por decisão humana com hierarquia**, e o desvio aparece na trilha
+  > como `auto_ban_barrado` / `auto_suspend_barrado`, não em silêncio.
 - **Suspensão temporária** (`profiles.suspended_until` + `apply_suspension`): as
   ações `suspend_1d`/`suspend_7d` **bloqueiam o usuário de criar conteúdo** (post,
   comentário, mural, chat) pelo período, via RLS (os `WITH CHECK` de INSERT

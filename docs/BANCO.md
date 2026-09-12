@@ -13,7 +13,7 @@ todas as tabelas públicas.**
 
 | Tabela                       | Descrição                                                        |
 | ---------------------------- | ---------------------------------------------------------------- |
-| `profiles`                   | Perfil do usuário (1:1 com `auth.users`): username, avatar, bio, role, banimento, redes, preferências |
+| `profiles`                   | Perfil do usuário (1:1 com `auth.users`): username, avatar, bio, role, banimento, redes, preferências. **`[12/09]` `role` e `banned` são `NOT NULL`** — o `CHECK` de `role` sozinho não bastava, porque `NULL = ANY(ARRAY[...])` é NULL e constraint só reprova em `false` explícito (SEC-017) |
 | `posts`                      | Posts do feed e lives (texto, mídia legada, áudio, embed, flags de live, `live_kind`, `live_kind_label`) |
 | `post_media`                 | Mídias de um post (imagem/vídeo/áudio, posição)                  |
 | `post_likes`                 | Likes de posts (único por `post_id+user_id`)                     |
@@ -40,7 +40,7 @@ todas as tabelas públicas.**
 | `site_config`                | Configuração global (manutenção, flags, banner, thresholds de moderação) |
 | `reports`                    | Denúncias da comunidade. Índice único **parcial**: uma pendente por pessoa e conteúdo — depois de dispensada, dá para denunciar de novo |
 | `blocked_words`              | Wordlist de palavras bloqueadas (com severidade)                |
-| `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor)     |
+| `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor). **`[12/09]` `points` tem `CHECK 0..10`** (o teto do `ACTION_POINTS` do painel) e a policy de INSERT usa `can_moderate_content(user_id)` — registrar infração é ato de moderação e respeita a hierarquia (SEC-020) |
 | `moderation_queue`           | Fila de revisão humana. `trigger_type`: `report`, `wordlist`, `ai`, `escalation`, `links` e — desde 29/08 — `sem_analise`, que significa o oposto dos outros: nenhuma checagem conseguiu olhar o conteúdo |
 
 #### Colunas relevantes em `posts`
@@ -203,13 +203,29 @@ transforma esta pegadinha em bug silencioso (§4).
   pontos do usuário e chama `apply_mod_auto_ban` ao atingir `mod_ban_threshold`.
 - `apply_mod_auto_ban(user_id, points)` (SECURITY DEFINER) — ban automático pelo
   sistema (sem caller role): marca `banned`, apaga a atividade, gera log +
-  notificação.
+  notificação. **`[12/09]` Ela NUNCA alcança a equipe** (`role_rank(alvo) >= 2`):
+  staff só é punido por decisão humana com hierarquia, e o desvio vai para
+  `admin_logs` como `auto_ban_barrado` em vez de um `RETURN` mudo. Sem esse
+  piso, uma linha em `violations` banía o fundador — ver SEC-020 em
+  [SEGURANCA.md](SEGURANCA.md).
 - `apply_suspension(user_id, days)` (SECURITY DEFINER) — suspende temporariamente
   (valida hierarquia, seta `suspended_until`, gera log + notificação).
 
 Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 `search_path` fixo e **checagem de role explícita via `auth.uid()`**. Helpers:
-- `role_rank(text)` — ranqueia os cargos (user 1 → owner 4).
+- `role_rank(text)` — ranqueia os cargos (user 1 → owner 4). **Papel
+  desconhecido ou NULL vira 0**, abaixo de `user` — e isso não é descuido do
+  `ELSE`: é o que torna toda a família abaixo NULL-safe, porque o piso nega.
+- `is_staff()` (rank ≥ 2) · `is_super()` (rank ≥ 3) · **`is_owner()`** (rank ≥ 4,
+  `[12/09]`). São a forma correta de perguntar por cargo, e **o motivo é
+  mecânico, não estilo**: `v_caller_role NOT IN ('super_admin','owner')` não
+  barra nada quando o papel é NULL, porque `NULL NOT IN (...)` é NULL e o `IF`
+  não dispara. Cinco funções tinham esse buraco (SEC-016/018 em
+  [SEGURANCA.md](SEGURANCA.md)).
+
+  Quando o sentido for **exatamente um cargo** e não "aquele ou acima" — é o
+  caso do `nominate_staff`, onde o owner é o avaliador e por isso não indica —
+  use `IS DISTINCT FROM`, que trata NULL como diferente. Nunca `<>` sozinho.
 - `can_moderate_content(author_id)` — retorna `true` só se o rank do ator
   (`auth.uid()`) for **estritamente maior** que o do autor. Usado nas políticas
   RLS de DELETE de `posts`, `comments`, `community_posts` e `live_chat` pra

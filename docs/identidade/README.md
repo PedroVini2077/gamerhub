@@ -199,37 +199,32 @@ de parede preto o quadrado `#060608` funde com o fundo**, e sobra a marca
 flutuando, sem silhueta — adesivo recortado, não ícone. Foi o que o dono
 resumiu como *"a do pwa tem que ser bonitinho poxa"*.
 
-O corpo passou a ter gradiente vertical, um brilho verde de um lado e roxo do
-outro (as duas pontas do gradiente da própria marca) e uma borda interna, que é
-o que desenha a silhueta no preto. Nada disso toca o desenho da marca.
+O corpo passou a ter gradiente vertical e um brilho verde de um lado e roxo do
+outro (as duas pontas do gradiente da própria marca). É isso que separa o ícone
+do papel de parede. Nada disso toca o desenho da marca.
 
-> **`[12/09]` A borda EXISTIA e não aparecia, e o defeito era de unidade.** Ele
-> instalou o app e relatou: *"tá muito bom o ícone no celular, mas senti falta
-> de uma borda, pq o app tá com a logo e o fundo preto"*.
+> **`[12/09]` Houve aqui uma BORDA desenhada, e ela foi REMOVIDA.** Ela nasceu
+> de um pedido dele (*"senti falta de uma borda, pq o app tá com a logo e o
+> fundo preto"*), passou por dois consertos, e ele mesmo a dispensou depois de
+> ver o resultado: *"percebi que esse gradiante que vc fez, e essas luzes elas
+> já fazem o trabalho de dar as 'bordas' do app, sem precisar de uma borda
+> física"*.
 >
-> Ela era `stroke-width="1.2"` num `viewBox` de **512** — 0,23% do lado, a 10%
-> de branco. Na tela de início, onde o ícone é desenhado a ~120 px, isso vira
+> **As duas lições ficam, porque nenhuma era sobre a borda:**
+>
+> **1. Unidade.** Ela era `stroke-width="1.2"` num `viewBox` de **512** — 0,23%
+> do lado. Na tela de início, onde o ícone é desenhado a ~120 px, isso vira
 > **0,3 pixel**. É o mesmo erro dos traços de 0,18 px da landing: o número
-> parece razoável e não é, porque a unidade não é pixel de tela.
+> parece razoável e não é, porque a unidade não é pixel de tela. Num `viewBox`
+> que vale o tamanho do arquivo, medida de traço tem que ser **fração do lado**.
 >
-> Agora a espessura é **fração do lado** (1/96), então vale o mesmo em todos os
-> tamanhos gerados, e a cor é o gradiente da marca em vez de branco — a borda
-> passou a ser assinatura, não contorno. Tem trava: ela reprova espessura
-> constante.
->
-> **E ela ainda não aparecia na TELA DE INÍCIO — segundo defeito, outra causa.**
-> O dono mandou dois prints: o arquivo aberto em tamanho grande **com** a borda,
-> e a tela de início **sem** ela. Os dois estavam certos.
->
-> O manifesto declara `icone-maskable-512.webp` com `purpose: maskable`, e o
-> Android **prefere esse arquivo** no launcher — depois aplica a máscara dele por
-> cima, que garante apenas o **círculo central de 80%**. Borda desenhada na borda
-> é exatamente o que essa máscara come.
->
-> O `maskable` passou a ter `recuoDaBorda: 0.11`: a borda cai dentro da zona
-> segura e sobrevive ao corte. Nos ícones que **não** são maskable o recuo é
-> zero — ali ninguém corta, e a borda na borda é o que desenha a silhueta contra
-> o preto.
+> **2. A máscara do `maskable` come a borda.** O manifesto declara
+> `icone-maskable-512.webp` com `purpose: maskable`, o Android **prefere esse
+> arquivo** no launcher, e depois aplica a máscara dele por cima — que garante
+> apenas o **círculo central de 80%**. Foi por isso que ele viu a borda no
+> arquivo aberto e não na tela de início: dois prints, os dois certos. Qualquer
+> coisa desenhada perto da borda desse arquivo precisa de recuo, ou não existe
+> no aparelho.
 
 Travas em `src/lib/__tests__/marca.test.js`: o favicon tem que conter o mesmo
 caminho do componente; o raio não pode voltar como marca; ninguém pode copiar o

@@ -132,6 +132,20 @@ encontrou **seis** casos, e eu conhecia um — os outros estavam na tela de
 entrada, no portão, e um eu tinha acabado de criar. Trava nova em
 `animacaoComAtraso.test.js`. Tudo em `docs/DECISOES.md`.
 
+**`[12/09]` AJUSTE 6 — ele DESFEZ duas coisas dos ajustes 4 e 5.** As **linhas
+do ATO 0** que iam até o centro (*"na vdd Claude, não gostei dessas linhas
+não... pode tirar tudo mesmo, do Pc e do celular"*) e a **borda do ícone do
+PWA** (*"esse gradiante que vc fez, e essas luzes elas já fazem o trabalho de
+dar as 'bordas' do app, sem precisar de uma borda física"*).
+
+Nos dois casos o que saiu foi a solução, não a lição — e a diferença importa,
+porque as travas eram do mecanismo: a de espessura em `non-scaling-stroke`
+**virou varredura de classe** sobre `src/components/landing` (provada
+reinjetando 0,18 px no `ConvergenciaDoHub`, que ela nunca tinha coberto), e a
+do `backwards` já era de classe e continua intacta. As travas que só descreviam
+o desenho removido (drenagem, gradiente, `pathLength`) saíram junto: trava sem
+alvo não falha, ela itera zero vezes e fica verde para sempre.
+
 **`[12/09]` A LANDING PAUSA AQUI, a pedido dele** — *"já trabalhamos demais
 nessa landing page"*. Não é abandono: o que sobrou está listado no fim desta
 seção, e a fila abaixo volta a ser a prioridade.
@@ -297,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**37 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -327,25 +341,86 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   em produção: tipo inventado, texto de 501 e alvo inexistente são todos
   recusados.
 
-- ⬜ `[12/09]` 🔵 **Falta um `is_owner()`, e é por isso que NOVE funções
-  escrevem `role = 'owner'` à mão.** *BLOCO B. **Correção de um achado meu
-  anterior**, que dizia "cinco funções escrevem a hierarquia à mão" — a
-  varredura que produziu aquele número procurava só `IN (...)`.*
+- ⬜ `[12/09]` 🟡 **SEC-015 · a INVERSA do ban existe para a marca, não para o
+  CONTEÚDO — e é DECISÃO DO DONO.** *BLOCO B.*
 
-  Medido: `is_staff()` e `is_super()` existem; **`is_owner()` não**. E
-  `is_super()` é `role_rank >= 3`, que inclui `super_admin` — usá-lo numa função
-  só do fundador **abriria** o acesso. As nove estão **certas**; o que falta é o
-  auxiliar. O risco é nove cópias da mesma decisão divergirem no dia em que
-  alguém mudar o nome do papel.
+  `ban_user` faz `DELETE FROM posts / comments / community_posts / live_chat`.
+  `DELETE` de verdade, não `soft_delete` — e o projeto TEM o caminho reversível
+  (`soft_delete_post` marca `deleted_at`, e existe `restore_post`).
 
-  **O que É lista de hierarquia à mão, e deveria virar `is_super()`:** três —
-  `unban_user`, `approve_unban_request`, `deny_unban_request`, todas com
-  `NOT IN ('super_admin','owner')`. Funcionam hoje.
+  | | quem pode | reversível? |
+  | --- | --- | --- |
+  | marcar banido | **admin** (rank 2) | sim |
+  | apagar todo o conteúdo | **admin** (rank 2) | **NÃO** |
+  | desbanir | **super_admin** (rank 3) | — |
 
-  **O que NÃO deve ser tocado:** `nominate_staff` exige `super_admin` literal e
-  exclui o fundador **de propósito** — a mensagem de erro diz por quê ("o
-  fundador é o avaliador independente"). É separação de funções, e uma varredura
-  automática a "consertaria".
+  **Quem destrói é um nível ABAIXO de quem desfaz**, e o que ele destrói é a
+  parte sem volta. O desbanimento devolve a conta e não devolve nada do que a
+  pessoa escreveu — e a notificação ainda diz *"sua conta voltou ao normal"*.
+
+  **Pode ser intencional** (banir para purgar é política defensável), e por isso
+  não é 🟠. Mas se for, precisa estar escrito e a mensagem precisa parar de
+  prometer o que não entrega. **Decisão de produto.**
+
+- ⬜ `[12/09]` 🔵 **`auth_account_deleted` virou entrada morta na lista do
+  cliente.** *Criado pelo meu próprio conserto do SEC-012.* A gravação passou
+  para dentro da RPC, mas a action continua na lista que `log_audit_event`
+  aceita do cliente — ninguém legítimo a usa, e qualquer pessoa logada pode
+  injetar um registro falso. Não dá poder nem expõe dado: é ruído forjável na
+  trilha. Uma linha para remover.
+
+- ⬜ `[12/09]` 🔵 **A política de senha do painel de Auth nunca foi conferida.**
+  *BLOCO F, e vem com a parte que eu quase errei.* O advisor pede para ligar a
+  proteção contra senha vazada (HaveIBeenPwned). **Pesquisei antes de virar
+  tarefa para você, e ela é do plano PRO** — não existe botão para clicar no
+  Free, e esse aviso vai aparecer em todo advisor para sempre. Não é
+  configuração, é dinheiro.
+
+  **O que dá para fazer no Free**, na mesma tela: comprimento mínimo e classes
+  de caracteres obrigatórias. Hoje o site só mede força **no cliente**
+  (`lib/password.js`), e validação no cliente não vale nada sozinha (§1.3) —
+  quem chama a API de auth direto passa por cima. Falta eu escrever o passo a
+  passo no `OPERACAO.md` (§9.12) e você conferir o que está configurado.
+
+- ⬜ `[12/09]` 🔵 **`admin_list_users` faz `SELECT * FROM profiles`.** *BLOCO D.*
+  Devolve **todas** as colunas para qualquer admin, inclusive as que a tela não
+  usa. Não é brecha — admin é cargo autorizado —, é minimização de dado e
+  egress (§6.1): a cota mais apertada do Supabase paga por coluna que ninguém
+  lê. Trocar por lista explícita de colunas.
+
+- ⬜ `[12/09]` 🟠 **NÃO EXISTE NENHUM SUPER ADMIN — e isso é o que transformava
+  o SEC-020 em porta sem volta.** *Descoberto ao medir o impacto do SEC-020, e é
+  DECISÃO DO DONO.* Medido: `select count(*) from profiles where role_rank(role)
+  >= 3 and not banned` devolve **0** — há o `owner` e dois `admin`.
+
+  O buraco de escalação foi fechado, então isto deixou de ser urgente. Mas a
+  assimetria continua e vale a decisão dele: **`unban_user` exige `is_super()`**,
+  e o `owner` é rank 4, ou seja, ele desbane. O problema é o caso em que o
+  próprio `owner` é quem está banido — aí não existe ninguém no site que possa
+  desfazer, e a saída é a credencial do banco.
+
+  Duas respostas possíveis, e as duas são dele: promover um super admin de
+  confiança, ou aceitar que a recuperação do fundador é por fora do site (e
+  então isso precisa estar escrito no `OPERACAO.md`, com o passo a passo).
+
+- ⬜ `[12/09]` 🔵 **`notify_user` aceita 9 tipos; o sino estiliza 4.** *BLOCO D.*
+  `warning`, `info`, `success`, `error`, `system` e `role` estão na lista
+  fechada da RPC e **não** estão no `NOTIF_META` — caem no sino genérico. Não é
+  bug: o `DESCONHECIDO` é fallback deliberado e visível. Mas a RPC promete mais
+  do que a tela desenha, e escolher ícone é decisão de design. Ou entram no
+  mapa, ou saem da lista da RPC.
+
+- ⬜ `[12/09]` 🔵 **`restore_post` restaura post que não está apagado.** *BLOCO
+  D.* Falta `AND deleted_at IS NOT NULL` no `UPDATE`. Efeito nulo e nenhuma
+  mentira na tela — é a irmã fraca do que o `unban_user` tinha, e por isso não
+  entrou no mesmo PR.
+
+- ⬜ `[12/09]` 🔵 **`deny_unban_request` não avisa a PESSOA.** *BLOCO C.* A
+  aprovação insere em `notifications` ("seu pedido foi aceito"); a negativa
+  **não insere nada**. Quem recorreu do próprio banimento fica sem resposta — a
+  `BannedScreen` mostra o estado do pedido, então ele não some de vez, mas a
+  simetria quebrada é do tipo que ninguém percebe do lado de fora. Uma linha,
+  espelhando o `approve_unban_request`.
 
 - ⬜ `[12/09]` 🔵 **O buraco que sobrou da régua de `anon`: `GRANT` explícito.**
   O `ALTER DEFAULT PRIVILEGES` fecha a tabela NOVA por padrão, mas não impede
@@ -1284,8 +1359,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->115<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.945<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->118<!--/n--> arq ·
+  <!--n:src.lib.linhas-->12.343<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
