@@ -290,3 +290,69 @@ describe('as ligações do ATO 0 são ENERGIA, e existem no celular', () => {
     ).toBe(true);
   });
 });
+
+describe('as ligações do ATO 0 são ABSORVIDAS, não desbotam', () => {
+  const SINAIS = 'src/components/landing/prologo/SinaisDeVida.jsx';
+  const CSS = 'src/estilos/sinaisDeVida.css';
+
+  it('o traço DRENA para o centro — `dashoffset` chega a negativo', () => {
+    // `[12/09]` *"Ao fim das animações as linhas somem aos poucos, mas fica uns
+    // pontos estranhos ali no meio."*
+    //
+    // A causa: o traço chegava ao centro e ficava 2,3 s desbotando INTEIRO e
+    // imóvel. Com cinco atrasos diferentes, sempre havia pedaços fracos de
+    // várias linhas ao mesmo tempo perto do centro.
+    //
+    // Levar o `dashoffset` a negativo faz a cauda entrar atrás da cabeça: a
+    // linha some pela ponta de FORA e o último pedaço visível é o do centro.
+    // Absorvida, não apagada.
+    const css = FONTE(CSS);
+    const quadro = css.slice(css.indexOf('@keyframes tracoDeConexao'));
+    const bloco = quadro.slice(0, quadro.indexOf('\n}'));
+    expect(
+      /stroke-dashoffset:\s*-\d/.test(bloco),
+      'O traço voltou a DESBOTAR em vez de drenar.\n'
+      + '  Sem `dashoffset` negativo ele chega ao centro e fica parado perdendo\n'
+      + '  opacidade — e como os cinco têm atrasos diferentes, sobram pedaços\n'
+      + '  fracos de várias linhas no meio ao mesmo tempo. Foi exatamente isso\n'
+      + '  que o dono chamou de "pontos estranhos ali no meio".',
+    ).toBe(true);
+  });
+
+  it('a opacidade não faz o trabalho de apagar', () => {
+    // A trava do desbotamento longo: entre o quadro em que o traço está
+    // INTEIRO (dashoffset 0) e o quadro em que ele começa a sumir, a opacidade
+    // precisa continuar em 1 — quem apaga é a geometria.
+    const css = FONTE(CSS);
+    const quadro = css.slice(css.indexOf('@keyframes tracoDeConexao'));
+    const bloco = quadro.slice(0, quadro.indexOf('\n}'));
+
+    const cheio = bloco.match(/(\d+)%\s*\{\s*stroke-dashoffset:\s*0(?:px)?;\s*opacity:\s*([\d.]+)/);
+    expect(cheio, 'Não achei o quadro do traço INTEIRO — a trava ficaria vazia.').toBeTruthy();
+    expect(
+      Number(cheio[2]),
+      `No instante em que o traço está inteiro (${cheio[1]}%) a opacidade já é `
+      + `${cheio[2]}.\n`
+      + '  Ele precisa chegar ao centro em opacidade CHEIA e sumir pela\n'
+      + '  geometria. Opacidade caindo com o traço inteiro é o desbotamento\n'
+      + '  parado que produziu os "pontos estranhos".',
+    ).toBe(1);
+  });
+
+  it('toda linha mede o MESMO comprimento para o tracejado', () => {
+    // `[12/09]` *"Tem uma verde que parou no meio da trajetória."*
+    //
+    // `stroke-dasharray` é medido em unidades do `viewBox`, e as cinco linhas
+    // têm comprimentos reais diferentes (~26 a ~42). Com
+    // `preserveAspectRatio="none"` o `viewBox` ainda é esticado DESIGUALMENTE,
+    // então o comprimento efetivo muda com a proporção da tela.
+    expect(
+      /pathLength="100"/.test(FONTE(SINAIS)),
+      'As ligações perderam o `pathLength="100"`.\n'
+      + '  Sem ele, o `stroke-dasharray: 100` do CSS significa uma fração\n'
+      + '  diferente em cada linha — e muda de novo conforme a proporção da\n'
+      + '  tela, porque o SVG não preserva o aspecto. O sintoma é uma linha\n'
+      + '  desenhando até o meio e parando.',
+    ).toBe(true);
+  });
+});

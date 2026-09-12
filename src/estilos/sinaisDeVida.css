@@ -77,13 +77,36 @@
 /* `[12/09]` A opacidade de pico subiu de 0,6 para 1: *"senti elas bem
  * apagadinhas"*. O gradiente já faz o traço nascer transparente na borda, então
  * 1 aqui não vira uma linha chapada — vira a ponta chegando no centro com
- * força, que é o pedido dele de *"energia se concentrando ali no meio"*. */
+ * força, que é o pedido dele de *"energia se concentrando ali no meio"*.
+ *
+ * ── `[12/09]` O traço DRENA para o centro; ele não desbota mais ─────────────
+ *
+ * Ele viu e descreveu certo: *"ao fim das animações as linhas somem aos poucos,
+ * mas fica uns pontos estranhos ali no meio, fica feio. Arruma um jeito dessas
+ * linhas sumirem logo após chegarem ao centro"*.
+ *
+ * **O que estava acontecendo.** O traço chegava ao centro em 56% e só então
+ * começava a perder opacidade, até 74% — 2,3 s desbotando **parado e inteiro**.
+ * Como os cinco têm atrasos diferentes, em qualquer instante havia traços em
+ * fases distintas de desbotamento, e o que sobrava perto do centro eram
+ * pedaços fracos de várias linhas ao mesmo tempo: os "pontos estranhos".
+ *
+ * **O conserto não é apagar mais rápido — é apagar pelo LADO CERTO.** Levando o
+ * `dashoffset` para NEGATIVO, a cauda entra atrás da cabeça: a linha some a
+ * partir da ponta de fora, e o último pedaço visível é o que está no centro.
+ * Ela é **absorvida** em vez de desbotar, que é a leitura que ele pediu — e não
+ * sobra nada parado no meio, porque em nenhum momento a linha fica parada.
+ *
+ * A opacidade só cai DEPOIS de o traço já ter sumido pela geometria, então ela
+ * não desenha nada: existe apenas para reiniciar o ciclo limpo. */
 @keyframes tracoDeConexao {
-  0%,  34% { stroke-dashoffset: 100; opacity: 0; }
-  42%      { opacity: 1; }
-  56%      { stroke-dashoffset: 0; opacity: 1; }
-  74%      { stroke-dashoffset: 0; opacity: 0; }
-  100%     { stroke-dashoffset: 100; opacity: 0; }
+  0%,  30% { stroke-dashoffset: 100;  opacity: 0; }
+  33%      { stroke-dashoffset: 100;  opacity: 1; }
+  /* chegou ao centro */
+  50%      { stroke-dashoffset: 0;    opacity: 1; }
+  /* a cauda entra atrás: a linha é sugada para dentro */
+  64%      { stroke-dashoffset: -100; opacity: 1; }
+  65%, 100% { stroke-dashoffset: -100; opacity: 0; }
 }
 
 /* O núcleo respira devagar — 5,2 s, mais lento que qualquer outra coisa da
@@ -115,8 +138,15 @@
  * 2,8 s), os cinco nascem acesos e apagam **um a um**, na ordem do atraso.
  *
  * Medido antes do conserto, em navegador: aos 400 ms, 4 dos 5 traços estavam
- * com opacidade 1 e `dashoffset` 0 — ou seja, desenhados por inteiro. Aos
- * 3.200 ms, zero. Os tempos batem exatamente com os atrasos.
+ * com **opacidade 1**; aos 3.200 ms, zero. Os tempos batem exatamente com os
+ * atrasos (0,7 · 1,4 · 2,1 · 2,8 s), que é o que prova o mecanismo.
+ *
+ * > **Correção do mesmo dia:** a primeira redação desta nota dizia "opacidade 1
+ * > e `dashoffset` 0". O segundo número era artefato do MEU instrumento —
+ * > `getComputedStyle` devolve `"100px"`, e o `Number()` que eu usei virava
+ * > `NaN`, que o `|| 0` transformava em zero. A opacidade (sem unidade) foi
+ * > medida corretamente e sustenta o diagnóstico sozinha; o `dashoffset`
+ * > daquela leitura não valia nada e saiu daqui.
  *
  * `backwards` manda aplicar o quadro de 0% JÁ durante o atraso. Uma palavra.
  *

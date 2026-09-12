@@ -297,9 +297,74 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**35 itens abertos** (+ 1 ideia sem compromisso)
+**37 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
+
+- ✅ **SEC-011 · `anon` lia 26 das 29 tabelas** — **FECHADO em 12/09**, e com
+  escopo maior do que o achado. O dono definiu a régua de papéis (*"não quero
+  que anon veja nada"*) e ela virou migration: `REVOKE ALL` nas 29 tabelas,
+  `GRANT SELECT (key, value, updated_at) ON site_config` como única exceção, e
+  `ALTER DEFAULT PRIVILEGES` para valer em tabela que ainda não existe.
+  Validado em `ROLLBACK` com usuário real (posts 275→275, comments 62→62), em
+  produção (`anon` lê só `site_config`, escreve NADA), e pela porta da frente
+  (`portas-do-banco.mjs` 46/46, HTTP 401 observado). Régua escrita em
+  `docs/regras/BANCO.md`; relatório em `db/2026-09-12-auditoria-bloco-a2-*.md`.
+
+- ✅ **SEC-012 · apagar a conta não pedia senha** — **FECHADO em 12/09**.
+  `delete_own_account(p_senha)` confere no SERVIDOR via `a_senha_confere`, um
+  auxiliar interno (revogado de `anon` e `authenticated`) que o cofre também
+  passou a usar — uma implementação só do `crypt`. A versão sem argumento foi
+  **apagada**, senão a porta continuaria aberta ao lado da nova. A trilha passou
+  a ser gravada **antes** do `DELETE` (o `logAudit` do cliente rodava depois, com
+  o ator já inexistente — falha silenciosa). Testado em `ROLLBACK` com usuário
+  descartável: senha errada recusa, senha certa apaga E deixa 1 registro.
+  Trava `exclusaoPedeSenha.test.js`, 6 asserções.
+
+- ✅ **SEC-013 · `notify_user` não deixava rastro** — **FECHADO em 12/09**.
+  Passou a registrar em `admin_logs` (`admin_notified_user`), exigir que o alvo
+  exista, limitar a 500 caracteres e aceitar só tipo de lista fechada. Provado
+  em produção: tipo inventado, texto de 501 e alvo inexistente são todos
+  recusados.
+
+- ⬜ `[12/09]` 🔵 **Falta um `is_owner()`, e é por isso que NOVE funções
+  escrevem `role = 'owner'` à mão.** *BLOCO B. **Correção de um achado meu
+  anterior**, que dizia "cinco funções escrevem a hierarquia à mão" — a
+  varredura que produziu aquele número procurava só `IN (...)`.*
+
+  Medido: `is_staff()` e `is_super()` existem; **`is_owner()` não**. E
+  `is_super()` é `role_rank >= 3`, que inclui `super_admin` — usá-lo numa função
+  só do fundador **abriria** o acesso. As nove estão **certas**; o que falta é o
+  auxiliar. O risco é nove cópias da mesma decisão divergirem no dia em que
+  alguém mudar o nome do papel.
+
+  **O que É lista de hierarquia à mão, e deveria virar `is_super()`:** três —
+  `unban_user`, `approve_unban_request`, `deny_unban_request`, todas com
+  `NOT IN ('super_admin','owner')`. Funcionam hoje.
+
+  **O que NÃO deve ser tocado:** `nominate_staff` exige `super_admin` literal e
+  exclui o fundador **de propósito** — a mensagem de erro diz por quê ("o
+  fundador é o avaliador independente"). É separação de funções, e uma varredura
+  automática a "consertaria".
+
+- ⬜ `[12/09]` 🔵 **O buraco que sobrou da régua de `anon`: `GRANT` explícito.**
+  O `ALTER DEFAULT PRIVILEGES` fecha a tabela NOVA por padrão, mas não impede
+  alguém de escrever `GRANT SELECT ... TO anon` numa migration futura. O que
+  pegaria isso é o `portas-do-banco.mjs`, e ele só enxerga as tabelas da lista
+  dele — tabela nova com grant explícito ficaria fora dos dois.
+
+  **Conserto possível:** o roteiro enumerar as tabelas em vez de usar lista
+  fixa, e exigir 401 em todas menos `site_config`. Não feito agora porque ele
+  roda com a chave anônima e não consegue listar o schema — precisaria de uma
+  RPC só para isso, e RPC nova aberta a `anon` é exatamente o que a régua
+  proíbe. Registrado para decidir com calma.
+
+- ✅ **`contagem_de_migrations()` chamável por `anon`** — **DECIDIDO MANTER** em
+  12/09, e a decisão está escrita em `docs/DECISOES.md`. Ela é usada pelo portão
+  de CI `espelho-de-migrations.mjs`, que roda com a chave anônima. Fechar
+  exigiria pôr a `service_role` no CI — trocar um inteiro exposto por uma
+  credencial mestra exposta é a conta errada. Ela não devolve dado nem dá poder:
+  cabe na régua do dono como exceção nomeada.
 
 - ✅ **SEC-001 · `game_keys.key_code` legível sem conta** — **FECHADO**.
   Migration `key_code_deixa_de_ser_legivel_sem_conta`, trava em
@@ -1219,10 +1284,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->114<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.714<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->115<!--/n--> arq ·
+  <!--n:src.lib.linhas-->11.945<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

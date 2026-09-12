@@ -152,6 +152,11 @@ export const TERRITORIO = {
     'src/components/conteudo',
     'src/components/contato',
     'src/components/auth',
+    // `[12/09]` Nasceu com o SEC-012 (apagar a conta passou a pedir a senha).
+    // Fica aqui e nao no SEGURANCA.md porque o que ela descreve e O QUE A TELA
+    // FAZ; o porque da senha existir e do territorio de seguranca, e esta
+    // escrito la.
+    'src/components/conta',
   ],
   // O que a equipe opera. O território dele são os painéis e o caminho de ban.
   'docs/PAINEIS.md': [

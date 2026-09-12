@@ -99,7 +99,14 @@ const ALVOS = [
   { arquivo: 'public/apple-touch-icon.png', lado: 180, margem: 0.17, raio: 0 },
   // Maskable: o Android corta um círculo de ~80% do lado, então a marca precisa
   // caber DENTRO desse círculo — mas não tão dentro que sobre anel vazio.
-  { arquivo: 'public/icone-maskable-512.webp', lado: 512, margem: 0.22, raio: 0 },
+  // `[12/09]` `recuoDaBorda: 0.11` — a borda precisa caber na ZONA SEGURA do
+  // maskable (o Android garante so o circulo central de 80%). Sem recuo ela
+  // fica na borda e o launcher a corta fora: foi o que o dono viu, borda no
+  // arquivo e nenhuma borda na tela de inicio.
+  {
+    arquivo: 'public/icone-maskable-512.webp', lado: 512, margem: 0.22, raio: 0,
+    recuoDaBorda: 0.11,
+  },
   // `[11/09]` O cartão de compartilhamento (`og:image`). Ele faltava, e o buraco
   // era visível: link do site colado no WhatsApp ou no Discord aparecia **sem
   // imagem nenhuma**, só com título e descrição.
@@ -184,6 +191,7 @@ function svgDoCartao({ largura, altura, arteBase64, larguraDaArte, alturaDaArte 
  */
 export function svgDaMarca({
   corpo = false, margem = 0, lado = 100, raio = 22, largura = null, altura = null,
+  recuoDaBorda = 0,
 } = {}) {
   // `[11/09]` Caixa RETANGULAR opcional, para o cartão de compartilhamento
   // (1200×630). A marca continua quadrada e centrada: esticá-la para preencher
@@ -234,10 +242,25 @@ export function svgDaMarca({
         // ao redimensionamento. E a cor deixou de ser branco: é o gradiente da
         // marca, verde de um lado e roxo do outro, então a borda passa a ser
         // assinatura em vez de contorno genérico.
-        + `<rect x="${cx / 192}" y="${cx / 192}"`
-        + ` width="${cx - cx / 96}" height="${cy - cx / 96}"`
-        + ` rx="${Math.max(raio - cx / 192, 0)}"`
-        + ` fill="none" stroke="url(#g)" stroke-opacity="0.55" stroke-width="${cx / 96}"/>`
+        + (() => {
+          // `[12/09]` O RECUO existe por causa do `maskable`, e o defeito era
+          // real: o dono viu a borda no arquivo aberto e NAO na tela de inicio.
+          //
+          // O manifesto declara `icone-maskable-512.webp` com
+          // `purpose: maskable`, e o Android PREFERE esse arquivo no launcher —
+          // depois aplica a mascara DELE por cima, cortando ~20% das bordas. A
+          // borda desenhada na borda e exatamente o que a mascara come.
+          //
+          // Com recuo, ela cai dentro da zona segura e sobrevive ao corte.
+          // Nos icones que NAO sao maskable o recuo e zero: ali ninguem corta,
+          // e a borda na borda e o que desenha a silhueta contra o preto.
+          const esp = cx / 96;
+          const rec = cx * recuoDaBorda + esp / 2;
+          return `<rect x="${rec}" y="${rec}"`
+            + ` width="${cx - rec * 2}" height="${cy - rec * 2}"`
+            + ` rx="${Math.max((raio || cx * 0.18) - rec, cx * 0.06)}"`
+            + ` fill="none" stroke="url(#g)" stroke-opacity="0.55" stroke-width="${esp}"/>`;
+        })()
       : '')
     + `<g transform="translate(${deslocamentoX} ${deslocamentoY}) scale(${escala})">`
     + `<path d="${CAMINHO_DA_MARCA}" fill="url(#g)" fill-rule="evenodd"/></g></svg>`;
@@ -281,6 +304,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       })
       : svgDaMarca({
         corpo: true, margem: alvo.margem, raio: alvo.raio, largura, altura,
+        recuoDaBorda: alvo.recuoDaBorda ?? 0,
       });
     const formato = alvo.arquivo.endsWith('.webp') ? 'image/webp'
       : alvo.arquivo.endsWith('.jpg') ? 'image/jpeg' : 'image/png';

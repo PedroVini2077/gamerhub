@@ -333,14 +333,37 @@ const SUPERFICIE_ANONIMA = {
   },
 
   game_keys: {
-    // A vitrine continua publica de proposito: o problema era o segredo, e o
-    // §22 manda a MENOR alteracao que o resolve. Estas colunas aqui existem
-    // para pegar a QUEDA SILENCIOSA — um revoke amplo que feche a vitrine
-    // junto deixaria este teste verde sem elas.
-    pode: ['id', 'game_title', 'platform', 'is_promo', 'discount_percent'],
-    naoPode: ['key_code'],
-    estrago: 'as chaves de jogo de verdade — o campo que o painel so mostra '
-      + 'quando a linha NAO e promocao',
+    // `[12/09]` A VITRINE FECHOU, e isto e mudanca de politica, nao regressao.
+    //
+    // O comentario anterior dizia "a vitrine continua publica de proposito".
+    // Deixou de ser verdade: o dono definiu a regua de papeis em 12/09 —
+    // *"nao quero que anon veja nada"* — e `/keys` sempre esteve atras de
+    // `RequireAuth`, entao ninguem deslogado alcancava essa vitrine de qualquer
+    // forma. O grant existia sem tela que o usasse.
+    //
+    // A trava fez exatamente o trabalho dela: acusou as cinco colunas fechando
+    // e perguntou se foi proposital. Foi.
+    pode: [],
+    naoPode: ['key_code', 'id', 'game_title', 'platform', 'is_promo',
+      'discount_percent'],
+    estrago: 'as chaves de jogo de verdade, e a vitrine inteira — que agora so '
+      + 'existe para quem tem conta',
+  },
+
+  // `[12/09]` As tabelas de LIVE. Elas nao estavam nesta lista, e o motivo de
+  // entrarem agora e o achado SEC-011: as tres tinham policy `USING (true)` E
+  // grant para `anon`. Nao vazavam porque estao VAZIAS — no dia da primeira
+  // live, o chat inteiro seria legivel sem conta. Estao aqui para que a porta
+  // nao reabra em silencio.
+  live_chat: {
+    pode: [],
+    naoPode: ['id', 'message', 'user_id', 'post_id'],
+    estrago: 'a conversa inteira de todas as lives, sem conta',
+  },
+  live_chat_timeouts: {
+    pode: [],
+    naoPode: ['id', 'user_id', 'created_by', 'post_id'],
+    estrago: 'qual moderador silenciou quem — metadado de moderacao publico',
   },
 };
 

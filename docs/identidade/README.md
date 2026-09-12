@@ -216,6 +216,20 @@ o que desenha a silhueta no preto. Nada disso toca o desenho da marca.
 > tamanhos gerados, e a cor é o gradiente da marca em vez de branco — a borda
 > passou a ser assinatura, não contorno. Tem trava: ela reprova espessura
 > constante.
+>
+> **E ela ainda não aparecia na TELA DE INÍCIO — segundo defeito, outra causa.**
+> O dono mandou dois prints: o arquivo aberto em tamanho grande **com** a borda,
+> e a tela de início **sem** ela. Os dois estavam certos.
+>
+> O manifesto declara `icone-maskable-512.webp` com `purpose: maskable`, e o
+> Android **prefere esse arquivo** no launcher — depois aplica a máscara dele por
+> cima, que garante apenas o **círculo central de 80%**. Borda desenhada na borda
+> é exatamente o que essa máscara come.
+>
+> O `maskable` passou a ter `recuoDaBorda: 0.11`: a borda cai dentro da zona
+> segura e sobrevive ao corte. Nos ícones que **não** são maskable o recuo é
+> zero — ali ninguém corta, e a borda na borda é o que desenha a silhueta contra
+> o preto.
 
 Travas em `src/lib/__tests__/marca.test.js`: o favicon tem que conter o mesmo
 caminho do componente; o raio não pode voltar como marca; ninguém pode copiar o

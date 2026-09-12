@@ -108,7 +108,18 @@ transforma esta pegadinha em bug silencioso (§4).
 **Chamadas pelo front (RPC):**
 
 - Auth/segurança: `check_login_status`, `reset_login_attempts`,
-  `record_banned_login_attempt`, `delete_own_account`.
+  `record_banned_login_attempt`, `delete_own_account(p_senha)`.
+
+  > **`[12/09]` `delete_own_account` passou a EXIGIR a senha** (SEC-012). Ela era
+  > uma linha — `DELETE FROM auth.users WHERE id = auth.uid()` — protegida só por
+  > dois `ConfirmModal`, que é validação de cliente e não vale nada contra quem
+  > chama a REST direto. A versão sem argumento **foi apagada**: deixá-la no ar
+  > manteria a porta aberta ao lado da nova.
+  >
+  > A senha é conferida por `a_senha_confere`, um auxiliar **interno**
+  > (`REVOKE` de `anon` e `authenticated`) que o `confere_a_propria_senha` do
+  > cofre também passou a usar — uma implementação só do `crypt` (§4). A trilha
+  > é gravada **antes** do `DELETE`, porque depois dele o ator não existe mais.
 - Ban: `ban_user`, `unban_user`, `request_unban`, `approve_unban_request`,
   `deny_unban_request`, `admin_unlock_login`, `get_blocked_logins`.
 - Recurso do próprio banido: `solicitar_revisao_do_proprio_ban` (um pedido por
