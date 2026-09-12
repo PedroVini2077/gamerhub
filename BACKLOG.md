@@ -297,9 +297,48 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**35 itens abertos** (+ 1 ideia sem compromisso)
+**37 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
+
+- ⬜ `[12/09]` 🟡 **SEC-011 · três tabelas de LIVE legíveis por quem NÃO tem
+  conta.** *Achado no BLOCO A da auditoria profunda. **Proposta — NÃO
+  executei**, porque é revoke (§7 🔴 alerta antes).*
+
+  **O que dá para fazer:** `GET /rest/v1/live_chat?select=*` com a chave anônima
+  (que é pública, está no pacote JS) devolve **o histórico inteiro do chat de
+  todas as lives**. Em `live_chat_timeouts`, a coluna `created_by` diz **qual
+  moderador silenciou quem**.
+
+  | Tabela | O que `anon` lê |
+  | --- | --- |
+  | `live_chat` | `message`, `user_id`, `post_id`, `created_at` |
+  | `live_chat_timeouts` | `user_id`, **`created_by`**, `expires_at`, `post_id` |
+  | `live_muted` | `user_id`, `post_id` |
+
+  **Por que é achado e não escolha:** `/lives` e `/lives/:id` estão as duas
+  atrás de `RequireAuth`. Nenhuma tela que um deslogado alcança lê essas
+  tabelas — o acesso nunca serviu a nada.
+
+  **O que limita o estrago hoje, e por que não conta como proteção:** o
+  `user_id` é uuid opaco para `anon`, porque `profiles` está revogada. Isso é
+  proteção de SEGUNDA ORDEM — some no dia em que alguém liberar uma coluna de
+  `profiles` (§1.3, *desconfiar de proteção acidental*).
+
+  **Solução:** `REVOKE SELECT ON live_chat, live_chat_timeouts, live_muted FROM
+  anon`, mantendo `authenticated`.
+
+  **Dependência já conferida ANTES de propor** (é o passo que este projeto pulou
+  três vezes e derrubou o site): as 6 policies que citam as tabelas são todas de
+  ESCRITA; as 5 funções são todas `SECURITY DEFINER`; os 4 triggers idem; e o
+  realtime de `live_chat`/`live_chat_timeouts` é assinado por `authenticated`,
+  que mantém o SELECT. Detalhe em
+  [`db/2026-09-12-auditoria-profunda-bloco-a.md`](db/2026-09-12-auditoria-profunda-bloco-a.md).
+
+- ⬜ `[12/09]` 🔵 **`contagem_de_migrations()` é chamável por `anon`.** Devolve
+  só um inteiro, então o risco é higiene. **Antes de fechar, descobrir quem
+  chama** — porta que ninguém usa é porta a fechar, mas fechar a que o CI usa
+  quebra o CI.
 
 - ✅ **SEC-001 · `game_keys.key_code` legível sem conta** — **FECHADO**.
   Migration `key_code_deixa_de_ser_legivel_sem_conta`, trava em
