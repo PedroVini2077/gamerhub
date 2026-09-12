@@ -160,6 +160,44 @@ Se algum dia isso precisar de trava de verdade e não de disciplina, o caminho
 é conectar o MCP com um papel restrito em vez do dono. Hoje não dá: auditoria
 e migration exigem esse nível. Registrado para quando deixar de exigir.
 
+### `[12/09]` A RÉGUA DE PAPÉIS — decidida pelo dono, e ela é um PORTÃO
+
+> Palavras dele: *"admin, super admin e owner são os que têm poderes no site e
+> acesso às coisas. Agora user e anon não pode 'nada', nada que dê poder a eles
+> ou ver coisas sensíveis. Não quero que anon veja nada — fecha isso para o anon
+> e para qualquer caso a partir de hoje"*.
+
+| Papel | O que pode |
+| --- | --- |
+| `owner`, `super_admin`, `admin` | poder e acesso, na hierarquia que as RPCs já impõem |
+| `authenticated` (user comum) | o **próprio** dado e o que é público **do site logado**. Nada que dê poder |
+| `anon` | **`site_config (key, value, updated_at)`. Mais nada.** |
+
+**Antes de criar tabela, policy ou grant, a pergunta é uma só: isto precisa
+existir para quem NÃO tem conta?** Se a tela que consome está atrás de
+`RequireAuth`, a resposta é não — e foi assim que `game_keys`,
+`community_post_media` e as três tabelas de live estavam abertas sem servir a
+tela nenhuma.
+
+**Nunca dê `GRANT ... TO anon` sem escrever ao lado qual tela pública o exige.**
+O `ALTER DEFAULT PRIVILEGES` fecha a tabela nova por padrão, mas **não** impede
+um grant explícito — e esse é o buraco que sobrou.
+
+**A exceção que existe, e por que ela é por COLUNA:** `site_config` carrega o
+modo manutenção, então o deslogado precisa lê-la, ou o site fora do ar não
+consegue dizer que está fora do ar. O grant é `(key, value, updated_at)` e não a
+tabela inteira, para que coluna nova nasça fechada — `updated_by` já tinha sido
+revogada assim no SEC-005.
+
+**O que o público alcança sem tabela:** RPC e Edge Function. Privilégio de
+FUNÇÃO não é tocado por revoke de TABELA — é por isso que `username_disponivel`,
+`check_login_status` e `verify-contact` continuam de pé.
+
+**Prova, não confiança:** `e2e/portas-do-banco.mjs` bate na REST API com a chave
+anônima de verdade e exige `HTTP 401`. Ele reprova nos DOIS sentidos — porta que
+abriu e porta que fechou —, então mudar a régua exige mudar a expectativa **com
+o motivo escrito ao lado**.
+
 ### Coisas específicas deste banco
 - RLS por **linha**; privilégio por **coluna** é por **papel**. "Dono vê tudo do
   próprio, nada do alheio" não se expressa com nenhum dos dois sozinho — precisa

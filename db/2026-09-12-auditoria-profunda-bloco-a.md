@@ -107,8 +107,21 @@ tabela. Medido com `information_schema.column_privileges`.
 | `live_muted` | `user_id`, `post_id` |
 
 **O que dá para fazer:** um `GET /rest/v1/live_chat?select=*` com a chave anônima
-— que é pública, está no pacote JS — devolve a conversa inteira. Em
-`live_chat_timeouts`, `created_by` diz **qual moderador** silenciou **quem**.
+— que é pública, está no pacote JS — **devolveria** a conversa inteira. Em
+`live_chat_timeouts`, `created_by` diria **qual moderador** silenciou **quem**.
+
+> ### ⚠️ CORREÇÃO minha, no mesmo dia — eu escrevi "devolve" e o certo era "devolveria"
+>
+> Ao continuar a auditoria eu medi o que `anon` **realmente lê**, assumindo o
+> papel. As três tabelas de live estão **VAZIAS** (0 linhas reais), então o
+> `GET` devolve uma lista vazia — não a conversa. Eu tinha lido o par
+> *policy `USING (true)` + grant* e afirmado o resultado como observado.
+> **Isso é inferência vestida de fato, que é a falha mais registrada deste
+> projeto (§1.1).**
+>
+> **O achado continua real, e a severidade não muda**: a porta está aberta e a
+> sala está vazia. No dia da primeira live, o chat inteiro passa a ser legível
+> sem conta, sem que ninguém mexa em nada. O que muda é o verbo.
 
 **Por que é achado e não escolha:** `/lives` e `/lives/:id` estão as duas atrás
 de `RequireAuth`. **Nenhuma tela que um visitante deslogado alcança lê essas
@@ -134,9 +147,8 @@ pulou três vezes e derrubou o site:
 | triggers | 4, todos `DEFINER` (`trg_wordlist_*`) |
 | publicação realtime | `live_chat` e `live_chat_timeouts` estão publicadas — **quem assina é `authenticated`**, e ele mantém o SELECT |
 
-**NÃO EXECUTADO.** É revoke, e o §7 manda alertar antes; a régua do §6 manda
-relatar e esperar em correção que não seja falha explorável de dano imediato.
-Esperando a decisão do dono.
+**~~NÃO EXECUTADO~~ — APROVADO E APLICADO no mesmo dia**, e com escopo maior do
+que esta proposta. Ver o relatório do BLOCO A2.
 
 ### 🔵 O resto das abertas — higiene, sem ação agora
 

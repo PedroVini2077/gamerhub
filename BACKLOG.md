@@ -297,48 +297,38 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**37 itens abertos** (+ 1 ideia sem compromisso)
+**36 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
-- ⬜ `[12/09]` 🟡 **SEC-011 · três tabelas de LIVE legíveis por quem NÃO tem
-  conta.** *Achado no BLOCO A da auditoria profunda. **Proposta — NÃO
-  executei**, porque é revoke (§7 🔴 alerta antes).*
+- ✅ **SEC-011 · `anon` lia 26 das 29 tabelas** — **FECHADO em 12/09**, e com
+  escopo maior do que o achado. O dono definiu a régua de papéis (*"não quero
+  que anon veja nada"*) e ela virou migration: `REVOKE ALL` nas 29 tabelas,
+  `GRANT SELECT (key, value, updated_at) ON site_config` como única exceção, e
+  `ALTER DEFAULT PRIVILEGES` para valer em tabela que ainda não existe.
+  Validado em `ROLLBACK` com usuário real (posts 275→275, comments 62→62), em
+  produção (`anon` lê só `site_config`, escreve NADA), e pela porta da frente
+  (`portas-do-banco.mjs` 46/46, HTTP 401 observado). Régua escrita em
+  `docs/regras/BANCO.md`; relatório em `db/2026-09-12-auditoria-bloco-a2-*.md`.
 
-  **O que dá para fazer:** `GET /rest/v1/live_chat?select=*` com a chave anônima
-  (que é pública, está no pacote JS) devolve **o histórico inteiro do chat de
-  todas as lives**. Em `live_chat_timeouts`, a coluna `created_by` diz **qual
-  moderador silenciou quem**.
+- ⬜ `[12/09]` 🔵 **O buraco que sobrou da régua de `anon`: `GRANT` explícito.**
+  O `ALTER DEFAULT PRIVILEGES` fecha a tabela NOVA por padrão, mas não impede
+  alguém de escrever `GRANT SELECT ... TO anon` numa migration futura. O que
+  pegaria isso é o `portas-do-banco.mjs`, e ele só enxerga as tabelas da lista
+  dele — tabela nova com grant explícito ficaria fora dos dois.
 
-  | Tabela | O que `anon` lê |
-  | --- | --- |
-  | `live_chat` | `message`, `user_id`, `post_id`, `created_at` |
-  | `live_chat_timeouts` | `user_id`, **`created_by`**, `expires_at`, `post_id` |
-  | `live_muted` | `user_id`, `post_id` |
+  **Conserto possível:** o roteiro enumerar as tabelas em vez de usar lista
+  fixa, e exigir 401 em todas menos `site_config`. Não feito agora porque ele
+  roda com a chave anônima e não consegue listar o schema — precisaria de uma
+  RPC só para isso, e RPC nova aberta a `anon` é exatamente o que a régua
+  proíbe. Registrado para decidir com calma.
 
-  **Por que é achado e não escolha:** `/lives` e `/lives/:id` estão as duas
-  atrás de `RequireAuth`. Nenhuma tela que um deslogado alcança lê essas
-  tabelas — o acesso nunca serviu a nada.
-
-  **O que limita o estrago hoje, e por que não conta como proteção:** o
-  `user_id` é uuid opaco para `anon`, porque `profiles` está revogada. Isso é
-  proteção de SEGUNDA ORDEM — some no dia em que alguém liberar uma coluna de
-  `profiles` (§1.3, *desconfiar de proteção acidental*).
-
-  **Solução:** `REVOKE SELECT ON live_chat, live_chat_timeouts, live_muted FROM
-  anon`, mantendo `authenticated`.
-
-  **Dependência já conferida ANTES de propor** (é o passo que este projeto pulou
-  três vezes e derrubou o site): as 6 policies que citam as tabelas são todas de
-  ESCRITA; as 5 funções são todas `SECURITY DEFINER`; os 4 triggers idem; e o
-  realtime de `live_chat`/`live_chat_timeouts` é assinado por `authenticated`,
-  que mantém o SELECT. Detalhe em
-  [`db/2026-09-12-auditoria-profunda-bloco-a.md`](db/2026-09-12-auditoria-profunda-bloco-a.md).
-
-- ⬜ `[12/09]` 🔵 **`contagem_de_migrations()` é chamável por `anon`.** Devolve
-  só um inteiro, então o risco é higiene. **Antes de fechar, descobrir quem
-  chama** — porta que ninguém usa é porta a fechar, mas fechar a que o CI usa
-  quebra o CI.
+- ✅ **`contagem_de_migrations()` chamável por `anon`** — **DECIDIDO MANTER** em
+  12/09, e a decisão está escrita em `docs/DECISOES.md`. Ela é usada pelo portão
+  de CI `espelho-de-migrations.mjs`, que roda com a chave anônima. Fechar
+  exigiria pôr a `service_role` no CI — trocar um inteiro exposto por uma
+  credencial mestra exposta é a conta errada. Ela não devolve dado nem dá poder:
+  cabe na régua do dono como exceção nomeada.
 
 - ✅ **SEC-001 · `game_keys.key_code` legível sem conta** — **FECHADO**.
   Migration `key_code_deixa_de_ser_legivel_sem_conta`, trava em

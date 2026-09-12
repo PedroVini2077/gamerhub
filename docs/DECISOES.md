@@ -2260,3 +2260,28 @@ transbordo.
 Ele **nomeia o culpado** em vez de só dizer o número: "a página tem 59 px a
 mais" manda procurar em 300 elementos. Provado reinjetando o vazamento real — as
 duas páginas falharam apontando o SVG.
+
+### `[12/09]` `contagem_de_migrations()` continua aberta a `anon` — exceção nomeada
+
+A régua de papéis de 12/09 diz que `anon` não vê nada. Esta função é a única
+exceção **de função** que sobrou, e ela é deliberada.
+
+**Quem a usa:** o portão de CI `scripts/espelho-de-migrations.mjs`, que compara
+quantas migrations existem no banco com quantas estão espelhadas no repositório
+— é o que pega o *"apliquei e esqueci de espelhar"*.
+
+**Por que não fechar.** Ele roda com a **chave anônima**. Fechar a função
+exigiria dar a `service_role` ao CI, ou seja **trocar um inteiro exposto por uma
+credencial mestra exposta**. A conta é obviamente pior: a `service_role` ignora
+RLS inteira.
+
+**Por que ela cabe na régua.** O dono escreveu *"nada que dê poder a eles ou ver
+coisas sensíveis"*. Um `count(*)` de migrations não é nenhum dos dois — não
+devolve linha, não devolve nome, não permite ação. O que ela revela é a
+maturidade do schema, o que é informação pública de qualquer projeto de código
+aberto — e este é.
+
+**A alternativa descartada** era mover o portão para uma Edge Function com
+segredo próprio. Isso é infraestrutura nova, com chave nova para rodar e vazar,
+para proteger um número. Não passa na conta do §0.2: *antes de ligar qualquer
+coisa nova, perguntar quantas vezes ela roda e o que ela custa*.

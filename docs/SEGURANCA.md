@@ -51,6 +51,46 @@
   conteúdo por qualquer usuário logado e leitura da tabela de usuários
   (incluindo `birth_date` e histórico de ban) **sem login**. Advisors de
   segurança: 64 → 42 avisos, 0 erros.
+### `[12/09]` A RÉGUA DE PAPÉIS — `anon` não lê o banco, e isso agora é privilégio
+
+> Decisão do dono, e ela vale para tudo daqui pra frente: *"admin, super admin e
+> owner são os que têm poderes no site e acesso às coisas. Agora user e anon não
+> pode 'nada'... não quero que anon veja nada — fecha isso para o anon **e para
+> qualquer caso a partir de hoje**"*.
+
+**O estado agora:** `anon` tem `SELECT` em **uma** tabela, por **três colunas** —
+`site_config (key, value, updated_at)` —, e **nenhum** privilégio de escrita em
+lugar nenhum. Antes eram 26 tabelas legíveis e 26 escrevíveis.
+
+**A exceção é única e tem motivo operacional:** `site_config` carrega o modo
+manutenção. Sem ela, o site fora do ar perde a capacidade de dizer que está fora
+do ar. O grant é **por coluna** de propósito — coluna nova nasce fechada.
+
+**O que o público continua alcançando** são RPCs e Edge Functions
+(`username_disponivel`, `check_login_status`, `verify-contact`): privilégio de
+FUNÇÃO não é tocado por revoke de TABELA. Conferido em transação.
+
+**Por que isto não era um vazamento, e mesmo assim foi fechado.** Medido antes:
+assumindo o papel `anon`, a RLS já barrava tudo que tinha dado dentro —
+`admin_logs` tem 2.561 linhas e `anon` via 0. O que foi fechado é a **distância**
+entre o que a policy permite hoje e o que o privilégio permitiria amanhã. Essa
+distância já tinha sido ocupada uma vez: `live_chat` tinha policy `USING (true)`
+**e** grant, e só não vazava porque a tabela está **vazia** — na primeira live,
+o chat inteiro seria legível sem conta.
+
+**A trava estrutural:** `ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON
+TABLES/SEQUENCES FROM anon`. É ela que faz a régua valer para tabela que ainda
+não existe, e não só para o retrato de hoje.
+
+**A trava de runtime:** `e2e/portas-do-banco.mjs`, que bate na REST API com a
+chave anônima de verdade e exige `HTTP 401`. Ela pega os dois sentidos — porta
+que abriu **e** porta que fechou. Foi ela que acusou esta própria mudança e
+perguntou se era proposital.
+
+**O que continua em aberto:** um `GRANT ... TO anon` escrito à mão numa migration
+futura passa por cima do default, e o `portas-do-banco.mjs` só enxerga as tabelas
+que estão na lista dele. Está no `BACKLOG.md`.
+
 - **URLs externas sempre saneadas** (`lib/url.js` → `safeExternalUrl`): só
   `http`/`https` viram `href`. Vale no cliente **e** no banco (`CHECK`
   constraints em `posts.embed_url`, `game_keys.promo_url`, `post_media.url`,
