@@ -102,7 +102,7 @@ export default function HighlightsStrip() {
     <nav
       ref={alvo}
       aria-label="Seções desta página"
-      className="grid grid-cols-2 md:grid-cols-5 gap-3 py-10"
+      className="grid grid-cols-2 md:grid-cols-5 gap-3 pb-8"
     >
       {SECOES.map((secao, i) => (
         <CartaDeDestaque

@@ -128,9 +128,15 @@ function Camadas({ progresso, introDone }) {
           `prioridade`: esta é a primeira tela, e a arte É o conteúdo dela. É a
           única arte da landing que pode ser ansiosa — a conta está em
           `docs/DESEMPENHO.md`. */}
-      <motion.div className="absolute inset-0" style={{ scale: escalaDaArte, opacity: opacidadeDaArte }}>
-        <ArteDaCena arte={CENAS.hero} prioridade />
-      </motion.div>
+      {/* O recorte fica na caixa de FORA, sem transformação: aplicado no mesmo
+          elemento que escala, ele recortaria na caixa já ampliada e não
+          recortaria nada. Ele existe porque o palco deixou de recortar na
+          vertical — ver `PalcoDeRolagem`. */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div className="h-full" style={{ scale: escalaDaArte, opacity: opacidadeDaArte }}>
+          <ArteDaCena arte={CENAS.hero} prioridade />
+        </motion.div>
+      </div>
 
       {/* ── `[12/09]` OS SINAIS DE VIDA ──────────────────────────────────────
           Eles ficam ENTRE a arte e o véu de propósito: o véu escurece o pé e o
@@ -165,7 +171,7 @@ function Camadas({ progresso, introDone }) {
         className="absolute inset-0"
         style={{ opacity: opacidadeDaConvergencia, scale: escalaDaConvergencia }}
       >
-        <ConvergenciaDoHub className="absolute inset-0" />
+        <ConvergenciaDoHub className="absolute inset-0" rastro />
       </motion.div>
 
       {/* ── MARCA ───────────────────────────────────────────────────────────

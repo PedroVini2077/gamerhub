@@ -267,3 +267,53 @@ describe('os sinais de vida do ATO 0', () => {
     ).toBe(true);
   });
 });
+
+describe('os sinais do ATO 0 são VISÍVEIS', () => {
+  const SINAIS = 'src/components/landing/prologo/SinaisDeVida.jsx';
+  const CSS = 'src/estilos/sinaisDeVida.css';
+
+  it('nenhum traço é fino demais para existir na tela', () => {
+    // `[12/09]` O bug: `strokeWidth="0.18"` JUNTO com
+    // `vector-effect="non-scaling-stroke"`. O efeito fixa a espessura em PIXEL
+    // DE TELA, então 0,18 é literalmente invisível — o desenho estava certo, o
+    // navegador desenhava, e ninguém via.
+    //
+    // Não é hipótese: a convergência do hero usa 1,4 com o mesmo efeito, e ela
+    // aparece. A diferença entre as duas era só este número.
+    const fonte = FONTE(SINAIS);
+    for (const [, largura] of fonte.matchAll(/strokeWidth="([\d.]+)"/g)) {
+      expect(
+        Number(largura),
+        `Um traço dos sinais está com ${largura} px de espessura.\n`
+        + '  Com `non-scaling-stroke` a espessura é em pixel de tela, não em\n'
+        + '  unidade do `viewBox`. Abaixo de ~0,5 px o traço some, e nada acusa:\n'
+        + '  o elemento existe no DOM e o navegador desenha nada.',
+      ).toBeGreaterThanOrEqual(0.5);
+    }
+  });
+
+  it('mais de um sinal convive na tela', () => {
+    // A conta que o dono percebeu como "muito sutil": 9 sinais a 1,4 s de
+    // distância, cada um visível 17% de 13 s (~2,2 s), dá UM por vez. Com 30%
+    // (~3,9 s) passam a conviver ~3.
+    //
+    // A trava confere a conta, e não a aparência: `visivel * ciclo >= 2 x
+    // espaçamento` é o mínimo para dois se sobreporem.
+    const css = FONTE(CSS);
+    const ciclo = Number(css.match(/animation: sinalDeVida ([\d.]+)s/)[1]);
+    const visivel = Number(css.match(/\n\s*(\d+)%\s*\{ opacity: 1; transform: translateY\(0\)[^}]*\}\n\s*36%/)?.[1]
+      ?? css.match(/(\d+)%\s*\{ opacity: 1; transform: translateY\(0\) scale\(1\); \}\s*\n\s*36%/)?.[1]);
+    const sinais = [...FONTE(SINAIS).matchAll(/atraso: '([\d.]+)s'/g)].map((m) => Number(m[1]));
+    const espacamento = sinais[1] - sinais[0];
+
+    expect(visivel, 'Não achei a janela visível no keyframe — a trava ficaria vazia.').toBeGreaterThan(0);
+    expect(
+      (visivel / 100) * ciclo,
+      `Cada sinal fica visível ${((visivel / 100) * ciclo).toFixed(1)} s, com `
+      + `${espacamento} s entre eles.\n`
+      + '  Com essa conta aparece UM de cada vez, e o ATO 0 volta a parecer\n'
+      + '  parado — que foi exatamente o que o dono relatou. É a única tela da\n'
+      + '  landing onde nada mais se move: ali, sutil vira nada.',
+    ).toBeGreaterThanOrEqual(espacamento * 2);
+  });
+});
