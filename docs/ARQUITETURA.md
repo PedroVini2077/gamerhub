@@ -453,6 +453,19 @@ src/
     │                      # CenaDaLanding (as cinco cenas com arte),
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot
+    │   ├── rodape/        # `[12/09]` O rodapé em TRÊS degraus, e o `LandingFooter`
+    │   │                  # virou só o compositor. Ele aparece em QUATRO páginas
+    │   │                  # (landing, /sobre e as de conteúdo legal) — mexer aqui
+    │   │                  # mexe nas quatro
+    │   │   ├── AssinaturaDoRodape.jsx # a marca, a tagline (a MESMA do ATO 0, de
+    │   │   │              # `atosDaLanding`) e os traços que IRRADIAM dela — o
+    │   │   │              # inverso do ato CONVERGÊNCIA do prólogo. Desenhados
+    │   │   │              # uma vez, sem laço: é o único lugar da página onde o
+    │   │   │              # movimento deve acabar
+    │   │   ├── ColunasDoRodape.jsx # as três colunas de navegação, em cascata.
+    │   │   │              # A lista de seções vem de `secoesDaLanding` — tem trava
+    │   │   └── CreditosDoRodape.jsx # créditos e o "Voltar ao início", que é
+    │   │                  # `button` e não âncora (âncora empilha histórico)
     │   ├── PrologoDaLanding.jsx # `[12/09]` OS CINCO ATOS que a rolagem conduz
     │   │                  # — ARTE, TRANSFORMAÇÃO, CONVERGÊNCIA, MARCA,
     │   │                  # GAMERHUB. Ele monta as camadas; o ritmo vem de

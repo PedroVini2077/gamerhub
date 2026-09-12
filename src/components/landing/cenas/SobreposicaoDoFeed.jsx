@@ -41,10 +41,25 @@ import PainelDaCena from './PainelDaCena';
  * bastam para o olho entender que ali tem gente, e continuam abstratos o
  * bastante para não competir com os posts que a própria arte desenha.
  */
+/**
+ * `[12/09]` As duas últimas são `soNoPc`, a pedido dele: *"ficou pequeno demais
+ * os elementos pra uma tela grande, tem como colocar mais elementos?"*.
+ *
+ * O feed é a única das cinco sobreposições que é uma **lista** — nas outras,
+ * "mais elementos" seria inventar conteúdo. Aqui é o oposto: três linhas num
+ * painel que cresceu 55% deixam sobra embaixo, e um feed com três posts contando
+ * que "não para" é a própria contradição.
+ *
+ * No celular elas ficam de fora porque lá o painel já ocupa 63% da largura e
+ * mora sobre uma arte em pé, com menos espaço livre — a mesma razão do
+ * `soCompleto` dos sinais do ATO 0.
+ */
 const PUBLICACOES = [
   { cor: 'from-neon-green to-cyan-400', nome: '@kaue', quando: 'agora', barra: 'w-full' },
   { cor: 'from-cyan-400 to-neon-purple', nome: '@nina_', quando: '2 min', barra: 'w-4/5' },
   { cor: 'from-neon-purple to-orange-400', nome: '@th1ago', quando: '5 min', barra: 'w-5/6' },
+  { cor: 'from-orange-400 to-red-400', nome: '@duh', quando: '8 min', barra: 'w-3/4', soNoPc: true },
+  { cor: 'from-cyan-400 to-neon-green', nome: '@lipe.rx', quando: '12 min', barra: 'w-11/12', soNoPc: true },
 ];
 
 /** As três batidas depois de as publicações assentarem, em milissegundos. */
@@ -77,7 +92,7 @@ export default function SobreposicaoDoFeed({ lado = 'esquerda' }) {
         {PUBLICACOES.map((post, i) => (
           <motion.div
             key={i}
-            className="flex items-center gap-2.5"
+            className={`items-center gap-2.5 ${post.soNoPc ? 'hidden md:flex' : 'flex'}`}
             initial={menosMovimento ? false : { opacity: 0, y: 14 }}
             animate={mostrar ? { opacity: 1, y: 0 } : undefined}
             transition={{ duration: 0.5, delay: i * 0.22, ease: [0.16, 1, 0.3, 1] }}

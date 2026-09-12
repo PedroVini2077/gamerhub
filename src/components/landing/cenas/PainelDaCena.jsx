@@ -48,6 +48,29 @@
  * POSIÇÃO daqui e dispensam o cartão — o que não pode divergir entre as cinco é
  * onde a camada pousa, não se ela tem borda.
  *
+ * ── `[12/09]` O painel CRESCE com a tela, e antes ele não crescia ───────────
+ *
+ * Ele viu testando no computador: *"ficou pequeno demais os elementos pra uma
+ * tela grande"*. Estava certo, e a causa era uma só — `w-[15.5rem]` são **248
+ * pixels fixos**, os mesmos num telefone de 390 e num monitor de 1440. O painel
+ * não encolheu; a tela cresceu em volta dele. Ele ocupava 63% da largura no
+ * celular e **17%** no computador.
+ *
+ * **A correção é `scale`, e não uma escada de larguras, e isso é deliberado.**
+ * Aumentar só a largura esticaria o cartão e deixaria o texto, os avatares e os
+ * ícones no mesmo tamanho — o painel ficaria grande e vazio, com um texto
+ * miúdo dentro. O que precisa crescer é a **camada inteira**, proporcional.
+ *
+ * E `scale` mora AQUI, num lugar só. A alternativa era escrever `md:` e `lg:`
+ * em cada tamanho de cada uma das cinco sobreposições — algumas dezenas de
+ * classes que divergiriam na primeira vez que alguém ajustasse uma delas, e que
+ * a sexta sobreposição não herdaria (§4).
+ *
+ * **A origem da transformação é a borda de que o painel se aproxima**, e essa é
+ * a mesma lição dos chips do ATO 0: crescer a partir do centro empurraria
+ * metade do painel para fora, porque ele mora a 5% da borda. Crescendo da borda
+ * para dentro, ele avança sobre a arte — que é onde há espaço.
+ *
  * @param {boolean} [props.vidro] Desenhar o cartão. `false` deixa só o
  *   posicionamento.
  * @param {'topo'|'meio'} [props.ancora] Onde o painel se apoia NO CELULAR.
@@ -63,6 +86,11 @@ export default function PainelDaCena({
        shadow-[0_8px_32px_rgba(0,0,0,0.55)]`
     : '';
 
+  // O celular fica em 1: lá o painel já ocupa 63% da largura, e crescer o
+  // deixaria maior que a arte que ele deveria pousar em cima.
+  const crescimento = 'md:scale-[1.3] lg:scale-[1.55] xl:scale-[1.75]';
+  const origem = textoNaEsquerda ? 'md:origin-right' : 'md:origin-left';
+
   return (
     <div
       aria-hidden
@@ -70,7 +98,7 @@ export default function PainelDaCena({
                   md:items-center md:pt-0 md:pb-0
                   ${textoNaEsquerda ? 'md:justify-end md:pr-[5%]' : 'md:justify-start md:pl-[5%]'}`}
     >
-      <div className={`${largura} max-w-[86vw] ${chrome}`}>
+      <div className={`${largura} max-w-[86vw] ${chrome} ${crescimento} ${origem}`}>
         {children}
       </div>
     </div>

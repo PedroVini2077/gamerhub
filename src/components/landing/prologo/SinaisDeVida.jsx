@@ -179,16 +179,34 @@ function Sinal({ sinal }) {
           não era de graça: cada `backdrop-filter` promove o elemento a uma
           camada própria de composição, e eram NOVE por cima de uma arte de tela
           cheia. */}
+      {/* `[12/09]` O chip CRESCE no computador, e a razão é a mesma dos painéis
+          das cenas: `text-[0.7rem]` são pixels fixos, então o chip ocupava a
+          mesma área num telefone de 390 e num monitor de 1440 — proporcional à
+          tela, ele minguava. As medidas do CELULAR não mudam: lá o problema era
+          o oposto, e a trava que impede o transbordo mede exatamente elas. */}
       <span
-        className="flex items-center gap-2 rounded-full border px-3 py-1.5
-                   font-mono text-[0.7rem] tracking-wide text-gray-100
+        className="flex items-center gap-2 md:gap-2.5 rounded-full border
+                   px-3 py-1.5 md:px-4 md:py-2 lg:px-5 lg:py-2.5
+                   font-mono text-[0.7rem] md:text-sm lg:text-base
+                   tracking-wide text-gray-100
                    bg-dark-900 whitespace-nowrap
                    shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
         style={{ borderColor: `${cor}66`, boxShadow: `0 0 14px ${cor}1f` }}
       >
-        {Icone && <Icone size={13} style={{ color: cor }} />}
+        {/* `size` dá o tamanho no celular; as classes o substituem a partir do
+            `md`, porque `size` vira atributo e CSS ganha de atributo. */}
+        {Icone && (
+          <Icone
+            size={13}
+            className="shrink-0 md:h-4 md:w-4 lg:h-[18px] lg:w-[18px]"
+            style={{ color: cor }}
+          />
+        )}
         {pulso && !Icone && (
-          <span className="sinal-pulso block h-2 w-2 rounded-full" style={{ background: cor }} />
+          <span
+            className="sinal-pulso block h-2 w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full"
+            style={{ background: cor }}
+          />
         )}
         {texto}
         {/* Três pontos que pulsam fora de fase: é o desenho universal de
@@ -198,7 +216,7 @@ function Sinal({ sinal }) {
             {[0, 0.2, 0.4].map((d) => (
               <span
                 key={d}
-                className="sinal-pulso block h-1.5 w-1.5 rounded-full"
+                className="sinal-pulso block h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
                 style={{ background: cor, animationDelay: `${d}s` }}
               />
             ))}

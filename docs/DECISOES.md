@@ -2140,3 +2140,64 @@ devolve o corte em silêncio. A terceira importa mais do que parece: fechar o p�
 de uma cena que **tem** arte depois faria as duas dissolverem na mesma faixa,
 abrindo um rasgo de fundo em vez de fechar um corte. Provadas reinjetando as
 três, uma de cada vez.
+
+### `[12/09]` A camada de produto MINGUAVA em tela grande — e isso piorava sozinho
+
+Ele testando no computador: *"as cenas ficaram ótimas… mas eu percebi algo,
+ficou pequeno demais os elementos pra uma tela grande, tem como colocar mais
+elementos? Ou crescer mais eles para desktop?"*.
+
+**A causa é uma linha:** `largura = 'w-[15.5rem]'` no `PainelDaCena` — **248
+pixels fixos**, os mesmos num telefone de 390 e num monitor de 1440. Medido nos
+dois: o painel ocupava **63%** da largura no celular e **17%** no computador. O
+painel não encolheu; a tela cresceu em volta dele.
+
+**E o defeito piora sem ninguém tocar em nada.** Cada monitor maior que aparecer
+no mundo deixa a camada de produto proporcionalmente menor. É a mesma família
+dos chips do ATO 0 no celular: um valor absoluto escolhido olhando **uma** tela.
+
+**A correção é `scale`, e não uma escada de larguras.** Aumentar só a largura
+esticaria o cartão e deixaria texto, avatares e ícones no mesmo tamanho — um
+painel grande com conteúdo miúdo dentro. O que precisa crescer é a camada
+inteira, proporcional: `md:1,3× · lg:1,55× · xl:1,75×`.
+
+E ela mora **num lugar só**. A alternativa era escrever `md:`/`lg:` em cada
+tamanho de cada uma das cinco sobreposições — dezenas de classes que divergiriam
+no primeiro ajuste, e que a sexta sobreposição não herdaria (§4).
+
+**A origem da transformação é a borda de que o painel se aproxima.** Ele mora a
+5% da borda: escalar a partir do centro jogaria metade do crescimento para fora
+da tela. Crescendo da borda para dentro, ele avança sobre a arte, que é onde há
+espaço. É literalmente a lição dos chips, aplicada antes de doer.
+
+**"Mais elementos" só no feed**, e a distinção é do conteúdo: ele é a única das
+cinco que é uma **lista**. Nas outras, "mais elementos" seria inventar coisa.
+Três linhas num painel 55% maior deixavam sobra embaixo — e um feed com três
+posts contando que "não para" é a própria contradição. Ficaram cinco no
+computador, três no celular.
+
+**Um defeito antigo apareceu junto, e só porque o tamanho cresceu:** o título das
+cenas usava `leading-[1.08]`, apertado demais para português — em "promoções que
+valem" a cedilha encostava na linha de cima. Passou para 1,18.
+
+### `[12/09]` Nada no CI perguntava se a página rola PARA O LADO
+
+Três bugs do mesmo dia — os chips do ATO 0, o SVG da assinatura do rodapé, e o
+risco que o `scale` das cenas criava — são **a mesma falha**: um elemento passa
+da borda, o dedo arrasta a página inteira, e o que está lá fora fica cortado.
+Sem erro, sem log, sem teste.
+
+Os três foram encontrados por ele, no telefone dele. **Essa é a definição de
+falha muda** (§1.5), e a resposta certa não era corrigir os três: era perguntar
+por que nenhum dos <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador fazia
+a pergunta.
+
+Agora o `e2e/conteudo-visivel.mjs` faz, e ele foi escolhido por já ser o roteiro
+que varre as páginas públicas **em janela de celular** — o mesmo arquivo que
+nasceu do bug de conteúdo invisível de 29/08. É a irmã lateral da mesma
+pergunta: *o conteúdo existe e não aparece*, uma vez por transparência, outra por
+transbordo.
+
+Ele **nomeia o culpado** em vez de só dizer o número: "a página tem 59 px a
+mais" manda procurar em 300 elementos. Provado reinjetando o vazamento real — as
+duas páginas falharam apontando o SVG.

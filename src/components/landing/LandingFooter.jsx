@@ -1,127 +1,59 @@
-import { Link } from 'react-router-dom';
-import { Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail, FileText } from 'lucide-react';
-// Marca vem do `react-icons/fa6`, não do lucide (§4 da convenção de UI) — e o
-// lucide nem tem mais `Github`, ele saiu do pacote junto com os outros ícones
-// de marca.
-import { FaGithub } from 'react-icons/fa6';
-import { SECOES, alvoDaSecao } from './secoesDaLanding';
-import MarcaGH from '../ui/MarcaGH';
+import AssinaturaDoRodape from './rodape/AssinaturaDoRodape';
+import ColunasDoRodape from './rodape/ColunasDoRodape';
+import CreditosDoRodape from './rodape/CreditosDoRodape';
 
 /**
- * O rodapé da landing.
+ * O rodapé — e ele NÃO é só da landing, apesar do nome.
  *
- * ── Por que ele cresceu ─────────────────────────────────────────────────────
+ * ── Onde ele aparece, e por que isso decide o que pode mudar aqui ───────────
  *
- * Pedido do dono: *"queria fazer um footer bonitão"*, e a decisão dele foi
- * começar pela landing (camada 1 — ver `CLAUDE.md` §0.4), avaliando depois uma
- * versão para o site logado, que tem barra lateral e cabeçalho próprios e onde
- * rodapé grande disputa espaço com o conteúdo.
+ * Quatro lugares: a landing, a `/sobre`, e as páginas de conteúdo legal
+ * (`/privacidade`, `/regras`, `/termos`) pelo `PaginaDeConteudo`. Qualquer
+ * mudança aqui aparece nos quatro — e foi o que decidiu **não** mexer no
+ * `border-t`: na landing ele parece redundante depois de a última arte
+ * dissolver, mas nas outras três ele é o único separador que existe.
  *
- * O que existia eram duas linhas: a marca e "v1.0 — Powered by Supabase". Não
- * levava a lugar nenhum, e num site que quer crescer o rodapé é a segunda
- * navegação — o lugar onde quem rolou até o fim procura o que não achou.
+ * ── `[12/09]` Por que ele foi reorganizado ──────────────────────────────────
  *
- * ── A lista de seções não é escrita aqui ────────────────────────────────────
+ * Pedido do dono: *"pense no footer como o epílogo da experiência… a sensação
+ * de 'a experiência terminou, mas o universo do GamerHub continua aqui'"*, com
+ * dois limites que valem palavra por palavra — *"não quero outro espetáculo
+ * visual"* e *"menos espetáculo, mais assinatura"*.
  *
- * Ela vem de `secoesDaLanding.js`, a mesma que alimenta a faixa do topo. Rodapé
- * com lista própria é o caso clássico de cópia que diverge (§4).
+ * A estrutura antiga era **quatro colunas iguais**, e a primeira delas era a
+ * marca espremida num quarto da largura, ao lado dos links. Isso dá à
+ * identidade o mesmo peso visual de uma lista de links — que é o oposto de
+ * assinatura.
+ *
+ * A hierarquia agora tem três degraus, e cada um é um arquivo:
+ *
+ * | | o quê | como entra |
+ * | --- | --- | --- |
+ * | `AssinaturaDoRodape` | a marca, a tagline e os traços que saem dela | 22 px, 0,85 s |
+ * | `ColunasDoRodape` | as três colunas de navegação | 12 px, em cascata de 0,08 |
+ * | `CreditosDoRodape` | créditos e o voltar ao início | só opacidade |
+ *
+ * **As três entradas desaceleram na ordem**, de propósito: o rodapé inteiro é
+ * uma frenagem depois do ritmo da landing, e a última coisa a aparecer quase
+ * não se move. O `fadeUpReveal` das cenas desloca 56 px — usá-lo aqui daria ao
+ * epílogo o mesmo impulso do que veio antes.
+ *
+ * ── Por que três arquivos e não um ──────────────────────────────────────────
+ *
+ * O arquivo tinha 127 linhas e a reforma o levaria a ~290 — dentro do limite de
+ * 300 do §4, e exatamente o tipo de arquivo que passa dele na próxima mudança.
+ * A regra manda entregar dividido quando eu SEI que vou fazer crescer, em vez
+ * de criar a dívida para pagar depois.
+ *
+ * O corte é por responsabilidade, não por tamanho: identidade, navegação e
+ * créditos mudam por motivos diferentes e em momentos diferentes.
  */
-
-const ANO = new Date().getFullYear();
-
-function Coluna({ titulo, children }) {
-  return (
-    <div className="space-y-3">
-      <h3 className="font-display text-xs tracking-widest uppercase text-gray-500">{titulo}</h3>
-      <ul className="space-y-2">{children}</ul>
-    </div>
-  );
-}
-
-function ItemDeLink({ para, href, icone: Icone, children }) {
-  const classe = 'inline-flex items-center gap-2 text-sm font-mono text-gray-400 '
-    + 'hover:text-neon-green transition-colors';
-  return (
-    <li>
-      {para
-        ? <Link to={para} className={classe}>{Icone && <Icone size={13} />}{children}</Link>
-        : <a href={href} className={classe}>{Icone && <Icone size={13} />}{children}</a>}
-    </li>
-  );
-}
-
 export default function LandingFooter() {
   return (
     <footer className="border-t border-dark-600 mt-10">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-12 grid gap-10 md:grid-cols-4">
-        <div className="space-y-3 md:col-span-1">
-          <div className="flex items-center gap-2">
-            <MarcaGH tamanho={18} />
-            <span className="font-display font-bold text-neon-green tracking-wider">GAMER</span>
-            <span className="font-display font-bold text-white tracking-wider">HUB</span>
-          </div>
-          <p className="text-xs text-gray-500 font-body leading-relaxed">
-            Feed colaborativo, mural, lives com chat ao vivo, keys grátis e ranks
-            por XP — feito pra quem vive games.
-          </p>
-        </div>
-
-        <Coluna titulo="O que tem aqui">
-          {SECOES.map(({ id, rotulo }) => (
-            // `para` e nao `href`: este rodape aparece na landing E na
-            // pagina "Sobre". Uma ancora relativa (`#feed`) so existe na
-            // landing — na Sobre ela apontava para uma secao inexistente e o
-            // clique nao fazia nada. O objeto com `pathname` leva para a
-            // landing E rola ate a secao, das duas paginas, sem recarregar.
-            <ItemDeLink key={id} para={{ pathname: '/', hash: alvoDaSecao(id) }}>
-              {rotulo}
-            </ItemDeLink>
-          ))}
-        </Coluna>
-
-        <Coluna titulo="O projeto">
-          <ItemDeLink para="/sobre" icone={Info}>Sobre o GamerHub</ItemDeLink>
-          <ItemDeLink para="/privacidade" icone={ShieldCheck}>Privacidade</ItemDeLink>
-          <ItemDeLink para="/regras" icone={Scale}>Regras da comunidade</ItemDeLink>
-          <ItemDeLink para="/termos" icone={FileText}>Termos de uso</ItemDeLink>
-          <ItemDeLink
-            href="https://github.com/PedroVini2077/gamerhub"
-            icone={FaGithub}
-          >
-            Código no GitHub
-          </ItemDeLink>
-        </Coluna>
-
-        <Coluna titulo="Sua conta">
-          <ItemDeLink para="/login" icone={LogIn}>Entrar ou criar conta</ItemDeLink>
-          {/* `[02/09]` Estas duas linhas dividem as pessoas por uma pergunta
-              só: **você ainda consegue entrar?**
-
-              Antes elas eram duas mensagens quase iguais ("Conta bloqueada?" e
-              "Fui banido — ver meu caso") levando as duas ao MESMO lugar, o
-              login. Isso obrigava quem tinha perdido o acesso a descobrir
-              sozinho que o login não ia resolver o caso dela.
-
-              Quem CONSEGUE entrar deve ir ao login, e não ao formulário: a
-              tela de banimento mostra o motivo, a linha do tempo do caso e o
-              recurso na hora. O formulário levaria dias e chegaria ao mesmo
-              lugar. Quem NÃO consegue entrar não tem essa porta, e é para ela
-              que o /contato existe. */}
-          <ItemDeLink para="/login" icone={ShieldQuestion}>Fui banido — ver meu caso</ItemDeLink>
-          <ItemDeLink para="/contato" icone={Mail}>Não consigo entrar na conta</ItemDeLink>
-        </Coluna>
-      </div>
-
-      <div className="border-t border-dark-700">
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-gray-600 font-mono">
-            © {ANO} GamerHub — projeto independente, feito por um gamer.
-          </p>
-          <p className="text-xs text-gray-700 font-mono">
-            // construído com React, Supabase e muito café
-          </p>
-        </div>
-      </div>
+      <AssinaturaDoRodape />
+      <ColunasDoRodape />
+      <CreditosDoRodape />
     </footer>
   );
 }

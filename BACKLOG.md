@@ -102,6 +102,22 @@ mascara o TOPO da cena que chega, e o `FinalCTA` é a única sem cena depois, en
 a borda de baixo dele ficou exposta. Máscara com `fechaEmbaixo` + a margem
 inferior fora. Três travas, provadas uma a uma. Em `docs/DECISOES.md`.
 
+**`[12/09]` AJUSTE 4 — o rodapé virou EPÍLOGO, e a camada de produto cresceu.**
+Dois pedidos dele no mesmo bloco. O rodapé ganhou três degraus (assinatura →
+navegação → créditos + voltar ao início), com entradas que **desaceleram na
+ordem**; os traços da assinatura são o inverso do ato CONVERGÊNCIA. E as
+sobreposições das cinco cenas cresciam: `w-[15.5rem]` eram 248 px FIXOS, 63% da
+tela no celular e **17%** no monitor. `scale` no `PainelDaCena` (1,3 / 1,55 /
+1,75), +2 linhas no feed no PC, chips do ATO 0 maiores, e o `leading` do título
+das cenas de 1,08 para 1,18 — a cedilha de "promoções" encostava na linha de
+cima. Em `docs/DECISOES.md`.
+
+**`[12/09]` O buraco que os três bugs revelaram, e ele era do CI.** Nenhum dos
+17 roteiros de navegador perguntava se a página **rola para o lado**. Os chips, o
+SVG do rodapé e o risco do `scale` são a mesma falha muda, e os três foram
+achados por ele no telefone. O `e2e/conteudo-visivel.mjs` passou a perguntar, e
+a NOMEAR o elemento culpado.
+
 **`[12/09]` A LANDING PAUSA AQUI, a pedido dele** — *"já trabalhamos demais
 nessa landing page"*. Não é abandono: o que sobrou está listado no fim desta
 seção, e a fila abaixo volta a ser a prioridade.
@@ -1166,7 +1182,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->113<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.444<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->11.513<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
