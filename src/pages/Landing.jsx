@@ -1,6 +1,5 @@
 import usePonteiroDaPagina from '../hooks/usePonteiroDaPagina';
 import LandingNav from '../components/landing/LandingNav';
-import FluxoDeDados from '../components/landing/FluxoDeDados';
 import PrologoDaLanding from '../components/landing/PrologoDaLanding';
 import CenaDaLanding from '../components/landing/CenaDaLanding';
 import CenaPresa from '../components/landing/CenaPresa';
@@ -27,17 +26,27 @@ import { CENAS } from '../lib/cenasDaLanding';
  *   baixo dele seria atropelo, não ambiente.
  */
 export default function Landing({ introDone = true }) {
-  // UM ouvinte de ponteiro para a landing inteira. Quem consome são o
-  // `FluxoDeDados` e a `MarcaFlutuante`, cada um no seu ramo da árvore.
+  // UM ouvinte de ponteiro para a landing inteira. `[12/09]` Com o
+  // `FluxoDeDados` fora daqui, quem consome `--ponteiro-x/y` é a
+  // `MarcaFlutuante` — o hook CONTINUA necessário, e apagá-lo junto teria
+  // deixado a marca do hero parada sem ninguém notar de imediato.
   usePonteiroDaPagina();
 
+  // ── `[12/09]` O `FluxoDeDados` SAIU daqui, e não é porque ele é ruim ──────
+  //
+  // Ordem do dono: *"ele simplesmente perdeu relevância diante da nova
+  // linguagem visual... uma cachoeira de dados atrás de tudo começa a
+  // competir"*. Com as artes ocupando a tela inteira ele mal aparecia — e onde
+  // aparecia, disputava com o assunto.
+  //
+  // **Ele continua vivo e em uso**: o site logado o monta pelo `FundoDaSecao`,
+  // com a cor de cada seção. O que saiu foi a participação dele NA LANDING.
+  //
+  // `grid-bg` e `scanline-overlay` FICAM, e a distinção é do próprio pedido
+  // dele: o fluxo era **elemento visual ativo**; estes dois são **textura
+  // ambiental**, sem movimento próprio competindo com a cena.
   return (
     <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay relative">
-      <FluxoDeDados />
-
-      {/* `relative z-10`: o conteúdo inteiro fica ACIMA da camada de dados.
-          Sem isto o fluxo passaria por cima do texto — que é a diferença entre
-          ambientação e poluição. */}
       <div className="relative z-10">
       <LandingNav />
       {/* `[12/09]` O hero deixou de ser uma tela e virou os CINCO ATOS que a
@@ -46,7 +55,14 @@ export default function Landing({ introDone = true }) {
           monta agora é o prólogo. Ver `components/landing/PrologoDaLanding.jsx`. */}
       <PrologoDaLanding introDone={introDone} />
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6">
+      {/* ── `[12/09]` A faixa INVADE o fim do prólogo ────────────────────────
+          A margem negativa faz as cartas subirem por cima dos últimos 12vh da
+          cena presa do hero — que é onde ele já terminou de se montar e só há
+          espaço vazio embaixo do botão.
+          É o que transforma *"acabou o hero, começaram os cards"* em *"o hero
+          cede e os cards assumem"*. O `z-20` é obrigatório: sem ele a cena
+          presa, que vem antes no fluxo, ficaria por cima. */}
+      <div className="relative z-20 -mt-[8vh] md:-mt-[12vh] max-w-5xl mx-auto px-4 md:px-6">
         <HighlightsStrip />
       </div>
 
@@ -77,7 +93,7 @@ export default function Landing({ introDone = true }) {
           titulo="Um feed que não para"
           descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa."
           lado="esquerda"
-          revelacao="deslize"
+          revelacao="costura"
           sobreposicao={() => <SobreposicaoDoFeed lado="esquerda" />}
         />
 

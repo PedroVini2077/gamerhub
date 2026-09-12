@@ -1900,3 +1900,63 @@ para o vazio **sem nada acusar**.
 
 Então cada sobreposição é um objeto do GamerHub **pousado** na cena, posicionado
 por uma regra (do lado oposto ao texto) e não por coordenadas medidas na imagem.
+
+---
+
+## `[12/09]` O `FluxoDeDados` sai da LANDING — e continua vivo no site logado
+
+**Decisão do dono, com o motivo dele:** *"não é porque o efeito seja ruim. Ele
+simplesmente perdeu relevância diante da nova linguagem visual... uma cachoeira
+de dados atrás de tudo começa a competir com a linguagem principal. Além disso,
+atualmente ela mal é percebida."*
+
+Ele está certo nas duas metades. Com as artes ocupando a faixa inteira e as
+cenas presas cobrindo a tela, os traços ficavam escondidos na maior parte da
+página — e onde apareciam, disputavam com o assunto do quadro.
+
+**O que NÃO saiu, e a distinção é dele:** `grid-bg` e `scanline-overlay` ficam.
+
+| | o que é | por isso |
+| --- | --- | --- |
+| `FluxoDeDados` | **elemento visual ativo** — tem movimento próprio | compete com a cena |
+| `grid-bg`, `scanline-overlay` | **textura ambiental** — não se move sozinha | não compete |
+
+**E o componente continua em uso.** O site logado o monta pelo `FundoDaSecao`,
+com a cor de cada seção (`lib/acentoDaSecao.js`). Apagá-lo junto teria sido ir
+além do pedido e matar um recurso que funciona onde não há arte competindo.
+
+> **A armadilha que quase peguei:** `usePonteiroDaPagina` foi criado por causa
+> do fluxo, e apagar os dois juntos parece limpeza. A `MarcaFlutuante` lê
+> `--ponteiro-x` no CSS — sem o hook ela pararia de reagir ao ponteiro **sem
+> erro nenhum**, porque a variável tem valor padrão e o `calc` continua válido.
+> Tem trava.
+
+---
+
+## `[12/09]` A COSTURA — como uma cena passa a invadir a anterior
+
+**O diagnóstico dele:** *"as cenas individualmente estão cinematográficas, mas a
+página ainda denuncia que são blocos independentes"*. E a régua: *"não pense em
+'como colocar uma animação entre duas imagens'. Pense em 'como fazer a imagem A
+se transformar na imagem B'"*.
+
+**A solução tem duas metades, e uma sem a outra não funciona:**
+
+| | o que faz | sozinha |
+| --- | --- | --- |
+| **margem negativa** | a cena sobe por cima do fim da anterior | a borda dura aparece por cima: fica **pior** que o corte |
+| **máscara no topo** | apaga a borda de cima da cena que chega | dissolve para o vazio: o corte continua onde estava |
+
+**Por que máscara e não um véu por cima.** Um gradiente sobreposto escureceria o
+que está embaixo — a cena anterior perderia brilho na emenda. A máscara apaga a
+arte **nova** na faixa de emenda e deixa a anterior intacta: é dissolução, não
+sombra.
+
+**Por que não custa quadro.** A máscara é estática — não anima, não é
+recalculada. O custo é uma camada de composição, uma vez. Foi o mesmo raciocínio
+que descartou `clip-path` animado nas cortinas.
+
+**A costura é um TIPO de revelação, não um segundo eixo.** Cena costurada não
+recebe cortina nem deslize: invadir a anterior já é a entrada. Duas entradas na
+mesma cena brigam — uma desliza de lado enquanto a outra dissolve por cima —, e
+o resultado é movimento sem leitura.

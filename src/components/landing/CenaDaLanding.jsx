@@ -51,6 +51,11 @@ export default function CenaDaLanding({
   // condicional seria hook atrás de `if`, que as Rules of Hooks proíbem.
   const progresso = useProgressoDeRolagem(alvo, 'solta');
   const desliza = revelacao === 'deslize';
+  // `costura` é um TIPO de revelação, e não um segundo eixo: com ela a cena
+  // não tem entrada própria nenhuma — invadir a anterior JÁ é a entrada. Duas
+  // entradas na mesma cena brigariam (uma desliza de lado enquanto a outra se
+  // dissolve por cima), e o resultado seria movimento sem leitura.
+  const costura = revelacao === 'costura';
 
   return (
     <motion.section
@@ -58,19 +63,48 @@ export default function CenaDaLanding({
       id={id}
       // `scroll-mt` compensa a barra fixa do topo: sem isso o link leva a seção
       // para debaixo dela, e o visitante cai num lugar que parece o errado.
-      style={{ scrollMarginTop: '5rem' }}
       variants={desliza ? entradaDaCena(lado) : undefined}
       initial={desliza ? 'initial' : undefined}
       whileInView={desliza ? 'animate' : undefined}
       viewport={desliza ? { once: true, amount: 0.25 } : undefined}
-      className="relative overflow-hidden md:rounded-2xl my-8 md:my-16"
+      className={`relative overflow-hidden md:rounded-2xl my-8 md:my-16
+                  ${costura ? '-mt-[9vh] md:-mt-[12vh] z-10' : ''}`}
+      // ── `[12/09]` A COSTURA: a cena não começa, ela INVADE ────────────────
+      //
+      // Diagnóstico do dono: *"a página ainda denuncia que são blocos
+      // independentes"*, e a régua que ele deu: *"não pense em como colocar
+      // uma animação entre duas imagens. Pense em como fazer a imagem A se
+      // transformar na imagem B"*.
+      //
+      // Duas coisas, e só duas:
+      //
+      // 1. **margem negativa** — a cena sobe por cima do fim da anterior. Sem
+      //    sobreposição no LAYOUT não existe transformação possível: duas
+      //    caixas que se tocam só podem trocar de vez.
+      // 2. **máscara no topo** — a borda de cima deixa de existir. É ela que
+      //    dizia "esta imagem acabou aqui"; sem ela a arte nova aparece
+      //    ATRAVÉS da anterior.
+      //
+      // Por que máscara e não um gradiente por cima: um véu sobreposto
+      // escureceria o que está embaixo. A máscara apaga a arte NOVA na faixa
+      // de emenda, deixando a anterior intacta — é dissolução, não sombra.
+      //
+      // E ela é ESTÁTICA: não anima, não é recalculada por quadro. O custo é
+      // uma camada de composição, uma vez.
+      style={{
+        scrollMarginTop: '5rem',
+        ...(costura && {
+          maskImage: 'linear-gradient(to bottom, transparent 0, #000 14vh)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 14vh)',
+        }),
+      }}
     >
       <ArteDaCena arte={arte} prioridade={prioridade} />
       <TextoDaCena eyebrow={eyebrow} titulo={titulo} descricao={descricao} lado={lado} />
 
       {sobreposicao?.(progresso)}
 
-      {!desliza && <CortinaDaCena eixo={revelacao} />}
+      {!desliza && !costura && <CortinaDaCena eixo={revelacao} />}
     </motion.section>
   );
 }

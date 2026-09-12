@@ -453,6 +453,10 @@ src/
     │   ├── ConteudoDoHero.jsx # `[12/09]` O que se LÊ no hero (sobrancelha,
     │   │                  # título, parágrafo, botão, avisos). Saiu do `Hero`
     │   │                  # porque tem dois donos: ele e o último ato do prólogo
+    │   ├── HighlightsStrip.jsx # O índice clicável da página. `[12/09]` Deixou
+    │   │                  # de ser uma SEÇÃO: as cartas sobem conduzidas pela
+    │   │                  # rolagem, invadindo o fim do prólogo, e cedem quando
+    │   │                  # o feed entra. Elas continuam links para as âncoras
     │   ├── CenaPresa.jsx # `[12/09]` A cena que PRENDE na tela enquanto a
     │   │                  # rolagem passa. Só para cena que tem uma
     │   │                  # TRANSFORMAÇÃO a contar — duas das cinco. Prender
