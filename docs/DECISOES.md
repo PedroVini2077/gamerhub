@@ -1999,3 +1999,66 @@ com o recuo dele, porque texto encostado na borda não se lê.
 **O que NÃO saiu:** `overflow-hidden`. Sem ele, a arte ampliada durante o gesto
 de chegada criaria barra de rolagem horizontal — e barra horizontal numa landing
 é o tipo de defeito que só aparece no aparelho de outra pessoa.
+
+---
+
+## `[12/09]` O recorte do palco passou a ser só HORIZONTAL — e o rastro atravessa a emenda
+
+**O que ele viu, com print:** *"as linhas que vc desenhou com alguns objetos indo
+em direção a logo do site, elas estão cortadas, antes dessa reformulação elas
+atravessavam até os cards"*.
+
+**A causa, e ela é minha:** o elemento preso do palco tinha `overflow-hidden`,
+porque a arte escala até 1,18 e criaria barra de rolagem horizontal. `hidden`
+recorta nos **dois** eixos — então o SVG da convergência terminava exatamente na
+altura da tela. O hero antigo usava `overflow-x-clip`, que é o único valor que
+segura um eixo e deixa o outro `visible`. Eu troquei sem perceber o que a troca
+levava junto.
+
+**O conserto tem três partes, e nenhuma funciona sozinha:**
+
+| | o que faz |
+| --- | --- |
+| o palco volta a `overflow-x-clip` | o eixo y deixa de recortar |
+| a arte ganha contêiner de recorte **próprio** | ela é quem precisava do recorte; e ele fica num elemento SEM transformação, senão recortaria na caixa já ampliada — ou seja, não recortaria nada |
+| o `<svg>` da convergência ganha `overflow: visible` | SVG recorta no próprio `viewBox` **antes** de qualquer ancestral: sem isto o rastro seria desenhado e descartado |
+
+**O rastro em si não muda a composição do hero.** Os trajetos originais
+continuam idênticos; o que existe agora é uma **continuação** a partir do ponto
+externo de cada trajeto que desce, com um quinto da intensidade, apagando
+sozinha antes de chegar na primeira cena. Só para baixo — continuar para cima
+desenharia atrás do cabeçalho, onde não há nada para atravessar.
+
+---
+
+## `[12/09]` Os sinais do ATO 0 ficaram maiores, e o motivo corrige uma régua minha
+
+**O pedido:** *"gostei das animações do ato 0, eu só achei muito sutis... será
+que deixar esses elementos maiores, ou colocar mais, atrapalharia? Pq o começo é
+tudo parado mesmo, então precisa ter movimento"*.
+
+**Ele está certo, e o erro foi de calibragem, não de conceito.** Eu mirei em
+*"mais descoberta do que percebida"*, que era o pedido original — e passei do
+ponto para o lugar onde a cena acontece. **O ATO 0 é a única tela da landing em
+que nada mais se move**: a arte está parada, a frase está parada, e não há
+rolagem em curso. Numa tela assim, "sutil" vira "nada".
+
+| | antes | agora |
+| --- | --- | --- |
+| sinais | 6 | **9** |
+| ciclo | 16 s | **13 s** |
+| janela visível de cada um | 17% | **30%** |
+| na tela ao mesmo tempo | ~1 | **~3** |
+| texto | 0,58 rem | **0,7 rem** |
+| no celular | 3 de 6 | **6 de 9** |
+
+**E havia um BUG junto, que o "muito sutis" também estava vendo.** As linhas de
+ligação usavam `strokeWidth="0.18"` com `vector-effect="non-scaling-stroke"` —
+o efeito fixa a espessura em **pixel de tela**, não em unidade do `viewBox`.
+0,18 px é literalmente invisível. A convergência do hero usa 1,4 com o mesmo
+efeito, e ela aparece: a diferença entre as duas era só esse número. Tem trava
+que reprova qualquer traço abaixo de 0,5 px.
+
+**O que NÃO mudou, e é o que importa:** continuam sendo fragmentos do produto.
+A regra dele segue de pé — ARTE + CAMADA DE PRODUTO ANIMADA, nunca efeito
+genérico. Ficaram mais visíveis, não mais barulhentos.

@@ -19,24 +19,36 @@
  * frase que define o alvo: *"a animação deve ser mais descoberta do que
  * percebida"*.
  *
- * Por isso o ciclo é longo (16 s) e cada sinal fica visível só ~3 s dele, com
- * atrasos escalonados: no máximo dois convivem na tela. Quem passa sente que a
- * arte está viva; quem para percebe que há coisas acontecendo. */
+ * Por isso o ciclo é longo e cada sinal fica visível só uma fração dele, com
+ * atrasos escalonados. Quem passa sente que a arte está viva; quem para percebe
+ * que há coisas acontecendo.
+ *
+ * `[12/09]` **O ciclo encurtou de 16 s para 13 s** a pedido dele: *"eu só achei
+ * muito sutis... o começo é tudo parado mesmo, então precisa ter movimento"*.
+ * Com nove sinais e 1,4 s entre eles, passam a conviver ~3 na tela em vez de 2.
+ * O alvo deixou de ser "descoberta" e passou a ser "presença" — porque o ATO 0
+ * é a ÚNICA tela da landing em que nada mais se move, e ali sutil vira nada. */
 
 /* ── O sinal: sobe um tico, fica, e sai ─────────────────────────────────────
  *
  * Ele NÃO some no lugar: entra subindo 10 px e sai subindo mais 8. Aparecer e
  * desaparecer parado lê como piscar; subir lê como algo que passou. */
+/* `[12/09]` A janela visível DOBROU — de 17% para 30% do ciclo.
+ *
+ * Com 9 sinais a 1,4 s de distância e cada um visível ~2,2 s, a tela mostrava
+ * um de cada vez: a conta não fechava, e o efeito era o que o dono descreveu
+ * como *"muito sutil"*. Visível até 30% de 13 s são ~3,9 s, e passam a conviver
+ * ~3 na tela — que é presença, não piscada. */
 @keyframes sinalDeVida {
   0%,   2% { opacity: 0; transform: translateY(10px) scale(0.94); }
-  7%       { opacity: 1; transform: translateY(0) scale(1); }
-  17%      { opacity: 1; transform: translateY(0) scale(1); }
-  23%      { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  6%       { opacity: 1; transform: translateY(0) scale(1); }
+  30%      { opacity: 1; transform: translateY(0) scale(1); }
+  36%      { opacity: 0; transform: translateY(-8px) scale(0.98); }
   100%     { opacity: 0; transform: translateY(10px) scale(0.94); }
 }
 
 .sinal-de-vida {
-  animation: sinalDeVida 16s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation: sinalDeVida 13s cubic-bezier(0.16, 1, 0.3, 1) infinite;
   opacity: 0;
   will-change: transform, opacity;
 }
@@ -63,17 +75,17 @@
  * `stroke-dashoffset` sobre um comprimento conhecido: o navegador resolve sem
  * recalcular geometria. */
 @keyframes tracoDeConexao {
-  0%,  38% { stroke-dashoffset: 100; opacity: 0; }
-  46%      { opacity: 0.5; }
-  58%      { stroke-dashoffset: 0; opacity: 0.5; }
-  70%      { stroke-dashoffset: 0; opacity: 0; }
+  0%,  34% { stroke-dashoffset: 100; opacity: 0; }
+  42%      { opacity: 0.6; }
+  56%      { stroke-dashoffset: 0; opacity: 0.6; }
+  74%      { stroke-dashoffset: 0; opacity: 0; }
   100%     { stroke-dashoffset: 100; opacity: 0; }
 }
 
 .traco-de-conexao {
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  animation: tracoDeConexao 16s ease-in-out infinite;
+  animation: tracoDeConexao 13s ease-in-out infinite;
 }
 
 /* ── Parado quando ninguém está vendo ──────────────────────────────────────

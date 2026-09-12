@@ -174,3 +174,58 @@ describe('a ponte do hero para a faixa de destaques', () => {
     ).toBeGreaterThan(0.1);
   });
 });
+
+describe('o rastro da convergência atravessa a emenda', () => {
+  const PALCO = 'src/components/landing/PalcoDeRolagem.jsx';
+  const CONV = 'src/components/landing/ConvergenciaDoHub.jsx';
+  const ARTE = 'src/components/landing/ArteQueInvade.jsx';
+  const PROLOGO = 'src/components/landing/PrologoDaLanding.jsx';
+
+  it('o palco recorta só na HORIZONTAL', () => {
+    // O dono mandou print: as linhas da convergência terminavam numa borda reta
+    // na altura da tela. A causa era `overflow-hidden` no elemento preso —
+    // recorta nos dois eixos.
+    //
+    // `overflow-x-clip` é o único valor que segura a barra horizontal (que a
+    // arte ampliada criaria) e deixa o eixo y passar.
+    expect(
+      /overflow-x-clip \$\{classeDoPalco\}/.test(FONTE(PALCO)),
+      'O palco voltou a recortar na vertical.\n'
+      + '  As linhas da convergência voltam a ser cortadas numa borda reta na\n'
+      + '  altura da tela, e nada acusa — o desenho continua correto, só que\n'
+      + '  invisível da metade para baixo.',
+    ).toBe(true);
+  });
+
+  it('quem recorta a arte é a ARTE, num contêiner sem transformação', () => {
+    // A outra metade da troca acima. Sem este contêiner, a arte ampliada
+    // (escala até 1,18) transborda para a seção seguinte — e o recorte precisa
+    // estar num elemento SEM transformação: aplicado no mesmo que escala, ele
+    // recortaria na caixa já ampliada, ou seja, não recortaria nada.
+    expect(
+      /<div className="h-full overflow-hidden">\s*<motion\.div/.test(FONTE(ARTE)),
+      'O `ArteQueInvade` perdeu o contêiner de recorte.\n'
+      + '  A arte ampliada passa a vazar para a cena seguinte. Com o palco\n'
+      + '  recortando só na horizontal, ninguém mais segura isso.',
+    ).toBe(true);
+    expect(
+      /<div className="absolute inset-0 overflow-hidden">\s*<motion\.div/.test(FONTE(PROLOGO)),
+      'A camada da arte do prólogo perdeu o contêiner de recorte.',
+    ).toBe(true);
+  });
+
+  it('o rastro existe, é usado, e desenha FORA da caixa', () => {
+    const conv = FONTE(CONV);
+    expect(
+      /overflow: 'visible'/.test(conv),
+      'A convergência voltou a recortar no próprio `viewBox`.\n'
+      + '  Sem `overflow: visible` no `<svg>`, o rastro é desenhado e descartado:\n'
+      + '  o SVG recorta na caixa dele antes de qualquer ancestral.',
+    ).toBe(true);
+    expect(
+      /<ConvergenciaDoHub[^/]*rastro/.test(FONTE(PROLOGO)),
+      'O prólogo deixou de pedir o rastro.\n'
+      + '  O mecanismo existe e as linhas voltam a terminar na borda da tela.',
+    ).toBe(true);
+  });
+});

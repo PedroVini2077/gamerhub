@@ -80,6 +80,12 @@ de ser uma sequência de blocos e virou uma travessia: o fluxo saiu, o hero cede
 para os cards, as seis emendas somem, as artes ocupam a tela, cada chegada tem
 um gesto próprio, e o ATO 0 tem sinais de vida que preparam a convergência.
 
+**`[12/09]` AJUSTE depois do print dele.** Três coisas: o rastro da convergência
+atravessando a emenda (o palco recortava nos dois eixos), a faixa de destaques
+subindo de 12vh para 26vh para fechar o *"buraco"* entre o hero e o feed, e os
+sinais do ATO 0 maiores e mais numerosos. Junto veio um bug real: as linhas de
+ligação tinham 0,18 **pixel** de espessura. Tudo em `docs/DECISOES.md`.
+
 **O que fica em aberto, e é medição, não conserto:** `mask-image` promove cada
 cena a camada própria de composição — são **seis** agora. Em GPU de celular isso
 tem custo de memória de vídeo que nenhuma medição de byte enxerga. É o primeiro
@@ -1140,7 +1146,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->112<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.168<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->11.273<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

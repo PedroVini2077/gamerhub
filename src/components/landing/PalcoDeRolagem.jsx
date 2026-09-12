@@ -78,10 +78,18 @@ export default function PalcoDeRolagem({
           rolar e a janela CRESCE. Com `vh` a cena presa mudaria de altura no
           meio do movimento — é a mesma lição de 01/09 que fez as formas da
           "Sobre" darem um pulo (ver `index.css`).
-          `overflow-hidden` porque as camadas escalam para além da borda: sem
-          ele, uma arte a 1,16× cria barra de rolagem horizontal. */}
+          `[12/09]` O recorte é `overflow-x-clip`, e NÃO `overflow-hidden`. A
+          diferença é a razão de o dono ter visto as linhas da convergência
+          cortadas: `hidden` recorta nos DOIS eixos, então o SVG do fundo
+          terminava exatamente na altura da tela.
+          `clip` no eixo x segura a barra de rolagem horizontal (que a arte
+          ampliada criaria) e deixa o eixo y passar — é o único valor que
+          permite ao outro eixo continuar `visible`. Era assim que o hero
+          antigo funcionava.
+          **Quem recorta a arte agora é a própria arte**, num contêiner sem
+          transformação: ver `ArteQueInvade` e a camada do prólogo. */}
       <div
-        className={`sticky top-0 h-[100svh] w-full overflow-hidden ${classeDoPalco}`}
+        className={`sticky top-0 h-[100svh] w-full overflow-x-clip ${classeDoPalco}`}
         style={estiloDoPalco}
       >
         {children(progresso)}

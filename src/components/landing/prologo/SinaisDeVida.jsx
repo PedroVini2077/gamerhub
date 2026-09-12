@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, useTransform, useInView } from 'framer-motion';
-import { Heart, KeyRound, Users } from 'lucide-react';
+import { Heart, KeyRound, Users, MessageCircle, Trophy, Tv } from 'lucide-react';
 import { JANELAS } from '../../../lib/atosDaLanding';
 
 /**
@@ -50,40 +50,75 @@ import { JANELAS } from '../../../lib/atosDaLanding';
  */
 
 /**
- * Os seis sinais. `atraso` é o que espaça a aparição: o ciclo dura 16 s e cada
- * um fica visível ~3 s, então com estes valores no máximo dois convivem na
- * tela — que é o *"não quero que tudo aconteça simultaneamente"* dele.
+ * ── `[12/09]` Eram seis e ficaram NOVE, e maiores ──────────────────────────
  *
- * `soCompleto` esconde o sinal no celular. Numa tela em pé, seis fragmentos
- * sobre a arte viram poluição — e a arte de retrato tem menos espaço livre.
+ * Correção pedida por ele depois de ver no telefone: *"gostei das animações do
+ * ato 0, eu só achei muito sutis... será que deixar esses elementos maiores, ou
+ * colocar mais, atrapalharia? Pq o começo é tudo parado mesmo, então precisa
+ * ter movimento"*.
+ *
+ * Ele tem razão e o erro foi meu de calibragem, não de conceito: eu mirei em
+ * *"mais descoberta do que percebida"* — que era o pedido original — e passei do
+ * ponto para o lugar onde a cena acontece. **O ATO 0 é a única tela da landing
+ * em que nada mais se move**: a arte está parada, a frase está parada, e não há
+ * rolagem acontecendo. Numa tela assim, "sutil" vira "nada".
+ *
+ * O que mudou, e nada disso é novo tipo de elemento:
+ *
+ * | | antes | agora |
+ * | --- | --- | --- |
+ * | quantidade | 6 | **9** |
+ * | ciclo | 16 s | **13 s** |
+ * | na tela ao mesmo tempo | ~2 | **~3** |
+ * | tamanho do texto | 0,58 rem | **0,7 rem** |
+ * | no celular | 3 dos 6 | **6 dos 9** |
+ *
+ * O que NÃO mudou é o que importa: continuam sendo fragmentos do produto, e a
+ * regra dele segue de pé — **ARTE + CAMADA DE PRODUTO ANIMADA**, nunca efeito
+ * genérico. Ficaram mais visíveis, não mais barulhentos.
+ *
+ * `soCompleto` esconde o sinal no celular. Nove sobre uma arte em pé viram
+ * poluição — a composição de retrato tem menos espaço livre.
  */
 const SINAIS = [
   {
-    id: 'curtida', em: 'left-[14%] top-[26%]', atraso: '0s', cor: '#39ff14',
-    icone: Heart, texto: '+1', pulso: false,
+    id: 'curtida', em: 'left-[12%] top-[24%]', atraso: '0s', cor: '#39ff14',
+    icone: Heart, texto: '+1 curtida',
   },
   {
-    id: 'digitando', em: 'left-[70%] top-[19%]', atraso: '2.6s', cor: '#00ffff',
-    texto: 'alguém está digitando', pontos: true, soCompleto: true,
+    id: 'digitando', em: 'left-[64%] top-[17%]', atraso: '1.5s', cor: '#00ffff',
+    texto: 'alguém está digitando', pontos: true,
   },
   {
-    id: 'online', em: 'left-[9%] top-[57%]', atraso: '5.2s', cor: '#39ff14',
+    id: 'online', em: 'left-[7%] top-[52%]', atraso: '3s', cor: '#39ff14',
     icone: Users, texto: '2.1 mil online', pulso: true,
   },
   {
-    id: 'key', em: 'left-[76%] top-[45%]', atraso: '7.8s', cor: '#ffa33a',
-    icone: KeyRound, texto: 'key liberada', soCompleto: true,
+    id: 'comentario', em: 'left-[70%] top-[32%]', atraso: '4.4s', cor: '#00ffff',
+    icone: MessageCircle, texto: 'novo comentário', soCompleto: true,
+  },
+  {
+    id: 'key', em: 'left-[74%] top-[45%]', atraso: '5.8s', cor: '#ffa33a',
+    icone: KeyRound, texto: 'key liberada',
   },
   {
     // `pulso` sem ícone: no print o chip só de texto sumia contra a parte
     // escura da arte — faltava uma âncora de cor. O ponto resolve sem
     // acrescentar mais um ícone à cena.
-    id: 'xp', em: 'left-[26%] top-[70%]', atraso: '10.4s', cor: '#bf00ff',
-    texto: '+20 XP', pulso: true, soCompleto: true,
+    id: 'xp', em: 'left-[22%] top-[68%]', atraso: '7.2s', cor: '#bf00ff',
+    texto: '+20 XP', pulso: true,
   },
   {
-    id: 'live', em: 'left-[62%] top-[64%]', atraso: '13s', cor: '#ff4d4d',
-    texto: 'ao vivo', pulso: true,
+    id: 'live', em: 'left-[58%] top-[62%]', atraso: '8.6s', cor: '#ff4d4d',
+    icone: Tv, texto: 'entrou ao vivo', pulso: true,
+  },
+  {
+    id: 'rank', em: 'left-[13%] top-[38%]', atraso: '10s', cor: '#22d3ee',
+    icone: Trophy, texto: 'subiu para Elite', soCompleto: true,
+  },
+  {
+    id: 'squad', em: 'left-[68%] top-[76%]', atraso: '11.4s', cor: '#bf00ff',
+    icone: Users, texto: 'squad montado', soCompleto: true,
   },
 ];
 
@@ -94,9 +129,11 @@ const SINAIS = [
  * três linhas que ninguém mede.
  */
 const LIGACOES = [
-  { de: [16, 28], para: [50, 46], cor: '#39ff14', atraso: '0s' },
-  { de: [72, 21], para: [50, 46], cor: '#00ffff', atraso: '0.9s' },
-  { de: [11, 59], para: [50, 46], cor: '#bf00ff', atraso: '1.8s' },
+  { de: [14, 26], para: [50, 46], cor: '#39ff14', atraso: '0s' },
+  { de: [66, 19], para: [50, 46], cor: '#00ffff', atraso: '0.7s' },
+  { de: [9, 54], para: [50, 46], cor: '#39ff14', atraso: '1.4s' },
+  { de: [76, 47], para: [50, 46], cor: '#ffa33a', atraso: '2.1s' },
+  { de: [24, 70], para: [50, 46], cor: '#bf00ff', atraso: '2.8s' },
 ];
 
 function Sinal({ sinal }) {
@@ -108,14 +145,15 @@ function Sinal({ sinal }) {
       style={{ animationDelay: atraso }}
     >
       <span
-        className="flex items-center gap-1.5 rounded-full border px-2.5 py-1
-                   font-mono text-[0.58rem] tracking-wide text-gray-200
-                   bg-dark-900/70 backdrop-blur-[2px] whitespace-nowrap"
-        style={{ borderColor: `${cor}44` }}
+        className="flex items-center gap-2 rounded-full border px-3 py-1.5
+                   font-mono text-[0.7rem] tracking-wide text-gray-100
+                   bg-dark-900/78 backdrop-blur-[3px] whitespace-nowrap
+                   shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
+        style={{ borderColor: `${cor}66`, boxShadow: `0 0 14px ${cor}1f` }}
       >
-        {Icone && <Icone size={11} style={{ color: cor }} fill={pulso ? 'none' : cor} />}
+        {Icone && <Icone size={13} style={{ color: cor }} />}
         {pulso && !Icone && (
-          <span className="sinal-pulso block h-1.5 w-1.5 rounded-full" style={{ background: cor }} />
+          <span className="sinal-pulso block h-2 w-2 rounded-full" style={{ background: cor }} />
         )}
         {texto}
         {/* Três pontos que pulsam fora de fase: é o desenho universal de
@@ -125,7 +163,7 @@ function Sinal({ sinal }) {
             {[0, 0.2, 0.4].map((d) => (
               <span
                 key={d}
-                className="sinal-pulso block h-1 w-1 rounded-full"
+                className="sinal-pulso block h-1.5 w-1.5 rounded-full"
                 style={{ background: cor, animationDelay: `${d}s` }}
               />
             ))}
@@ -165,7 +203,12 @@ export default function SinaisDeVida({ progresso }) {
             key={i}
             className="traco-de-conexao"
             x1={de[0]} y1={de[1]} x2={para[0]} y2={para[1]}
-            stroke={cor} strokeWidth="0.18" vectorEffect="non-scaling-stroke"
+            // `1.1` e não `0.18`: com `non-scaling-stroke` a espessura é em
+            // PIXEL DE TELA, não em unidade do `viewBox`. 0,18 px é literalmente
+            // invisível — foi assim que as ligações nasceram, e o print do dono
+            // ("achei muito sutis") estava vendo isso também, não só o tamanho
+            // dos chips. A convergência do hero usa 1,4 pelo mesmo motivo.
+            stroke={cor} strokeWidth="1.1" vectorEffect="non-scaling-stroke"
             style={{ animationDelay: atraso }}
           />
         ))}

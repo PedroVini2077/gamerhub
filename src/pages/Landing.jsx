@@ -56,13 +56,21 @@ export default function Landing({ introDone = true }) {
       <PrologoDaLanding introDone={introDone} />
 
       {/* ── `[12/09]` A faixa INVADE o fim do prólogo ────────────────────────
-          A margem negativa faz as cartas subirem por cima dos últimos 12vh da
-          cena presa do hero — que é onde ele já terminou de se montar e só há
-          espaço vazio embaixo do botão.
-          É o que transforma *"acabou o hero, começaram os cards"* em *"o hero
-          cede e os cards assumem"*. O `z-20` é obrigatório: sem ele a cena
-          presa, que vem antes no fluxo, ficaria por cima. */}
-      <div className="relative z-20 -mt-[8vh] md:-mt-[12vh] max-w-5xl mx-auto px-4 md:px-6">
+          A margem negativa faz as cartas subirem por cima do fim da cena presa
+          do hero — onde ele já terminou de se montar e só há espaço vazio
+          embaixo do botão. É o que transforma *"acabou o hero, começaram os
+          cards"* em *"o hero cede e os cards assumem"*.
+
+          **A sobreposição DOBROU depois do print dele.** Com 12vh ainda sobrava
+          meia tela de fundo vazio entre o botão do hero e as cartas — o
+          *"buraco"* que ele descreveu. 26vh põe as cartas dentro do terço
+          inferior do hero, que é justamente a parte que estava sobrando: o
+          botão fica em ~58% da tela e as cartas começam em 74%. Elas invadem o
+          vazio, nunca o conteúdo.
+
+          O `z-20` é obrigatório: sem ele a cena presa, que vem antes no fluxo,
+          ficaria por cima. */}
+      <div className="relative z-20 -mt-[22vh] md:-mt-[26vh] max-w-5xl mx-auto px-4 md:px-6">
         <HighlightsStrip />
       </div>
 

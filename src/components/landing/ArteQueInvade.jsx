@@ -52,9 +52,21 @@ export default function ArteQueInvade({ arte, prioridade = false, progresso, inv
   // que atravessa (a seção não tem altura própria — quem a define é a imagem).
   // Posicionar por absoluto aqui faria a seção colapsar para zero, e o defeito
   // apareceria só nas três cenas soltas.
+  // Duas caixas, e a de fora é obrigatória: o recorte precisa acontecer num
+  // elemento SEM transformação. Aplicado no mesmo elemento que escala, ele
+  // recortaria na caixa já ampliada — ou seja, não recortaria nada.
+  //
+  // `[12/09]` Ele passou a ser responsabilidade daqui quando o palco trocou
+  // `overflow-hidden` por `overflow-x-clip` para deixar o rastro da
+  // convergência atravessar a emenda.
+  //
+  // `h-full` e NÃO `absolute`: a arte precisa continuar dando a altura da cena
+  // que atravessa (a seção não tem altura própria — quem a define é a imagem).
   return (
-    <motion.div className="h-full" style={{ x, y, scale: escala }}>
-      <ArteDaCena arte={arte} prioridade={prioridade} />
-    </motion.div>
+    <div className="h-full overflow-hidden">
+      <motion.div className="h-full" style={{ x, y, scale: escala }}>
+        <ArteDaCena arte={arte} prioridade={prioridade} />
+      </motion.div>
+    </div>
   );
 }

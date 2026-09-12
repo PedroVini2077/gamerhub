@@ -78,6 +78,26 @@ const LIMPO = { rx: 25, ry: 22 };
 const FORA = { min: 34, max: 45 };
 
 /**
+ * `[12/09]` O RASTRO — quanto os trajetos que apontam para BAIXO continuam
+ * depois de sair da tela do hero.
+ *
+ * O dono mandou print: *"as linhas que vc desenhou com alguns objetos indo em
+ * direção a logo do site, elas estão cortadas, antes dessa reformulação elas
+ * atravessavam até os cards"*. Ele está certo, e a causa é do palco: o elemento
+ * preso tem `overflow-hidden` (a arte escala 1,18 e criaria barra), então o SVG
+ * era recortado exatamente na altura da tela.
+ *
+ * O rastro não muda a composição do hero — os trajetos originais continuam
+ * idênticos. Ele acrescenta uma CONTINUAÇÃO a partir do ponto externo de cada
+ * trajeto que desce, com uma fração da intensidade, atravessando a emenda e
+ * apagando sozinha antes de chegar na primeira cena.
+ *
+ * Só para baixo: continuar para cima desenharia por trás do cabeçalho, onde não
+ * há nada para atravessar.
+ */
+const RASTRO = { alcance: 2.4, opacidade: 0.2 };
+
+/**
  * Onde cada traço começa e termina.
  *
  * O ponto interno é a interseção do raio com a elipse limpa — resolvido, não
@@ -99,8 +119,16 @@ function useTrajetos() {
     const dentro = 1 / Math.hypot(cos / LIMPO.rx, sen / LIMPO.ry);
     const fora = FORA.min + ((i * 5) % (FORA.max - FORA.min));
 
+    // Um trajeto "desce" quando o seno é claramente positivo. O corte em 0,3
+    // deixa de fora os quase-horizontais, que só sairiam pelos lados.
+    const desce = sen > 0.3;
+
     return {
       id: i,
+      desce,
+      // Onde o rastro termina, se houver: o mesmo raio, mais longe.
+      x3: ALVO.x + cos * fora * RASTRO.alcance,
+      y3: ALVO.y + sen * fora * RASTRO.alcance,
       // De fora para dentro: é o sentido da chegada.
       x1: ALVO.x + cos * fora,
       y1: ALVO.y + sen * fora,
@@ -119,7 +147,12 @@ function useTrajetos() {
   }), []);
 }
 
-export default function ConvergenciaDoHub({ className = '' }) {
+/**
+ * @param {boolean} [props.rastro] Deixar os trajetos que descem CONTINUAREM
+ *   para fora da caixa. Só o prólogo usa: é ele que precisa atravessar a emenda
+ *   até a faixa de destaques. Exige que nenhum ancestral recorte na vertical.
+ */
+export default function ConvergenciaDoHub({ className = '', rastro = false }) {
   const trajetos = useTrajetos();
 
   return (
@@ -128,6 +161,10 @@ export default function ConvergenciaDoHub({ className = '' }) {
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
         className="w-full h-full convergencia"
+        // `overflow: visible` é o que permite desenhar FORA do `viewBox`. Sem
+        // ele o SVG recorta na própria caixa e o rastro não existiria — que era
+        // metade do problema; a outra metade é o recorte do palco.
+        style={rastro ? { overflow: 'visible' } : undefined}
       >
         <defs>
           {/* Afina nas DUAS pontas e acende no meio. O traço não "começa" nem
@@ -139,6 +176,19 @@ export default function ConvergenciaDoHub({ className = '' }) {
             >
               <stop offset="0%" stopColor={t.cor} stopOpacity="0" />
               <stop offset="55%" stopColor={t.cor} stopOpacity="0.38" />
+              <stop offset="100%" stopColor={t.cor} stopOpacity="0" />
+            </linearGradient>
+          ))}
+          {/* O gradiente do rastro: começa onde o trajeto acabou, com uma
+              fração da intensidade dele, e apaga por completo antes do fim.
+              É o que faz a linha ATRAVESSAR a emenda em vez de terminar nela. */}
+          {trajetos.filter((t) => t.desce).map((t) => (
+            <linearGradient
+              key={`r${t.id}`} id={`rastro-${t.id}`} gradientUnits="userSpaceOnUse"
+              x1={t.x1} y1={t.y1} x2={t.x3} y2={t.y3}
+            >
+              <stop offset="0%" stopColor={t.cor} stopOpacity={RASTRO.opacidade} />
+              <stop offset="45%" stopColor={t.cor} stopOpacity={RASTRO.opacidade * 0.7} />
               <stop offset="100%" stopColor={t.cor} stopOpacity="0" />
             </linearGradient>
           ))}
@@ -158,6 +208,16 @@ export default function ConvergenciaDoHub({ className = '' }) {
 
         {trajetos.map((t) => (
           <g key={t.id}>
+            {/* O rastro vem PRIMEIRO: ele é o fundo do trajeto, e o trajeto é o
+                assunto. Desenhado depois, ele apareceria por cima do que ele
+                próprio continua. */}
+            {rastro && t.desce && (
+              <line
+                x1={t.x1} y1={t.y1} x2={t.x3} y2={t.y3}
+                stroke={`url(#rastro-${t.id})`} strokeWidth="1.4"
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
             <line
               x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
               stroke={`url(#conv-${t.id})`} strokeWidth="1.4"
