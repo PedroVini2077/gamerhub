@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**39 itens abertos** (+ 1 ideia sem compromisso)
+**41 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -368,6 +368,18 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   aceita do cliente — ninguém legítimo a usa, e qualquer pessoa logada pode
   injetar um registro falso. Não dá poder nem expõe dado: é ruído forjável na
   trilha. Uma linha para remover.
+
+- ⬜ `[12/09]` 🔵 **`notify_user` aceita 9 tipos; o sino estiliza 4.** *BLOCO D.*
+  `warning`, `info`, `success`, `error`, `system` e `role` estão na lista
+  fechada da RPC e **não** estão no `NOTIF_META` — caem no sino genérico. Não é
+  bug: o `DESCONHECIDO` é fallback deliberado e visível. Mas a RPC promete mais
+  do que a tela desenha, e escolher ícone é decisão de design. Ou entram no
+  mapa, ou saem da lista da RPC.
+
+- ⬜ `[12/09]` 🔵 **`restore_post` restaura post que não está apagado.** *BLOCO
+  D.* Falta `AND deleted_at IS NOT NULL` no `UPDATE`. Efeito nulo e nenhuma
+  mentira na tela — é a irmã fraca do que o `unban_user` tinha, e por isso não
+  entrou no mesmo PR.
 
 - ⬜ `[12/09]` 🔵 **`deny_unban_request` não avisa a PESSOA.** *BLOCO C.* A
   aprovação insere em `notifications` ("seu pedido foi aceito"); a negativa
@@ -1313,8 +1325,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->116<!--/n--> arq ·
-  <!--n:src.lib.linhas-->12.081<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->117<!--/n--> arq ·
+  <!--n:src.lib.linhas-->12.170<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

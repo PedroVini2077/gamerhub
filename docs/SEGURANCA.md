@@ -253,6 +253,19 @@ que estão na lista dele. Está no `BACKLOG.md`.
   nota ≤ 500, alerta ao owner ≤ 2000, alvo tem que existir, e — no
   `unban_user` — alvo tem que estar **banido**, senão a pessoa recebia aviso de
   um castigo que nunca teve.
+- **`[12/09]` `owner_set_site_config` aceitava qualquer chave** (SEC-019). 🔵 O
+  `ON CONFLICT (key) DO UPDATE` **cria linha nova** quando a chave não existe, e
+  é isso que tornava o erro mudo: um `maintenence_mode` digitado errado
+  respondia **sucesso**, punha o toast verde, escrevia na trilha que a
+  configuração mudou — e o site, que lê `maintenance_mode`, não fazia nada. Os
+  três canais do §1.5 em branco, no painel que tira o site do ar.
+
+  Hoje são **14 chaves em lista fechada**, conferidas em três lugares que batem
+  sem sobra: o estado inicial do `SiteTab.jsx`, as linhas da tabela, e o SQL.
+  Junto entrou faixa de 500 no valor (`banner_text` vai para a tela de todo
+  mundo) e o `is_owner()` no lugar do `role = 'owner'` à mão. Trava:
+  `siteConfigChavesFechadas.test.js`, provada nos dois sentidos — porque fechar
+  a lista resolve uma deriva e cria outra.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

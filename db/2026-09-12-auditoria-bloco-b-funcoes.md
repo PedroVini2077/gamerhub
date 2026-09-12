@@ -492,3 +492,106 @@ antiga com o código velho é história, não estado, e não reprova.
 - **`deny_unban_request` não avisa a pessoa.** A aprovação avisa; a negativa
   não. Quem recorreu fica sem resposta. 🔵 — anotado no `BACKLOG.md`.
 - Continuam faltando **19 de 50** funções para ler.
+
+---
+
+# BLOCO D — a leitura das funções que faltavam
+
+Enumeradas **66** funções `SECURITY DEFINER` que não são gatilho (a consulta
+exclui `pg_trigger`). Deste bloco saíram uma correção e três anotações.
+
+## O que eu suspeitei e estava ERRADO
+
+`reset_login_attempts()` — sem argumentos, escreve, e é chamável por qualquer
+`authenticated`. Pelo nome e pela assinatura, parecia o caso clássico de
+"qualquer pessoa logada zera o contador de força bruta de todo mundo". Lida por
+inteiro, ela é:
+
+```sql
+DELETE FROM public.login_attempts
+WHERE email = lower((SELECT email FROM auth.users WHERE id = auth.uid()));
+```
+
+Escopo do **próprio** email, tirado do `auth.uid()` e não de parâmetro. Não há
+o que forjar. Registrado porque quase virou achado: a assinatura assustava e o
+corpo desmentiu (§1.1 — inferência não é fato).
+
+Conferidas junto e **corretas**: `admin_unlock_login` (`role_rank < 3`,
+NULL-safe, e o `owner` passa porque rank 4 ≥ 3) · `restore_post` (rank + a
+mesma hierarquia estrita do `soft_delete_post`) · `notify_user` (faixa de 500,
+tipo em lista fechada, alvo tem que existir, e grava na trilha).
+
+## 🔵 SEC-019 · `owner_set_site_config` aceita QUALQUER chave — e é MUDO
+
+```sql
+INSERT INTO site_config (key, value, ...) VALUES (p_key, p_value, ...)
+ON CONFLICT (key) DO UPDATE SET value = p_value, ...
+```
+
+`p_key text`, sem faixa. E o `ON CONFLICT ... DO UPDATE` é o que torna isso
+silencioso em vez de barulhento: chave desconhecida **não** dá erro, ela
+**cria linha nova**.
+
+**O caminho da falha.** O dono digita `maintenence_mode` — ou um refactor
+renomeia uma chave num lado só. A RPC responde **sucesso**. O painel mostra o
+toast verde. A trilha de auditoria registra *"@dono alterou maintenence_mode:
+'false' para 'true'"*. Tudo confirma, do lado de quem clicou. Mas o site lê
+`maintenance_mode`, essa linha continua `false`, e **o site não entra em
+manutenção**.
+
+Nada estoura, nada aparece na tela, nada vai para log de erro, nenhum teste
+quebra — os três canais do §1.5 em branco, no painel cuja função é tirar o site
+do ar e devolvê-lo.
+
+**Conserto: lista fechada de 14 chaves.** Elas foram conferidas em **três**
+lugares e batem sem sobra de nenhum lado — o estado inicial do `SiteTab.jsx`, as
+14 linhas que existem hoje na tabela, e agora o SQL.
+
+Junto: `is_owner()` no lugar do `role = 'owner'` escrito à mão (era mais uma
+cópia da mesma decisão, §4), e faixa de 500 no valor — `banner_text` e
+`pause_reason` vão para a tela de todo mundo, e `text` aceita megabytes.
+
+**🔵 Baixo, e o número importa:** só o `owner` alcança esta função. Não é brecha
+de privilégio; é um comando de painel que pode mentir que funcionou.
+
+**Validado em `ROLLBACK`**, 6 asserções: chave com typo recusada nomeando a
+chave · chave nula recusada · valor de 501 recusado · **as 14 chaves reais
+aceitas** · admin recusado · a tabela continuou com 14 linhas, sem linha morta.
+
+**Trava** (`siteConfigChavesFechadas.test.js`), provada nos **dois** sentidos —
+porque fechar a lista no banco cria uma deriva nova, não só resolve uma:
+
+| Bug reinjetado | A trava disse |
+| --- | --- |
+| `feature_torneios` só no painel | *"As chaves DIVERGIRAM"*, com as duas listas e o `+ feature_torneios` |
+| a lista fechada some do SQL | *"não valida mais `p_key` com uma lista fechada"* |
+
+## O que fica anotado, e por que não virou correção agora
+
+- **`notify_user` aceita 9 tipos; o `NOTIF_META` estiliza 4.** Os outros cinco
+  (`warning`, `info`, `success`, `error`, `system`, `role`) caem no sino
+  genérico. Isso **não é bug**: o `DESCONHECIDO` é fallback deliberado e
+  visível, escrito para não fingir que era outra coisa. Mas a lista da RPC
+  promete mais do que a tela sabe desenhar, e escolher ícone é decisão de
+  design. Backlog.
+- **`restore_post` restaura post que não está apagado**, sem erro. O `UPDATE`
+  não tem `AND deleted_at IS NOT NULL`. Efeito nulo e nenhuma mentira na tela —
+  é a irmã fraca do que o `unban_user` tinha. Backlog.
+- **`KEY_LABEL[key] || key`** no `SiteTab.jsx` é fallback silencioso pelo
+  formato (§4), mas benigno: o padrão é a própria chave, que informa. Com a
+  lista agora fechada nos dois lados, o caso deixou de ser alcançável.
+
+## Cobertura declarada — acumulada dos quatro blocos
+
+| | |
+| --- | --- |
+| funções `SECURITY DEFINER` não-gatilho | **66** enumeradas |
+| lidas por inteiro | **43** |
+| das que ESCREVEM e são alcançáveis por `authenticated` | **26 de 26** — o piso do §6 está fechado |
+| das que só `service_role` alcança | 6 de 14 |
+| das que só leem | 11 de 26 |
+
+**As 23 que faltam não são o piso.** São 8 de `service_role` (moderação
+automática, limpeza agendada, o hook de senha — alcançáveis só por Edge
+Function) e 15 de leitura pura. Ainda assim: **este bloco está parcial**, e o
+que falta está nomeado, não arredondado.
