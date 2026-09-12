@@ -6,6 +6,7 @@ import MarcaFlutuante from './MarcaFlutuante';
 import ConteudoDoHero from './ConteudoDoHero';
 import ArteDaCena from './ArteDaCena';
 import PrologoParado from './PrologoParado';
+import SinaisDeVida from './prologo/SinaisDeVida';
 import { CENAS } from '../../lib/cenasDaLanding';
 import { OPACIDADE_NO_HERO } from '../../lib/marcaNoHero';
 import { ALTURA_DO_PROLOGO, JANELAS, FRASE_DO_ATO_ZERO } from '../../lib/atosDaLanding';
@@ -130,6 +131,13 @@ function Camadas({ progresso, introDone }) {
       <motion.div className="absolute inset-0" style={{ scale: escalaDaArte, opacity: opacidadeDaArte }}>
         <ArteDaCena arte={CENAS.hero} prioridade />
       </motion.div>
+
+      {/* ── `[12/09]` OS SINAIS DE VIDA ──────────────────────────────────────
+          Eles ficam ENTRE a arte e o véu de propósito: o véu escurece o pé e o
+          topo, e um chip pousado ali precisa receber o mesmo tratamento que a
+          arte recebe — senão ele flutua acima da cena em vez de acontecer
+          dentro dela. Ver `prologo/SinaisDeVida.jsx`. */}
+      <SinaisDeVida progresso={progresso} />
 
       {/* Véu fixo: a frase precisa ser legível sobre uma arte clara no miolo.
           Ele escurece o pé e o topo e deixa o meio limpo, que é onde a arte é

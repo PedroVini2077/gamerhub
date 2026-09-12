@@ -1242,6 +1242,19 @@ de altura. A continuidade saiu **mais curta** que os cortes.
 | todos os gestos são `x`/`y`/`scale` | compostos pelo navegador, sem repaint |
 | margem negativa é **layout**, resolvido uma vez | nada por quadro |
 
+#### `[12/09]` O bloco C: os sinais do ATO 0 custaram 2,3 kB de JS e 1,0 kB de CSS
+
+| | bloco B | bloco C |
+| --- | --- | --- |
+| JavaScript inicial | 737,3 kB | **737,3 kB** |
+| chunk da Landing | 48,9 kB | **51,2 kB** |
+| CSS do site | 68,5 kB | **69,5 kB** |
+
+O ciclo dos seis sinais é `@keyframes`, então ele **não** entra no JavaScript —
+os 2,3 kB são o componente e as posições. É a diferença entre animar no
+compositor e animar na thread principal, e ela não aparece em byte: aparece em
+quadro perdido, num aparelho que este ambiente não tem.
+
 #### O que eu NÃO medi
 
 Tempo, de novo. E há uma pergunta aberta que só aparece em aparelho de verdade:

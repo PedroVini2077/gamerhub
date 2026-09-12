@@ -1,0 +1,106 @@
+/* Os SINAIS DE VIDA do ATO 0 — pequenos fragmentos do GamerHub acontecendo
+ * sobre a arte de abertura.
+ *
+ * ── Por que CSS e não Framer Motion `[12/09]` ───────────────────────────────
+ *
+ * São seis elementos em laço infinito, e eles ficam vivos enquanto a pessoa
+ * está parada olhando a primeira tela. Animação de biblioteca roda no
+ * `requestAnimationFrame` da thread principal; `@keyframes` de `opacity` e
+ * `transform` roda no COMPOSITOR, sem tocar a thread principal.
+ *
+ * Com um elemento a diferença não apareceria. Com seis em laço, numa página que
+ * já paga uma arte de tela cheia, ela aparece — e este projeto tem 29.441 ms de
+ * histórico dizendo isso (ver `docs/DESEMPENHO.md`).
+ *
+ * ── O ritmo é a regra, não a decoração ──────────────────────────────────────
+ *
+ * Ordem do dono: *"as animações devem ser sutis, lentas e espaçadas, aparecendo
+ * em momentos diferentes. Não quero que tudo aconteça simultaneamente"*, e a
+ * frase que define o alvo: *"a animação deve ser mais descoberta do que
+ * percebida"*.
+ *
+ * Por isso o ciclo é longo (16 s) e cada sinal fica visível só ~3 s dele, com
+ * atrasos escalonados: no máximo dois convivem na tela. Quem passa sente que a
+ * arte está viva; quem para percebe que há coisas acontecendo. */
+
+/* ── O sinal: sobe um tico, fica, e sai ─────────────────────────────────────
+ *
+ * Ele NÃO some no lugar: entra subindo 10 px e sai subindo mais 8. Aparecer e
+ * desaparecer parado lê como piscar; subir lê como algo que passou. */
+@keyframes sinalDeVida {
+  0%,   2% { opacity: 0; transform: translateY(10px) scale(0.94); }
+  7%       { opacity: 1; transform: translateY(0) scale(1); }
+  17%      { opacity: 1; transform: translateY(0) scale(1); }
+  23%      { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  100%     { opacity: 0; transform: translateY(10px) scale(0.94); }
+}
+
+.sinal-de-vida {
+  animation: sinalDeVida 16s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* ── O ponto que pulsa, dentro de alguns sinais ────────────────────────────
+ * Devagar de propósito. Emissora nenhuma pisca o "ao vivo" rápido, e ponto
+ * rápido numa tela parada é a definição de chamar atenção à toa. */
+@keyframes pulsoDoSinal {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
+
+.sinal-pulso { animation: pulsoDoSinal 2.4s ease-in-out infinite; }
+
+/* ── As linhas que sugerem CONEXÃO ─────────────────────────────────────────
+ *
+ * Elas entram tarde no ciclo, e essa é a função narrativa inteira: primeiro a
+ * pessoa vê sinais soltos, depois vê que eles se ligam — e só então a
+ * `ConvergenciaDoHub` aparece na rolagem.
+ *
+ * Sem isso os trajetos da convergência surgem do nada. Com isso, a cena já
+ * tinha dito que existe atividade E ligação acontecendo ali.
+ *
+ * `stroke-dashoffset` sobre um comprimento conhecido: o navegador resolve sem
+ * recalcular geometria. */
+@keyframes tracoDeConexao {
+  0%,  38% { stroke-dashoffset: 100; opacity: 0; }
+  46%      { opacity: 0.5; }
+  58%      { stroke-dashoffset: 0; opacity: 0.5; }
+  70%      { stroke-dashoffset: 0; opacity: 0; }
+  100%     { stroke-dashoffset: 100; opacity: 0; }
+}
+
+.traco-de-conexao {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: tracoDeConexao 16s ease-in-out infinite;
+}
+
+/* ── Parado quando ninguém está vendo ──────────────────────────────────────
+ * A mesma disciplina da `MarcaFlutuante`: enfeite que a pessoa já rolou para
+ * longe não deve custar nada. `animation-play-state` mantém a posição, então
+ * ao voltar o ciclo continua de onde estava em vez de saltar para o início. */
+.sinais-parados .sinal-de-vida,
+.sinais-parados .sinal-pulso,
+.sinais-parados .traco-de-conexao {
+  animation-play-state: paused;
+}
+
+/* ── Quem pediu menos movimento vê os sinais, PARADOS ──────────────────────
+ *
+ * Eles não são enfeite: são a única coisa que diz que aquele mundo tem gente
+ * dentro. Some o ciclo, fica o conteúdo — todos visíveis ao mesmo tempo, que é
+ * a leitura estática correta de "várias coisas acontecendo". */
+@media (prefers-reduced-motion: reduce) {
+  .sinal-de-vida {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .sinal-pulso { animation: none; }
+  .traco-de-conexao {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 0.4;
+  }
+}

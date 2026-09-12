@@ -73,7 +73,17 @@ conduzida pela rolagem invadindo o fim do prólogo, e nasceu o mecanismo de
 **costura** — margem negativa + máscara no topo — aplicado por enquanto só na
 emenda para o Feed. O bloco B estende a costura para as outras e dá tela cheia
 às artes. Detalhe em `docs/DECISOES.md`.
-| **C** | As microanimações do ATO 0 — a arte de abertura viva antes da transformação | a fazer |
+| **C** | As microanimações do ATO 0 — a arte de abertura viva antes da transformação | **feito** em 12/09 |
+
+**`[12/09]` A FATIA 7 FECHOU.** Os três blocos estão na branch. A landing deixou
+de ser uma sequência de blocos e virou uma travessia: o fluxo saiu, o hero cede
+para os cards, as seis emendas somem, as artes ocupam a tela, cada chegada tem
+um gesto próprio, e o ATO 0 tem sinais de vida que preparam a convergência.
+
+**O que fica em aberto, e é medição, não conserto:** `mask-image` promove cada
+cena a camada própria de composição — são **seis** agora. Em GPU de celular isso
+tem custo de memória de vídeo que nenhuma medição de byte enxerga. É o primeiro
+lugar a olhar se alguém relatar travamento ao rolar. Está em `DESEMPENHO.md`.
 
 **O que ele PROIBIU nesta rodada, e vale para os três blocos:** fade preto entre
 cenas (só o do prólogo, que tem função narrativa) · prender as cinco · parallax
@@ -1130,7 +1140,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->112<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.091<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->11.168<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

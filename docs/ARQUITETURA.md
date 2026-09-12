@@ -26,6 +26,11 @@ src/
 │   │                      # DEPOIS das utilitárias do Tailwind, de propósito
 │   ├── decoracao.css      # fundo das páginas públicas, intro do raio, peças
 │   │                      # de videogame, luzes de arena, explosões, aviso
+│   ├── sinaisDeVida.css   # `[12/09]` o ciclo dos sinais do ATO 0: 16 s, cada
+│   │                      # um visível ~3 s, atrasos escalonados para no
+│   │                      # máximo dois conviverem. CSS e não biblioteca
+│   │                      # porque são seis laços infinitos — compositor, e
+│   │                      # não thread principal
 │   ├── cofre.css          # `[05/09]` o giro do disco do cofre do Fundador
 │   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
 │   ├── portao/            # o portão de boas-vindas, em 3 partes
@@ -469,6 +474,12 @@ src/
     │   ├── TextoDaCena.jsx # `[12/09]` O véu e o texto, que a cena presa e a
     │   │                  # solta dividem. O véu troca de EIXO com a orientação
     │   │                  # da arte: lateral no PC, do pé no celular
+    │   ├── prologo/       # `[12/09]` As camadas que só existem no prólogo
+    │   │   └── SinaisDeVida.jsx # os fragmentos do produto que acontecem sobre
+    │   │                  # a arte do ATO 0 — curtida, alguém digitando, gente
+    │   │                  # online, key, XP, live. Ciclo em `@keyframes` (não
+    │   │                  # em biblioteca: são 6 laços infinitos), e as linhas
+    │   │                  # que se ligam ao centro preparam a CONVERGÊNCIA
     │   ├── ArteQueInvade.jsx # `[12/09]` A arte com o GESTO de chegada
     │   │                  # (`sobe`, `afasta`, `mergulha`, `deriva`), conduzido
     │   │                  # pela rolagem e TERMINANDO PARADO. Imagem que nunca
