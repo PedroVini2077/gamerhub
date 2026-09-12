@@ -217,7 +217,9 @@
   background: #39ff14;
   box-shadow: 0 0 12px #39ff1499;
   clip-path: polygon(0 0, 100% 50%, 0 100%, 42% 50%);
-  animation: portaChevron 1.5s ease-in-out infinite;
+  /* `backwards` pelo mesmo motivo dos traços do ATO 0: os chevrons 2 e 3
+   * têm atraso, e sem isto os três nascem no pico em vez de na base. */
+  animation: portaChevron 1.5s ease-in-out infinite backwards;
 }
 
 .porta-chevron-2 { animation-delay: 0.18s; }

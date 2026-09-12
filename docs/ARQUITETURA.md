@@ -30,7 +30,10 @@ src/
 │   │                      # um visível ~3,9 s, atrasos escalonados para ~três
 │   │                      # conviverem. CSS e não biblioteca porque são NOVE
 │   │                      # laços infinitos — compositor, e não thread
-│   │                      # principal
+│   │                      # principal.
+│   │                      # `[12/09]` Toda animação com atraso aqui declara
+│   │                      # `backwards`: sem ele o elemento nasce ACESO durante
+│   │                      # a espera. Tem trava de classe varrendo os estilos
 │   ├── cofre.css          # `[05/09]` o giro do disco do cofre do Fundador
 │   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
 │   ├── portao/            # o portão de boas-vindas, em 3 partes
@@ -497,7 +500,9 @@ src/
     │   │                  # gente online, key, XP, live, comentário, rank,
     │   │                  # squad. Ciclo em `@keyframes` (não em biblioteca:
     │   │                  # são 9 laços infinitos), e as linhas que se ligam ao
-    │   │                  # centro preparam a CONVERGÊNCIA.
+    │   │                  # centro preparam a CONVERGÊNCIA — visíveis TAMBÉM
+    │   │                  # no celular, com gradiente que acende na direção do
+    │   │                  # centro (energia chegando, não risco na tela).
     │   │                  # `[12/09]` Cada chip se ancora pela borda de que ele
     │   │                  # se APROXIMA (`right` à direita, `left` à esquerda):
     │   │                  # com `whitespace-nowrap` ele cresce a partir da

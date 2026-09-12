@@ -228,3 +228,65 @@ describe('os sinais do ATO 0 são VISÍVEIS', () => {
     ).toBeGreaterThanOrEqual(espacamento * 2);
   });
 });
+
+describe('as ligações do ATO 0 são ENERGIA, e existem no celular', () => {
+  const SINAIS = 'src/components/landing/prologo/SinaisDeVida.jsx';
+  const ICONES = 'scripts/gerar-icones.mjs';
+
+  it('as linhas NÃO são escondidas no celular', () => {
+    // `[12/09]` Ele perguntou por que as linhas do começo não apareciam no
+    // telefone. A resposta era um `hidden md:block` no SVG — cautela minha de
+    // quando os chips ainda transbordavam, que virou defeito quando eles
+    // pararam de transbordar e ninguém revisitou a classe.
+    const svg = FONTE(SINAIS).match(/<svg[\s\S]*?viewBox="0 0 100 100"[\s\S]*?>/)[0];
+    expect(
+      /\bhidden\b/.test(svg),
+      'O SVG das ligações voltou a ser escondido no celular.\n'
+      + '  Elas são metade do que faz o ATO 0 parecer vivo, e o celular é onde\n'
+      + '  ele passa mais tempo na tela — a arte em pé demora mais para rolar.',
+    ).toBe(false);
+  });
+
+  it('o traço acende NA DIREÇÃO do centro, e não por igual', () => {
+    // Pedido: *"queria que essas linhas fossem tipo energia se concentrando ali
+    // no meio, senti elas bem apagadinhas"*.
+    //
+    // A trava mede a FORMA do gradiente, não o brilho: um traço de opacidade
+    // uniforme lê como risco na tela, e é o que ele descreveu. O que lê como
+    // energia indo para algum lugar é a ponta de chegada ser a mais forte.
+    const fonte = FONTE(SINAIS);
+    const grad = fonte.match(/id=\{`ligacao-\$\{i\}`\}[\s\S]*?<\/linearGradient>/)?.[0];
+    expect(grad, 'Sumiu o gradiente das ligações — elas voltaram a ser cor chapada.').toBeTruthy();
+
+    const paradas = [...grad.matchAll(/offset="(\d+)%"[^/]*stopOpacity="([\d.]+)"/g)]
+      .map(([, o, a]) => ({ onde: Number(o), opacidade: Number(a) }));
+    const borda = paradas.find((p) => p.onde === 0);
+    const centro = paradas.find((p) => p.onde === 100);
+
+    expect(
+      centro.opacidade,
+      `A ponta do traço no CENTRO está em ${centro.opacidade} e a da borda em `
+      + `${borda.opacidade}.\n`
+      + '  O gradiente precisa ACENDER na direção do centro — é o que separa\n'
+      + '  "energia se concentrando" de "risco na tela", que foi a diferença que\n'
+      + '  o dono apontou. Pelo menos 3x a opacidade da borda.',
+    ).toBeGreaterThan(Math.max(borda.opacidade * 3, 0.6));
+  });
+
+  it('a borda do ícone do app é fração do lado, não pixel fixo', () => {
+    // `[12/09]` *"O app tá com a logo e o fundo preto, faltou uma borda"*. Ela
+    // EXISTIA: `stroke-width="1.2"` num `viewBox` de 512 — 0,23% do lado, que na
+    // tela de início vira 0,3 pixel. Mesmo defeito de unidade dos traços de
+    // 0,18 px: o número parece razoável e não é, porque a unidade não é pixel.
+    const linha = FONTE(ICONES).match(/stroke-width="\$\{([^}]+)\}"/)?.[1]
+      ?? FONTE(ICONES).match(/stroke-width="([\d.]+)"/)?.[1];
+    expect(linha, 'Não achei a espessura da borda do ícone — a trava ficou vazia.').toBeTruthy();
+    expect(
+      /cx|cy|lado|largura/.test(String(linha)),
+      `A borda do ícone voltou a ter espessura fixa (\`${linha}\`).\n`
+      + '  O `viewBox` do ícone é do TAMANHO dele (192, 512...), então número\n'
+      + '  constante vale proporções diferentes em cada arquivo gerado — e no\n'
+      + '  maior ele some. A espessura precisa ser fração do lado.',
+    ).toBe(true);
+  });
+});

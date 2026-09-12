@@ -118,6 +118,20 @@ SVG do rodapé e o risco do `scale` são a mesma falha muda, e os três foram
 achados por ele no telefone. O `e2e/conteudo-visivel.mjs` passou a perguntar, e
 a NOMEAR o elemento culpado.
 
+**`[12/09]` AJUSTE 5 — o último polimento, e ele achou um bug em SEIS lugares.**
+Quatro pedidos: o cartão das Keys desceu do topo no celular (`pt-16` →
+`pt-[26vh]`); as ligações do ATO 0 passaram a aparecer no telefone (havia um
+`hidden md:block` que era cautela velha, não decisão) e viraram **energia**
+(gradiente que acende na direção do centro + núcleo que respira); a borda do
+ícone do PWA passou a ser fração do lado — ela **existia** e era 0,3 pixel; e o
+pisca das animações com atraso.
+
+**O pisca era o achado:** `animation-delay` não esconde o elemento, então
+durante a espera o navegador desenha o estado normal dele. A varredura de classe
+encontrou **seis** casos, e eu conhecia um — os outros estavam na tela de
+entrada, no portão, e um eu tinha acabado de criar. Trava nova em
+`animacaoComAtraso.test.js`. Tudo em `docs/DECISOES.md`.
+
 **`[12/09]` A LANDING PAUSA AQUI, a pedido dele** — *"já trabalhamos demais
 nessa landing page"*. Não é abandono: o que sobrou está listado no fim desta
 seção, e a fila abaixo volta a ser a prioridade.
@@ -1205,8 +1219,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->113<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.513<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->114<!--/n--> arq ·
+  <!--n:src.lib.linhas-->11.714<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

@@ -80,7 +80,19 @@ export default function PainelDaCena({
   lado = 'esquerda', largura = 'w-[15.5rem]', vidro = true, ancora = 'meio', children,
 }) {
   const textoNaEsquerda = lado === 'esquerda';
-  const noCelular = ancora === 'topo' ? 'items-start pt-16' : 'items-center pb-32';
+  // `[12/09]` `topo` deixou de ser o TOPO. Ele viu o cartão das Keys no
+  // telefone: *"achei esse cartão de presente muito pra cima, coloca mais
+  // centralizado e fora do topo"*.
+  //
+  // `pt-16` colava o painel logo abaixo da barra fixa, e o que sobrava era meia
+  // tela de arte vazia embaixo dele. `pt-[26vh]` o traz para o terço superior —
+  // fora do topo, e ainda acima do texto, que no celular mora no pé.
+  //
+  // **O nome `topo` continua certo e a distinção continua necessária**: ele
+  // ancora a partir do TOPO da cena, que é o que uma cena PRESA pode fazer com
+  // segurança. A que rola não pode, porque um recuo fixo passa por baixo da
+  // barra enquanto ela sobe — é por isso que existem dois valores.
+  const noCelular = ancora === 'topo' ? 'items-start pt-[26vh]' : 'items-center pb-32';
   const chrome = vidro
     ? `rounded-xl border border-white/10 bg-dark-900/80 backdrop-blur-sm p-3.5
        shadow-[0_8px_32px_rgba(0,0,0,0.55)]`

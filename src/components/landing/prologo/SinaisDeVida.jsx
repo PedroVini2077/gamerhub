@@ -246,25 +246,65 @@ export default function SinaisDeVida({ progresso }) {
       style={{ opacity: opacidade }}
     >
       {/* As ligações ficam ATRÁS dos sinais: elas são o fundo da ideia, e o
-          fragmento é o assunto. */}
+          fragmento é o assunto.
+
+          `[12/09]` O `hidden md:block` SAIU. Ele perguntou por que as linhas não
+          apareciam no telefone, e a resposta era essa classe — não havia motivo
+          técnico, foi cautela minha de quando os chips ainda transbordavam. As
+          linhas não transbordam: elas terminam no centro.
+
+          `[12/09]` E elas viraram ENERGIA se concentrando, a pedido dele
+          (*"senti elas bem apagadinhas"*). Duas mudanças, e as duas são de
+          direção, não de brilho bruto:
+          - o **gradiente é assimétrico**: nasce transparente na borda e chega
+            forte no centro. Traço de brilho uniforme lê como risco; traço que
+            acende na direção do destino lê como algo indo para lá;
+          - o **halo** (`filter`) dá o corpo que uma linha de 1 px não tem. */}
       <svg
         viewBox="0 0 100 100" preserveAspectRatio="none"
-        className="absolute inset-0 h-full w-full hidden md:block"
+        className="absolute inset-0 h-full w-full"
       >
+        <defs>
+          {LIGACOES.map(({ de, para, cor }, i) => (
+            <linearGradient
+              key={`g${i}`} id={`ligacao-${i}`} gradientUnits="userSpaceOnUse"
+              x1={de[0]} y1={de[1]} x2={para[0]} y2={para[1]}
+            >
+              <stop offset="0%" stopColor={cor} stopOpacity="0" />
+              <stop offset="35%" stopColor={cor} stopOpacity="0.35" />
+              <stop offset="100%" stopColor={cor} stopOpacity="0.95" />
+            </linearGradient>
+          ))}
+        </defs>
         {LIGACOES.map(({ de, para, cor, atraso }, i) => (
           <line
             key={i}
             className="traco-de-conexao"
             x1={de[0]} y1={de[1]} x2={para[0]} y2={para[1]}
-            // `1.1` e não `0.18`: com `non-scaling-stroke` a espessura é em
+            // `1.6` e não `0.18`: com `non-scaling-stroke` a espessura é em
             // PIXEL DE TELA, não em unidade do `viewBox`. 0,18 px é literalmente
             // invisível — foi assim que as ligações nasceram, e o print do dono
             // ("achei muito sutis") estava vendo isso também, não só o tamanho
             // dos chips. A convergência do hero usa 1,4 pelo mesmo motivo.
-            stroke={cor} strokeWidth="1.1" vectorEffect="non-scaling-stroke"
-            style={{ animationDelay: atraso }}
+            stroke={`url(#ligacao-${i})`} strokeWidth="1.6"
+            vectorEffect="non-scaling-stroke"
+            style={{ animationDelay: atraso, filter: `drop-shadow(0 0 3px ${cor}aa)` }}
           />
         ))}
+        {/* O ponto de chegada: o brilho que se ACUMULA onde todas as linhas
+            terminam. Sem ele o olho vê cinco traços apontando para um lugar
+            vazio; com ele, vê energia chegando em algum lugar. */}
+        <ellipse
+          cx="50" cy="46" rx="13" ry="11" fill="url(#nucleo-das-ligacoes)"
+          className="nucleo-das-ligacoes"
+        />
+        <defs>
+          <radialGradient id="nucleo-das-ligacoes">
+            <stop offset="0%" stopColor="#8ef7ff" stopOpacity="0.30" />
+            <stop offset="55%" stopColor="#39ff14" stopOpacity="0.10" />
+            <stop offset="100%" stopColor="#39ff14" stopOpacity="0" />
+          </radialGradient>
+        </defs>
       </svg>
 
       {SINAIS.map((sinal) => <Sinal key={sinal.id} sinal={sinal} />)}
