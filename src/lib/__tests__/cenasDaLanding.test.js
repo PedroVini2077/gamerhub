@@ -13,6 +13,7 @@ const FONTE = (c) => readFileSync(c, 'utf8');
 const CENA = 'src/components/landing/CenaDaLanding.jsx';
 const CTA = 'src/components/landing/FinalCTA.jsx';
 const ARTE = 'src/components/landing/ArteDaCena.jsx';
+const ARTE_QUE_INVADE = 'src/components/landing/ArteQueInvade.jsx';
 const MAPA = 'src/lib/cenasDaLanding.js';
 const REF_LARGA = 'docs/identidade/referencias/cenas';
 const REF_ALTA = 'docs/identidade/referencias/cenas-retrato';
@@ -134,17 +135,26 @@ describe('o custo das artes', () => {
   // passam por ele. Sem essa primeira asserção, alguém poderia reescrever um
   // `<img>` à mão dentro da cena e as três verificações abaixo continuariam
   // verdes, olhando um arquivo que ninguém mais usa.
-  it('as cenas usam o `ArteDaCena` — e não um `<img>` próprio', () => {
+  it('as cenas usam o componente da arte — e não um `<img>` próprio', () => {
+    // `[12/09]` A cadeia ganhou um elo: as cenas montam `<ArteQueInvade>`, que
+    // é quem aplica o gesto de chegada e monta o `<ArteDaCena>`. A trava aceita
+    // os dois nomes e continua proibindo o que importa — `<img>` escrito à mão.
+    expect(
+      FONTE(ARTE_QUE_INVADE),
+      'O `ArteQueInvade` deixou de montar o `ArteDaCena` — o elo que garante as\n'
+      + '  seis decisões de carregamento se quebrou no meio da cadeia.',
+    ).toContain('<ArteDaCena');
+
     for (const caminho of [CENA, CTA]) {
       const fonte = FONTE(caminho);
       expect(
-        fonte,
-        `${caminho} deixou de usar \`<ArteDaCena>\`.\n`
+        /<Arte(DaCena|QueInvade)/.test(fonte) ? fonte : '',
+        `${caminho} deixou de usar o componente da arte.\n`
         + '  As seis decisões de carregamento (media, srcSet, sizes, dimensões,\n'
         + '  loading, fetchPriority) voltaram a ser copiadas. Copiadas, elas\n'
         + '  divergem na primeira vez que alguém mexer em uma — e a divergência\n'
         + '  não aparece: a página continua bonita, só custa mais.',
-      ).toContain('<ArteDaCena');
+      ).toContain('<Arte');
       expect(
         /<img[\s>]/.test(fonte),
         `${caminho} voltou a ter um \`<img>\` escrito à mão.`,
@@ -170,7 +180,7 @@ describe('o custo das artes', () => {
     // A chamada, não o texto: o arquivo EXPLICA num comentário por que não pede
     // prioridade, e varrer o texto inteiro reprovaria a própria explicação.
     expect(
-      /<ArteDaCena[^/>]*prioridade/.test(FONTE(CTA)),
+      /<Arte(DaCena|QueInvade)[^/>]*prioridade/.test(FONTE(CTA)),
       'O `FinalCTA` passou a pedir `prioridade`.\n'
       + '  Ele é a ÚLTIMA seção da landing. Arte ansiosa ali é banda cobrada de\n'
       + '  quem talvez nunca role até lá.',

@@ -1,6 +1,5 @@
 import usePonteiroDaPagina from '../hooks/usePonteiroDaPagina';
 import LandingNav from '../components/landing/LandingNav';
-import FluxoDeDados from '../components/landing/FluxoDeDados';
 import PrologoDaLanding from '../components/landing/PrologoDaLanding';
 import CenaDaLanding from '../components/landing/CenaDaLanding';
 import CenaPresa from '../components/landing/CenaPresa';
@@ -27,17 +26,27 @@ import { CENAS } from '../lib/cenasDaLanding';
  *   baixo dele seria atropelo, não ambiente.
  */
 export default function Landing({ introDone = true }) {
-  // UM ouvinte de ponteiro para a landing inteira. Quem consome são o
-  // `FluxoDeDados` e a `MarcaFlutuante`, cada um no seu ramo da árvore.
+  // UM ouvinte de ponteiro para a landing inteira. `[12/09]` Com o
+  // `FluxoDeDados` fora daqui, quem consome `--ponteiro-x/y` é a
+  // `MarcaFlutuante` — o hook CONTINUA necessário, e apagá-lo junto teria
+  // deixado a marca do hero parada sem ninguém notar de imediato.
   usePonteiroDaPagina();
 
+  // ── `[12/09]` O `FluxoDeDados` SAIU daqui, e não é porque ele é ruim ──────
+  //
+  // Ordem do dono: *"ele simplesmente perdeu relevância diante da nova
+  // linguagem visual... uma cachoeira de dados atrás de tudo começa a
+  // competir"*. Com as artes ocupando a tela inteira ele mal aparecia — e onde
+  // aparecia, disputava com o assunto.
+  //
+  // **Ele continua vivo e em uso**: o site logado o monta pelo `FundoDaSecao`,
+  // com a cor de cada seção. O que saiu foi a participação dele NA LANDING.
+  //
+  // `grid-bg` e `scanline-overlay` FICAM, e a distinção é do próprio pedido
+  // dele: o fluxo era **elemento visual ativo**; estes dois são **textura
+  // ambiental**, sem movimento próprio competindo com a cena.
   return (
     <div className="min-h-screen bg-dark-900 grid-bg scanline-overlay relative">
-      <FluxoDeDados />
-
-      {/* `relative z-10`: o conteúdo inteiro fica ACIMA da camada de dados.
-          Sem isto o fluxo passaria por cima do texto — que é a diferença entre
-          ambientação e poluição. */}
       <div className="relative z-10">
       <LandingNav />
       {/* `[12/09]` O hero deixou de ser uma tela e virou os CINCO ATOS que a
@@ -46,15 +55,24 @@ export default function Landing({ introDone = true }) {
           monta agora é o prólogo. Ver `components/landing/PrologoDaLanding.jsx`. */}
       <PrologoDaLanding introDone={introDone} />
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6">
+      {/* ── `[12/09]` A faixa INVADE o fim do prólogo ────────────────────────
+          A margem negativa faz as cartas subirem por cima dos últimos 12vh da
+          cena presa do hero — que é onde ele já terminou de se montar e só há
+          espaço vazio embaixo do botão.
+          É o que transforma *"acabou o hero, começaram os cards"* em *"o hero
+          cede e os cards assumem"*. O `z-20` é obrigatório: sem ele a cena
+          presa, que vem antes no fluxo, ficaria por cima. */}
+      <div className="relative z-20 -mt-[8vh] md:-mt-[12vh] max-w-5xl mx-auto px-4 md:px-6">
         <HighlightsStrip />
       </div>
 
-      {/* `[12/09]` AS CENAS SAEM DO CONTÊINER ESTREITO, e isso é pedido dele:
-          *"não tenha medo de abandonar a escala atual... algumas cenas podem
-          ocupar 100vw"*. Dentro do `max-w-5xl` a arte virava um cartão de
-          976 px no meio de um monitor de 1440 — medido no primeiro print. */}
-      <div className="px-0 md:px-6">
+      {/* ── `[12/09]` AS CENAS OCUPAM A LARGURA INTEIRA ──────────────────────
+          Pedido dele no bloco B: *"a arte deve parecer um cenário, não um card
+          gigante"*. Saíram as duas coisas que ainda entregavam "isto é um
+          card": o respiro lateral de 24 px e o canto arredondado.
+          Antes disso elas já tinham saído do `max-w-5xl` — dentro dele a arte
+          virava um cartão de 976 px num monitor de 1440. */}
+      <div>
         {/* ── `[12/09]` AS CINCO CENAS, e cada uma com a FORMA que o que ela
             conta pede ────────────────────────────────────────────────────────
 
@@ -72,17 +90,16 @@ export default function Landing({ introDone = true }) {
             mini-sites em fila. */}
 
         <CenaDaLanding
-          id="feed" arte={CENAS.feed}
+          id="feed" invasao="sobe" arte={CENAS.feed}
           eyebrow="Feed"
           titulo="Um feed que não para"
           descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa."
           lado="esquerda"
-          revelacao="deslize"
           sobreposicao={() => <SobreposicaoDoFeed lado="esquerda" />}
         />
 
         <CenaPresa
-          id="mural" arte={CENAS.comunidade} altura={260}
+          id="mural" invasao="afasta" arte={CENAS.comunidade} altura={260}
           eyebrow="Comunidade"
           titulo="Tem gente aqui"
           descricao="O mural é o ponto de encontro informal: prints, squads sendo montados e papo solto com quem também joga."
@@ -91,17 +108,16 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="lives" arte={CENAS.lives}
+          id="lives" invasao="mergulha" arte={CENAS.lives}
           eyebrow="Lives"
           titulo="Está acontecendo agora"
           descricao="Sua transmissão do Twitch ou do YouTube dentro do Hub, com chat em tempo real e contador de quem está assistindo."
           lado="esquerda"
-          revelacao="centro"
           sobreposicao={() => <SobreposicaoDasLives lado="esquerda" />}
         />
 
         <CenaPresa
-          id="keys" arte={CENAS.keys} altura={240}
+          id="keys" invasao="deriva" arte={CENAS.keys} altura={240}
           eyebrow="Keys & Promos"
           titulo="Keys grátis e as promoções que valem"
           descricao="O código pronto para copiar, a plataforma na etiqueta, e a lista atualizada pela equipe."
@@ -110,20 +126,17 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="ranks" arte={CENAS.ranks}
+          id="ranks" invasao="sobe" arte={CENAS.ranks}
           eyebrow="Ranks & XP"
           titulo="Participar conta, e aparece"
           descricao="Postar, comentar e receber curtidas rende XP. O rank é o que a comunidade vê do seu histórico."
           lado="esquerda"
-          revelacao="varredura"
           sobreposicao={(p) => <SobreposicaoDosRanks progresso={p} lado="esquerda" />}
         />
 
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6">
-        <FinalCTA />
-      </div>
+      <FinalCTA />
 
       <LandingFooter />
       </div>

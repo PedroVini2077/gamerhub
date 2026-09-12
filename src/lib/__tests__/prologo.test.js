@@ -190,3 +190,80 @@ describe('o mecanismo', () => {
     expect(FRASE_DO_ATO_ZERO).toBe('Tudo o que acontece entre gamers, em um só lugar.');
   });
 });
+
+describe('os sinais de vida do ATO 0', () => {
+  const SINAIS = 'src/components/landing/prologo/SinaisDeVida.jsx';
+  const CSS = 'src/estilos/sinaisDeVida.css';
+
+  it('o ATO 0 monta os sinais', () => {
+    // Sem isto o componente existe, é testado, e a primeira tela volta a ser
+    // arte + frase — o "um pouco vazia" que o dono descreveu.
+    expect(
+      FONTE(PROLOGO),
+      'O prólogo deixou de montar os `SinaisDeVida`.',
+    ).toContain('<SinaisDeVida');
+  });
+
+  it('eles são FRAGMENTOS DO PRODUTO, não efeitos genéricos', () => {
+    // A regra que ele escreveu, palavra por palavra: **ARTE + CAMADA DE PRODUTO
+    // ANIMADA**, e não **ARTE + EFEITOS VISUAIS GENÉRICOS**.
+    //
+    // A deriva aqui é fácil e silenciosa: alguém acha o chip discreto demais,
+    // troca por um brilho ou uma partícula, e a cena continua "viva" — só que
+    // dizendo nada sobre o GamerHub.
+    const fonte = FONTE(SINAIS);
+    for (const fragmento of ['curtida', 'digitando', 'online', 'key', 'xp', 'live']) {
+      expect(
+        fonte.includes(`id: '${fragmento}'`),
+        `O sinal "${fragmento}" sumiu do ATO 0.\n`
+        + '  Cada um é um fragmento de uma cena de baixo aparecendo de relance.\n'
+        + '  Trocar um por um efeito abstrato quebra a regra que o dono escreveu:\n'
+        + '  arte + camada de PRODUTO, nunca arte + efeito genérico.',
+      ).toBe(true);
+    }
+  });
+
+  it('eles SAEM antes de a transformação começar', () => {
+    // Se ficassem, um chip piscaria enquanto a arte se desfaz e a frase sai —
+    // dois assuntos na tela, e o ato da transformação perde o foco.
+    expect(
+      /JANELAS\.fraseSai\[0\]/.test(FONTE(SINAIS)),
+      'Os sinais deixaram de sair junto com a frase.\n'
+      + '  A janela deles precisa terminar onde a da frase começa, senão eles\n'
+      + '  atravessam a TRANSFORMAÇÃO disputando atenção com ela.',
+    ).toBe(true);
+  });
+
+  it('o ciclo é CSS e PARA quando a cena sai da tela', () => {
+    const css = FONTE(CSS);
+    const fonte = FONTE(SINAIS);
+    // Seis elementos em laço infinito no `requestAnimationFrame` seria trabalho
+    // de thread principal para sempre. Em `@keyframes` é compositor.
+    expect(
+      /@keyframes sinalDeVida/.test(css),
+      'O ciclo dos sinais saiu do CSS.\n'
+      + '  Seis laços infinitos numa biblioteca de animação rodam na thread\n'
+      + '  principal, numa página que já paga uma arte de tela cheia.',
+    ).toBe(true);
+    expect(
+      /animation-play-state: paused/.test(css) && /sinais-parados/.test(fonte),
+      'Os sinais deixaram de pausar fora da tela.\n'
+      + '  Eles continuariam animando para quem já rolou até o rodapé — a versão\n'
+      + '  barata dos 29.441 ms que a cena 3D custou.',
+    ).toBe(true);
+  });
+
+  it('quem pediu menos movimento continua vendo os sinais', () => {
+    // Eles não são enfeite: são a única coisa que diz que aquele mundo tem
+    // gente dentro. O ciclo some; o conteúdo fica.
+    const css = FONTE(CSS);
+    const reduzido = css.slice(css.indexOf('prefers-reduced-motion'));
+    expect(
+      /animation: none/.test(reduzido) && /opacity: 1/.test(reduzido),
+      'No modo sem movimento os sinais somem em vez de ficarem parados.\n'
+      + '  Com `animation: none` e sem `opacity: 1` eles herdam o estado\n'
+      + '  inicial do keyframe, que é INVISÍVEL: a primeira tela volta a ser\n'
+      + '  arte + frase para quem desligou animação.',
+    ).toBe(true);
+  });
+});

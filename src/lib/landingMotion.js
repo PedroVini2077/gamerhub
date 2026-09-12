@@ -30,26 +30,6 @@ export const fadeUpReveal = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
 };
 
-/**
- * `[12/09]` A entrada de uma cena que ATRAVESSA — e por que ela não é o
- * `fadeUpReveal` de novo.
- *
- * Ordem do dono: *"não quero cinco fades iguais"*. Esta entrada difere em duas
- * coisas que se sentem: a cena vem **do lado onde o texto dela mora** (então
- * duas cenas seguidas nunca entram pela mesma direção, porque o `lado`
- * alterna), e ela chega com um leve recuo de escala em vez de subir.
- *
- * `x` e `scale` são compostos pelo navegador exatamente como `y` — a troca não
- * custa nada e desfaz a sensação de fila.
- */
-export const entradaDaCena = (lado = 'esquerda') => ({
-  initial: { opacity: 0, x: lado === 'esquerda' ? -48 : 48, scale: 0.985 },
-  animate: {
-    opacity: 1, x: 0, scale: 1,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
-  },
-});
-
 // Container com filhos em cascata — filhos usam fadeUpReveal e herdam
 // initial/animate do pai por propagação (não declaram os próprios)
 export const staggerContainer = (stagger = 0.12) => ({

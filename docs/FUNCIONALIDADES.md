@@ -139,6 +139,19 @@ andamento do recurso na `BannedScreen`; o que faltava era saber que isso existe.
 Identificar o visitante banido foi descartado por privacidade — ver
 [DECISOES.md](DECISOES.md).
 
+**`[12/09]` A página é uma TRAVESSIA, não uma pilha de seções.** Nenhuma cena
+tem borda: cada uma sobe por cima do fim da anterior e a borda de cima é
+dissolvida por uma máscara, então duas artes dividem a mesma tela sem emenda
+visível. As artes vão de borda a borda. E cada chegada tem um gesto próprio —
+a do feed **sobe**, a da comunidade **afasta** a câmera, a das lives
+**mergulha**, a das keys **deriva** para o lado.
+
+**A primeira tela tem sinais de vida**: fragmentos do produto — uma curtida,
+alguém digitando, gente online, uma key liberada, XP caindo, uma live no ar —
+aparecendo um de cada vez sobre a arte, e depois linhas finas que os ligam ao
+centro. É o que faz os trajetos da convergência parecerem a conclusão de algo,
+e não um efeito novo.
+
 **`[12/09]` Cada cena tem uma PERSONALIDADE de movimento**, e ela nasce do que a
 funcionalidade é — não do catálogo de efeitos:
 

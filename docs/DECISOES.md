@@ -1900,3 +1900,102 @@ para o vazio **sem nada acusar**.
 
 Então cada sobreposição é um objeto do GamerHub **pousado** na cena, posicionado
 por uma regra (do lado oposto ao texto) e não por coordenadas medidas na imagem.
+
+---
+
+## `[12/09]` O `FluxoDeDados` sai da LANDING — e continua vivo no site logado
+
+**Decisão do dono, com o motivo dele:** *"não é porque o efeito seja ruim. Ele
+simplesmente perdeu relevância diante da nova linguagem visual... uma cachoeira
+de dados atrás de tudo começa a competir com a linguagem principal. Além disso,
+atualmente ela mal é percebida."*
+
+Ele está certo nas duas metades. Com as artes ocupando a faixa inteira e as
+cenas presas cobrindo a tela, os traços ficavam escondidos na maior parte da
+página — e onde apareciam, disputavam com o assunto do quadro.
+
+**O que NÃO saiu, e a distinção é dele:** `grid-bg` e `scanline-overlay` ficam.
+
+| | o que é | por isso |
+| --- | --- | --- |
+| `FluxoDeDados` | **elemento visual ativo** — tem movimento próprio | compete com a cena |
+| `grid-bg`, `scanline-overlay` | **textura ambiental** — não se move sozinha | não compete |
+
+**E o componente continua em uso.** O site logado o monta pelo `FundoDaSecao`,
+com a cor de cada seção (`lib/acentoDaSecao.js`). Apagá-lo junto teria sido ir
+além do pedido e matar um recurso que funciona onde não há arte competindo.
+
+> **A armadilha que quase peguei:** `usePonteiroDaPagina` foi criado por causa
+> do fluxo, e apagar os dois juntos parece limpeza. A `MarcaFlutuante` lê
+> `--ponteiro-x` no CSS — sem o hook ela pararia de reagir ao ponteiro **sem
+> erro nenhum**, porque a variável tem valor padrão e o `calc` continua válido.
+> Tem trava.
+
+---
+
+## `[12/09]` A COSTURA — como uma cena passa a invadir a anterior
+
+**O diagnóstico dele:** *"as cenas individualmente estão cinematográficas, mas a
+página ainda denuncia que são blocos independentes"*. E a régua: *"não pense em
+'como colocar uma animação entre duas imagens'. Pense em 'como fazer a imagem A
+se transformar na imagem B'"*.
+
+**A solução tem duas metades, e uma sem a outra não funciona:**
+
+| | o que faz | sozinha |
+| --- | --- | --- |
+| **margem negativa** | a cena sobe por cima do fim da anterior | a borda dura aparece por cima: fica **pior** que o corte |
+| **máscara no topo** | apaga a borda de cima da cena que chega | dissolve para o vazio: o corte continua onde estava |
+
+**Por que máscara e não um véu por cima.** Um gradiente sobreposto escureceria o
+que está embaixo — a cena anterior perderia brilho na emenda. A máscara apaga a
+arte **nova** na faixa de emenda e deixa a anterior intacta: é dissolução, não
+sombra.
+
+**Por que não custa quadro.** A máscara é estática — não anima, não é
+recalculada. O custo é uma camada de composição, uma vez. Foi o mesmo raciocínio
+que descartou `clip-path` animado nas cortinas.
+
+**A costura é um TIPO de revelação, não um segundo eixo.** Cena costurada não
+recebe cortina nem deslize: invadir a anterior já é a entrada. Duas entradas na
+mesma cena brigam — uma desliza de lado enquanto a outra dissolve por cima —, e
+o resultado é movimento sem leitura.
+
+---
+
+## `[12/09]` Três mecanismos de entrada viraram UM — e a variedade mudou de lugar
+
+**O que existia depois do bloco A:** deslize lateral, cortina (em três eixos) e
+costura. Três formas de uma cena entrar, escolhidas por cena para dar variedade.
+
+**O que a costura em todas as emendas revelou:** as outras duas viraram uma
+**segunda entrada empilhada**. Uma cena que já está dissolvendo por cima da
+anterior e ainda desliza de lado, ou ainda abre uma cortina, tem dois movimentos
+disputando a mesma leitura — e o resultado é movimento sem significado.
+
+**A decisão:** ficou só a costura. O `CortinaDaCena.jsx` e o `entradaDaCena` do
+`landingMotion` foram **apagados** (§6.1: componente sem chamador é código morto).
+
+**E a variedade mudou de lugar, que é a parte que importa.** Ela saiu do
+*mecanismo de entrada* e foi para o **gesto da arte que chega**: `sobe`,
+`afasta`, `mergulha`, `deriva`. Menos mecanismo, mais variação — que é
+literalmente o que o dono pediu: *"quero a solução mais simples que consiga
+produzir a experiência desejada com qualidade"*.
+
+> A trava mudou junto: ela vigiava se as revelações eram distintas; agora vigia
+> se **duas emendas seguidas** repetem o gesto. E a regra não é "todos
+> diferentes" — seis gestos distintos seria o catálogo que ele mandou evitar.
+
+---
+
+## `[12/09]` As artes passam a ocupar a largura inteira
+
+Pedido dele: *"a arte deve parecer um cenário, não um card gigante"*.
+
+Saíram as duas coisas que ainda entregavam "isto é um card": o respiro lateral
+de 24 px e o canto arredondado. As cenas iam de borda a borda; o texto continua
+com o recuo dele, porque texto encostado na borda não se lê.
+
+**O que NÃO saiu:** `overflow-hidden`. Sem ele, a arte ampliada durante o gesto
+de chegada criaria barra de rolagem horizontal — e barra horizontal numa landing
+é o tipo de defeito que só aparece no aparelho de outra pessoa.

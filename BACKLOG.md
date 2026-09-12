@@ -46,68 +46,60 @@ deixar a página mais impressionante"*.
 **Objetivo:** a landing dos três atos — a fenda, o que converge, você já está
 dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 
-#### `[12/09]` PLANO DA FATIA 5 — CONCLUÍDA
+#### `[12/09]` FATIAS 5 e 6 — CONCLUÍDAS e mergeadas (PR #191 e #192)
 
-O prólogo por rolagem, do segundo prompt dele. As etapas, todas fechadas:
+O prólogo (ATO 0 → GAMERHUB) e as cinco cenas com personalidade de movimento
+estão na `main`. O detalhe de cada uma está em
+[`BRIEFING-LANDING-2026-09.md`](docs/identidade/BRIEFING-LANDING-2026-09.md).
 
-| Etapa | O que é | Estado |
+#### `[12/09]` FATIA 7 — CONTINUIDADE CINEMATOGRÁFICA (em execução)
+
+> Quarto prompt dele, e o diagnóstico é preciso: *"as cenas individualmente
+> estão cinematográficas, mas a página ainda denuncia que são blocos
+> independentes"*. E a régua: *"não pense em 'como colocar uma animação entre
+> duas imagens'. Pense em 'como fazer a imagem A se transformar na imagem B'"*.
+
+**Ele mandou fazer AOS POUCOS** — *"eu sei que é muita coisa, grava tudo e faça
+aos poucos"*. Então a fatia vai em três blocos, cada um com PR próprio.
+
+| Bloco | O que é | Estado |
 | --- | --- | --- |
-| A | Ler a landing inteira e propor a arquitetura (regra 17 dele) | **feita** — a proposta está no briefing |
-| B | `lib/atosDaLanding.js` — o roteiro como dado, não como código | **feita** |
-| C | `PalcoDeRolagem` — cena presa + progresso, o único que sabe o que é rolagem | **feita** |
-| D | `PrologoDaLanding` — as cinco camadas, cada uma com sua janela | **feita** |
-| E | `PrologoParado` — a mesma landing para `prefers-reduced-motion` | **feita** |
-| F | `ArteDaCena` — o `<picture>` que estava copiado em dois lugares | **feita** |
-| G | O cartão de compartilhamento passa a ser a arte | **feita** |
-| H | Travas (11 novas), medição e documentação | **feita** |
+| **A** | Tirar o `FluxoDeDados` da landing + costurar HERO → HIGHLIGHTS → FEED, que é o corte mais visível | **feito** em 12/09 |
+| **B** | As artes ganharem a tela inteira + a costura nas outras quatro emendas (comunidade, lives, keys, ranks, CTA) | **feito** em 12/09 |
 
-#### `[12/09]` PLANO DA FATIA 6 — DAR VIDA ÀS CENAS (em execução)
+**`[12/09]` O bloco A fechou.** O `FluxoDeDados` saiu da landing (e continua no
+site logado), a faixa de destaques deixou de ser uma seção e passou a ser
+conduzida pela rolagem invadindo o fim do prólogo, e nasceu o mecanismo de
+**costura** — margem negativa + máscara no topo — aplicado por enquanto só na
+emenda para o Feed. O bloco B estende a costura para as outras e dá tela cheia
+às artes. Detalhe em `docs/DECISOES.md`.
+| **C** | As microanimações do ATO 0 — a arte de abertura viva antes da transformação | **feito** em 12/09 |
 
-Terceiro prompt dele, e a regra que manda é a 14: **o movimento nasce do
-produto**, não do catálogo de efeitos. *"Se uma animação não reforçar o
-significado da cena, provavelmente ela não precisa existir."*
+**`[12/09]` A FATIA 7 FECHOU.** Os três blocos estão na branch. A landing deixou
+de ser uma sequência de blocos e virou uma travessia: o fluxo saiu, o hero cede
+para os cards, as seis emendas somem, as artes ocupam a tela, cada chegada tem
+um gesto próprio, e o ATO 0 tem sinais de vida que preparam a convergência.
 
-**A personalidade de cada cena, decidida antes de escrever qualquer linha:**
+**O que fica em aberto, e é medição, não conserto:** `mask-image` promove cada
+cena a camada própria de composição — são **seis** agora. Em GPU de celular isso
+tem custo de memória de vídeo que nenhuma medição de byte enxerga. É o primeiro
+lugar a olhar se alguém relatar travamento ao rolar. Está em `DESEMPENHO.md`.
 
-| Cena | Personalidade | Presa? | O movimento |
-| --- | --- | --- | --- |
-| Feed | atividade | não | posts chegando escalonados, curtida acendendo, contador subindo |
-| Comunidade | conexão | **sim** | nós dispersos → linhas se desenhando → constelação |
-| Lives | presença | não | o player PARADO e o chat subindo — o contraste é o efeito |
-| Keys | descoberta | **sim** | cartas passando, uma ganha foco, desconto, reflexo |
-| Ranks | progressão | não (mas guiado pela rolagem) | a barra de XP enche conforme a cena atravessa a tela |
-| CTA | pertencimento | não | cortina que sobe, em vez do sexto `fadeUpReveal` |
+**O que ele PROIBIU nesta rodada, e vale para os três blocos:** fade preto entre
+cenas (só o do prólogo, que tem função narrativa) · prender as cinco · parallax
+exagerado · 3D · biblioteca nova · cartas falsas nas Keys · partículas · mais
+neon · destruir a composição de celular · mexer em rota, texto ou funcionalidade
+· remover os cards clicáveis do `HighlightsStrip` (eles são o índice da página).
 
-**Por que só DUAS presas.** Ele foi explícito: *"não transforme obrigatoriamente
-cada uma das cinco em um enorme bloco preso... não quero cinco mini-sites
-consecutivos"*. Prender as cinco somaria ~13 telas de rolagem a uma página que
-já tem 9. As duas escolhidas são as que têm uma **transformação** para contar
-(dispersão→conexão, coleção→oportunidade); as outras três têm um **estado** que
-se vê melhor parado.
+**O que ele mandou PRESERVAR:** as cinco cenas, os overlays e as personalidades,
+as artes das duas composições, o CTA com pessoas, as âncoras, o
+`prefers-reduced-motion`, o lazy, e a distinção
+`CenaDaLanding` × `CenaPresa` × `PalcoDeRolagem`.
 
-**A regra que decide onde a sobreposição pode ficar:** ela é **camada própria**,
-nunca remendo em cima de um detalhe desenhado dentro da arte. Alinhar um
-contador ao contador que já existe no quadro seria frágil por construção — a
-composição larga e a de retrato têm enquadramentos diferentes, e a arte pode ser
-regerada. Cada sobreposição é um objeto do GamerHub pousado na cena.
-
-| Etapa | O que é | Estado |
-| --- | --- | --- |
-| A | Separar a moldura (arte + véu + texto) para a cena presa e a solta compartilharem | **feita** |
-| B | `useProgressoDeRolagem` — o progresso, com e sem prender, numa fonte só | **feita** |
-| C | As cinco sobreposições, uma por cena | **feita** |
-| D | Uma revelação diferente por cena (nada de `fadeUpReveal` em fila) | **feita** |
-| E | `prefers-reduced-motion` em todas: estado final, parado | **feita** |
-| F | Travas (7, todas provadas) + medição | **feita** |
-
-**Duas ideias foram implementadas e CORTADAS depois de eu ver no navegador** —
-a fileira de cartas de jogo nas Keys (a arte já é a coleção) e a hipótese de
-prender as cinco cenas. As duas estão em `docs/DECISOES.md` com o motivo.
-
-**O que fica aberto desta fatia:** a página cresceu de 8.666 para 11.601 px no
-computador — 34%, por causa das duas cenas presas. Não é defeito, é o preço da
-narrativa; mas se ele incomodar no uso real, a alavanca é a `altura` de cada
-`CenaPresa`, num arquivo só.
+**`[12/09]` ETAPA 0 do prompt — o merge manual dele, CONFERIDO.** `origin/main`
+está em `b9c195a` (merge do PR #192), `git diff 61f69c3 origin/main` é vazio, os
+6 arquivos de `cenas/` estão lá, build/lint/631 testes/6 portões verdes, e a
+produção serve **o mesmo hash** que o build local da `main` gera. Nada faltou.
 
 **Sobre a memória da abertura: NÃO há o que construir.** Ele pediu que ela não
 volte ao trocar de aba, só ao fechar e abrir. Conferido em
@@ -1147,8 +1139,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->110<!--/n--> arq ·
-  <!--n:src.lib.linhas-->10.821<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->112<!--/n--> arq ·
+  <!--n:src.lib.linhas-->11.168<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
