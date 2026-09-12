@@ -1110,3 +1110,59 @@ continuar legível — e trocar legibilidade por byte sem olhar seria desfazer o
 motivo de as artes de retrato existirem. A medição que resolve: gerar uma cena a
 0,72 e comparar o recorte do texto lado a lado. Está no `BACKLOG.md`.
 
+
+---
+
+### `[12/09]` O prólogo por rolagem custou 0,3 kB — e a conta quase saiu errada
+
+A narrativa de cinco atos que a rolagem conduz (`PrologoDaLanding`) parecia o
+tipo de coisa que engorda o carregamento inicial: ela usa `useScroll`,
+`useSpring` e `useTransform`, que não eram usados em lugar nenhum do projeto até
+hoje. Medido, na mesma ferramenta e no mesmo arquivo `.env.local`:
+
+| | antes (HEAD) | depois |
+| --- | --- | --- |
+| JavaScript inicial | 737,0 kB | **737,3 kB** (+0,3 kB) |
+| chunk da Landing (lazy) | 24,9 kB | **37,7 kB** (+12,8 kB) |
+| arte na 1ª dobra, computador | 0 kB | **104 kB** |
+| arte na 1ª dobra, celular 400 px | 0 kB | **36 kB** |
+
+**A arte da primeira tela é o custo real, e ele é deliberado.** Ela é o conteúdo
+do ATO 0, então é ansiosa e com `fetchPriority="high"` — é o elemento LCP da
+página, e adiá-la seria adiar a única coisa que existe na tela. As outras seis
+continuam preguiçosas: medido com o navegador, **uma** arte é baixada no
+carregamento, não sete.
+
+Ela tem uma cobertura que nenhuma outra tem: a abertura da marca dura ~2,15 s de
+tela cheia, e a arte baixa **por baixo dela**.
+
+#### A armadilha de medição em que eu caí — e ela JÁ estava documentada
+
+A primeira comparação acusou **+95,8 kB de JavaScript inicial** (641,5 → 737,3
+kB) e eu quase saí atrás de uma regressão que não existia. A causa: construí o
+"antes" numa árvore de trabalho separada, que **não tinha o `.env.local`**. Sem
+as variáveis do Supabase, a guarda no topo de `lib/supabase.js` vira condição
+constante e o empacotador poda 94 kB do `index`.
+
+**Isso não é descoberta minha: está escrito desde 11/09** em
+[`OPERACAO.md`](OPERACAO.md), na seção que conta como o portão media um site que
+ninguém recebia. Os números de lá (640,8 → 735,1 kB) são os mesmos que eu
+remedi hoje. Registro aqui só o que aquela seção não cobria, porque ela fala do
+CI e não de comparação local:
+
+> **Árvore de trabalho nova não herda arquivo ignorado pelo git.** Medir antes e
+> depois na mesma ferramenta (§0.3, regra 5) não basta se o *ambiente do build*
+> muda junto — e `git worktree` muda, em silêncio, porque `.env.local` está no
+> `.gitignore`.
+
+Reproduzido nos dois sentidos antes de eu acreditar: com o mesmo `.env.local`,
+HEAD dá 737,0 kB; a mesma árvore sem ele dá 641,5 kB. O hash do arquivo gerado
+bateu com o da minha árvore, o que fecha o diagnóstico.
+
+#### O que os números NÃO dizem
+
+Não medi tempo — nem TBT, nem LCP, nem em laboratório nem em campo. O que está
+acima é byte, que é determinístico (§0.3, regra 4). A camada roda em `transform`
+e `opacity`, que o navegador resolve no compositor, e não há laço de JavaScript
+por quadro; mas **isso é o desenho, não uma medição**. A medição de campo virá
+do Vercel Speed Insights, que já está instalado.

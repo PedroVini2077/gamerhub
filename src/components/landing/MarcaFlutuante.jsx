@@ -37,8 +37,25 @@ import {
  * e ele existe por causa de uma lição cara: a cena 3D continuava desenhando
  * 60×/s para quem já tinha rolado para longe, e isso custou **29.441 ms** de
  * thread principal num PageSpeed (§0.3).
+ *
+ * ── `[12/09]` Por que a opacidade virou parâmetro ───────────────────────────
+ *
+ * Ela é `0.16` no hero e continua sendo — o valor é o contrato de
+ * `lib/marcaNoHero.js`, e é o que mantém o parágrafo legível por cima dela.
+ *
+ * O que mudou é que o prólogo precisa **acender** a marca no ato dela e depois
+ * baixá-la até esse mesmo 0,16. Isso não cabe multiplicando opacidade de pai
+ * com filho (o produto nunca passa do menor dos dois), então quem controla a
+ * opacidade ali é a camada de fora, e este componente entra transparente ao
+ * próprio valor — `1` — para não dividir o brilho em dois lugares.
+ *
+ * @param {object} props
+ * @param {number} [props.opacidade] Padrão: o contrato do hero. Só o prólogo
+ *   passa outro valor, e passa `1` porque a opacidade dele é animada por fora.
  */
-export default function MarcaFlutuante({ className = '' }) {
+export default function MarcaFlutuante({
+  className = '', opacidade = OPACIDADE_NO_HERO,
+}) {
   // O `<defs>` é global ao documento, e esta marca convive com a do cabeçalho e
   // com a da abertura. Sem id único, um gradiente rouba o do outro e a marca
   // aparece preta — sem erro nenhum.
@@ -75,7 +92,7 @@ export default function MarcaFlutuante({ className = '' }) {
         top: CENTRO_DA_MARCA.y,
         width: TAMANHO_NO_HERO,
         height: TAMANHO_NO_HERO,
-        opacity: OPACIDADE_NO_HERO,
+        opacity: opacidade,
       }}
       aria-hidden="true"
     >

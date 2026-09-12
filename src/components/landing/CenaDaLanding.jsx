@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { fadeUpReveal, VIEWPORT } from '../../lib/landingMotion';
-import { LARGURA_ALTA, ALTURA_ALTA } from '../../lib/cenasDaLanding';
+import ArteDaCena from './ArteDaCena';
 
 /**
  * Uma CENA da landing: a arte ocupa a faixa inteira, o texto vive por cima.
@@ -41,8 +41,7 @@ import { LARGURA_ALTA, ALTURA_ALTA } from '../../lib/cenasDaLanding';
  * `docs/DESEMPENHO.md`.
  */
 export default function CenaDaLanding({
-  id, arte, largura, altura, eyebrow, titulo, descricao, lado = 'esquerda',
-  prioridade = false,
+  id, arte, eyebrow, titulo, descricao, lado = 'esquerda', prioridade = false,
 }) {
   const textoNaEsquerda = lado === 'esquerda';
 
@@ -55,32 +54,11 @@ export default function CenaDaLanding({
       variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}
       className="relative overflow-hidden md:rounded-2xl my-8 md:my-16"
     >
-      {/* `[12/09]` `<picture>` e não só `srcset`, e a diferença importa:
-          `srcset` troca de RESOLUÇÃO; `<picture>` troca de ARTE. As duas
-          versões mostram a mesma cena em composições diferentes — a de retrato
-          foi gerada pelo dono para a tela em pé, não recortada da outra. */}
-      <picture>
-        <source
-          media="(max-width: 767px)"
-          srcSet={arte.alta.srcSet}
-          sizes="100vw"
-          width={LARGURA_ALTA} height={ALTURA_ALTA}
-        />
-        <img
-          src={arte.src}
-          srcSet={arte.srcSet}
-          sizes="min(1600px, 100vw)"
-          width={largura} height={altura}
-          alt=""
-          aria-hidden="true"
-          // A primeira cena pode ser ansiosa; as outras nunca. Seis artes
-          // baixando juntas seriam ~700 kB para quem talvez pare na 1ª dobra.
-          loading={prioridade ? 'eager' : 'lazy'}
-          decoding="async"
-          fetchPriority={prioridade ? 'high' : 'low'}
-          className="w-full h-full object-cover"
-        />
-      </picture>
+      {/* `[12/09]` O `<picture>` mora em `ArteDaCena` — ele é o mesmo aqui, no
+          `FinalCTA` e no prólogo, e são seis decisões finas juntas
+          (`media`, `srcSet`, `sizes`, dimensões, `loading`, `fetchPriority`).
+          Copiado três vezes, diverge na primeira que alguém mexer. */}
+      <ArteDaCena arte={arte} prioridade={prioridade} />
 
       {/* O véu, SÓ a partir do `md`. Ele escurece o lado do texto e some no
           outro — a arte continua visível onde ela é o assunto. No celular não

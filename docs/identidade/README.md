@@ -160,10 +160,22 @@ o cartão de compartilhamento. Para mudar a marca, troca-se a arte e roda-se
 | `icone-192.webp` · `icone-512.webp` | WebP · 4 e 10 kB | o corpo novo é um gradiente suave, e **PNG comprime gradiente muito mal**: o de 512 dava 274 kB, contra 13 kB em WebP |
 | `icone-maskable-512.webp` | WebP · 9 kB | idem, e sem cantos arredondados — quem desenha a forma é o Android |
 | `apple-touch-icon.png` | PNG · 37 kB | **exceção obrigatória**: o iOS não aceita WebP neste `<link>` |
-| `cartao-1200x630.jpg` | JPEG · 31 kB | o `og:image`. JPEG porque o rastreador do Facebook ainda falha com WebP em parte dos casos, **e a falha é muda** — o link volta a aparecer sem imagem |
+| `cartao-1200x630.jpg` | JPEG · 155 kB | o `og:image`. JPEG porque o rastreador do Facebook ainda falha com WebP em parte dos casos, **e a falha é muda** — o link volta a aparecer sem imagem |
 
-O conjunto pesa **97 kB**, contra 195 kB do conjunto anterior: ficou mais leve
-apesar de ter ganhado um arquivo a mais e um corpo mais elaborado.
+Os ÍCONES pesam **60 kB**, contra 195 kB do conjunto anterior: ficaram mais
+leves apesar de um corpo mais elaborado.
+
+> **`[12/09]` O cartão saiu dessa conta, e cresceu de 31 kB para 155 kB.** Ele
+> deixou de ser a marca num fundo escuro e passou a ser **a arte de abertura da
+> landing**, com a marca assinando o canto — decisão do dono, e o porquê está em
+> [`DECISOES.md`](../DECISOES.md).
+>
+> **O peso não conta como os outros.** Ícone é baixado pelo visitante; o cartão
+> é baixado **uma vez pelo servidor da rede social**, sem página aberta. O
+> argumento de byte que decidiu WebP nos ícones simplesmente não se aplica a
+> ele. Ele continua saindo de `npm run icones`, e a arte fonte é a referência
+> em `referencias/cenas/1-hero.webp` — não a versão já comprimida do site, para
+> não empilhar artefato sobre artefato.
 
 #### `[11/09]` Onde a marca aparece ANIMADA
 

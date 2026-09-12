@@ -1805,3 +1805,54 @@ clarão sumiu por descuido e vai "consertar".
 > num quadro qualquer a marca não estiver visível por causa do brilho, é o
 > clarão de novo, e está errado.
 
+
+---
+
+## `[12/09]` A marca deixa de assentar no hero — ela passa a ser AONDE a história chega
+
+**O que muda.** Até 11/09 a abertura pintava a marca e ela **assentava** no
+hero: mesmo centro (`lib/marcaNoHero.js`), mesma coisa, e a troca lia como
+continuidade em vez de dois desenhos parecidos. Com o prólogo por rolagem, o
+clarão da abertura abre para a **arte do ATO 0**, e a marca só reaparece no
+quarto ato.
+
+**Por que.** É consequência direta do pedido dele: o ATO 0 é *"a arte quase em
+tela cheia, sem o logo do GamerHub por cima"*, e o arco termina em
+`... → MARCA → GAMERHUB`. Marca visível na primeira tela entregaria o fim da
+história antes do começo.
+
+**O que se ganha, e não é consolo.** A marca deixa de ser um objeto que está
+sempre ali e passa a ser o destino: os trajetos da convergência nascem do escuro
+e ela acende no meio deles. O contrato de posição continua valendo — ele só é
+usado mais tarde.
+
+**O que se perde, dito com todas as letras:** a continuidade entre a abertura e
+o que vem depois. Quem vir a abertura duas vezes vai notar que a marca some no
+fim dela.
+
+**Se ele preferir o contrário**, o caminho está escrito e é curto: a marca
+nasceria visível em progresso 0 e sairia nos primeiros 6% da rolagem. Isso
+contraria a regra 1 do prompt dele ao pé da letra, então não foi feito por
+conta própria — é decisão de produto, não minha (§7).
+
+---
+
+## `[12/09]` O cartão de compartilhamento passou a ser a ARTE, não a marca
+
+**Decisão dele, com estas palavras:** *"pode colocar ela no cartão de
+compartilhamento"*.
+
+**O que estava errado com o anterior.** Ele existia desde 11/09 e resolvia o
+problema certo — link colado no WhatsApp aparecia sem imagem nenhuma. Mas era a
+marca num fundo escuro: **identificava** o site e não dizia **nada** sobre ele.
+Cartão é, para muita gente, a única coisa vista antes de decidir clicar.
+
+**O que ficou.** A arte de abertura recortada em 1200×630, com véu só no pé e a
+marca assinando o canto inferior esquerdo — assinatura, não assunto, já que o
+monograma está desenhado no meio da própria arte. Quem clica vê exatamente o que
+a prévia mostrou, porque é a mesma arte do ATO 0.
+
+**O que NÃO mudou, e o motivo continua valendo:** JPEG, e não WebP. O rastreador
+do Facebook ainda falha com WebP em parte dos casos, e a falha é **muda** — o
+link volta a aparecer sem imagem. Custou 155 kB, baixados uma vez pelo servidor
+da rede social e nunca pelo visitante.

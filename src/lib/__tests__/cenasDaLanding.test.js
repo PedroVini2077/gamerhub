@@ -12,6 +12,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 const FONTE = (c) => readFileSync(c, 'utf8');
 const CENA = 'src/components/landing/CenaDaLanding.jsx';
 const CTA = 'src/components/landing/FinalCTA.jsx';
+const ARTE = 'src/components/landing/ArteDaCena.jsx';
 const MAPA = 'src/lib/cenasDaLanding.js';
 const REF_LARGA = 'docs/identidade/referencias/cenas';
 const REF_ALTA = 'docs/identidade/referencias/cenas-retrato';
@@ -100,48 +101,102 @@ describe('as artes das cenas', () => {
   });
 });
 
+describe('o cartão de compartilhamento', () => {
+  it('o recorte do cartão usa as medidas REAIS da arte', () => {
+    // `[12/09]` O cartão passou a ser a arte do ATO 0, recortada de 1672x940
+    // para 1200x630. O script escreve essas duas medidas à mão, porque ele lê
+    // o arquivo como bytes e não como imagem.
+    //
+    // A falha silenciosa: o dono regerar a arte noutra proporção. A conta de
+    // "cobrir" passaria a mirar no lugar errado — o cartão sairia com tarja,
+    // ou cortando o assunto — e nada acusaria, porque o arquivo é gerado sem
+    // erro e ninguém olha o og:image depois de ele existir uma vez.
+    const script = readFileSync('scripts/gerar-icones.mjs', 'utf8');
+    const mapa = FONTE(MAPA);
+    const larg = script.match(/larguraDaArte:\s*(\d+)/)?.[1];
+    const alt = script.match(/alturaDaArte:\s*(\d+)/)?.[1];
+    expect(
+      `${larg}x${alt}`,
+      'As medidas da arte no gerador do cartão não batem com as do site.\n'
+      + '  `scripts/gerar-icones.mjs` recorta a arte por essas duas medidas.\n'
+      + '  Divergindo delas, o cartão sai com tarja preta ou cortando o meio —\n'
+      + '  e a prévia do WhatsApp é onde muita gente vê o site pela primeira vez.',
+    ).toBe(
+      `${mapa.match(/export const LARGURA = (\d+)/)[1]}x${mapa.match(/export const ALTURA = (\d+)/)[1]}`,
+    );
+  });
+});
+
 describe('o custo das artes', () => {
-  it('toda cena que não é a primeira é PREGUIÇOSA', () => {
+  // `[12/09]` O `<picture>` era copiado em `CenaDaLanding` e em `FinalCTA`, e o
+  // prólogo seria a terceira cópia. Hoje ele mora em `ArteDaCena`, e é lá que
+  // estas travas olham — mas só depois de provarem que os chamadores REALMENTE
+  // passam por ele. Sem essa primeira asserção, alguém poderia reescrever um
+  // `<img>` à mão dentro da cena e as três verificações abaixo continuariam
+  // verdes, olhando um arquivo que ninguém mais usa.
+  it('as cenas usam o `ArteDaCena` — e não um `<img>` próprio', () => {
     for (const caminho of [CENA, CTA]) {
       const fonte = FONTE(caminho);
       expect(
         fonte,
-        `${caminho} deixou de declarar \`loading\`.\n`
-        + '  Sem `loading="lazy"` o navegador baixa as SEIS artes de uma vez: são\n'
-        + '  813 kB medidos no computador, para quem talvez pare na primeira\n'
-        + '  dobra. Nada estoura, nada aparece em log — só a conta de dados de\n'
-        + '  quem visita. E o orçamento de bytes do CI não vê isto: ele mede\n'
-        + '  chunk de JavaScript.',
-      ).toContain('loading=');
+        `${caminho} deixou de usar \`<ArteDaCena>\`.\n`
+        + '  As seis decisões de carregamento (media, srcSet, sizes, dimensões,\n'
+        + '  loading, fetchPriority) voltaram a ser copiadas. Copiadas, elas\n'
+        + '  divergem na primeira vez que alguém mexer em uma — e a divergência\n'
+        + '  não aparece: a página continua bonita, só custa mais.',
+      ).toContain('<ArteDaCena');
+      expect(
+        /<img[\s>]/.test(fonte),
+        `${caminho} voltou a ter um \`<img>\` escrito à mão.`,
+      ).toBe(false);
     }
+  });
+
+  it('só a PRIMEIRA arte da página pode ser ansiosa', () => {
+    const arte = FONTE(ARTE);
+    expect(
+      arte,
+      `${ARTE} deixou de decidir o \`loading\`.\n`
+      + '  Sem `loading="lazy"` nas artes de baixo o navegador baixa as SETE de\n'
+      + '  uma vez: são ~960 kB medidos no computador, para quem talvez pare na\n'
+      + '  primeira dobra. Nada estoura, nada aparece em log — só a conta de\n'
+      + '  dados de quem visita. E o orçamento de bytes do CI não vê isto: ele\n'
+      + '  mede chunk de JavaScript.',
+    ).toContain('loading=');
+    expect(arte).toContain("'eager'");
+    expect(arte).toContain("'lazy'");
+
     // O CTA é o último elemento da página: ele nunca pode ser ansioso.
-    expect(FONTE(CTA)).toContain('loading="lazy"');
+    // A chamada, não o texto: o arquivo EXPLICA num comentário por que não pede
+    // prioridade, e varrer o texto inteiro reprovaria a própria explicação.
+    expect(
+      /<ArteDaCena[^/>]*prioridade/.test(FONTE(CTA)),
+      'O `FinalCTA` passou a pedir `prioridade`.\n'
+      + '  Ele é a ÚLTIMA seção da landing. Arte ansiosa ali é banda cobrada de\n'
+      + '  quem talvez nunca role até lá.',
+    ).toBe(false);
   });
 
   it('toda arte reserva o espaço dela antes de chegar', () => {
-    for (const caminho of [CENA, CTA]) {
-      const fonte = FONTE(caminho);
-      expect(
-        /width=\{/.test(fonte) && /height=\{/.test(fonte),
-        `${caminho} tem \`<img>\` sem \`width\`/\`height\`.\n`
-        + '  Sem eles o navegador não sabe quanto espaço reservar, e a página\n'
-        + '  EMPURRA o conteúdo para baixo quando cada arte chega — enquanto a\n'
-        + '  pessoa está lendo. É o salto mais irritante que existe, e ele não\n'
-        + '  quebra nada: só acontece.',
-      ).toBe(true);
-    }
+    const arte = FONTE(ARTE);
+    expect(
+      /width=\{/.test(arte) && /height=\{/.test(arte),
+      `${ARTE} tem \`<img>\` sem \`width\`/\`height\`.\n`
+      + '  Sem eles o navegador não sabe quanto espaço reservar, e a página\n'
+      + '  EMPURRA o conteúdo para baixo quando cada arte chega — enquanto a\n'
+      + '  pessoa está lendo. É o salto mais irritante que existe, e ele não\n'
+      + '  quebra nada: só acontece.',
+    ).toBe(true);
   });
 
   it('o `sizes` acompanha o `srcset` — senão o celular baixa a arte do monitor', () => {
-    for (const caminho of [CENA, CTA]) {
-      const fonte = FONTE(caminho);
-      expect(
-        fonte.includes('srcSet') && fonte.includes('sizes='),
-        `${caminho} tem \`srcSet\` sem \`sizes\` (ou o contrário).\n`
-        + '  Sem `sizes`, o navegador assume que a imagem ocupa 100% da largura\n'
-        + '  da JANELA e escolhe o arquivo maior — o celular baixa a arte de\n'
-        + '  1600 px. Funciona, aparece certo, e custa 3x mais dados.',
-      ).toBe(true);
-    }
+    const arte = FONTE(ARTE);
+    expect(
+      arte.includes('srcSet') && arte.includes('sizes='),
+      `${ARTE} tem \`srcSet\` sem \`sizes\` (ou o contrário).\n`
+      + '  Sem `sizes`, o navegador assume que a imagem ocupa 100% da largura\n'
+      + '  da JANELA e escolhe o arquivo maior — o celular baixa a arte de\n'
+      + '  1600 px. Funciona, aparece certo, e custa 3x mais dados.',
+    ).toBe(true);
   });
 });

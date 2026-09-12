@@ -475,3 +475,24 @@ que aparecer vulnerabilidade de verdade, o reflexo já estará treinado.
 **O que se perde, dito com todas as letras:** um PR pode ser mergeado sem a
 auditoria ter rodado. O aviso aparece no resumo do PR, e a próxima execução
 verifica de novo — inclusive o mesmo commit, quando ele chega na `main`.
+
+### `[12/09]` GSAP + ScrollTrigger foram recusados para a narrativa da landing
+
+O prompt do dono mandava justificar antes de acrescentar a dependência. A conta
+deu contra, e por quatro motivos independentes:
+
+| | GSAP + ScrollTrigger | o que foi usado |
+| --- | --- | --- |
+| peso | ~70 kB **descompactados** no caminho crítico | **0** — `framer-motion` já está no pacote e é usado na landing inteira |
+| como prende a cena | JavaScript: cria elemento espaçador e reescreve o layout | `position: sticky`, no compositor |
+| conflito conhecido | o pin dele briga com `position: fixed`, e o `FluxoDeDados` é fixo | nenhum: a página rola normalmente |
+| manutenção | uma timeline central que cresce sem fim | uma janela por camada, num arquivo de dados |
+
+Medido depois de pronto: a camada custou **+0,3 kB** de JavaScript inicial (ver
+`DESEMPENHO.md`). O que o GSAP resolveria melhor — timelines encadeadas com
+easing por trecho — a landing não precisa: cada camada tem uma janela e uma
+transformação.
+
+**Isto não fecha a porta.** Se aparecer uma cena que exija sequência real
+(A termina, B começa, C depende do estado de B), a conta muda e a decisão se
+reabre — com medição, não com preferência.

@@ -46,19 +46,32 @@ deixar a página mais impressionante"*.
 **Objetivo:** a landing dos três atos — a fenda, o que converge, você já está
 dentro. Ver `docs/identidade/BRIEFING-2026-09.md`.
 
-#### `[11/09]` PLANO DA FATIA 2 — em execução
+#### `[12/09]` PLANO DA FATIA 5 — CONCLUÍDA
 
-Ele aprovou: frase **"Aqui o jogo continua."**, marca **pintada**, **brilho de
-objeto polido** que abre a landing, **~2,15 s**, e a marca com **vai e vem
-próprio, "como se estivesse no espaço"**, mais reação ao ponteiro.
+O prólogo por rolagem, do segundo prompt dele. As etapas, todas fechadas:
 
 | Etapa | O que é | Estado |
 | --- | --- | --- |
-| A | `lib/tempoDaAbertura.js` — o orçamento de tempo numa fonte só, lida pelo componente, pelo CSS e pelo teste | a fazer |
-| B | O ponteiro passa a ter **UM** ouvinte, escrevendo em `:root` — hoje o `FluxoDeDados` escreve no próprio contêiner e ninguém de fora enxerga | a fazer |
-| C | A abertura reescrita: pinta → frase → brilho → abre | a fazer |
-| D | `MarcaFlutuante` no hero: deriva própria + ponteiro | a fazer |
-| E | Travas e documentação | a fazer |
+| A | Ler a landing inteira e propor a arquitetura (regra 17 dele) | **feita** — a proposta está no briefing |
+| B | `lib/atosDaLanding.js` — o roteiro como dado, não como código | **feita** |
+| C | `PalcoDeRolagem` — cena presa + progresso, o único que sabe o que é rolagem | **feita** |
+| D | `PrologoDaLanding` — as cinco camadas, cada uma com sua janela | **feita** |
+| E | `PrologoParado` — a mesma landing para `prefers-reduced-motion` | **feita** |
+| F | `ArteDaCena` — o `<picture>` que estava copiado em dois lugares | **feita** |
+| G | O cartão de compartilhamento passa a ser a arte | **feita** |
+| H | Travas (11 novas), medição e documentação | **feita** |
+
+#### `[12/09]` PLANO DA FATIA 6 — a fazer
+
+As cinco cenas de baixo ainda entram todas com o mesmo `fadeUpReveal` — que é o
+*"cinco fades iguais"* que ele proibiu no mesmo prompt. O palco já existe e
+serve para elas.
+
+| Etapa | O que é |
+| --- | --- |
+| A | Decidir QUAIS cenas prendem — prender as cinco seria 18 telas de rolagem |
+| B | Uma transição própria por cena, com o respiro entre elas |
+| C | Medir de novo a 1ª dobra e o total: cena presa muda o que carrega e quando |
 
 **Sobre a memória da abertura: NÃO há o que construir.** Ele pediu que ela não
 volte ao trocar de aba, só ao fechar e abrir. Conferido em
@@ -95,8 +108,26 @@ muda é só o tempo que ela dura quando toca.
 | **2** | A abertura: marca pintada, frase revelada, reflexo polido, e a marca assenta no hero | **feita** |
 | **3** | As CINCO CENAS com arte própria + o CTA — **no PC** | **feita** em 12/09 |
 | 4 | As mesmas cenas **no CELULAR**, com as artes de RETRATO | **feita** em 12/09 |
-| 5 | O mecanismo de cena presa (sticky + progresso de scroll) | a fazer |
-| 6 | Ritmo: respiro entre as cenas, e as transições entre elas | a fazer |
+| **5** | O PRÓLOGO: cena presa + progresso de rolagem, os cinco atos do ATO 0 até o hero | **feita** em 12/09 |
+| 6 | O mesmo tratamento nas CINCO CENAS de baixo: respiro e transição própria entre elas | a fazer |
+
+**`[12/09]` A fatia 5 fechou.** Segundo prompt dele — a landing como narrativa
+de rolagem. O ATO 0 é a arte de abertura quase em tela cheia, **sem logo, sem
+parágrafo e sem CTA**, com a frase *"Tudo o que acontece entre gamers, em um só
+lugar."*; a rolagem conduz `ARTE → TRANSFORMAÇÃO → CONVERGÊNCIA → MARCA →
+GAMERHUB`. A arquitetura, as 20 regras dele item a item e o que se perdeu estão
+em [`BRIEFING-LANDING-2026-09.md`](docs/identidade/BRIEFING-LANDING-2026-09.md).
+
+**O que ficou aberto DENTRO da fatia 5, e é decisão dele:**
+
+- `[12/09]` 🔵 **A marca não assenta mais no hero** — a abertura abre para a
+  arte, e a marca só volta no 4º ato. É consequência da regra 1 do prompt dele
+  (ATO 0 sem logo). Se ele preferir a continuidade de volta, o caminho está
+  escrito em `docs/DECISOES.md` e são ~5 linhas.
+- `[12/09]` 🔵 **A fatia 6 é o resto do pedido:** as cinco cenas de baixo
+  continuam entrando com o mesmo `fadeUpReveal` — que é exatamente o *"cinco
+  fades iguais"* que ele proibiu. O palco (`PalcoDeRolagem`) já existe e serve
+  para elas sem mudança.
 
 **`[12/09]` A fila foi reorganizada em DOIS BLOCOS**, por decisão dele: *"faz
 primeiro no PC... eu vou regerar todas elas, mas no formato de celular, aí vamos
@@ -1080,8 +1111,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->107<!--/n--> arq ·
-  <!--n:src.lib.linhas-->10.266<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->109<!--/n--> arq ·
+  <!--n:src.lib.linhas-->10.606<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

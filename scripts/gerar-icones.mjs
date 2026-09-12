@@ -20,11 +20,25 @@
 // Uso:  node scripts/gerar-icones.mjs
 
 import { chromium } from 'playwright';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 
 import { CAMINHO_DA_MARCA, PARADAS_DO_GRADIENTE } from '../src/lib/marca.js';
 
 const CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+
+/**
+ * `[12/09]` A arte de abertura, para o CARTÃO de compartilhamento.
+ *
+ * Decisão do dono, com estas palavras: *"pode colocar ela no cartão de
+ * compartilhamento"*. Ela é a mesma arte do ATO 0 da landing — quem clica no
+ * link vê exatamente o que a prévia prometeu, e é isso que um cartão precisa
+ * fazer.
+ *
+ * A fonte é a REFERÊNCIA, não a versão gerada em `src/assets/`: aquelas já
+ * passaram por uma compressão a 0,80 para a web, e recomprimir imagem
+ * comprimida empilha artefato. Aqui parte-se do original, uma vez só.
+ */
+const ARTE_DO_CARTAO = 'docs/identidade/referencias/cenas/1-hero.webp';
 
 /** O fundo dos ícones de app. Igual ao `theme-color` do site. */
 const FUNDO = '#060608';
@@ -96,11 +110,64 @@ const ALVOS = [
   // moderno por um que sempre funciona é a conta certa aqui, porque quem baixa
   // este arquivo é o servidor da rede social, uma vez, e não o visitante a
   // cada visita — o argumento de peso que decidiu os ícones não vale para ele.
+  //
+  // **`[12/09]` Ele deixou de ser a marca sozinha e passou a ser A ARTE.** O
+  // comentário acima continua valendo no que decidiu o formato; o que mudou é o
+  // conteúdo. A marca num fundo escuro identificava o site e não dizia nada
+  // sobre ele — e cartão é a única coisa que muita gente vê antes de clicar.
+  //
+  // A marca continua no cartão, pequena, no canto: assinatura, não assunto. O
+  // centro é da arte, que já traz o monograma desenhado dentro dela.
   {
     arquivo: 'public/cartao-1200x630.jpg',
-    largura: 1200, altura: 630, margem: 0.26, raio: 0,
+    largura: 1200, altura: 630, margem: 0.26, raio: 0, arte: ARTE_DO_CARTAO,
   },
 ];
+
+/**
+ * O cartão de compartilhamento: a arte recortada em 1200×630, escurecida no pé,
+ * com a marca assinando o canto.
+ *
+ * ── O recorte, e por que ele não é opcional ─────────────────────────────────
+ *
+ * A arte é 1672×940 (16:9 = 1,778) e o cartão é 1,905. Esticar para preencher
+ * deformaria a cena; deixar sobra criaria duas tarjas pretas que o WhatsApp
+ * mostra como se fossem parte da imagem. Então é COBRIR: escala pela maior
+ * razão e corta o que passar — 22 px em cima e 22 embaixo, longe do assunto.
+ */
+function svgDoCartao({ largura, altura, arteBase64, larguraDaArte, alturaDaArte }) {
+  const escala = Math.max(largura / larguraDaArte, altura / alturaDaArte);
+  const l = larguraDaArte * escala;
+  const a = alturaDaArte * escala;
+  const x = (largura - l) / 2;
+  const y = (altura - a) / 2;
+
+  // A marca no canto: 11% da altura do cartão. Grande o bastante para ser
+  // reconhecida na prévia pequena do WhatsApp, pequena o bastante para não
+  // brigar com o monograma que já está desenhado no meio da arte.
+  const ladoDaMarca = altura * 0.11;
+  const folga = altura * 0.055;
+  const paradas = PARADAS_DO_GRADIENTE.map(({ pos, cor }) =>
+    `<stop offset="${pos}%" stop-color="${cor}"/>`).join('');
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"`
+    + ` viewBox="0 0 ${largura} ${altura}" width="${largura}" height="${altura}">`
+    + `<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">${paradas}</linearGradient>`
+    // Véu só no pé: ele existe para a marca do canto ter contraste, não para
+    // apagar a arte. Um véu uniforme deixaria o cartão cinza — o oposto do
+    // motivo de trocar a marca chapada pela arte.
+    + `<linearGradient id="veu" x1="0%" y1="100%" x2="0%" y2="0%">`
+    + `<stop offset="0%" stop-color="${FUNDO}" stop-opacity="0.88"/>`
+    + `<stop offset="34%" stop-color="${FUNDO}" stop-opacity="0.28"/>`
+    + `<stop offset="70%" stop-color="${FUNDO}" stop-opacity="0"/></linearGradient></defs>`
+    + `<rect width="${largura}" height="${altura}" fill="${FUNDO}"/>`
+    + `<image x="${x}" y="${y}" width="${l}" height="${a}"`
+    + ` xlink:href="data:image/webp;base64,${arteBase64}"/>`
+    + `<rect width="${largura}" height="${altura}" fill="url(#veu)"/>`
+    + `<g transform="translate(${folga} ${altura - folga - ladoDaMarca})`
+    + ` scale(${ladoDaMarca / 100})">`
+    + `<path d="${CAMINHO_DA_MARCA}" fill="url(#g)" fill-rule="evenodd"/></g></svg>`;
+}
 
 /**
  * O SVG da marca, com ou sem corpo. Usado pelo favicon e pelos PNGs.
@@ -181,9 +248,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const alvo of ALVOS) {
     const largura = alvo.largura ?? alvo.lado;
     const altura = alvo.altura ?? alvo.lado;
-    const svg = svgDaMarca({
-      corpo: true, margem: alvo.margem, raio: alvo.raio, largura, altura,
-    });
+    const svg = alvo.arte
+      ? svgDoCartao({
+        largura,
+        altura,
+        arteBase64: readFileSync(alvo.arte).toString('base64'),
+        // As medidas da arte de referência. Escritas aqui e conferidas pela
+        // trava: se a fonte mudar de proporção, o recorte silenciosamente
+        // passaria a cortar o assunto em vez das bordas.
+        larguraDaArte: 1672,
+        alturaDaArte: 940,
+      })
+      : svgDaMarca({
+        corpo: true, margem: alvo.margem, raio: alvo.raio, largura, altura,
+      });
     const formato = alvo.arquivo.endsWith('.webp') ? 'image/webp'
       : alvo.arquivo.endsWith('.jpg') ? 'image/jpeg' : 'image/png';
     const b64 = await pagina.evaluate(async ({ svg, largura, altura, formato }) => {

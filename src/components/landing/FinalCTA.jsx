@@ -1,9 +1,8 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { fadeUpReveal, VIEWPORT } from '../../lib/landingMotion';
-import {
-  CENAS, LARGURA, ALTURA, LARGURA_ALTA, ALTURA_ALTA,
-} from '../../lib/cenasDaLanding';
+import ArteDaCena from './ArteDaCena';
+import { CENAS } from '../../lib/cenasDaLanding';
 
 /**
  * O FECHO da landing — a sétima cena.
@@ -32,25 +31,10 @@ export default function FinalCTA() {
       variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}
       className="relative overflow-hidden md:rounded-2xl my-10 md:my-16"
     >
-      <picture>
-        <source
-          media="(max-width: 767px)"
-          srcSet={CENAS.cta.alta.srcSet}
-          sizes="100vw"
-          width={LARGURA_ALTA} height={ALTURA_ALTA}
-        />
-        <img
-          src={CENAS.cta.src}
-          srcSet={CENAS.cta.srcSet}
-          sizes="min(1600px, 100vw)"
-          width={LARGURA} height={ALTURA}
-          alt="" aria-hidden="true"
-          // Última seção da página: nunca ansiosa. Quem para na primeira dobra
-          // não pode pagar por uma arte que está a cinco telas de distância.
-          loading="lazy" decoding="async" fetchPriority="low"
-          className="w-full h-full object-cover"
-        />
-      </picture>
+      {/* Sem `prioridade`: esta é a ÚLTIMA seção da página, e quem para na
+          primeira dobra não pode pagar por uma arte que está a cinco telas de
+          distância. O `<picture>` em si mora em `ArteDaCena` — ver o porquê lá. */}
+      <ArteDaCena arte={CENAS.cta} />
 
       {/* Véu radial, e não lateral como nas outras: aqui o texto está no meio,
           então o escurecimento precisa nascer do centro para fora — senão ele

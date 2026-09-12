@@ -1,12 +1,12 @@
 import usePonteiroDaPagina from '../hooks/usePonteiroDaPagina';
 import LandingNav from '../components/landing/LandingNav';
 import FluxoDeDados from '../components/landing/FluxoDeDados';
-import Hero from '../components/landing/Hero';
+import PrologoDaLanding from '../components/landing/PrologoDaLanding';
 import CenaDaLanding from '../components/landing/CenaDaLanding';
 import HighlightsStrip from '../components/landing/HighlightsStrip';
 import FinalCTA from '../components/landing/FinalCTA';
 import LandingFooter from '../components/landing/LandingFooter';
-import { CENAS, LARGURA, ALTURA } from '../lib/cenasDaLanding';
+import { CENAS } from '../lib/cenasDaLanding';
 
 // Página pública vista por quem ainda não está logado — apresenta o site
 // antes do login/cadastro (ver App.jsx: HomeOrLanding decide entre esta
@@ -34,7 +34,11 @@ export default function Landing({ introDone = true }) {
           ambientação e poluição. */}
       <div className="relative z-10">
       <LandingNav />
-      <Hero introDone={introDone} />
+      {/* `[12/09]` O hero deixou de ser uma tela e virou os CINCO ATOS que a
+          rolagem conduz — ARTE, TRANSFORMAÇÃO, CONVERGÊNCIA, MARCA, GAMERHUB.
+          O `Hero` continua existindo e continua sendo o último ato; quem o
+          monta agora é o prólogo. Ver `components/landing/PrologoDaLanding.jsx`. */}
+      <PrologoDaLanding introDone={introDone} />
 
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         <HighlightsStrip />
@@ -56,7 +60,7 @@ export default function Landing({ introDone = true }) {
             `lado` alterna de propósito: cinco cenas com o texto sempre à
             esquerda voltariam a ser um molde, só que com imagem maior. */}
         <CenaDaLanding
-          id="feed" arte={CENAS.feed} largura={LARGURA} altura={ALTURA}
+          id="feed" arte={CENAS.feed}
           eyebrow="Feed"
           titulo="Um feed que não para"
           descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa."
@@ -64,7 +68,7 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="mural" arte={CENAS.comunidade} largura={LARGURA} altura={ALTURA}
+          id="mural" arte={CENAS.comunidade}
           eyebrow="Comunidade"
           titulo="Tem gente aqui"
           descricao="O mural é o ponto de encontro informal: prints, squads sendo montados e papo solto com quem também joga."
@@ -72,7 +76,7 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="lives" arte={CENAS.lives} largura={LARGURA} altura={ALTURA}
+          id="lives" arte={CENAS.lives}
           eyebrow="Lives"
           titulo="Está acontecendo agora"
           descricao="Sua transmissão do Twitch ou do YouTube dentro do Hub, com chat em tempo real e contador de quem está assistindo."
@@ -80,7 +84,7 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="keys" arte={CENAS.keys} largura={LARGURA} altura={ALTURA}
+          id="keys" arte={CENAS.keys}
           eyebrow="Keys & Promos"
           titulo="Keys grátis e as promoções que valem"
           descricao="O código pronto para copiar, a plataforma na etiqueta, e a lista atualizada pela equipe."
@@ -88,7 +92,7 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="ranks" arte={CENAS.ranks} largura={LARGURA} altura={ALTURA}
+          id="ranks" arte={CENAS.ranks}
           eyebrow="Ranks & XP"
           titulo="Participar conta, e aparece"
           descricao="Postar, comentar e receber curtidas rende XP. O rank é o que a comunidade vê do seu histórico."
