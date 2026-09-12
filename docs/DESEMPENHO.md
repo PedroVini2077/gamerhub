@@ -1212,3 +1212,40 @@ Tempo. Nem TBT, nem LCP, nem em laboratório nem em campo. O que está acima é
 byte e altura, que são determinísticos (§0.3, regra 4). O desenho evita repaint
 por construção, mas **isso é argumento, não medição** — a medição de campo vem
 do Vercel Speed Insights.
+
+---
+
+### `[12/09]` A continuidade custou **menos** JavaScript do que os cortes
+
+A fatia 7 costurou todas as emendas, deu tela cheia às artes e trocou três
+mecanismos de entrada por um. Medido no mesmo `.env.local`:
+
+| | antes da fatia 7 | bloco A | bloco B |
+| --- | --- | --- | --- |
+| JavaScript inicial | 737,3 kB | 737,3 kB | **737,3 kB** |
+| chunk da Landing (lazy) | 52,1 kB | 49,2 kB | **48,9 kB** |
+| altura da página, computador | 11.601 px | 11.321 px | **10.963 px** |
+
+**O chunk encolheu duas vezes**, e não por otimização: o `fadeUpReveal` da faixa
+saiu no bloco A, e o `CortinaDaCena` + o `entradaDaCena` saíram no bloco B. Foi
+código apagado, não código espremido — a costura substitui os três.
+
+**A página encolheu 5,5%** pelas margens negativas: cada emenda economiza ~12vh
+de altura. A continuidade saiu **mais curta** que os cortes.
+
+#### Por que a costura não custa quadro
+
+| decisão | o que ela evita |
+| --- | --- |
+| máscara **estática** no topo | máscara animada seria recalculada a cada quadro sobre uma imagem de faixa inteira |
+| o gesto de chegada **termina** em 0,42 do progresso | arte que nunca para de deslizar é o parallax exagerado, e desenha para sempre |
+| todos os gestos são `x`/`y`/`scale` | compostos pelo navegador, sem repaint |
+| margem negativa é **layout**, resolvido uma vez | nada por quadro |
+
+#### O que eu NÃO medi
+
+Tempo, de novo. E há uma pergunta aberta que só aparece em aparelho de verdade:
+`mask-image` promove o elemento a camada própria de composição, e agora são
+**seis** camadas dessas na mesma página. Em GPU de celular isso tem custo de
+memória de vídeo que nenhuma medição de byte enxerga. Fica registrado como o
+próximo lugar a olhar se alguém relatar travamento ao rolar.

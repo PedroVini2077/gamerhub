@@ -192,6 +192,11 @@ src/
 │   │                      # `[12/09]` Ganhou `entradaDaCena`: a cena chega DO
 │   │                      # LADO onde o texto dela mora, e como o lado alterna,
 │   │                      # duas cenas seguidas nunca entram pela mesma direção
+│   ├── costuraDeCena.js   # `[12/09]` Como uma cena INVADE a anterior: margem
+│   │                      # negativa + máscara no topo, e os quatro gestos de
+│   │                      # chegada. Fonte única porque três componentes
+│   │                      # precisam dela — copiada, a emenda de um divergiria
+│   │                      # das outras cinco e ficaria visível
 │   ├── atosDaLanding.js   # `[12/09]` O ROTEIRO do prólogo: as JANELAS de
 │   │                      # rolagem de cada camada (de 0 a 1), a frase do ATO 0
 │   │                      # e a altura do palco. Só dados — o ritmo se ajusta
@@ -464,10 +469,10 @@ src/
     │   ├── TextoDaCena.jsx # `[12/09]` O véu e o texto, que a cena presa e a
     │   │                  # solta dividem. O véu troca de EIXO com a orientação
     │   │                  # da arte: lateral no PC, do pé no celular
-    │   ├── CortinaDaCena.jsx # `[12/09]` Três revelações num mecanismo só —
-    │   │                  # painel opaco escalando (compositor), não
-    │   │                  # `clip-path` (repaint por quadro). O EIXO é o
-    │   │                  # argumento: abre do centro, varre, ou sobe
+    │   ├── ArteQueInvade.jsx # `[12/09]` A arte com o GESTO de chegada
+    │   │                  # (`sobe`, `afasta`, `mergulha`, `deriva`), conduzido
+    │   │                  # pela rolagem e TERMINANDO PARADO. Imagem que nunca
+    │   │                  # para de deslizar é o parallax exagerado, e cansa
     │   ├── cenas/         # `[12/09]` As SOBREPOSIÇÕES — a camada de produto
     │   │                  # acontecendo dentro de cada arte. Uma por cena, cada
     │   │                  # uma com a personalidade de movimento dela

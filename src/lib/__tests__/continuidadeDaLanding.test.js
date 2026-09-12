@@ -16,6 +16,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 const FONTE = (c) => readFileSync(c, 'utf8');
 const LANDING = 'src/pages/Landing.jsx';
 const CENA = 'src/components/landing/CenaDaLanding.jsx';
+const COSTURA = 'src/lib/costuraDeCena.js';
 const FAIXA = 'src/components/landing/HighlightsStrip.jsx';
 
 describe('o fundo da landing', () => {
@@ -64,14 +65,18 @@ describe('o fundo da landing', () => {
 
 describe('a costura entre as cenas', () => {
   it('a costura tem as DUAS metades — sobreposição E máscara', () => {
-    const cena = FONTE(CENA);
+    // `[12/09]` A trava passou a ler a LIB: no bloco B a costura saiu de dentro
+    // da cena e virou fonte única, porque três componentes precisam dela.
+    const cena = FONTE(COSTURA);
     // Uma sem a outra não costura nada:
     //   margem negativa sem máscara .... a borda dura da arte nova aparece por
     //                                    cima da anterior. Fica PIOR que o corte.
     //   máscara sem margem negativa .... a arte dissolve para o vazio, e o corte
     //                                    continua onde estava.
+    // `[1-9]` e não `\d`: `-mt-[0vh]` casaria com o dígito genérico e a trava
+    // aprovaria uma costura zerada. Provado reinjetando.
     expect(
-      /-mt-\[\d+vh\]/.test(cena),
+      /-mt-\[[1-9]\d*vh\]/.test(cena),
       'A cena costurada perdeu a margem negativa.\n'
       + '  Sem sobreposição no LAYOUT não existe transformação possível: duas\n'
       + '  caixas que apenas se tocam só podem trocar de vez.',
@@ -86,29 +91,43 @@ describe('a costura entre as cenas', () => {
   });
 
   it('a costura NÃO acumula com outra entrada', () => {
-    const cena = FONTE(CENA);
     // Duas entradas na mesma cena brigam: uma desliza de lado enquanto a outra
-    // se dissolve por cima. O resultado é movimento sem leitura.
-    expect(
-      /const costura = revelacao === 'costura'/.test(cena),
-      'A costura deixou de ser um TIPO de revelação e virou um segundo eixo.',
-    ).toBe(true);
-    expect(
-      /!desliza && !costura && <CortinaDaCena/.test(cena),
-      'A cena costurada voltou a receber cortina.\n'
-      + '  Invadir a anterior JÁ é a entrada; a cortina por cima disso é animar\n'
-      + '  a entrada de uma animação.',
-    ).toBe(true);
+    // se dissolve por cima. O resultado é movimento sem leitura — e foi por
+    // isso que a cortina e o deslize lateral SAÍRAM quando a costura passou a
+    // valer em todas as emendas.
+    for (const arq of [CENA, 'src/components/landing/FinalCTA.jsx']) {
+      expect(
+        /Cortina|entradaDaCena|whileInView/.test(FONTE(arq)),
+        `${arq} voltou a ter uma segunda entrada além da costura.\n`
+        + '  Invadir a anterior JÁ é a entrada; qualquer coisa por cima disso é\n'
+        + '  animar a entrada de uma animação.',
+      ).toBe(false);
+    }
   });
 
-  it('alguma cena realmente usa a costura', () => {
-    // Sem isto o mecanismo inteiro poderia existir, ser testado, e não estar
-    // montado em lugar nenhum — o mesmo vício da arte órfã.
-    expect(
-      FONTE(LANDING),
-      'Nenhuma cena declara `revelacao="costura"`.\n'
-      + '  O mecanismo existe e a página continua com os cortes.',
-    ).toContain('revelacao="costura"');
+  it('TODAS as emendas costuram — inclusive a presa e o fecho', () => {
+    // A costura numa emenda só deslocaria o corte em vez de matá-lo. São três
+    // componentes diferentes, e o que os mantém iguais é a lib compartilhada.
+    //
+    // Cada linha confere a APLICAÇÃO, não a menção: os três arquivos importam
+    // a lib, então procurar o nome dela aprovaria um componente que importa e
+    // não usa. Provado reinjetando nos três.
+    const aplicam = [
+      [CENA, /className=\{`relative overflow-hidden[^`]*\$\{CLASSE_DA_COSTURA\}/],
+      [CENA, /style=\{\{ scrollMarginTop: '5rem', \.\.\.estiloDaCostura\(\) \}\}/],
+      ['src/components/landing/CenaPresa.jsx', /className=\{CLASSE_DA_COSTURA\}/],
+      ['src/components/landing/CenaPresa.jsx', /estiloDoPalco=\{estiloDaCostura\(\)\}/],
+      ['src/components/landing/FinalCTA.jsx', /\$\{CLASSE_DA_COSTURA\}`\}/],
+      ['src/components/landing/FinalCTA.jsx', /style=\{estiloDaCostura\(\)\}/],
+    ];
+    for (const [arq, aplicacao] of aplicam) {
+      expect(
+        aplicacao.test(FONTE(arq)),
+        `${arq} não APLICA a costura (\`${aplicacao.source.slice(0, 46)}…\`).\n`
+        + '  Uma emenda sem costura no meio de cinco costuradas é MAIS visível\n'
+        + '  do que seis cortes iguais — o olho compara com as vizinhas.',
+      ).toBe(true);
+    }
   });
 });
 

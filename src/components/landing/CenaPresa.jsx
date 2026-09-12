@@ -1,7 +1,8 @@
 import { useMotionValue, useReducedMotion } from 'framer-motion';
 import PalcoDeRolagem from './PalcoDeRolagem';
-import ArteDaCena from './ArteDaCena';
+import ArteQueInvade from './ArteQueInvade';
 import TextoDaCena from './TextoDaCena';
+import { CLASSE_DA_COSTURA, estiloDaCostura } from '../../lib/costuraDeCena';
 
 /**
  * Uma cena que PRENDE — ela fica na tela enquanto a rolagem passa por ela.
@@ -49,24 +50,28 @@ import TextoDaCena from './TextoDaCena';
  */
 export default function CenaPresa({
   id, arte, eyebrow, titulo, descricao, lado = 'esquerda',
-  altura = 250, sobreposicao,
+  altura = 250, sobreposicao, invasao,
 }) {
   const menosMovimento = useReducedMotion();
   // O progresso congelado no FIM. Criado sempre — hook não pode ficar atrás de
   // condicional — e usado só no caminho sem movimento.
   const semTempo = useMotionValue(1);
 
-  const moldura = (
+  const moldura = (progresso) => (
     <>
-      <ArteDaCena arte={arte} />
+      <ArteQueInvade arte={arte} progresso={progresso} invasao={invasao} />
       <TextoDaCena eyebrow={eyebrow} titulo={titulo} descricao={descricao} lado={lado} />
     </>
   );
 
   if (menosMovimento) {
     return (
-      <section id={id} style={{ scrollMarginTop: '5rem' }} className="relative overflow-hidden md:rounded-2xl my-8 md:my-16">
-        {moldura}
+      <section
+        id={id}
+        style={{ scrollMarginTop: '5rem', ...estiloDaCostura() }}
+        className={`relative overflow-hidden my-8 md:my-14 ${CLASSE_DA_COSTURA}`}
+      >
+        {moldura(semTempo)}
         {sobreposicao(semTempo)}
       </section>
     );
@@ -79,11 +84,14 @@ export default function CenaPresa({
   // muda que este projeto persegue (§1.5). O recorte e o arredondamento moram
   // no próprio elemento preso, dentro do `PalcoDeRolagem`.
   return (
-    <section id={id} style={{ scrollMarginTop: '5rem' }}>
-      <PalcoDeRolagem altura={altura} classeDoPalco="md:rounded-2xl">
+    // A costura vai no PALCO, e não nesta seção: o que precisa dissolver é o
+    // que se VÊ, e o que se vê é o elemento preso. Máscara na seção alta de
+    // 250vh apagaria os primeiros 14vh de um bloco que nem está na tela.
+    <section id={id} style={{ scrollMarginTop: '5rem' }} className={CLASSE_DA_COSTURA}>
+      <PalcoDeRolagem altura={altura} classeDoPalco="" estiloDoPalco={estiloDaCostura()}>
         {(progresso) => (
           <>
-            {moldura}
+            {moldura(progresso)}
             {sobreposicao(progresso)}
           </>
         )}

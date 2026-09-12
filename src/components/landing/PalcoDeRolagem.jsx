@@ -56,7 +56,7 @@ import useProgressoDeRolagem from '../../hooks/useProgressoDeRolagem';
  *   progresso chegar sem contexto e sem `cloneElement`.
  */
 export default function PalcoDeRolagem({
-  altura, children, className = '', classeDoPalco = '',
+  altura, children, className = '', classeDoPalco = '', estiloDoPalco,
 }) {
   const alvo = useRef(null);
 
@@ -80,7 +80,10 @@ export default function PalcoDeRolagem({
           "Sobre" darem um pulo (ver `index.css`).
           `overflow-hidden` porque as camadas escalam para além da borda: sem
           ele, uma arte a 1,16× cria barra de rolagem horizontal. */}
-      <div className={`sticky top-0 h-[100svh] w-full overflow-hidden ${classeDoPalco}`}>
+      <div
+        className={`sticky top-0 h-[100svh] w-full overflow-hidden ${classeDoPalco}`}
+        style={estiloDoPalco}
+      >
         {children(progresso)}
       </div>
     </div>

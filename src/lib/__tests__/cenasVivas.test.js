@@ -40,22 +40,28 @@ describe('a varredura não pode ficar vazia', () => {
 });
 
 describe('cada cena tem uma personalidade PRÓPRIA', () => {
-  it('nenhuma cena entra com o mesmo `fadeUpReveal` da anterior', () => {
-    // A ordem exata do prompt do dono: *"não quero cinco fades iguais"*. A
-    // deriva aqui é lenta e silenciosa — alguém acrescenta uma cena copiando a
-    // de cima, e em três meses são cinco de novo.
-    const revelacoes = [...LANDING.matchAll(/revelacao="([a-z]+)"/g)].map((m) => m[1]);
+  it('duas cenas SEGUIDAS nunca invadem com o mesmo gesto', () => {
+    // `[12/09]` A trava mudou de eixo junto com o código. Antes ela vigiava a
+    // `revelacao`; com a costura valendo em todas as emendas, a variedade
+    // passou a viver no GESTO da arte que chega.
+    //
+    // A regra não é "todos diferentes" — seis gestos distintos viraria um
+    // catálogo, que é o que o dono pediu para evitar. A regra é que duas
+    // emendas **seguidas** não repitam: é aí que o olho percebe padrão.
+    const gestos = [...LANDING.matchAll(/invasao="([a-z]+)"/g)].map((m) => m[1]);
     expect(
-      revelacoes.length,
-      'Nenhuma cena declara `revelacao` na Landing.',
-    ).toBeGreaterThanOrEqual(3);
-    expect(
-      new Set(revelacoes).size,
-      `As cenas soltas voltaram a compartilhar revelação: ${revelacoes.join(', ')}.\n`
-      + '  Cinco seções entrando igual é exatamente o que o dono mandou\n'
-      + '  eliminar, e é invisível numa revisão de código: cada linha está\n'
-      + '  certa, o conjunto é que fica monótono.',
-    ).toBe(revelacoes.length);
+      gestos.length,
+      'Nenhuma cena declara `invasao` na Landing — a variedade sumiu.',
+    ).toBeGreaterThanOrEqual(5);
+    for (let i = 1; i < gestos.length; i++) {
+      expect(
+        gestos[i] === gestos[i - 1],
+        `As cenas ${i} e ${i + 1} invadem com o mesmo gesto ("${gestos[i]}").\n`
+        + '  Duas emendas seguidas iguais é onde o olho percebe padrão — e a\n'
+        + '  página volta a parecer uma sequência de blocos, que é o defeito\n'
+        + '  que a fatia 7 inteira existe para consertar.',
+      ).toBe(false);
+    }
 
     expect(
       LANDING.includes('fadeUpReveal'),

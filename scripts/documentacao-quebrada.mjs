@@ -65,6 +65,18 @@ const CITACOES_HISTORICAS = new Map([
   // a entrada dele no mapa de territórios sobreviveu ao arquivo — deixando o
   // `DESEMPENHO.md` meio vigiado sem nada acusar. Reescrever o trecho para tirar
   // o nome destruiria o exemplo: ele é sobre ESTE arquivo ter sumido.
+  // `[12/09]` Conferido com `ls`: o arquivo NAO existe mais. Ele foi criado e
+  // apagado no MESMO dia — nasceu no bloco A da continuidade como o mecanismo
+  // de revelacao variada, e morreu no bloco B quando a costura passou a valer
+  // em todas as emendas e ele virou uma SEGUNDA entrada empilhada.
+  // O DECISOES.md o cita porque a decisao e sobre ELE ter sido apagado: tirar o
+  // nome deixaria a entrada sem sujeito, e a proxima pessoa que pensar em
+  // "cada cena com uma cortina propria" nao acharia o registro de que isso ja
+  // foi tentado e por que saiu.
+  ['CortinaDaCena.jsx',
+    'criado e apagado em 12/09; citado em DECISOES.md como o mecanismo que a '
+    + 'costura tornou redundante (tres entradas viraram uma)'],
+
   ['resolucaoDaCena.js',
     'apagado no PR #105; citado em OPERACAO.md como o caso que motivou o portao '
     + 'de cobertura de territorio (scripts/territorio-coberto.mjs)'],

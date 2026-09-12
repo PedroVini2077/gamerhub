@@ -65,7 +65,7 @@ aos poucos"*. Então a fatia vai em três blocos, cada um com PR próprio.
 | Bloco | O que é | Estado |
 | --- | --- | --- |
 | **A** | Tirar o `FluxoDeDados` da landing + costurar HERO → HIGHLIGHTS → FEED, que é o corte mais visível | **feito** em 12/09 |
-| **B** | As artes ganharem a tela inteira + a costura nas outras quatro emendas (comunidade, lives, keys, ranks, CTA) | a fazer |
+| **B** | As artes ganharem a tela inteira + a costura nas outras quatro emendas (comunidade, lives, keys, ranks, CTA) | **feito** em 12/09 |
 
 **`[12/09]` O bloco A fechou.** O `FluxoDeDados` saiu da landing (e continua no
 site logado), a faixa de destaques deixou de ser uma seção e passou a ser
@@ -1129,8 +1129,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->111<!--/n--> arq ·
-  <!--n:src.lib.linhas-->10.978<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->112<!--/n--> arq ·
+  <!--n:src.lib.linhas-->11.091<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

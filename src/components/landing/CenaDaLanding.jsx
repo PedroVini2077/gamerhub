@@ -1,10 +1,8 @@
 import { useRef } from 'react';
-import { motion } from 'framer-motion';
-import ArteDaCena from './ArteDaCena';
+import ArteQueInvade from './ArteQueInvade';
 import TextoDaCena from './TextoDaCena';
-import CortinaDaCena from './CortinaDaCena';
-import { entradaDaCena } from '../../lib/landingMotion';
 import useProgressoDeRolagem from '../../hooks/useProgressoDeRolagem';
+import { CLASSE_DA_COSTURA, estiloDaCostura } from '../../lib/costuraDeCena';
 
 /**
  * Uma cena que ATRAVESSA — ela rola junto com a página.
@@ -29,46 +27,41 @@ import useProgressoDeRolagem from '../../hooks/useProgressoDeRolagem';
  * da arte, que seria frágil por construção: a composição larga e a de retrato
  * têm enquadramentos diferentes, e a arte pode ser regerada a qualquer momento.
  *
- * ── A revelação é DIFERENTE em cada cena, de propósito ──────────────────────
+ * ── `[12/09]` Ela sempre COSTURA, e o que varia é o gesto ───────────────────
  *
- * `revelacao` escolhe entre a entrada por deslize e as cortinas. Cinco seções
- * com o mesmo `fadeUpReveal` foi exatamente o que ele mandou eliminar.
+ * Houve três formas de entrar: deslize lateral, cortina e costura. Com a
+ * costura valendo em todas as emendas, as outras duas viraram uma segunda
+ * entrada empilhada — e duas entradas na mesma cena brigam.
+ *
+ * Sobrou uma, e a variedade mudou de lugar: ela vive agora no **gesto da arte**
+ * que chega (`invasao`), diferente em cada emenda. Ver `lib/costuraDeCena.js`.
+ * Menos mecanismo, mais variação — que é o que ele pediu ao escrever *"quero a
+ * solução mais simples que consiga produzir a experiência desejada"*.
  *
  * @param {object} props
- * @param {'deslize'|'centro'|'varredura'} [props.revelacao] Como a cena é
- *   descoberta. Ver `CortinaDaCena` para o que cada eixo significa.
+ * @param {'sobe'|'afasta'|'mergulha'|'deriva'} [props.invasao] O gesto da arte
+ *   ao chegar.
  * @param {(progresso: import('framer-motion').MotionValue<number>) => React.ReactNode}
  *   [props.sobreposicao] A camada de produto. Recebe o progresso da cena na
  *   tela (0 = começou a entrar por baixo, 1 = terminou de sair por cima).
  */
 export default function CenaDaLanding({
   id, arte, eyebrow, titulo, descricao, lado = 'esquerda', prioridade = false,
-  revelacao = 'deslize', sobreposicao,
+  sobreposicao, invasao,
 }) {
   const alvo = useRef(null);
   // O progresso é medido sempre, e é barato: o `useScroll` do Framer Motion
   // divide UM ouvinte passivo entre todas as chamadas da página. Torná-lo
   // condicional seria hook atrás de `if`, que as Rules of Hooks proíbem.
   const progresso = useProgressoDeRolagem(alvo, 'solta');
-  const desliza = revelacao === 'deslize';
-  // `costura` é um TIPO de revelação, e não um segundo eixo: com ela a cena
-  // não tem entrada própria nenhuma — invadir a anterior JÁ é a entrada. Duas
-  // entradas na mesma cena brigariam (uma desliza de lado enquanto a outra se
-  // dissolve por cima), e o resultado seria movimento sem leitura.
-  const costura = revelacao === 'costura';
 
   return (
-    <motion.section
+    <section
       ref={alvo}
       id={id}
       // `scroll-mt` compensa a barra fixa do topo: sem isso o link leva a seção
       // para debaixo dela, e o visitante cai num lugar que parece o errado.
-      variants={desliza ? entradaDaCena(lado) : undefined}
-      initial={desliza ? 'initial' : undefined}
-      whileInView={desliza ? 'animate' : undefined}
-      viewport={desliza ? { once: true, amount: 0.25 } : undefined}
-      className={`relative overflow-hidden md:rounded-2xl my-8 md:my-16
-                  ${costura ? '-mt-[9vh] md:-mt-[12vh] z-10' : ''}`}
+      className={`relative overflow-hidden my-8 md:my-14 ${CLASSE_DA_COSTURA}`}
       // ── `[12/09]` A COSTURA: a cena não começa, ela INVADE ────────────────
       //
       // Diagnóstico do dono: *"a página ainda denuncia que são blocos
@@ -91,20 +84,12 @@ export default function CenaDaLanding({
       //
       // E ela é ESTÁTICA: não anima, não é recalculada por quadro. O custo é
       // uma camada de composição, uma vez.
-      style={{
-        scrollMarginTop: '5rem',
-        ...(costura && {
-          maskImage: 'linear-gradient(to bottom, transparent 0, #000 14vh)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 14vh)',
-        }),
-      }}
+      style={{ scrollMarginTop: '5rem', ...estiloDaCostura() }}
     >
-      <ArteDaCena arte={arte} prioridade={prioridade} />
+      <ArteQueInvade arte={arte} prioridade={prioridade} progresso={progresso} invasao={invasao} />
       <TextoDaCena eyebrow={eyebrow} titulo={titulo} descricao={descricao} lado={lado} />
 
       {sobreposicao?.(progresso)}
-
-      {!desliza && !costura && <CortinaDaCena eixo={revelacao} />}
-    </motion.section>
+    </section>
   );
 }

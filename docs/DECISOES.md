@@ -1960,3 +1960,42 @@ que descartou `clip-path` animado nas cortinas.
 recebe cortina nem deslize: invadir a anterior já é a entrada. Duas entradas na
 mesma cena brigam — uma desliza de lado enquanto a outra dissolve por cima —, e
 o resultado é movimento sem leitura.
+
+---
+
+## `[12/09]` Três mecanismos de entrada viraram UM — e a variedade mudou de lugar
+
+**O que existia depois do bloco A:** deslize lateral, cortina (em três eixos) e
+costura. Três formas de uma cena entrar, escolhidas por cena para dar variedade.
+
+**O que a costura em todas as emendas revelou:** as outras duas viraram uma
+**segunda entrada empilhada**. Uma cena que já está dissolvendo por cima da
+anterior e ainda desliza de lado, ou ainda abre uma cortina, tem dois movimentos
+disputando a mesma leitura — e o resultado é movimento sem significado.
+
+**A decisão:** ficou só a costura. O `CortinaDaCena.jsx` e o `entradaDaCena` do
+`landingMotion` foram **apagados** (§6.1: componente sem chamador é código morto).
+
+**E a variedade mudou de lugar, que é a parte que importa.** Ela saiu do
+*mecanismo de entrada* e foi para o **gesto da arte que chega**: `sobe`,
+`afasta`, `mergulha`, `deriva`. Menos mecanismo, mais variação — que é
+literalmente o que o dono pediu: *"quero a solução mais simples que consiga
+produzir a experiência desejada com qualidade"*.
+
+> A trava mudou junto: ela vigiava se as revelações eram distintas; agora vigia
+> se **duas emendas seguidas** repetem o gesto. E a regra não é "todos
+> diferentes" — seis gestos distintos seria o catálogo que ele mandou evitar.
+
+---
+
+## `[12/09]` As artes passam a ocupar a largura inteira
+
+Pedido dele: *"a arte deve parecer um cenário, não um card gigante"*.
+
+Saíram as duas coisas que ainda entregavam "isto é um card": o respiro lateral
+de 24 px e o canto arredondado. As cenas iam de borda a borda; o texto continua
+com o recuo dele, porque texto encostado na borda não se lê.
+
+**O que NÃO saiu:** `overflow-hidden`. Sem ele, a arte ampliada durante o gesto
+de chegada criaria barra de rolagem horizontal — e barra horizontal numa landing
+é o tipo de defeito que só aparece no aparelho de outra pessoa.

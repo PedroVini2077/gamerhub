@@ -66,11 +66,13 @@ export default function Landing({ introDone = true }) {
         <HighlightsStrip />
       </div>
 
-      {/* `[12/09]` AS CENAS SAEM DO CONTÊINER ESTREITO, e isso é pedido dele:
-          *"não tenha medo de abandonar a escala atual... algumas cenas podem
-          ocupar 100vw"*. Dentro do `max-w-5xl` a arte virava um cartão de
-          976 px no meio de um monitor de 1440 — medido no primeiro print. */}
-      <div className="px-0 md:px-6">
+      {/* ── `[12/09]` AS CENAS OCUPAM A LARGURA INTEIRA ──────────────────────
+          Pedido dele no bloco B: *"a arte deve parecer um cenário, não um card
+          gigante"*. Saíram as duas coisas que ainda entregavam "isto é um
+          card": o respiro lateral de 24 px e o canto arredondado.
+          Antes disso elas já tinham saído do `max-w-5xl` — dentro dele a arte
+          virava um cartão de 976 px num monitor de 1440. */}
+      <div>
         {/* ── `[12/09]` AS CINCO CENAS, e cada uma com a FORMA que o que ela
             conta pede ────────────────────────────────────────────────────────
 
@@ -88,17 +90,16 @@ export default function Landing({ introDone = true }) {
             mini-sites em fila. */}
 
         <CenaDaLanding
-          id="feed" arte={CENAS.feed}
+          id="feed" invasao="sobe" arte={CENAS.feed}
           eyebrow="Feed"
           titulo="Um feed que não para"
           descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa."
           lado="esquerda"
-          revelacao="costura"
           sobreposicao={() => <SobreposicaoDoFeed lado="esquerda" />}
         />
 
         <CenaPresa
-          id="mural" arte={CENAS.comunidade} altura={260}
+          id="mural" invasao="afasta" arte={CENAS.comunidade} altura={260}
           eyebrow="Comunidade"
           titulo="Tem gente aqui"
           descricao="O mural é o ponto de encontro informal: prints, squads sendo montados e papo solto com quem também joga."
@@ -107,17 +108,16 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="lives" arte={CENAS.lives}
+          id="lives" invasao="mergulha" arte={CENAS.lives}
           eyebrow="Lives"
           titulo="Está acontecendo agora"
           descricao="Sua transmissão do Twitch ou do YouTube dentro do Hub, com chat em tempo real e contador de quem está assistindo."
           lado="esquerda"
-          revelacao="centro"
           sobreposicao={() => <SobreposicaoDasLives lado="esquerda" />}
         />
 
         <CenaPresa
-          id="keys" arte={CENAS.keys} altura={240}
+          id="keys" invasao="deriva" arte={CENAS.keys} altura={240}
           eyebrow="Keys & Promos"
           titulo="Keys grátis e as promoções que valem"
           descricao="O código pronto para copiar, a plataforma na etiqueta, e a lista atualizada pela equipe."
@@ -126,20 +126,17 @@ export default function Landing({ introDone = true }) {
         />
 
         <CenaDaLanding
-          id="ranks" arte={CENAS.ranks}
+          id="ranks" invasao="sobe" arte={CENAS.ranks}
           eyebrow="Ranks & XP"
           titulo="Participar conta, e aparece"
           descricao="Postar, comentar e receber curtidas rende XP. O rank é o que a comunidade vê do seu histórico."
           lado="esquerda"
-          revelacao="varredura"
           sobreposicao={(p) => <SobreposicaoDosRanks progresso={p} lado="esquerda" />}
         />
 
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6">
-        <FinalCTA />
-      </div>
+      <FinalCTA />
 
       <LandingFooter />
       </div>
