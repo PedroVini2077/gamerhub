@@ -2099,3 +2099,44 @@ porque `bg-dark-900/78` e `bg-dark-900` diferem por dois caracteres.
 
 **Medido em navegador**, não deduzido: 360, 390, 400 e 1440 px, zero chip fora
 da tela e zero rolagem horizontal em todos.
+
+### `[12/09]` O corte entre a última arte e o rodapé — e a pergunta dele estava certa
+
+*"Sabe esse corte da última arte com o footer, vc acha que dá pra fazer algo
+aqui? Ou essa parte é realmente pra ser simples?"*
+
+**As duas coisas, e a distinção é o conteúdo desta decisão.**
+
+**O rodapé É para ser simples, e continua exatamente como estava.** Ele é a
+saída, e o botão de criar conta fica logo acima dele: movimento ali competiria
+com a última coisa que deve segurar atenção. Some a isso um fato que decide
+sozinho — o `LandingFooter` é o mesmo em **quatro páginas** (landing, `/sobre`,
+e as de conteúdo legal). O `border-t` dele, que na landing parece redundante
+depois da dissolução, é o **único** separador nas outras três. Mexer nele para
+melhorar uma página piora as outras.
+
+**Mas o corte não era simplicidade — era a única emenda dura que sobrou**, e a
+causa é estrutural, não descuido. A costura mascara o **topo** da cena que
+chega. O pé da cena que **sai** nunca precisou de máscara, porque toda cena era
+seguida por outra arte que cobria a borda dela. O `FinalCTA` é seguido por nada,
+então a borda inferior ficou exposta pela primeira vez na página inteira — e uma
+emenda dura no meio de seis dissolvidas é **mais** visível do que sete cortes
+iguais, porque o olho compara com as vizinhas.
+
+**A correção, em duas partes que só funcionam juntas.** A máscara ganhou
+`fechaEmbaixo`, que acrescenta a parada transparente no fim do gradiente; e a
+margem de baixo da seção saiu, porque com ela a arte dissolveria numa faixa
+vazia **antes** do rodapé — o corte não morreria, desceria alguns pixels e
+viraria uma sombra flutuando no nada.
+
+A faixa de baixo é mais funda que a de cima (**18vh × 14vh**), e a razão é que
+elas dissolvem sobre coisas diferentes: em cima, sobre **outra arte**, que
+disfarça o degrau; embaixo, sobre o **fundo da página**, onde qualquer degrau
+curto ainda lê como linha.
+
+**A trava confere as TRÊS coisas** — o gradiente terminar transparente, o fecho
+pedir o fechamento, e nenhuma cena do meio pedir —, porque cada uma sozinha
+devolve o corte em silêncio. A terceira importa mais do que parece: fechar o pé
+de uma cena que **tem** arte depois faria as duas dissolverem na mesma faixa,
+abrindo um rasgo de fundo em vez de fechar um corte. Provadas reinjetando as
+três, uma de cada vez.

@@ -30,9 +30,32 @@ export const CLASSE_DA_COSTURA = '-mt-[9vh] md:-mt-[12vh] z-10';
 /**
  * A máscara. O prefixo `-webkit-` não é opcional: sem ele o Safari mostra a
  * borda dura, e quem confere no Chrome não vê defeito nenhum.
+ *
+ * ── `[12/09]` `fechaEmbaixo`: a emenda que ficou de fora, e por quê ──────────
+ *
+ * Ele viu no telefone: *"esse corte da última arte com o footer"*. E a pergunta
+ * junto era a certa — *"ou essa parte é realmente pra ser simples?"*.
+ *
+ * **O rodapé é para ser simples**, e continua: ele é a saída, e o botão de criar
+ * conta está logo acima. Movimento ali competiria com a última coisa que deve
+ * segurar atenção. O que estava errado não era a simplicidade dele; era a borda.
+ *
+ * **A causa é estrutural, não descuido.** A costura mascara o **topo** da cena
+ * que CHEGA. O pé da cena que SAI nunca precisou de máscara, porque toda cena
+ * era seguida por outra arte que a invadia — a de baixo cobria a borda da de
+ * cima. O `FinalCTA` é seguido por **nada**, então a borda inferior ficou
+ * exposta pela primeira vez na página inteira, e ficou sendo a única emenda dura
+ * de uma página cujas outras seis dissolvem.
+ *
+ * A faixa de baixo é mais funda que a de cima (18vh × 14vh) porque as duas
+ * fazem trabalhos diferentes: em cima a arte dissolve sobre **outra arte**, que
+ * disfarça; embaixo ela dissolve sobre o **fundo da página**, onde qualquer
+ * degrau curto ainda lê como linha.
  */
-export function estiloDaCostura() {
-  const mascara = 'linear-gradient(to bottom, transparent 0, #000 14vh)';
+export function estiloDaCostura({ fechaEmbaixo = false } = {}) {
+  const mascara = fechaEmbaixo
+    ? 'linear-gradient(to bottom, transparent 0, #000 14vh, #000 calc(100% - 18vh), transparent 100%)'
+    : 'linear-gradient(to bottom, transparent 0, #000 14vh)';
   return { maskImage: mascara, WebkitMaskImage: mascara };
 }
 

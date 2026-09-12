@@ -118,7 +118,7 @@ describe('a costura entre as cenas', () => {
       ['src/components/landing/CenaPresa.jsx', /className=\{CLASSE_DA_COSTURA\}/],
       ['src/components/landing/CenaPresa.jsx', /estiloDoPalco=\{estiloDaCostura\(\)\}/],
       ['src/components/landing/FinalCTA.jsx', /\$\{CLASSE_DA_COSTURA\}`\}/],
-      ['src/components/landing/FinalCTA.jsx', /style=\{estiloDaCostura\(\)\}/],
+      ['src/components/landing/FinalCTA.jsx', /style=\{estiloDaCostura\(\{ fechaEmbaixo: true \}\)\}/],
     ];
     for (const [arq, aplicacao] of aplicam) {
       expect(
@@ -128,6 +128,51 @@ describe('a costura entre as cenas', () => {
         + '  do que seis cortes iguais — o olho compara com as vizinhas.',
       ).toBe(true);
     }
+  });
+
+  it('a ÚLTIMA cena fecha o pé — ela é a única sem cena depois', () => {
+    // `[12/09]` Ele viu no telefone: *"esse corte da última arte com o footer"*.
+    //
+    // A causa é estrutural: a costura mascara o TOPO da cena que chega. O pé da
+    // cena que sai nunca precisou de máscara, porque toda cena era seguida por
+    // outra arte que cobria a borda dela. O `FinalCTA` é seguido por NADA — e
+    // aí a borda inferior ficou exposta pela primeira vez na página inteira.
+    //
+    // São TRÊS coisas que precisam ser verdade juntas, e cada uma sozinha
+    // devolve o corte em silêncio. Por isso as três estão aqui, e não só a
+    // primeira, que seria a fácil de escrever.
+    const cta = FONTE('src/components/landing/FinalCTA.jsx');
+    const costura = FONTE(COSTURA);
+
+    // 1. a lib sabe fechar embaixo — o gradiente TERMINA transparente
+    expect(
+      /fechaEmbaixo[\s\S]{0,220}?transparent 100%\)/.test(costura),
+      'O gradiente de `fechaEmbaixo` não termina em `transparent 100%`.\n'
+      + '  Sem a última parada transparente a máscara é opaca até a borda e o\n'
+      + '  corte volta inteiro — com a bandeira ligada, o que é pior: parece\n'
+      + '  resolvido em quem for ler o `FinalCTA`.',
+    ).toBe(true);
+
+    // 2. o fecho pede o fechamento — e nenhuma outra cena pede
+    const pedem = ['src/components/landing/CenaDaLanding.jsx',
+      'src/components/landing/CenaPresa.jsx']
+      .filter((a) => /fechaEmbaixo/.test(FONTE(a)));
+    expect(
+      pedem,
+      `Uma cena do MEIO pediu \`fechaEmbaixo\` (${pedem.join(', ')}).\n`
+      + '  Fechar o pé de uma cena que TEM outra arte depois abre um rasgo de\n'
+      + '  fundo entre as duas: a de baixo dissolve o próprio topo e a de cima\n'
+      + '  dissolve o próprio pé, e as duas some na mesma faixa.',
+    ).toEqual([]);
+
+    // 3. a margem de baixo NÃO voltou
+    expect(
+      /className=\{`relative overflow-hidden[^`]*\bm[by]-\d/.test(cta),
+      'O `FinalCTA` voltou a ter margem embaixo (`my-` ou `mb-`).\n'
+      + '  Com margem, a arte dissolve numa faixa VAZIA antes do rodapé em vez\n'
+      + '  de dissolver dentro do preto dele: o corte não morre, ele desce\n'
+      + '  alguns pixels e vira uma sombra flutuando no nada.',
+    ).toBe(false);
   });
 });
 

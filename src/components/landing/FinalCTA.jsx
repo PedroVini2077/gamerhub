@@ -41,10 +41,14 @@ export default function FinalCTA() {
   const progresso = useProgressoDeRolagem(alvo, 'solta');
 
   return (
+    // `fechaEmbaixo`: esta é a ÚNICA cena que não é seguida por outra arte, e
+    // por isso a única cuja borda inferior aparece. Ver `costuraDeCena.js`.
+    // A margem de baixo saiu junto — a arte precisa dissolver DENTRO do preto do
+    // rodapé, e não numa faixa vazia antes dele, senão o corte só troca de lugar.
     <section
       ref={alvo}
-      style={estiloDaCostura()}
-      className={`relative overflow-hidden my-10 md:my-14 ${CLASSE_DA_COSTURA}`}
+      style={estiloDaCostura({ fechaEmbaixo: true })}
+      className={`relative overflow-hidden mt-10 md:mt-14 ${CLASSE_DA_COSTURA}`}
     >
       {/* Sem `prioridade`: esta é a ÚLTIMA seção da página, e quem para na
           primeira dobra não pode pagar por uma arte que está a cinco telas de

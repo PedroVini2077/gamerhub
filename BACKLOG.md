@@ -94,6 +94,14 @@ borda de que o chip se aproxima (ele cresce PARA DENTRO), e o fundo virou opaco.
 Duas travas novas, as duas provadas reinjetando o bug. Medido em navegador a
 360, 390, 400 e 1440 px: nenhum chip fora da tela, zero rolagem horizontal.
 
+**`[12/09]` AJUSTE 3 — a sétima emenda, que ninguém tinha visto.** Pergunta
+dele: *"esse corte da última arte com o footer, dá pra fazer algo? Ou essa parte
+é pra ser simples?"*. As duas: **o rodapé fica simples** (é a saída, e é o mesmo
+em quatro páginas), mas o corte era a única emenda dura que sobrou — a costura
+mascara o TOPO da cena que chega, e o `FinalCTA` é a única sem cena depois, então
+a borda de baixo dele ficou exposta. Máscara com `fechaEmbaixo` + a margem
+inferior fora. Três travas, provadas uma a uma. Em `docs/DECISOES.md`.
+
 **`[12/09]` A LANDING PAUSA AQUI, a pedido dele** — *"já trabalhamos demais
 nessa landing page"*. Não é abandono: o que sobrou está listado no fim desta
 seção, e a fila abaixo volta a ser a prioridade.
@@ -1158,7 +1166,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->113<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.376<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->11.444<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

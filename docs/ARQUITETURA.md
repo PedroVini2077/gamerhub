@@ -201,7 +201,11 @@ src/
 │   │                      # negativa + máscara no topo, e os quatro gestos de
 │   │                      # chegada. Fonte única porque três componentes
 │   │                      # precisam dela — copiada, a emenda de um divergiria
-│   │                      # das outras cinco e ficaria visível
+│   │                      # das outras cinco e ficaria visível.
+│   │                      # `fechaEmbaixo` é só do `FinalCTA`: ele é a única
+│   │                      # cena sem outra arte depois, então é a única cuja
+│   │                      # borda INFERIOR aparece. Numa cena do meio o mesmo
+│   │                      # gradiente abriria um rasgo de fundo
 │   ├── atosDaLanding.js   # `[12/09]` O ROTEIRO do prólogo: as JANELAS de
 │   │                      # rolagem de cada camada (de 0 a 1), a frase do ATO 0
 │   │                      # e a altura do palco. Só dados — o ritmo se ajusta
