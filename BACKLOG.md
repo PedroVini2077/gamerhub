@@ -1067,6 +1067,30 @@ dependência técnica real** que decide o resto:
 
 ## 🟢 Recomendado
 
+- ⬜ `[12/09]` 🟢 **A falha do `e2e/fluxos.mjs` manda investigar o lugar
+  errado.** *Achado hoje, custou alguns minutos de investigação minha.*
+
+  **O que aconteceu.** O job `fluxos autenticados` reprovou dizendo *"o portão
+  de boas-vindas NÃO apareceu depois do login"*, e listou três coisas para
+  conferir no portão. Nenhuma era a causa: o dump da tela mostrava a URL ainda
+  em `/login` e o botão em **"AGUARDE..."** — o `signInWithPassword` nem tinha
+  voltado. O portão não apareceu porque **o login não aconteceu**.
+
+  **Por que importa.** É a regra §1.5 na letra: *toda mensagem de erro tem que
+  ser verdadeira*. "Você não tem permissão" quando o motivo é outro é pior do
+  que "erro desconhecido", porque manda alguém investigar permissão por horas.
+  Aqui o alvo errado é o portão.
+
+  **O conserto:** antes de escolher a mensagem, desambiguar os dois estados —
+  ainda em `/login` com o botão travado (**o login não voltou**, quase sempre
+  rede/serviço externo) × já autenticado e o portão ausente (**a causa que as
+  três dicas descrevem**). Mesma disciplina do "0 linhas é AMBÍGUO" do §1.5.
+
+  **Foi flake nesta vez** — o re-run do MESMO commit passou nos 6 jobs, e
+  nenhum dos 17 arquivos do PR #195 está no caminho do login. Mas o teto de
+  2,5 s para uma chamada de rede a serviço externo vai reprovar de novo, e a
+  próxima pessoa vai reler as mesmas três dicas erradas.
+
 - ⬜ `[05/09]` 🟢 **A query de índice nunca usado do §6.1 não serve neste
   volume — e isso precisa estar escrito antes de alguém agir nela.**
 
