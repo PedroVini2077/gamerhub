@@ -1045,3 +1045,38 @@ número daqui seria artefato (§1.1). O que dá para afirmar é o desenho: só
 `transform` anima, e a animação não roda fora da tela. A medição de campo
 continua no backlog e depende do dono.
 
+### `[12/09]` As sete artes da landing — o que o visitante REALMENTE baixa
+
+As artes chegaram como **13,5 MB de PNG**. O número que importa não é esse, e
+nem o do repositório: é o que sai pela rede quando alguém abre a página.
+
+**Medido num navegador de verdade, rolando a landing inteira devagar:**
+
+| | 1ª dobra | página inteira |
+| --- | --- | --- |
+| computador, 1440 px | **229 kB** | **813 kB** em 6 artes |
+| celular, 400 px com densidade 2 | **146 kB** | **312 kB** em 6 artes |
+
+**Três coisas fazem esse número, e nenhuma é opcional:**
+
+1. **WebP em três larguras** (1600, 1200, 828) com `srcset` e `sizes`. Sem o
+   `sizes`, o navegador assume que a imagem ocupa a janela inteira e o celular
+   baixa a arte do monitor — funciona, aparece certo, e custa 3× mais.
+2. **`loading="lazy"` em todas menos a primeira.** Sem ele são 813 kB de uma vez
+   para quem talvez pare na primeira dobra.
+3. **`width`/`height` declarados**, para a página não empurrar o conteúdo para
+   baixo quando cada arte chega.
+
+**O que se perdeu na troca, dito com o número:** as cinco seções antigas usavam
+prints em `.jpg` que somavam **91 kB**. As artes custam **9× mais**. É uma troca
+consciente — pedido dele: *"na landing é onde eu mais quero gastar... não precisa
+ser pesado, mas tem que ter impactante"* — e ela é aceitável porque o custo é
+**progressivo**: quem não rola não paga.
+
+> **NENHUM portão do CI vigia isto.** O `orcamento-de-bytes.mjs` mede chunk de
+> JavaScript, e as artes são imagem. O que existe são travas de contrato em
+> `src/lib/__tests__/cenasDaLanding.test.js` — elas reprovam se o `lazy`, o
+> `sizes` ou o `width`/`height` sumirem, que são as três formas de esse número
+> triplicar em silêncio. O NÚMERO em si continua sendo trabalho de medir, e está
+> aqui para a próxima medição ter com o que comparar.
+

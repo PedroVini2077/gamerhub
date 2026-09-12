@@ -176,6 +176,12 @@ src/
 │   │                      # conexão do pool que ainda não vê a linha — o feed
 │   │                      # engolia o post e nada estourava (§1.5)
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
+│   ├── cenasDaLanding.js  # `[12/09]` As 7 artes das cenas da landing e o
+│   │                      # `srcset` de cada uma, numa fonte só. Os arquivos
+│   │                      # saem de `npm run cenas`, que os deriva das
+│   │                      # referências — nada aqui é editado à mão.
+│   │                      # Import ESTÁTICO de propósito: caminho montado por
+│   │                      # string funciona em desenvolvimento e some do build
 │   ├── marcaNoHero.js     # `[11/09]` A POSIÇÃO COMBINADA da marca — o contrato
 │   │                      # entre a abertura e o hero. A marca não voa até um
 │   │                      # ponto medido: os dois lados concordam de antemão,
@@ -415,7 +421,7 @@ src/
     │   └── queueLabels.js # TRAVA: todo tipo da fila precisa existir nos três
     │                      # mapas — foi um tipo novo sem entrada que travou a tela
     ├── landing/           # Hero, ElectricTitle, AberturaDaMarca, MarcaFlutuante,
-    │                      # FeatureSection,
+    │                      # CenaDaLanding (as cinco cenas com arte),
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot
     │   ├── ConvergenciaDoHub.jsx # `[11/09]` O fundo do Hero: trajetos que

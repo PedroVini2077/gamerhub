@@ -107,6 +107,18 @@ const CITACOES_HISTORICAS = new Map([
   ['cena-3d.mjs',
     'removido em 11/09 com a cena 3D e o job do CI que o rodava; citado em '
     + 'DESEMPENHO/DECISOES/FUNCIONALIDADES como a prova das medicoes do laco'],
+
+  // `[12/09]` Conferido com `ls`: o arquivo NAO existe mais. Era o molde unico
+  // das cinco secoes da landing — sobrancelha, titulo, descricao, botao, print —
+  // e foi apagado quando cada funcionalidade ganhou arte propria.
+  //
+  // O BRIEFING continua citando o nome porque a analise dele é sobre ESTE
+  // arquivo: "a monotonia é de UM arquivo, e isso é boa noticia — o problema
+  // esta em 67 linhas, nao espalhado pela pagina". Tirar o nome apagaria o
+  // achado e deixaria so a conclusao.
+  ['FeatureSection.jsx',
+    'apagado em 12/09 quando as cinco secoes viraram cenas com arte propria; '
+    + 'citado no BRIEFING-LANDING como o molde que causava a monotonia'],
 ]);
 
 /** Extensões que valem a pena conferir. Documento cita muito nome solto. */

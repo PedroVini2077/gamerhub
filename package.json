@@ -31,7 +31,8 @@
     "edges": "node scripts/edges-implantadas.mjs",
     "icones": "node scripts/gerar-icones.mjs",
     "test:migrations": "node scripts/espelho-de-migrations.mjs",
-    "test:e2e:terceiro": "node e2e/terceiro-no-contato.mjs"
+    "test:e2e:terceiro": "node e2e/terceiro-no-contato.mjs",
+    "cenas": "node scripts/gerar-cenas-da-landing.mjs"
   },
   "dependencies": {
     "@sentry/react": "^10.72.0",

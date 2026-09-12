@@ -1,19 +1,12 @@
-import { Newspaper, Users, Tv, Trophy, Key } from 'lucide-react';
 import usePonteiroDaPagina from '../hooks/usePonteiroDaPagina';
 import LandingNav from '../components/landing/LandingNav';
 import FluxoDeDados from '../components/landing/FluxoDeDados';
 import Hero from '../components/landing/Hero';
-import FeatureSection from '../components/landing/FeatureSection';
-import LandingShot from '../components/landing/LandingShot';
+import CenaDaLanding from '../components/landing/CenaDaLanding';
 import HighlightsStrip from '../components/landing/HighlightsStrip';
 import FinalCTA from '../components/landing/FinalCTA';
 import LandingFooter from '../components/landing/LandingFooter';
-import { DIMENSOES_DOS_PRINTS } from '../components/landing/dimensoesDosPrints';
-import feedShot from '../assets/landing/feed.jpg';
-import muralShot from '../assets/landing/mural.jpg';
-import livesShot from '../assets/landing/lives.jpg';
-import keysShot from '../assets/landing/keys.jpg';
-import ranksShot from '../assets/landing/ranks.jpg';
+import { CENAS, LARGURA, ALTURA } from '../lib/cenasDaLanding';
 
 // Página pública vista por quem ainda não está logado — apresenta o site
 // antes do login/cadastro (ver App.jsx: HomeOrLanding decide entre esta
@@ -45,64 +38,66 @@ export default function Landing({ introDone = true }) {
 
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         <HighlightsStrip />
+      </div>
 
-        <FeatureSection
-          id="feed"
-          icon={Newspaper}
+      {/* `[12/09]` AS CENAS SAEM DO CONTÊINER ESTREITO, e isso é pedido dele:
+          *"não tenha medo de abandonar a escala atual... algumas cenas podem
+          ocupar 100vw"*. Dentro do `max-w-5xl` a arte virava um cartão de
+          976 px no meio de um monitor de 1440 — medido no primeiro print. */}
+      <div className="px-0 md:px-6">
+        {/* `[12/09]` AS CINCO CENAS. Elas substituem cinco `FeatureSection`
+            idênticos — sobrancelha, título, descrição, botão, print —, que era
+            exatamente a monotonia que o dono diagnosticou.
+
+            A ordem segue a jornada, não o alfabeto: o que se descobre primeiro
+            (o feed), depois a gente (comunidade), depois o que acontece ao vivo
+            (lives), depois a recompensa (keys) e por fim a progressão (ranks).
+
+            `lado` alterna de propósito: cinco cenas com o texto sempre à
+            esquerda voltariam a ser um molde, só que com imagem maior. */}
+        <CenaDaLanding
+          id="feed" arte={CENAS.feed} largura={LARGURA} altura={ALTURA}
           eyebrow="Feed"
-          title="Dicas, curiosidades e news da comunidade"
-          description="Acompanhe um feed colaborativo onde a galera posta dicas, descobertas e novidades — curta, comente e participe das discussões."
-          details="Posts com categorias (dica, curiosidade, news), curtidas, comentários com respostas em thread, busca e filtros — tudo em tempo real."
-          accent="green"
-          mockup={<LandingShot src={feedShot} alt="Feed do GamerHub com keys grátis e promoções na lateral" width={DIMENSOES_DOS_PRINTS.feed.largura} height={DIMENSOES_DOS_PRINTS.feed.altura} />}
+          titulo="Um feed que não para"
+          descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa."
+          lado="esquerda"
         />
 
-        <FeatureSection
-          id="mural"
-          icon={Users}
-          eyebrow="Mural"
-          title="Mural da comunidade"
-          description="Um espaço aberto pra trocar ideias, organizar squads, compartilhar prints e bater papo com outros membros do Hub."
-          details="Mural com posts livres, imagens, reações e conversas em tempo real — o ponto de encontro informal da comunidade."
-          accent="purple"
-          reverse
-          mockup={<LandingShot src={muralShot} alt="Mural da comunidade do GamerHub" width={DIMENSOES_DOS_PRINTS.mural.largura} height={DIMENSOES_DOS_PRINTS.mural.altura} />}
+        <CenaDaLanding
+          id="mural" arte={CENAS.comunidade} largura={LARGURA} altura={ALTURA}
+          eyebrow="Comunidade"
+          titulo="Tem gente aqui"
+          descricao="O mural é o ponto de encontro informal: prints, squads sendo montados e papo solto com quem também joga."
+          lado="direita"
         />
 
-        <FeatureSection
-          id="lives"
-          icon={Tv}
+        <CenaDaLanding
+          id="lives" arte={CENAS.lives} largura={LARGURA} altura={ALTURA}
           eyebrow="Lives"
-          title="Suas lives do Twitch e YouTube, com chat na hora"
-          description="Traga sua transmissão do Twitch ou do YouTube e assista as dos outros membros direto no Hub — com chat em tempo real e contador de espectadores ao vivo."
-          details="Embeds de Twitch e YouTube com chat próprio do Hub, moderação, presença online e contador de espectadores em tempo real — sem sair da plataforma."
-          accent="cyan"
-          mockup={<LandingShot src={livesShot} alt="Aba de Lives do GamerHub com gameplays, reacts e lives da comunidade" width={DIMENSOES_DOS_PRINTS.lives.largura} height={DIMENSOES_DOS_PRINTS.lives.altura} />}
+          titulo="Está acontecendo agora"
+          descricao="Sua transmissão do Twitch ou do YouTube dentro do Hub, com chat em tempo real e contador de quem está assistindo."
+          lado="esquerda"
         />
 
-        <FeatureSection
-          id="keys"
-          icon={Key}
+        <CenaDaLanding
+          id="keys" arte={CENAS.keys} largura={LARGURA} altura={ALTURA}
           eyebrow="Keys & Promos"
-          title="Keys de jogos grátis e as melhores promoções"
-          description="Pegue keys de jogos grátis e fique por dentro das melhores promoções — direto no Hub, com o código pronto pra copiar na hora."
-          details="Seção de keys grátis e promoções com a plataforma (Steam, Epic, GOG), código copiável e atualização constante pela equipe."
-          accent="purple"
-          reverse
-          mockup={<LandingShot src={keysShot} alt="Página de Keys e Promoções do GamerHub" width={DIMENSOES_DOS_PRINTS.keys.largura} height={DIMENSOES_DOS_PRINTS.keys.altura} />}
+          titulo="Keys grátis e as promoções que valem"
+          descricao="O código pronto para copiar, a plataforma na etiqueta, e a lista atualizada pela equipe."
+          lado="direita"
         />
 
-        <FeatureSection
-          id="ranks"
-          icon={Trophy}
+        <CenaDaLanding
+          id="ranks" arte={CENAS.ranks} largura={LARGURA} altura={ALTURA}
           eyebrow="Ranks & XP"
-          title="Suba de rank e mostre seu progresso"
-          description="Ganhe XP postando, recebendo curtidas, comentando e completando seu perfil — evolua de rank e mostre quem é o melhor pra toda a comunidade."
-          details="Sistema de XP automático com ranks visuais, sub-ranks e progressão — quanto mais ativo, mais alto você sobe."
-          accent="green"
-          mockup={<LandingShot src={ranksShot} alt="Sistema de ranks e XP do GamerHub" width={DIMENSOES_DOS_PRINTS.ranks.largura} height={DIMENSOES_DOS_PRINTS.ranks.altura} />}
+          titulo="Participar conta, e aparece"
+          descricao="Postar, comentar e receber curtidas rende XP. O rank é o que a comunidade vê do seu histórico."
+          lado="esquerda"
         />
 
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
         <FinalCTA />
       </div>
 

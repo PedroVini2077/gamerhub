@@ -40,8 +40,17 @@ describe('as seções declaradas existem na página', () => {
   });
 
   it('toda seção da página está na lista (nenhuma fica sem link)', () => {
-    const idsNaPagina = [...LANDING.matchAll(/<FeatureSection\s+id="([^"]+)"/g)].map(m => m[1]);
-    expect(idsNaPagina.length).toBeGreaterThan(0);
+    // `[12/09]` O alvo era `<FeatureSection`, que deixou de existir quando as
+    // cinco seções viraram cenas com arte própria. **A trava pegou a troca**:
+    // a lista ficou vazia e o `toBeGreaterThan(0)` reprovou, em vez de aprovar
+    // por vacuidade. É exatamente para isto que aquela linha existe.
+    const idsNaPagina = [...LANDING.matchAll(/<CenaDaLanding\s+id="([^"]+)"/g)].map(m => m[1]);
+    expect(
+      idsNaPagina.length,
+      'Nenhuma `<CenaDaLanding id="...">` encontrada na Landing. Se o '
+      + 'componente das seções mudou de nome de novo, ajuste este alvo — senão '
+      + 'este teste passa a aprovar qualquer coisa sem olhar nada.',
+    ).toBeGreaterThan(0);
     for (const id of idsNaPagina) {
       expect(
         SECOES.map(s => s.id),
