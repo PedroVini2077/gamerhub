@@ -172,15 +172,82 @@ automática. Registrado aqui para ninguém a consertar.
 | `admin_set_role` | sete guardas: alvo existe, não é você, papel válido, alvo não é o fundador, seu cargo é maior que o do alvo **e** ≥ ao que você está dando |
 | `decide_role_demotion` | `FOR UPDATE` na linha (barra decisão dupla por corrida) e **quem pediu não pode decidir** — separação de funções de verdade |
 
+## As de BAN — dois achados, e o segundo é de arquitetura
+
+### 🟡 `ban_user` — a trilha pode ficar SEM O MOTIVO
+
+`p_reason` não tem validação nenhuma: nem nulo, nem tamanho. E o log é montado
+por concatenação:
+
+```sql
+'@' || v_target_username || ' foi banido por @' || v_caller_username
+  || '. Motivo: ' || p_reason
+```
+
+**Em SQL, `'texto' || NULL` é NULL** — medido, não deduzido. E
+`admin_logs.details` **aceita NULL** (conferido no `information_schema`). Então
+um ban com motivo nulo grava uma linha de trilha **com o detalhe inteiro vazio**:
+some o alvo, some quem baniu, some o motivo.
+
+A mesma coisa acontece na `admin_notifications` que avisa a equipe.
+
+**É o §1.5 na forma mais pura:** a ação acontece, a trilha existe, e ela não diz
+nada. E é o §5 na letra — *toda entrada de RPC precisa de FAIXA, não só de tipo*.
+
+**Conserto:** `IF p_reason IS NULL OR length(btrim(p_reason)) < 3 THEN RAISE`, e
+`coalesce` nas concatenações como defesa em profundidade.
+
+### 🟡 A INVERSA do ban existe para a marca, não para o CONTEÚDO
+
+`ban_user` faz, além de marcar o perfil:
+
+```sql
+DELETE FROM posts           WHERE user_id = p_user_id;
+DELETE FROM comments        WHERE user_id = p_user_id;
+DELETE FROM community_posts WHERE user_id = p_user_id;
+DELETE FROM live_chat       WHERE user_id = p_user_id;
+```
+
+**`DELETE` de verdade, não `soft_delete`.** O projeto TEM o caminho reversível —
+`soft_delete_post` marca `deleted_at` justamente para a moderação poder voltar
+atrás, e existe `restore_post`. O ban não usa nenhum dos dois.
+
+**O resultado é uma assimetria em duas dimensões**, e as duas contrariam a regra
+do `BANCO.md` (*"toda ação de estado precisa da INVERSA"*):
+
+| | quem pode | é reversível? |
+| --- | --- | --- |
+| marcar como banido | **admin** (rank 2) | sim — `unban_user` |
+| apagar todo o conteúdo | **admin** (rank 2) | **NÃO** |
+| desbanir | **super_admin** (rank 3) | — |
+
+Ou seja: **quem destrói é um nível ABAIXO de quem desfaz**, e a parte que ele
+destrói é justamente a que não tem volta. Um desbanimento devolve a conta e não
+devolve nada do que a pessoa escreveu — e ela não é avisada disso: a notificação
+diz *"sua conta voltou ao normal"*.
+
+**Isto pode ser intencional** — banir para purgar é uma política defensável, e
+por isso não é 🟠. Mas se for, precisa estar escrito, e a mensagem de
+desbanimento precisa parar de prometer o que não entrega. **É decisão de
+produto, e é do dono.**
+
+### 🔵 `unban_user` não confere se a pessoa está banida
+
+`lift_suspension` confere (*"Este usuario nao esta suspenso"*) — medido.
+`unban_user` **não**. Desbanir quem não está banido "funciona": os `UPDATE`
+rodam sem efeito, e a pessoa **recebe uma notificação** dizendo que o banimento
+dela foi revisto e removido. Aviso sobre um castigo que ela nunca teve.
+
 ## Cobertura declarada
 
 | | |
 | --- | --- |
-| funções `SECURITY DEFINER` alcançáveis | **24 lidas por inteiro de 50** (7 no BLOCO A + 17 aqui) |
+| funções `SECURITY DEFINER` alcançáveis | **31 lidas por inteiro de 50** (7 no BLOCO A + 24 aqui) |
 | das que ESCREVEM com barreira mais fraca | **4 de 4** |
 | das que escrevem com barreira de staff | 5 de 11 |
 | das que escrevem com barreira super/owner | 8 de 13 |
 | listas de papel à mão | **5 de 5** enumeradas |
 
-**Este bloco está PARCIAL, não concluído.** Faltam **26** funções: 6 das que
-escrevem com barreira de staff, 5 das de super/owner, e as 15 que só leem.
+**Este bloco está PARCIAL, não concluído.** Faltam **19** funções: 4 que
+escrevem (`decide_staff_trial`, `deny_unban_request`, `review_staff_nomination` e
+`contato_registrar_resposta` já lida) e 15 que só leem.

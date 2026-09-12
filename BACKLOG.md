@@ -297,7 +297,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**37 itens abertos** (+ 1 ideia sem compromisso)
+**41 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -326,6 +326,54 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   exista, limitar a 500 caracteres e aceitar só tipo de lista fechada. Provado
   em produção: tipo inventado, texto de 501 e alvo inexistente são todos
   recusados.
+
+- ⬜ `[12/09]` 🟡 **SEC-014 · `ban_user` pode gravar a trilha SEM O MOTIVO.**
+  *BLOCO B. **Proposta — não executei** (§7 🟡, RPC sensível).*
+
+  `p_reason` não tem validação: nem nulo, nem tamanho. O log é montado por
+  concatenação, e **em SQL `'texto' || NULL` é NULL** — medido. Como
+  `admin_logs.details` aceita NULL (conferido no `information_schema`), um ban
+  com motivo nulo grava uma linha de trilha **com o detalhe inteiro vazio**:
+  some o alvo, some quem baniu, some o motivo. O mesmo na notificação da equipe.
+
+  É o §1.5 puro — a ação acontece, a trilha existe e não diz nada — e o §5:
+  *toda entrada de RPC precisa de FAIXA, não só de tipo*.
+
+  **Conserto:** `IF p_reason IS NULL OR length(btrim(p_reason)) < 3 THEN RAISE`,
+  mais `coalesce` nas concatenações como defesa em profundidade.
+
+- ⬜ `[12/09]` 🟡 **SEC-015 · a INVERSA do ban existe para a marca, não para o
+  CONTEÚDO — e é DECISÃO DO DONO.** *BLOCO B.*
+
+  `ban_user` faz `DELETE FROM posts / comments / community_posts / live_chat`.
+  `DELETE` de verdade, não `soft_delete` — e o projeto TEM o caminho reversível
+  (`soft_delete_post` marca `deleted_at`, e existe `restore_post`).
+
+  | | quem pode | reversível? |
+  | --- | --- | --- |
+  | marcar banido | **admin** (rank 2) | sim |
+  | apagar todo o conteúdo | **admin** (rank 2) | **NÃO** |
+  | desbanir | **super_admin** (rank 3) | — |
+
+  **Quem destrói é um nível ABAIXO de quem desfaz**, e o que ele destrói é a
+  parte sem volta. O desbanimento devolve a conta e não devolve nada do que a
+  pessoa escreveu — e a notificação ainda diz *"sua conta voltou ao normal"*.
+
+  **Pode ser intencional** (banir para purgar é política defensável), e por isso
+  não é 🟠. Mas se for, precisa estar escrito e a mensagem precisa parar de
+  prometer o que não entrega. **Decisão de produto.**
+
+- ⬜ `[12/09]` 🔵 **`unban_user` não confere se a pessoa está banida.** *BLOCO B.*
+  `lift_suspension` confere; `unban_user` não. Desbanir quem não está banido
+  "funciona" e **manda uma notificação** dizendo que o banimento foi removido —
+  aviso sobre um castigo que a pessoa nunca teve.
+
+- ⬜ `[12/09]` 🔵 **`auth_account_deleted` virou entrada morta na lista do
+  cliente.** *Criado pelo meu próprio conserto do SEC-012.* A gravação passou
+  para dentro da RPC, mas a action continua na lista que `log_audit_event`
+  aceita do cliente — ninguém legítimo a usa, e qualquer pessoa logada pode
+  injetar um registro falso. Não dá poder nem expõe dado: é ruído forjável na
+  trilha. Uma linha para remover.
 
 - ⬜ `[12/09]` 🔵 **Falta um `is_owner()`, e é por isso que NOVE funções
   escrevem `role = 'owner'` à mão.** *BLOCO B. **Correção de um achado meu
