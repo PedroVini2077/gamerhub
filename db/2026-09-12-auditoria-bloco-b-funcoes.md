@@ -723,3 +723,66 @@ O `apply_mod_auto_ban` é **mais suave** que o `ban_user` humano: ele faz
 `UPDATE posts SET deleted_at` (reversível) onde o humano faz `DELETE`. O
 banimento automático preserva mais do que o manual — o inverso do que se
 esperaria. Não mexi: é a mesma decisão de produto do SEC-015, e é do dono.
+
+---
+
+# BLOCO F — os advisors, e um alarme que NÃO dá para atender
+
+Rodados depois de todas as mudanças de schema (§5 manda).
+
+## Piso do §6, conferido por consulta e não por impressão
+
+```
+80 funções SECURITY DEFINER · 0 sem `search_path` · 80 com `search_path` explícito
+```
+
+A regra do `BANCO.md` — *"toda `SECURITY DEFINER` precisa de `SET search_path`
+explícito"* — está **100% cumprida**, incluindo as sete que este dia criou ou
+reescreveu.
+
+## Security advisor — 3 avisos, e nenhum é achado novo
+
+**50 × `authenticated_security_definer_function_executable`.** É a arquitetura
+do projeto, não um defeito: cada RPC é chamável por quem tem conta e **cada uma
+tem guard interno por `auth.uid()`** — foi o que este bloco inteiro auditou.
+Revogar `EXECUTE` das 50 quebraria o site.
+
+**3 × `anon_security_definer_function_executable`**, e as três são exceções já
+decididas e escritas: `check_login_status` e `username_disponivel` (o
+deslogado precisa delas para entrar e para se cadastrar) e
+`contagem_de_migrations` (registrada em `DECISOES.md` em 12/09).
+
+## 🔵 `auth_leaked_password_protection` — e a resposta honesta é "não dá"
+
+O advisor pede para ligar a checagem contra o HaveIBeenPwned. **Pesquisado na
+documentação oficial antes de virar tarefa para o dono**, e a resposta muda
+tudo:
+
+> *"Leaked password protection is available on the Pro Plan and above."*
+
+**Este projeto roda no plano gratuito** (§0.2). Então este aviso vai continuar
+aparecendo em todo advisor, para sempre, e **não existe passo a passo que o
+dono possa executar** — é dinheiro, não configuração.
+
+Registrar isto assim é o §0 na letra: *"falta recurso pago → achar o caminho que
+existe, e escrever o que ele NÃO cobre; nunca fingir que cobre"*. E é também
+§9.12: eu quase escrevi *"ligue a proteção de senha vazada no painel"* e mandei
+ele procurar um botão que o plano dele não tem.
+
+**O que É possível no Free**, na mesma tela de Auth: comprimento mínimo e
+classes de caracteres obrigatórias. Hoje o site mede força no cliente
+(`lib/password.js` pontua a partir de 8 e de 12 caracteres) — e **validação no
+cliente não vale nada sozinha** (§1.3): quem chama a API de auth direto passa
+por cima. Conferir e endurecer o mínimo no painel é ação do dono, e essa sim
+tem caminho. Está no `BACKLOG.md`.
+
+## Performance advisor — 23 × `unused_index`, e nenhum sai
+
+Todos INFO. **Num site com 5 perfis e tráfego de teste, índice sem uso é o
+esperado** — `idx_comments_post_id` não foi usado porque quase não há
+comentários, não porque é inútil. Apagá-los agora seria otimizar contra o
+futuro: eles existem exatamente para o dia em que o volume chegar.
+
+Registrado aqui como **decisão de não otimizar, com o motivo** (§6.1). A hora de
+reavaliar é quando houver tráfego real — e aí o mesmo advisor responde de novo,
+com dado que significa alguma coisa.

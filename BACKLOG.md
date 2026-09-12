@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**42 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -368,6 +368,25 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   aceita do cliente — ninguém legítimo a usa, e qualquer pessoa logada pode
   injetar um registro falso. Não dá poder nem expõe dado: é ruído forjável na
   trilha. Uma linha para remover.
+
+- ⬜ `[12/09]` 🔵 **A política de senha do painel de Auth nunca foi conferida.**
+  *BLOCO F, e vem com a parte que eu quase errei.* O advisor pede para ligar a
+  proteção contra senha vazada (HaveIBeenPwned). **Pesquisei antes de virar
+  tarefa para você, e ela é do plano PRO** — não existe botão para clicar no
+  Free, e esse aviso vai aparecer em todo advisor para sempre. Não é
+  configuração, é dinheiro.
+
+  **O que dá para fazer no Free**, na mesma tela: comprimento mínimo e classes
+  de caracteres obrigatórias. Hoje o site só mede força **no cliente**
+  (`lib/password.js`), e validação no cliente não vale nada sozinha (§1.3) —
+  quem chama a API de auth direto passa por cima. Falta eu escrever o passo a
+  passo no `OPERACAO.md` (§9.12) e você conferir o que está configurado.
+
+- ⬜ `[12/09]` 🔵 **`admin_list_users` faz `SELECT * FROM profiles`.** *BLOCO D.*
+  Devolve **todas** as colunas para qualquer admin, inclusive as que a tela não
+  usa. Não é brecha — admin é cargo autorizado —, é minimização de dado e
+  egress (§6.1): a cota mais apertada do Supabase paga por coluna que ninguém
+  lê. Trocar por lista explícita de colunas.
 
 - ⬜ `[12/09]` 🟠 **NÃO EXISTE NENHUM SUPER ADMIN — e isso é o que transformava
   o SEC-020 em porta sem volta.** *Descoberto ao medir o impacto do SEC-020, e é
