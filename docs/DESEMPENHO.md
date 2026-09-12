@@ -1080,3 +1080,33 @@ ser pesado, mas tem que ter impactante"* — e ela é aceitável porque o custo 
 > triplicar em silêncio. O NÚMERO em si continua sendo trabalho de medir, e está
 > aqui para a próxima medição ter com o que comparar.
 
+### `[12/09]` As artes de RETRATO — e o celular passou a pesar mais que o PC
+
+O dono gerou as sete cenas numa segunda composição, feita para a tela em pé, e
+o `<picture>` passou a trocar de **arte** (não só de resolução) abaixo de
+768 px. O ganho visual é real: no celular a cena tem 712 px de altura em vez de
+225, e a interface desenhada dentro dela é legível.
+
+**Medido rolando a landing inteira, com as duas composições no ar:**
+
+| | 1ª dobra | página inteira |
+| --- | --- | --- |
+| computador, 1440 px | 121 kB | **706 kB** em 6 artes |
+| celular, 400 px com densidade 2 | 134 kB | **777 kB** em 6 artes |
+
+**O celular ficou MAIS PESADO que o computador, e isso não é bug.** É
+geometria: a 828 px de largura, a arte de retrato tem 1.472 px de altura contra
+466 px da paisagem — **três vezes mais pixels** no mesmo arquivo. Trocar
+qualidade por composição tem preço, e ele aparece aqui.
+
+**Por que não está errado assim mesmo:** o número que decide a primeira
+impressão é a **1ª dobra**, e ela é 134 kB. O resto chega enquanto a pessoa
+rola, uma cena por vez, e só para quem rola.
+
+**O que existe de alavanca, sem chute:** a qualidade das artes é 0,80. Medido na
+paisagem, 0,72 tira ~25% do peso. **Não apliquei** porque não medi se o artefato
+aparece no texto da interface DENTRO da arte, que é justamente o que precisa
+continuar legível — e trocar legibilidade por byte sem olhar seria desfazer o
+motivo de as artes de retrato existirem. A medição que resolve: gerar uma cena a
+0,72 e comparar o recorte do texto lado a lado. Está no `BACKLOG.md`.
+

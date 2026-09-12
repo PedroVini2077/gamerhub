@@ -124,8 +124,15 @@ Identificar o visitante banido foi descartado por privacidade — ver
   o outro lado fica limpo, e a arte continua sendo o assunto.
 - O `lado` do texto **alterna** entre as cenas. Cinco seções com o texto sempre
   no mesmo lugar voltariam a ser um molde, só que com imagem maior.
-- `loading="lazy"` em todas menos a primeira, e `srcset` com três larguras: a
-  mesma cena custa 147 kB a 1600 px e 57 kB a 828 px.
+- **Cada cena tem DUAS artes**, e o `<picture>` troca abaixo de 768 px: a larga
+  (16:9) no computador e uma composição de **retrato** no celular. Não é recorte
+  — é arte feita para a tela em pé. Medido: com a 16:9 espremida, o texto da
+  interface desenhada dentro dela ficava com 2–3 px.
+- O **véu muda de eixo** junto: lateral no computador (texto ao lado), vertical
+  no celular (texto no pé). Véu lateral numa arte em pé apagaria uma coluna
+  inteira da composição.
+- `loading="lazy"` em todas menos a primeira, e `srcset` com três larguras por
+  composição.
 
   > **`[12/09]` Isto substituiu o `FeatureSection`, que foi APAGADO.** Ele era
   > um molde único — sobrancelha, título, descrição, botão, print — instanciado
