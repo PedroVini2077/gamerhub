@@ -87,8 +87,15 @@ estado de autenticação.
   ~20 minutos — então o olho não acha a repetição.
 - **Segue o ponteiro** no computador, na mesma linguagem da cachoeira de dados.
   No celular não há ponteiro e ela fica parada, o que não é defeito.
+- **O mesmo reflexo da abertura volta a cada 11 s**, pedido dele: *"esse brilho
+  na animação... ela passa de vez em quando"*. A passagem ocupa 12% do ciclo e
+  nos outros 88% a faixa fica parada fora da marca — é isso que faz o brilho ser
+  um acontecimento em vez de um pisca-pisca.
 - Fica **atrás do texto e discreta de propósito**: o parágrafo do hero precisa
   continuar legível, e o que dá presença a ela é o movimento, não o brilho.
+- **Tudo para quando o hero sai da tela.** Não é zelo: a cena 3D continuava
+  desenhando para quem já tinha rolado para longe, e isso custou 29.441 ms de
+  thread principal num PageSpeed.
 - É ela que dá **alvo** aos trajetos do fundo, que antes convergiam para espaço
   vazio.
 
