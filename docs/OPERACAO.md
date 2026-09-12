@@ -551,9 +551,9 @@ engorda. Ele confere quatro coisas:
 
 | O que | Teto | Por quê |
 | --- | --- | --- |
-| JS do carregamento inicial | 740 kB brutos / 222 kB gzip | é o que o navegador busca antes de pintar qualquer coisa |
+| JS do carregamento inicial | 760 kB brutos / 228 kB gzip | é o que o navegador busca antes de pintar qualquer coisa |
 | Qualquer chunk isolado | 320 kB | chunk de **rota** não aparece no `index.html` e escapa do teto acima — mas quem abre a página paga tudo |
-| `LandingScene-*.js` existe | — | se o `lazy()` virar `import` estático, o chunk some e a cena 3D é absorvida pela rota |
+| `Admin-*.js` e `Owner-*.js` existem | — | se um `lazy()` virar `import` estático o chunk some, nada quebra, e **todo visitante anônimo passa a baixar o código da equipe**. `[12/09]` Esta linha dizia `LandingScene-*.js`, que foi apagado com a cena 3D em 11/09 — o script já apontava para os painéis |
 | O HTML ainda é legível | — | se as expressões pararem de casar, ele sai com erro em vez de medir zero byte e aprovar |
 
 **Mede byte, não tempo, de propósito.** Tempo de laboratório oscila com a
@@ -1140,8 +1140,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->351<!--/n--> arquivos e
-<!--n:src.linhas-->35.627<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->358<!--/n--> arquivos e
+<!--n:src.linhas-->36.411<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1165,7 +1165,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->351<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->358<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1190,7 +1190,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->15.909<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->16.249<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 

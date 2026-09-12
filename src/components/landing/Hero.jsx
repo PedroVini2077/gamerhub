@@ -1,28 +1,35 @@
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ChevronDown, PauseCircle, ShieldQuestion } from 'lucide-react';
-import { useDbOffline } from '../../hooks/useDbOffline';
-import { motivoDaPausa } from '../../lib/pauseReason';
-import { heroFade } from '../../lib/landingMotion';
-import ElectricTitle from './ElectricTitle';
+import { ChevronDown } from 'lucide-react';
 import ConvergenciaDoHub from './ConvergenciaDoHub';
 import MarcaFlutuante from './MarcaFlutuante';
-import MarcaGH from '../ui/MarcaGH';
+import ConteudoDoHero from './ConteudoDoHero';
 
+/**
+ * O hero em UMA tela, sem narrativa por rolagem.
+ *
+ * ── `[12/09]` Quem chega aqui hoje ──────────────────────────────────────────
+ *
+ * Este é o caminho de quem pediu **menos movimento** no sistema
+ * (`prefers-reduced-motion`). Para todos os outros, o hero é o último ato do
+ * `PrologoDaLanding`, que monta as mesmas três camadas com o progresso da
+ * rolagem no comando.
+ *
+ * Ele **não** é um caminho de segunda: é a mesma cena, sem a narrativa. Quem
+ * desliga animação no sistema tem motivo — de enjoo a vestibular —, e entregar
+ * a landing sem conteúdo para essa pessoa seria trocar acessibilidade por
+ * efeito. Aqui ela vê a convergência, a marca e o texto, parados.
+ *
+ * ── `[02/09]` A intro NÃO mora mais aqui, e a razão é medida ────────────────
+ *
+ * Ela era montada pelo Hero, que vive dentro do chunk lazy da landing.
+ * Consequência: o clarão só existia na tela depois de aquele chunk baixar e
+ * executar — **1320 ms a 6× de CPU, 1820 ms a 8×**. Todo esse tempo é tela
+ * preta, e foi metade do "às vezes não aparece" que o dono relatou.
+ *
+ * Hoje quem monta a abertura é o `HomeOrLanding` (App.jsx), que está no pacote
+ * inicial. O Hero só recebe o resultado em `introDone`.
+ */
 export default function Hero({ introDone = true }) {
-  const foraDoAr = useDbOffline();
-  // `[02/09]` A intro NÃO mora mais aqui, e a razão é medida.
-  //
-  // Ela era montada pelo Hero, que vive dentro do chunk lazy da landing.
-  // Consequência: o raio só existia na tela depois de aquele chunk baixar e
-  // executar — **1320 ms a 6x de CPU, 1820 ms a 8x**. Todo esse tempo é tela
-  // preta, e foi metade do "às vezes não aparece" que o dono relatou.
-  //
-  // Hoje quem monta a intro é o `HomeOrLanding` (App.jsx), que está no pacote
-  // inicial. O Hero só recebe o resultado: `introDone` diz se já pode revelar
-  // o conteúdo. Ele continua sem saber o que é um raio.
-  const show = introDone ? 'animate' : 'initial';
-
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 overflow-x-clip">
       {/* Glows flutuantes — assinatura exclusiva da landing, não existem no resto do site */}
@@ -52,74 +59,7 @@ export default function Hero({ introDone = true }) {
           vez de convergirem para espaço vazio, e o texto continua por cima. */}
       <MarcaFlutuante className="z-[2]" />
 
-      <div className="relative z-10 flex flex-col items-center">
-        <motion.div variants={heroFade(0)} initial="initial" animate={show} className="flex items-center gap-2 mb-5">
-          <MarcaGH tamanho={20} />
-          <span className="font-mono text-xs tracking-[0.3em] text-neon-green uppercase">
-            Sua base de operações gamer
-          </span>
-        </motion.div>
-
-        <ElectricTitle active={introDone} />
-
-        <motion.p
-          variants={heroFade(0.25)} initial="initial" animate={show}
-          className="max-w-xl text-gray-400 font-body text-base md:text-lg mb-9"
-        >
-          Feed colaborativo, mural da comunidade, lives ao vivo, ranks e XP —
-          tudo num só lugar, feito pra quem vive games.
-        </motion.p>
-
-        <motion.div variants={heroFade(0.45)} initial="initial" animate={show}>
-          <Link to="/login" className="btn-solid py-3.5 px-9 text-sm">Entrar / Criar conta</Link>
-        </motion.div>
-
-        {/*
-          `[29/08]` Porta de entrada para quem foi banido.
-
-          O pedido do dono era um aviso na landing "só para ele" — identificando
-          quem está banido. Descartado, e o motivo está em `docs/DECISOES.md`: a
-          landing é vista por visitante anônimo, então identificar exigiria
-          guardar no navegador que AQUELA MÁQUINA teve um login banido. Num PC ou
-          celular compartilhado, isso conta a terceiros algo que não é da conta
-          deles — o oposto do endurecimento de LGPD que este projeto fez.
-
-          Este link resolve o problema real sem identificar ninguém: quem está
-          banido JÁ consegue entrar e ver o andamento do recurso na
-          `BannedScreen`; o que faltava era saber que isso existe. O link é
-          igual para todo mundo e não revela nada — quem não está banido só
-          encontra a tela de login normal.
-        */}
-        <motion.div variants={heroFade(0.5)} initial="initial" animate={show}>
-          <Link
-            to="/login"
-            className="mt-4 inline-flex items-center gap-1.5 text-xs font-mono text-gray-600 hover:text-gray-400 transition-colors"
-          >
-            <ShieldQuestion size={13} />
-            Conta bloqueada? Consulte seu caso
-          </Link>
-        </motion.div>
-
-        {/* Troca entre a cena 3D e a versão leve. Só aparece para quem tem o
-            que trocar — em desktop rodando o padrão (que já é 3D) ele some
-            sozinho, para não poluir a landing. Ver `lib/cena3D.js`. */}
-        <motion.div variants={heroFade(0.6)} initial="initial" animate={show}>
-        </motion.div>
-
-        {/* O aviso de pausa era um texto FIXO no código: para tirar ou trocar,
-            precisava de commit e deploy. Agora ele aparece sozinho quando o
-            site perde o banco, e some sozinho quando volta. O motivo vem da
-            chave `pause_reason`, guardada no navegador enquanto havia conexão
-            (ver `lib/pauseReason.js` para o porquê de não vir do banco). */}
-        {foraDoAr && (
-          <motion.div variants={heroFade(0.65)} initial="initial" animate={show}>
-            <div className="mt-5 flex items-start gap-2 px-4 py-2.5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 text-yellow-400/70 font-mono text-xs text-left">
-              <PauseCircle size={13} className="shrink-0 mt-0.5" />
-              <span>{motivoDaPausa()}</span>
-            </div>
-          </motion.div>
-        )}
-      </div>
+      <ConteudoDoHero introDone={introDone} />
 
       <motion.div
         aria-hidden

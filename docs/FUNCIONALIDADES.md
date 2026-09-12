@@ -33,6 +33,29 @@ O `owner` tem um rank especial de **Fundador** (laranja), exibido na página
 logados) ao acessar `/`. Decide-se em `HomeOrLanding` no `App.jsx` com base no
 estado de autenticação.
 
+**`[12/09]` O PRÓLOGO — os cinco atos que a rolagem conduz**
+(`PrologoDaLanding`):
+
+O hero deixou de ser uma tela e virou uma narrativa. Ela ocupa as primeiras 3,6
+alturas de tela, presa no lugar enquanto a pessoa rola:
+
+| Ato | O que se vê |
+| --- | --- |
+| **ARTE** | a arte de abertura quase em tela cheia, com a frase *"Tudo o que acontece entre gamers, em um só lugar."* — sem logo, sem parágrafo e sem botão |
+| **TRANSFORMAÇÃO** | a frase sai subindo, a arte avança e o escuro fecha por cima |
+| **CONVERGÊNCIA** | os trajetos do `ConvergenciaDoHub` chegam de fora, contraindo |
+| **MARCA** | a marca acende no meio deles e assenta na opacidade do hero |
+| **GAMERHUB** | o hero de sempre sobe e assume — título, parágrafo e botão |
+
+- **Quem pediu menos movimento vê a landing inteira, parada.** Com
+  `prefers-reduced-motion`, o `PrologoParado` mostra a arte e a frase numa tela
+  estática e o hero completo logo abaixo. A arte e a frase são conteúdo, não
+  efeito — some quem escolheu menos animação, não o que a página diz.
+- Enquanto o hero está transparente, os links dele **não** recebem clique nem
+  foco de teclado: botão invisível que leva ao login é armadilha.
+- O botão **Entrar** da barra do topo está visível o tempo todo, inclusive no
+  ATO 0 que não tem CTA próprio.
+
 **Fundo do Hero — a convergência** (`ConvergenciaDoHub`):
 - Trajetos finos chegando de fora e parando num anel em volta do bloco de
   texto. É o nome do produto desenhado: **Hub** é um ponto onde as coisas se

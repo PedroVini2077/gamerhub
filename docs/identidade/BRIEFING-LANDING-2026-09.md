@@ -424,3 +424,126 @@ destruída não é.
    somar.
 3. **Se o rodapé, a sidebar e a faixa de destaques sobrevivem** à reformulação
    ou entram na narrativa.
+
+---
+
+# `[12/09]` O COMPLEMENTO — a landing como narrativa de rolagem
+
+> Segundo prompt dele, mandado depois de as sete artes entrarem: *"vamos usar
+> ela na landing sim, vou te mandar mais um prompt, e esse vai ser pra
+> complementar o outro, aí vc agrega oq precisar agregar e faz com calma e todo
+> capricho do mundo"*.
+
+## O que ele pediu, na letra
+
+**ATO 0 — a arte de abertura vira CENA.** `CENAS.hero` deixa de ser um arquivo
+sem chamador e passa a ocupar a primeira tela quase inteira, com a frase
+**"Tudo o que acontece entre gamers, em um só lugar."** tratada como parte da
+composição. E três proibições explícitas, que decidem o desenho:
+
+- **sem o logo do GamerHub por cima** da arte;
+- **sem o parágrafo atual do hero**;
+- **sem CTA imediato**.
+
+**Depois, a rolagem conduz:** `ARTE → TRANSFORMAÇÃO → CONVERGÊNCIA → MARCA →
+GAMERHUB` — e ele foi específico sobre o que NÃO servia: *"não é `arte → fade →
+Hero`"*. Cena presa, cenas que se sobrepõem, progresso da rolagem comandando as
+transformações, transições contínuas, e ritmo **IMPACTO → RESPIRO → IMPACTO**,
+com **cada cena tendo uma transição diferente** — *"nunca cinco fades iguais"*.
+
+As 20 regras dele estão cumpridas ou respondidas abaixo. A 17 é a que decidiu a
+ordem do trabalho: *"antes de implementar, faça uma leitura cuidadosa do código
+atual da landing e proponha a arquitetura da nova camada de storytelling. Não
+altere nada apenas para experimentar"*.
+
+## A ARQUITETURA — o que foi lido, e o que foi decidido
+
+Lidos por inteiro antes de escrever qualquer linha: `pages/Landing.jsx`,
+`Hero.jsx`, `App.jsx`, `ConvergenciaDoHub.jsx`, `MarcaFlutuante.jsx`,
+`FluxoDeDados.jsx`, `CenaDaLanding.jsx`, `FinalCTA.jsx`, `landingMotion.js`,
+`cenasDaLanding.js`, `marcaNoHero.js` e as travas de `cenasDaLanding.test.js`.
+
+### Três camadas, e cada uma ignora as outras duas
+
+| Camada | Arquivo | Sabe sobre |
+| --- | --- | --- |
+| **o roteiro** | `lib/atosDaLanding.js` | **quando** — só números: as janelas de 0 a 1 |
+| **o palco** | `components/landing/PalcoDeRolagem.jsx` | **como prender** e medir o progresso |
+| **as camadas** | `components/landing/PrologoDaLanding.jsx` | **o que** aparece em cada ato |
+
+É a regra 19 dele — *"separe a lógica de storytelling da lógica de conteúdo das
+cenas"* — virada em arquivo. O efeito prático: **ajustar o ritmo não abre JSX
+nenhum**, e é isso que impede o que a regra 20 proíbe (*"uma timeline gigante
+impossível de manter"*).
+
+### Framer Motion, e NÃO GSAP/ScrollTrigger — a regra 18, respondida
+
+Ele mandou justificar antes de acrescentar. A justificativa é contra:
+
+| | GSAP + ScrollTrigger | o que foi usado |
+| --- | --- | --- |
+| peso | ~70 kB **descompactados** no caminho crítico | **0** — `framer-motion` já está no pacote |
+| como prende | JavaScript: cria espaçador e reescreve o layout | `position: sticky` do CSS |
+| conflito | o pin dele briga com `position: fixed` — e o `FluxoDeDados` é fixo | nenhum |
+| manutenção | uma timeline central | uma janela por camada, num arquivo de dados |
+
+Medido depois de pronto: a camada inteira custou **+0,3 kB** de JavaScript
+inicial e **+12,8 kB** no chunk da landing, que é lazy. Ver `docs/DESEMPENHO.md`.
+
+### O que NÃO foi usado, e por quê
+
+**Desfoque na dissolução da arte.** Ficaria mais bonito e é repintado a cada
+quadro numa imagem de tela cheia — o travamento clássico de celular. Escala,
+opacidade e véu fazem quase o mesmo no compositor, de graça. Este projeto já
+pagou 29.441 ms de thread principal por decoração que desenhava sem parar.
+
+## O que se PERDEU, dito antes de alguém notar
+
+Até 11/09 a marca pintada na abertura **assentava** no hero: mesmo centro, e a
+troca lia como continuidade. Com o ATO 0 sendo a arte **sem logo**, essa
+continuidade acaba — o clarão abre para a arte, e a marca só volta no quarto ato.
+
+Não é descuido: é o preço de o arco terminar em MARCA, que foi o pedido dele. E
+tem um ganho junto: a marca deixa de estar sempre ali e passa a ser **aonde a
+história chega**. O contrato de `lib/marcaNoHero.js` continua valendo — ele só é
+usado mais tarde.
+
+**Se ele preferir o contrário**, o caminho é curto e está escrito aqui para não
+se perder: a marca voltaria a nascer visível em progresso 0 e sairia nos
+primeiros 6% da rolagem. Isso violaria a regra 1 do prompt dele ao pé da letra,
+então não foi feito por conta própria.
+
+## O ritmo implementado, com os números
+
+| Progresso | Ato | A transição, e ela é diferente em cada um |
+| --- | --- | --- |
+| 0 → 0,16 | **ARTE** | empurrão lento: escala 1,08 → 1 |
+| 0,16 → 0,30 | *respiro* | nada se move |
+| 0,30 → 0,44 | **TRANSFORMAÇÃO** | a frase sai subindo; a arte avança |
+| 0,26 → 0,58 | | o véu fecha por cima, levando a cena ao preto |
+| 0,40 → 0,60 | **CONVERGÊNCIA** | os trajetos CONTRAEM de 1,14 para 1 — chegam de fora |
+| 0,60 → 0,64 | *respiro* | o escuro antes do impacto |
+| 0,64 → 0,84 | **MARCA** | acende acima do valor final (0,5) e assenta em 0,16 |
+| 0,84 → 1,00 | **GAMERHUB** | o hero de sempre sobe 40 px e aparece |
+
+A frase do ATO 0 é a única coisa que **não** entra por rolagem: ela entra por
+tempo, logo depois da abertura. Janela de rolagem a faria invisível em progresso
+0, que é justamente onde a pessoa chega.
+
+## As 20 regras — onde cada uma parou
+
+| | Regra | Como ficou |
+| --- | --- | --- |
+| 1–4 | ATO 0 sem logo, sem parágrafo, sem CTA, arte quase cheia | feito — e travado em `prologo.test.js` |
+| 5–9 | cena presa, sobreposição, progresso comandando, transições contínuas | feito |
+| 10 | cada cena uma transição diferente | feito — a tabela acima |
+| 11 | `prefers-reduced-motion` | `PrologoParado`: a arte e a frase ficam, paradas |
+| 12 | sem salto de layout | tudo `absolute` dentro de caixa de altura fixa; a arte com `width`/`height` |
+| 13 | não quebrar o que existe | `ConvergenciaDoHub`, `MarcaFlutuante`, `ElectricTitle`, a abertura e o ponteiro entram inteiros |
+| 14 | preservar o lazy das cenas de baixo | só a arte do ATO 0 é ansiosa; travado |
+| 15 | não criar arte nova | nenhuma |
+| 16 | não acrescentar dependência | nenhuma |
+| 17 | ler e propor antes | esta seção |
+| 18 | justificar GSAP | recusado, com a conta acima |
+| 19 | separar storytelling de conteúdo | as três camadas |
+| 20 | não virar timeline gigante | o roteiro é dado, não código |

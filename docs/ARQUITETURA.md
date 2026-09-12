@@ -182,6 +182,11 @@ src/
 │   │                      # referências — nada aqui é editado à mão.
 │   │                      # Import ESTÁTICO de propósito: caminho montado por
 │   │                      # string funciona em desenvolvimento e some do build
+│   ├── atosDaLanding.js   # `[12/09]` O ROTEIRO do prólogo: as JANELAS de
+│   │                      # rolagem de cada camada (de 0 a 1), a frase do ATO 0
+│   │                      # e a altura do palco. Só dados — o ritmo se ajusta
+│   │                      # aqui sem abrir JSX, que é o que impede a página de
+│   │                      # virar uma timeline gigante
 │   ├── marcaNoHero.js     # `[11/09]` A POSIÇÃO COMBINADA da marca — o contrato
 │   │                      # entre a abertura e o hero. A marca não voa até um
 │   │                      # ponto medido: os dois lados concordam de antemão,
@@ -424,6 +429,24 @@ src/
     │                      # CenaDaLanding (as cinco cenas com arte),
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot
+    │   ├── PrologoDaLanding.jsx # `[12/09]` OS CINCO ATOS que a rolagem conduz
+    │   │                  # — ARTE, TRANSFORMAÇÃO, CONVERGÊNCIA, MARCA,
+    │   │                  # GAMERHUB. Ele monta as camadas; o ritmo vem de
+    │   │                  # `lib/atosDaLanding.js` e o mecanismo do palco
+    │   ├── PalcoDeRolagem.jsx # `[12/09]` A cena PRESA na tela enquanto a
+    │   │                  # rolagem passa: `position: sticky` + `useScroll`.
+    │   │                  # É o único arquivo que sabe o que é rolagem — quem
+    │   │                  # escreve uma cena recebe um número de 0 a 1
+    │   ├── PrologoParado.jsx # `[12/09]` O mesmo prólogo para quem pediu
+    │   │                  # `prefers-reduced-motion`: a arte e a frase existem,
+    │   │                  # paradas, e o Hero completo vem logo abaixo
+    │   ├── ConteudoDoHero.jsx # `[12/09]` O que se LÊ no hero (sobrancelha,
+    │   │                  # título, parágrafo, botão, avisos). Saiu do `Hero`
+    │   │                  # porque tem dois donos: ele e o último ato do prólogo
+    │   ├── ArteDaCena.jsx # `[12/09]` O `<picture>` das artes numa fonte só —
+    │   │                  # media, srcSet, sizes, dimensões, loading e
+    │   │                  # fetchPriority. Era copiado em dois lugares e o
+    │   │                  # prólogo seria o terceiro
     │   ├── ConvergenciaDoHub.jsx # `[11/09]` O fundo do Hero: trajetos que
     │   │                  # chegam de fora e pousam no centro, onde o nome
     │   │                  # está. SVG + CSS. Substituiu a cena 3D (−708 kB)
