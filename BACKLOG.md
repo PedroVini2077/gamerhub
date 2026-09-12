@@ -132,6 +132,20 @@ encontrou **seis** casos, e eu conhecia um — os outros estavam na tela de
 entrada, no portão, e um eu tinha acabado de criar. Trava nova em
 `animacaoComAtraso.test.js`. Tudo em `docs/DECISOES.md`.
 
+**`[12/09]` AJUSTE 6 — ele DESFEZ duas coisas dos ajustes 4 e 5.** As **linhas
+do ATO 0** que iam até o centro (*"na vdd Claude, não gostei dessas linhas
+não... pode tirar tudo mesmo, do Pc e do celular"*) e a **borda do ícone do
+PWA** (*"esse gradiante que vc fez, e essas luzes elas já fazem o trabalho de
+dar as 'bordas' do app, sem precisar de uma borda física"*).
+
+Nos dois casos o que saiu foi a solução, não a lição — e a diferença importa,
+porque as travas eram do mecanismo: a de espessura em `non-scaling-stroke`
+**virou varredura de classe** sobre `src/components/landing` (provada
+reinjetando 0,18 px no `ConvergenciaDoHub`, que ela nunca tinha coberto), e a
+do `backwards` já era de classe e continua intacta. As travas que só descreviam
+o desenho removido (drenagem, gradiente, `pathLength`) saíram junto: trava sem
+alvo não falha, ela itera zero vezes e fica verde para sempre.
+
 **`[12/09]` A LANDING PAUSA AQUI, a pedido dele** — *"já trabalhamos demais
 nessa landing page"*. Não é abandono: o que sobrou está listado no fim desta
 seção, e a fila abaixo volta a ser a prioridade.
@@ -1333,7 +1347,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->115<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.945<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->11.850<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

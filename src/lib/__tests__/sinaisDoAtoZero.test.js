@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { varrerFontes } from './varrerFontes.js';
 
 /**
  * As travas dos SINAIS DE VIDA — a camada de produto animada do ATO 0.
@@ -99,26 +100,6 @@ describe('os sinais de vida do ATO 0', () => {
 describe('os sinais do ATO 0 são VISÍVEIS', () => {
   const SINAIS = 'src/components/landing/prologo/SinaisDeVida.jsx';
   const CSS = 'src/estilos/sinaisDeVida.css';
-
-  it('nenhum traço é fino demais para existir na tela', () => {
-    // `[12/09]` O bug: `strokeWidth="0.18"` JUNTO com
-    // `vector-effect="non-scaling-stroke"`. O efeito fixa a espessura em PIXEL
-    // DE TELA, então 0,18 é literalmente invisível — o desenho estava certo, o
-    // navegador desenhava, e ninguém via.
-    //
-    // Não é hipótese: a convergência do hero usa 1,4 com o mesmo efeito, e ela
-    // aparece. A diferença entre as duas era só este número.
-    const fonte = FONTE(SINAIS);
-    for (const [, largura] of fonte.matchAll(/strokeWidth="([\d.]+)"/g)) {
-      expect(
-        Number(largura),
-        `Um traço dos sinais está com ${largura} px de espessura.\n`
-        + '  Com `non-scaling-stroke` a espessura é em pixel de tela, não em\n'
-        + '  unidade do `viewBox`. Abaixo de ~0,5 px o traço some, e nada acusa:\n'
-        + '  o elemento existe no DOM e o navegador desenha nada.',
-      ).toBeGreaterThanOrEqual(0.5);
-    }
-  });
 
   it('nenhum sinal transborda a tela do celular', () => {
     // `[12/09]` O bug que o dono viu no telefone: *"alguns dos css estão
@@ -229,130 +210,54 @@ describe('os sinais do ATO 0 são VISÍVEIS', () => {
   });
 });
 
-describe('as ligações do ATO 0 são ENERGIA, e existem no celular', () => {
-  const SINAIS = 'src/components/landing/prologo/SinaisDeVida.jsx';
-  const ICONES = 'scripts/gerar-icones.mjs';
+/**
+ * `[12/09]` Esta varredura era um teste de UM arquivo, e virou de CLASSE.
+ *
+ * Ela nasceu medindo o `strokeWidth` dos traços do ATO 0. Esses traços foram
+ * REMOVIDOS a pedido do dono — e uma trava que varre um arquivo que perdeu o
+ * alvo não falha: ela itera zero vezes e fica **verde para sempre**, que é a
+ * lição inteira do `varrerFontes.js`.
+ *
+ * A escolha então foi entre apagá-la e generalizá-la. Generalizar, porque o bug
+ * que ela pega **não era dos traços**: é da UNIDADE. `vector-effect:
+ * non-scaling-stroke` fixa a espessura em PIXEL DE TELA, e não em unidade do
+ * `viewBox` — então um número que parece razoável ali dentro (`0.18` num
+ * `viewBox` de 100) é literalmente invisível. O elemento existe no DOM, o
+ * navegador desenha, e ninguém vê (§1.5).
+ *
+ * Hoje há três outros lugares com o mesmo efeito (`ConvergenciaDoHub`,
+ * `AssinaturaDoRodape`), e a próxima decoração da landing será a quarta.
+ */
+describe('traço com `non-scaling-stroke` é grosso o bastante para existir', () => {
+  it('nenhum arquivo da landing desenha um traço abaixo de 0,5 px de tela', () => {
+    const arquivos = varrerFontes('src/components/landing');
+    const comEfeito = arquivos.filter((c) => /non-scaling-stroke/.test(FONTE(c)));
 
-  it('as linhas NÃO são escondidas no celular', () => {
-    // `[12/09]` Ele perguntou por que as linhas do começo não apareciam no
-    // telefone. A resposta era um `hidden md:block` no SVG — cautela minha de
-    // quando os chips ainda transbordavam, que virou defeito quando eles
-    // pararam de transbordar e ninguém revisitou a classe.
-    const svg = FONTE(SINAIS).match(/<svg[\s\S]*?viewBox="0 0 100 100"[\s\S]*?>/)[0];
+    // A guarda do `varrerFontes` cobre a pasta sumir; esta cobre o EFEITO
+    // sumir da pasta. Sem ela, o dia em que ninguém mais usar
+    // `non-scaling-stroke` deixa a trava verde sem ter medido nada — e ela
+    // continuaria parecendo vigiar a próxima vez que alguém usar.
     expect(
-      /\bhidden\b/.test(svg),
-      'O SVG das ligações voltou a ser escondido no celular.\n'
-      + '  Elas são metade do que faz o ATO 0 parecer vivo, e o celular é onde\n'
-      + '  ele passa mais tempo na tela — a arte em pé demora mais para rolar.',
-    ).toBe(false);
-  });
+      comEfeito.length,
+      `Nenhum arquivo de ${arquivos.length} em src/components/landing usa\n`
+      + '  `non-scaling-stroke`. Ou o efeito deixou de ser usado (e esta trava\n'
+      + '  não protege mais nada), ou o nome dele mudou. Confira antes de\n'
+      + '  aceitar o verde.',
+    ).toBeGreaterThan(0);
 
-  it('o traço acende NA DIREÇÃO do centro, e não por igual', () => {
-    // Pedido: *"queria que essas linhas fossem tipo energia se concentrando ali
-    // no meio, senti elas bem apagadinhas"*.
-    //
-    // A trava mede a FORMA do gradiente, não o brilho: um traço de opacidade
-    // uniforme lê como risco na tela, e é o que ele descreveu. O que lê como
-    // energia indo para algum lugar é a ponta de chegada ser a mais forte.
-    const fonte = FONTE(SINAIS);
-    const grad = fonte.match(/id=\{`ligacao-\$\{i\}`\}[\s\S]*?<\/linearGradient>/)?.[0];
-    expect(grad, 'Sumiu o gradiente das ligações — elas voltaram a ser cor chapada.').toBeTruthy();
-
-    const paradas = [...grad.matchAll(/offset="(\d+)%"[^/]*stopOpacity="([\d.]+)"/g)]
-      .map(([, o, a]) => ({ onde: Number(o), opacidade: Number(a) }));
-    const borda = paradas.find((p) => p.onde === 0);
-    const centro = paradas.find((p) => p.onde === 100);
-
-    expect(
-      centro.opacidade,
-      `A ponta do traço no CENTRO está em ${centro.opacidade} e a da borda em `
-      + `${borda.opacidade}.\n`
-      + '  O gradiente precisa ACENDER na direção do centro — é o que separa\n'
-      + '  "energia se concentrando" de "risco na tela", que foi a diferença que\n'
-      + '  o dono apontou. Pelo menos 3x a opacidade da borda.',
-    ).toBeGreaterThan(Math.max(borda.opacidade * 3, 0.6));
-  });
-
-  it('a borda do ícone do app é fração do lado, não pixel fixo', () => {
-    // `[12/09]` *"O app tá com a logo e o fundo preto, faltou uma borda"*. Ela
-    // EXISTIA: `stroke-width="1.2"` num `viewBox` de 512 — 0,23% do lado, que na
-    // tela de início vira 0,3 pixel. Mesmo defeito de unidade dos traços de
-    // 0,18 px: o número parece razoável e não é, porque a unidade não é pixel.
-    const linha = FONTE(ICONES).match(/stroke-width="\$\{([^}]+)\}"/)?.[1]
-      ?? FONTE(ICONES).match(/stroke-width="([\d.]+)"/)?.[1];
-    expect(linha, 'Não achei a espessura da borda do ícone — a trava ficou vazia.').toBeTruthy();
-    expect(
-      /cx|cy|lado|largura/.test(String(linha)),
-      `A borda do ícone voltou a ter espessura fixa (\`${linha}\`).\n`
-      + '  O `viewBox` do ícone é do TAMANHO dele (192, 512...), então número\n'
-      + '  constante vale proporções diferentes em cada arquivo gerado — e no\n'
-      + '  maior ele some. A espessura precisa ser fração do lado.',
-    ).toBe(true);
-  });
-});
-
-describe('as ligações do ATO 0 são ABSORVIDAS, não desbotam', () => {
-  const SINAIS = 'src/components/landing/prologo/SinaisDeVida.jsx';
-  const CSS = 'src/estilos/sinaisDeVida.css';
-
-  it('o traço DRENA para o centro — `dashoffset` chega a negativo', () => {
-    // `[12/09]` *"Ao fim das animações as linhas somem aos poucos, mas fica uns
-    // pontos estranhos ali no meio."*
-    //
-    // A causa: o traço chegava ao centro e ficava 2,3 s desbotando INTEIRO e
-    // imóvel. Com cinco atrasos diferentes, sempre havia pedaços fracos de
-    // várias linhas ao mesmo tempo perto do centro.
-    //
-    // Levar o `dashoffset` a negativo faz a cauda entrar atrás da cabeça: a
-    // linha some pela ponta de FORA e o último pedaço visível é o do centro.
-    // Absorvida, não apagada.
-    const css = FONTE(CSS);
-    const quadro = css.slice(css.indexOf('@keyframes tracoDeConexao'));
-    const bloco = quadro.slice(0, quadro.indexOf('\n}'));
-    expect(
-      /stroke-dashoffset:\s*-\d/.test(bloco),
-      'O traço voltou a DESBOTAR em vez de drenar.\n'
-      + '  Sem `dashoffset` negativo ele chega ao centro e fica parado perdendo\n'
-      + '  opacidade — e como os cinco têm atrasos diferentes, sobram pedaços\n'
-      + '  fracos de várias linhas no meio ao mesmo tempo. Foi exatamente isso\n'
-      + '  que o dono chamou de "pontos estranhos ali no meio".',
-    ).toBe(true);
-  });
-
-  it('a opacidade não faz o trabalho de apagar', () => {
-    // A trava do desbotamento longo: entre o quadro em que o traço está
-    // INTEIRO (dashoffset 0) e o quadro em que ele começa a sumir, a opacidade
-    // precisa continuar em 1 — quem apaga é a geometria.
-    const css = FONTE(CSS);
-    const quadro = css.slice(css.indexOf('@keyframes tracoDeConexao'));
-    const bloco = quadro.slice(0, quadro.indexOf('\n}'));
-
-    const cheio = bloco.match(/(\d+)%\s*\{\s*stroke-dashoffset:\s*0(?:px)?;\s*opacity:\s*([\d.]+)/);
-    expect(cheio, 'Não achei o quadro do traço INTEIRO — a trava ficaria vazia.').toBeTruthy();
-    expect(
-      Number(cheio[2]),
-      `No instante em que o traço está inteiro (${cheio[1]}%) a opacidade já é `
-      + `${cheio[2]}.\n`
-      + '  Ele precisa chegar ao centro em opacidade CHEIA e sumir pela\n'
-      + '  geometria. Opacidade caindo com o traço inteiro é o desbotamento\n'
-      + '  parado que produziu os "pontos estranhos".',
-    ).toBe(1);
-  });
-
-  it('toda linha mede o MESMO comprimento para o tracejado', () => {
-    // `[12/09]` *"Tem uma verde que parou no meio da trajetória."*
-    //
-    // `stroke-dasharray` é medido em unidades do `viewBox`, e as cinco linhas
-    // têm comprimentos reais diferentes (~26 a ~42). Com
-    // `preserveAspectRatio="none"` o `viewBox` ainda é esticado DESIGUALMENTE,
-    // então o comprimento efetivo muda com a proporção da tela.
-    expect(
-      /pathLength="100"/.test(FONTE(SINAIS)),
-      'As ligações perderam o `pathLength="100"`.\n'
-      + '  Sem ele, o `stroke-dasharray: 100` do CSS significa uma fração\n'
-      + '  diferente em cada linha — e muda de novo conforme a proporção da\n'
-      + '  tela, porque o SVG não preserva o aspecto. O sintoma é uma linha\n'
-      + '  desenhando até o meio e parando.',
-    ).toBe(true);
+    for (const caminho of comEfeito) {
+      const fonte = FONTE(caminho);
+      for (const [, largura] of fonte.matchAll(/strokeWidth="([\d.]+)"/g)) {
+        expect(
+          Number(largura),
+          `${caminho} desenha um traço de ${largura} px de espessura.\n`
+          + '  Com `non-scaling-stroke` a espessura é em PIXEL DE TELA, não em\n'
+          + '  unidade do `viewBox` — um valor que parece proporcional ali\n'
+          + '  dentro pode ser invisível na tela. Abaixo de ~0,5 px o traço\n'
+          + '  some, e nada acusa: o elemento existe no DOM e o navegador\n'
+          + '  desenha nada.',
+        ).toBeGreaterThanOrEqual(0.5);
+      }
+    }
   });
 });

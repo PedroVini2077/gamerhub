@@ -63,111 +63,31 @@
 
 .sinal-pulso { animation: pulsoDoSinal 2.4s ease-in-out infinite; }
 
-/* ── As linhas que sugerem CONEXÃO ─────────────────────────────────────────
+/* ── `[12/09]` As LINHAS que iam até o centro foram REMOVIDAS ───────────────
  *
- * Elas entram tarde no ciclo, e essa é a função narrativa inteira: primeiro a
- * pessoa vê sinais soltos, depois vê que eles se ligam — e só então a
- * `ConvergenciaDoHub` aparece na rolagem.
+ * Havia aqui um segundo sistema: cinco traços que saíam dos sinais e
+ * convergiam para um núcleo no meio da cena, com `stroke-dashoffset` drenando
+ * para negativo. O dono mandou tirar: *"na vdd Claude, não gostei dessas linhas
+ * não... pode tirar tudo mesmo, do Pc e do celular"*.
  *
- * Sem isso os trajetos da convergência surgem do nada. Com isso, a cena já
- * tinha dito que existe atividade E ligação acontecendo ali.
+ * **A lição que fica, e que NÃO some com as linhas** (é geral, e já mordeu em
+ * seis lugares): `animation-delay` NÃO esconde o elemento. Durante a espera o
+ * navegador desenha o **estado normal** dele; só quando a animação começa é que
+ * o quadro de 0% se aplica. Se os dois diferem, o elemento nasce ACESO e apaga
+ * quando o atraso vence — que foi exatamente o *"as linhas aparecem todas e
+ * somem uma por uma"* que ele viu. A saída é `animation-fill-mode: backwards`,
+ * ou fazer o estado normal ser igual ao de 0% (é o caso de `.sinal-de-vida`,
+ * com `opacity: 0` na regra base).
  *
- * `stroke-dashoffset` sobre um comprimento conhecido: o navegador resolve sem
- * recalcular geometria. */
-/* `[12/09]` A opacidade de pico subiu de 0,6 para 1: *"senti elas bem
- * apagadinhas"*. O gradiente já faz o traço nascer transparente na borda, então
- * 1 aqui não vira uma linha chapada — vira a ponta chegando no centro com
- * força, que é o pedido dele de *"energia se concentrando ali no meio"*.
- *
- * ── `[12/09]` O traço DRENA para o centro; ele não desbota mais ─────────────
- *
- * Ele viu e descreveu certo: *"ao fim das animações as linhas somem aos poucos,
- * mas fica uns pontos estranhos ali no meio, fica feio. Arruma um jeito dessas
- * linhas sumirem logo após chegarem ao centro"*.
- *
- * **O que estava acontecendo.** O traço chegava ao centro em 56% e só então
- * começava a perder opacidade, até 74% — 2,3 s desbotando **parado e inteiro**.
- * Como os cinco têm atrasos diferentes, em qualquer instante havia traços em
- * fases distintas de desbotamento, e o que sobrava perto do centro eram
- * pedaços fracos de várias linhas ao mesmo tempo: os "pontos estranhos".
- *
- * **O conserto não é apagar mais rápido — é apagar pelo LADO CERTO.** Levando o
- * `dashoffset` para NEGATIVO, a cauda entra atrás da cabeça: a linha some a
- * partir da ponta de fora, e o último pedaço visível é o que está no centro.
- * Ela é **absorvida** em vez de desbotar, que é a leitura que ele pediu — e não
- * sobra nada parado no meio, porque em nenhum momento a linha fica parada.
- *
- * A opacidade só cai DEPOIS de o traço já ter sumido pela geometria, então ela
- * não desenha nada: existe apenas para reiniciar o ciclo limpo. */
-@keyframes tracoDeConexao {
-  0%,  30% { stroke-dashoffset: 100;  opacity: 0; }
-  33%      { stroke-dashoffset: 100;  opacity: 1; }
-  /* chegou ao centro */
-  50%      { stroke-dashoffset: 0;    opacity: 1; }
-  /* a cauda entra atrás: a linha é sugada para dentro */
-  64%      { stroke-dashoffset: -100; opacity: 1; }
-  65%, 100% { stroke-dashoffset: -100; opacity: 0; }
-}
-
-/* O núcleo respira devagar — 5,2 s, mais lento que qualquer outra coisa da
- * cena. É o que sugere acúmulo em vez de piscada, e é a ÚNICA coisa em laço
- * infinito que sobrou fora do ciclo de 13 s. */
-@keyframes nucleoRespira {
-  0%, 100% { opacity: 0.55; }
-  50%      { opacity: 1; }
-}
-
-/* A opacidade da regra base é a MESMA do quadro de 0% — que é a segunda
- * forma, ao lado de `backwards`, de o elemento não nascer diferente do que a
- * animação começa. A trava aceita as duas, e aqui esta lê melhor: o núcleo tem
- * um repouso, e 0,55 É o repouso dele. */
-.nucleo-das-ligacoes {
-  opacity: 0.55;
-  animation: nucleoRespira 5.2s ease-in-out infinite;
-}
-
-/* ── `[12/09]` `backwards` NÃO é detalhe: sem ele o traço aparece INTEIRO ────
- *
- * Ele viu e descreveu com precisão: *"ao recarregar a página ou trocar de abas,
- * as linhas aparecem todas e somem uma por uma, depois a animação acontece"*.
- *
- * O mecanismo: `animation-delay` NÃO esconde o elemento. Durante a espera o
- * navegador desenha o **estado normal** dele — e o estado normal de um traço
- * SVG é opaco e inteiro. Só quando a animação começa é que o primeiro quadro
- * (invisível) se aplica. Como os atrasos são escalonados (0, 0,7, 1,4, 2,1,
- * 2,8 s), os cinco nascem acesos e apagam **um a um**, na ordem do atraso.
- *
- * Medido antes do conserto, em navegador: aos 400 ms, 4 dos 5 traços estavam
- * com **opacidade 1**; aos 3.200 ms, zero. Os tempos batem exatamente com os
- * atrasos (0,7 · 1,4 · 2,1 · 2,8 s), que é o que prova o mecanismo.
- *
- * > **Correção do mesmo dia:** a primeira redação desta nota dizia "opacidade 1
- * > e `dashoffset` 0". O segundo número era artefato do MEU instrumento —
- * > `getComputedStyle` devolve `"100px"`, e o `Number()` que eu usei virava
- * > `NaN`, que o `|| 0` transformava em zero. A opacidade (sem unidade) foi
- * > medida corretamente e sustenta o diagnóstico sozinha; o `dashoffset`
- * > daquela leitura não valia nada e saiu daqui.
- *
- * `backwards` manda aplicar o quadro de 0% JÁ durante o atraso. Uma palavra.
- *
- * A regra geral, que vale para a próxima animação com atraso: **se o quadro de
- * 0% difere do estado normal do elemento, o atraso precisa de `backwards`** —
- * ou o estado normal precisa ser igual ao de 0%, que é como `.sinal-de-vida`
- * (com `opacity: 0` na regra base) escapou desse bug sem ninguém perceber. */
-.traco-de-conexao {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: tracoDeConexao 13s ease-in-out infinite backwards;
-}
+ * A trava que varre isso por CLASSE — não caso a caso — é
+ * `src/lib/__tests__/animacaoComAtraso.test.js`. Ela continua de pé. */
 
 /* ── Parado quando ninguém está vendo ──────────────────────────────────────
  * A mesma disciplina da `MarcaFlutuante`: enfeite que a pessoa já rolou para
  * longe não deve custar nada. `animation-play-state` mantém a posição, então
  * ao voltar o ciclo continua de onde estava em vez de saltar para o início. */
 .sinais-parados .sinal-de-vida,
-.sinais-parados .sinal-pulso,
-.sinais-parados .nucleo-das-ligacoes,
-.sinais-parados .traco-de-conexao {
+.sinais-parados .sinal-pulso {
   animation-play-state: paused;
 }
 

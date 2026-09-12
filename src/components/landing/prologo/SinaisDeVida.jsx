@@ -24,13 +24,19 @@ import { JANELAS } from '../../../lib/atosDaLanding';
  *
  * ── A função narrativa, que é o motivo de ele existir ───────────────────────
  *
- * `ARTE → sinais de atividade → os sinais se LIGAM → CONVERGÊNCIA → MARCA`.
+ * `ARTE → sinais de atividade → CONVERGÊNCIA → MARCA`.
  *
- * As linhas finas que unem alguns sinais entram tarde no ciclo de propósito.
- * Sem elas, os trajetos do `ConvergenciaDoHub` surgem do nada quando a rolagem
- * começa. Com elas, a cena já tinha dito que existe atividade **e ligação**
- * acontecendo ali — a convergência passa a ser a conclusão de algo, e não um
- * efeito novo.
+ * `[12/09]` **Havia aqui um segundo elemento — cinco linhas que iam dos sinais
+ * até o centro — e o dono mandou tirar:** *"na vdd Claude, não gostei dessas
+ * linhas não... pode tirar essas linhas que vai até o centro no hero, pode
+ * tirar tudo mesmo, do Pc e do celular"*.
+ *
+ * Elas existiam para preparar a `ConvergenciaDoHub`, que aparece mais abaixo na
+ * rolagem: a ideia era que os trajetos da convergência não surgissem do nada.
+ * Registrado aqui porque a justificativa era real, e quem for reintroduzir algo
+ * no lugar precisa saber qual problema aquilo resolvia — e que a solução
+ * anterior foi recusada por leitura visual, não por defeito técnico. A
+ * `ConvergenciaDoHub` continua existindo e não foi tocada.
  *
  * ── Onde eles podem pousar ──────────────────────────────────────────────────
  *
@@ -142,20 +148,6 @@ const SINAIS = [
   },
 ];
 
-/**
- * As ligações, em coordenadas de 0 a 100 — as MESMAS posições dos sinais acima.
- * Escritas aqui e não derivadas porque o SVG tem sistema próprio: derivar
- * exigiria medir o elemento no DOM, que é trabalho por quadro para desenhar
- * três linhas que ninguém mede.
- */
-const LIGACOES = [
-  { de: [14, 26], para: [50, 46], cor: '#39ff14', atraso: '0s' },
-  { de: [66, 19], para: [50, 46], cor: '#00ffff', atraso: '0.7s' },
-  { de: [9, 54], para: [50, 46], cor: '#39ff14', atraso: '1.4s' },
-  { de: [76, 47], para: [50, 46], cor: '#ffa33a', atraso: '2.1s' },
-  { de: [24, 70], para: [50, 46], cor: '#bf00ff', atraso: '2.8s' },
-];
-
 function Sinal({ sinal }) {
   const { lado, x, y, atraso, cor, icone: Icone, texto, pulso, pontos, soCompleto } = sinal;
 
@@ -245,84 +237,6 @@ export default function SinaisDeVida({ progresso }) {
       className={`absolute inset-0 pointer-events-none ${naTela ? '' : 'sinais-parados'}`}
       style={{ opacity: opacidade }}
     >
-      {/* As ligações ficam ATRÁS dos sinais: elas são o fundo da ideia, e o
-          fragmento é o assunto.
-
-          `[12/09]` O `hidden md:block` SAIU. Ele perguntou por que as linhas não
-          apareciam no telefone, e a resposta era essa classe — não havia motivo
-          técnico, foi cautela minha de quando os chips ainda transbordavam. As
-          linhas não transbordam: elas terminam no centro.
-
-          `[12/09]` E elas viraram ENERGIA se concentrando, a pedido dele
-          (*"senti elas bem apagadinhas"*). Duas mudanças, e as duas são de
-          direção, não de brilho bruto:
-          - o **gradiente é assimétrico**: nasce transparente na borda e chega
-            forte no centro. Traço de brilho uniforme lê como risco; traço que
-            acende na direção do destino lê como algo indo para lá;
-          - o **halo** (`filter`) dá o corpo que uma linha de 1 px não tem. */}
-      <svg
-        viewBox="0 0 100 100" preserveAspectRatio="none"
-        className="absolute inset-0 h-full w-full"
-      >
-        <defs>
-          {LIGACOES.map(({ de, para, cor }, i) => (
-            <linearGradient
-              key={`g${i}`} id={`ligacao-${i}`} gradientUnits="userSpaceOnUse"
-              x1={de[0]} y1={de[1]} x2={para[0]} y2={para[1]}
-            >
-              <stop offset="0%" stopColor={cor} stopOpacity="0" />
-              <stop offset="35%" stopColor={cor} stopOpacity="0.35" />
-              <stop offset="100%" stopColor={cor} stopOpacity="0.95" />
-            </linearGradient>
-          ))}
-        </defs>
-        {LIGACOES.map(({ de, para, cor, atraso }, i) => (
-          <line
-            key={i}
-            className="traco-de-conexao"
-            x1={de[0]} y1={de[1]} x2={para[0]} y2={para[1]}
-            // `1.6` e não `0.18`: com `non-scaling-stroke` a espessura é em
-            // PIXEL DE TELA, não em unidade do `viewBox`. 0,18 px é literalmente
-            // invisível — foi assim que as ligações nasceram, e o print do dono
-            // ("achei muito sutis") estava vendo isso também, não só o tamanho
-            // dos chips. A convergência do hero usa 1,4 pelo mesmo motivo.
-            stroke={`url(#ligacao-${i})`} strokeWidth="1.6"
-            vectorEffect="non-scaling-stroke"
-            // `[12/09]` `pathLength="100"` NORMALIZA o comprimento de cada
-            // linha para 100, e sem isso o tracejado não é confiável aqui.
-            //
-            // As cinco têm comprimentos reais diferentes (de ~26 a ~42
-            // unidades do `viewBox`), e o `stroke-dasharray: 100` do CSS é
-            // medido nessas unidades. Pior: o SVG usa
-            // `preserveAspectRatio="none"`, então o `viewBox` é esticado de
-            // forma DESIGUAL — o comprimento efetivo muda com a proporção da
-            // tela. O resultado é cada linha desenhando e drenando num ritmo
-            // próprio, e foi o que o dono viu: *"tem uma verde que parou no
-            // meio da trajetória até o meio"*.
-            //
-            // Com `pathLength`, o navegador passa a tratar toda linha como se
-            // medisse 100. O traço e o dasharray passam a falar a mesma língua,
-            // e as cinco entram e saem no mesmo tempo relativo.
-            pathLength="100"
-            style={{ animationDelay: atraso, filter: `drop-shadow(0 0 3px ${cor}aa)` }}
-          />
-        ))}
-        {/* O ponto de chegada: o brilho que se ACUMULA onde todas as linhas
-            terminam. Sem ele o olho vê cinco traços apontando para um lugar
-            vazio; com ele, vê energia chegando em algum lugar. */}
-        <ellipse
-          cx="50" cy="46" rx="13" ry="11" fill="url(#nucleo-das-ligacoes)"
-          className="nucleo-das-ligacoes"
-        />
-        <defs>
-          <radialGradient id="nucleo-das-ligacoes">
-            <stop offset="0%" stopColor="#8ef7ff" stopOpacity="0.30" />
-            <stop offset="55%" stopColor="#39ff14" stopOpacity="0.10" />
-            <stop offset="100%" stopColor="#39ff14" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-      </svg>
-
       {SINAIS.map((sinal) => <Sinal key={sinal.id} sinal={sinal} />)}
     </motion.div>
   );

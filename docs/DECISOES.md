@@ -2320,3 +2320,50 @@ medisse 100, e o traço e o dasharray falam a mesma língua.
 `100 → 0 → −100` sem parar em nenhum valor, e os cinco entram escalonados pelos
 atrasos. Antes desta correção o `dashoffset` sequer podia ser medido pelo meu
 instrumento — ver a nota de correção em `sinaisDeVida.css`.
+
+### `[12/09]` As linhas do ATO 0 e a borda do ícone do PWA foram REMOVIDAS
+
+As três seções acima contam o trabalho de fazer as linhas do ATO 0 aparecerem
+no celular, acenderem na direção do centro e drenarem em vez de desbotar — e a
+de mais acima conta a borda do ícone virando fração do lado e ganhando recuo
+para sobreviver à máscara do Android. **As duas coisas saíram**, e este registro
+existe para que ninguém "conserte" a ausência delas daqui a três meses.
+
+| O que saiu | O que ele disse |
+| --- | --- |
+| as 5 linhas que convergiam para o centro do ATO 0 | *"na vdd Claude, não gostei dessas linhas não... pode tirar essas linhas que vai até o centro no hero, depois pensamos em outra coisa, pode tirar tudo mesmo, do Pc e do celular"* |
+| a borda desenhada no corpo do ícone | *"pode tirar a borda tbm do aplicativo PWA, percebi que esse gradiante que vc fez, e essas luzes elas já fazem o trabalho de dar as 'bordas' do app, sem precisar de uma borda física"* |
+
+**A avaliação dele sobre o ícone está tecnicamente certa**, e vale escrever
+porque é o argumento que dispensa a borda: o corpo é um gradiente vertical do
+topo (mais claro) para o preto, com dois halos radiais por cima. A silhueta
+contra o papel de parede já vem daí. A borda somava um segundo desenho fazendo
+o mesmo trabalho.
+
+**O que continua faltando, dito com todas as letras.** As linhas tinham uma
+função narrativa real: sem elas, os trajetos do `ConvergenciaDoHub` — que
+aparece mais abaixo na rolagem, no ato CONVERGÊNCIA — surgem sem preparo. Ele
+sabe e disse *"depois pensamos em outra coisa"*. Não é buraco esquecido; é
+buraco aberto de propósito, esperando uma ideia que ele goste.
+
+#### A parte que NÃO sai junto: as travas eram do mecanismo, não do desenho
+
+Duas das travas criadas nesse trabalho pegavam bugs de **unidade**, que não têm
+nada a ver com o desenho que foi recusado:
+
+- **`non-scaling-stroke` mede em PIXEL DE TELA**, não em unidade do `viewBox`.
+  Foi o que fez um traço de `0.18` (razoável num `viewBox` de 100) ser
+  invisível, e um `stroke-width="1.2"` num `viewBox` de 512 virar 0,3 px na tela
+  de início. A trava era de um arquivo só; **virou varredura de classe** sobre
+  `src/components/landing`, e foi **provada reinjetando 0,18 px no
+  `ConvergenciaDoHub`** — um arquivo que ela nunca tinha coberto e que usa o
+  mesmo efeito.
+- **`animation-delay` não esconde o elemento**, então sem
+  `animation-fill-mode: backwards` ele nasce aceso. Essa já era de classe e não
+  foi tocada.
+
+As travas que descreviam o **desenho** (a drenagem para negativo, a forma do
+gradiente, o `pathLength`) foram apagadas junto com ele. Deixá-las apontando
+para um alvo que não existe não é cautela: elas iterariam zero vezes e ficariam
+**verdes para sempre**, que é a lição do `varrerFontes.js` aplicada a travas
+que varrem um arquivo em vez de uma pasta.
