@@ -116,15 +116,34 @@ andamento do recurso na `BannedScreen`; o que faltava era saber que isso existe.
 Identificar o visitante banido foi descartado por privacidade — ver
 [DECISOES.md](DECISOES.md).
 
-**Seções de features** (`FeatureSection`):
-- Cada seção tem ícone, eyebrow, título, descrição e botão "Saiba mais" que
-  abre/fecha painel animado com mais detalhes (`expandPanel`).
-- Imagens reais do site (`LandingShot`) com usernames censados por privacidade.
-- Seções cobertas: Feed, Mural, Lives, Keys & Promos, Ranks & XP.
-- Animações de reveal ao entrar na viewport (`fadeUpReveal` + `VIEWPORT`).
+**As cinco CENAS** (`CenaDaLanding`) — `[12/09]`:
+- Cada funcionalidade ganhou **arte própria**, ocupando a largura da tela. A
+  hierarquia é a que o dono pediu: **arte → produto → informação**.
+- Cobertas: Feed, Comunidade, Lives, Keys & Promos, Ranks & XP.
+- O texto vive **por cima** da arte, sobre um véu que escurece só o lado dele —
+  o outro lado fica limpo, e a arte continua sendo o assunto.
+- O `lado` do texto **alterna** entre as cenas. Cinco seções com o texto sempre
+  no mesmo lugar voltariam a ser um molde, só que com imagem maior.
+- `loading="lazy"` em todas menos a primeira, e `srcset` com três larguras: a
+  mesma cena custa 147 kB a 1600 px e 57 kB a 828 px.
 
-**Outros componentes**: `HighlightsStrip` (stats/destaques), `FinalCTA`
-(chamada pra ação final), `LandingNav` (navegação pública), `LandingFooter`.
+  > **`[12/09]` Isto substituiu o `FeatureSection`, que foi APAGADO.** Ele era
+  > um molde único — sobrancelha, título, descrição, botão, print — instanciado
+  > cinco vezes, e era essa repetição que o dono diagnosticou: a landing ficava
+  > *"organizada, e por isso mesmo previsível e institucional"*. Saíram com ele
+  > o `LandingShot`, o `dimensoesDosPrints` e os cinco prints em `.jpg`.
+  >
+  > Os prints reais continuam no histórico do git, recuperáveis, caso uma cena
+  > futura precise mostrar a interface de verdade em vez da arte.
+
+**O fecho** (`FinalCTA`) — `[12/09]` ganhou a **sétima arte**, e ela é a única
+que mostra **pessoas** em vez de telas: gente caminhando em direção à luz e à
+marca. O texto vai no centro, por cima, com véu radial — a composição tem ponto
+de fuga no meio, e texto de lado brigaria com ele. O botão e o destino não
+mudaram: esta seção é a porta do cadastro.
+
+**Outros componentes**: `HighlightsStrip` (stats/destaques), `LandingNav`
+(navegação pública), `LandingFooter`.
 
 **`lib/landingMotion.js`** — variantes Framer Motion exclusivas da landing:
 `heroTitle`, `heroFade`, `fadeUpReveal`, `staggerContainer`, `expandPanel`.

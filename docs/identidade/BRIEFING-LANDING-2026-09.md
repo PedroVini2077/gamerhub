@@ -88,23 +88,70 @@ transforme tudo em neon."*
 
 ---
 
-## PENDENTE — as referências visuais ainda não existem
+## AS SETE ARTES — chegaram em 12/09
 
-**Ele disse, com todas as letras:** *"provavelmente ele vai falar que eu vou te
-mandar imagens de referência, eu não tenho elas agora eu vou ter que gerar,
-deixa isso pendente"*.
+Ele mandou as sete de uma vez: *"cada uma delas representa uma parte do site,
+uma é a hero, no caso a entrada, antes do feed e demais, e o outro é o cta"*.
+Estão em [`referencias/cenas/`](referencias/cenas/), em WebP na resolução cheia.
 
-Isto está escrito aqui porque o prompt inteiro se apoia nelas — *"use-as como
-referência para composição, escala, profundidade, posicionamento da UI,
-narrativa, atmosfera, transições, hierarquia visual e comportamento durante o
-scroll"*. **Toda decisão de direção de arte fica em aberto até elas chegarem.**
+| Arquivo | O que é | Como reconhecer |
+| --- | --- | --- |
+| `1-hero.webp` | a **entrada** | a marca no centro, telas flutuando em volta, um pódio ao fundo |
+| `2-feed.webp` | o Feed | "Feed" aceso na barra lateral; posts, curtidas, tendências |
+| `3-comunidade.webp` | Comunidade / mural | "Comunidade" aceso; gente, comentários, o campo "O que você está pensando?" |
+| `4-keys.webp` | Keys & Promos | "Keys & Promos" aceso; capas de jogo, chaves, selos de desconto |
+| `5-ranks.webp` | Ranks e XP | "Ranks" aceso; a torre de patentes, conquistas, a barra de XP |
+| `6-lives.webp` | Lives | "Lives" aceso; o player grande, o chat, a lista de quem está no ar |
+| `7-cta.webp` | o **fecho** | as pessoas caminhando em direção à luz e à marca |
 
-**O que NÃO depende delas, e por isso pode andar agora:** a arquitetura de
-cenas, o mecanismo de scroll, o orçamento de desempenho, o comportamento no
-celular e a estrutura de componentes. É exatamente por onde a fila abaixo
-começa.
+**Peso:** 1672×940 cada, **2.032 kB as sete juntas** em WebP q0,92 — contra
+**13,5 MB** em PNG, que é como elas chegaram.
 
-Quando chegarem, elas vão para `referencias/` e são citadas neste arquivo.
+### "Dá para usar no PC e no celular sem perder qualidade?" — a resposta MEDIDA
+
+**Sim, mas por RECORTE, não por encolhimento.** A pergunta dele merecia mais do
+que um "sim": eu renderizei uma das artes das duas maneiras, numa tela de 400 px.
+
+| O que se faz | O que acontece |
+| --- | --- |
+| **encolher a arte inteira** para caber na largura do celular | vira 400×225. A interface desenhada dentro dela fica com o texto em 2–3 px: **ilegível**. Sobra uma miniatura bonita e muda |
+| **recortar 1:2 no miolo** e usar a altura do celular | funciona **muito bem** — dá para ler "Melhor partida do dia! Que jogo insano", "Alguém pra jogar hoje? Tô no PC!", e a atmosfera sobrevive inteira |
+
+**Por que a segunda funciona e a primeira não:** o problema nunca foi resolução,
+foi **densidade de informação por pixel de tela**. No recorte, os mesmos pixels
+da arte cobrem uma área menor da composição — então cada detalhe fica **maior**,
+não menor. É o oposto de encolher.
+
+**A consequência prática, e ela decide a implementação:** cada cena precisa de
+**duas** versões — a 16:9 do computador e um recorte alto para o celular —, e o
+recorte precisa ser **escolhido**, não centralizado por padrão. Em `2-feed` o
+miolo é o feed; em `5-ranks` é a torre; em `7-cta` são as pessoas. Centralizar
+tudo às cegas cortaria o assunto de metade delas.
+
+**O peso deixa de ser problema**, e isto também é medido — a mesma arte, em WebP:
+
+| largura | q0,82 | q0,72 |
+| --- | --- | --- |
+| 1600 px (monitor) | 121 kB | 90 kB |
+| 828 px (celular 2×) | **45 kB** | 33 kB |
+| 420 px (celular 1×) | 19 kB | 15 kB |
+
+Sete cenas a 45 kB são **315 kB no celular**, e só a primeira precisa chegar
+junto com a página — as outras entram conforme a pessoa rola.
+
+### O que eu proponho, e a decisão é dele
+
+**Não usar a `1-hero` no hero.** Ela é linda e é redundante: o hero de hoje já é
+a marca no centro com trajetos convergindo nela, custa **3,2 kB**, e ele acabou
+de chamar de *"FENOMENAL"*. Trocar isso por uma imagem de 230 kB seria pagar
+70× mais por uma ideia que já está de pé — e perder o movimento, o ponteiro e o
+reflexo, que uma imagem não faz.
+
+**Onde ela serve melhor:** como cartão de compartilhamento (hoje o `og:image` é
+só a marca num fundo), ou como a cena de uma seção "o que é o GamerHub".
+
+**As outras seis entram**, e são exatamente o que mata o molde repetido: cinco
+cenas para as cinco funcionalidades, e a sétima para o fecho.
 
 ---
 
@@ -252,7 +299,7 @@ impressão. Medido em 11/09:
 | `Hero.jsx` | 125 | ato 1 |
 | `Landing.jsx` | 109 | **a página inteira**, que ordena tudo |
 | `ElectricTitle.jsx` | 91 | o nome com eletricidade |
-| `FeatureSection.jsx` | 67 | **o molde repetido 5×** — é aqui que mora a monotonia |
+| ~~`FeatureSection.jsx`~~ | 67 | era **o molde repetido 5×**, e a monotonia morava nele. **Apagado em 12/09**: as cinco seções viraram cenas com arte própria (`CenaDaLanding`) |
 | `HighlightsStrip.jsx` | 54 | faixa de destaques |
 | `FinalCTA.jsx` | 31 | o fecho |
 
@@ -262,7 +309,7 @@ impressão. Medido em 11/09:
    300 (§4). Não existe dívida estrutural bloqueando a reformulação — o que ele
    teme (*"Landing.jsx virar um monstro"*) ainda não aconteceu, e o trabalho é
    manter assim enquanto as cenas crescem.
-2. **A monotonia é de UM arquivo.** `FeatureSection.jsx` tem 67 linhas e é
+2. **A monotonia era de UM arquivo.** `FeatureSection.jsx` tinha 67 linhas e era
    instanciado 5× com props diferentes. Trocar o molde não exige reescrever a
    página: exige **deixar de ter um molde único**.
 3. **O sistema de animação já é `framer-motion`**, usado em 6 componentes. Ele

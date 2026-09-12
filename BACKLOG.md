@@ -89,17 +89,28 @@ muda é só o tempo que ela dura quando toca.
 > com as propostas de frase, as três leituras de "montar", a restrição técnica
 > que decide o desenho e os 6 pontos ainda em aberto.
 
-| Fatia | O que é | Depende das imagens? | Estado |
-| --- | --- | --- | --- |
-| **1** | Matar a cena 3D e trocar o fundo do hero por **convergência** em SVG/CSS | não | **feita** |
-| 2 | A abertura (`AberturaDaMarca`): marca pintada por uma luz, a mesma luz revela "Aqui o jogo continua", reflexo polido, e a marca **assenta no hero** flutuando e seguindo o ponteiro | não | **feita** |
-| 3 | **O mecanismo de cena presa** (sticky + progresso de scroll), sem arte nova | não | a fazer — é a fundação das outras |
-| 4 | Comunidade: *"tem gente aqui"* | em parte | espera a 3 |
-| 5 | Feed vivo | em parte | espera a 3 |
-| 6 | Lives — a cena mais cinematográfica | **sim** | espera as imagens |
-| 7 | Keys & Promos — descoberta | **sim** | espera as imagens |
-| 8 | XP/ranks — o scroll como progressão | não | espera a 3 |
-| 9 | O fecho, na porta do login | não | espera as anteriores |
+| Fatia | O que é | Estado |
+| --- | --- | --- |
+| **1** | Matar a cena 3D e trocar o fundo do hero por convergência em SVG/CSS | **feita** |
+| **2** | A abertura: marca pintada, frase revelada, reflexo polido, e a marca assenta no hero | **feita** |
+| **3** | As CINCO CENAS com arte própria + o CTA — **no PC** | **feita** em 12/09 |
+| 4 | As mesmas cenas **no CELULAR**, com as artes que ele vai gerar em RETRATO | a fazer — bloco 2 |
+| 5 | O mecanismo de cena presa (sticky + progresso de scroll) | a fazer |
+| 6 | Ritmo: respiro entre as cenas, e as transições entre elas | a fazer |
+
+**`[12/09]` A fila foi reorganizada em DOIS BLOCOS**, por decisão dele: *"faz
+primeiro no PC... eu vou regerar todas elas, mas no formato de celular, aí vamos
+em duas partes"*.
+
+**O que isso muda no que eu já fiz:** o recorte automático para celular
+(`npm run cenas` gera as versões `alta-*`) deixa de ser a solução e vira
+**remendo**. Arte composta em retrato ganha de qualquer corte automático — o
+corte não escolhe o enquadramento, ele só descarta o que sobra.
+
+**O piso enquanto o bloco 2 não chega:** no celular a cena **empilha** — arte em
+cima, texto embaixo. Não é o desenho final, mas é legível. Medido em 400×800:
+com o texto sobreposto a coluna ficava com **128 px** de largura; empilhada, tem
+**360 px**.
 
 **As PERGUNTAS que eu fiz, e onde cada uma parou.** Gravadas porque pergunta que
 vive só na conversa some com a sessão — foi assim que quatro pedidos dele se
@@ -1061,8 +1072,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->105<!--/n--> arq ·
-  <!--n:src.lib.linhas-->10.009<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->107<!--/n--> arq ·
+  <!--n:src.lib.linhas-->10.187<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
