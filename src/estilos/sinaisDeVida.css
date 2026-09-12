@@ -74,18 +74,60 @@
  *
  * `stroke-dashoffset` sobre um comprimento conhecido: o navegador resolve sem
  * recalcular geometria. */
+/* `[12/09]` A opacidade de pico subiu de 0,6 para 1: *"senti elas bem
+ * apagadinhas"*. O gradiente já faz o traço nascer transparente na borda, então
+ * 1 aqui não vira uma linha chapada — vira a ponta chegando no centro com
+ * força, que é o pedido dele de *"energia se concentrando ali no meio"*. */
 @keyframes tracoDeConexao {
   0%,  34% { stroke-dashoffset: 100; opacity: 0; }
-  42%      { opacity: 0.6; }
-  56%      { stroke-dashoffset: 0; opacity: 0.6; }
+  42%      { opacity: 1; }
+  56%      { stroke-dashoffset: 0; opacity: 1; }
   74%      { stroke-dashoffset: 0; opacity: 0; }
   100%     { stroke-dashoffset: 100; opacity: 0; }
 }
 
+/* O núcleo respira devagar — 5,2 s, mais lento que qualquer outra coisa da
+ * cena. É o que sugere acúmulo em vez de piscada, e é a ÚNICA coisa em laço
+ * infinito que sobrou fora do ciclo de 13 s. */
+@keyframes nucleoRespira {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* A opacidade da regra base é a MESMA do quadro de 0% — que é a segunda
+ * forma, ao lado de `backwards`, de o elemento não nascer diferente do que a
+ * animação começa. A trava aceita as duas, e aqui esta lê melhor: o núcleo tem
+ * um repouso, e 0,55 É o repouso dele. */
+.nucleo-das-ligacoes {
+  opacity: 0.55;
+  animation: nucleoRespira 5.2s ease-in-out infinite;
+}
+
+/* ── `[12/09]` `backwards` NÃO é detalhe: sem ele o traço aparece INTEIRO ────
+ *
+ * Ele viu e descreveu com precisão: *"ao recarregar a página ou trocar de abas,
+ * as linhas aparecem todas e somem uma por uma, depois a animação acontece"*.
+ *
+ * O mecanismo: `animation-delay` NÃO esconde o elemento. Durante a espera o
+ * navegador desenha o **estado normal** dele — e o estado normal de um traço
+ * SVG é opaco e inteiro. Só quando a animação começa é que o primeiro quadro
+ * (invisível) se aplica. Como os atrasos são escalonados (0, 0,7, 1,4, 2,1,
+ * 2,8 s), os cinco nascem acesos e apagam **um a um**, na ordem do atraso.
+ *
+ * Medido antes do conserto, em navegador: aos 400 ms, 4 dos 5 traços estavam
+ * com opacidade 1 e `dashoffset` 0 — ou seja, desenhados por inteiro. Aos
+ * 3.200 ms, zero. Os tempos batem exatamente com os atrasos.
+ *
+ * `backwards` manda aplicar o quadro de 0% JÁ durante o atraso. Uma palavra.
+ *
+ * A regra geral, que vale para a próxima animação com atraso: **se o quadro de
+ * 0% difere do estado normal do elemento, o atraso precisa de `backwards`** —
+ * ou o estado normal precisa ser igual ao de 0%, que é como `.sinal-de-vida`
+ * (com `opacity: 0` na regra base) escapou desse bug sem ninguém perceber. */
 .traco-de-conexao {
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  animation: tracoDeConexao 13s ease-in-out infinite;
+  animation: tracoDeConexao 13s ease-in-out infinite backwards;
 }
 
 /* ── Parado quando ninguém está vendo ──────────────────────────────────────
@@ -94,6 +136,7 @@
  * ao voltar o ciclo continua de onde estava em vez de saltar para o início. */
 .sinais-parados .sinal-de-vida,
 .sinais-parados .sinal-pulso,
+.sinais-parados .nucleo-das-ligacoes,
 .sinais-parados .traco-de-conexao {
   animation-play-state: paused;
 }
@@ -113,6 +156,10 @@
   .traco-de-conexao {
     animation: none;
     stroke-dashoffset: 0;
-    opacity: 0.4;
+    opacity: 0.75;
   }
+  /* O núcleo fica, PARADO no meio do próprio ciclo: ele é o que diz que as
+     cinco linhas chegam em algum lugar, e some-lo deixaria cinco setas
+     apontando para o vazio. */
+  .nucleo-das-ligacoes { animation: none; opacity: 0.8; }
 }

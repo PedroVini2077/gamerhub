@@ -24,7 +24,7 @@ import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 
 import { CAMINHO_DA_MARCA, PARADAS_DO_GRADIENTE } from '../src/lib/marca.js';
 
-const CHROMIUM = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const CHROMIUM = process.env.CHROMIUM_BIN ?? '/opt/pw-browsers/chromium';
 
 /**
  * `[12/09]` A arte de abertura, para o CARTÃO de compartilhamento.
@@ -62,8 +62,14 @@ const FUNDO = '#060608';
  *      que dá volume e impede a fusão com o preto;
  *   2. um BRILHO por trás da marca, verde de um lado e roxo do outro, na direção
  *      do próprio gradiente dela — é a assinatura do site;
- *   3. uma borda interna de 1 px em branco quase transparente, que **desenha a
- *      silhueta** do ícone mesmo quando o papel de parede é preto puro.
+ *   3. uma borda interna no GRADIENTE DA MARCA, que **desenha a silhueta** do
+ *      ícone mesmo quando o papel de parede é preto puro.
+ *
+ * `[12/09]` **A borda existia e não aparecia** — ela era `1.2` num `viewBox` de
+ * 512, ou seja 0,23% do lado, a 10% de branco. Na tela de início isso é 0,3
+ * pixel, que é o mesmo defeito de unidade dos traços de 0,18 px da landing. Ele
+ * relatou o sintoma: *"o app tá com a logo e o fundo preto, faltou uma borda"*.
+ * Agora a espessura é fração do lado (1/96) e a cor é a da marca.
  *
  * Nada disso toca no desenho da marca: ela continua vindo inteira de
  * `src/lib/marca.js`, e trocar a arte continua sendo trocar a arte e rodar de
@@ -215,9 +221,23 @@ export function svgDaMarca({
         // A silhueta. `stroke` fica MEIO dentro e meio fora do caminho, então o
         // retângulo é encolhido em meia espessura — senão metade da borda sai
         // do viewBox e o ícone fica com um fio cortado nos quatro lados.
-        + `<rect x="0.6" y="0.6" width="${cx - 1.2}" height="${cy - 1.2}"`
-        + ` rx="${Math.max(raio - 0.6, 0)}"`
-        + ` fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="1.2"/>`
+        //
+        // `[12/09]` ELA EXISTIA E NÃO APARECIA, e o defeito é de unidade — o
+        // mesmo tipo que produziu os traços de 0,18 px. Era
+        // `stroke-width="${cx / 96}"` num `viewBox` de 512: **0,23% do lado**. Na tela
+        // de início, onde o ícone é desenhado a ~120 px, isso vira 0,3 pixel a
+        // 10% de branco. O dono descreveu exatamente o resultado: *"o app tá
+        // com a logo e o fundo preto, faltou uma borda"*.
+        //
+        // Agora a espessura é uma FRAÇÃO DO LADO (1/96), então ela vale o mesmo
+        // em qualquer tamanho gerado — que é a única forma de a borda sobreviver
+        // ao redimensionamento. E a cor deixou de ser branco: é o gradiente da
+        // marca, verde de um lado e roxo do outro, então a borda passa a ser
+        // assinatura em vez de contorno genérico.
+        + `<rect x="${cx / 192}" y="${cx / 192}"`
+        + ` width="${cx - cx / 96}" height="${cy - cx / 96}"`
+        + ` rx="${Math.max(raio - cx / 192, 0)}"`
+        + ` fill="none" stroke="url(#g)" stroke-opacity="0.55" stroke-width="${cx / 96}"/>`
       : '')
     + `<g transform="translate(${deslocamentoX} ${deslocamentoY}) scale(${escala})">`
     + `<path d="${CAMINHO_DA_MARCA}" fill="url(#g)" fill-rule="evenodd"/></g></svg>`;

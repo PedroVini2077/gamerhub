@@ -200,9 +200,22 @@ flutuando, sem silhueta — adesivo recortado, não ícone. Foi o que o dono
 resumiu como *"a do pwa tem que ser bonitinho poxa"*.
 
 O corpo passou a ter gradiente vertical, um brilho verde de um lado e roxo do
-outro (as duas pontas do gradiente da própria marca) e uma borda interna quase
-transparente, que é o que desenha a silhueta no preto. Nada disso toca o
-desenho da marca.
+outro (as duas pontas do gradiente da própria marca) e uma borda interna, que é
+o que desenha a silhueta no preto. Nada disso toca o desenho da marca.
+
+> **`[12/09]` A borda EXISTIA e não aparecia, e o defeito era de unidade.** Ele
+> instalou o app e relatou: *"tá muito bom o ícone no celular, mas senti falta
+> de uma borda, pq o app tá com a logo e o fundo preto"*.
+>
+> Ela era `stroke-width="1.2"` num `viewBox` de **512** — 0,23% do lado, a 10%
+> de branco. Na tela de início, onde o ícone é desenhado a ~120 px, isso vira
+> **0,3 pixel**. É o mesmo erro dos traços de 0,18 px da landing: o número
+> parece razoável e não é, porque a unidade não é pixel de tela.
+>
+> Agora a espessura é **fração do lado** (1/96), então vale o mesmo em todos os
+> tamanhos gerados, e a cor é o gradiente da marca em vez de branco — a borda
+> passou a ser assinatura, não contorno. Tem trava: ela reprova espessura
+> constante.
 
 Travas em `src/lib/__tests__/marca.test.js`: o favicon tem que conter o mesmo
 caminho do componente; o raio não pode voltar como marca; ninguém pode copiar o

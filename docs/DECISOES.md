@@ -2180,6 +2180,65 @@ computador, três no celular.
 cenas usava `leading-[1.08]`, apertado demais para português — em "promoções que
 valem" a cedilha encostava na linha de cima. Passou para 1,18.
 
+### `[12/09]` O PISCA das animações com atraso — um bug em SEIS lugares
+
+Relato dele, e ele descreveu o mecanismo sem saber: *"ao recarregar a página ou
+trocar de abas, as linhas aparecem todas e somem uma por uma, depois a animação
+acontece"*.
+
+**A causa é contraintuitiva o bastante para ter passado por seis animações deste
+projeto: `animation-delay` NÃO esconde o elemento.** Durante a espera o
+navegador desenha o **estado normal** dele. Só quando a animação começa é que o
+quadro de 0% se aplica. Um traço SVG sem `opacity` na regra base é opaco por
+padrão — então ele nasce aceso, e some de repente quando o atraso vence. Com
+atrasos escalonados, somem em cascata.
+
+**Medido em navegador antes do conserto**, e os tempos batem com os atrasos:
+
+| t | traços desenhados |
+| --- | --- |
+| 400 ms | **4 de 5** (opacidade 1, `dashoffset` 0) |
+| 1.200 ms | 3 |
+| 2.000 ms | 2 |
+| 3.200 ms | 0 — só então o ciclo real começa |
+
+**A varredura de CLASSE (§1.3) achou seis, e eu só conhecia um.** Escrevi a
+trava antes de corrigir, e ela apontou três que eu não tinha visto — na tela de
+entrada (`arena-particula`, atrasos de até 9 s) e no portão (`porta-chevron`) —
+mais um que **eu acabara de criar** na mesma sessão. Corrigir só o caso relatado
+teria deixado cinco.
+
+**A trava mede opacidade, e só ela.** Comparar todas as propriedades daria
+ruído: quase todo keyframe começa com um `transform` que a regra base não
+declara, e na maioria isso é invisível porque a opacidade já é 0. A opacidade é
+a que decide se aparece.
+
+**Ela também aceitou uma correção que eu tive que fazer nela mesma.** A primeira
+versão acusou `.arena-estilhaco`, que é **variante** de `.arena-particula` — as
+duas classes no mesmo elemento, então o `fill-mode` vem da base. Silenciar com
+uma declaração repetida seria fabricar alarme falso (§0.2, 4ª regra); a trava
+passou a exigir que a regra **carregue o tempo** para ser acusada, e o que se
+perde com isso está escrito dentro dela.
+
+### `[12/09]` As ligações do ATO 0: escondidas no celular, e apagadas no PC
+
+Dois pedidos dele na mesma mensagem, com causas diferentes.
+
+**Escondidas:** havia um `hidden md:block` no SVG. Não era decisão — era cautela
+minha de quando os chips ainda transbordavam da tela, que virou defeito quando
+eles pararam de transbordar e ninguém revisitou a classe. As linhas nunca
+transbordaram: elas **terminam** no centro.
+
+**Apagadas:** *"queria que essas linhas fossem tipo energia se concentrando ali
+no meio"*. O gradiente era uniforme, e traço de brilho uniforme lê como **risco
+na tela**. O que lê como energia indo para algum lugar é a **direção**: agora
+ele nasce transparente na borda e chega a 0,95 no centro, com halo, e há um
+núcleo que respira devagar onde as cinco chegam — sem ele o olho via cinco setas
+apontando para o vazio.
+
+A trava mede a **forma** do gradiente (a ponta do centro pelo menos 3× a da
+borda), e não o brilho: é a forma que separa as duas leituras.
+
 ### `[12/09]` Nada no CI perguntava se a página rola PARA O LADO
 
 Três bugs do mesmo dia — os chips do ATO 0, o SVG da assinatura do rodapé, e o

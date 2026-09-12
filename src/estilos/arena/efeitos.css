@@ -197,6 +197,10 @@
   animation-iteration-count: infinite;
   animation-delay: var(--atraso, 0s);
   animation-duration: var(--duracao, 13s);
+  /* `[12/09]` `backwards`: sem ele o elemento nasce ACESO e some quando o
+   * atraso vence — achado pela trava `animacaoComAtraso.test.js`, que varre a
+   * classe inteira do bug relatado no ATO 0. */
+  animation-fill-mode: backwards;
   will-change: transform, opacity;
 }
 

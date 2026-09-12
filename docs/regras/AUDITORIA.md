@@ -48,9 +48,9 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->376<!--/n--> arquivos · <!--n:src.linhas-->39.133<!--/n--> linhas |
-| dividido em | `lib` <!--n:src.lib.arquivos-->113<!--/n--> · `components` <!--n:src.components.arquivos-->178<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->43<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
-| rede de testes | <!--n:testes.arquivos-->78<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador |
+| código em `src/` | <!--n:src.arquivos-->377<!--/n--> arquivos · <!--n:src.linhas-->39.386<!--/n--> linhas |
+| dividido em | `lib` <!--n:src.lib.arquivos-->114<!--/n--> · `components` <!--n:src.components.arquivos-->178<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->43<!--/n--> · `pages` <!--n:src.pages.arquivos-->22<!--/n--> · `services` <!--n:src.services.arquivos-->17<!--/n--> |
+| rede de testes | <!--n:testes.arquivos-->79<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->8<!--/n--> |
 | banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
 
@@ -64,8 +64,8 @@ digitado à mão:
 > `[03/09]` **Esta seção mudou, e a mudança foi aprovada pelo dono.** Ela dizia
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
-> **dobrou** — <!--n:src.arquivos-->376<!--/n--> arquivos,
-> <!--n:src.linhas-->39.133<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> **dobrou** — <!--n:src.arquivos-->377<!--/n--> arquivos,
+> <!--n:src.linhas-->39.386<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
 > *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
@@ -122,8 +122,8 @@ com leitura parcial.
 ### Honestidade sobre o método
 
 **Ao relatar, dizer qual método foi usado e o número real de cobertura** —
-"li <!--n:src.arquivos-->376<!--/n--> de <!--n:src.arquivos-->376<!--/n-->
-arquivos" ou "li 40 de <!--n:src.arquivos-->376<!--/n-->, parei em X". Nunca deixar parecer
+"li <!--n:src.arquivos-->377<!--/n--> de <!--n:src.arquivos-->377<!--/n-->
+arquivos" ou "li 40 de <!--n:src.arquivos-->377<!--/n-->, parei em X". Nunca deixar parecer
 que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
 não concluída.
 

@@ -75,6 +75,11 @@
   animation-name: pecaFlutua;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+  /* `[12/09]` Terceiro caso da mesma varredura. Aqui o estrago é pequeno — a
+   * peça nasce em `top: 100%`, abaixo da dobra —, mas o defeito é idêntico e a
+   * correção é a mesma palavra. Corrigir só os dois que doíam deixaria este
+   * esperando o dia em que alguém mudar o `top`. */
+  animation-fill-mode: backwards;
   will-change: transform, opacity;
 }
 
@@ -222,6 +227,11 @@
   animation-name: convergenciaPulso;
   animation-timing-function: ease-in;
   animation-iteration-count: infinite;
+  /* `[12/09]` Mesmo bug dos traços do ATO 0, e achado pela varredura de CLASSE
+   * (§1.3) em vez de caso a caso: `animation-delay` não esconde nada. Durante
+   * a espera o navegador desenha o estado NORMAL do ponto, que é opaco — os
+   * quatro nascem acesos e apagam um a um conforme cada atraso vence. */
+  animation-fill-mode: backwards;
   filter: drop-shadow(0 0 1.2px currentColor);
 }
 
