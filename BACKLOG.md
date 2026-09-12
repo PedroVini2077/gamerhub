@@ -313,6 +313,58 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 **Última conferência contra o sistema:** 11/09/2026 ·
 **44 itens abertos** (+ 1 ideia sem compromisso)
 
+---
+
+## 🔖 `[12/09]` ENGATILHADO PARA A PRÓXIMA SESSÃO
+
+> Escrito porque a cota semanal dele acabou em 12/09 (98%) e ele pediu:
+> *"me fala exatamente oq vc precisa de mim e quais são as minhas decisões que
+> vc precisa e já deixamos engatilhado pra próxima sessão"*. **Reinicia quinta,
+> 07:00.**
+>
+> A ordem aqui é deliberada: primeiro o que **trava trabalho meu**, depois o que
+> eu faço sem depender dele. Assim a primeira coisa da sessão nova é ele
+> responder 5 perguntas, e não eu ficar procurando o que fazer.
+
+### A · DECISÕES QUE SÃO DELE — eu não posso tomar no lugar
+
+| # | A decisão | Por que é dele, e não minha |
+| --- | --- | --- |
+| **A1** 🟠 | **Promover um super admin?** | Medido: existem **0**. `unban_user` exige `is_super()`, então se a conta dele for banida **ninguém no site desfaz** — só a credencial do banco. Ou ele promove alguém de confiança, ou aceita a recuperação por fora e eu escrevo o procedimento no `OPERACAO.md`. É confiança em pessoa, não arquitetura. |
+| **A2** 🟡 | **O ban deve DESTRUIR conteúdo?** (SEC-015) | `ban_user` faz `DELETE` de comentário, mural e chat — sem volta. E quem destrói (`admin`, rank 2) está **abaixo** de quem desfaz (`super_admin`, rank 3). Curiosamente o ban **automático** é mais suave (soft-delete). Três saídas: virar tudo soft-delete · manter e **parar de prometer** *"sua conta voltou ao normal"* no desban · manter e escrever que é proposital. |
+| **A3** 🟠 | **A MARCA E A LANDING** — a decisão que já esperava antes desta sessão | Continua parada. Está no item `[11/09]` mais abaixo, com o briefing gravado. |
+| **A4** 🟠 | **Sair do Gmail para enviar email?** | Decisão de **custo**, item `[23/08]`. O teto de ~500/dia trava cadastro e recuperação de senha quando estourar. |
+| **A5** 🔵 | **Ícones para 5 tipos de notificação** | `notify_user` aceita 9 tipos e o `NOTIF_META` desenha 4 — os outros caem no sino genérico (que é fallback deliberado, não bug). Ou ele escolhe ícone para `warning/info/success/error/system/role`, ou eu **encurto a lista da RPC** para os 4 que a tela sabe mostrar. Prefiro a segunda: promete menos e não mente. |
+
+### B · AÇÕES DE PAINEL — eu não alcanço, e cada uma precisa do passo a passo (§9.12)
+
+| # | O que | Estado |
+| --- | --- | --- |
+| **B1** 🟠 | **Ligar o contador de tentativas de login** | Item `[11/09]`. Está **construído e nunca ligado** — força bruta hoje não é contada. **Eu ainda NÃO escrevi o passo a passo pesquisado**; é a primeira coisa que faço na volta. |
+| **B2** 🔵 | **Política de senha no painel de Auth** | Mínimo de caracteres e classes obrigatórias. O site só mede força **no cliente**, e isso não vale nada sozinho (§1.3). **A proteção contra senha vazada NÃO entra: é do plano Pro** — pesquisado, e por isso não virou tarefa. |
+| **B3** 🔵 | **Alerta de cota do Sentry (email)** | §0.2: o esgotamento gradual não dá para fechar em código sem expor token no CI. |
+| **B4** 🟠 | **As Edge Functions que esperam ele** | Item `[10/09]`: o vigia está construído e provado; 7 das 8 dependem de uma ação dele. |
+
+### C · O QUE EU FAÇO SOZINHO, sem esperar resposta nenhuma
+
+Se ele não responder nada, a sessão começa por aqui — em ordem de valor:
+
+1. **Ler as 23 funções que faltam** (8 de `service_role`, 15 de leitura pura). O piso do §6 já está fechado — 26 de 26 das que escrevem e são alcançáveis por quem tem conta —, então isto é cobertura, não risco conhecido.
+2. **`deny_unban_request` não avisa a pessoa** 🔵 — a aprovação notifica, a negativa não.
+3. **`restore_post` restaura post que não está apagado** 🔵 — falta `AND deleted_at IS NOT NULL`.
+4. **`admin_list_users` faz `SELECT *`** 🔵 — minimização de dado e egress.
+5. **`auth_account_deleted` morto na allowlist do cliente** 🔵 — uma linha.
+6. Escrever **B1** e **B2** por extenso no `OPERACAO.md`, para ele só clicar.
+
+### O que NÃO está pendente — para ele não se preocupar
+
+A auditoria desta sessão está **inteira no ar e mergeada** (PR #199, `d2e0d06`):
+os 5 achados corrigidos, cada um testado em `ROLLBACK` antes da produção e cada
+trava provada reinjetando o bug. Nada ficou pela metade, nenhum PR aberto,
+nenhum achado só na conversa.
+
+---
+
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
 - ✅ **SEC-011 · `anon` lia 26 das 29 tabelas** — **FECHADO em 12/09**, e com
