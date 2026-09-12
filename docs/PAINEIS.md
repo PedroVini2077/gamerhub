@@ -142,6 +142,12 @@ Tabela `site_config` (chave/valor), editável só pelo owner via
   `SECURITY DEFINER` (`notify_post_like`, `notify_post_comment`,
   `notify_comment_like`) ou pela RPC `notify_user` — o cliente **não** insere
   direto. Respeitam `profiles.notif_likes` / `profiles.notif_comments`.
+  - **`[12/09]` `notify_user` passou a deixar rastro** (SEC-013). A barreira de
+    cargo já estava certa e era só o que havia: um admin mandava qualquer coisa
+    para qualquer um e **nada era gravado**. Agora ela registra em `admin_logs`
+    (`admin_notified_user`), exige que o alvo exista, limita a mensagem a 500
+    caracteres e só aceita tipo de uma **lista fechada** — tipo desconhecido
+    caía no mapa de ícones da tela sem entrada, que é o fallback silencioso.
   - `notif_likes` cobre curtida em **post e em comentário**; `notif_comments`
     cobre comentário no post **e resposta a comentário** — os rótulos de
     Configurações dizem isso.

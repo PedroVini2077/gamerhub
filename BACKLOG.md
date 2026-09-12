@@ -297,7 +297,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**39 itens abertos** (+ 1 ideia sem compromisso)
+**37 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -311,34 +311,21 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   (`portas-do-banco.mjs` 46/46, HTTP 401 observado). Régua escrita em
   `docs/regras/BANCO.md`; relatório em `db/2026-09-12-auditoria-bloco-a2-*.md`.
 
-- ⬜ `[12/09]` 🟡 **SEC-012 · apagar a conta é irreversível e NÃO pede a senha.**
-  *BLOCO B da auditoria. **Proposta — NÃO executei** (§7 🟡 muda contrato de RPC
-  + tela, e §7 🔴 manda alertar em perda de dado de usuário).*
+- ✅ **SEC-012 · apagar a conta não pedia senha** — **FECHADO em 12/09**.
+  `delete_own_account(p_senha)` confere no SERVIDOR via `a_senha_confere`, um
+  auxiliar interno (revogado de `anon` e `authenticated`) que o cofre também
+  passou a usar — uma implementação só do `crypt`. A versão sem argumento foi
+  **apagada**, senão a porta continuaria aberta ao lado da nova. A trilha passou
+  a ser gravada **antes** do `DELETE` (o `logAudit` do cliente rodava depois, com
+  o ator já inexistente — falha silenciosa). Testado em `ROLLBACK` com usuário
+  descartável: senha errada recusa, senha certa apaga E deixa 1 registro.
+  Trava `exclusaoPedeSenha.test.js`, 6 asserções.
 
-  `delete_own_account()` é uma linha: `DELETE FROM auth.users WHERE id =
-  auth.uid()`. A ação mais destrutiva e **irreversível** do site acontece atrás
-  de um `ConfirmModal` — validação de cliente, que o §1.3 diz não valer nada,
-  porque dá para chamar `/rest/v1/rpc/delete_own_account` direto com a
-  `anon key`. Sessão deixada aberta apaga a conta com **uma requisição**.
-
-  **O projeto já tem a peça certa, no lugar menos grave:** o `ResetDoCofre`
-  (ação **reversível**) confere a senha no SERVIDOR via
-  `confere_a_propria_senha`. A trava mais forte está na ação menos destrutiva.
-
-  **Solução:** `delete_own_account(p_senha text)` chamando
-  `confere_a_propria_senha` antes do `DELETE`, e a tela pedindo a senha.
-
-- ⬜ `[12/09]` 🟡 **SEC-013 · `notify_user` não deixa rastro.** *BLOCO B.*
-
-  A barreira de cargo está certa (`role_rank >= 2`). Falta o resto: **nenhum
-  registro em `admin_logs`**, `p_message` sem teto, `p_type` sem lista fechada
-  (cai no mapa de ícones da tela — família do fallback silencioso), e nada
-  confere se `p_user_id` existe.
-
-  **Não é XSS** — conferido, não há `dangerouslySetInnerHTML` no projeto e a
-  mensagem é texto. O que sobra é engenharia social com a voz do sistema, **sem
-  trilha** — e toda a filosofia de auditoria daqui é que ação de equipe deixa
-  rastro.
+- ✅ **SEC-013 · `notify_user` não deixava rastro** — **FECHADO em 12/09**.
+  Passou a registrar em `admin_logs` (`admin_notified_user`), exigir que o alvo
+  exista, limitar a 500 caracteres e aceitar só tipo de lista fechada. Provado
+  em produção: tipo inventado, texto de 501 e alvo inexistente são todos
+  recusados.
 
 - ⬜ `[12/09]` 🔵 **Cinco funções ainda escrevem a hierarquia À MÃO.** *BLOCO B.*
 
@@ -1289,10 +1276,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->114<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.780<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->115<!--/n--> arq ·
+  <!--n:src.lib.linhas-->11.945<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

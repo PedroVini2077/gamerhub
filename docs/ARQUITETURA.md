@@ -418,6 +418,13 @@ src/
     │                      # TrialCard, DemotionCard, CandidateHeader,
     │                      # EligibilityChecklist, DecisionButton
     ├── ui/                # ConfirmModal, ReasonModal, BannedScreen, …
+    │   ├── ConfirmarComSenha.jsx # `[12/09]` A confirmação de ação
+    │   │                  # IRREVERSÍVEL, com a senha da conta. O `ConfirmModal`
+    │   │                  # confirma INTENÇÃO ("tem certeza?"); este confirma
+    │   │                  # IDENTIDADE ("você é o dono?"). São perguntas
+    │   │                  # diferentes, e juntá-las faria a versão fraca virar
+    │   │                  # o padrão por descuido. A tela só COLETA — quem
+    │   │                  # confere a senha é a RPC, no servidor (SEC-012)
     │   ├── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
     │   ├── MarcaGH.jsx     # `[11/09]` A MARCA — o monograma GH, em SVG
     │   │                  # derivado da arte por medição (1,80% de diferença,
@@ -576,6 +583,13 @@ src/
     ├── profile/           # ProfileIdentityCard, PersonalInfoCard, GamingCard,
     │                      # SocialLinksCard, PlayerStatsCard, AvatarModal,
     │                      # AdminApplicationCard
+    ├── conta/             # `[12/09]` O que é da CONTA de quem está logado
+    │   └── ZonaDePerigo.jsx # Apagar a própria conta, em duas etapas:
+    │                      # `ConfirmModal` (intenção) e `ConfirmarComSenha`
+    │                      # (identidade). Saiu do `Settings.jsx` quando a
+    │                      # senha o levaria a 304 linhas (§4) — e o corte
+    │                      # também é por responsabilidade: o resto daquela
+    │                      # tela é preferência reversível, isto não tem volta
     ├── conteudo/          # A casca das páginas públicas de texto
     │   ├── PaginaDeConteudo.jsx # Extraída quando a SEGUNDA ia nascer: cópia
     │   │                  # diverge (§4). Hoje serve /privacidade, /regras,

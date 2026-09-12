@@ -86,6 +86,9 @@ export const ACTION_META = {
   auth_rate_limited:         A(ShieldAlert,  'text-yellow-400',  '#facc15'),
   auto_solicitado:           A(RotateCcw,    'text-yellow-400',  '#facc15'),
   admin_delete_unconfirmed:  A(UserMinus,    'text-red-400',     '#f87171'),
+  // `[12/09]` SEC-013: notificar um usuário passou a deixar rastro. Antes um
+  // admin mandava qualquer coisa para qualquer um e nada era gravado.
+  admin_notified_user:       A(Bell,         'text-neon-cyan',   '#22d3ee'),
 
   // admin — cargos e avaliação de equipe (tudo gravado pelo banco)
   demotion_approved:         A(UserCog,      'text-yellow-400',  '#facc15'),
