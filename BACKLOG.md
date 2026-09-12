@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**41 itens abertos** (+ 1 ideia sem compromisso)
+**39 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -341,21 +341,6 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   em produção: tipo inventado, texto de 501 e alvo inexistente são todos
   recusados.
 
-- ⬜ `[12/09]` 🟡 **SEC-014 · `ban_user` pode gravar a trilha SEM O MOTIVO.**
-  *BLOCO B. **Proposta — não executei** (§7 🟡, RPC sensível).*
-
-  `p_reason` não tem validação: nem nulo, nem tamanho. O log é montado por
-  concatenação, e **em SQL `'texto' || NULL` é NULL** — medido. Como
-  `admin_logs.details` aceita NULL (conferido no `information_schema`), um ban
-  com motivo nulo grava uma linha de trilha **com o detalhe inteiro vazio**:
-  some o alvo, some quem baniu, some o motivo. O mesmo na notificação da equipe.
-
-  É o §1.5 puro — a ação acontece, a trilha existe e não diz nada — e o §5:
-  *toda entrada de RPC precisa de FAIXA, não só de tipo*.
-
-  **Conserto:** `IF p_reason IS NULL OR length(btrim(p_reason)) < 3 THEN RAISE`,
-  mais `coalesce` nas concatenações como defesa em profundidade.
-
 - ⬜ `[12/09]` 🟡 **SEC-015 · a INVERSA do ban existe para a marca, não para o
   CONTEÚDO — e é DECISÃO DO DONO.** *BLOCO B.*
 
@@ -377,11 +362,6 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   não é 🟠. Mas se for, precisa estar escrito e a mensagem precisa parar de
   prometer o que não entrega. **Decisão de produto.**
 
-- ⬜ `[12/09]` 🔵 **`unban_user` não confere se a pessoa está banida.** *BLOCO B.*
-  `lift_suspension` confere; `unban_user` não. Desbanir quem não está banido
-  "funciona" e **manda uma notificação** dizendo que o banimento foi removido —
-  aviso sobre um castigo que a pessoa nunca teve.
-
 - ⬜ `[12/09]` 🔵 **`auth_account_deleted` virou entrada morta na lista do
   cliente.** *Criado pelo meu próprio conserto do SEC-012.* A gravação passou
   para dentro da RPC, mas a action continua na lista que `log_audit_event`
@@ -389,25 +369,12 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   injetar um registro falso. Não dá poder nem expõe dado: é ruído forjável na
   trilha. Uma linha para remover.
 
-- ⬜ `[12/09]` 🔵 **Falta um `is_owner()`, e é por isso que NOVE funções
-  escrevem `role = 'owner'` à mão.** *BLOCO B. **Correção de um achado meu
-  anterior**, que dizia "cinco funções escrevem a hierarquia à mão" — a
-  varredura que produziu aquele número procurava só `IN (...)`.*
-
-  Medido: `is_staff()` e `is_super()` existem; **`is_owner()` não**. E
-  `is_super()` é `role_rank >= 3`, que inclui `super_admin` — usá-lo numa função
-  só do fundador **abriria** o acesso. As nove estão **certas**; o que falta é o
-  auxiliar. O risco é nove cópias da mesma decisão divergirem no dia em que
-  alguém mudar o nome do papel.
-
-  **O que É lista de hierarquia à mão, e deveria virar `is_super()`:** três —
-  `unban_user`, `approve_unban_request`, `deny_unban_request`, todas com
-  `NOT IN ('super_admin','owner')`. Funcionam hoje.
-
-  **O que NÃO deve ser tocado:** `nominate_staff` exige `super_admin` literal e
-  exclui o fundador **de propósito** — a mensagem de erro diz por quê ("o
-  fundador é o avaliador independente"). É separação de funções, e uma varredura
-  automática a "consertaria".
+- ⬜ `[12/09]` 🔵 **`deny_unban_request` não avisa a PESSOA.** *BLOCO C.* A
+  aprovação insere em `notifications` ("seu pedido foi aceito"); a negativa
+  **não insere nada**. Quem recorreu do próprio banimento fica sem resposta — a
+  `BannedScreen` mostra o estado do pedido, então ele não some de vez, mas a
+  simetria quebrada é do tipo que ninguém percebe do lado de fora. Uma linha,
+  espelhando o `approve_unban_request`.
 
 - ⬜ `[12/09]` 🔵 **O buraco que sobrou da régua de `anon`: `GRANT` explícito.**
   O `ALTER DEFAULT PRIVILEGES` fecha a tabela NOVA por padrão, mas não impede
@@ -1346,8 +1313,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->115<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.850<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->116<!--/n--> arq ·
+  <!--n:src.lib.linhas-->12.081<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

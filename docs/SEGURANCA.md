@@ -192,6 +192,67 @@ que estão na lista dele. Está no `BACKLOG.md`.
   para **todo** chamador `authenticated`, sem condição de cargo — testado com um
   admin tentando rebaixar, banir e se autopromover: os três `UPDATE` responderam
   "1 linha, sem erro" e **nada mudou**.
+- **`[12/09]` Comparar PAPEL com NULL não barrava nada** (SEC-016/017/018). 🟡
+  Cinco funções `SECURITY DEFINER` guardavam o acesso assim:
+
+  ```sql
+  IF v_caller_role NOT IN ('super_admin','owner') THEN RAISE EXCEPTION ...
+  ```
+
+  Em SQL, `NULL NOT IN (...)` é **NULL**, e `IF NULL THEN` **não dispara**.
+  Medido: `select (null::text not in ('super_admin','owner'))` devolve NULL. O
+  portão ficava aberto para exatamente um chamador — **quem não tem linha em
+  `profiles`**, cujo `SELECT role INTO` deixa a variável nula.
+
+  **O que segurava era acidental, e é o motivo de isto ter virado correção e não
+  nota.** Na prova em `ROLLBACK` o guard **passou** e a função seguiu adiante; o
+  que a derrubou foi um `NOT NULL` em `admin_logs.admin_username` — uma coluna
+  de log que não sabe que está fazendo controle de acesso, e que só alcança
+  porque o `INSERT` vem depois do `UPDATE`. A segunda rede era ter 0 usuários
+  sem perfil hoje, invariante de um trigger que vive fora destas funções.
+
+  | Função | O guard | Conserto |
+  | --- | --- | --- |
+  | `unban_user` · `approve_unban_request` · `deny_unban_request` | `NOT IN ('super_admin','owner')` | `is_super()` |
+  | `notify_owner` | `NOT IN ('admin','super_admin')` | `is_staff()` — **e isso passou a incluir o `owner`, que estava de fora** |
+  | `nominate_staff` | `<> 'super_admin'` | `IS DISTINCT FROM` |
+
+  `is_super()` é NULL-safe **por construção**: `role_rank(NULL)` é 0 (medido) e
+  `0 >= 3` é false. Papel ausente passa a negar.
+
+  **O `nominate_staff` é a exceção que explica a regra.** Trocar por
+  `is_super()` ali teria deixado o `owner` **indicar** para super admin — e a
+  função existe para que ele seja o *avaliador independente* dessas indicações.
+  `IS DISTINCT FROM` fecha o NULL preservando o sentido literal. Nasceu junto o
+  `is_owner()`, que faltava na família.
+
+  **A irmã, no parâmetro, e aqui o `CHECK` não segura.** `p_new_role NOT IN
+  (...)` também não dispara com NULL, e o `UPDATE` grava — porque constraint só
+  reprova em `false` **explícito**, e `NULL = ANY(ARRAY[...])` é NULL. Medido:
+  o perfil ficou com `role` nulo, `role_rank` 0, **abaixo de `user`**. A trava é
+  de nível 1: `profiles.role` e `profiles.banned` viraram **`NOT NULL`**, então
+  o estado ruim deixou de ser possível em vez de depender de cada função
+  lembrar. Medido antes: 0 perfis afetados, em 5.
+
+  Trava: `guardDePapelNaoAceitaNull.test.js`, que reconstrói a **última**
+  definição de cada função a partir de `supabase/migrations/` (legítimo porque o
+  portão `espelho-de-migrations.mjs` garante pasta = banco). Provada cinco
+  vezes, reinjetando cada bug.
+- **`[12/09]` `ban_user` aceitava qualquer texto como motivo** (SEC-014). 🟡 O
+  `BanModal` oferece seis motivos numa lista fechada; a RPC aceitava `text`, e o
+  site usa a `anon key` — a REST API é chamável direto. Esse texto vai para a
+  trilha de auditoria, para a `BannedScreen` da pessoa banida e para a
+  notificação de toda a equipe. Virou lista fechada no SQL, com teste de
+  contrato varrendo os dois lados: motivo novo no modal e esquecido no banco faz
+  o ban falhar **alto**, em vez de gravar um valor que os painéis não agrupam.
+
+  Junto: alvo inexistente fazia `'@' || NULL || ' foi banido'` virar NULL
+  inteiro, e como `admin_logs.details` é **nullable** isso **gravava** — trilha
+  com uma linha `admin_ban` sem história enquanto ninguém foi banido. Faixas que
+  entraram: detalhes ≤ 300 (o `maxLength` do modal, que agora vale de verdade),
+  nota ≤ 500, alerta ao owner ≤ 2000, alvo tem que existir, e — no
+  `unban_user` — alvo tem que estar **banido**, senão a pessoa recebia aviso de
+  um castigo que nunca teve.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

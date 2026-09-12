@@ -50,7 +50,12 @@ export function useAdminStaffActions({
     const targetUser = unbanDirectModal;
     if (!targetUser) return;
     const { error } = await supabase.rpc('unban_user', { p_user_id: targetUser.id, p_note: note || null });
-    if (error) { toast.error('Erro ao desbanir'); return; }
+    // `[12/09]` A mensagem da RPC passa a chegar na tela. Ela deixou de ser
+    // genérica no SEC-016/017 — hoje diz "Este usuario nao esta banido",
+    // "Usuario nao encontrado" ou o limite da nota, e "Erro ao desbanir"
+    // apagava exatamente a informação que faz o admin saber o que fazer (§1.5).
+    // É o padrão que a `handleDemote` deste mesmo arquivo já usava.
+    if (error) { toast.error(error.message || 'Erro ao desbanir'); return; }
     toast.success(`@${targetUser.username} desbanido`);
     setUnbanDirectModal(null);
     refresh();
@@ -58,7 +63,7 @@ export function useAdminStaffActions({
 
   async function handleApproveUnban(req) {
     const { error } = await supabase.rpc('approve_unban_request', { p_request_id: req.id });
-    if (error) { toast.error('Erro ao aprovar'); return; }
+    if (error) { toast.error(error.message || 'Erro ao aprovar'); return; }
     toast.success(`@${req.target_username} desbanido!`);
     fetchUnbanRequests();
     refresh();
@@ -68,7 +73,7 @@ export function useAdminStaffActions({
     const req = denyUnbanModal;
     if (!req) return;
     const { error } = await supabase.rpc('deny_unban_request', { p_request_id: req.id, p_note: note || null });
-    if (error) { toast.error('Erro ao negar'); return; }
+    if (error) { toast.error(error.message || 'Erro ao negar'); return; }
     toast.success('Solicitação negada');
     setDenyUnbanModal(null);
     fetchUnbanRequests();
