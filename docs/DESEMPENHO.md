@@ -1166,3 +1166,49 @@ acima é byte, que é determinístico (§0.3, regra 4). A camada roda em `transf
 e `opacity`, que o navegador resolve no compositor, e não há laço de JavaScript
 por quadro; mas **isso é o desenho, não uma medição**. A medição de campo virá
 do Vercel Speed Insights, que já está instalado.
+
+---
+
+### `[12/09]` As cinco cenas ganharam vida sem custar UM BYTE do carregamento
+
+A fatia 6 acrescentou cinco sobreposições animadas, duas cenas presas e três
+revelações diferentes. Medido no mesmo `.env.local` dos dois lados:
+
+| | antes | depois |
+| --- | --- | --- |
+| JavaScript inicial | 737,3 kB | **737,3 kB** (sem mudança) |
+| chunk da Landing (lazy) | 37,7 kB | **52,1 kB** (+14,4 kB) |
+| altura da página, computador | 8.666 px | **11.601 px** |
+
+**O carregamento inicial não mudou um byte**, e não é sorte: tudo isto vive no
+chunk da landing, que é `lazy`. Quem cai na página baixa o mesmo que antes, e o
+custo das cinco cenas chega junto com a página que as usa.
+
+> **Os 14,4 kB do chunk eu escrevi errado antes de medir** — tinha posto "3,6 kB"
+> por estimativa. Corrigido pelo número do build. É o §1.1: inferência vestida
+> de fato é a falha mais registrada deste projeto, e ela reaparece justamente
+> nos números pequenos, que parecem não valer a conferência.
+
+**A página cresceu 34%, e esse é o custo real da fatia.** São as duas cenas
+presas: cada uma consome ~2,5 telas de rolagem. Foi escolha consciente contra a
+alternativa de prender as cinco, que somaria ~13 telas.
+
+#### O que NÃO custa quadro, e por que cada decisão
+
+| Decisão | O que ela evita |
+| --- | --- |
+| revelação por painel opaco escalando, não `clip-path` | `clip-path` animado **repinta** a cada quadro sobre uma imagem de faixa inteira |
+| duas barras de cor empilhadas no XP, não uma mudando de cor | interpolação de cor não é composta pelo navegador |
+| o número do XP é um `MotionValue` renderizado como filho | contar com `useState` seria uma atualização de React **por quadro de rolagem** |
+| o chat das lives para quando a cena sai da tela | `setInterval` ligado para sempre é a versão barata dos 29.441 ms da cena 3D |
+| nenhuma sobreposição anima filtro | `blur`/`drop-shadow` por quadro é o travamento clássico de celular |
+
+As quatro primeiras têm trava em `cenasVivas.test.js`. A última também — ela
+varre as cinco sobreposições procurando `filter: blur`.
+
+#### O que eu NÃO medi
+
+Tempo. Nem TBT, nem LCP, nem em laboratório nem em campo. O que está acima é
+byte e altura, que são determinísticos (§0.3, regra 4). O desenho evita repaint
+por construção, mas **isso é argumento, não medição** — a medição de campo vem
+do Vercel Speed Insights.

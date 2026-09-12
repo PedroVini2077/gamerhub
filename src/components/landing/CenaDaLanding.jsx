@@ -1,118 +1,76 @@
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { fadeUpReveal, VIEWPORT } from '../../lib/landingMotion';
 import ArteDaCena from './ArteDaCena';
+import TextoDaCena from './TextoDaCena';
+import CortinaDaCena from './CortinaDaCena';
+import { entradaDaCena } from '../../lib/landingMotion';
+import useProgressoDeRolagem from '../../hooks/useProgressoDeRolagem';
 
 /**
- * Uma CENA da landing: a arte ocupa a faixa inteira, o texto vive por cima.
+ * Uma cena que ATRAVESSA — ela rola junto com a página.
  *
- * ── O que ela substitui, e por quê ──────────────────────────────────────────
+ * ── As duas formas de cena, e por que existem as duas `[12/09]` ─────────────
  *
- * `[12/09]` O `FeatureSection` era usado **cinco vezes** com o mesmo molde —
- * sobrancelha, título, descrição, botão, print — e era essa repetição que o
- * dono diagnosticou: a landing ficava *"organizada, e por isso mesmo previsível
- * e institucional"*.
+ * | | esta | `CenaPresa` |
+ * | --- | --- | --- |
+ * | o que faz | passa pela tela | fica presa enquanto a rolagem passa |
+ * | o que ela conta | um **estado** — algo que está acontecendo | uma **transformação** — algo virando outra coisa |
+ * | custo | nenhum: não alonga a página | some ~2,5 telas de rolagem |
  *
- * A hierarquia que ele pediu no lugar é **ARTE → PRODUTO → INFORMAÇÃO**: a arte
- * cria o impacto, a interface real demonstra, o texto explica. Aqui a arte
- * deixa de ser um print ao lado do texto e passa a ser **a cena inteira**.
+ * Ordem do dono, na letra: *"não transforme obrigatoriamente cada uma das cinco
+ * cenas em um enorme bloco preso... não quero cinco mini-sites consecutivos"*.
+ * Três das cinco são deste tipo, e é isso que dá o respiro entre as duas presas.
  *
- * ── Por que ainda é UM componente, se o molde único era o problema ──────────
+ * ── A hierarquia continua ARTE → PRODUTO → INFORMAÇÃO ───────────────────────
  *
- * Porque o que cansava não era o componente: era as cinco seções serem
- * **visualmente idênticas**. Cada cena agora tem arte própria, e o `lado` muda
- * de onde o texto vem. O que se repete é a mecânica — recorte, escurecimento,
- * lazy —, e essa é justamente a parte que **não pode** divergir entre elas (§4).
+ * A arte é o mundo; a **sobreposição** é o produto acontecendo dentro dele; o
+ * texto explica o que acabou de acontecer. A sobreposição é uma camada própria
+ * de HTML/SVG — nunca um remendo colado em cima de um detalhe desenhado dentro
+ * da arte, que seria frágil por construção: a composição larga e a de retrato
+ * têm enquadramentos diferentes, e a arte pode ser regerada a qualquer momento.
  *
- * ── O texto precisa sobreviver à arte ───────────────────────────────────────
+ * ── A revelação é DIFERENTE em cada cena, de propósito ──────────────────────
  *
- * As artes são claras no miolo e cheias de detalhe. Texto solto por cima delas
- * seria ilegível em metade das telas — então cada cena carrega um **véu**:
- * um gradiente que escurece o lado onde o texto mora e deixa o outro limpo.
- * É o que permite pôr texto sobre imagem sem apagar a imagem.
+ * `revelacao` escolhe entre a entrada por deslize e as cortinas. Cinco seções
+ * com o mesmo `fadeUpReveal` foi exatamente o que ele mandou eliminar.
  *
- * ── Custo, e o que ele NÃO cobre ────────────────────────────────────────────
- *
- * `loading="lazy"` é obrigatório: são seis cenas, e a de baixo não pode ser
- * baixada por quem nunca rolou até ela. O `srcset` faz o navegador escolher o
- * tamanho — a mesma cena custa 147 kB a 1600 px e 57 kB a 828 px.
- *
- * **O orçamento de bytes do CI NÃO vê isto**: ele mede chunk de JavaScript.
- * O peso das artes é responsabilidade de quem as acrescenta, e está medido em
- * `docs/DESEMPENHO.md`.
+ * @param {object} props
+ * @param {'deslize'|'centro'|'varredura'} [props.revelacao] Como a cena é
+ *   descoberta. Ver `CortinaDaCena` para o que cada eixo significa.
+ * @param {(progresso: import('framer-motion').MotionValue<number>) => React.ReactNode}
+ *   [props.sobreposicao] A camada de produto. Recebe o progresso da cena na
+ *   tela (0 = começou a entrar por baixo, 1 = terminou de sair por cima).
  */
 export default function CenaDaLanding({
   id, arte, eyebrow, titulo, descricao, lado = 'esquerda', prioridade = false,
+  revelacao = 'deslize', sobreposicao,
 }) {
-  const textoNaEsquerda = lado === 'esquerda';
+  const alvo = useRef(null);
+  // O progresso é medido sempre, e é barato: o `useScroll` do Framer Motion
+  // divide UM ouvinte passivo entre todas as chamadas da página. Torná-lo
+  // condicional seria hook atrás de `if`, que as Rules of Hooks proíbem.
+  const progresso = useProgressoDeRolagem(alvo, 'solta');
+  const desliza = revelacao === 'deslize';
 
   return (
     <motion.section
+      ref={alvo}
       id={id}
       // `scroll-mt` compensa a barra fixa do topo: sem isso o link leva a seção
       // para debaixo dela, e o visitante cai num lugar que parece o errado.
       style={{ scrollMarginTop: '5rem' }}
-      variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}
+      variants={desliza ? entradaDaCena(lado) : undefined}
+      initial={desliza ? 'initial' : undefined}
+      whileInView={desliza ? 'animate' : undefined}
+      viewport={desliza ? { once: true, amount: 0.25 } : undefined}
       className="relative overflow-hidden md:rounded-2xl my-8 md:my-16"
     >
-      {/* `[12/09]` O `<picture>` mora em `ArteDaCena` — ele é o mesmo aqui, no
-          `FinalCTA` e no prólogo, e são seis decisões finas juntas
-          (`media`, `srcSet`, `sizes`, dimensões, `loading`, `fetchPriority`).
-          Copiado três vezes, diverge na primeira que alguém mexer. */}
       <ArteDaCena arte={arte} prioridade={prioridade} />
+      <TextoDaCena eyebrow={eyebrow} titulo={titulo} descricao={descricao} lado={lado} />
 
-      {/* O véu, SÓ a partir do `md`. Ele escurece o lado do texto e some no
-          outro — a arte continua visível onde ela é o assunto. No celular não
-          há sobreposição, então não há o que escurecer. */}
-      {/* O véu muda de EIXO com a orientação da arte, e não é detalhe:
-          no computador a arte é larga e o texto fica de lado, então o
-          escurecimento é lateral; no celular a arte é alta e o texto fica
-          embaixo, então ele sobe do pé. Um véu lateral numa arte em pé
-          apagaria uma coluna inteira da composição. */}
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none md:hidden"
-        style={{
-          background:
-            'linear-gradient(0deg, rgba(6,6,8,0.96) 0%, rgba(6,6,8,0.88) 26%, rgba(6,6,8,0.35) 52%, rgba(6,6,8,0.04) 76%)',
-        }}
-      />
-      <div
-        aria-hidden
-        className="hidden md:block absolute inset-0 pointer-events-none"
-        style={{
-          background: textoNaEsquerda
-            ? 'linear-gradient(90deg, rgba(6,6,8,0.94) 0%, rgba(6,6,8,0.82) 34%, rgba(6,6,8,0.25) 62%, rgba(6,6,8,0.05) 100%)'
-            : 'linear-gradient(270deg, rgba(6,6,8,0.94) 0%, rgba(6,6,8,0.82) 34%, rgba(6,6,8,0.25) 62%, rgba(6,6,8,0.05) 100%)',
-        }}
-      />
+      {sobreposicao?.(progresso)}
 
-      {/* ── `[12/09]` O texto fica POR CIMA nos dois, e o eixo é que muda ────
-          Enquanto a arte de celular era a 16:9 espremida, isto era impossível:
-          medido em 400×800, a cena tinha 225 px de altura e a coluna de texto
-          sobreposta ficava com **128 px** de largura. Ilegível.
-
-          Com a arte de RETRATO a conta inverte — sobra altura, e o texto se
-          apoia no pé da cena, onde o véu vertical o sustenta. */}
-      <div
-        className={`absolute inset-0 flex items-end md:items-center
-                    ${textoNaEsquerda ? 'md:justify-start' : 'md:justify-end'}`}
-      >
-        <div className="w-full md:w-auto md:max-w-[46%] px-6 pb-8 md:pb-0
-                        md:px-12 lg:px-16 space-y-2 md:space-y-4">
-          <span className="font-mono text-[0.62rem] md:text-xs tracking-[0.3em] uppercase text-neon-green">
-            {eyebrow}
-          </span>
-          <h2 className="font-display font-bold text-white leading-[1.08]
-                         text-2xl md:text-3xl lg:text-[2.6rem]">
-            {titulo}
-          </h2>
-          <p className="text-gray-400 md:text-gray-300 font-body
-                        text-sm md:text-base lg:text-lg
-                        leading-relaxed max-w-lg">
-            {descricao}
-          </p>
-        </div>
-      </div>
+      {!desliza && <CortinaDaCena eixo={revelacao} />}
     </motion.section>
   );
 }

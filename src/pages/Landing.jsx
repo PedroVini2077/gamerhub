@@ -3,6 +3,12 @@ import LandingNav from '../components/landing/LandingNav';
 import FluxoDeDados from '../components/landing/FluxoDeDados';
 import PrologoDaLanding from '../components/landing/PrologoDaLanding';
 import CenaDaLanding from '../components/landing/CenaDaLanding';
+import CenaPresa from '../components/landing/CenaPresa';
+import SobreposicaoDoFeed from '../components/landing/cenas/SobreposicaoDoFeed';
+import SobreposicaoDaComunidade from '../components/landing/cenas/SobreposicaoDaComunidade';
+import SobreposicaoDasLives from '../components/landing/cenas/SobreposicaoDasLives';
+import SobreposicaoDasKeys from '../components/landing/cenas/SobreposicaoDasKeys';
+import SobreposicaoDosRanks from '../components/landing/cenas/SobreposicaoDosRanks';
 import HighlightsStrip from '../components/landing/HighlightsStrip';
 import FinalCTA from '../components/landing/FinalCTA';
 import LandingFooter from '../components/landing/LandingFooter';
@@ -49,30 +55,39 @@ export default function Landing({ introDone = true }) {
           ocupar 100vw"*. Dentro do `max-w-5xl` a arte virava um cartão de
           976 px no meio de um monitor de 1440 — medido no primeiro print. */}
       <div className="px-0 md:px-6">
-        {/* `[12/09]` AS CINCO CENAS. Elas substituem cinco `FeatureSection`
-            idênticos — sobrancelha, título, descrição, botão, print —, que era
-            exatamente a monotonia que o dono diagnosticou.
+        {/* ── `[12/09]` AS CINCO CENAS, e cada uma com a FORMA que o que ela
+            conta pede ────────────────────────────────────────────────────────
 
             A ordem segue a jornada, não o alfabeto: o que se descobre primeiro
             (o feed), depois a gente (comunidade), depois o que acontece ao vivo
             (lives), depois a recompensa (keys) e por fim a progressão (ranks).
 
-            `lado` alterna de propósito: cinco cenas com o texto sempre à
-            esquerda voltariam a ser um molde, só que com imagem maior. */}
+            `lado` alterna de propósito — e agora ele decide duas coisas: de que
+            lado o texto mora E de que lado a sobreposição pousa (sempre a
+            oposta). Duas cenas seguidas nunca têm o mesmo desenho na tela.
+
+            DUAS prendem e TRÊS atravessam. O critério não é importância, é se a
+            cena tem uma TRANSFORMAÇÃO para contar — ver `CenaPresa.jsx`. É o
+            que dá o ritmo IMPACTO → RESPIRO que o dono pediu, em vez de cinco
+            mini-sites em fila. */}
+
         <CenaDaLanding
           id="feed" arte={CENAS.feed}
           eyebrow="Feed"
           titulo="Um feed que não para"
           descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa."
           lado="esquerda"
+          revelacao="deslize"
+          sobreposicao={() => <SobreposicaoDoFeed lado="esquerda" />}
         />
 
-        <CenaDaLanding
-          id="mural" arte={CENAS.comunidade}
+        <CenaPresa
+          id="mural" arte={CENAS.comunidade} altura={260}
           eyebrow="Comunidade"
           titulo="Tem gente aqui"
           descricao="O mural é o ponto de encontro informal: prints, squads sendo montados e papo solto com quem também joga."
           lado="direita"
+          sobreposicao={(p) => <SobreposicaoDaComunidade progresso={p} lado="direita" />}
         />
 
         <CenaDaLanding
@@ -81,14 +96,17 @@ export default function Landing({ introDone = true }) {
           titulo="Está acontecendo agora"
           descricao="Sua transmissão do Twitch ou do YouTube dentro do Hub, com chat em tempo real e contador de quem está assistindo."
           lado="esquerda"
+          revelacao="centro"
+          sobreposicao={() => <SobreposicaoDasLives lado="esquerda" />}
         />
 
-        <CenaDaLanding
-          id="keys" arte={CENAS.keys}
+        <CenaPresa
+          id="keys" arte={CENAS.keys} altura={240}
           eyebrow="Keys & Promos"
           titulo="Keys grátis e as promoções que valem"
           descricao="O código pronto para copiar, a plataforma na etiqueta, e a lista atualizada pela equipe."
           lado="direita"
+          sobreposicao={(p) => <SobreposicaoDasKeys progresso={p} lado="direita" />}
         />
 
         <CenaDaLanding
@@ -97,6 +115,8 @@ export default function Landing({ introDone = true }) {
           titulo="Participar conta, e aparece"
           descricao="Postar, comentar e receber curtidas rende XP. O rank é o que a comunidade vê do seu histórico."
           lado="esquerda"
+          revelacao="varredura"
+          sobreposicao={(p) => <SobreposicaoDosRanks progresso={p} lado="esquerda" />}
         />
 
       </div>

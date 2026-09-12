@@ -103,7 +103,7 @@ describe('o mecanismo', () => {
     // perdido a classe. Provado reinjetando o bug — a primeira versão desta
     // trava passou verde com `absolute top-0` no lugar.
     expect(
-      /className="sticky top-0/.test(palco),
+      /className=\{?[`"]sticky top-0/.test(palco),
       'O `PalcoDeRolagem` perdeu o `sticky top-0`.\n'
       + '  Sem prender, o bloco de 360vh apenas passa: os cinco atos acontecem\n'
       + '  em frações de segundo enquanto a tela sobe, e a landing vira um\n'
@@ -117,7 +117,7 @@ describe('o mecanismo', () => {
       + '  lição de 01/09 que fez as formas da "Sobre" darem um pulo.',
       // De novo a classe e não a palavra, pelo mesmo motivo do `sticky`: o
       // comentário do arquivo cita `100svh` ao explicar a escolha.
-    ).toMatch(/className="sticky top-0 h-\[100svh\]/);
+    ).toMatch(/className=\{?[`"]sticky top-0 h-\[100svh\]/);
   });
 
   it('não entrou biblioteca de rolagem — o palco usa o que já existe', () => {

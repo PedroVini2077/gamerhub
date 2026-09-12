@@ -52,6 +52,12 @@ src/
 │                          # moldura de circuito das bordas. A cor NÃO é escolha
 │                          # livre — é a identidade do site (ver DECISOES.md)
 ├── hooks/
+│   ├── useProgressoDeRolagem.js # `[12/09]` O progresso de um elemento na
+│   │                      # rolagem, de 0 a 1, nos DOIS recortes: `presa`
+│   │                      # (enquanto a cena está grudada) e `solta` (enquanto
+│   │                      # ela atravessa a tela). A mola mora aqui — escrita
+│   │                      # em dois lugares, daria inércias diferentes a cenas
+│   │                      # da mesma página sem ninguém ter decidido isso
 │   ├── usePonteiroDaPagina.js # `[11/09]` O ÚNICO ouvinte de `pointermove` do
 │   │                      # projeto. Escreve `--ponteiro-x/y` em `:root`, e quem
 │   │                      # precisa lê de lá com valor padrão. Antes o
@@ -182,6 +188,10 @@ src/
 │   │                      # referências — nada aqui é editado à mão.
 │   │                      # Import ESTÁTICO de propósito: caminho montado por
 │   │                      # string funciona em desenvolvimento e some do build
+│   ├── landingMotion.js   # Variantes de animação exclusivas da landing.
+│   │                      # `[12/09]` Ganhou `entradaDaCena`: a cena chega DO
+│   │                      # LADO onde o texto dela mora, e como o lado alterna,
+│   │                      # duas cenas seguidas nunca entram pela mesma direção
 │   ├── atosDaLanding.js   # `[12/09]` O ROTEIRO do prólogo: as JANELAS de
 │   │                      # rolagem de cada camada (de 0 a 1), a frase do ATO 0
 │   │                      # e a altura do palco. Só dados — o ritmo se ajusta
@@ -443,6 +453,40 @@ src/
     │   ├── ConteudoDoHero.jsx # `[12/09]` O que se LÊ no hero (sobrancelha,
     │   │                  # título, parágrafo, botão, avisos). Saiu do `Hero`
     │   │                  # porque tem dois donos: ele e o último ato do prólogo
+    │   ├── CenaPresa.jsx # `[12/09]` A cena que PRENDE na tela enquanto a
+    │   │                  # rolagem passa. Só para cena que tem uma
+    │   │                  # TRANSFORMAÇÃO a contar — duas das cinco. Prender
+    │   │                  # todas somaria 13 telas de rolagem
+    │   ├── TextoDaCena.jsx # `[12/09]` O véu e o texto, que a cena presa e a
+    │   │                  # solta dividem. O véu troca de EIXO com a orientação
+    │   │                  # da arte: lateral no PC, do pé no celular
+    │   ├── CortinaDaCena.jsx # `[12/09]` Três revelações num mecanismo só —
+    │   │                  # painel opaco escalando (compositor), não
+    │   │                  # `clip-path` (repaint por quadro). O EIXO é o
+    │   │                  # argumento: abre do centro, varre, ou sobe
+    │   ├── cenas/         # `[12/09]` As SOBREPOSIÇÕES — a camada de produto
+    │   │                  # acontecendo dentro de cada arte. Uma por cena, cada
+    │   │                  # uma com a personalidade de movimento dela
+    │   │   ├── PainelDaCena.jsx # a REGRA de onde a camada pousa: do lado
+    │   │   │              # oposto ao texto no PC, no alto no celular. Nunca em
+    │   │   │              # cima de um detalhe desenhado dentro da arte, que
+    │   │   │              # some no dia em que a arte for regerada
+    │   │   ├── SobreposicaoDoFeed.jsx # ATIVIDADE. Por TEMPO, não por rolagem:
+    │   │   │              # atividade que para quando a pessoa para de rolar
+    │   │   │              # diria o oposto de "tem gente usando isso agora"
+    │   │   ├── SobreposicaoDaComunidade.jsx # CONEXÃO. Sete pessoas dispersas
+    │   │   │              # caminham para um núcleo e só então as linhas se
+    │   │   │              # desenham — a ordem é o argumento
+    │   │   ├── SobreposicaoDasLives.jsx # PRESENÇA. O player fica PARADO e o
+    │   │   │              # chat anda: é o contraste que comunica "ao vivo".
+    │   │   │              # Único relógio repetido da landing, e ele para
+    │   │   │              # quando a cena sai da tela
+    │   │   ├── SobreposicaoDasKeys.jsx # DESCOBERTA. Uma key com o código
+    │   │   │              # COBERTO, e a tarja saindo — que é a interação real
+    │   │   │              # do produto, não um efeito
+    │   │   └── SobreposicaoDosRanks.jsx # PROGRESSÃO. Atravessa uma fronteira
+    │   │                  # de rank de verdade (860 → 1120 XP), lendo os
+    │   │                  # rótulos e as cores de `lib/ranks.js`
     │   ├── ArteDaCena.jsx # `[12/09]` O `<picture>` das artes numa fonte só —
     │   │                  # media, srcSet, sizes, dimensões, loading e
     │   │                  # fetchPriority. Era copiado em dois lugares e o
