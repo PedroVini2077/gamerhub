@@ -547,3 +547,70 @@ tempo, logo depois da abertura. Janela de rolagem a faria invisível em progress
 | 18 | justificar GSAP | recusado, com a conta acima |
 | 19 | separar storytelling de conteúdo | as três camadas |
 | 20 | não virar timeline gigante | o roteiro é dado, não código |
+
+---
+
+# `[12/09]` A FATIA 6 — dar vida às cenas
+
+> Terceiro e último prompt dele: *"o objetivo NÃO é simplesmente adicionar mais
+> animações. O objetivo é fazer a landing parecer viva"*.
+
+## A pergunta que decidiu tudo
+
+Ele deu a régua na regra 14, e ela é mais útil como **podadeira** do que como
+gerador de ideia: *"não pergunte 'qual efeito fica bonito?'. Pergunte 'qual
+movimento representa essa funcionalidade?'"*.
+
+| Cena | O que ela É | Logo, o movimento é | Prende? |
+| --- | --- | --- | --- |
+| Feed | atividade acontecendo | por **tempo** — atividade que para quando você para de rolar não é atividade | não |
+| Comunidade | disperso virando conectado | por **rolagem**: é uma transformação, com começo e fim | **sim** |
+| Lives | está no ar agora | o player **parado** e o chat andando | não |
+| Keys | descoberta | a tarja saindo do código — a interação real de resgatar | **sim** |
+| Ranks | progressão | a rolagem **é** a barra | não |
+| CTA | pertencimento | uma cortina que **sobe** — o chão se abrindo para você entrar | não |
+
+## O ritmo, e por que só DUAS prendem
+
+`IMPACTO (prólogo) → atividade → IMPACTO (comunidade) → presença → IMPACTO
+(keys) → progressão → pertencimento`.
+
+Prender as cinco somaria ~13 telas de rolagem a uma página que já tem 9 — é o
+que ele chamou de *"cinco mini-sites consecutivos"*. O critério para prender não
+é importância: é **a cena ter uma transformação para contar**.
+
+## As três camadas, e o que cada uma ignora
+
+| Arquivo | Sabe sobre |
+| --- | --- |
+| `hooks/useProgressoDeRolagem.js` | como medir progresso, nos dois recortes |
+| `CenaDaLanding` / `CenaPresa` | as duas formas de cena |
+| `cenas/Sobreposicao*.jsx` | o que acontece dentro de cada uma |
+
+`PainelDaCena` guarda a regra que impede o erro mais tentador da fatia: **a
+sobreposição nunca se cola a um detalhe desenhado dentro da arte**. Alinhar um
+contador ao contador do quadro seria impressionante e frágil por construção — as
+duas composições têm enquadramentos diferentes, e a arte pode ser regerada.
+
+## O que eu implementei e CORTEI depois de ver no navegador
+
+1. **A fileira de cinco cartas de jogo nas Keys.** A arte daquela cena já é uma
+   parede de capas reais; as minhas, de gradiente, ao lado delas pareciam
+   exatamente o que eram. No lugar entrou **uma** key, com o código coberto.
+2. **As pessoas da comunidade começando fora do quadro.** O SVG recorta no
+   `viewBox`: a primeira metade da cena presa era uma tela vazia, e a história
+   perdia o ato do isolamento. Achado no print, não no código — nada estourava.
+3. **As publicações do feed sem nome.** Duas barras cinzas por linha liam como
+   **tela de carregamento**. Um apelido e um horário resolveram.
+4. **O painel no celular preso ao topo.** Na cena que ROLA, um recuo fixo passa
+   por baixo da barra fixa — a primeira publicação sumia atrás dela.
+
+> As quatro só apareceram no navegador. É a razão de a fatia ter sido medida em
+> print a cada passo, e não declarada pronta no fim.
+
+## O que ficou por medir
+
+**Tempo.** O que está em `DESEMPENHO.md` é byte e altura, que são
+determinísticos. O desenho evita repaint por construção — nada de `clip-path`
+animado, nada de filtro, nada de `useState` por quadro —, mas isso é argumento,
+não medição. A de campo vem do Vercel Speed Insights.

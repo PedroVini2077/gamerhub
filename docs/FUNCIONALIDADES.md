@@ -139,6 +139,26 @@ andamento do recurso na `BannedScreen`; o que faltava era saber que isso existe.
 Identificar o visitante banido foi descartado por privacidade — ver
 [DECISOES.md](DECISOES.md).
 
+**`[12/09]` Cada cena tem uma PERSONALIDADE de movimento**, e ela nasce do que a
+funcionalidade é — não do catálogo de efeitos:
+
+| Cena | Personalidade | Como ela se move |
+| --- | --- | --- |
+| **Feed** | atividade | três publicações chegam escalonadas, a curtida acende, o contador sobe duas vezes e um comentário desliza. Por **tempo**, não por rolagem: atividade que para quando você para de rolar não é atividade |
+| **Comunidade** | conexão | a cena **prende** na tela. Sete pessoas dispersas caminham para um núcleo e só então as linhas se desenham — a ordem é o argumento |
+| **Lives** | presença | o player fica **parado** e o chat anda. O contraste é o que diz "ao vivo"; fazer tudo pulsar diria "animação" |
+| **Keys** | descoberta | a cena **prende**. Uma key com o código coberto, a tarja saindo, o preço riscado e o GRÁTIS — a tarja é a interação real de resgatar |
+| **Ranks** | progressão | a rolagem **é** a barra: atravessar a seção leva 860 → 1120 XP e cruza a fronteira Guerreiro → Elite, lida de `lib/ranks.js` |
+
+Cada uma entra de um jeito diferente: deslize lateral (Feed), cortina que abre do
+centro (Lives), varredura da esquerda para a direita (Ranks), cortina que sobe
+(CTA). As duas presas não têm cortina — prender já é a revelação.
+
+**Quem pediu menos movimento** vê tudo: as cenas presas viram seções comuns de
+uma tela, com a sobreposição no **estado final** da história. Não existe uma
+segunda versão "estática" de nada — é o mesmo componente recebendo um progresso
+congelado em 1.
+
 **As cinco CENAS** (`CenaDaLanding`) — `[12/09]`:
 - Cada funcionalidade ganhou **arte própria**, ocupando a largura da tela. A
   hierarquia é a que o dono pediu: **arte → produto → informação**.

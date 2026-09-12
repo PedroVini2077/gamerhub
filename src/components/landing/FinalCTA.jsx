@@ -1,7 +1,6 @@
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { fadeUpReveal, VIEWPORT } from '../../lib/landingMotion';
 import ArteDaCena from './ArteDaCena';
+import CortinaDaCena from './CortinaDaCena';
 import { CENAS } from '../../lib/cenasDaLanding';
 
 /**
@@ -24,13 +23,18 @@ import { CENAS } from '../../lib/cenasDaLanding';
  * O botão, o texto e o destino. Esta seção é a porta do cadastro, e mexer no
  * caminho que leva alguém a criar conta por causa de uma reforma visual seria
  * trocar o que funciona pelo que é bonito.
+ *
+ * ── `[12/09]` A revelação mudou, e o eixo é o argumento ─────────────────────
+ *
+ * Ela entrava com o mesmo `fadeUpReveal` das outras cinco — o sexto fade da
+ * fila. Agora é uma cortina que **sobe**, descobrindo a cena de baixo para
+ * cima: é o chão se abrindo para você entrar, que é literalmente o que esta
+ * seção pede. A escolha do eixo é a regra 14 do prompt dele — o movimento
+ * representa a funcionalidade.
  */
 export default function FinalCTA() {
   return (
-    <motion.section
-      variants={fadeUpReveal} initial="initial" whileInView="animate" viewport={VIEWPORT}
-      className="relative overflow-hidden md:rounded-2xl my-10 md:my-16"
-    >
+    <section className="relative overflow-hidden md:rounded-2xl my-10 md:my-16">
       {/* Sem `prioridade`: esta é a ÚLTIMA seção da página, e quem para na
           primeira dobra não pode pagar por uma arte que está a cinco telas de
           distância. O `<picture>` em si mora em `ArteDaCena` — ver o porquê lá. */}
@@ -62,6 +66,8 @@ export default function FinalCTA() {
           Criar minha conta
         </Link>
       </div>
-    </motion.section>
+
+      <CortinaDaCena eixo="sobe" duracao={1} />
+    </section>
   );
 }

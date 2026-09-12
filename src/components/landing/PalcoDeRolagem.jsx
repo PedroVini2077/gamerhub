@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useScroll, useSpring } from 'framer-motion';
+import useProgressoDeRolagem from '../../hooks/useProgressoDeRolagem';
 
 /**
  * O PALCO: uma cena presa na tela enquanto a rolagem passa por ela.
@@ -55,22 +55,22 @@ import { useScroll, useSpring } from 'framer-motion';
  *   Recebe o progresso e devolve as camadas. É função, e não elemento, para o
  *   progresso chegar sem contexto e sem `cloneElement`.
  */
-export default function PalcoDeRolagem({ altura, children, className = '' }) {
+export default function PalcoDeRolagem({
+  altura, children, className = '', classeDoPalco = '',
+}) {
   const alvo = useRef(null);
 
-  // `['start start', 'end end']`: 0 quando o TOPO do bloco encosta no topo da
-  // tela (é quando a cena prende), 1 quando o FIM do bloco encosta no fim da
-  // tela (é quando ela solta). Qualquer outro par desalinha o progresso do
-  // momento em que a cena está de fato presa — e aí a última camada termina de
-  // aparecer depois de a cena já ter saído.
-  const { scrollYProgress } = useScroll({
-    target: alvo,
-    offset: ['start start', 'end end'],
-  });
-
-  const progresso = useSpring(scrollYProgress, {
-    stiffness: 140, damping: 34, mass: 0.35, restDelta: 0.0005,
-  });
+  // O recorte `presa`: 0 quando o TOPO do bloco encosta no topo da tela (é
+  // quando a cena prende), 1 quando o FIM do bloco encosta no fim da tela (é
+  // quando ela solta). Qualquer outro par desalinha o progresso do momento em
+  // que a cena está de fato presa — e aí a última camada termina de aparecer
+  // depois de a cena já ter saído.
+  //
+  // `[12/09]` A medição e a mola saíram daqui para `useProgressoDeRolagem`,
+  // porque as cenas SOLTAS precisam do mesmo progresso com outro recorte. Duas
+  // molas escritas em dois lugares dariam inércias diferentes a cenas da mesma
+  // página, sem ninguém ter decidido isso.
+  const progresso = useProgressoDeRolagem(alvo, 'presa');
 
   return (
     <div ref={alvo} style={{ height: `${altura}vh` }} className={className}>
@@ -80,7 +80,7 @@ export default function PalcoDeRolagem({ altura, children, className = '' }) {
           "Sobre" darem um pulo (ver `index.css`).
           `overflow-hidden` porque as camadas escalam para além da borda: sem
           ele, uma arte a 1,16× cria barra de rolagem horizontal. */}
-      <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
+      <div className={`sticky top-0 h-[100svh] w-full overflow-hidden ${classeDoPalco}`}>
         {children(progresso)}
       </div>
     </div>

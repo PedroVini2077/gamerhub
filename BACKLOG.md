@@ -61,17 +61,53 @@ O prólogo por rolagem, do segundo prompt dele. As etapas, todas fechadas:
 | G | O cartão de compartilhamento passa a ser a arte | **feita** |
 | H | Travas (11 novas), medição e documentação | **feita** |
 
-#### `[12/09]` PLANO DA FATIA 6 — a fazer
+#### `[12/09]` PLANO DA FATIA 6 — DAR VIDA ÀS CENAS (em execução)
 
-As cinco cenas de baixo ainda entram todas com o mesmo `fadeUpReveal` — que é o
-*"cinco fades iguais"* que ele proibiu no mesmo prompt. O palco já existe e
-serve para elas.
+Terceiro prompt dele, e a regra que manda é a 14: **o movimento nasce do
+produto**, não do catálogo de efeitos. *"Se uma animação não reforçar o
+significado da cena, provavelmente ela não precisa existir."*
 
-| Etapa | O que é |
-| --- | --- |
-| A | Decidir QUAIS cenas prendem — prender as cinco seria 18 telas de rolagem |
-| B | Uma transição própria por cena, com o respiro entre elas |
-| C | Medir de novo a 1ª dobra e o total: cena presa muda o que carrega e quando |
+**A personalidade de cada cena, decidida antes de escrever qualquer linha:**
+
+| Cena | Personalidade | Presa? | O movimento |
+| --- | --- | --- | --- |
+| Feed | atividade | não | posts chegando escalonados, curtida acendendo, contador subindo |
+| Comunidade | conexão | **sim** | nós dispersos → linhas se desenhando → constelação |
+| Lives | presença | não | o player PARADO e o chat subindo — o contraste é o efeito |
+| Keys | descoberta | **sim** | cartas passando, uma ganha foco, desconto, reflexo |
+| Ranks | progressão | não (mas guiado pela rolagem) | a barra de XP enche conforme a cena atravessa a tela |
+| CTA | pertencimento | não | cortina que sobe, em vez do sexto `fadeUpReveal` |
+
+**Por que só DUAS presas.** Ele foi explícito: *"não transforme obrigatoriamente
+cada uma das cinco em um enorme bloco preso... não quero cinco mini-sites
+consecutivos"*. Prender as cinco somaria ~13 telas de rolagem a uma página que
+já tem 9. As duas escolhidas são as que têm uma **transformação** para contar
+(dispersão→conexão, coleção→oportunidade); as outras três têm um **estado** que
+se vê melhor parado.
+
+**A regra que decide onde a sobreposição pode ficar:** ela é **camada própria**,
+nunca remendo em cima de um detalhe desenhado dentro da arte. Alinhar um
+contador ao contador que já existe no quadro seria frágil por construção — a
+composição larga e a de retrato têm enquadramentos diferentes, e a arte pode ser
+regerada. Cada sobreposição é um objeto do GamerHub pousado na cena.
+
+| Etapa | O que é | Estado |
+| --- | --- | --- |
+| A | Separar a moldura (arte + véu + texto) para a cena presa e a solta compartilharem | **feita** |
+| B | `useProgressoDeRolagem` — o progresso, com e sem prender, numa fonte só | **feita** |
+| C | As cinco sobreposições, uma por cena | **feita** |
+| D | Uma revelação diferente por cena (nada de `fadeUpReveal` em fila) | **feita** |
+| E | `prefers-reduced-motion` em todas: estado final, parado | **feita** |
+| F | Travas (7, todas provadas) + medição | **feita** |
+
+**Duas ideias foram implementadas e CORTADAS depois de eu ver no navegador** —
+a fileira de cartas de jogo nas Keys (a arte já é a coleção) e a hipótese de
+prender as cinco cenas. As duas estão em `docs/DECISOES.md` com o motivo.
+
+**O que fica aberto desta fatia:** a página cresceu de 8.666 para 11.601 px no
+computador — 34%, por causa das duas cenas presas. Não é defeito, é o preço da
+narrativa; mas se ele incomodar no uso real, a alavanca é a `altura` de cada
+`CenaPresa`, num arquivo só.
 
 **Sobre a memória da abertura: NÃO há o que construir.** Ele pediu que ela não
 volte ao trocar de aba, só ao fechar e abrir. Conferido em
@@ -109,7 +145,7 @@ muda é só o tempo que ela dura quando toca.
 | **3** | As CINCO CENAS com arte própria + o CTA — **no PC** | **feita** em 12/09 |
 | 4 | As mesmas cenas **no CELULAR**, com as artes de RETRATO | **feita** em 12/09 |
 | **5** | O PRÓLOGO: cena presa + progresso de rolagem, os cinco atos do ATO 0 até o hero | **feita** em 12/09 |
-| 6 | O mesmo tratamento nas CINCO CENAS de baixo: respiro e transição própria entre elas | a fazer |
+| **6** | DAR VIDA às cinco cenas: personalidade de movimento por cena, duas presas, três soltas | **feita** em 12/09 |
 
 **`[12/09]` A fatia 5 fechou.** Segundo prompt dele — a landing como narrativa
 de rolagem. O ATO 0 é a arte de abertura quase em tela cheia, **sem logo, sem
@@ -1111,8 +1147,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->109<!--/n--> arq ·
-  <!--n:src.lib.linhas-->10.606<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->110<!--/n--> arq ·
+  <!--n:src.lib.linhas-->10.821<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

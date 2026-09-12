@@ -1856,3 +1856,47 @@ a prévia mostrou, porque é a mesma arte do ATO 0.
 do Facebook ainda falha com WebP em parte dos casos, e a falha é **muda** — o
 link volta a aparecer sem imagem. Custou 155 kB, baixados uma vez pelo servidor
 da rede social e nunca pelo visitante.
+
+---
+
+## `[12/09]` O movimento de cada cena nasce do PRODUTO — e duas ideias foram cortadas por isso
+
+**A regra que o dono deu, e ela é o critério inteiro:** *"não pergunte 'qual
+efeito fica bonito?'. Pergunte 'qual movimento representa essa
+funcionalidade?'"*. Na prática ela decide mais coisa do que parece:
+
+| Cena | O que ela É | Logo, o movimento é |
+| --- | --- | --- |
+| Feed | atividade acontecendo | por **tempo** — atividade que para quando você para de rolar não é atividade |
+| Comunidade | disperso virando conectado | por **rolagem**, presa: é uma transformação, e ela tem começo e fim |
+| Lives | está no ar agora | o player **parado** e o chat andando. O contraste é o efeito |
+| Keys | descoberta | a tarja saindo do código — que é a interação real de resgatar uma key |
+| Ranks | progressão | a rolagem **é** a barra: atravessar a seção enche o XP |
+
+### As duas ideias que eu implementei e depois cortei
+
+**1. A fileira de cartas de jogo nas Keys.** Cinco cartas desfilando, uma
+ganhando foco. No navegador ficou óbvio o problema: **a arte daquela cena já é
+a coleção** — tem uma parede de capas reais. As minhas, de gradiente, ao lado
+delas pareciam exatamente o que eram. Trocado por uma key só, com o código
+coberto.
+
+**2. Prender as cinco cenas.** Era o caminho mais fácil de fazer tudo parecer
+"cinematográfico". São ~13 telas de rolagem a mais numa página que já tem 9, e
+é o que o dono chamou de *"cinco mini-sites consecutivos"*. Ficaram duas — as
+que têm uma transformação para contar.
+
+> As duas foram cortadas pela mesma pergunta: **isso reforça o significado da
+> cena, ou só ocupa a tela?** É a regra 14 dele, e ela é mais útil como
+> podadeira do que como gerador de ideia.
+
+### Por que a sobreposição nunca é colada num detalhe da arte
+
+Seria a coisa mais impressionante possível: alinhar um contador ao contador que
+já está desenhado dentro do quadro. É também frágil por construção — a
+composição larga e a de retrato têm enquadramentos diferentes, e a arte pode ser
+regerada a qualquer momento. No dia em que fosse, o remendo ficaria apontando
+para o vazio **sem nada acusar**.
+
+Então cada sobreposição é um objeto do GamerHub **pousado** na cena, posicionado
+por uma regra (do lado oposto ao texto) e não por coordenadas medidas na imagem.
