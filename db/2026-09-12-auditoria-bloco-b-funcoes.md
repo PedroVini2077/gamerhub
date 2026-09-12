@@ -130,14 +130,57 @@ comportamento em RPC sensível (§7 🟡), e o ganho hoje é higiene. O que **fa
 vale mais** é uma trava que reprove lista literal em `prosrc` — sem ela, esta
 mesma seção reaparece na próxima auditoria.
 
+## `[12/09]` CORREÇÃO do achado das "listas à mão" — a minha varredura era rasa
+
+A seção acima diz *"cinco funções escrevem a hierarquia à mão"*. **A varredura
+que produziu esse número procurava `IN ('admin','super_admin')` e nada mais** —
+então ela não via `<> 'super_admin'` nem `role = 'owner'`. Refeita com um
+casamento mais largo, o quadro é outro, e mais útil:
+
+| O que está escrito | Onde | Veredito |
+| --- | --- | --- |
+| `NOT IN ('super_admin','owner')` | `unban_user`, `approve_unban_request`, `deny_unban_request` | 🔵 **é `is_super()` escrito à mão** — deveria usar o auxiliar |
+| `role = 'owner'` | **9 funções** (`owner_get_*`, `owner_set_*`…) | ✅ **correto, e não tem alternativa** |
+| `NOT IN ('admin','super_admin')` | `notify_owner` | 🔵 exclui o `owner`, com efeito prático nulo |
+| `v_caller_role <> 'super_admin'` | `nominate_staff` | ✅ **deliberado**, e a mensagem de erro explica |
+| `role IN ('admin','super_admin')` | `owner_get_stats` | métrica, não permissão |
+
+### O que a varredura rasa escondia, e é o achado de verdade
+
+**`role = 'owner'` não é hierarquia — é UM papel específico.** `is_super()` é
+`role_rank >= 3`, o que inclui `super_admin`; usá-lo numa função só do fundador
+**abriria** o acesso. As 9 estão certas.
+
+**O que falta é um `is_owner()`.** Ele não existe: medido, `is_staff()` e
+`is_super()` existem e `is_owner()` **não**. É por isso que nove funções
+escrevem `role = 'owner'` à mão — não por descuido, mas porque não há o que
+usar. O risco é o de sempre: nove cópias da mesma decisão divergem na primeira
+vez que alguém mudar o nome do papel.
+
+**E `nominate_staff` é o oposto de um bug.** Ela exige `super_admin` literal
+para indicar a super admin, excluindo o fundador **de propósito** — a mensagem
+de erro diz por quê: *"o fundador é o avaliador independente dessas
+indicações"*. É separação de funções, e teria sido "corrigida" por uma varredura
+automática. Registrado aqui para ninguém a consertar.
+
+## As 4 de cargo e ban — todas passam, e duas com sobra
+
+| Função | O que ela faz de certo |
+| --- | --- |
+| `apply_suspension` | faixa de 1–30 **com checagem de nulo**, rank > 1, hierarquia estrita, loga, avisa a equipe **e o alvo** |
+| `lift_suspension` | mesma hierarquia, confere que a pessoa ESTÁ suspensa, e tem comentário no SQL dizendo que usa `role_rank` de propósito |
+| `admin_set_role` | sete guardas: alvo existe, não é você, papel válido, alvo não é o fundador, seu cargo é maior que o do alvo **e** ≥ ao que você está dando |
+| `decide_role_demotion` | `FOR UPDATE` na linha (barra decisão dupla por corrida) e **quem pediu não pode decidir** — separação de funções de verdade |
+
 ## Cobertura declarada
 
 | | |
 | --- | --- |
-| funções `SECURITY DEFINER` alcançáveis | **16 lidas por inteiro de 50** (7 no BLOCO A + 9 aqui) |
+| funções `SECURITY DEFINER` alcançáveis | **24 lidas por inteiro de 50** (7 no BLOCO A + 17 aqui) |
 | das que ESCREVEM com barreira mais fraca | **4 de 4** |
 | das que escrevem com barreira de staff | 5 de 11 |
-| das que escrevem com barreira super/owner | **0 de 13** |
+| das que escrevem com barreira super/owner | 8 de 13 |
 | listas de papel à mão | **5 de 5** enumeradas |
 
-**Este bloco está PARCIAL, não concluído.** Faltam 34 funções.
+**Este bloco está PARCIAL, não concluído.** Faltam **26** funções: 6 das que
+escrevem com barreira de staff, 5 das de super/owner, e as 15 que só leem.

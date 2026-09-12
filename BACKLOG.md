@@ -327,17 +327,25 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   em produção: tipo inventado, texto de 501 e alvo inexistente são todos
   recusados.
 
-- ⬜ `[12/09]` 🔵 **Cinco funções ainda escrevem a hierarquia À MÃO.** *BLOCO B.*
+- ⬜ `[12/09]` 🔵 **Falta um `is_owner()`, e é por isso que NOVE funções
+  escrevem `role = 'owner'` à mão.** *BLOCO B. **Correção de um achado meu
+  anterior**, que dizia "cinco funções escrevem a hierarquia à mão" — a
+  varredura que produziu aquele número procurava só `IN (...)`.*
 
-  `unban_user`, `approve_unban_request`, `deny_unban_request`, `notify_owner` e
-  `owner_get_stats`. **As três primeiras funcionam hoje** (a lista inclui
-  `owner`) — isto não é a falha das 14 policies, é o **padrão** que a produziu,
-  ainda vivo. `notify_owner` exclui `owner`, com efeito prático nulo (é avisar a
-  si mesmo). `owner_get_stats` é métrica, não permissão: o painel conta "N
-  admins" sem o fundador — decisão de produto.
+  Medido: `is_staff()` e `is_super()` existem; **`is_owner()` não**. E
+  `is_super()` é `role_rank >= 3`, que inclui `super_admin` — usá-lo numa função
+  só do fundador **abriria** o acesso. As nove estão **certas**; o que falta é o
+  auxiliar. O risco é nove cópias da mesma decisão divergirem no dia em que
+  alguém mudar o nome do papel.
 
-  **O que vale mais que a correção:** uma trava que reprove lista literal de
-  papel em `prosrc`. Sem ela, esta seção reaparece na próxima auditoria.
+  **O que É lista de hierarquia à mão, e deveria virar `is_super()`:** três —
+  `unban_user`, `approve_unban_request`, `deny_unban_request`, todas com
+  `NOT IN ('super_admin','owner')`. Funcionam hoje.
+
+  **O que NÃO deve ser tocado:** `nominate_staff` exige `super_admin` literal e
+  exclui o fundador **de propósito** — a mensagem de erro diz por quê ("o
+  fundador é o avaliador independente"). É separação de funções, e uma varredura
+  automática a "consertaria".
 
 - ⬜ `[12/09]` 🔵 **O buraco que sobrou da régua de `anon`: `GRANT` explícito.**
   O `ALTER DEFAULT PRIVILEGES` fecha a tabela NOVA por padrão, mas não impede
