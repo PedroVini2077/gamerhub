@@ -33,7 +33,11 @@ src/
 │   │                      # principal.
 │   │                      # `[12/09]` Toda animação com atraso aqui declara
 │   │                      # `backwards`: sem ele o elemento nasce ACESO durante
-│   │                      # a espera. Tem trava de classe varrendo os estilos
+│   │                      # a espera. Tem trava de classe varrendo os estilos.
+│   │                      # `[12/09]` As ligações DRENAM (dashoffset até -100):
+│   │                      # a cauda entra atrás da cabeça e a linha é absorvida
+│   │                      # pelo centro. Desbotar parada deixava pedaços fracos
+│   │                      # de várias linhas no meio ao mesmo tempo
 │   ├── cofre.css          # `[05/09]` o giro do disco do cofre do Fundador
 │   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
 │   ├── portao/            # o portão de boas-vindas, em 3 partes

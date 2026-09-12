@@ -1249,7 +1249,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->114<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.714<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->11.780<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

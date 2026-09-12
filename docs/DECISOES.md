@@ -2195,9 +2195,9 @@ atrasos escalonados, somem em cascata.
 
 **Medido em navegador antes do conserto**, e os tempos batem com os atrasos:
 
-| t | traços desenhados |
+| t | traços com opacidade 1 |
 | --- | --- |
-| 400 ms | **4 de 5** (opacidade 1, `dashoffset` 0) |
+| 400 ms | **4 de 5** |
 | 1.200 ms | 3 |
 | 2.000 ms | 2 |
 | 3.200 ms | 0 — só então o ciclo real começa |
@@ -2285,3 +2285,38 @@ aberto — e este é.
 segredo próprio. Isso é infraestrutura nova, com chave nova para rodar e vazar,
 para proteger um número. Não passa na conta do §0.2: *antes de ligar qualquer
 coisa nova, perguntar quantas vezes ela roda e o que ela custa*.
+
+### `[12/09]` As linhas do ATO 0 passaram a DRENAR para o centro
+
+Ele viu, e a descrição estava certa: *"ao fim das animações as linhas somem aos
+poucos, mas fica uns pontos estranhos ali no meio, fica feio. Arruma um jeito
+dessas linhas sumirem logo após chegarem ao centro"*. E junto: *"tem uma verde
+que parou no meio da trajetória"*.
+
+**São dois defeitos, e o segundo explica o primeiro.**
+
+**1. O desbotamento parado.** O traço chegava ao centro em 56% do ciclo e só
+então começava a perder opacidade, até 74% — **2,3 s desbotando inteiro e
+imóvel**. Com cinco atrasos diferentes, em qualquer instante havia traços em
+fases distintas de desbotamento, e o que sobrava perto do centro eram pedaços
+fracos de várias linhas ao mesmo tempo. Os "pontos estranhos".
+
+**O conserto não é apagar mais rápido — é apagar pelo LADO CERTO.** O
+`stroke-dashoffset` agora vai para **negativo**: a cauda entra atrás da cabeça,
+a linha some a partir da ponta de fora, e o último pedaço visível é o do centro.
+Ela é **absorvida** em vez de desbotar. E como nunca fica parada, não sobra nada
+no meio.
+
+**2. A linha que parava no meio.** `stroke-dasharray: 100` é medido em unidades
+do `viewBox`, e as cinco linhas têm comprimentos reais diferentes (~26 a ~42).
+Pior: o SVG usa `preserveAspectRatio="none"`, então o `viewBox` é esticado de
+forma **desigual** — o comprimento efetivo muda com a proporção da tela. Cada
+linha desenhava e drenava num ritmo próprio.
+
+`pathLength="100"` normaliza: o navegador passa a tratar toda linha como se
+medisse 100, e o traço e o dasharray falam a mesma língua.
+
+**Medido depois**, um ciclo inteiro em navegador: cada traço percorre
+`100 → 0 → −100` sem parar em nenhum valor, e os cinco entram escalonados pelos
+atrasos. Antes desta correção o `dashoffset` sequer podia ser medido pelo meu
+instrumento — ver a nota de correção em `sinaisDeVida.css`.

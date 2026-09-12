@@ -288,6 +288,22 @@ export default function SinaisDeVida({ progresso }) {
             // dos chips. A convergência do hero usa 1,4 pelo mesmo motivo.
             stroke={`url(#ligacao-${i})`} strokeWidth="1.6"
             vectorEffect="non-scaling-stroke"
+            // `[12/09]` `pathLength="100"` NORMALIZA o comprimento de cada
+            // linha para 100, e sem isso o tracejado não é confiável aqui.
+            //
+            // As cinco têm comprimentos reais diferentes (de ~26 a ~42
+            // unidades do `viewBox`), e o `stroke-dasharray: 100` do CSS é
+            // medido nessas unidades. Pior: o SVG usa
+            // `preserveAspectRatio="none"`, então o `viewBox` é esticado de
+            // forma DESIGUAL — o comprimento efetivo muda com a proporção da
+            // tela. O resultado é cada linha desenhando e drenando num ritmo
+            // próprio, e foi o que o dono viu: *"tem uma verde que parou no
+            // meio da trajetória até o meio"*.
+            //
+            // Com `pathLength`, o navegador passa a tratar toda linha como se
+            // medisse 100. O traço e o dasharray passam a falar a mesma língua,
+            // e as cinco entram e saem no mesmo tempo relativo.
+            pathLength="100"
             style={{ animationDelay: atraso, filter: `drop-shadow(0 0 3px ${cor}aa)` }}
           />
         ))}
