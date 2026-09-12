@@ -37,6 +37,41 @@ export const staggerContainer = (stagger = 0.12) => ({
   animate: { transition: { staggerChildren: stagger } },
 });
 
+// ── `[12/09]` O RODAPÉ: três entradas diferentes, e a diferença é o ponto ───
+//
+// Pedido do dono: *"não usar simplesmente o mesmo `fadeUpReveal` genérico em
+// todos os blocos"*, e a régua junto: *"as animações devem ser calmas e servir
+// como uma desaceleração depois do ritmo da landing"*.
+//
+// Por isso as três desaceleram NA ORDEM em que aparecem — cada bloco se move
+// menos e mais devagar que o anterior. O rodapé inteiro é uma frenagem, e a
+// última coisa a entrar quase não se move:
+//
+// | bloco | desloca | dura |
+// | --- | --- | --- |
+// | assinatura | 22 px | 0,85 s |
+// | colunas | 12 px, em cascata | 0,45 s |
+// | créditos | 0 px — só opacidade | 0,6 s |
+//
+// `fadeUpReveal` desloca 56 px em 0,7 s. Usá-lo aqui daria ao epílogo o mesmo
+// impulso das cenas, que é o oposto de encerrar.
+
+export const assinaturaDoRodape = {
+  initial: { opacity: 0, y: 22 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] } },
+};
+
+export const colunaDoRodape = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } },
+};
+
+// Sem deslocamento nenhum: é a última coisa da página, e ela apenas ACENDE.
+export const creditosDoRodape = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.6, ease: 'easeOut' } },
+};
+
 // Painel que abre/fecha ao clicar (alturas animadas)
 export const expandPanel = {
   collapsed: { height: 0, opacity: 0 },

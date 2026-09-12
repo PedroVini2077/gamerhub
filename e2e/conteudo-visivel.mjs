@@ -83,8 +83,47 @@ try {
       await page.waitForTimeout(1200);
       await rolarAPaginaInteira(page);
 
+      // `[12/09]` A SEGUNDA pergunta desta trava, e ela nasceu de dois bugs do
+      // mesmo dia: os chips do ATO 0 saindo pela borda do celular, e o SVG da
+      // assinatura do rodapé criando 59 px de rolagem lateral.
+      //
+      // Os dois são irmãos do bug de 29/08 que originou este arquivo: o
+      // elemento existe, o navegador desenha, e ninguém vê — só que aqui ele
+      // sai de lado em vez de ficar transparente. Nada no CI perguntava isso, e
+      // por isso os dois foram encontrados pelo dono, no telefone dele.
+      //
+      // 2 px de tolerância: arredondamento de subpixel em `translate` produz
+      // frações que não são defeito nenhum.
+      const vazamento = await page.evaluate(() => {
+        const raiz = document.documentElement;
+        if (raiz.scrollWidth - raiz.clientWidth <= 2) return null;
+        // Nomear O CULPADO, e não só o número: "a página tem 59 px a mais" manda
+        // procurar em 300 elementos. O laço devolve quem passa da borda.
+        const limite = raiz.clientWidth;
+        const culpados = [...document.querySelectorAll('body *')]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0 && (r.right > limite + 2 || r.left < -2);
+          })
+          .slice(0, 6)
+          .map((el) => `${el.tagName.toLowerCase()}.${[...el.classList].slice(0, 3).join('.')}`);
+        return { sobra: raiz.scrollWidth - raiz.clientWidth, culpados };
+      });
+
       const presos = await invisiveisComTamanho(page);
-      if (presos.length === 0) {
+      if (vazamento) {
+        falhas++;
+        console.error(`\n  FALHOU ${rota.nome.padEnd(16)} ${rota.path}`);
+        console.error(`  A página rola ${vazamento.sobra} px PARA O LADO num celular de ${JANELA.width} px.`);
+        console.error('  Alguma coisa passa da borda: o dedo arrasta a página inteira, e o');
+        console.error('  que estiver lá fora fica cortado sem erro nenhum.\n');
+        vazamento.culpados.forEach((c) => console.error(`    - ${c}`));
+        console.error('\n  Causa quase certa: largura em `vw` maior que 100, posição em % com');
+        console.error('  `whitespace-nowrap`, ou `scale`/`translate` a partir do centro num');
+        console.error('  elemento colado na borda. Conserto: ancorar pela borda de que ele se');
+        console.error('  aproxima, ou `overflow-x-clip` no contêiner.\n');
+        await salvarEvidencia(page);
+      } else if (presos.length === 0) {
         console.log(`  OK     ${rota.nome.padEnd(16)} ${rota.path}`);
       } else {
         falhas++;

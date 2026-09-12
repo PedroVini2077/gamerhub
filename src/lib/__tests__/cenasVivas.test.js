@@ -198,4 +198,38 @@ describe('o custo e a acessibilidade', () => {
       + '  qualquer coisa embaixo, e o defeito só aparece para quem tentar.',
     ).toBe(true);
   });
+
+  it('a camada de produto CRESCE com a tela — senão ela míngua', () => {
+    // `[12/09]` Ele viu testando no computador: *"ficou pequeno demais os
+    // elementos pra uma tela grande"*.
+    //
+    // A causa: `w-[15.5rem]` são 248 pixels FIXOS. O painel ocupava 63% da
+    // largura num telefone de 390 e 17% num monitor de 1440 — ele não encolheu,
+    // a tela cresceu em volta dele. E isso piora sozinho: cada monitor novo que
+    // aparece no mundo deixa a camada de produto menor, sem ninguém mexer em
+    // nada.
+    //
+    // A trava mora no PAINEL porque a correção mora no painel: as cinco
+    // sobreposições herdam dali, e é isso que impede uma sexta de nascer miúda.
+    const painel = FONTE(`${PASTA}/PainelDaCena.jsx`);
+
+    expect(
+      /md:scale-\[1\.[1-9]/.test(painel),
+      'O painel das cenas perdeu o crescimento no computador.\n'
+      + '  Com tamanho fixo ele volta a ocupar 17% de uma tela de 1440 — a\n'
+      + '  camada de produto vira uma miniatura ao lado de uma arte de tela\n'
+      + '  cheia, e nada acusa: no monitor de quem programou, cabe.',
+    ).toBe(true);
+
+    // A origem é o que impede o painel de crescer PARA FORA da tela: ele mora a
+    // 5% da borda, e escala a partir do centro joga metade dele para fora. É a
+    // mesma lição dos chips do ATO 0, e ela custou um print do dono.
+    expect(
+      /origin-right/.test(painel) && /origin-left/.test(painel),
+      'O painel cresce sem `transform-origin` na borda de que ele se aproxima.\n'
+      + '  Escalando a partir do centro, um painel a 5% da borda avança metade\n'
+      + '  do crescimento para FORA da tela e é cortado pelo `overflow-x-clip`\n'
+      + '  do palco — sem erro nenhum, como os chips do ATO 0 foram.',
+    ).toBe(true);
+  });
 });

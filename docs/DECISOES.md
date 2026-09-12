@@ -2062,3 +2062,142 @@ que reprova qualquer traço abaixo de 0,5 px.
 **O que NÃO mudou, e é o que importa:** continuam sendo fragmentos do produto.
 A regra dele segue de pé — ARTE + CAMADA DE PRODUTO ANIMADA, nunca efeito
 genérico. Ficaram mais visíveis, não mais barulhentos.
+
+### `[12/09]` E aí eles ficaram ILEGÍVEIS no celular — duas falhas da mesma família
+
+Ele viu no telefone, no mesmo dia: *"alguns dos css estão cortadas no celular,
+não estão dentro da cena"* e, logo depois, *"o fundo é colorido, e o texto com
+esse balão vazado não dá pra enxergar muito"*.
+
+São dois bugs distintos com **a mesma assinatura** — e é a assinatura que este
+projeto persegue (§1.5): o elemento existe no DOM, o navegador desenha, e
+ninguém lê. Nada estoura, nada vai para log nenhum.
+
+| | o que eu fiz | por que quebrou |
+| --- | --- | --- |
+| **corte** | posicionei por `left-[74%]` com `whitespace-nowrap` | o chip cresce **para a direita** a partir da âncora, e a largura vem do TEXTO, não do espaço que sobra. Em 1440 px sobram 374 depois de 74%; em 360 sobram 94, e "key liberada" pede ~115 |
+| **fundo** | `bg-dark-900/78` + `backdrop-blur` | translúcido sobre a arte é legível na parte escura dela e ilegível na parte clara. Pior que ilegível sempre: não parece defeito, parece a arte |
+
+**A causa comum é uma só, e vale registrar porque vai se repetir:** eu escolhi os
+dois valores olhando o desenho no monitor. Nenhum dos dois **escala** — nem
+porcentagem carrega a largura do conteúdo junto, nem opacidade carrega o que
+está por baixo.
+
+**As correções.** O chip se ancora pela borda de que ele se **aproxima** — `right`
+à direita, `left` à esquerda —, então ele cresce para dentro da tela e mexer no
+texto não pode mais empurrá-lo para fora, em largura nenhuma. E o fundo virou
+opaco; o `backdrop-blur` saiu junto, porque com fundo opaco ele não tem o que
+desfocar e não era de graça: cada `backdrop-filter` promove o elemento a camada
+própria de composição, e eram **nove** por cima de uma arte de tela cheia.
+
+**As travas, as duas provadas reinjetando o bug.** A do corte **mede a conta** —
+estima a largura do chip pelo texto e reprova se ele passar de uma tela de
+360 px — e não a presença de um `right`: trocar a âncora resolveu este caso, mas
+o que precisa continuar verdade é que o chip **caiba**. Um texto mais longo
+amanhã reabriria o buraco sem tocar na âncora. A do fundo lê a classe aplicada,
+porque `bg-dark-900/78` e `bg-dark-900` diferem por dois caracteres.
+
+**Medido em navegador**, não deduzido: 360, 390, 400 e 1440 px, zero chip fora
+da tela e zero rolagem horizontal em todos.
+
+### `[12/09]` O corte entre a última arte e o rodapé — e a pergunta dele estava certa
+
+*"Sabe esse corte da última arte com o footer, vc acha que dá pra fazer algo
+aqui? Ou essa parte é realmente pra ser simples?"*
+
+**As duas coisas, e a distinção é o conteúdo desta decisão.**
+
+**O rodapé É para ser simples, e continua exatamente como estava.** Ele é a
+saída, e o botão de criar conta fica logo acima dele: movimento ali competiria
+com a última coisa que deve segurar atenção. Some a isso um fato que decide
+sozinho — o `LandingFooter` é o mesmo em **quatro páginas** (landing, `/sobre`,
+e as de conteúdo legal). O `border-t` dele, que na landing parece redundante
+depois da dissolução, é o **único** separador nas outras três. Mexer nele para
+melhorar uma página piora as outras.
+
+**Mas o corte não era simplicidade — era a única emenda dura que sobrou**, e a
+causa é estrutural, não descuido. A costura mascara o **topo** da cena que
+chega. O pé da cena que **sai** nunca precisou de máscara, porque toda cena era
+seguida por outra arte que cobria a borda dela. O `FinalCTA` é seguido por nada,
+então a borda inferior ficou exposta pela primeira vez na página inteira — e uma
+emenda dura no meio de seis dissolvidas é **mais** visível do que sete cortes
+iguais, porque o olho compara com as vizinhas.
+
+**A correção, em duas partes que só funcionam juntas.** A máscara ganhou
+`fechaEmbaixo`, que acrescenta a parada transparente no fim do gradiente; e a
+margem de baixo da seção saiu, porque com ela a arte dissolveria numa faixa
+vazia **antes** do rodapé — o corte não morreria, desceria alguns pixels e
+viraria uma sombra flutuando no nada.
+
+A faixa de baixo é mais funda que a de cima (**18vh × 14vh**), e a razão é que
+elas dissolvem sobre coisas diferentes: em cima, sobre **outra arte**, que
+disfarça o degrau; embaixo, sobre o **fundo da página**, onde qualquer degrau
+curto ainda lê como linha.
+
+**A trava confere as TRÊS coisas** — o gradiente terminar transparente, o fecho
+pedir o fechamento, e nenhuma cena do meio pedir —, porque cada uma sozinha
+devolve o corte em silêncio. A terceira importa mais do que parece: fechar o pé
+de uma cena que **tem** arte depois faria as duas dissolverem na mesma faixa,
+abrindo um rasgo de fundo em vez de fechar um corte. Provadas reinjetando as
+três, uma de cada vez.
+
+### `[12/09]` A camada de produto MINGUAVA em tela grande — e isso piorava sozinho
+
+Ele testando no computador: *"as cenas ficaram ótimas… mas eu percebi algo,
+ficou pequeno demais os elementos pra uma tela grande, tem como colocar mais
+elementos? Ou crescer mais eles para desktop?"*.
+
+**A causa é uma linha:** `largura = 'w-[15.5rem]'` no `PainelDaCena` — **248
+pixels fixos**, os mesmos num telefone de 390 e num monitor de 1440. Medido nos
+dois: o painel ocupava **63%** da largura no celular e **17%** no computador. O
+painel não encolheu; a tela cresceu em volta dele.
+
+**E o defeito piora sem ninguém tocar em nada.** Cada monitor maior que aparecer
+no mundo deixa a camada de produto proporcionalmente menor. É a mesma família
+dos chips do ATO 0 no celular: um valor absoluto escolhido olhando **uma** tela.
+
+**A correção é `scale`, e não uma escada de larguras.** Aumentar só a largura
+esticaria o cartão e deixaria texto, avatares e ícones no mesmo tamanho — um
+painel grande com conteúdo miúdo dentro. O que precisa crescer é a camada
+inteira, proporcional: `md:1,3× · lg:1,55× · xl:1,75×`.
+
+E ela mora **num lugar só**. A alternativa era escrever `md:`/`lg:` em cada
+tamanho de cada uma das cinco sobreposições — dezenas de classes que divergiriam
+no primeiro ajuste, e que a sexta sobreposição não herdaria (§4).
+
+**A origem da transformação é a borda de que o painel se aproxima.** Ele mora a
+5% da borda: escalar a partir do centro jogaria metade do crescimento para fora
+da tela. Crescendo da borda para dentro, ele avança sobre a arte, que é onde há
+espaço. É literalmente a lição dos chips, aplicada antes de doer.
+
+**"Mais elementos" só no feed**, e a distinção é do conteúdo: ele é a única das
+cinco que é uma **lista**. Nas outras, "mais elementos" seria inventar coisa.
+Três linhas num painel 55% maior deixavam sobra embaixo — e um feed com três
+posts contando que "não para" é a própria contradição. Ficaram cinco no
+computador, três no celular.
+
+**Um defeito antigo apareceu junto, e só porque o tamanho cresceu:** o título das
+cenas usava `leading-[1.08]`, apertado demais para português — em "promoções que
+valem" a cedilha encostava na linha de cima. Passou para 1,18.
+
+### `[12/09]` Nada no CI perguntava se a página rola PARA O LADO
+
+Três bugs do mesmo dia — os chips do ATO 0, o SVG da assinatura do rodapé, e o
+risco que o `scale` das cenas criava — são **a mesma falha**: um elemento passa
+da borda, o dedo arrasta a página inteira, e o que está lá fora fica cortado.
+Sem erro, sem log, sem teste.
+
+Os três foram encontrados por ele, no telefone dele. **Essa é a definição de
+falha muda** (§1.5), e a resposta certa não era corrigir os três: era perguntar
+por que nenhum dos <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador fazia
+a pergunta.
+
+Agora o `e2e/conteudo-visivel.mjs` faz, e ele foi escolhido por já ser o roteiro
+que varre as páginas públicas **em janela de celular** — o mesmo arquivo que
+nasceu do bug de conteúdo invisível de 29/08. É a irmã lateral da mesma
+pergunta: *o conteúdo existe e não aparece*, uma vez por transparência, outra por
+transbordo.
+
+Ele **nomeia o culpado** em vez de só dizer o número: "a página tem 59 px a
+mais" manda procurar em 300 elementos. Provado reinjetando o vazamento real — as
+duas páginas falharam apontando o SVG.

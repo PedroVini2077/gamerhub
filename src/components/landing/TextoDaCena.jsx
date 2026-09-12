@@ -61,7 +61,13 @@ export default function TextoDaCena({ eyebrow, titulo, descricao, lado = 'esquer
           <span className="font-mono text-[0.62rem] md:text-xs tracking-[0.3em] uppercase text-neon-green">
             {eyebrow}
           </span>
-          <h2 className="font-display font-bold text-white leading-[1.08]
+          {/* `[12/09]` `leading-[1.08]` era APERTADO DEMAIS para português: em
+              "promoções que valem" a cedilha e o "q" encostavam na linha de
+              cima, e em "Está acontecendo" o acento quase tocava. O defeito já
+              existia e passou despercebido porque só aparece em título de duas
+              linhas COM acento embaixo — 1,18 dá a folga do descendente sem
+              afrouxar o título. */}
+          <h2 className="font-display font-bold text-white leading-[1.18]
                          text-2xl md:text-3xl lg:text-[2.6rem]">
             {titulo}
           </h2>

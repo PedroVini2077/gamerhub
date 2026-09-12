@@ -80,44 +80,64 @@ import { JANELAS } from '../../../lib/atosDaLanding';
  * `soCompleto` esconde o sinal no celular. Nove sobre uma arte em pé viram
  * poluição — a composição de retrato tem menos espaço livre.
  */
+/**
+ * ── `[12/09]` Cada sinal se ancora pelo lado de que ele se APROXIMA ─────────
+ *
+ * Correção de um bug que o dono viu no telefone: *"alguns dos css estão
+ * cortadas no celular, não estão dentro da cena"*.
+ *
+ * A causa é a soma de duas escolhas minhas que se contradizem: o chip é
+ * posicionado por `left` e tem `whitespace-nowrap`. Ancorado em `left-[74%]`
+ * ele **cresce para a direita** a partir dali — e a largura dele depende do
+ * texto, não do espaço que sobra. Num monitor de 1440 px sobram 374 px depois
+ * de 74%; num telefone de 400 px sobram 104, e "key liberada" precisa de 117.
+ *
+ * O erro é de raciocínio, não de número: eu tinha escolhido as posições
+ * olhando o desenho no computador, e posição em porcentagem NÃO leva a largura
+ * do conteúdo junto.
+ *
+ * **A regra agora:** sinal do lado direito se ancora por `right`, então ele
+ * cresce **para dentro** da tela. Ajustar um texto deixa de poder empurrá-lo
+ * para fora, em qualquer largura de tela. Tem trava.
+ */
 const SINAIS = [
   {
-    id: 'curtida', em: 'left-[12%] top-[24%]', atraso: '0s', cor: '#39ff14',
+    id: 'curtida', lado: 'esq', x: '10%', y: '24%', atraso: '0s', cor: '#39ff14',
     icone: Heart, texto: '+1 curtida',
   },
   {
-    id: 'digitando', em: 'left-[64%] top-[17%]', atraso: '1.5s', cor: '#00ffff',
+    id: 'digitando', lado: 'dir', x: '6%', y: '17%', atraso: '1.5s', cor: '#00ffff',
     texto: 'alguém está digitando', pontos: true,
   },
   {
-    id: 'online', em: 'left-[7%] top-[52%]', atraso: '3s', cor: '#39ff14',
+    id: 'online', lado: 'esq', x: '6%', y: '52%', atraso: '3s', cor: '#39ff14',
     icone: Users, texto: '2.1 mil online', pulso: true,
   },
   {
-    id: 'comentario', em: 'left-[70%] top-[32%]', atraso: '4.4s', cor: '#00ffff',
+    id: 'comentario', lado: 'dir', x: '9%', y: '32%', atraso: '4.4s', cor: '#00ffff',
     icone: MessageCircle, texto: 'novo comentário', soCompleto: true,
   },
   {
-    id: 'key', em: 'left-[74%] top-[45%]', atraso: '5.8s', cor: '#ffa33a',
+    id: 'key', lado: 'dir', x: '7%', y: '45%', atraso: '5.8s', cor: '#ffa33a',
     icone: KeyRound, texto: 'key liberada',
   },
   {
     // `pulso` sem ícone: no print o chip só de texto sumia contra a parte
     // escura da arte — faltava uma âncora de cor. O ponto resolve sem
     // acrescentar mais um ícone à cena.
-    id: 'xp', em: 'left-[22%] top-[68%]', atraso: '7.2s', cor: '#bf00ff',
+    id: 'xp', lado: 'esq', x: '18%', y: '68%', atraso: '7.2s', cor: '#bf00ff',
     texto: '+20 XP', pulso: true,
   },
   {
-    id: 'live', em: 'left-[58%] top-[62%]', atraso: '8.6s', cor: '#ff4d4d',
+    id: 'live', lado: 'dir', x: '12%', y: '62%', atraso: '8.6s', cor: '#ff4d4d',
     icone: Tv, texto: 'entrou ao vivo', pulso: true,
   },
   {
-    id: 'rank', em: 'left-[13%] top-[38%]', atraso: '10s', cor: '#22d3ee',
+    id: 'rank', lado: 'esq', x: '11%', y: '38%', atraso: '10s', cor: '#22d3ee',
     icone: Trophy, texto: 'subiu para Elite', soCompleto: true,
   },
   {
-    id: 'squad', em: 'left-[68%] top-[76%]', atraso: '11.4s', cor: '#bf00ff',
+    id: 'squad', lado: 'dir', x: '14%', y: '76%', atraso: '11.4s', cor: '#bf00ff',
     icone: Users, texto: 'squad montado', soCompleto: true,
   },
 ];
@@ -137,23 +157,56 @@ const LIGACOES = [
 ];
 
 function Sinal({ sinal }) {
-  const { em, atraso, cor, icone: Icone, texto, pulso, pontos, soCompleto } = sinal;
+  const { lado, x, y, atraso, cor, icone: Icone, texto, pulso, pontos, soCompleto } = sinal;
 
   return (
     <div
-      className={`sinal-de-vida absolute ${em} ${soCompleto ? 'hidden md:block' : ''}`}
-      style={{ animationDelay: atraso }}
+      className={`sinal-de-vida absolute ${soCompleto ? 'hidden md:block' : ''}`}
+      // A âncora vai em `style`, e não em classe: `left-[10%]` é gerado pelo
+      // Tailwind a partir do texto que ele encontra no arquivo, e valor vindo
+      // de variável não é encontrado — a classe simplesmente não existiria no
+      // CSS, e o chip pousaria no canto superior esquerdo sem erro nenhum.
+      style={{ animationDelay: atraso, top: y, [lado === 'dir' ? 'right' : 'left']: x }}
     >
+      {/* `[12/09]` O fundo é SÓLIDO, e o `backdrop-blur` saiu junto ─────────
+          Pedido dele: *"o fundo é colorido, e o texto com esse balão vazado não
+          dá pra enxergar muito... eles não ocupam muito espaço, então não
+          atrapalha"*. Ele está certo, e o erro era meu: 78% de opacidade sobre
+          a arte funciona na parte escura dela e falha na parte clara — o mesmo
+          chip legível num canto e ilegível no outro, que é pior do que
+          ilegível sempre, porque não parece defeito.
+          O desfoque saiu porque com fundo opaco ele não tem o que desfocar, e
+          não era de graça: cada `backdrop-filter` promove o elemento a uma
+          camada própria de composição, e eram NOVE por cima de uma arte de tela
+          cheia. */}
+      {/* `[12/09]` O chip CRESCE no computador, e a razão é a mesma dos painéis
+          das cenas: `text-[0.7rem]` são pixels fixos, então o chip ocupava a
+          mesma área num telefone de 390 e num monitor de 1440 — proporcional à
+          tela, ele minguava. As medidas do CELULAR não mudam: lá o problema era
+          o oposto, e a trava que impede o transbordo mede exatamente elas. */}
       <span
-        className="flex items-center gap-2 rounded-full border px-3 py-1.5
-                   font-mono text-[0.7rem] tracking-wide text-gray-100
-                   bg-dark-900/78 backdrop-blur-[3px] whitespace-nowrap
+        className="flex items-center gap-2 md:gap-2.5 rounded-full border
+                   px-3 py-1.5 md:px-4 md:py-2 lg:px-5 lg:py-2.5
+                   font-mono text-[0.7rem] md:text-sm lg:text-base
+                   tracking-wide text-gray-100
+                   bg-dark-900 whitespace-nowrap
                    shadow-[0_4px_18px_rgba(0,0,0,0.5)]"
         style={{ borderColor: `${cor}66`, boxShadow: `0 0 14px ${cor}1f` }}
       >
-        {Icone && <Icone size={13} style={{ color: cor }} />}
+        {/* `size` dá o tamanho no celular; as classes o substituem a partir do
+            `md`, porque `size` vira atributo e CSS ganha de atributo. */}
+        {Icone && (
+          <Icone
+            size={13}
+            className="shrink-0 md:h-4 md:w-4 lg:h-[18px] lg:w-[18px]"
+            style={{ color: cor }}
+          />
+        )}
         {pulso && !Icone && (
-          <span className="sinal-pulso block h-2 w-2 rounded-full" style={{ background: cor }} />
+          <span
+            className="sinal-pulso block h-2 w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full"
+            style={{ background: cor }}
+          />
         )}
         {texto}
         {/* Três pontos que pulsam fora de fase: é o desenho universal de
@@ -163,7 +216,7 @@ function Sinal({ sinal }) {
             {[0, 0.2, 0.4].map((d) => (
               <span
                 key={d}
-                className="sinal-pulso block h-1.5 w-1.5 rounded-full"
+                className="sinal-pulso block h-1.5 w-1.5 md:h-2 md:w-2 rounded-full"
                 style={{ background: cor, animationDelay: `${d}s` }}
               />
             ))}

@@ -86,6 +86,42 @@ subindo de 12vh para 26vh para fechar o *"buraco"* entre o hero e o feed, e os
 sinais do ATO 0 maiores e mais numerosos. Junto veio um bug real: as linhas de
 ligação tinham 0,18 **pixel** de espessura. Tudo em `docs/DECISOES.md`.
 
+**`[12/09]` AJUSTE 2 — os chips do ATO 0 no celular.** Ele viu no telefone:
+*"alguns dos css estão cortadas no celular"* e *"o fundo é colorido, e o texto
+com esse balão vazado não dá pra enxergar muito"*. Duas coisas da mesma família
+— o chip existe, o navegador desenha, e ninguém lê. A âncora passou a ser a
+borda de que o chip se aproxima (ele cresce PARA DENTRO), e o fundo virou opaco.
+Duas travas novas, as duas provadas reinjetando o bug. Medido em navegador a
+360, 390, 400 e 1440 px: nenhum chip fora da tela, zero rolagem horizontal.
+
+**`[12/09]` AJUSTE 3 — a sétima emenda, que ninguém tinha visto.** Pergunta
+dele: *"esse corte da última arte com o footer, dá pra fazer algo? Ou essa parte
+é pra ser simples?"*. As duas: **o rodapé fica simples** (é a saída, e é o mesmo
+em quatro páginas), mas o corte era a única emenda dura que sobrou — a costura
+mascara o TOPO da cena que chega, e o `FinalCTA` é a única sem cena depois, então
+a borda de baixo dele ficou exposta. Máscara com `fechaEmbaixo` + a margem
+inferior fora. Três travas, provadas uma a uma. Em `docs/DECISOES.md`.
+
+**`[12/09]` AJUSTE 4 — o rodapé virou EPÍLOGO, e a camada de produto cresceu.**
+Dois pedidos dele no mesmo bloco. O rodapé ganhou três degraus (assinatura →
+navegação → créditos + voltar ao início), com entradas que **desaceleram na
+ordem**; os traços da assinatura são o inverso do ato CONVERGÊNCIA. E as
+sobreposições das cinco cenas cresciam: `w-[15.5rem]` eram 248 px FIXOS, 63% da
+tela no celular e **17%** no monitor. `scale` no `PainelDaCena` (1,3 / 1,55 /
+1,75), +2 linhas no feed no PC, chips do ATO 0 maiores, e o `leading` do título
+das cenas de 1,08 para 1,18 — a cedilha de "promoções" encostava na linha de
+cima. Em `docs/DECISOES.md`.
+
+**`[12/09]` O buraco que os três bugs revelaram, e ele era do CI.** Nenhum dos
+17 roteiros de navegador perguntava se a página **rola para o lado**. Os chips, o
+SVG do rodapé e o risco do `scale` são a mesma falha muda, e os três foram
+achados por ele no telefone. O `e2e/conteudo-visivel.mjs` passou a perguntar, e
+a NOMEAR o elemento culpado.
+
+**`[12/09]` A LANDING PAUSA AQUI, a pedido dele** — *"já trabalhamos demais
+nessa landing page"*. Não é abandono: o que sobrou está listado no fim desta
+seção, e a fila abaixo volta a ser a prioridade.
+
 **O que fica em aberto, e é medição, não conserto:** `mask-image` promove cada
 cena a camada própria de composição — são **seis** agora. Em GPU de celular isso
 tem custo de memória de vídeo que nenhuma medição de byte enxerga. É o primeiro
@@ -1145,8 +1181,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->112<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.273<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->113<!--/n--> arq ·
+  <!--n:src.lib.linhas-->11.513<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

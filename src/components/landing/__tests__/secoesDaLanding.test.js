@@ -81,17 +81,21 @@ describe('as seções declaradas existem na página', () => {
 
 describe('quem consome a lista não escreve a sua própria', () => {
   // Se um destes voltar a ter lista literal, ela volta a divergir em silêncio.
+  // `[12/09]` O caminho de cada um vem junto porque o rodapé foi dividido e a
+  // lista desceu um nível — `rodape/ColunasDoRodape.jsx` importa de `../`. A
+  // trava pegou a mudança e falhou apontando o arquivo certo, que é o trabalho
+  // dela; o que não podia era eu "consertar" apagando a linha.
   it.each([
-    ['HighlightsStrip.jsx'],
-    ['LandingFooter.jsx'],
-    ['LandingSidebar.jsx'],
-  ])('%s importa de secoesDaLanding', (arquivo) => {
+    ['HighlightsStrip.jsx', './secoesDaLanding'],
+    ['rodape/ColunasDoRodape.jsx', '../secoesDaLanding'],
+    ['LandingSidebar.jsx', './secoesDaLanding'],
+  ])('%s importa de secoesDaLanding', (arquivo, caminho) => {
     const fonte = readFileSync(join(raiz, 'components/landing', arquivo), 'utf8');
     expect(
       fonte,
       `${arquivo} parou de importar a lista de seções e provavelmente tem uma\n`
       + 'cópia própria. Cópia diverge — foi assim que a faixa do topo ficou sem\n'
       + 'Keys sem ninguém perceber.',
-    ).toMatch(/from '\.\/secoesDaLanding'/);
+    ).toMatch(new RegExp(`from '${caminho.replace(/[./]/g, '\\$&')}'`));
   });
 });

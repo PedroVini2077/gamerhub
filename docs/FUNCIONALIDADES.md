@@ -417,6 +417,26 @@ camadas, que é o que colocou este trabalho na frente.
 | **Cards do topo levam às seções** | pedido do dono: *"imagina o site cresce, e o usuário ter que rolar uma tela grande"*. A faixa deixou de ser enfeite e virou o índice da página |
 | **Navegação lateral** (gaveta) | abre pelo menu da barra fixa. Coluna fixa disputaria espaço com o Hero, e no celular não caberia |
 | **Rodapé de verdade** | eram duas linhas que não levavam a lugar nenhum. Agora tem as seções, o projeto, o GitHub e a conta |
+
+> **`[12/09]` O rodapé virou o EPÍLOGO da landing.** Pedido dele: *"pense no
+> footer como o epílogo da experiência… 'a experiência terminou, mas o universo
+> do GamerHub continua aqui'"*, com o limite *"menos espetáculo, mais
+> assinatura"*.
+>
+> Três degraus no lugar de quatro colunas iguais: **assinatura** (a marca, a
+> tagline e traços que irradiam dela), **navegação** (as mesmas três colunas de
+> links) e **créditos** com um "Voltar ao início". As três entram com animações
+> **diferentes e cada vez menores** — 22 px, 12 px em cascata, e a última só
+> acende —, porque o rodapé é a frenagem depois do ritmo da landing.
+>
+> Os traços são o **inverso** do ato CONVERGÊNCIA do prólogo: lá tudo entra na
+> marca, aqui tudo sai dela. E eles são desenhados **uma vez**, sem laço — este
+> é o único lugar da página onde o movimento deve acabar.
+>
+> Ele aparece em **quatro páginas** (landing, `/sobre`, `/privacidade`,
+> `/regras`, `/termos`), e é por isso que o `border-t` continua lá: na landing
+> ele parece redundante depois de a arte dissolver, mas nas outras é o único
+> separador que existe.
 | **Página `/sobre`** | pública de propósito: dá para ler sobre o projeto **antes** de criar conta |
 
 **A lista de seções é fonte única** (`components/landing/secoesDaLanding.js`).

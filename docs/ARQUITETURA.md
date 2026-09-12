@@ -26,11 +26,11 @@ src/
 │   │                      # DEPOIS das utilitárias do Tailwind, de propósito
 │   ├── decoracao.css      # fundo das páginas públicas, intro do raio, peças
 │   │                      # de videogame, luzes de arena, explosões, aviso
-│   ├── sinaisDeVida.css   # `[12/09]` o ciclo dos sinais do ATO 0: 16 s, cada
-│   │                      # um visível ~3 s, atrasos escalonados para no
-│   │                      # máximo dois conviverem. CSS e não biblioteca
-│   │                      # porque são seis laços infinitos — compositor, e
-│   │                      # não thread principal
+│   ├── sinaisDeVida.css   # `[12/09]` o ciclo dos sinais do ATO 0: 13 s, cada
+│   │                      # um visível ~3,9 s, atrasos escalonados para ~três
+│   │                      # conviverem. CSS e não biblioteca porque são NOVE
+│   │                      # laços infinitos — compositor, e não thread
+│   │                      # principal
 │   ├── cofre.css          # `[05/09]` o giro do disco do cofre do Fundador
 │   ├── portao.css         # `[05/09]` só os 3 @import do portão, e a ordem
 │   ├── portao/            # o portão de boas-vindas, em 3 partes
@@ -201,7 +201,11 @@ src/
 │   │                      # negativa + máscara no topo, e os quatro gestos de
 │   │                      # chegada. Fonte única porque três componentes
 │   │                      # precisam dela — copiada, a emenda de um divergiria
-│   │                      # das outras cinco e ficaria visível
+│   │                      # das outras cinco e ficaria visível.
+│   │                      # `fechaEmbaixo` é só do `FinalCTA`: ele é a única
+│   │                      # cena sem outra arte depois, então é a única cuja
+│   │                      # borda INFERIOR aparece. Numa cena do meio o mesmo
+│   │                      # gradiente abriria um rasgo de fundo
 │   ├── atosDaLanding.js   # `[12/09]` O ROTEIRO do prólogo: as JANELAS de
 │   │                      # rolagem de cada camada (de 0 a 1), a frase do ATO 0
 │   │                      # e a altura do palco. Só dados — o ritmo se ajusta
@@ -449,6 +453,19 @@ src/
     │                      # CenaDaLanding (as cinco cenas com arte),
     │                      # HighlightsStrip, FinalCTA, LandingNav, LandingFooter,
     │                      # LandingShot
+    │   ├── rodape/        # `[12/09]` O rodapé em TRÊS degraus, e o `LandingFooter`
+    │   │                  # virou só o compositor. Ele aparece em QUATRO páginas
+    │   │                  # (landing, /sobre e as de conteúdo legal) — mexer aqui
+    │   │                  # mexe nas quatro
+    │   │   ├── AssinaturaDoRodape.jsx # a marca, a tagline (a MESMA do ATO 0, de
+    │   │   │              # `atosDaLanding`) e os traços que IRRADIAM dela — o
+    │   │   │              # inverso do ato CONVERGÊNCIA do prólogo. Desenhados
+    │   │   │              # uma vez, sem laço: é o único lugar da página onde o
+    │   │   │              # movimento deve acabar
+    │   │   ├── ColunasDoRodape.jsx # as três colunas de navegação, em cascata.
+    │   │   │              # A lista de seções vem de `secoesDaLanding` — tem trava
+    │   │   └── CreditosDoRodape.jsx # créditos e o "Voltar ao início", que é
+    │   │                  # `button` e não âncora (âncora empilha histórico)
     │   ├── PrologoDaLanding.jsx # `[12/09]` OS CINCO ATOS que a rolagem conduz
     │   │                  # — ARTE, TRANSFORMAÇÃO, CONVERGÊNCIA, MARCA,
     │   │                  # GAMERHUB. Ele monta as camadas; o ritmo vem de
@@ -475,11 +492,18 @@ src/
     │   │                  # solta dividem. O véu troca de EIXO com a orientação
     │   │                  # da arte: lateral no PC, do pé no celular
     │   ├── prologo/       # `[12/09]` As camadas que só existem no prólogo
-    │   │   └── SinaisDeVida.jsx # os fragmentos do produto que acontecem sobre
-    │   │                  # a arte do ATO 0 — curtida, alguém digitando, gente
-    │   │                  # online, key, XP, live. Ciclo em `@keyframes` (não
-    │   │                  # em biblioteca: são 6 laços infinitos), e as linhas
-    │   │                  # que se ligam ao centro preparam a CONVERGÊNCIA
+    │   │   └── SinaisDeVida.jsx # os NOVE fragmentos do produto que acontecem
+    │   │                  # sobre a arte do ATO 0 — curtida, alguém digitando,
+    │   │                  # gente online, key, XP, live, comentário, rank,
+    │   │                  # squad. Ciclo em `@keyframes` (não em biblioteca:
+    │   │                  # são 9 laços infinitos), e as linhas que se ligam ao
+    │   │                  # centro preparam a CONVERGÊNCIA.
+    │   │                  # `[12/09]` Cada chip se ancora pela borda de que ele
+    │   │                  # se APROXIMA (`right` à direita, `left` à esquerda):
+    │   │                  # com `whitespace-nowrap` ele cresce a partir da
+    │   │                  # âncora, e ancorar em `left-[74%]` o jogava para fora
+    │   │                  # do celular. Fundo OPACO pelo mesmo tipo de motivo —
+    │   │                  # translúcido some na parte clara da arte
     │   ├── ArteQueInvade.jsx # `[12/09]` A arte com o GESTO de chegada
     │   │                  # (`sobe`, `afasta`, `mergulha`, `deriva`), conduzido
     │   │                  # pela rolagem e TERMINANDO PARADO. Imagem que nunca
