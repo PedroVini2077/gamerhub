@@ -86,6 +86,18 @@ subindo de 12vh para 26vh para fechar o *"buraco"* entre o hero e o feed, e os
 sinais do ATO 0 maiores e mais numerosos. Junto veio um bug real: as linhas de
 ligação tinham 0,18 **pixel** de espessura. Tudo em `docs/DECISOES.md`.
 
+**`[12/09]` AJUSTE 2 — os chips do ATO 0 no celular.** Ele viu no telefone:
+*"alguns dos css estão cortadas no celular"* e *"o fundo é colorido, e o texto
+com esse balão vazado não dá pra enxergar muito"*. Duas coisas da mesma família
+— o chip existe, o navegador desenha, e ninguém lê. A âncora passou a ser a
+borda de que o chip se aproxima (ele cresce PARA DENTRO), e o fundo virou opaco.
+Duas travas novas, as duas provadas reinjetando o bug. Medido em navegador a
+360, 390, 400 e 1440 px: nenhum chip fora da tela, zero rolagem horizontal.
+
+**`[12/09]` A LANDING PAUSA AQUI, a pedido dele** — *"já trabalhamos demais
+nessa landing page"*. Não é abandono: o que sobrou está listado no fim desta
+seção, e a fila abaixo volta a ser a prioridade.
+
 **O que fica em aberto, e é medição, não conserto:** `mask-image` promove cada
 cena a camada própria de composição — são **seis** agora. Em GPU de celular isso
 tem custo de memória de vídeo que nenhuma medição de byte enxerga. É o primeiro
@@ -1145,8 +1157,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->112<!--/n--> arq ·
-  <!--n:src.lib.linhas-->11.273<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->113<!--/n--> arq ·
+  <!--n:src.lib.linhas-->11.376<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.825<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

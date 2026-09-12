@@ -2062,3 +2062,40 @@ que reprova qualquer traço abaixo de 0,5 px.
 **O que NÃO mudou, e é o que importa:** continuam sendo fragmentos do produto.
 A regra dele segue de pé — ARTE + CAMADA DE PRODUTO ANIMADA, nunca efeito
 genérico. Ficaram mais visíveis, não mais barulhentos.
+
+### `[12/09]` E aí eles ficaram ILEGÍVEIS no celular — duas falhas da mesma família
+
+Ele viu no telefone, no mesmo dia: *"alguns dos css estão cortadas no celular,
+não estão dentro da cena"* e, logo depois, *"o fundo é colorido, e o texto com
+esse balão vazado não dá pra enxergar muito"*.
+
+São dois bugs distintos com **a mesma assinatura** — e é a assinatura que este
+projeto persegue (§1.5): o elemento existe no DOM, o navegador desenha, e
+ninguém lê. Nada estoura, nada vai para log nenhum.
+
+| | o que eu fiz | por que quebrou |
+| --- | --- | --- |
+| **corte** | posicionei por `left-[74%]` com `whitespace-nowrap` | o chip cresce **para a direita** a partir da âncora, e a largura vem do TEXTO, não do espaço que sobra. Em 1440 px sobram 374 depois de 74%; em 360 sobram 94, e "key liberada" pede ~115 |
+| **fundo** | `bg-dark-900/78` + `backdrop-blur` | translúcido sobre a arte é legível na parte escura dela e ilegível na parte clara. Pior que ilegível sempre: não parece defeito, parece a arte |
+
+**A causa comum é uma só, e vale registrar porque vai se repetir:** eu escolhi os
+dois valores olhando o desenho no monitor. Nenhum dos dois **escala** — nem
+porcentagem carrega a largura do conteúdo junto, nem opacidade carrega o que
+está por baixo.
+
+**As correções.** O chip se ancora pela borda de que ele se **aproxima** — `right`
+à direita, `left` à esquerda —, então ele cresce para dentro da tela e mexer no
+texto não pode mais empurrá-lo para fora, em largura nenhuma. E o fundo virou
+opaco; o `backdrop-blur` saiu junto, porque com fundo opaco ele não tem o que
+desfocar e não era de graça: cada `backdrop-filter` promove o elemento a camada
+própria de composição, e eram **nove** por cima de uma arte de tela cheia.
+
+**As travas, as duas provadas reinjetando o bug.** A do corte **mede a conta** —
+estima a largura do chip pelo texto e reprova se ele passar de uma tela de
+360 px — e não a presença de um `right`: trocar a âncora resolveu este caso, mas
+o que precisa continuar verdade é que o chip **caiba**. Um texto mais longo
+amanhã reabriria o buraco sem tocar na âncora. A do fundo lê a classe aplicada,
+porque `bg-dark-900/78` e `bg-dark-900` diferem por dois caracteres.
+
+**Medido em navegador**, não deduzido: 360, 390, 400 e 1440 px, zero chip fora
+da tela e zero rolagem horizontal em todos.
