@@ -595,3 +595,131 @@ porque fechar a lista no banco cria uma deriva nova, não só resolve uma:
 automática, limpeza agendada, o hook de senha — alcançáveis só por Edge
 Function) e 15 de leitura pura. Ainda assim: **este bloco está parcial**, e o
 que falta está nomeado, não arredondado.
+
+---
+
+# BLOCO E — 🟠 SEC-020 · um ADMIN bane o FUNDADOR por um caminho lateral
+
+**O achado mais grave desta auditoria.** Ele apareceu ao ler as funções de
+moderação automática, que estavam na lista de "só `service_role` alcança" e por
+isso pareciam de baixo risco.
+
+## A prova, os dois caminhos na mesma transação
+
+Assumi o papel de um `admin` real (rank 2) e tentei as duas rotas contra o
+`owner` (rank 4):
+
+```
+1_caminho_direto   = BARRADO (correto): Access denied: cannot ban equal or higher role
+2_caminho_indireto = o INSERT em violations PASSOU
+3_owner_depois     = banned=true motivo="Banimento automático — limite de
+                     infrações atingido (1003 pontos)"
+4_conteudo_depois  = 0 posts visiveis, 0 comentarios, 0 murais
+5_quem_desfaz      = unban_user exige is_super(). Super admins hoje: 0
+```
+
+Uma linha:
+
+```sql
+INSERT INTO violations (user_id, points, reason) VALUES ('<owner>', 999, 'forjado');
+```
+
+## A corrente — e cada elo estava certo lendo isolado
+
+Este é o ponto que vale guardar, mais do que o bug em si:
+
+| Elo | O que faz | Por que ninguém viu |
+| --- | --- | --- |
+| policy `violations_insert` | `role_rank(<autor>) >= 2` | checa **quem escreve** e nunca **contra quem** — parece uma policy de staff comum |
+| coluna `points` | `integer`, sem CHECK | tipo certo, faixa nenhuma. É o §5 literal: *"o tipo diz o formato; a faixa diz o que faz sentido"* |
+| trigger `handle_violation_escalation` | soma e compara com o limite | é aritmética; ninguém põe hierarquia num somatório |
+| `apply_mod_auto_ban` | bane e apaga o conteúdo | **zero checagem de cargo**, porque "quem chama é o sistema" |
+
+Nenhum é obviamente errado sozinho. É a **Fase 4** em estado puro — cada lado
+concorda consigo mesmo e discorda do outro — e é o motivo de ela existir.
+
+## Severidade: 🟠 Alto
+
+- **Risco:** qualquer `admin`, o cargo mais baixo da equipe, bane qualquer
+  pessoa — inclusive `super_admin` e o `owner`.
+- **Impacto:** o alvo perde a conta e o conteúdo. Posts viram `deleted_at`
+  (recuperável), mas **comentários, mural e chat são apagados de verdade**. E
+  medido agora: há **0 super admins**, e `unban_user` exige `is_super()`. Banido
+  o fundador, **não existe caminho de volta pelo site** — só pela credencial do
+  banco.
+- **Por que não 🔴:** exige uma conta de `admin`. Não é alcançável de fora.
+
+## A solução — três camadas, e a ordem importa
+
+**1 · Faixa na coluna.** `CHECK (points >= 0 AND points <= 10)`. O
+`ACTION_POINTS` do painel é `{none:0, warn:1, hide:2, suspend_1d:5,
+suspend_7d:10}` — **10 é o máximo que a tela consegue produzir**. Isto sozinho
+não protege (bastaria repetir linhas): serve para que um número absurdo não seja
+sequer representável.
+
+**2 · A policy passa a olhar o alvo.** `WITH CHECK (can_moderate_content(user_id))`
+— o mesmo auxiliar que as seis policies de conteúdo usam desde o SEC-009: rank
+do ator **estritamente maior** que o do alvo. Registrar infração é ato de
+moderação, e a hierarquia da moderação já estava escrita; esta tabela é que
+tinha ficado de fora.
+
+**3 · A escalação automática nunca alcança a equipe.** É a camada que vale mesmo
+se as outras duas caírem, e o motivo é concreto: **`service_role` ignora RLS**.
+Uma Edge Function de moderação, hoje ou amanhã, escreve em `violations` sem
+passar pela camada 2.
+
+A regra de produto, escrita porque tem que estar escrita em algum lugar:
+**membro da equipe só é punido por decisão humana com hierarquia.**
+
+E o desvio é **barulhento**: vai para `admin_logs` como `auto_ban_barrado` /
+`auto_suspend_barrado`, em `warning`. Sair em silêncio criaria a versão boa do
+mesmo problema — a equipe nunca saberia que alguém acumulou pontos suficientes
+para ser banido, e isso é informação de segurança, não ruído (§1.5).
+
+## Validado em ROLLBACK — 9 asserções
+
+| | |
+| --- | --- |
+| `A1` admin → owner, 999 pontos | recusado pela RLS |
+| `A2` admin → owner, 10 pontos (válidos) | recusado pela RLS |
+| `A3` admin → outro admin | recusado pela RLS |
+| `B1` admin → `user`, as 5 pontuações do painel | **aceitas** |
+| `B2` o `user` escalou | `banned=true suspenso=true` — a moderação legítima continua funcionando |
+| `B3` owner | intacto |
+| `C1` insert privilegiado (ignora RLS), 24 pontos no owner | entrou, como esperado |
+| `C2` **owner depois dos 24 pontos** | **`banned=false`** — a camada 3 segurou |
+| `C3` a equipe fica sabendo | `auto_*_barrado` no `admin_logs` |
+
+O par `C1`/`C2` é o que prova que a camada 3 não é redundante: mesmo com a
+linha entrando por um caminho que a RLS não vê, o fundador não cai.
+
+## A trava, provada três vezes
+
+`punicaoRespeitaHierarquia.test.js`, e ela varre a **classe**: *toda função que
+escreve punição em `profiles` consulta `role_rank`?*. Travar as duas pelo nome
+deixaria a próxima nascer sem o piso — que foi como 14 policies ficaram sem
+`owner`, três vezes.
+
+| Bug reinjetado | A trava disse |
+| --- | --- |
+| piso de rank fora do `apply_mod_auto_ban` | *"Função que PUNE sem consultar `role_rank`: apply_mod_auto_ban"* |
+| policy voltando a olhar só o autor | *"voltou a não olhar o alvo"*, imprimindo a regra |
+| `DROP CONSTRAINT` da faixa numa migration futura | *"A faixa de `violations.points` foi removida"* |
+
+**Cuidado que ela precisou ter:** `WHERE banned = true` aparece em
+`pode_publicar`, `request_unban` e `owner_get_stats`, que só **leem**. Uma
+varredura ingênua acusaria as três, e alarme que grita à toa é o mesmo problema
+do outro lado (§0.2, 4ª regra). Ela casa só `UPDATE profiles SET ... banned =
+true`.
+
+**O limite dela, escrito porque verde precisa significar algo:** confere que
+`role_rank` **aparece**, não que a comparação está certa. `>= 99` passaria. É
+trava contra o esquecimento — que foi o defeito real —, não contra erro de
+lógica.
+
+## O que este achado reforça sobre o SEC-015
+
+O `apply_mod_auto_ban` é **mais suave** que o `ban_user` humano: ele faz
+`UPDATE posts SET deleted_at` (reversível) onde o humano faz `DELETE`. O
+banimento automático preserva mais do que o manual — o inverso do que se
+esperaria. Não mexi: é a mesma decisão de produto do SEC-015, e é do dono.

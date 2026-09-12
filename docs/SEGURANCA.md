@@ -266,6 +266,41 @@ que estão na lista dele. Está no `BACKLOG.md`.
   mundo) e o `is_owner()` no lugar do `role = 'owner'` à mão. Trava:
   `siteConfigChavesFechadas.test.js`, provada nos dois sentidos — porque fechar
   a lista resolve uma deriva e cria outra.
+- **`[12/09]` 🟠 Um ADMIN banía o FUNDADOR por um caminho lateral** (SEC-020).
+  O achado mais grave da auditoria de 12/09, e o desenho dele é a lição:
+  **existiam dois caminhos para banir, e a hierarquia estava escrita só num.**
+
+  Provado em `ROLLBACK`, os dois lados na mesma transação: `ban_user` barrou
+  (*"cannot ban equal or higher role"*) e **uma linha em `violations` derrubou
+  o fundador** — conta banida, comentários, mural e chat apagados.
+
+  ```sql
+  INSERT INTO violations (user_id, points, reason) VALUES ('<owner>', 999, 'forjado');
+  ```
+
+  **Cada elo estava certo lendo isolado**, e é por isso que ninguém viu: a
+  policy checava **quem escreve** e nunca **contra quem**; `points` tinha tipo e
+  nenhuma faixa; o trigger de escalação é aritmética; e `apply_mod_auto_ban` não
+  checava cargo porque "quem chama é o sistema". Fase 4 em estado puro.
+
+  **Impacto medido:** há **0 super admins**, e `unban_user` exige `is_super()` —
+  banido o fundador, não havia caminho de volta pelo site.
+
+  Três camadas, e a ordem importa:
+
+  | | |
+  | --- | --- |
+  | `CHECK (points BETWEEN 0 AND 10)` | 10 é o maior valor que o painel produz (`suspend_7d`) |
+  | policy → `can_moderate_content(user_id)` | o mesmo auxiliar das seis policies de conteúdo: rank do ator estritamente maior |
+  | piso de `role_rank(alvo) >= 2` na escalação automática | **vale mesmo se as outras caírem** — `service_role` ignora RLS |
+
+  A regra de produto que passou a estar escrita: **membro da equipe só é punido
+  por decisão humana com hierarquia.** E o desvio é barulhento —
+  `auto_ban_barrado` / `auto_suspend_barrado` em `admin_logs`, porque sair em
+  silêncio esconderia que alguém da equipe acumulou pontos de banimento.
+
+  Trava: `punicaoRespeitaHierarquia.test.js`, que varre a **classe** (*toda
+  função que escreve punição consulta `role_rank`?*) e foi provada três vezes.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

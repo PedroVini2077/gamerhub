@@ -40,7 +40,7 @@ todas as tabelas públicas.**
 | `site_config`                | Configuração global (manutenção, flags, banner, thresholds de moderação) |
 | `reports`                    | Denúncias da comunidade. Índice único **parcial**: uma pendente por pessoa e conteúdo — depois de dispensada, dá para denunciar de novo |
 | `blocked_words`              | Wordlist de palavras bloqueadas (com severidade)                |
-| `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor)     |
+| `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor). **`[12/09]` `points` tem `CHECK 0..10`** (o teto do `ACTION_POINTS` do painel) e a policy de INSERT usa `can_moderate_content(user_id)` — registrar infração é ato de moderação e respeita a hierarquia (SEC-020) |
 | `moderation_queue`           | Fila de revisão humana. `trigger_type`: `report`, `wordlist`, `ai`, `escalation`, `links` e — desde 29/08 — `sem_analise`, que significa o oposto dos outros: nenhuma checagem conseguiu olhar o conteúdo |
 
 #### Colunas relevantes em `posts`
@@ -203,7 +203,11 @@ transforma esta pegadinha em bug silencioso (§4).
   pontos do usuário e chama `apply_mod_auto_ban` ao atingir `mod_ban_threshold`.
 - `apply_mod_auto_ban(user_id, points)` (SECURITY DEFINER) — ban automático pelo
   sistema (sem caller role): marca `banned`, apaga a atividade, gera log +
-  notificação.
+  notificação. **`[12/09]` Ela NUNCA alcança a equipe** (`role_rank(alvo) >= 2`):
+  staff só é punido por decisão humana com hierarquia, e o desvio vai para
+  `admin_logs` como `auto_ban_barrado` em vez de um `RETURN` mudo. Sem esse
+  piso, uma linha em `violations` banía o fundador — ver SEC-020 em
+  [SEGURANCA.md](SEGURANCA.md).
 - `apply_suspension(user_id, days)` (SECURITY DEFINER) — suspende temporariamente
   (valida hierarquia, seta `suspended_until`, gera log + notificação).
 

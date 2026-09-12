@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**41 itens abertos** (+ 1 ideia sem compromisso)
+**42 itens abertos** (+ 1 ideia sem compromisso)
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -368,6 +368,21 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
   aceita do cliente — ninguém legítimo a usa, e qualquer pessoa logada pode
   injetar um registro falso. Não dá poder nem expõe dado: é ruído forjável na
   trilha. Uma linha para remover.
+
+- ⬜ `[12/09]` 🟠 **NÃO EXISTE NENHUM SUPER ADMIN — e isso é o que transformava
+  o SEC-020 em porta sem volta.** *Descoberto ao medir o impacto do SEC-020, e é
+  DECISÃO DO DONO.* Medido: `select count(*) from profiles where role_rank(role)
+  >= 3 and not banned` devolve **0** — há o `owner` e dois `admin`.
+
+  O buraco de escalação foi fechado, então isto deixou de ser urgente. Mas a
+  assimetria continua e vale a decisão dele: **`unban_user` exige `is_super()`**,
+  e o `owner` é rank 4, ou seja, ele desbane. O problema é o caso em que o
+  próprio `owner` é quem está banido — aí não existe ninguém no site que possa
+  desfazer, e a saída é a credencial do banco.
+
+  Duas respostas possíveis, e as duas são dele: promover um super admin de
+  confiança, ou aceitar que a recuperação do fundador é por fora do site (e
+  então isso precisa estar escrito no `OPERACAO.md`, com o passo a passo).
 
 - ⬜ `[12/09]` 🔵 **`notify_user` aceita 9 tipos; o sino estiliza 4.** *BLOCO D.*
   `warning`, `info`, `success`, `error`, `system` e `role` estão na lista
@@ -1325,8 +1340,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->117<!--/n--> arq ·
-  <!--n:src.lib.linhas-->12.170<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->118<!--/n--> arq ·
+  <!--n:src.lib.linhas-->12.343<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
