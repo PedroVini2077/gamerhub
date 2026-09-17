@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+const ws = [], rest = [];
+p.on('websocket', (w) => ws.push(w.url().slice(0, 70)));
+p.on('request', (r) => { if (/supabase\.co\/rest/.test(r.url())) rest.push(r.url().split('?')[0].slice(-30)); });
+await p.goto('http://127.0.0.1:4176/', { waitUntil: 'load' });
+await p.waitForTimeout(5000);
+console.log(`  WebSocket de realtime na landing ANÔNIMA: ${ws.length}`);
+ws.forEach((u) => console.log(`    ${u}`));
+console.log(`  leitura de site_config (tem que continuar): ${rest.filter((u) => /site_config/.test(u)).length}`);
+await b.close();
