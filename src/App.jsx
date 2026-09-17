@@ -17,6 +17,7 @@ import { useConfigDoSite, ProvedorDaConfigDoSite } from './hooks/useConfigDoSite
 import AvisoSemBanco from './components/ui/AvisoSemBanco';
 import MaintenancePage from './components/ui/MaintenancePage';
 import RolagemDeRota from './components/ui/RolagemDeRota';
+import MetaDaRota from './components/ui/MetaDaRota';
 import GlobalBanner from './components/ui/GlobalBanner';
 import AvisoDeAceite from './components/ui/AvisoDeAceite';
 import BotaoDeSom from './components/landing/BotaoDeSom';
@@ -180,6 +181,7 @@ function AppRoutes() {
           desmontaria junto com a tela de login. */}
       <PortaoDeBoasVindas />
       <RolagemDeRota />
+      <MetaDaRota />
       {/* `introTerminou` só faz sentido na raiz, onde a intro toca. Nas outras
           páginas públicas não há raio para esperar, então a tentativa pode
           acontecer assim que a página monta. */}

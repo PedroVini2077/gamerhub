@@ -16,6 +16,12 @@
 
     <!-- Prévia ao compartilhar o link (WhatsApp, Discord, X). Sem isso o link
          do site aparecia sem título nem descrição. -->
+    <!-- `[17/09]` Canonical BASE. O `MetaDaRota` o reescreve por página assim
+         que o JavaScript roda; este valor existe para quem NÃO executa JS não
+         ficar sem canonical nenhum — e para o endereço com `?utm_source=…` ou
+         `?fbclid=…` não virar uma segunda versão da landing. -->
+    <link rel="canonical" href="https://gamerhub-nine.vercel.app/" />
+
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="GamerHub" />
     <meta property="og:title" content="GamerHub — a comunidade gamer brasileira" />

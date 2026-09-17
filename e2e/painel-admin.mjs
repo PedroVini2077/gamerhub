@@ -187,7 +187,39 @@ try {
   // "o botão existe" de "o botão funciona" — um `onClick` quebrado deixaria o
   // botão lá, clicável, sem trazer nada.
   await aba(page, 'Posts').click();
-  await page.waitForTimeout(2000);
+
+  // `[17/09]` Aqui havia `waitForTimeout(2000)` — espera FIXA, e ela reprovou
+  // este job DUAS vezes (12/09 e 17/09) com a mesma assinatura:
+  //
+  //     declara -1 ativo(s), estado vazio na tela: false
+  //
+  // Os dois valores juntos dizem exatamente o que aconteceu: a aba não tinha
+  // renderizado NEM o contador, NEM o estado vazio, NEM uma linha. É o terceiro
+  // caso que o comentário abaixo já previa — "a aba nao renderizou" —, e a
+  // causa não é o painel: é a espera de 2 s ter acabado antes dele.
+  //
+  // Em 12/09 eu tratei isso como lentidão do CI, re-rodei e vi verde. A causa
+  // estava certa e a conclusão, incompleta: espera por TEMPO num teste de
+  // navegador não é cautela, é um sorteio — ela passa na máquina rápida e
+  // reprova na lenta, pelo mesmo código. Alarme que depende de sorte ensina a
+  // ignorar o canal (§0.2, 4ª regra).
+  //
+  // Agora espera-se a CONDIÇÃO: a aba terminou quando mostra pelo menos uma
+  // das três coisas que ela tem obrigação de mostrar. Em runner rápido isso
+  // resolve em milissegundos; em runner lento, espera o quanto precisar.
+  await page.waitForFunction(() => {
+    const main = document.querySelector('main');
+    if (!main) return false;
+    const txt = main.innerText;
+    return main.querySelector('[data-post-row]') !== null
+        || /nenhum post ativo/i.test(txt)
+        || /Posts ativos\s*\d+/.test(txt);
+  }, null, { timeout: 20000 }).catch(() => {
+    // O `catch` não engole: ele só deixa a asserção de baixo produzir a
+    // mensagem boa, que diz o que o painel declarou e o que estava na tela.
+    // Estourar aqui daria um `TimeoutError` cru, que não ensina nada.
+  });
+
   const carregarMais = page.getByRole('button', { name: /carregar mais/i }).first();
   const linhas = () => page.locator('main [data-post-row]').count();
 

@@ -385,9 +385,9 @@ segurança.
 
 | Camada | O que | Estado |
 | --- | --- | --- |
-| 🔴 1 | console | ⏳ **depende dele**: 0 erros do código medidos local, mas o console de PRODUÇÃO não é medível deste sandbox (proxy derruba o navegador; PageSpeed em 429). Falta o que o PageSpeed dele reportar |
+| 🔴 1 | console | ✅ **diagnosticado em 17/09** com o PageSpeed dele. TODOS os erros são o mesmo: o WebSocket de realtime falhando DNS no runner do Google. Não é defeito para quem usa — mas revelou o achado abaixo |
 | 🟠 2 | `robots.txt` · `sitemap.xml` | ✅ **FEITO em 17/09** — ver `db/2026-09-17-prompt1-etapa1.md` |
-| 🟡 3 | titles · meta descriptions · canonical · JSON-LD | ⬜ |
+| 🟡 3 | titles · meta descriptions · canonical | ✅ **FEITO em 17/09** — 6 títulos únicos de 6, canonical por página. JSON-LD fica para a Etapa 3 |
 | 🟢 4 | acessibilidade — problema concreto, preservando a direção artística | ⬜ |
 | 🔵 5 | performance — **só com evidência** | ⬜ |
 | ⚪ 6 | `llms.txt` | ✅ **FEITO em 17/09** |
@@ -1454,8 +1454,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->119<!--/n--> arq ·
-  <!--n:src.lib.linhas-->12.665<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->121<!--/n--> arq ·
+  <!--n:src.lib.linhas-->12.937<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
