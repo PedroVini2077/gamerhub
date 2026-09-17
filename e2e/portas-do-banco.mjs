@@ -161,22 +161,89 @@ const ABERTAS = [
  * ninguém), mas é decisão do dono e está no `BACKLOG.md` com a análise.
  * Isto NÃO é brecha — nenhuma porta abriu. É vigia cego, que é §1.5.
  */
+/**
+ * `[17/09]` O ALVO INEXISTENTE — por que cada chamada leva argumento agora.
+ *
+ * Até hoje este roteiro mandava `{}` em todas. Com corpo vazio o PostgREST
+ * devolve **404 para função com parâmetro obrigatório**, porque não acha a
+ * sobrecarga — e o teste contava isso como "revogada". Quase todas as entradas
+ * desta lista têm parâmetro, então o "49/49" provava muito menos do que
+ * parecia. Prova de que era falso:
+ *
+ *     username_disponivel  {}                        -> 404   (parece fechada)
+ *     username_disponivel  {"p_username":"zzteste"}  -> 200   <- ABERTA
+ *
+ * ── Por que mandar o argumento é SEGURO, e isto foi conferido ───────────────
+ *
+ * A pergunta certa é: e se a porta estiver aberta? A função executa. Foi por
+ * isso que eu não tinha consertado sozinho — e o dono liberou depois de eu
+ * mostrar que existe caminho sem efeito colateral.
+ *
+ * O PostgREST resolve a assinatura, **depois** checa `EXECUTE`, e só então
+ * executa. E o `ban_user` — a mais perigosa da lista — tem TRÊS barreiras
+ * antes de qualquer escrita, lidas no `pg_proc`:
+ *
+ *   1. `EXECUTE` revogado                     -> 401 (é o que este teste mede)
+ *   2. `role_rank(v_caller_role) <= 1`        -> `anon` não tem perfil, e
+ *                                                `role_rank(NULL)` é 0
+ *   3. `IF v_target_username IS NULL`         -> 'Usuario nao encontrado.'
+ *
+ * O `ALVO` abaixo é o UUID zerado, que **não corresponde a ninguém**. Mesmo que
+ * as duas primeiras barreiras caíssem de uma vez, a terceira barra antes de
+ * tocar em qualquer linha.
+ *
+ * ── A exceção que exige cuidado, e ela é uma só ─────────────────────────────
+ *
+ * `enviar_mensagem_de_contato` NÃO tem alvo: ela CRIA linha. Se a porta abrir,
+ * o argumento válido vira uma mensagem de verdade no canal. Por isso o texto
+ * dela se identifica: a linha que aparecer é obviamente do CI, e nesse caso ela
+ * é um **alarme a mais**, não um dano — a porta ter aberto é o problema, e a
+ * mensagem é o aviso.
+ *
+ * ── O que mudou na leitura do resultado ─────────────────────────────────────
+ *
+ * Com a assinatura casando, `401` passa a ser a recusa esperada (medido:
+ * `check_login_status` com o argumento certo responde 401, não 404). Um `404`
+ * agora significa outra coisa — a função não existe mais —, e por isso a
+ * mensagem dele mudou.
+ */
+const ALVO = '00000000-0000-0000-0000-000000000000';
+
 const RPCS_FECHADAS = [
-  ['ban_user', 'banir qualquer usuário'],
-  ['unban_user', 'desbanir quem a equipe baniu'],
-  ['owner_set_role', 'se promover a fundador'],
-  ['apply_suspension', 'silenciar qualquer usuário'],
-  ['lift_suspension', 'tirar a suspensão de quem a equipe puniu'],
-  ['soft_delete_post', 'apagar post alheio'],
-  ['admin_list_users', 'listar todos os usuários com dado pessoal'],
-  ['log_audit_event', 'forjar linha na trilha de auditoria'],
+  ['ban_user', 'banir qualquer usuário',
+    { p_user_id: ALVO, p_reason: 'spam', p_details: 'teste de porta do CI' }],
+  ['unban_user', 'desbanir quem a equipe baniu',
+    { p_user_id: ALVO }],
+  ['owner_set_role', 'se promover a fundador',
+    { p_target_user_id: ALVO, p_new_role: 'admin' }],
+  ['apply_suspension', 'silenciar qualquer usuário',
+    { p_user_id: ALVO, p_days: 1 }],
+  ['lift_suspension', 'tirar a suspensão de quem a equipe puniu',
+    { p_user_id: ALVO }],
+  ['soft_delete_post', 'apagar post alheio',
+    { p_post_id: ALVO }],
+  // Só parâmetro OPCIONAL: para esta, `{}` já casava a assinatura, e o
+  // resultado dela nunca foi ambíguo.
+  ['admin_list_users', 'listar todos os usuários com dado pessoal', {}],
+  ['log_audit_event', 'forjar linha na trilha de auditoria',
+    { p_action: 'teste_de_porta_do_ci', p_details: 'se esta linha existe, a porta abriu' }],
   // `[03/09]` Esta é diferente das de cima: ela não dá privilégio nenhum, e
   // por isso ficou aberta de propósito até hoje. O que ela dá é VOLUME — encher
   // o formulário de contato e fechar o canal para todo mundo pelo disjuntor de
   // 60/hora. É a porta que o captcha fecha, e o captcha só vale enquanto ela
   // estiver fechada: com ela aberta, basta um POST direto aqui para pular a
   // verificação inteira (§1.3).
-  ['enviar_mensagem_de_contato', 'pular o captcha e encher o canal de contato'],
+  ['enviar_mensagem_de_contato', 'pular o captcha e encher o canal de contato',
+    // A única da lista que CRIA linha em vez de agir sobre um alvo. O texto se
+    // identifica de propósito: se ela aparecer no canal, a porta abriu.
+    {
+      p_nome: 'Teste automatico do CI',
+      p_email: 'ci@exemplo.invalido',
+      p_assunto: 'PORTA ABERTA: esta RPC aceitou chamada anonima',
+      p_mensagem: 'Mensagem gerada por e2e/portas-do-banco.mjs. Se ela chegou '
+        + 'ate aqui, `enviar_mensagem_de_contato` voltou a ser chamavel sem '
+        + 'conta, e o captcha do formulario deixou de valer.',
+    }],
 
   // ── `[17/09]` As três portas mortas do contador de login ─────────────────
   //
@@ -196,9 +263,12 @@ const RPCS_FECHADAS = [
   // usuario no CI — a mesma troca ja recusada aqui e no alerta de cota. O
   // estado de `authenticated` foi provado em ROLLBACK (6 asercoes) e conferido
   // no `pg_proc`; o que roda sozinho e a metade anonima.
-  ['check_login_status', 'perguntar por qualquer e-mail sem ter conta (SEC-022)'],
-  ['reset_login_attempts', 'apagar o proprio historico de tentativas (SEC-024)'],
-  ['contabilizar_falha_de_login', 'fabricar bloqueio sem saber a senha'],
+  ['check_login_status', 'perguntar por qualquer e-mail sem ter conta (SEC-022)',
+    { p_email: 'ci@exemplo.invalido' }],
+  // A única sem parâmetro NENHUM: o resultado dela nunca foi ambíguo.
+  ['reset_login_attempts', 'apagar o proprio historico de tentativas (SEC-024)', {}],
+  ['contabilizar_falha_de_login', 'fabricar bloqueio sem saber a senha',
+    { p_email: 'ci@exemplo.invalido' }],
 ];
 
 const falhas = [];
@@ -291,24 +361,42 @@ for (const { tabela, colunas, porque } of ABERTAS) {
 }
 
 // ── 3. RPCs privilegiadas ──────────────────────────────────────────────────
-for (const [funcao, estrago] of RPCS_FECHADAS) {
+for (const [funcao, estrago, corpo] of RPCS_FECHADAS) {
+  // Guarda contra a trava virar decoração de novo: entrada sem corpo voltaria a
+  // mandar `{}` e a colher o 404 de assinatura, que é exatamente o defeito que
+  // esta rodada corrigiu. Falhar alto é melhor do que aprovar em silêncio.
+  if (!corpo) {
+    falhou(`rpc ${funcao.padEnd(20)} SEM CORPO na lista`,
+      `\`${funcao}\` nao tem argumentos declarados em RPCS_FECHADAS.\n`
+      + '    Sem eles a chamada vai com `{}`, e funcao com parametro\n'
+      + '    obrigatorio responde 404 por ASSINATURA — que este teste contaria\n'
+      + '    como "revogada". Declare os argumentos, com alvo inofensivo.');
+    continue;
+  }
+
   const { status } = await pegar(`/rest/v1/rpc/${funcao}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: '{}',
+    body: JSON.stringify(corpo),
   });
 
-  if (status === 404) {
-    ok(`rpc ${funcao.padEnd(20)} revogada (nem aparece)`);
-  } else if (status === 401 || status === 403) {
-    ok(`rpc ${funcao.padEnd(20)} execução negada (HTTP ${status})`);
+  if (status === 401 || status === 403) {
+    ok(`rpc ${funcao.padEnd(24)} execução negada (HTTP ${status})`);
+  } else if (status === 404) {
+    // Com a assinatura casando, 404 deixou de significar "revogada" e passou a
+    // significar "nao existe". As duas são aceitáveis — o que não pode é ser
+    // chamável —, mas a mensagem tem que dizer a verdade sobre qual é.
+    ok(`rpc ${funcao.padEnd(24)} nao existe, ou o nome do argumento mudou (404)`);
   } else {
-    falhou(`rpc ${funcao.padEnd(20)} ACEITOU CHAMADA ANÔNIMA (HTTP ${status})`,
-      `\`${funcao}\` respondeu ${status} a uma chamada SEM CONTA.\n`
+    falhou(`rpc ${funcao.padEnd(24)} ACEITOU CHAMADA ANÔNIMA (HTTP ${status})`,
+      `\`${funcao}\` respondeu ${status} a uma chamada SEM CONTA, com os\n`
+      + '    argumentos CERTOS — entao ela passou do privilegio.\n'
       + `    O que isso permitiria: ${estrago}.\n`
       + '    Mesmo que a funcao cheque `auth.uid()` por dentro, ela nao devia\n'
       + '    ser CHAMAVEL: `REVOKE ... FROM PUBLIC, anon` e a primeira porta,\n'
-      + '    e a checagem interna e a segunda (CLAUDE.md §5).');
+      + '    e a checagem interna e a segunda (CLAUDE.md §5).\n'
+      + '    Um 400 aqui tambem e falha: erro de VALIDACAO so acontece depois\n'
+      + '    de o EXECUTE ter passado.');
   }
 }
 

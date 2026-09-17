@@ -19,6 +19,77 @@
 
 ---
 
+### `[17/09]` A Etapa 5 rendeu TRÊS diagnósticos e NENHUMA otimização — e está certo
+
+Autorização dele: *"pode fazer e pode realizar os concertos de otimização"*. O
+que a medição devolveu foi **nada para consertar** — e o valor da rodada está em
+por quê, para ninguém refazer o mesmo caminho.
+
+#### 1. Eu propus tirar o Supabase do caminho crítico. A proposta estava ERRADA
+
+Na proposta da Etapa 5 eu disse que o `vendor-supabase` (203,8 kB) entrava no
+boot da landing por causa do `ProvedorDaConfigDoSite`, e que dava para adiá-lo.
+
+**Fui ler o código e não é isso.** Quem puxa o chunk é o `hooks/useAuth.jsx`,
+que chama `supabase.auth.getSession()` no boot — é ele que decide entre a
+landing e o feed. Adiar isso não é otimização: é quebrar a decisão de qual
+página mostrar.
+
+Era **inferência vestida de fato** (§1.1): eu tinha visto um consumidor e
+concluí que era o único. O `grep` desmentiu.
+
+> O que **sobra** de verdade daquele achado é a **conexão de realtime** que todo
+> visitante anônimo abre — e isso é cota (§0.2), não byte. Continua como
+> proposta no `BACKLOG.md`.
+
+#### 2. O CSS de 70,5 kB não tem gordura
+
+| | |
+| --- | --- |
+| CSS total do build | **70,5 kB** bruto |
+| CSS **nosso**, escrito à mão | **49,4 kB** (`src/estilos/*.css` + `index.css`) |
+| sobra do Tailwind, já purgado | ~21 kB |
+
+O `content` do Tailwind cobre `./index.html` e `./src/**/*.{js,jsx}` — está
+correto, e 21 kB para um design system inteiro é purge funcionando.
+
+Os 360 ms de bloqueio no celular contra **50 ms no PC**, pelo mesmo arquivo,
+são **rede** — sete vezes o mesmo byte. Não há o que cortar.
+
+**Extrair CSS crítico foi recusado**, e o motivo é dele: o risco é FOUC, a
+página aparecer sem estilo por um instante. Isso é literalmente *"deixar a
+landing feia"*.
+
+#### 3. Separar o `framer-motion` PIOROU, e o portão recusou
+
+Era o único grande sem chunk próprio — cai dentro do `index` junto com o código
+do app. Separar parecia ganho de cache óbvio: o `index` muda a cada deploy, a
+biblioteca não.
+
+**Medido, mesma ferramenta, antes e depois (§0.3 regra 5):**
+
+| | bruto | gzip |
+| --- | --- | --- |
+| antes | 739,0 kB | **224,4 kB** |
+| depois | 748,5 kB | **228,4 kB** ← estourou |
+| teto | 760 kB | **228 kB** |
+
+**Chunk separado comprime pior.** O gzip trabalha com um dicionário por arquivo;
+quebrar um arquivo grande em dois faz cada metade perder o que a outra teria
+compartilhado. O bruto sobe pelo preâmbulo de módulo, o gzip sobe pela
+compressão pior.
+
+A troca real seria: **economia de cache para quem VOLTA, em troca de 4 kB a mais
+para quem chega pela PRIMEIRA vez** — e a primeira visita é exatamente a que o
+PageSpeed mede em 77. **Revertido.**
+
+> **O número que ninguém tinha olhado:** o carregamento inicial está em
+> **224,4 de 228 kB** gzip. São **3,6 kB de folga**. Qualquer dependência nova
+> estoura o portão — o que é o portão fazendo o trabalho dele, e vale saber
+> antes de propor biblioteca.
+
+---
+
 ### `[17/09]` O PageSpeed dele: 96 no PC e 77 no celular — e o culpado NÃO é peso
 
 Medição trazida pelo dono (`pagespeed.web.dev`, 17/09 12:20 BRT, Lighthouse
