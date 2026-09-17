@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**44 itens abertos** (+ 1 ideia sem compromisso)
+**43 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -353,7 +353,7 @@ subir de plano) — e ela continua sem resposta.
 | --- | --- | --- |
 | **B2** 🔵 | Política de senha no painel de Auth | continua válida. A proteção contra senha vazada **não** entra: plano Pro |
 | **B3** 🔵 | Alerta de cota do Sentry | ele **acha** que já ativou. Não tenho como verificar daqui — fica assim escrito, sem eu afirmar nem negar |
-| **B4** 🟠 | Implantar 7 das 8 Edge Functions | **é isto que o item `[10/09]` pede**, e ele perguntou o que era: ver a explicação lá. Depende de um *Personal Access Token* do Supabase |
+| **B4** ✅ | Implantar 7 das 8 Edge Functions | **FEITO em 17/09.** Ele mandou o token, as 8 subiram, e `npm run edges` diz **8/8 OK** pela primeira vez. Junto apareceu a `moderate-text` que **não compilava** — ver `db/2026-09-17-*` |
 
 ---
 
@@ -971,42 +971,6 @@ dependência técnica real** que decide o resto:
   (`relay <host>` ou `gmail`) — antes mandaria investigar o provedor errado. E a
   volta é apagar o segredo `SMTP_HOST`: sem ele o código cai no Gmail sozinho,
   sem deploy.
-
-- ⬜ `[10/09]` 🟠 **O vigia das Edge Functions está CONSTRUÍDO e PROVADO — falta
-  implantar 7 das 8.** *`[11/09]` O que falta é uma ação do dono, e ela está
-  escrita abaixo.*
-
-  **O que já existe e funciona**, com a prova junto:
-
-  | Peça | O que faz | Estado |
-  | --- | --- | --- |
-  | `scripts/impressao-das-edges.mjs` (`npm run impressao-edges`) | deriva a impressão do CÓDIGO de cada função | pronto |
-  | `scripts/__tests__/impressaoDasEdges.test.js` | reprova no `npm test` se a impressão escrita ficou velha | **provado** reinjetando o bug num arquivo IRMÃO (`politica.ts`) |
-  | `scripts/edges-implantadas.mjs` (`npm run edges`) | pergunta a impressão a cada função NO AR e compara | **provado**: acusou as 8, e passou a dizer OK na que foi implantada |
-
-  A impressão é derivada do código, e não uma data escrita à mão, justamente
-  porque data à mão reproduz o problema: eu edito a função, esqueço de subir o
-  número, e os dois lados concordam num valor velho — o portão fica verde no
-  caso exato que ele existe para pegar.
-
-  **O que falta, e por que eu parei aqui.** Só `cleanup-orphans` foi implantada
-  (v12, e o `npm run edges` já a marca OK). As outras 7 somam **~2.100 linhas**,
-  e o único caminho que eu alcanço é passar o código inteiro por uma chamada de
-  ferramenta — ou seja, **eu retransscrevendo 2.100 linhas de código de
-  produção**. Na `send-email` um caractere perdido derruba o cadastro. Trocar
-  isso por um portão de monitoramento é uma conta ruim, e a §0.2 é sobre
-  exatamente esse tipo de troca.
-
-  **A ação do dono, e ela resolve de vez:** gerar um *Personal Access Token* em
-  `supabase.com/dashboard/account/tokens` e me dar como `SUPABASE_ACCESS_TOKEN`.
-  Com ele, `npx supabase functions deploy <nome>` implanta **do disco**, sem
-  nada passar por mim — e aí as 7 vão de uma vez, o portão entra no CI, e toda
-  implantação futura deixa de depender de transcrição.
-
-  **Enquanto isso, o portão NÃO está no CI**, e isso é deliberado: ligá-lo hoje
-  reprovaria todo PR por 7 funções que só o dono pode destravar, e portão que
-  grita por algo que ninguém pode resolver ensina a ignorar o canal (§0.2, 4ª
-  regra). `npm run edges` responde a pergunta a qualquer momento.
 
 - ⬜ `[11/09]` 🟠 **A MARCA E A LANDING — briefing gravado, esperando UMA decisão.**
   *Tudo em [`docs/identidade/BRIEFING-2026-09.md`](docs/identidade/BRIEFING-2026-09.md);

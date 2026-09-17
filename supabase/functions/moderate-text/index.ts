@@ -8,13 +8,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
+  DIAL_PADRAO, viaOpenAI, viaHuggingFace, type Decisao,
+} from "./politica.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio:
 // e assim que "editei a funcao e esqueci de implantar" passa a reprovar o PR.
-const IMPRESSAO_DESTE_CODIGO = "89ad5d8ab21747fb";
-  DIAL_PADRAO, viaOpenAI, viaHuggingFace, type Decisao,
-} from "./politica.ts";
+const IMPRESSAO_DESTE_CODIGO = "48afcb046ff96182";
 
 const SUPABASE_URL   = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON  = Deno.env.get("SUPABASE_ANON_KEY")!;
