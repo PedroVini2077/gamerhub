@@ -19,6 +19,69 @@
 
 ---
 
+### `[17/09]` A travada que ele sentiu no início: reproduzida, e NÃO é a animação
+
+Observação dele: *"sabe a transição do hero pro título? Dá uma travada lá no
+início mesmo, é aquela primeira cena, dá uma pequena queda de performance"*.
+
+**O sintoma é real e foi reproduzido.** O que estava errado era a causa que eu
+fui procurar primeiro — e o caminho até o diagnóstico certo vale mais do que ele.
+
+#### O que eu medi errado antes de medir certo
+
+| Tentativa | O que deu | Por que não servia |
+| --- | --- | --- |
+| tarefas longas rolando | 2.445 ms numa rodada | **não se repetiu**; e o controle PARADO deu o mesmo (276 ms vs 248 ms) — não era a rolagem |
+| quadros por ato | ATO 0 numa rodada, TRANSFORMAÇÃO noutra | oscilava entre execuções; consistente só em "os dois primeiros atos" |
+| `will-change` na arte | **nenhuma mudança** (178–188 ms, contra 179–180 antes) | a hipótese estava errada, e a medição disse isso na cara |
+
+Duas tentativas sem matar o problema é o limite do §1.2. Em vez de chutar a
+terceira, fui **instrumentar** — a API `long-animation-frame`, que diz *quanto*
+foi script e *qual* script foi.
+
+#### O diagnóstico, e ele é inequívoco
+
+Ato 0, celular emulado com CPU 4× mais lenta:
+
+```
+ 195 ms · estilo+layout   0 ms · Window.fetch.catch:174ms      <- artefato do sandbox
+ 143 ms · estilo+layout   0 ms · MessagePort.onmessage:41ms, FrameRequestCallback:94ms
+ 138 ms · estilo+layout   0 ms · (o chunk `index` do app):136ms
+ 115 ms · estilo+layout   0 ms · MessagePort.onmessage:98ms
+```
+
+**`estilo + layout = 0 ms` em TODOS.** A animação não custa nada: `scale` e
+`opacity` estão sendo compostos exatamente como o comentário do
+`PrologoDaLanding` promete. **O desenho da cena está certo.**
+
+O que custa é **JavaScript ainda montando o site**:
+
+| Quem | O que é |
+| --- | --- |
+| o chunk `index` do app, 136 ms | o bundle do app **executando** |
+| `MessagePort.onmessage` 41–98 ms | o **agendador do React** (ele usa `MessageChannel`) |
+| `FrameRequestCallback` 94 ms | o `rAF` do Framer Motion calculando as transformações |
+
+> **O de 195 ms foi descontado**, e é honestidade obrigatória: `Window.fetch.catch`
+> é o handler de erro do fetch ao Supabase, que falha **no meu sandbox** com
+> `ERR_CERT_AUTHORITY_INVALID` (proxy TLS). Em produção esse fetch responde.
+> Apresentá-lo como defeito do site seria vender artefato do meu ambiente como
+> achado (§1.1).
+
+#### O que isso quer dizer, e por que liga no resto
+
+**A travada não é a primeira cena: é o boot do site competindo com a rolagem.**
+O FCP é 2,4 s e a abertura termina em ~3,5 s; quem começa a rolar nesse intervalo
+está rolando enquanto o React ainda monta.
+
+É **o mesmo problema do LCP**, sentido de outro jeito — e é por isso que o
+`will-change` não mudou nada: não havia repaint para otimizar.
+
+**Nada foi alterado.** O `will-change` foi experimento local, medido e revertido;
+a landing está intacta.
+
+---
+
 ### `[17/09]` A Etapa 5 rendeu TRÊS diagnósticos e NENHUMA otimização — e está certo
 
 Autorização dele: *"pode fazer e pode realizar os concertos de otimização"*. O
