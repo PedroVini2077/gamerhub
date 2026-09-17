@@ -1190,7 +1190,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->19.411<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->19.420<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1480,6 +1480,15 @@ puro no log do job. *Secret* é mascarado — se vazar num `echo`, o GitHub troc
 por `***`.
 
 ### 3. Confira que funcionou
+
+> **⚠️ O botão só aparece depois que o workflow estiver na `main`.** O GitHub
+> lista em **Actions** apenas os workflows que existem no **branch padrão**, e
+> `workflow_dispatch` também só é oferecido a partir dali. Enquanto o arquivo
+> estiver só numa branch de trabalho, a página responde *"This workflow does not
+> exist."* — **e isso não é erro do segredo**.
+>
+> Foi exatamente o que aconteceu em 17/09: eu passei o link antes de mergear, e
+> ele abriu numa tela vazia. O segredo pode estar perfeito e a tela dizer isso.
 
 Você **não** precisa fazer nada acontecer para testar. O workflow tem gatilho
 manual:
