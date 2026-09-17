@@ -16,8 +16,14 @@
 - Funções `SECURITY DEFINER` administrativas/owner têm `EXECUTE` **revogado de
   `anon`** (defesa em profundidade): além da checagem interna por `auth.uid()`,
   usuários não autenticados sequer conseguem invocá-las via RPC. Só permanecem
-  abertas a `anon` a leitura do estado de login (`check_login_status`) e a
-  leitura de XP (`get_user_xp`).
+  abertas a `anon` a checagem de username no cadastro (`username_disponivel`) e
+  a contagem de migrations (`contagem_de_migrations`, exceção decidida em
+  12/09).
+
+  > **`[17/09]` Esta linha dizia `check_login_status` e `get_user_xp`, e as duas
+  > estavam erradas.** Medido: `get_user_xp` é só de `authenticated` há tempo, e
+  > `check_login_status` foi **revogada hoje** (SEC-022) — ela era porta morta
+  > desde 11/09, quando a tela de login parou de chamá-la.
 
   > **`[28/08]` `register_login_attempt` foi removida.** Este parágrafo a
   > listava como aberta a `anon`, e conferir no banco mostrou que ela não existe
@@ -333,6 +339,28 @@ que estão na lista dele. Está no `BACKLOG.md`.
 
   Trava: `punicaoRespeitaHierarquia.test.js` ganhou o espelho — *quem desfaz
   punição também compara cargo?* —, provada reinjetando os dois bugs.
+- **`[17/09]` Duas portas que ninguém usava mais** (SEC-022 e SEC-023),
+  achadas ao fechar as 23 funções que faltavam ler.
+
+  **`check_login_status` era oráculo de enumeração esperando a hora.** Qualquer
+  pessoa **sem conta** perguntava por **qualquer e-mail** e recebia `attempts`,
+  `blocked` e `blocked_until`. Inofensiva **só porque `login_attempts` está
+  vazia** — e ela está vazia porque o hook que a alimentaria é de plano pago. A
+  proteção não era a função: era a tabela. No dia do upgrade, vira resposta a
+  *"este e-mail existe e está sob ataque?"* para quem não tem conta.
+
+  E **ninguém chamava**: varridos `src/`, `supabase/functions/`, `e2e/` e
+  `scripts/`. A tela de login parou de usá-la em 11/09 e o grant ficou seis dias
+  órfão. Revogada de `anon` e `authenticated`; a função fica, guardada para o
+  upgrade. Provado: `HTTP 401` pela REST API com a chave anônima, enquanto
+  `username_disponivel` continua `200`.
+
+  **O alarme de "banido tentou entrar" não tinha teto.** O guard de identidade
+  está certo (só o próprio e-mail — a brecha de 28/08), mas a pessoa banida
+  podia chamar quantas vezes quisesse sobre si mesma, e cada chamada notificava
+  **toda a equipe**. Medido sem ninguém atacando: **9 linhas em 28 minutos**.
+  Hoje a repetição dentro de 30 min atualiza a linha existente — nove tentativas
+  viram **uma linha dizendo "9 vezes"**. 4ª regra do §0.2.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

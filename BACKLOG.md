@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**43 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -353,7 +353,7 @@ subir de plano) — e ela continua sem resposta.
 | --- | --- | --- |
 | **B2** 🔵 | Política de senha no painel de Auth | continua válida. A proteção contra senha vazada **não** entra: plano Pro |
 | **B3** 🔵 | Alerta de cota do Sentry | ele **acha** que já ativou. Não tenho como verificar daqui — fica assim escrito, sem eu afirmar nem negar |
-| **B4** ⏳ | Implantar as Edge Functions | **FEITO em 17/09** — as 8 subiram e `npm run edges` diz 8/8 OK. **O que resta é ele pôr o token como segredo do GitHub** (`SUPABASE_ACCESS_TOKEN`), e aí a implantação deixa de depender de token no chat. Passo a passo em `OPERACAO.md` |
+| **B4** ✅ | Implantar as Edge Functions | **FEITO em 17/09** — as 8 subiram e `npm run edges` diz 8/8 OK. **FECHADO em 17/09**: ele pôs o segredo, o workflow rodou verde de ponta a ponta e o passo de prova confirmou 8/8 |
 
 ---
 
@@ -513,6 +513,26 @@ AGORA** escrito nele.
   Duas respostas possíveis, e as duas são dele: promover um super admin de
   confiança, ou aceitar que a recuperação do fundador é por fora do site (e
   então isso precisa estar escrito no `OPERACAO.md`, com o passo a passo).
+
+- ⬜ `[17/09]` 🟡 **DUAS soluções para o mesmo problema de alarme repetido — e
+  eu criei a segunda hoje.** *DECISÃO DELE.*
+
+  | Função | Estratégia | Ganha | Perde |
+  | --- | --- | --- | --- |
+  | `registrar_falha_de_edge_function` | **suprime** a repetição | trilha estritamente append-only | a contagem |
+  | `record_banned_login_attempt` (SEC-023) | **atualiza** a linha | "9 vezes" é sinal de verdade | a linha deixa de ser imutável |
+
+  A primeira tem a razão escrita no código: *"a trilha é append-only, então não
+  dá para incrementar um contador na linha existente sem mudar essa natureza"*.
+  **Eu li isso DEPOIS de aplicar o SEC-023** — o argumento é legítimo e eu não o
+  considerei antes de escrever.
+
+  A favor de atualizar: aqui a contagem **é** a informação. "Tentou 1 vez" e
+  "tentou 30 vezes em meia hora" são fatos diferentes, e a linha alterada
+  descreve evento **do sistema**, não ação humana.
+
+  Alinhar é barato nos dois sentidos. O que não pode é ficar com duas respostas
+  para a mesma pergunta (§4, fonte única).
 
 - ⬜ `[12/09]` 🔵 **`notify_user` aceita 9 tipos; o sino estiliza 4.** *BLOCO D.*
   `warning`, `info`, `success`, `error`, `system` e `role` estão na lista
