@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**45 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -389,7 +389,7 @@ segurança.
 | 🟠 2 | `robots.txt` · `sitemap.xml` | ✅ **FEITO em 17/09** — ver `db/2026-09-17-prompt1-etapa1.md` |
 | 🟡 3 | titles · meta descriptions · canonical · **JSON-LD** | ✅ **FEITO em 17/09** — 6 títulos únicos de 6, canonical por página, e o JSON-LD com **um** tipo (`WebSite`). Ver `db/2026-09-17-prompt1-etapa3.md` |
 | 🟢 4 | acessibilidade — problema concreto, preservando a direção artística | ✅ **FEITO em 17/09** — medido em navegador nas 5 rotas: 0 botão sem nome, 0 link sem texto, 0 imagem sem `alt`, nenhum salto de cabeçalho. **2 defeitos reais**, os dois corrigidos |
-| 🔵 5 | performance — **só com evidência** | ⬜ |
+| 🔵 5 | performance — **só com evidência** | ✅ **DIAGNOSTICADA em 17/09, e a evidência disse para NÃO mexer.** Três investigações, zero otimizações: a minha proposta do Supabase estava errada (quem puxa o chunk é o `useAuth`), o CSS não tem gordura (49,4 dos 70,5 kB são nossos, o purge está certo), e separar o `framer-motion` **estourou o orçamento** — chunk menor comprime pior. Ver `db/2026-09-17-etapa5-e-o-alvo-inexistente.md` |
 | ⚪ 6 | `llms.txt` | ✅ **FEITO em 17/09** |
 
 **ACHADO DA ETAPA 1, já medido em produção — e é falha MUDA:**
@@ -1056,35 +1056,6 @@ dependência técnica real** que decide o resto:
   arquivo que inchei, ou eu uso o §4 como desculpa para refatorar o que quiser.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[17/09]` 🟠 **O roteiro `portas-do-banco.mjs` aprova RPC pelo motivo
-  errado — e o número final sugere mais do que ele prova.** *Precisa de decisão
-  dele: a correção muda o que o teste FAZ contra produção.*
-
-  **O achado, medido contra produção com a chave anônima:** o roteiro chama cada
-  RPC com corpo vazio, e o PostgREST devolve **404 para função com parâmetro
-  obrigatório** — porque não acha a sobrecarga, não porque negou privilégio. Os
-  dois 404 são indistinguíveis daqui.
-
-  ```
-  username_disponivel  {}                        -> 404   (parece fechada)
-  username_disponivel  {"p_username":"zzteste"}  -> 200   <- ABERTA de propósito
-  ```
-
-  **Impacto:** quase todas as entradas de `RPCS_FECHADAS` têm parâmetro
-  obrigatório. Se alguém der `GRANT` em `ban_user` amanhã, o 404 de assinatura
-  chega antes e o teste **continua verde**. É a classe "teste que não consegue
-  falhar" — a mesma que originou o `varrerFontes.js` — de volta em outro lugar.
-
-  **Isto NÃO é brecha:** nenhuma porta abriu, e as três do contador de login
-  foram conferidas uma a uma com o argumento certo (as três deram `401`). É
-  **vigia cego**, que é §1.5.
-
-  **A correção, e por que ela pede decisão:** mandar o argumento nomeado de cada
-  função. Isso faria o roteiro **invocar de verdade** `ban_user`,
-  `soft_delete_post` e afins, caso alguma estivesse aberta. O caminho seguro é
-  UUID zerado (`00000000-…`), que não casa com ninguém — mas é um teste de CI
-  passando a escrever contra produção, e isso é 🟡 pelo §7.
 
 - ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
   de painel — eu não alcanço.*
