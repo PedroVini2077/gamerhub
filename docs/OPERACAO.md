@@ -1141,7 +1141,7 @@ Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
 linhas"* num projeto de <!--n:src.arquivos-->383<!--/n--> arquivos e
-<!--n:src.linhas-->40.148<!--/n--> linhas.
+<!--n:src.linhas-->40.238<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1190,7 +1190,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->19.136<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->19.241<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1313,3 +1313,105 @@ Não é uma chave limitada a deploy.
 
 **Como conferir que funcionou:** `npm run edges` passa a dizer `OK` nas 8. Hoje
 ele diz OK só em `cleanup-orphans`.
+
+---
+
+## `[17/09]` O FUNDADOR FOI BANIDO — como voltar pelo banco
+
+> **Por que esta receita existe.** Em 17/09 o dono decidiu que um `super_admin`
+> **não** pode desbaniar o fundador (SEC-021). Isso fecha uma porta de
+> propósito: se a conta dele for banida, **ninguém no site desfaz** — nem ele,
+> porque conta banida não entra.
+>
+> Ele já tinha testado o caminho pelo banco e disse: *"o processo não é difícil,
+> só preciso lembrar os comandos"*. Então os comandos ficam aqui, e não na
+> memória dele nem numa conversa que some.
+
+### Antes de mandar você clicar, eu conferi que o clique é seguro
+
+Duas coisas poderiam fazer a receita falhar em silêncio, e as duas foram
+medidas **em transação com `ROLLBACK`**, no banco de produção:
+
+| O risco | O que foi medido |
+| --- | --- |
+| o trigger `guard_profile_privileged_cols` reverter o `UPDATE` sem dar erro | ele só age quando `current_user in ('authenticated','anon')` — **o editor de SQL roda como `postgres`** (medido: `current_user` = `postgres`), então o guard não alcança |
+| o `UPDATE` "passar" e não mudar nada | ensaio completo: banir o owner → rodar a receita → **`banned=false`**, guard não reverteu |
+
+Esta é a diferença entre receita e armadilha bem formatada: sem essa
+conferência, você rodaria o comando, veria "Success. No rows returned" e
+continuaria trancado para fora — porque `UPDATE` sem erro **não prova que
+mudou** (§1.5).
+
+### Passo a passo
+
+**1. Abra o editor de SQL** — link direto, já no projeto certo:
+
+`https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/sql/new`
+
+**O que você vai ver:** uma página com um editor de texto grande no meio, o
+título **SQL Editor** na barra lateral esquerda, e um botão verde **Run** no
+canto inferior direito (ou `Ctrl`/`Cmd` + `Enter`).
+
+**2. Antes de consertar, CONFIRA o estado.** Cole isto e rode:
+
+```sql
+select username, role, banned, ban_reason, banned_by_username, banned_at
+  from profiles
+ where username = 'opedrovini';
+```
+
+**O que você vai ver:** uma linha. Se `banned` estiver `false`, **pare** — o
+problema não é banimento, e o resto desta receita não se aplica.
+
+**3. Desfaça o banimento.** Cole e rode:
+
+```sql
+update profiles
+   set banned             = false,
+       ban_reason         = null,
+       ban_details        = null,
+       banned_by          = null,
+       banned_by_username = null,
+       banned_at          = null
+ where username = 'opedrovini';
+```
+
+**O que você vai ver:** `Success. No rows returned`. Isso **não é prova de que
+funcionou** — é por isso que existe o passo 4.
+
+**4. CONFIRA que funcionou.** Rode de novo a consulta do passo 2.
+
+`banned` tem que estar **`false`**. Se continuar `true`, o guard reverteu —
+significa que a sessão não está como `postgres`, e aí me chame em vez de
+insistir.
+
+**5. Entre no site normalmente.** Se a tela de banido continuar aparecendo, saia
+e entre de novo: ela é desenhada a partir do perfil que o site carregou no
+login.
+
+### O que NÃO fazer
+
+- **Não apague a linha do `profiles`.** Isso não desbane: derruba o perfil
+  inteiro, e o `auth.users` fica órfão. A conta some em vez de voltar.
+- **Não mexa em `role` no mesmo comando.** Se o cargo estiver certo, alterar é
+  risco sem ganho — e `role` é `NOT NULL` desde o SEC-017, então um erro de
+  digitação vira erro de constraint no meio da recuperação.
+- **Não use este caminho para desbanir outra pessoa.** Para os outros existe o
+  painel, e o painel **deixa rastro** em `admin_logs`. Este `UPDATE` direto
+  não deixa — é a limitação registrada no `BANCO.md`, e é aceitável só porque
+  aqui não existe outro caminho.
+
+### O rastro que esta receita NÃO deixa
+
+Um `UPDATE` pelo editor de SQL não grava em `admin_logs`. Se você quiser que a
+recuperação fique na trilha, rode **depois** de confirmar o passo 4:
+
+```sql
+insert into admin_logs (action, details, category, actor_id, actor_username,
+                        severity, metadata, admin_id, admin_username)
+select 'admin_unban', '@' || username || ' recuperou o proprio acesso pelo banco '
+       || '(o site nao permite desbanir o fundador — SEC-021)',
+       'security', id, username, 'warning',
+       jsonb_build_object('target_id', id, 'via', 'sql_editor'), id, username
+  from profiles where username = 'opedrovini';
+```

@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**46 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -425,35 +425,6 @@ AGORA** escrito nele.
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
-- ⬜ `[17/09]` 🟠 **SEC-021 · a INVERSA do ban não respeita hierarquia.**
-  *Pedido direto dele: "não quero que ele tenha poderes pra me desbanir".*
-
-  A assimetria, medida no corpo das funções:
-
-  | Ação | Guard | Olha o cargo do ALVO? |
-  | --- | --- | --- |
-  | `ban_user` | `role_rank(ator) <= role_rank(alvo)` recusa | **sim** |
-  | `unban_user` | `IF NOT is_super()` | **não** |
-  | `approve_unban_request` | `IF NOT is_super()` | **não** |
-
-  Um `super_admin` **não consegue banir** o `owner` — e **consegue desbanir**.
-  A ida checa cargo, a volta não. Enquanto não existir super admin nenhum isso
-  é teórico; no minuto em que existir, é poder real sobre a conta do fundador.
-
-  **Conserto:** a volta passa a exigir rank estritamente maior que o do alvo, o
-  mesmo `can_moderate_content` que as seis policies de conteúdo já usam. Efeito:
-  `super_admin` desbane `admin` e `user`, e **não** desbane `owner`; o `owner`
-  desbane todo mundo.
-
-  **A contrapartida, e ele já aceitou:** se o próprio `owner` for banido, a
-  recuperação é **pelo banco**. Ele já testou e disse que *"o processo não é
-  difícil, só preciso lembrar os comandos"* — então junto vai a receita no
-  `OPERACAO.md`, para ele não depender da memória.
-
-- ⬜ `[17/09]` 🔵 **A notificação de desbanimento promete o que não entrega.**
-  *Sobra do SEC-015, depois de ele decidir que o ban destrói mesmo.*
-  A mensagem diz *"Sua conta voltou ao normal."* — a conta volta, o conteúdo
-  apagado não. Mensagem de sistema que promete o que não cumpre é §1.5.
 
 - ✅ **SEC-011 · `anon` lia 26 das 29 tabelas** — **FECHADO em 12/09**, e com
   escopo maior do que o achado. O dono definiu a régua de papéis (*"não quero
@@ -1500,7 +1471,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->118<!--/n--> arq ·
-  <!--n:src.lib.linhas-->12.343<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->12.433<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
