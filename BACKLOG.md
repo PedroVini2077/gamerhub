@@ -35,6 +35,37 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🗣️ `[17/09]` A MESA — a visão de futuro e a landing, decididas JUNTOS
+
+**Pedido dele, na letra:** *"a gente coloca na mesa tudo o que está na visão de
+futuro e sobre a landing page e decidimos o que vamos fazer, até porque dá pra
+fazer agora; aí vc coloca tudo aqui e vc vai me falando o que podemos fazer e
+tals, anota isso"*.
+
+**O que isto é:** uma conversa de decisão, não uma tarefa de execução. Ele quer
+**a lista inteira na frente** — o que o [`VISAO-DE-FUTURO.md`](docs/VISAO-DE-FUTURO.md)
+guarda e o que o [`EVOLUCAO-VISUAL-DA-LANDING.md`](docs/identidade/EVOLUCAO-VISUAL-DA-LANDING.md)
+propõe — com **o que já dá para fazer hoje** separado do que não dá, e eu
+opinando item a item.
+
+**O que ele espera de mim quando a mesa abrir:**
+
+| | |
+| --- | --- |
+| a lista **completa**, não uma seleção minha | ele decide, eu informo |
+| para cada item: **dá pra fazer agora?** | e o que falta, quando não dá |
+| a minha opinião, **inclusive quando for contra** | §7: concordar por educação é o pior serviço |
+| o que **conflita** entre si | duas ideias boas que não cabem juntas |
+
+**Está aqui e não na fila** porque é o próximo bloco combinado, e porque o §6.2
+manda o pedido virar item escrito **antes** de começar — foi assim que quatro
+pedidos dele viveram só na conversa em 01/09.
+
+> **A landing continua área protegida até esta mesa acontecer.** A conversa pode
+> mudar isso; nada antes dela muda.
+
+---
+
 ### `[11/09]` REFORMULAÇÃO DA LANDING — em fatias, mergeando cada uma
 
 **Ordem do dono:** *"eu realmente quero reformular toda a landing, não só a
@@ -311,7 +342,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**44 itens abertos** (+ 1 ideia sem compromisso)
+**43 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -518,21 +549,6 @@ AGORA** escrito nele.
   usa. Não é brecha — admin é cargo autorizado —, é minimização de dado e
   egress (§6.1): a cota mais apertada do Supabase paga por coluna que ninguém
   lê. Trocar por lista explícita de colunas.
-
-- ⬜ `[12/09]` 🟠 **NÃO EXISTE NENHUM SUPER ADMIN — e isso é o que transformava
-  o SEC-020 em porta sem volta.** *Descoberto ao medir o impacto do SEC-020, e é
-  DECISÃO DO DONO.* Medido: `select count(*) from profiles where role_rank(role)
-  >= 3 and not banned` devolve **0** — há o `owner` e dois `admin`.
-
-  O buraco de escalação foi fechado, então isto deixou de ser urgente. Mas a
-  assimetria continua e vale a decisão dele: **`unban_user` exige `is_super()`**,
-  e o `owner` é rank 4, ou seja, ele desbane. O problema é o caso em que o
-  próprio `owner` é quem está banido — aí não existe ninguém no site que possa
-  desfazer, e a saída é a credencial do banco.
-
-  Duas respostas possíveis, e as duas são dele: promover um super admin de
-  confiança, ou aceitar que a recuperação do fundador é por fora do site (e
-  então isso precisa estar escrito no `OPERACAO.md`, com o passo a passo).
 
 - ⬜ `[17/09]` 🟡 **DUAS soluções para o mesmo problema de alarme repetido — e
   eu criei a segunda hoje.** *DECISÃO DELE.*
@@ -1474,8 +1490,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->122<!--/n--> arq ·
-  <!--n:src.lib.linhas-->13.164<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->123<!--/n--> arq ·
+  <!--n:src.lib.linhas-->13.319<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

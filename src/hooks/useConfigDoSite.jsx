@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './useAuth.jsx';
 import { guardarMotivoDaPausa } from '../lib/pauseReason';
 
 /**
@@ -67,7 +68,12 @@ export function useConfigDoSite() {
 export function ProvedorDaConfigDoSite({ children }) {
   const [maintenance, setMaintenance] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
+  // `[17/09]` Ver a seção "O CANAL é só de quem tem sessão", abaixo.
+  const { user } = useAuth();
 
+  // ── A LEITURA: para TODO MUNDO, inclusive quem nunca vai logar ────────────
+  // Ela é o conserto de 03/09 e não pode ser condicionada a nada: é ela que faz
+  // a landing aprender o `pause_reason` enquanto ainda há banco.
   useEffect(() => {
     let vivo = true;
 
@@ -91,6 +97,45 @@ export function ProvedorDaConfigDoSite({ children }) {
         setConfigLoaded(true);
       });
 
+    return () => { vivo = false; };
+  }, []);
+
+  /**
+   * ── `[17/09]` O CANAL é só de quem tem SESSÃO ──────────────────────────────
+   *
+   * Até hoje **todo visitante anônimo da landing** abria uma conexão de realtime
+   * — só para saber ao vivo se o site entrou em manutenção enquanto ele lia uma
+   * página de apresentação.
+   *
+   * **Conexão de realtime é recurso contado por plano** (§0.2), e o custo cresce
+   * com o número de visitantes, que é justamente o que a landing existe para
+   * aumentar. É o pior formato de custo que este projeto pode ter: cresce com o
+   * sucesso.
+   *
+   * ── O que se perde, dito antes de alguém notar ────────────────────────────
+   *
+   * Quem está na landing **deslogado** e o site entra em manutenção *durante* a
+   * leitura não vê a tela mudar sozinha. Ele descobre ao clicar em entrar, ou ao
+   * recarregar.
+   *
+   * Isso é aceitável e a razão é a assimetria de situação: quem está logado está
+   * **no meio de alguma coisa** — escrevendo um post, num chat de live — e
+   * merece o aviso ao vivo. Quem está lendo a apresentação não perde trabalho
+   * nenhum.
+   *
+   * **O que NÃO se perde:** a landing continua sabendo do modo manutenção e do
+   * motivo, porque a LEITURA acima é para todos. O que muda é só o *ao vivo*.
+   *
+   * ── Por que `user` e não uma flag de rota ─────────────────────────────────
+   *
+   * Amarrar a rota traria de volta o bug de 03/09 pela outra ponta: a pessoa
+   * logada que está na `/` cairia fora do canal. `user` acompanha a sessão, e o
+   * efeito reassina sozinho quando ela faz login — sem recarregar a página.
+   */
+  useEffect(() => {
+    if (!user) return undefined;
+    let vivo = true;
+
     const canal = supabase.channel('config_do_site')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_config' }, payload => {
         if (!vivo) return;
@@ -105,7 +150,7 @@ export function ProvedorDaConfigDoSite({ children }) {
       }).subscribe();
 
     return () => { vivo = false; supabase.removeChannel(canal); };
-  }, []);
+  }, [user]);
 
   return (
     <ContextoDaConfig.Provider value={{ maintenance, configLoaded }}>

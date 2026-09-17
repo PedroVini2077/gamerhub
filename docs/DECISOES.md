@@ -245,7 +245,85 @@ Soft-hide, nunca delete automático. O moderador humano tem a palavra final.
 
 ---
 
+## Hierarquia
+
+### `[17/09]` NÃO existirá super admin — e a recuperação do fundador é POR FORA
+
+**Decisão dele, na letra:** *"os super admin não vou criar nenhum, até pq não
+tenho conta pra criar"*.
+
+Isto fecha uma pergunta que estava aberta desde 12/09, quando medi que
+`role_rank(role) >= 3 and not banned` devolvia **0**: existem o `owner` e dois
+`admin`, e nenhum super admin.
+
+**A assimetria que isso deixa em pé, e ela é aceita conscientemente.**
+`unban_user` exige `is_super()`. O `owner` é rank 4, então ele desbane
+normalmente. O caso sem saída é o **próprio `owner` estar banido**: não há
+ninguém no site capaz de desfazer.
+
+| | |
+| --- | --- |
+| **O que foi escolhido** | a recuperação do fundador acontece **pelo banco**, com a credencial mestra |
+| **O que foi recusado** | promover um super admin de confiança |
+| **Por quê** | ele não tem uma segunda pessoa para o papel, e a alternativa dele em 17/09 foi explícita: *"não quero que ele tenha poderes pra me desbanir"* |
+
+**A contrapartida já está paga.** A receita de recuperação está escrita no
+[`OPERACAO.md`](OPERACAO.md) e foi **ensaiada em `ROLLBACK`** quando a SEC-021
+entrou — não é um plano no papel, é um procedimento testado.
+
+> **O que torna esta decisão segura de reavaliar:** ela depende de uma condição
+> de fato — ele ser a única pessoa com poder no site. No dia em que houver uma
+> segunda pessoa de confiança, a pergunta volta, e volta diferente: passa a ser
+> "quem", e não "se".
+
+---
+
 ## Realtime e custo
+
+### `[17/09]` A landing de quem NÃO tem conta parou de abrir realtime
+
+**Aprovado por ele**, e a frase foi curta: *"pode fazer esse treco da conexão de
+realtime"*.
+
+**O que existia.** O `ProvedorDaConfigDoSite` envolve **todas** as rotas — foi o
+conserto de 03/09, para a landing aprender o `pause_reason` enquanto ainda há
+banco. Junto com a leitura, ele assinava um canal de realtime em `site_config`.
+Resultado: **todo visitante anônimo** abria um WebSocket.
+
+**Por que isso é o pior formato de custo que o projeto pode ter.** Conexão de
+realtime é contada por plano, e esta cresce com o **número de visitantes** —
+que é exatamente o que a landing existe para aumentar. Quanto melhor ela
+funcionasse, mais caro ficaria, e nada avisaria antes da cota.
+
+Medido antes e depois, mesma ferramenta, landing anônima:
+
+| | WebSocket de realtime | leitura de `site_config` |
+| --- | --- | --- |
+| antes | **3** (1 tentativa + 2 retentativas) | 3 |
+| depois | **0** | 3 |
+
+**O que ficou restrito:** só o **ao vivo**. A leitura continua sendo de todo
+mundo, e é ela que carrega o conserto de 03/09.
+
+**O que se perde, dito antes de alguém notar.** Quem está na landing deslogado e
+o site entra em manutenção *durante* a leitura não vê a tela mudar sozinha —
+descobre ao clicar em entrar, ou ao recarregar.
+
+Isso é aceitável pela assimetria de situação: **quem está logado está no meio de
+alguma coisa** — escrevendo um post, num chat de live — e merece o aviso ao
+vivo. Quem está lendo a apresentação não perde trabalho nenhum.
+
+**Por que amarrado a `user` e não à rota.** Amarrar a rota traria o bug de 03/09
+de volta pela outra ponta: a pessoa logada que está na `/` cairia fora do canal.
+`user` acompanha a sessão, e o efeito reassina sozinho no login, sem recarregar.
+
+> **A trava tem duas asserções de propósito** (`e2e/realtime-do-anonimo.mjs`):
+> *sem socket* **e** *com leitura*. A primeira sozinha seria satisfeita apagando
+> o provedor inteiro — e aí o motivo da pausa volta a nunca ser aprendido por
+> quem chega pela landing, que foi exatamente o defeito que ele relatou em
+> 03/09.
+
+---
 
 ### `[22/08]` O que ficou **fora** do realtime, e por quê
 
@@ -2248,7 +2326,7 @@ Sem erro, sem log, sem teste.
 
 Os três foram encontrados por ele, no telefone dele. **Essa é a definição de
 falha muda** (§1.5), e a resposta certa não era corrigir os três: era perguntar
-por que nenhum dos <!--n:e2e.roteiros-->17<!--/n--> roteiros de navegador fazia
+por que nenhum dos <!--n:e2e.roteiros-->18<!--/n--> roteiros de navegador fazia
 a pergunta.
 
 Agora o `e2e/conteudo-visivel.mjs` faz, e ele foi escolhido por já ser o roteiro

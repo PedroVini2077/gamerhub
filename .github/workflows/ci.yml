@@ -437,6 +437,19 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[17/09]` Custo que cresce com o SUCESSO da landing: cada visitante
+      # anônimo abria um WebSocket de realtime só para saber ao vivo se o site
+      # entrou em manutenção. Conexão é contada por plano (§0.2), e ninguém
+      # receberia aviso antes da cota estourar.
+      #
+      # O roteiro tem DUAS asserções de propósito: sem socket E com a leitura de
+      # `site_config`. A primeira sozinha seria satisfeita apagando o provedor —
+      # e aí volta o bug de 03/09, do motivo de pausa que nunca era aprendido.
+      - name: A landing de quem não tem conta não abre realtime
+        run: node e2e/realtime-do-anonimo.mjs
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+
       # `[04/09]` As duas artes da tela de entrada chegam como UMA imagem com os
       # dois lutadores, e viram fundo depois de recortadas. O primeiro recorte
       # foi numa reta vertical no meio — e os dois se sobrepõem em ~75 colunas,
