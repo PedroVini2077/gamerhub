@@ -1190,7 +1190,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->19.320<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->19.411<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1415,3 +1415,94 @@ select 'admin_unban', '@' || username || ' recuperou o proprio acesso pelo banco
        jsonb_build_object('target_id', id, 'via', 'sql_editor'), id, username
   from profiles where username = 'opedrovini';
 ```
+
+---
+
+## `[17/09]` O TOKEN DO SUPABASE NO COFRE DO GITHUB — passo a passo
+
+> **Para que serve.** Com este segredo no lugar, o CI implanta as Edge Functions
+> **do disco** quando algo na pasta delas chega na `main`. Sem ele, a
+> implantação depende de alguém colar um token no chat — que foi como as 7
+> funções ficaram rodando versão velha por dias.
+>
+> Caminho conferido na [documentação oficial do GitHub](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+> em 17/09, e não escrito de memória: painel muda de lugar sem avisar.
+
+### Antes de você clicar, o que eu conferi
+
+| O risco | O que foi feito |
+| --- | --- |
+| o deploy automático **ligar** o `verify_jwt` e derrubar o cadastro | `supabase functions deploy` liga por padrão, e 7 das 8 precisam dele **desligado**. Criei o `supabase/config.toml` declarando cada uma — os valores foram **medidos** batendo em cada função sem credencial, não copiados |
+| o workflow implantar código de branch em produção | ele só roda em `main`, e só quando `supabase/functions/**` ou a configuração mudam |
+| o job dizer "implantado" sem ter implantado | o último passo pergunta a impressão a cada função **no ar** e reprova se divergir — `Deployed Functions.` é o que a CLI diz ao terminar o upload, não prova de que a função viva é essa |
+
+### 1. Gere o token
+
+Link direto: `https://supabase.com/dashboard/account/tokens`
+
+**O que você vai ver:** a página **Access Tokens**, com uma lista e o botão
+**Generate new token** no canto superior direito.
+
+Clique nele, dê um nome que diga de onde ele é — sugestão: **`github-actions-gamerhub`**
+— e confirme.
+
+> **O valor aparece UMA vez.** Copie na hora; depois a tela só mostra o prefixo.
+> Se perder, não dá para recuperar: gera outro e apaga o antigo.
+
+### 2. Guarde no cofre do repositório
+
+Link direto, já no repositório certo:
+
+`https://github.com/PedroVini2077/gamerhub/settings/secrets/actions`
+
+**O que você vai ver:** a página **Actions secrets and variables**, com as abas
+**Secrets** e **Variables**. Você já tem quatro segredos aqui
+(`E2E_EMAIL`, `E2E_PASSWORD`, `E2E_STAFF_EMAIL`, `E2E_STAFF_PASSWORD`) e duas
+variáveis (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) — então a tela vai
+estar familiar.
+
+Na aba **Secrets**, clique em **New repository secret**. Preencha:
+
+| Campo | O que digitar |
+| --- | --- |
+| **Name** | `SUPABASE_ACCESS_TOKEN` |
+| **Secret** | o token que você copiou, colado inteiro |
+
+Clique em **Add secret**.
+
+> **O nome tem que ser exatamente esse.** Não é preferência: a CLI do Supabase
+> lê essa variável **sozinha**, sem eu precisar passar `--token`. Um nome
+> diferente faz o deploy falhar com erro de autenticação, que não diz que o
+> problema é o nome.
+
+**Secret e não Variable**, e a diferença importa: *variable* aparece em texto
+puro no log do job. *Secret* é mascarado — se vazar num `echo`, o GitHub troca
+por `***`.
+
+### 3. Confira que funcionou
+
+Você **não** precisa fazer nada acontecer para testar. O workflow tem gatilho
+manual:
+
+`https://github.com/PedroVini2077/gamerhub/actions/workflows/implantar-edges.yml`
+
+**O que você vai ver:** a página do workflow **implantar Edge Functions**, com o
+botão **Run workflow** do lado direito. Clique, escolha a branch **main**, e
+**Run workflow** de novo.
+
+**O que significa cada resultado:**
+
+| Resultado | O que quer dizer |
+| --- | --- |
+| ✅ verde | as 8 subiram **e** foram conferidas uma a uma contra o que está no repositório |
+| ❌ *"Falta o segredo SUPABASE_ACCESS_TOKEN"* | o nome saiu diferente, ou foi criado como *variable*. Volte ao passo 2 |
+| ❌ no passo **implantar todas** | o token existe e foi recusado — provavelmente revogado. Gere outro |
+| ❌ no passo **provar que o que esta no ar veio deste codigo** | subiu e **não bateu**. Não ignore: é exatamente o defeito que este workflow existe para pegar |
+
+### Quando trocar o token
+
+- Se ele aparecer em qualquer lugar fora do cofre — chat, print, log, mensagem.
+  **Um PAT dá acesso de gerência ao projeto inteiro**, não só às funções.
+- Revogar é no mesmo link do passo 1, no ícone de lixeira da linha.
+- Depois de revogar, o workflow falha no passo **implantar todas** até você
+  colocar o novo. Ele não quebra o site — só para de implantar.

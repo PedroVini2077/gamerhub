@@ -1,0 +1,89 @@
+# ============================================================================
+# `[17/09]` A configuração de cada Edge Function — e por que este arquivo nasceu
+# ============================================================================
+#
+# Este arquivo não existia, e a ausência dele era uma armadilha para o dia em
+# que a implantação virasse automática.
+#
+# ── O risco, dito com precisão ──────────────────────────────────────────────
+#
+# `supabase functions deploy` aplica `verify_jwt = true` por padrão. Sete das
+# oito funções deste projeto precisam dele **desligado**, e quem desligava era
+# a flag `--no-verify-jwt` digitada à mão na linha de comando.
+#
+# Ou seja: a segurança de cada função dependia de alguém lembrar de um
+# parâmetro. Um `supabase functions deploy` sem a flag — que é exatamente o que
+# o exemplo oficial do GitHub Actions usa — **ligaria** o `verify_jwt` nas sete.
+#
+# O estrago mais grave seria na `send-email`: ela é chamada pelo **Auth Hook** do
+# Supabase, que manda um segredo de webhook e **não** um JWT. Com `verify_jwt`
+# ligado, a plataforma recusaria antes de o código rodar, e **cadastro e
+# recuperação de senha parariam** — em silêncio, porque o hook falha do lado do
+# GoTrue e não aparece em nenhuma tela do site.
+#
+# Com este arquivo, a configuração passa a viver no repositório, versionada, e o
+# deploy vira determinístico: não depende de flag, nem de memória, nem de quem
+# executou.
+#
+# ── Como cada valor abaixo foi DECIDIDO ─────────────────────────────────────
+#
+# Medido em 17/09, batendo em cada função **sem credencial nenhuma** e olhando
+# de quem vinha a recusa:
+#
+#   - `UNAUTHORIZED_NO_AUTH_HEADER`  -> mensagem da PLATAFORMA: verify_jwt LIGADO
+#   - `{"error":"Nao autorizado"}`   -> mensagem do CÓDIGO: verify_jwt desligado,
+#                                       e quem barra é o guard interno da função
+#
+# Não foi copiado de lugar nenhum: é o estado real do ambiente no dia.
+#
+# ── Desligado NÃO quer dizer aberto ─────────────────────────────────────────
+#
+# As sete validam o token **elas mesmas**, e isso foi testado com token forjado:
+# um JWT com estrutura válida e a `sub` do fundador, assinado por mim em vez de
+# pelo Supabase, recebeu `401 {"error":"Invalid token"}`. A `delete-user`, que é
+# a mais destrutiva, ainda por cima só apaga `user.id` — a própria conta de quem
+# chamou, nunca a de outro.
+#
+# O motivo de estarem desligadas é o **preflight**: o navegador manda `OPTIONS`
+# sem `Authorization`, e a plataforma o recusaria antes do código responder o
+# CORS. Some a isso a `send-email`, que é chamada por um hook sem JWT.
+# ============================================================================
+
+project_id = "yuqbdcoljlvncxdnesxk"
+
+# ── A única com verificação na PLATAFORMA ───────────────────────────────────
+# Medido: responde `UNAUTHORIZED_NO_AUTH_HEADER`, que é a recusa do Supabase
+# antes do código rodar. Ela é chamada por agendamento com a service_role, nunca
+# pelo navegador — então não tem preflight para atender e não precisa da porta
+# aberta. Deixar assim é defesa em profundidade de graça.
+[functions.cleanup-orphans]
+verify_jwt = true
+
+# ── As sete que validam o token elas mesmas ─────────────────────────────────
+
+# Chamada pelo Auth Hook do GoTrue, que manda segredo de webhook e NÃO JWT.
+# Ligar `verify_jwt` aqui derruba cadastro e recuperação de senha.
+[functions.send-email]
+verify_jwt = false
+
+# Apaga a PRÓPRIA conta de quem chama (`user.id` vindo de `auth.getUser`).
+# Testado com JWT forjado: `401 Invalid token`.
+[functions.delete-user]
+verify_jwt = false
+
+# As três de moderação: chamadas do navegador, com preflight `OPTIONS`.
+[functions.moderate-text]
+verify_jwt = false
+
+[functions.moderate-image]
+verify_jwt = false
+
+[functions.moderate-links]
+verify_jwt = false
+
+# Formulário público de contato e a resposta da equipe — as duas com preflight.
+[functions.verify-contact]
+verify_jwt = false
+
+[functions.responder-contato]
+verify_jwt = false

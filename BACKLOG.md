@@ -353,7 +353,7 @@ subir de plano) — e ela continua sem resposta.
 | --- | --- | --- |
 | **B2** 🔵 | Política de senha no painel de Auth | continua válida. A proteção contra senha vazada **não** entra: plano Pro |
 | **B3** 🔵 | Alerta de cota do Sentry | ele **acha** que já ativou. Não tenho como verificar daqui — fica assim escrito, sem eu afirmar nem negar |
-| **B4** ✅ | Implantar 7 das 8 Edge Functions | **FEITO em 17/09.** Ele mandou o token, as 8 subiram, e `npm run edges` diz **8/8 OK** pela primeira vez. Junto apareceu a `moderate-text` que **não compilava** — ver `db/2026-09-17-*` |
+| **B4** ⏳ | Implantar as Edge Functions | **FEITO em 17/09** — as 8 subiram e `npm run edges` diz 8/8 OK. **O que resta é ele pôr o token como segredo do GitHub** (`SUPABASE_ACCESS_TOKEN`), e aí a implantação deixa de depender de token no chat. Passo a passo em `OPERACAO.md` |
 
 ---
 

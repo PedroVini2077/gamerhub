@@ -143,4 +143,51 @@ describe('as Edge Functions são código válido', () => {
       + '  edicao a mao, e ela nao se conserta sozinha.',
     ).toEqual([]);
   });
+
+  it('toda função da pasta está declarada no `config.toml`', () => {
+    // `[17/09]` Sem entrada no config, `supabase functions deploy` aplica
+    // `verify_jwt = true` — o PADRÃO. Sete das oito precisam dele desligado,
+    // e a `send-email` é chamada pelo Auth Hook, que manda segredo de webhook
+    // e NAO JWT: ligar ali derruba cadastro e recuperacao de senha.
+    //
+    // O perigo nao e a config de hoje, que esta certa. E a funcao NOVA: ela
+    // nasce fora do arquivo, e o primeiro deploy automatico a tranca — em
+    // silencio, porque a recusa acontece na plataforma, antes do codigo, e nao
+    // aparece em tela nenhuma do site (§1.5).
+    const toml = readFileSync('supabase/config.toml', 'utf8');
+    const declaradas = [...toml.matchAll(/^\[functions\.([\w-]+)\]/gm)].map((m) => m[1]);
+
+    const naPasta = readdirSync(PASTA)
+      .filter((n) => statSync(join(PASTA, n)).isDirectory())
+      .sort();
+
+    expect(
+      naPasta.length,
+      `Nao achei funcao nenhuma em ${PASTA}/ — a trava ficaria vazia.`,
+    ).toBeGreaterThanOrEqual(8);
+
+    const semConfig = naPasta.filter((n) => !declaradas.includes(n));
+    expect(
+      semConfig,
+      'Funcao sem entrada no `supabase/config.toml`:\n'
+      + `  ${semConfig.join('\n  ')}\n\n`
+      + '  Sem a entrada, o deploy aplica `verify_jwt = true` (o padrao) e a\n'
+      + '  plataforma passa a recusar a chamada ANTES do codigo rodar.\n\n'
+      + '  Se a funcao e chamada do navegador, o preflight `OPTIONS` vem sem\n'
+      + '  `Authorization` e morre ali. Se e chamada por hook (como a\n'
+      + '  `send-email`), nao existe JWT nenhum para verificar.\n\n'
+      + '  Decida o valor MEDINDO, nao copiando: bata na funcao sem credencial.\n'
+      + '  `UNAUTHORIZED_NO_AUTH_HEADER` e recusa da PLATAFORMA (true);\n'
+      + '  mensagem em portugues e recusa do CODIGO (false).',
+    ).toEqual([]);
+
+    const orfas = declaradas.filter((n) => !naPasta.includes(n));
+    expect(
+      orfas,
+      `O \`config.toml\` declara funcao que nao existe na pasta:\n  ${orfas.join('\n  ')}\n`
+      + '  Ou a funcao foi apagada e a entrada ficou, ou o nome esta com erro de\n'
+      + '  digitacao — e nesse caso a funcao REAL esta sem configuracao.',
+    ).toEqual([]);
+  });
 });
+
