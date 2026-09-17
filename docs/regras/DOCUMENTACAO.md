@@ -193,6 +193,32 @@ grita por indício vira ruído, e ruído ensina a ignorar o canal (§0.2, 4ª re
 Documento novo sem entrada no mapa é reportado como não mapeado, senão o
 próprio mapa envelheceria em silêncio.
 
+> #### `[17/09]` Ele datava pelo ÚLTIMO TOQUE, e o `npm run numeros` o cegava
+>
+> A data de cada documento saía de `git log -1 -- <doc>`: o último commit que
+> **tocou** o arquivo. Só que o portão de números **toca documento sozinho** —
+> ele reescreve o valor dentro dos marcadores a cada PR que muda uma contagem.
+>
+> **Efeito:** todo documento com marcador vivo se **rejuvenescia sozinho**, e são
+> justamente os mais centrais que os têm — `README.md`, `AUDITORIA.md`, este
+> arquivo e o `EXECUCAO.md`. O caso que revelou foi o README anunciando uma
+> dependência 3D removida havia seis dias; o último "update" dele tinha sido um
+> robô trocando `176` por `177`.
+>
+> **A ironia, e é o motivo de isto ficar escrito:** o portão de números termina
+> pedindo *"confira o texto EM VOLTA de cada um"* — e, no mesmo ato, apagava o
+> sinal de que alguém precisava conferir. **Portão que cega outro portão** é o
+> §1.5 aplicado à própria esteira de vigilância: nada estoura, nada loga, e o
+> documento simplesmente para de ser vigiado.
+>
+> **Hoje a data vem do último TOQUE DE GENTE:** o commit cujo diff no arquivo
+> ainda difere **depois de neutralizar os valores dos marcadores**. Comparar
+> conteúdo, e não procurar o marcador, é o que evita o falso negativo da linha
+> que tem marcador *e* texto reescrito junto.
+>
+> Provado reinjetando o caso real, e o conserto resgatou **este arquivo** e o
+> `EXECUCAO.md`, que estavam invisíveis ao relatório pelo mesmo motivo.
+
 **3. Reler antes de escrever** — a camada que nenhum script cobre, e a que
 falhou nos três casos acima. **Proibido editar trecho de documento estrutural
 sem abrir a seção alvo primeiro.** Não vale "eu lembro o que está lá": foi
@@ -259,7 +285,7 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->20.703<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->20.788<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e

@@ -45,6 +45,66 @@ describe('varredura de branches abandonadas', () => {
     ).toEqual(['qualquer']);
   });
 
+  it('a contagem é DITA pelo script, e é ela que o workflow lê', () => {
+    // `[17/09]` A issue #201 foi aberta com este corpo, palavra por palavra:
+    //
+    //     OK: nenhuma branch orfa. Toda branch tem PR aberto.
+    //
+    // Uma issue para avisar que está tudo certo. A causa era o workflow
+    // reconstruir a contagem por padrão de texto:
+    //
+    //     n=$(grep -cE '^    [a-zA-Z]' /tmp/relatorio.txt)
+    //
+    // Quatro espaços e uma letra — que é exatamente como a seção "Com PR
+    // aberto — nao sao lixo" imprime. O contador contava as branches que o
+    // relatório tinha acabado de declarar LEGÍTIMAS, e o robô abria issue toda
+    // semana em que houvesse um PR do dependabot aberto. Ou seja, quase sempre.
+    //
+    // Isto trava o CONTRATO entre os dois lados, que é onde a deriva mora: o
+    // script promete a linha, e o workflow promete lê-la. Cobrir só um lado
+    // deixaria o outro livre para voltar ao `grep`.
+    const script = readFileSync('scripts/branches-abandonadas.mjs', 'utf8');
+
+    // `semComentarios` NAO e zelo. A primeira versao desta trava afirmou que o
+    // `grep -cE` tinha sumido do workflow, e ele falhou — porque casou o
+    // `grep -cE` de dentro do COMENTARIO que eu mesmo escrevi ali explicando o
+    // bug. E a SEXTA vez que este projeto e mordido por trava que le a PROSA em
+    // vez do CODIGO, e a segunda hoje. Por isso o corte vem antes do regex.
+    const semComentarios = (yaml) => yaml
+      .split('\n')
+      .filter((l) => !/^\s*#/.test(l))
+      .join('\n');
+
+    const fluxo = semComentarios(
+      readFileSync('.github/workflows/branches-abandonadas.yml', 'utf8'),
+    );
+
+    expect(
+      /console\.log\(`\\nORFAS=\$\{abandonadas\.length\}`\)/.test(script),
+      'O script parou de imprimir a linha `ORFAS=<n>`.\n'
+      + '  Ela e o unico numero confiavel do relatorio: o workflow decide com\n'
+      + '  ela se abre issue. Sem ela, ele volta a adivinhar por formato de\n'
+      + '  texto — que foi o que produziu a issue #201, aberta para dizer que\n'
+      + '  estava tudo bem.',
+    ).toBe(true);
+
+    expect(
+      /sed -n 's\/\^ORFAS=\/\/p'/.test(fluxo),
+      'O workflow parou de ler a linha `ORFAS=` do relatorio.\n'
+      + '  Se ele voltar a contar linha por `grep`, volta a contar tambem as\n'
+      + '  branches da secao "Com PR aberto", que NAO sao lixo — e o robo passa\n'
+      + '  a abrir issue toda semana. Alarme que grita a toa ensina a ignorar o\n'
+      + '  canal (§0.2, 4a regra), e o canal aqui e a mesma aba de issues por\n'
+      + '  onde chega o aviso de documentacao envelhecida.',
+    ).toBe(true);
+
+    expect(
+      /grep -cE/.test(fluxo),
+      'O `grep -cE` voltou ao workflow. Era ele que contava as branches\n'
+      + '  legitimas junto com as orfas.',
+    ).toBe(false);
+  });
+
   it('a branch de trabalho do CLAUDE.md §8 está protegida', () => {
     // Lida do CLAUDE.md, e não escrita aqui: duas cópias do mesmo nome
     // divergiriam no dia em que a branch mudar (§4, fonte única).

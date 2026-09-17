@@ -98,3 +98,26 @@ Está no estudo de direção. Os pontos que continuam abertos:
 `760 kB` brutos / `228 kB` gzip no carregamento inicial, com portão no CI. A
 cena 3D sozinha pesava **708 kB** — é por isso que ela não cabia. SVG, CSS e
 tipografia cabem em **unidades de kB**.
+
+---
+
+> ### `[17/09]` Conferido inteiro contra o sistema — e continua verdade
+>
+> A issue automática de documentação (#166) apontava este arquivo como atrás do
+> código, por 15 commits. **É indício, não veredito**, e neste caso o indício
+> não se confirmou: as afirmações verificáveis foram conferidas uma a uma, na
+> fonte e não na memória (§1.4).
+>
+> | Afirmação | Onde conferi | Resultado |
+> | --- | --- | --- |
+> | teto de `760 kB` / `228 kB` | `scripts/orcamento-de-bytes.mjs` | bate: `TETO_BRUTO_KB = 760`, `TETO_GZIP_KB = 228` |
+> | `Orbitron` é a fonte de display | `tailwind.config.js` | continua: `display: ["'Orbitron'", "monospace"]` |
+> | a cena 3D pesava 708 kB e saiu | `DESEMPENHO.md` + `package.json` | saiu em 11/09; `three` e `@react-three/fiber` não existem mais |
+>
+> **Por que o aviso apareceu mesmo assim, e vale registrar:** até hoje o
+> relatório mensal datava cada documento pelo último commit que **tocou** o
+> arquivo — e o `npm run numeros` toca documento sozinho ao reescrever
+> marcadores. Isso cegava o relatório em vários documentos e, aqui, o efeito foi
+> o oposto: o aviso estava certo em apontar, e o que faltava era alguém abrir.
+> O mecanismo foi corrigido no mesmo dia (ver
+> `db/2026-09-17-readme-sec024-e-o-vigia-cego.md`).

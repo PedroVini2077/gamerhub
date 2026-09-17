@@ -417,7 +417,19 @@ destruída não é.
 
 ## O que continua em aberto, e é decisão dele
 
-1. **As imagens de referência** — bloqueiam as cenas 6 e 7.
+> **`[17/09]` Conferido contra o sistema, e o item 1 já não era verdade.** Ele
+> dizia que as imagens bloqueavam as cenas 6 e 7 — e **as sete artes chegaram em
+> 12/09**, o que este mesmo documento registra numa seção acima. O bloqueio
+> ficou escrito depois de ter sido resolvido: o documento se contradizia sem que
+> nada acusasse, porque portão nenhum lê o que um parágrafo afirma.
+>
+> Medido hoje em `src/lib/cenasDaLanding.js`: **7 cenas** — `hero`, `feed`,
+> `comunidade`, `keys`, `ranks`, `lives`, `cta` —, cada uma com 6 recortes.
+> Item riscado abaixo, e não apagado, porque o que ele bloqueava faz parte da
+> história de como as cenas foram decididas.
+
+1. ~~**As imagens de referência** — bloqueiam as cenas 6 e 7.~~ **Resolvido em
+   12/09:** as sete artes entraram.
 2. **Quanto da jornada dele manter.** `ENTER → DISCOVER → CONNECT → LIVE →
    DISCOVER → LEVEL UP → BELONG` tem sete tempos; a proposta acima tem nove
    cenas. Elas não são a mesma lista, e reduzir é provavelmente melhor do que
@@ -614,3 +626,27 @@ duas composições têm enquadramentos diferentes, e a arte pode ser regerada.
 determinísticos. O desenho evita repaint por construção — nada de `clip-path`
 animado, nada de filtro, nada de `useState` por quadro —, mas isso é argumento,
 não medição. A de campo vem do Vercel Speed Insights.
+
+> ### `[17/09]` A medição CHEGOU, e ela confirma o argumento — com uma ressalva
+>
+> O dono mediu no PageSpeed (Moto G Power emulado, 4G lento): **96 no
+> computador, 77 no celular**. O detalhe está em
+> [`DESEMPENHO.md`](../DESEMPENHO.md); o que interessa a este briefing são duas
+> linhas.
+>
+> **O argumento do desenho se sustentou:** `TBT 0 ms` e `CLS 0`. Nenhuma thread
+> principal travada, nenhum layout pulando. As três regras desta seção — nada de
+> laço por quadro, deslocamento no compositor, uma variável CSS — produziram
+> exatamente o que prometiam.
+>
+> **A ressalva, e ela é do tipo que argumento nenhum teria previsto:** o LCP do
+> celular é **4,6 s**, e **3.560 ms** disso é *"atraso na renderização do
+> elemento"*. O elemento é a **frase do Ato 0** — texto, não arte. Ela está no
+> HTML desde o primeiro byte e fica invisível até o JavaScript carregar e a
+> animação de entrada rodar.
+>
+> Ou seja: o que atrasa a primeira impressão da landing **não é peso de cena**.
+> É a própria animação de entrada do texto, que é justamente a coisa que esta
+> reformulação existe para preservar. **Nada foi mexido** — ordem dele. Fica
+> registrado aqui porque é a primeira medição que encosta numa decisão de
+> direção de arte, e não numa de engenharia.
