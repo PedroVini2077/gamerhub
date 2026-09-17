@@ -1,0 +1,20 @@
+# GamerHub
+
+> Rede social para quem joga: feed, comunidade, lives com chat, keys e promoções
+> de jogos, e um sistema de XP e ranks. Em português do Brasil.
+
+O site é uma aplicação de página única: o conteúdo do feed, das lives, das keys
+e dos perfis existe apenas para quem tem conta, e não é acessível sem login.
+As páginas listadas abaixo são as públicas.
+
+## Páginas
+
+- [Início](https://gamerhub-nine.vercel.app/): a apresentação do GamerHub — o que ele é e o que se faz nele.
+- [Sobre](https://gamerhub-nine.vercel.app/sobre): quem fez, por que existe e como foi construído.
+- [Contato](https://gamerhub-nine.vercel.app/contato): formulário para falar com a equipe.
+
+## Documentos
+
+- [Regras da comunidade](https://gamerhub-nine.vercel.app/regras): o que é permitido e o que leva à moderação.
+- [Termos de uso](https://gamerhub-nine.vercel.app/termos)
+- [Política de privacidade](https://gamerhub-nine.vercel.app/privacidade): quais dados o site coleta e por quanto tempo os guarda.

@@ -89,13 +89,26 @@ evitar closures velhas nos callbacks).
 
 ### Bloqueio de login por tentativas
 
-Servidor é a **única fonte de verdade** (`check_login_status` /
-`admin_unlock_login` / `reset_login_attempts`):
+Servidor é a **única fonte de verdade** (`hook_de_verificacao_de_senha` →
+`contabilizar_falha_de_login`, e `admin_unlock_login` para liberar):
 
 - 5 falhas consecutivas → bloqueio temporário de **15 min**.
 - 10+ falhas → bloqueio **permanente** (precisa de super admin para liberar).
-- O contador só zera em **login bem-sucedido** (`reset_login_attempts`) — sem
-  reversão por tempo (punição intencional).
+- O contador só zera em **login bem-sucedido** — sem reversão por tempo
+  (punição intencional).
+
+> **`[17/09]` Esta lista nomeava duas funções que não fazem o que ela dizia.**
+> Lido no `pg_proc`, não deduzido:
+>
+> - `check_login_status` saiu porque **nada a chama** desde 11/09, e hoje ela
+>   está revogada de `anon` e `authenticated` (SEC-022).
+> - `reset_login_attempts` saiu porque **não é ela que zera**. Quem zera é o
+>   próprio hook, com um `DELETE FROM login_attempts` dentro do ramo
+>   `IF v_valid THEN` — servidor, sem passar pelo cliente. A `reset_login_attempts`
+>   existe, é chamável por `authenticated` e **ninguém a chama**: nem `src/`, nem
+>   Edge Function, nem outra função do banco (`prosrc ilike` devolveu vazio).
+>   É porta morta da mesma família da SEC-022, e está no `BACKLOG.md` como
+>   proposta de revogação — não como correção feita.
 
 > **`[28/08]` A contagem está desligada, e isto é honestidade, não falta.** Esta
 > seção citava `register_login_attempt`, que **não existe mais** — conferido no

@@ -169,11 +169,19 @@ export default function Login() {
           <ArrowLeft size={14} /> Voltar para a página inicial
         </Link>
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-3">
+          {/* `[17/09]` Era um `<div>`, e a tela de entrada ficava SEM `<h1>`
+              nenhum — medido em navegador. Quem usa leitor de tela navega por
+              cabeçalho, e uma página sem o principal obriga a percorrer tudo
+              para descobrir onde caiu.
+
+              A troca é SÓ semântica: o `preflight` do Tailwind zera margem e
+              tamanho de fonte dos títulos, e as classes ficaram nos mesmos
+              `<span>`. Renderiza igual, pixel por pixel. */}
+          <h1 className="flex items-center justify-center gap-2 mb-3">
             <MarcaGH tamanho={28} />
             <span className="font-display font-bold text-3xl text-neon-green tracking-wider">GAMER</span>
             <span className="font-display font-bold text-3xl text-white tracking-wider">HUB</span>
-          </div>
+          </h1>
           {/* `[04/09]` A linha muda com o modo, e é o "character selected" que o
               dono descreveu — em palavra, não em arte licenciada. No celular o
               formulário de cadastro cobre quase a tela inteira e a arena mal

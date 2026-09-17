@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**43 itens abertos** (+ 1 ideia sem compromisso)
+**46 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -353,7 +353,7 @@ subir de plano) — e ela continua sem resposta.
 | --- | --- | --- |
 | **B2** 🔵 | Política de senha no painel de Auth | continua válida. A proteção contra senha vazada **não** entra: plano Pro |
 | **B3** 🔵 | Alerta de cota do Sentry | ele **acha** que já ativou. Não tenho como verificar daqui — fica assim escrito, sem eu afirmar nem negar |
-| **B4** ⏳ | Implantar as Edge Functions | **FEITO em 17/09** — as 8 subiram e `npm run edges` diz 8/8 OK. **O que resta é ele pôr o token como segredo do GitHub** (`SUPABASE_ACCESS_TOKEN`), e aí a implantação deixa de depender de token no chat. Passo a passo em `OPERACAO.md` |
+| **B4** ✅ | Implantar as Edge Functions | **FEITO em 17/09** — as 8 subiram e `npm run edges` diz 8/8 OK. **FECHADO em 17/09**: ele pôs o segredo, o workflow rodou verde de ponta a ponta e o passo de prova confirmou 8/8 |
 
 ---
 
@@ -385,12 +385,12 @@ segurança.
 
 | Camada | O que | Estado |
 | --- | --- | --- |
-| 🔴 1 | console — achar a **causa** dos erros, nunca silenciar | ⬜ |
-| 🟠 2 | `robots.txt` · `sitemap.xml` | ⬜ — **já diagnosticado, ver abaixo** |
-| 🟡 3 | titles · meta descriptions · canonical · JSON-LD | ⬜ |
-| 🟢 4 | acessibilidade — problema concreto, preservando a direção artística | ⬜ |
+| 🔴 1 | console | ✅ **diagnosticado em 17/09** com o PageSpeed dele. TODOS os erros são o mesmo: o WebSocket de realtime falhando DNS no runner do Google. Não é defeito para quem usa — mas revelou o achado abaixo |
+| 🟠 2 | `robots.txt` · `sitemap.xml` | ✅ **FEITO em 17/09** — ver `db/2026-09-17-prompt1-etapa1.md` |
+| 🟡 3 | titles · meta descriptions · canonical · **JSON-LD** | ✅ **FEITO em 17/09** — 6 títulos únicos de 6, canonical por página, e o JSON-LD com **um** tipo (`WebSite`). Ver `db/2026-09-17-prompt1-etapa3.md` |
+| 🟢 4 | acessibilidade — problema concreto, preservando a direção artística | ✅ **FEITO em 17/09** — medido em navegador nas 5 rotas: 0 botão sem nome, 0 link sem texto, 0 imagem sem `alt`, nenhum salto de cabeçalho. **2 defeitos reais**, os dois corrigidos |
 | 🔵 5 | performance — **só com evidência** | ⬜ |
-| ⚪ 6 | `llms.txt` | ⬜ |
+| ⚪ 6 | `llms.txt` | ✅ **FEITO em 17/09** |
 
 **ACHADO DA ETAPA 1, já medido em produção — e é falha MUDA:**
 
@@ -425,6 +425,25 @@ AGORA** escrito nele.
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
+
+- ⬜ **SEC-024 · `[17/09]` 🔵 `reset_login_attempts()` é a terceira porta morta
+  da mesma família — PROPOSTA de revogação, esperando decisão.**
+  Chamável por `authenticated` e **ninguém a chama**: nem `src/`, nem Edge
+  Function, nem outra função do banco (`prosrc ilike '%reset_login_attempts%'`
+  devolveu vazio). Apareceu ao conferir a documentação da Etapa 3, não por
+  varredura de segurança.
+  **Impacto hoje: nenhum.** `login_attempts` está vazia e continua vazia (o hook
+  que a encheria é de plano pago), e o corpo é escopado por `auth.uid()` — não há
+  alvo a forjar. **O risco é o do dia em que o hook existir:** quem estiver com
+  bloqueio temporário e tiver sessão aberta em outra aba limpa o próprio
+  bloqueio.
+  **Solução:** `REVOKE EXECUTE ... FROM authenticated`, como na SEC-022. Quem
+  zera em login bem-sucedido é o próprio hook, com `DELETE FROM login_attempts`
+  dentro do ramo `IF v_valid THEN` — servidor, sem passar pelo cliente.
+  **Por que não executei:** permissão é 🟡 pelo §7 (proponho e espero), e a
+  exceção do §1.3 vale para brecha **explorável** — esta não é hoje.
+  *(A auditoria de 12/09 leu esta função e a liberou pelo escopo, o que estava
+  certo. O que ninguém perguntou foi "e quem a chama?".)*
 
 - ✅ **SEC-011 · `anon` lia 26 das 29 tabelas** — **FECHADO em 12/09**, e com
   escopo maior do que o achado. O dono definiu a régua de papéis (*"não quero
@@ -513,6 +532,26 @@ AGORA** escrito nele.
   Duas respostas possíveis, e as duas são dele: promover um super admin de
   confiança, ou aceitar que a recuperação do fundador é por fora do site (e
   então isso precisa estar escrito no `OPERACAO.md`, com o passo a passo).
+
+- ⬜ `[17/09]` 🟡 **DUAS soluções para o mesmo problema de alarme repetido — e
+  eu criei a segunda hoje.** *DECISÃO DELE.*
+
+  | Função | Estratégia | Ganha | Perde |
+  | --- | --- | --- | --- |
+  | `registrar_falha_de_edge_function` | **suprime** a repetição | trilha estritamente append-only | a contagem |
+  | `record_banned_login_attempt` (SEC-023) | **atualiza** a linha | "9 vezes" é sinal de verdade | a linha deixa de ser imutável |
+
+  A primeira tem a razão escrita no código: *"a trilha é append-only, então não
+  dá para incrementar um contador na linha existente sem mudar essa natureza"*.
+  **Eu li isso DEPOIS de aplicar o SEC-023** — o argumento é legítimo e eu não o
+  considerei antes de escrever.
+
+  A favor de atualizar: aqui a contagem **é** a informação. "Tentou 1 vez" e
+  "tentou 30 vezes em meia hora" são fatos diferentes, e a linha alterada
+  descreve evento **do sistema**, não ação humana.
+
+  Alinhar é barato nos dois sentidos. O que não pode é ficar com duas respostas
+  para a mesma pergunta (§4, fonte única).
 
 - ⬜ `[12/09]` 🔵 **`notify_user` aceita 9 tipos; o sino estiliza 4.** *BLOCO D.*
   `warning`, `info`, `success`, `error`, `system` e `role` estão na lista
@@ -1017,6 +1056,18 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[17/09]` 🟢 **A landing tem DOIS `<h1>` — proposta, não mudança.** Medido
+  em navegador na Etapa 3. Não quebra nada e não é defeito grave de
+  acessibilidade: é **ambiguidade sobre qual é o título da página**. Quem lê a
+  árvore de acessibilidade (e quem indexa) encontra dois candidatos a "sobre o
+  que é esta página".
+
+  **Não mexi porque a landing é área protegida** — palavra dele: *"está
+  finalizada"*. A correção seria rebaixar um dos dois para `<h2>` ou `<p>`, com
+  as classes ficando onde estão (troca só semântica, renderiza igual — foi
+  exatamente o que foi feito no `/login`, e lá a caixa da marca não se moveu um
+  pixel). **Decisão dele: mexe ou fica.**
+
 - ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
   de painel — eu não alcanço.*
 
@@ -1434,8 +1485,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->118<!--/n--> arq ·
-  <!--n:src.lib.linhas-->12.503<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->122<!--/n--> arq ·
+  <!--n:src.lib.linhas-->13.111<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

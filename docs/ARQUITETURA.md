@@ -140,6 +140,11 @@ src/
 │   │                      # vez de virar um genérico que esconde o caso novo
 │   ├── url.js             # safeExternalUrl() — só http(s) vira href (anti-XSS)
 │   ├── logMeta.js         # Fonte única de categorias/ícones/retenção dos logs
+│   ├── metaDaPagina.js    # `[17/09]` O catálogo de title/description das 6
+│   │                      # páginas públicas, e aplicarMeta(). Mora aqui e não
+│   │                      # no componente porque o teste de contrato precisa
+│   │                      # LÊ-LO sem montar React: ele cruza as rotas públicas
+│   │                      # do router com as chaves deste mapa
 │   ├── like.js            # Curtida otimista com rollback quando o servidor recusa
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
@@ -649,6 +654,14 @@ src/
                            # e NÃO bloqueia; some por sessão, não para sempre),
                            # LazyVisible, PageTransition, RolagemDeRota (decide
                            # para onde a página rola ao trocar de rota),
+                           # MetaDaRota (`[17/09]` irmão do RolagemDeRota, e
+                           # pelo mesmo motivo: navegação de SPA não recarrega
+                           # o documento, então o <title> do index.html ficava
+                           # nas SEIS páginas públicas e elas viravam "a mesma
+                           # página" para quem indexa. Aplica title, description
+                           # e canonical por rota. NÃO toca em og:/twitter:, que
+                           # seguem estáticos — raspador de cartão social não
+                           # executa JavaScript),
                            # AvisoSemBanco (faixa
                            # de banco fora do ar — não sequestra o app),
                            # MaintenancePage (`[03/09]` a tela de pausa, e ela

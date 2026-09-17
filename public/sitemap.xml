@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GamerHub — só as páginas PÚBLICAS e indexáveis.
+
+  Fora daqui de propósito: tudo atrás de `RequireAuth` (feed, comunidade, keys,
+  lives, ranks, perfis, configurações), os painéis de equipe (`/admin`,
+  `/owner`) e o fluxo de entrada (`/login`, `/auth/*`). Nenhuma URL foi
+  inventada: as seis abaixo saíram do router em `src/App.jsx`.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://gamerhub-nine.vercel.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://gamerhub-nine.vercel.app/sobre</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://gamerhub-nine.vercel.app/contato</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://gamerhub-nine.vercel.app/regras</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://gamerhub-nine.vercel.app/termos</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://gamerhub-nine.vercel.app/privacidade</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>
