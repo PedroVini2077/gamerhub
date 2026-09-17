@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Crown, Lock, RotateCcw, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { Crown, Lock, RotateCcw, CheckCircle, XCircle, Shield, ShieldOff } from 'lucide-react';
 
 export default function SuperAdminPanel({
   blockedLogins, blockedLoading, fetchBlockedLogins, setUnlockModal,
@@ -54,9 +54,26 @@ export default function SuperAdminPanel({
             {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-dark-700 rounded-lg animate-pulse" />)}
           </div>
         ) : blockedLogins.length === 0 ? (
+          /* `[17/09]` Esta lista vazia dizia "Nenhum usuário bloqueado no
+             momento" com um ✅ VERDE — e isso se lê como "o sistema está
+             vigiando e não achou nada". Não há nada vigiando: `login_attempts`
+             é sempre vazia porque ninguém escreve nela.
+
+             A promessa foi tirada da tela de LOGIN em 11/09, mas sobreviveu
+             aqui. É o §1.3 na letra: a correção de 11/09 foi do CASO, e o
+             padrão tinha duas ocorrências.
+
+             Tranquilizar a equipe sem base é pior do que não mostrar nada — ela
+             deixa de procurar ataque porque o painel disse que está tudo bem.
+             O ícone deixou de ser o de "tudo certo". */
           <div className="text-center py-4">
-            <CheckCircle size={24} className="text-neon-green/40 mx-auto mb-2" />
-            <p className="text-xs text-gray-500 font-mono">Nenhum usuário bloqueado no momento</p>
+            <ShieldOff size={24} className="text-gray-600 mx-auto mb-2" />
+            <p className="text-xs text-gray-500 font-mono">Contador de tentativas inativo</p>
+            <p className="text-[11px] text-gray-600 font-mono mt-1 max-w-xs mx-auto leading-relaxed">
+              O hook de verificação de senha é exclusivo dos planos pagos, então
+              esta lista fica vazia mesmo sob ataque. Quem barra força bruta hoje
+              é o limite do próprio servidor de login.
+            </p>
           </div>
         ) : (
           <div className="space-y-2">

@@ -111,3 +111,73 @@ describe('a tela de entrada não promete bloqueio por tentativas', () => {
     }
   });
 });
+
+/**
+ * `[17/09]` A MESMA promessa sobreviveu no painel da EQUIPE.
+ *
+ * A trava acima nasceu em 11/09 e cobre `Login.jsx` e `components/auth` — onde
+ * a **pessoa comum** olha. O painel do super admin ficou de fora, e lá a lista
+ * vazia dizia *"Nenhum usuário bloqueado no momento"* com um **✅ verde**.
+ *
+ * ── Por que isso é pior do que a versão da tela de login ────────────────────
+ *
+ * A mensagem de login era uma ameaça vazia: dizia à pessoa errada uma coisa que
+ * não acontecia, e o custo era só de credibilidade.
+ *
+ * Esta **tranquiliza quem deveria estar vigiando.** Um ✅ verde com "nenhum
+ * usuário bloqueado" se lê como *"o sistema está olhando e não achou nada"* —
+ * quando o correto é *"ninguém está olhando"*. A equipe deixa de procurar
+ * ataque porque o painel disse que está tudo bem.
+ *
+ * ── O que isto diz sobre a correção de 11/09 ────────────────────────────────
+ *
+ * Ela foi do **caso**, não da **classe** (§1.3). A pergunta certa em 11/09 era
+ * *"onde mais o site afirma que existe bloqueio por tentativas?"*, e a resposta
+ * tinha duas ocorrências. Seis dias depois a segunda ainda estava lá.
+ */
+describe('o painel da equipe não finge que existe vigia', () => {
+  const PAINEL = 'src/components/admin/SuperAdminPanel.jsx';
+
+  it('a lista vazia não é apresentada como "tudo certo"', () => {
+    const fonte = readFileSync(PAINEL, 'utf8');
+    const semComentarios = fonte
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+
+    // A guarda: se o arquivo mudar de forma e o bloco sumir, as asserções
+    // abaixo passariam por vacuidade.
+    expect(
+      /blockedLogins\.length === 0/.test(semComentarios),
+      `Nao achei o estado vazio de \`blockedLogins\` em ${PAINEL}.\n`
+      + '  Se o painel mudou de forma, esta trava parou de olhar — ajuste-a, ou\n'
+      + '  ela aprova qualquer coisa a partir de agora.',
+    ).toBe(true);
+
+    const vazio = semComentarios.slice(
+      semComentarios.indexOf('blockedLogins.length === 0'),
+      semComentarios.indexOf('blockedLogins.map'),
+    );
+
+    expect(
+      /Nenhum usuário bloqueado/i.test(vazio),
+      `${PAINEL} voltou a dizer "Nenhum usuário bloqueado no momento".\n`
+      + '  Isso afirma que houve uma VERIFICACAO que nao achou nada. Nao houve:\n'
+      + '  `login_attempts` e sempre vazia porque ninguem escreve nela.\n'
+      + '  Tranquilizar quem deveria vigiar e pior do que nao mostrar nada.',
+    ).toBe(false);
+
+    expect(
+      /CheckCircle/.test(vazio),
+      `${PAINEL} voltou a usar o icone de "tudo certo" na lista vazia.\n`
+      + '  O simbolo comunica antes do texto: um ✅ verde diz "verificado, sem\n'
+      + '  problema" mesmo que a frase ao lado diga outra coisa.',
+    ).toBe(false);
+
+    expect(
+      /inativo|planos pagos/i.test(vazio),
+      `${PAINEL} parou de explicar POR QUE a lista esta vazia.\n`
+      + '  Sem isso a equipe nao tem como saber se o silencio e "nenhum ataque"\n'
+      + '  ou "ninguem contando". Diga qual dos dois e.',
+    ).toBe(true);
+  });
+});

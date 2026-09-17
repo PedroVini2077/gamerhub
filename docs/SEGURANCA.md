@@ -301,6 +301,38 @@ que estão na lista dele. Está no `BACKLOG.md`.
 
   Trava: `punicaoRespeitaHierarquia.test.js`, que varre a **classe** (*toda
   função que escreve punição consulta `role_rank`?*) e foi provada três vezes.
+- **`[17/09]` A IDA comparava cargo, a VOLTA não** (SEC-021). 🟠 Pedido direto
+  do dono: *"não quero que ele tenha poderes pra me desbanir"*.
+
+  | Função | Compara com o cargo do ALVO? |
+  | --- | --- |
+  | `ban_user` · `apply_suspension` · `lift_suspension` | **sim** |
+  | `unban_user` · `approve_unban_request` | **não** — só `IF NOT is_super()` |
+
+  Um `super_admin` **não conseguia banir** o `owner` e **conseguia desbanir**.
+
+  **O que prova que era deriva e não decisão:** `lift_suspension`, a inversa da
+  suspensão, **já comparava**. O padrão certo não precisou ser inventado — ele
+  já existia no projeto, e só o desbanimento destoava do próprio irmão.
+
+  `is_super()` **continua**, e não foi substituído: a comparação sozinha
+  deixaria um `admin` desbanir um `user`, o que hoje ele não pode. A regra passa
+  a ser as duas coisas — ser super/owner **e** estar acima do alvo.
+
+  **A contrapartida, aceita por ele:** banido o fundador, **ninguém no site
+  desfaz** — nem ele, porque conta banida não entra. A recuperação é pelo banco,
+  e a receita está no [`OPERACAO.md`](OPERACAO.md), **ensaiada inteira em
+  `ROLLBACK`** (o guard de colunas privilegiadas não alcança o editor de SQL,
+  que roda como `postgres` — medido). Deixa de ser buraco e vira decisão
+  escrita: restaurar o fundador não é delegável pela interface.
+
+  Junto saiu uma mentira de sistema: o aviso de desbanimento dizia *"Sua conta
+  voltou ao normal."* Como o dono decidiu no mesmo dia que **o ban destrói
+  mesmo**, a frase era verdade sobre a conta e falsa sobre o conteúdo. Hoje ela
+  diz que a conta volta **e que o conteúdo apagado não é recuperado**.
+
+  Trava: `punicaoRespeitaHierarquia.test.js` ganhou o espelho — *quem desfaz
+  punição também compara cargo?* —, provada reinjetando os dois bugs.
 - *(histórico)* **`anon` só enxergava `(id, username)` de `profiles`** — o suficiente para a
   checagem de username duplicado no cadastro (`useAuth.jsx`:
   `select('id').eq('username', …)` antes do `signUp`). RLS é por linha, não por

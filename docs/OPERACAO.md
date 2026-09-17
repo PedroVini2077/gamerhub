@@ -1141,7 +1141,7 @@ Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
 linhas"* num projeto de <!--n:src.arquivos-->383<!--/n--> arquivos e
-<!--n:src.linhas-->40.148<!--/n--> linhas.
+<!--n:src.linhas-->40.325<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1190,7 +1190,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->18.737<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->19.420<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1313,3 +1313,205 @@ Não é uma chave limitada a deploy.
 
 **Como conferir que funcionou:** `npm run edges` passa a dizer `OK` nas 8. Hoje
 ele diz OK só em `cleanup-orphans`.
+
+---
+
+## `[17/09]` O FUNDADOR FOI BANIDO — como voltar pelo banco
+
+> **Por que esta receita existe.** Em 17/09 o dono decidiu que um `super_admin`
+> **não** pode desbaniar o fundador (SEC-021). Isso fecha uma porta de
+> propósito: se a conta dele for banida, **ninguém no site desfaz** — nem ele,
+> porque conta banida não entra.
+>
+> Ele já tinha testado o caminho pelo banco e disse: *"o processo não é difícil,
+> só preciso lembrar os comandos"*. Então os comandos ficam aqui, e não na
+> memória dele nem numa conversa que some.
+
+### Antes de mandar você clicar, eu conferi que o clique é seguro
+
+Duas coisas poderiam fazer a receita falhar em silêncio, e as duas foram
+medidas **em transação com `ROLLBACK`**, no banco de produção:
+
+| O risco | O que foi medido |
+| --- | --- |
+| o trigger `guard_profile_privileged_cols` reverter o `UPDATE` sem dar erro | ele só age quando `current_user in ('authenticated','anon')` — **o editor de SQL roda como `postgres`** (medido: `current_user` = `postgres`), então o guard não alcança |
+| o `UPDATE` "passar" e não mudar nada | ensaio completo: banir o owner → rodar a receita → **`banned=false`**, guard não reverteu |
+
+Esta é a diferença entre receita e armadilha bem formatada: sem essa
+conferência, você rodaria o comando, veria "Success. No rows returned" e
+continuaria trancado para fora — porque `UPDATE` sem erro **não prova que
+mudou** (§1.5).
+
+### Passo a passo
+
+**1. Abra o editor de SQL** — link direto, já no projeto certo:
+
+`https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/sql/new`
+
+**O que você vai ver:** uma página com um editor de texto grande no meio, o
+título **SQL Editor** na barra lateral esquerda, e um botão verde **Run** no
+canto inferior direito (ou `Ctrl`/`Cmd` + `Enter`).
+
+**2. Antes de consertar, CONFIRA o estado.** Cole isto e rode:
+
+```sql
+select username, role, banned, ban_reason, banned_by_username, banned_at
+  from profiles
+ where username = 'opedrovini';
+```
+
+**O que você vai ver:** uma linha. Se `banned` estiver `false`, **pare** — o
+problema não é banimento, e o resto desta receita não se aplica.
+
+**3. Desfaça o banimento.** Cole e rode:
+
+```sql
+update profiles
+   set banned             = false,
+       ban_reason         = null,
+       ban_details        = null,
+       banned_by          = null,
+       banned_by_username = null,
+       banned_at          = null
+ where username = 'opedrovini';
+```
+
+**O que você vai ver:** `Success. No rows returned`. Isso **não é prova de que
+funcionou** — é por isso que existe o passo 4.
+
+**4. CONFIRA que funcionou.** Rode de novo a consulta do passo 2.
+
+`banned` tem que estar **`false`**. Se continuar `true`, o guard reverteu —
+significa que a sessão não está como `postgres`, e aí me chame em vez de
+insistir.
+
+**5. Entre no site normalmente.** Se a tela de banido continuar aparecendo, saia
+e entre de novo: ela é desenhada a partir do perfil que o site carregou no
+login.
+
+### O que NÃO fazer
+
+- **Não apague a linha do `profiles`.** Isso não desbane: derruba o perfil
+  inteiro, e o `auth.users` fica órfão. A conta some em vez de voltar.
+- **Não mexa em `role` no mesmo comando.** Se o cargo estiver certo, alterar é
+  risco sem ganho — e `role` é `NOT NULL` desde o SEC-017, então um erro de
+  digitação vira erro de constraint no meio da recuperação.
+- **Não use este caminho para desbanir outra pessoa.** Para os outros existe o
+  painel, e o painel **deixa rastro** em `admin_logs`. Este `UPDATE` direto
+  não deixa — é a limitação registrada no `BANCO.md`, e é aceitável só porque
+  aqui não existe outro caminho.
+
+### O rastro que esta receita NÃO deixa
+
+Um `UPDATE` pelo editor de SQL não grava em `admin_logs`. Se você quiser que a
+recuperação fique na trilha, rode **depois** de confirmar o passo 4:
+
+```sql
+insert into admin_logs (action, details, category, actor_id, actor_username,
+                        severity, metadata, admin_id, admin_username)
+select 'admin_unban', '@' || username || ' recuperou o proprio acesso pelo banco '
+       || '(o site nao permite desbanir o fundador — SEC-021)',
+       'security', id, username, 'warning',
+       jsonb_build_object('target_id', id, 'via', 'sql_editor'), id, username
+  from profiles where username = 'opedrovini';
+```
+
+---
+
+## `[17/09]` O TOKEN DO SUPABASE NO COFRE DO GITHUB — passo a passo
+
+> **Para que serve.** Com este segredo no lugar, o CI implanta as Edge Functions
+> **do disco** quando algo na pasta delas chega na `main`. Sem ele, a
+> implantação depende de alguém colar um token no chat — que foi como as 7
+> funções ficaram rodando versão velha por dias.
+>
+> Caminho conferido na [documentação oficial do GitHub](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+> em 17/09, e não escrito de memória: painel muda de lugar sem avisar.
+
+### Antes de você clicar, o que eu conferi
+
+| O risco | O que foi feito |
+| --- | --- |
+| o deploy automático **ligar** o `verify_jwt` e derrubar o cadastro | `supabase functions deploy` liga por padrão, e 7 das 8 precisam dele **desligado**. Criei o `supabase/config.toml` declarando cada uma — os valores foram **medidos** batendo em cada função sem credencial, não copiados |
+| o workflow implantar código de branch em produção | ele só roda em `main`, e só quando `supabase/functions/**` ou a configuração mudam |
+| o job dizer "implantado" sem ter implantado | o último passo pergunta a impressão a cada função **no ar** e reprova se divergir — `Deployed Functions.` é o que a CLI diz ao terminar o upload, não prova de que a função viva é essa |
+
+### 1. Gere o token
+
+Link direto: `https://supabase.com/dashboard/account/tokens`
+
+**O que você vai ver:** a página **Access Tokens**, com uma lista e o botão
+**Generate new token** no canto superior direito.
+
+Clique nele, dê um nome que diga de onde ele é — sugestão: **`github-actions-gamerhub`**
+— e confirme.
+
+> **O valor aparece UMA vez.** Copie na hora; depois a tela só mostra o prefixo.
+> Se perder, não dá para recuperar: gera outro e apaga o antigo.
+
+### 2. Guarde no cofre do repositório
+
+Link direto, já no repositório certo:
+
+`https://github.com/PedroVini2077/gamerhub/settings/secrets/actions`
+
+**O que você vai ver:** a página **Actions secrets and variables**, com as abas
+**Secrets** e **Variables**. Você já tem quatro segredos aqui
+(`E2E_EMAIL`, `E2E_PASSWORD`, `E2E_STAFF_EMAIL`, `E2E_STAFF_PASSWORD`) e duas
+variáveis (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) — então a tela vai
+estar familiar.
+
+Na aba **Secrets**, clique em **New repository secret**. Preencha:
+
+| Campo | O que digitar |
+| --- | --- |
+| **Name** | `SUPABASE_ACCESS_TOKEN` |
+| **Secret** | o token que você copiou, colado inteiro |
+
+Clique em **Add secret**.
+
+> **O nome tem que ser exatamente esse.** Não é preferência: a CLI do Supabase
+> lê essa variável **sozinha**, sem eu precisar passar `--token`. Um nome
+> diferente faz o deploy falhar com erro de autenticação, que não diz que o
+> problema é o nome.
+
+**Secret e não Variable**, e a diferença importa: *variable* aparece em texto
+puro no log do job. *Secret* é mascarado — se vazar num `echo`, o GitHub troca
+por `***`.
+
+### 3. Confira que funcionou
+
+> **⚠️ O botão só aparece depois que o workflow estiver na `main`.** O GitHub
+> lista em **Actions** apenas os workflows que existem no **branch padrão**, e
+> `workflow_dispatch` também só é oferecido a partir dali. Enquanto o arquivo
+> estiver só numa branch de trabalho, a página responde *"This workflow does not
+> exist."* — **e isso não é erro do segredo**.
+>
+> Foi exatamente o que aconteceu em 17/09: eu passei o link antes de mergear, e
+> ele abriu numa tela vazia. O segredo pode estar perfeito e a tela dizer isso.
+
+Você **não** precisa fazer nada acontecer para testar. O workflow tem gatilho
+manual:
+
+`https://github.com/PedroVini2077/gamerhub/actions/workflows/implantar-edges.yml`
+
+**O que você vai ver:** a página do workflow **implantar Edge Functions**, com o
+botão **Run workflow** do lado direito. Clique, escolha a branch **main**, e
+**Run workflow** de novo.
+
+**O que significa cada resultado:**
+
+| Resultado | O que quer dizer |
+| --- | --- |
+| ✅ verde | as 8 subiram **e** foram conferidas uma a uma contra o que está no repositório |
+| ❌ *"Falta o segredo SUPABASE_ACCESS_TOKEN"* | o nome saiu diferente, ou foi criado como *variable*. Volte ao passo 2 |
+| ❌ no passo **implantar todas** | o token existe e foi recusado — provavelmente revogado. Gere outro |
+| ❌ no passo **provar que o que esta no ar veio deste codigo** | subiu e **não bateu**. Não ignore: é exatamente o defeito que este workflow existe para pegar |
+
+### Quando trocar o token
+
+- Se ele aparecer em qualquer lugar fora do cofre — chat, print, log, mensagem.
+  **Um PAT dá acesso de gerência ao projeto inteiro**, não só às funções.
+- Revogar é no mesmo link do passo 1, no ícone de lixeira da linha.
+- Depois de revogar, o workflow falha no passo **implantar todas** até você
+  colocar o novo. Ele não quebra o site — só para de implantar.
