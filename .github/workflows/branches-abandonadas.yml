@@ -56,9 +56,19 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           node scripts/branches-abandonadas.mjs | tee /tmp/relatorio.txt
-          # A contagem decide se vale abrir issue. `|| true` porque `grep` sem
-          # casar sai com 1 e derrubaria o passo.
-          n=$(grep -cE '^    [a-zA-Z]' /tmp/relatorio.txt || true)
+          # `[17/09]` A contagem vem do script, que SABE o numero — antes ela
+          # era adivinhada por `grep -cE '^    [a-zA-Z]'`, e aquele padrao casava
+          # tambem a secao "Com PR aberto — nao sao lixo". O contador contava as
+          # branches legitimas, e o robo abria issue toda semana em que houvesse
+          # um PR do dependabot aberto. Foi a issue #201, cujo corpo dizia
+          # "OK: nenhuma branch orfa" (§0.2, 4a regra).
+          n=$(sed -n 's/^ORFAS=//p' /tmp/relatorio.txt)
+          # Linha ausente = script mudou de formato. Falhar alto e melhor do que
+          # virar "0" em silencio e nunca mais avisar de nada.
+          if [ -z "$n" ]; then
+            echo "::error::O relatorio nao trouxe a linha ORFAS=. O script mudou de formato?"
+            exit 1
+          fi
           echo "orfas=$n" >> $GITHUB_OUTPUT
 
       - name: Abrir issue se houver entulho

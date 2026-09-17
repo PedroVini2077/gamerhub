@@ -134,8 +134,45 @@ if (emFila.length) {
   console.log('');
 }
 
+/**
+ * `[17/09]` A CONTAGEM PASSOU A SER DITA, e não adivinhada por `grep`.
+ *
+ * ── O alarme falso, e ele era semanal ───────────────────────────────────────
+ *
+ * O workflow decidia se valia abrir issue assim:
+ *
+ *     n=$(grep -cE '^    [a-zA-Z]' /tmp/relatorio.txt || true)
+ *
+ * Quatro espaços e uma letra. Só que a seção **"Com PR aberto — nao sao lixo"**
+ * imprime exatamente nesse formato. O contador contava as branches que o
+ * relatório tinha acabado de declarar **legítimas**.
+ *
+ * O resultado foi a issue #201, cujo corpo diz, com todas as letras:
+ *
+ *     OK: nenhuma branch orfa. Toda branch tem PR aberto.
+ *
+ * Uma issue aberta para avisar que está tudo certo. E não era eventual: enquanto
+ * houvesse **um** PR do dependabot aberto — ou seja, quase sempre —, o robô
+ * abriria issue toda segunda-feira.
+ *
+ * ── Por que isto importa mais do que o incômodo ─────────────────────────────
+ *
+ * É a 4ª regra do §0.2, que eu mesmo escrevi depois de desligar um vigia de CI
+ * que gritava errado por PR: *"alarme que sempre grita errado é pior do que
+ * alarme nenhum — ele ensina a ignorar o canal"*. O canal aqui é a aba de
+ * issues do repositório, que é a mesma por onde chega o aviso de documentação
+ * envelhecida. Ruído semanal num canal treina a pessoa a não abrir o canal.
+ *
+ * ── O conserto ──────────────────────────────────────────────────────────────
+ *
+ * A contagem sai daqui, onde ela é **sabida**, em vez de ser reconstruída lá
+ * por padrão de texto. Formato fixo, fácil de ler no shell, e impossível de
+ * confundir com linha de relatório.
+ */
+console.log(`\nORFAS=${abandonadas.length}`);
+
 if (!abandonadas.length) {
-  console.log('  OK: nenhuma branch orfa. Toda branch tem PR aberto.\n');
+  console.log('\n  OK: nenhuma branch orfa. Toda branch tem PR aberto.\n');
   process.exit(0);
 }
 
