@@ -2367,3 +2367,62 @@ gradiente, o `pathLength`) foram apagadas junto com ele. Deixá-las apontando
 para um alvo que não existe não é cautela: elas iterariam zero vezes e ficariam
 **verdes para sempre**, que é a lição do `varrerFontes.js` aplicada a travas
 que varrem um arquivo em vez de uma pasta.
+
+
+## `[17/09]` As quatro decisões dele sobre punição, cargo e custo
+
+Respostas às perguntas que o bloco **ENGATILHADO** do `BACKLOG.md` deixou
+esperando. Cada uma fecha um item que estava parado.
+
+### 1. O BAN PODE DESTRUIR TUDO — e isso é deliberado (fecha o SEC-015)
+
+Palavras dele: *"eu acho que o ban é a punição mais severa do site, pra mim pode
+destruir tudo sim"*.
+
+O `ban_user` faz `DELETE` de comentário, mural e chat, e `deleted_at` nos posts.
+Eu tinha levantado isso como possível defeito, porque **quem destrói (`admin`,
+rank 2) está abaixo de quem desfaz (`super_admin`, rank 3)** e o estrago não tem
+volta. A resposta dele é que o desenho é esse mesmo: ban é o fim da linha.
+
+**O que continua sendo conserto, e não decisão:** a notificação de desbanimento
+diz *"Sua conta voltou ao normal."* — e isso **é falso** sobre o conteúdo, que
+não volta. A conta volta; o que a pessoa escreveu, não. Mensagem de sistema que
+promete o que não entrega é §1.5, independente de a política ser severa ou não.
+
+### 2. SUPER ADMIN: pode existir, mas NÃO com poder sobre o fundador
+
+Palavras dele: *"eu posso até colocar um super admin, mas não quero que ele
+tenha poderes pra me desbanir; eu fiz um teste pelo banco de me banir e
+desbanir, o processo não é difícil, só preciso lembrar os comandos"*.
+
+Isto **muda o desenho**, e para melhor. Hoje existe uma assimetria real:
+
+| Ação | Respeita hierarquia? |
+| --- | --- |
+| `ban_user` | **sim** — `role_rank(ator) <= role_rank(alvo)` recusa |
+| `unban_user` | **não** — só exige `is_super()`, sem olhar o cargo do alvo |
+
+Ou seja: um `super_admin` não consegue banir o `owner`, mas **consegue
+desbanir**. A ida checa cargo e a volta não. Vira o item SEC-021 no
+`BACKLOG.md`.
+
+**A recuperação do fundador passa a ser explicitamente pelo banco**, e ele já
+testou o caminho. O que falta é ele não precisar lembrar os comandos de cabeça —
+vai para o `OPERACAO.md` como receita.
+
+### 3. SAIR DO GMAIL: agora não
+
+*"Sair do gmail agora não."* O item `[23/08]` continua aberto e deixa de ser
+🟠. O teto de ~500 envios/dia continua sendo o risco conhecido: quando estourar,
+cadastro e recuperação de senha param. O `admin_logs` já grita quando isso
+acontece (desde 23/08), então a falha não será silenciosa.
+
+### 4. XP/RANK COMO PUNIÇÃO — ideia nova, foi para a VISÃO DE FUTURO
+
+*"Eu pensei em até resetar os Rankins, ou tirar alguns pontos, tipo jogo
+competitivo em rankeadas? Caso a pessoa perca uma partida ela perde uns
+pontos."*
+
+Não é decisão fechada nem item de fila — é direção de produto. Registrada em
+[`VISAO-DE-FUTURO.md`](VISAO-DE-FUTURO.md) com a menor versão que entrega o
+valor, como manda o formato daquele documento.

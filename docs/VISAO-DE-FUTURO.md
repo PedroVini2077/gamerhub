@@ -328,3 +328,56 @@ que é a pergunta que ele fez e que nenhuma tela de hoje responde.
   e um segundo lugar para a mesma regra de permissão divergir (§4);
 - **qualquer medição de visitante individual** — é o oposto do que o site
   prometeu por escrito.
+
+
+## `[17/09]` PERDER pontos, e não só ganhar — a punição graduada
+
+> Ideia dele, em 17/09, no meio da conversa sobre o ban: *"eu pensei em até
+> resetar os Rankins, ou tirar alguns pontos, tipo jogo competitivo em
+> rankeadas? Caso a pessoa perca uma partida ela perde uns pontos"*.
+
+### O buraco que ela preenche, e ele é real
+
+A escala de punição do GamerHub hoje tem **dois degraus e um abismo entre
+eles**:
+
+| Degrau | O que acontece |
+| --- | --- |
+| suspensão | a pessoa não publica por 1 ou 7 dias, e volta **exatamente como estava** |
+| ban | perde a conta e o conteúdo, e é o fim da linha (decisão de 17/09) |
+
+Não existe punição que **custe alguma coisa** sem tirar tudo. Quem acumula
+infrações leves sente zero até cruzar o limite, e aí sente tudo de uma vez.
+
+XP e rank são a moeda que o site já tem, e que a pessoa já se importa em
+acumular. Tirar pontos é a punição que dói na hora certa: proporcional, visível
+e reversível pelo próprio esforço.
+
+### A menor versão que entrega o valor
+
+**Ligar a perda de XP ao que já existe**, sem criar sistema novo: o
+`ACTION_POINTS` da fila de moderação já classifica a gravidade
+(`warn` 1 · `hide` 2 · `suspend_1d` 5 · `suspend_7d` 10). A menor versão é
+cada ponto de infração custar um valor fixo de XP, e nada mais — sem reset,
+sem rebaixamento automático, sem tabela nova.
+
+Isso reaproveita a decisão que o moderador **já toma**, e não pede uma segunda.
+
+### O que precisa ser pensado ANTES, e por isso não é fila ainda
+
+- **Piso.** XP negativo faz sentido? Provavelmente não — o piso é 0, senão o
+  rank vira dívida impagável e a pessoa desiste em vez de corrigir.
+- **Rebaixar de rank é visível para os outros?** Subir de rank é público. Cair
+  também seria — e aí a punição vira exposição, que é uma decisão diferente de
+  "custar pontos".
+- **O que a pessoa vê.** Perder XP sem saber por quê é pior do que não perder.
+  Precisa de notificação dizendo qual infração custou quanto.
+- **A inversa** (§5, regra da INVERSA): se a moderação errou e a infração é
+  revertida, o XP volta? Se não voltar, o erro do moderador é permanente.
+- **A analogia de "perder partida" não se traduz direto.** Em jogo competitivo
+  a perda vem de **desempenho**; aqui viria de **comportamento**. São coisas
+  diferentes, e misturar as duas faria o rank deixar de significar participação
+  e passar a significar reputação — mudança grande, e que é decisão dele.
+
+**STATUS: ideia registrada, sem data e sem compromisso.** Nada disto está na
+fila.

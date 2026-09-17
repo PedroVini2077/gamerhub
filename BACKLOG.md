@@ -311,61 +311,149 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**44 itens abertos** (+ 1 ideia sem compromisso)
+**46 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
-## 🔖 `[12/09]` ENGATILHADO PARA A PRÓXIMA SESSÃO
+## 🔖 `[17/09]` ELE RESPONDEU — o que fica, o que cai, e o que entra
 
-> Escrito porque a cota semanal dele acabou em 12/09 (98%) e ele pediu:
-> *"me fala exatamente oq vc precisa de mim e quais são as minhas decisões que
-> vc precisa e já deixamos engatilhado pra próxima sessão"*. **Reinicia quinta,
-> 07:00.**
->
-> A ordem aqui é deliberada: primeiro o que **trava trabalho meu**, depois o que
-> eu faço sem depender dele. Assim a primeira coisa da sessão nova é ele
-> responder 5 perguntas, e não eu ficar procurando o que fazer.
+> O bloco ENGATILHADO de 12/09 fez 5 perguntas e pediu 4 ações de painel. Ele
+> respondeu todas em 17/09. Este bloco substitui aquele.
 
-### A · DECISÕES QUE SÃO DELE — eu não posso tomar no lugar
+### O que ele decidiu (detalhe e motivo em [`docs/DECISOES.md`](docs/DECISOES.md))
 
-| # | A decisão | Por que é dele, e não minha |
-| --- | --- | --- |
-| **A1** 🟠 | **Promover um super admin?** | Medido: existem **0**. `unban_user` exige `is_super()`, então se a conta dele for banida **ninguém no site desfaz** — só a credencial do banco. Ou ele promove alguém de confiança, ou aceita a recuperação por fora e eu escrevo o procedimento no `OPERACAO.md`. É confiança em pessoa, não arquitetura. |
-| **A2** 🟡 | **O ban deve DESTRUIR conteúdo?** (SEC-015) | `ban_user` faz `DELETE` de comentário, mural e chat — sem volta. E quem destrói (`admin`, rank 2) está **abaixo** de quem desfaz (`super_admin`, rank 3). Curiosamente o ban **automático** é mais suave (soft-delete). Três saídas: virar tudo soft-delete · manter e **parar de prometer** *"sua conta voltou ao normal"* no desban · manter e escrever que é proposital. |
-| **A3** 🟠 | **A MARCA E A LANDING** — a decisão que já esperava antes desta sessão | Continua parada. Está no item `[11/09]` mais abaixo, com o briefing gravado. |
-| **A4** 🟠 | **Sair do Gmail para enviar email?** | Decisão de **custo**, item `[23/08]`. O teto de ~500/dia trava cadastro e recuperação de senha quando estourar. |
-| **A5** 🔵 | **Ícones para 5 tipos de notificação** | `notify_user` aceita 9 tipos e o `NOTIF_META` desenha 4 — os outros caem no sino genérico (que é fallback deliberado, não bug). Ou ele escolhe ícone para `warning/info/success/error/system/role`, ou eu **encurto a lista da RPC** para os 4 que a tela sabe mostrar. Prefiro a segunda: promete menos e não mente. |
+| Pergunta | Resposta dele |
+| --- | --- |
+| **Super admin?** | pode existir, **mas sem poder sobre o fundador**. Vira o **SEC-021** abaixo — hoje `ban_user` respeita hierarquia e `unban_user` **não** |
+| **O ban destrói conteúdo?** | **sim, é deliberado.** *"o ban é a punição mais severa do site"*. SEC-015 **fechado** — sobra só a mensagem de desban, que promete o que não entrega |
+| **Sair do Gmail?** | **agora não.** O item continua aberto, deixa de ser 🟠 |
+| **Ícones de notificação?** | não respondeu — e a minha recomendação continua de pé: **encurtar a lista da RPC** para os 4 que a tela desenha |
+| **Ideia nova** | XP/rank como punição graduada → [`VISAO-DE-FUTURO.md`](docs/VISAO-DE-FUTURO.md) |
 
-### B · AÇÕES DE PAINEL — eu não alcanço, e cada uma precisa do passo a passo (§9.12)
+### ❌ B1 ERA UMA TAREFA FALSA, E O ERRO FOI MEU
+
+Ele reagiu: *"ligar o contador de tentativas não dá, é pago esqueceu?"*. **Ele
+está certo, e o agravante é que o projeto JÁ SABIA** — o item `[11/09]` mais
+abaixo diz, com a fonte da documentação oficial, que o
+`Password Verification Attempt` é de **Teams and Enterprise** (nem Pro), e
+termina com a frase *"NÃO é 'faltou clicar', e eu afirmei isso antes de
+conferir"*.
+
+No bloco de 12/09 eu escrevi de volta *"está construído e nunca ligado… falta o
+passo a passo"* — **reintroduzi um erro que este mesmo arquivo já tinha
+corrigido**, porque escrevi o resumo de memória em vez de reler o item. É o §1.4
+na veia: documento envelhece, mas aqui quem envelheceu fui eu.
+
+**O que resta é a decisão A ou B do item `[11/09]`** (tirar a promessa da tela ×
+subir de plano) — e ela continua sem resposta.
+
+### Ações de painel que sobraram
 
 | # | O que | Estado |
 | --- | --- | --- |
-| **B1** 🟠 | **Ligar o contador de tentativas de login** | Item `[11/09]`. Está **construído e nunca ligado** — força bruta hoje não é contada. **Eu ainda NÃO escrevi o passo a passo pesquisado**; é a primeira coisa que faço na volta. |
-| **B2** 🔵 | **Política de senha no painel de Auth** | Mínimo de caracteres e classes obrigatórias. O site só mede força **no cliente**, e isso não vale nada sozinho (§1.3). **A proteção contra senha vazada NÃO entra: é do plano Pro** — pesquisado, e por isso não virou tarefa. |
-| **B3** 🔵 | **Alerta de cota do Sentry (email)** | §0.2: o esgotamento gradual não dá para fechar em código sem expor token no CI. |
-| **B4** 🟠 | **As Edge Functions que esperam ele** | Item `[10/09]`: o vigia está construído e provado; 7 das 8 dependem de uma ação dele. |
+| **B2** 🔵 | Política de senha no painel de Auth | continua válida. A proteção contra senha vazada **não** entra: plano Pro |
+| **B3** 🔵 | Alerta de cota do Sentry | ele **acha** que já ativou. Não tenho como verificar daqui — fica assim escrito, sem eu afirmar nem negar |
+| **B4** 🟠 | Implantar 7 das 8 Edge Functions | **é isto que o item `[10/09]` pede**, e ele perguntou o que era: ver a explicação lá. Depende de um *Personal Access Token* do Supabase |
 
-### C · O QUE EU FAÇO SOZINHO, sem esperar resposta nenhuma
+---
 
-Se ele não responder nada, a sessão começa por aqui — em ordem de valor:
+## 🆕 `[17/09]` OS DOIS PROMPTS — registrados, para rodar em PARALELO
 
-1. **Ler as 23 funções que faltam** (8 de `service_role`, 15 de leitura pura). O piso do §6 já está fechado — 26 de 26 das que escrevem e são alcançáveis por quem tem conta —, então isto é cobertura, não risco conhecido.
-2. **`deny_unban_request` não avisa a pessoa** 🔵 — a aprovação notifica, a negativa não.
-3. **`restore_post` restaura post que não está apagado** 🔵 — falta `AND deleted_at IS NOT NULL`.
-4. **`admin_list_users` faz `SELECT *`** 🔵 — minimização de dado e egress.
-5. **`auth_account_deleted` morto na allowlist do cliente** 🔵 — uma linha.
-6. Escrever **B1** e **B2** por extenso no `OPERACAO.md`, para ele só clicar.
+> Ordem dele: *"eu vou te mandar dois prompts, quero que vc grave tudo e faça
+> tudo em paralelo ao que já estamos fazendo"*. Os textos integrais estão em
+> `db/2026-09-17-prompts-do-dono.md` — aqui fica só o que vira trabalho.
 
-### O que NÃO está pendente — para ele não se preocupar
+### ⬜ PROMPT 1 · AUDITORIA TÉCNICA PÓS-LANDING (Lighthouse/PageSpeed) 🟠
 
-A auditoria desta sessão está **inteira no ar e mergeada** (PR #199, `d2e0d06`):
-os 5 achados corrigidos, cada um testado em `ROLLBACK` antes da produção e cada
-trava provada reinjetando o bug. Nada ficou pela metade, nenhum PR aberto,
-nenhum achado só na conversa.
+**O que é:** auditoria técnica do **GamerHub inteiro**, guiada pelo PageSpeed,
+em 6 camadas e por prioridade — uma de cada vez, com diagnóstico → decisão →
+implementação → validação.
+
+**A regra que manda mais alto, e é dele:** *"NÃO quero uma caça ao 100/100"*.
+Performance só se mexe com **problema real, ganho relevante e risco baixo** —
+ganho teórico ou incerto é **não implementar**.
+
+**A LANDING É ÁREA PROTEGIDA.** *"Está finalizada"*. Pode ser verificada quanto
+a defeito técnico real, mas **não sofre alteração visual ou estrutural para
+agradar métrica**. Proibido remover animação, Framer Motion, imagem, cena ou
+composição por causa de Lighthouse.
+
+**O escopo é por FINALIDADE, não uniforme:** landing ≠ página pública ≠
+autenticada ≠ administrativa ≠ legal. Não aplicar regra de SEO de página
+pública em área logada; não indexar admin; não usar `robots.txt` como
+segurança.
+
+| Camada | O que | Estado |
+| --- | --- | --- |
+| 🔴 1 | console — achar a **causa** dos erros, nunca silenciar | ⬜ |
+| 🟠 2 | `robots.txt` · `sitemap.xml` | ⬜ — **já diagnosticado, ver abaixo** |
+| 🟡 3 | titles · meta descriptions · canonical · JSON-LD | ⬜ |
+| 🟢 4 | acessibilidade — problema concreto, preservando a direção artística | ⬜ |
+| 🔵 5 | performance — **só com evidência** | ⬜ |
+| ⚪ 6 | `llms.txt` | ⬜ |
+
+**ACHADO DA ETAPA 1, já medido em produção — e é falha MUDA:**
+
+```
+/robots.txt   -> HTTP 200 · text/html
+/sitemap.xml  -> HTTP 200 · text/html
+/llms.txt     -> HTTP 200 · text/html
+```
+
+Nenhum dos três existe em `public/`. O `vercel.json` tem
+`"rewrites": [{ "source": "/(.*)", "destination": "/" }]`, que **captura tudo** —
+então o crawler pede `robots.txt` e recebe **o HTML do site com status 200**.
+É pior do que 404: o 404 diz "não existe"; o 200 com HTML diz "existe" e entrega
+lixo. Ninguém vê, nada loga, nenhum teste falha (§1.5).
+
+### ⬜ PROMPT 2 · A EVOLUÇÃO VISUAL FUTURA DA LANDING — documento, NÃO implementação 🟡
+
+**Ordem explícita:** *"NÃO implemente essa evolução agora"*. A tarefa é
+**analisar a landing atual e registrar a visão** num documento. A landing
+vigente continua valendo.
+
+O princípio a gravar: **uma experiência = uma cena**, e não *uma feature = uma
+cena*. A landing cresce por pilares narrativos, não por catálogo de
+funcionalidades. Junto: **preservar o conceito, não o asset** — arte que depende
+de texto, preço, número ou layout específico envelhece rápido, e no futuro a
+representação pode migrar para SVG/UI/híbrido, cena por cena.
+
+Destino: documento próprio em `docs/`, com **STATUS: FUTURO / NÃO IMPLEMENTAR
+AGORA** escrito nele.
 
 ---
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
+
+- ⬜ `[17/09]` 🟠 **SEC-021 · a INVERSA do ban não respeita hierarquia.**
+  *Pedido direto dele: "não quero que ele tenha poderes pra me desbanir".*
+
+  A assimetria, medida no corpo das funções:
+
+  | Ação | Guard | Olha o cargo do ALVO? |
+  | --- | --- | --- |
+  | `ban_user` | `role_rank(ator) <= role_rank(alvo)` recusa | **sim** |
+  | `unban_user` | `IF NOT is_super()` | **não** |
+  | `approve_unban_request` | `IF NOT is_super()` | **não** |
+
+  Um `super_admin` **não consegue banir** o `owner` — e **consegue desbanir**.
+  A ida checa cargo, a volta não. Enquanto não existir super admin nenhum isso
+  é teórico; no minuto em que existir, é poder real sobre a conta do fundador.
+
+  **Conserto:** a volta passa a exigir rank estritamente maior que o do alvo, o
+  mesmo `can_moderate_content` que as seis policies de conteúdo já usam. Efeito:
+  `super_admin` desbane `admin` e `user`, e **não** desbane `owner`; o `owner`
+  desbane todo mundo.
+
+  **A contrapartida, e ele já aceitou:** se o próprio `owner` for banido, a
+  recuperação é **pelo banco**. Ele já testou e disse que *"o processo não é
+  difícil, só preciso lembrar os comandos"* — então junto vai a receita no
+  `OPERACAO.md`, para ele não depender da memória.
+
+- ⬜ `[17/09]` 🔵 **A notificação de desbanimento promete o que não entrega.**
+  *Sobra do SEC-015, depois de ele decidir que o ban destrói mesmo.*
+  A mensagem diz *"Sua conta voltou ao normal."* — a conta volta, o conteúdo
+  apagado não. Mensagem de sistema que promete o que não cumpre é §1.5.
 
 - ✅ **SEC-011 · `anon` lia 26 das 29 tabelas** — **FECHADO em 12/09**, e com
   escopo maior do que o achado. O dono definiu a régua de papéis (*"não quero
