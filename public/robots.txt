@@ -1,0 +1,32 @@
+# GamerHub — https://gamerhub-nine.vercel.app
+#
+# Este arquivo NÃO é mecanismo de segurança. O que protege as áreas de conta é
+# a autenticação; aqui só se diz ao rastreador onde vale a pena gastar tempo.
+#
+# Por que ele passou a existir: sem arquivo, o `rewrites` do `vercel.json`
+# mandava `/robots.txt` para o SPA, e o rastreador recebia o HTML do site com
+# status 200. Pior do que 404 — o 404 diz "não existe"; o 200 com HTML diz
+# "existe" e entrega lixo.
+
+User-agent: *
+Allow: /
+
+# Área de conta: mesma casca de HTML para todo mundo, e nada dentro é público.
+# Rastrear aqui é desperdício dos dois lados, não segredo.
+Disallow: /community
+Disallow: /keys
+Disallow: /lives
+Disallow: /ranks
+Disallow: /profile
+Disallow: /settings
+Disallow: /post/
+Disallow: /mural/
+Disallow: /u/
+Disallow: /admin
+Disallow: /owner
+
+# Fluxo de entrada: não é conteúdo, e indexar tela de login não serve a ninguém.
+Disallow: /login
+Disallow: /auth/
+
+Sitemap: https://gamerhub-nine.vercel.app/sitemap.xml
