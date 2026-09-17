@@ -19,6 +19,85 @@
 
 ---
 
+### `[17/09]` O PageSpeed dele: 96 no PC e 77 no celular — e o culpado NÃO é peso
+
+Medição trazida pelo dono (`pagespeed.web.dev`, 17/09 12:20 BRT, Lighthouse
+13.4.1, Moto G Power emulado, 4G lento). **Isto é campo do Google, não medição
+minha** — e a leitura dele estava certa: *"parece que o PC tá mais otimizado do
+que no Cell"*.
+
+| | Celular | Computador |
+| --- | --- | --- |
+| **Desempenho** | **77** | **96** |
+| FCP | 2,4 s | — |
+| **LCP** | **4,6 s** 🔴 | — |
+| TBT | **0 ms** ✅ | — |
+| CLS | **0** ✅ | — |
+| Speed Index | 4,9 s | — |
+| bloqueio de renderização | **360 ms** | 50 ms |
+
+#### O número que decide tudo, e ele não é byte
+
+O detalhamento da LCP:
+
+```
+Time to First Byte                0 ms
+Atraso na renderização do elemento   3.560 ms     <- 77% do LCP inteiro
+```
+
+E o elemento de LCP é **texto**:
+
+```html
+<h1 class="font-display font-bold text-white text-center leading-[1.1]…"
+    style="opacity: 1; transform: none;">
+  Tudo o que acontece entre gamers, em um só lugar.
+</h1>
+```
+
+**Texto não tem download.** O `style="opacity: 1; transform: none"` é saída do
+Framer Motion: a frase existe no HTML desde o primeiro byte e fica **invisível**
+até o JavaScript carregar, o React montar e a animação de entrada rodar. O
+"atraso de renderização" é isso, inteiro.
+
+> **Consequência para o diagnóstico:** as recomendações de peso do próprio
+> relatório — *"reduza o JavaScript não usado: 126 KiB"*, *"reduza o CSS não
+> usado: 11 KiB"*, *"melhore a entrega de imagens: 28 KiB"* — **não atacam este
+> número**. Elas encurtariam o download; o gargalo está no que acontece
+> **depois** que ele termina. Cortar 126 KiB de JS mexeria em quando o React
+> começa, não em quanto a animação espera.
+
+#### Por que o PC vai a 96 e o celular fica em 77
+
+O mesmo trabalho, num aparelho mais lento e numa rede pior. Duas evidências no
+próprio relatório apontam para a mesma causa e não para excesso de conteúdo:
+
+- **TBT 0 ms e CLS 0.** Não há thread principal travada nem layout pulando. O
+  celular não está *engasgando* — está **esperando**.
+- **Bloqueio de renderização: 360 ms no celular contra 50 ms no PC**, pelo mesmo
+  arquivo (`index-DS1VixnV.css`, 15,7 KiB). Sete vezes mais tempo para o mesmo
+  byte é rede, não tamanho.
+
+#### O que isto NÃO autoriza
+
+O dono foi explícito: *"vc não vai alterar nada, pq da última vez vc deixou a
+landing feia"*, e *"se for alterar algo, que tenha ganho real"*. Nada foi mexido
+nesta rodada.
+
+Registro junto o que **não** faria diferença, para a próxima sessão não gastar
+tempo no lugar errado:
+
+| Ideia que o relatório sugere | Por que não resolve ISTO |
+| --- | --- |
+| cortar 126 KiB de JS não usado | o atraso é pós-download; encurtar o download não encurta a animação |
+| cortar 11 KiB de CSS | idem, e são 11 KiB num arquivo de 15,7 |
+| otimizar 28 KiB de imagem | a LCP é **texto**, não a arte |
+| tirar animação da landing | resolveria o número **destruindo a landing** — é exatamente o que ele proibiu |
+
+A única linha com ganho real e risco baixo está registrada como **proposta** no
+`BACKLOG.md`, e depende de decisão dele porque encosta na área protegida.
+
+---
+
 ### `[11/09]` A cena 3D saiu inteira — e o que ela custava NÃO era carregamento
 
 **O que mudou.** O hero deixou de ser uma cena WebGL e passou a ser

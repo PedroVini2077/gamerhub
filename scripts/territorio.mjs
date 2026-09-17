@@ -97,6 +97,19 @@ export const TERRITORIO = {
     'docs/identidade/tentativas',
   ],
 
+  // `[17/09]` A VISÃO de como a landing deve crescer (Prompt 2). Ela é FUTURO e
+  // não implementação, então quase nada nela envelhece por commit — com uma
+  // exceção: o "retrato de hoje" que ela carrega, e que existe justamente para
+  // a evolução saber de onde parte.
+  //
+  // Território mínimo e não `src/components/landing` inteiro, pela razão de
+  // sempre: o retrato é "7 cenas, 6 recortes cada", e é DESTE arquivo que esse
+  // número sai. Apontar a pasta toda faria o documento aparecer a cada ajuste
+  // de animação, e portão que sempre grita ensina a ignorar o canal.
+  'docs/identidade/EVOLUCAO-VISUAL-DA-LANDING.md': [
+    'src/lib/cenasDaLanding.js',
+  ],
+
   // `[11/09]` O briefing da reformulacao da marca e da landing. O territorio
   // dele e a LANDING e a tela de entrada — os dois lugares onde a marca aparece
   // para quem chega. No dia em que a direcao for escolhida e implementada, este
@@ -201,8 +214,33 @@ export const TERRITORIO = {
   'docs/DECISOES.md': [],
   'docs/DECISOES-FERRAMENTAL.md': [],
   'docs/MANIFESTO.md': [],
-  'README.md': [],
   'BACKLOG.md': [],
+
+  // ── `[17/09]` O README SAIU DA LISTA DE VAZIOS, e o motivo é um erro meu ──
+  //
+  // Ele estava aqui em cima, junto com `DECISOES.md` e `VISAO-DE-FUTURO.md`.
+  // Aqueles dois são mapas de possibilidade e de história: nenhum commit os
+  // torna falsos. **O README não é dessa família.** Ele AFIRMA coisas sobre o
+  // código — quais dependências o projeto tem, quais comandos existem, o que a
+  // landing é. Afirmação sobre código envelhece quando o código muda.
+  //
+  // O custo do erro, encontrado pelo dono e não por portão nenhum: o README
+  // anunciava `@react-three/fiber` e `three` como dependências de produção e
+  // descrevia a landing como "animada com cena 3D". As duas bibliotecas
+  // **não existem** no projeto desde 11/09 — zero ocorrências no
+  // `package.json` e em `src/`. Ficou seis dias afirmando o que não é, e o
+  // relatório mensal nunca o citou, porque território vazio significa
+  // "não vigie por commit". Verde permanente é diferente de correto.
+  //
+  // ── Por que SÓ o `package.json`, e não `src/` inteiro ────────────────────
+  //
+  // O README responde "o que é" e "como rodar". Dar-lhe `src/` o faria
+  // aparecer em toda issue mensal, e portão que sempre grita ensina a ignorar
+  // o canal (§0.2, 4ª regra). O `package.json` é o arquivo mínimo que torna
+  // este documento falso: é dele que saem a tabela de dependências e a lista
+  // de comandos — e é ele que teria apontado ESTE caso, porque a saída da cena
+  // 3D foi, literalmente, a remoção de duas linhas dali.
+  'README.md': ['package.json'],
 
   // ── As regras, e a ligação delas é outra ──────────────────────────────────
   //

@@ -40,7 +40,25 @@ export default function ElectricTitle({ active = true }) {
   const [revealed, setRevealed] = useState(false);
 
   return (
-    <motion.h1
+    // `[17/09]` Era `motion.h1`, e a landing servia DOIS `<h1>` — este e a frase
+    // do Ato 0 ("Tudo o que acontece entre gamers, em um só lugar"), medidos em
+    // navegador nos dois caminhos: o normal e o de `prefers-reduced-motion`.
+    //
+    // Dois `<h1>` não quebram nada. O que eles fazem é dar DUAS respostas para
+    // "sobre o que é esta página" — e quem navega por cabeçalho (leitor de tela)
+    // ou quem indexa precisa de uma. A frase do Ato 0 DESCREVE a página; este
+    // aqui NOMEIA a marca, que já está no `<title>`, no JSON-LD (`name`) e na
+    // navbar. Descrição ganha de nome, então a frase ficou com o `<h1>`.
+    //
+    // A troca é SÓ semântica, e o motivo de renderizar igual está na linha de
+    // baixo: `text-5xl md:text-7xl` diz o tamanho explicitamente, então o
+    // `preflight` do Tailwind (que zera tamanho de heading) não muda nada.
+    // Medido antes e depois: 329x48 · 48px nos dois.
+    //
+    // Consertado pela CLASSE, não pelo caso (§1.3): este arquivo é o segundo
+    // `<h1>` dos DOIS caminhos — o `PrologoDaLanding` e o `PrologoParado`
+    // chegam aqui pelo mesmo `ConteudoDoHero`. Um arquivo fecha os dois.
+    <motion.h2
       variants={heroTitle} initial="initial" animate={active ? 'animate' : 'initial'}
       // só revela os arcos quando a entrada do título de fato rodou (active) —
       // evita o onAnimationComplete disparar à toa quando animate === initial.
@@ -50,8 +68,14 @@ export default function ElectricTitle({ active = true }) {
       GAMER
       {/* O brilho é ESTÁTICO aqui, e o pisca-pisca é só `opacity` (ver os
           keyframes de `electricBuzz`): `text-shadow` não roda no compositor, e
-          este span é o elemento de LCP da landing — animá-lo repintava o maior
-          texto da página na thread principal, 60 vezes por segundo. */}
+          animá-lo repintaria um dos maiores textos da página na thread
+          principal, 60 vezes por segundo.
+
+          `[17/09]` Este comentário dizia "este span é o elemento de LCP da
+          landing". Não é mais, e o PageSpeed dele prova: o LCP medido em
+          17/09 é a FRASE DO ATO 0, com 3.560 ms de atraso de renderização.
+          A razão de não animar `text-shadow` continua valendo inteira — o que
+          envelheceu foi o "é o LCP", que virou justificativa falsa. */}
       <span
         className="text-neon-green animate-electric-buzz"
         style={{ textShadow: '0 0 30px #39ff14, 0 0 60px #39ff1450', willChange: 'opacity' }}
@@ -86,6 +110,6 @@ export default function ElectricTitle({ active = true }) {
           ))}
         </svg>
       )}
-    </motion.h1>
+    </motion.h2>
   );
 }

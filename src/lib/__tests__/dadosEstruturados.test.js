@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { META, DOMINIO } from '../metaDaPagina.js';
+import { varrerFontes } from './varrerFontes.js';
 
 /**
  * `[17/09]` Dados estruturados e acessibilidade — Etapa 3 do Prompt 1.
@@ -152,6 +153,58 @@ describe('acessibilidade — o que foi medido em navegador', () => {
       + '  Ela e a porta de quem ainda nao entrou, e quem navega por cabecalho\n'
       + '  perde a referencia da pagina inteira.',
     ).toBe(true);
+  });
+
+  it('a landing tem UM `<h1>` — e ele é o do prólogo, nos dois caminhos', () => {
+    // `[17/09]` Medido em navegador antes da correção: a landing servia DOIS
+    // `<h1>` — a frase do Ato 0 e o "GAMERHUB" do `ElectricTitle` —, e isso nos
+    // DOIS caminhos, porque o `PrologoParado` (o de `prefers-reduced-motion`)
+    // chega no mesmo `ConteudoDoHero`.
+    //
+    // Dois `<h1>` não quebram nada. Eles dão duas respostas para "sobre o que é
+    // esta página", e quem navega por cabeçalho precisa de uma.
+    //
+    // ── Por que a trava varre a PASTA, e não o ElectricTitle ────────────────
+    //
+    // Consertar só o arquivo culpado deixaria o proximo `<h1>` entrar por
+    // qualquer outro componente da landing, em silêncio — é a diferença entre
+    // corrigir o CASO e corrigir a CLASSE (§1.3). A regra abaixo é a do
+    // sistema, não a do bug de hoje:
+    //
+    //   os DOIS prólogos são mutuamente exclusivos e valem 1 `<h1>` cada;
+    //   qualquer outro arquivo da landing vale ZERO.
+    const PROLOGOS = [
+      'src/components/landing/PrologoDaLanding.jsx',   // o caminho normal
+      'src/components/landing/PrologoParado.jsx',      // prefers-reduced-motion
+    ];
+    // Duas constantes e não uma: regex com `g` guarda `lastIndex` entre
+    // chamadas, então reusar a mesma em `.test()` faz a segunda chamada mentir.
+    const H1_TODOS = /<(?:motion\.)?h1[\s>]/g;
+    const TEM_H1 = /<(?:motion\.)?h1[\s>]/;
+
+    for (const caminho of PROLOGOS) {
+      const n = [...semComentarios(readFileSync(caminho, 'utf8')).matchAll(H1_TODOS)].length;
+      expect(
+        n,
+        `\`${caminho}\` tem ${n} \`<h1>\`, e devia ter exatamente 1.\n`
+        + '  Os dois prologos sao os DOIS caminhos da mesma tela e nunca\n'
+        + '  aparecem juntos, entao cada um carrega o unico titulo da pagina.',
+      ).toBe(1);
+    }
+
+    const outros = varrerFontes('src/components/landing')
+      .filter((c) => !PROLOGOS.includes(c))
+      .filter((c) => TEM_H1.test(semComentarios(readFileSync(c, 'utf8'))));
+
+    expect(
+      outros,
+      `Arquivo da landing que NAO e o prologo voltou a declarar \`<h1>\`:\n  ${outros.join('\n  ')}\n\n`
+      + '  A landing passa a ter dois titulos principais, e quem navega por\n'
+      + '  cabecalho recebe duas respostas para "sobre o que e esta pagina".\n\n'
+      + '  Se este elemento e mesmo o titulo da pagina, o certo e TROCAR com o\n'
+      + '  prologo — nunca somar. Use `<h2>`: as classes da landing dizem o\n'
+      + '  tamanho da fonte explicitamente, entao a troca nao muda um pixel.',
+    ).toEqual([]);
   });
 
   it('o botão de dispensar o aviso de som tem área de toque suficiente', () => {

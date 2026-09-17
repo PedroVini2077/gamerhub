@@ -73,13 +73,79 @@ function naoMapeados() {
     .filter(f => !(f in TERRITORIO));
 }
 
+/**
+ * `[17/09]` O `npm run numeros` CEGAVA este relatório, e o caso foi real.
+ *
+ * ── O que acontecia ─────────────────────────────────────────────────────────
+ *
+ * A data de um documento saía de `git log -1 -- <doc>`: o último commit que
+ * **tocou** o arquivo. Só que o `numeros-do-projeto.mjs` toca documento sozinho
+ * — ele reescreve o valor dentro de `<!--n:chave-->123<!--/n-->` a cada PR que
+ * muda uma contagem, e o commit entra no histórico como qualquer outro.
+ *
+ * Resultado: todo documento com marcador vivo se **rejuvenescia sozinho**. E
+ * são justamente os mais centrais que os têm — `README.md`, `AUDITORIA.md`,
+ * `DOCUMENTACAO.md`, `EXECUCAO.md`.
+ *
+ * ── O caso, medido ──────────────────────────────────────────────────────────
+ *
+ * O `README.md` anunciava `@react-three/fiber` e `three` como dependências de
+ * produção e descrevia a landing como "animada com cena 3D". As duas saíram do
+ * `package.json` em **11/09**. O documento nunca apareceu neste relatório,
+ * porque em 17/09 ele "foi atualizado" — e a atualização inteira foi:
+ *
+ *     -  ... <!--n:migrations-->176<!--/n--> migrations que recriam o banco
+ *     +  ... <!--n:migrations-->177<!--/n--> migrations que recriam o banco
+ *
+ * Nenhum humano leu uma linha. Quem encontrou foi o dono, olhando o README no
+ * celular.
+ *
+ * ── A ironia, que é o motivo de isto virar mecanismo e não regra ───────────
+ *
+ * O `numeros-do-projeto.mjs` termina imprimindo *"Confira o texto EM VOLTA de
+ * cada um"* — e, no mesmo ato, apagava o sinal de que alguém precisava
+ * conferir. Portão que cega outro portão é §1.5 puro: nada estoura, nada loga,
+ * e o documento simplesmente para de ser vigiado.
+ *
+ * ── Como o conserto decide ──────────────────────────────────────────────────
+ *
+ * Um commit conta como toque de gente se, **neutralizando os valores dos
+ * marcadores**, as linhas removidas ainda diferem das adicionadas. Comparar o
+ * conteúdo (e não só procurar `<!--n:`) é o que impede o falso negativo de uma
+ * linha que tem marcador E texto reescrito junto.
+ */
+const MARCADOR = /<!--n:[a-zA-Z0-9._-]+-->[\s\S]*?<!--\/n-->/g;
+const semValorDeMarcador = (linha) => linha.replace(MARCADOR, '<!--n-->');
+
+function ultimoToqueDeGente(doc) {
+  const shas = git('log', '--format=%H', '--', doc).split('\n').filter(Boolean);
+
+  for (const sha of shas) {
+    const diff = git('show', sha, '--unified=0', '--format=', '--', doc);
+    const mexidas = diff.split('\n')
+      .filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l));
+
+    if (mexidas.length === 0) continue;             // merge/rename, sem conteúdo
+
+    const fora = mexidas.filter((l) => l.startsWith('-')).map(semValorDeMarcador).sort();
+    const dentro = mexidas.filter((l) => l.startsWith('+')).map(semValorDeMarcador).sort();
+    // Só os números mudaram: o texto saiu e voltou igual depois de neutralizar.
+    if (fora.length === dentro.length
+        && fora.every((l, i) => l.slice(1) === dentro[i].slice(1))) continue;
+
+    return sha;
+  }
+  // Documento cujo histórico inteiro é marcador: o primeiro commit é a verdade.
+  return shas[shas.length - 1] ?? '';
+}
+
 const atrasados = [];
 
 for (const [doc, caminhos] of Object.entries(TERRITORIO)) {
   if (caminhos.length === 0) continue;
   if (!existsSync(join(RAIZ, doc))) continue;
 
-  const ultimoDoDoc = git('log', '-1', '--format=%H', '--', doc);
+  const ultimoDoDoc = ultimoToqueDeGente(doc);
   if (!ultimoDoDoc) continue;
 
   const existentes = caminhos.filter(c => existsSync(join(RAIZ, c)));

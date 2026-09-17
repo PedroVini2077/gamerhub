@@ -1,0 +1,62 @@
+-- SEC-024 · `[17/09]` A TERCEIRA porta morta da mesma familia.
+--
+-- ── O que ela e ─────────────────────────────────────────────────────────────
+--
+-- `reset_login_attempts()` apaga as linhas de `login_attempts` do PROPRIO
+-- e-mail de quem chama (escopo tirado de `auth.uid()`, nao de parametro).
+-- Estava com `GRANT EXECUTE ... TO authenticated` desde 06/06.
+--
+-- ── Por que ela sai ─────────────────────────────────────────────────────────
+--
+-- **Ninguem a chama.** Conferido em tres frentes, nao deduzido:
+--
+--   grep em `src/`                -> 0 chamadas
+--   grep em `supabase/functions/` -> 0 chamadas
+--   `pg_proc.prosrc ilike '%reset_login_attempts%'` -> nenhuma outra funcao
+--   `pg_policies` citando o nome  -> nenhuma
+--   trigger chamando              -> nenhum
+--
+-- E **nao e ela que zera o contador**, que era o motivo escrito no PAINEIS.md
+-- para ela existir. Quem zera e o proprio `hook_de_verificacao_de_senha`, com
+-- um `DELETE FROM public.login_attempts` dentro do ramo `IF v_valid THEN` —
+-- servidor, sem passar pelo cliente. O documento foi corrigido no mesmo PR.
+--
+-- ── Por que HOJE, e nao "quando virar problema" ─────────────────────────────
+--
+-- Eu tinha deixado isto como proposta no backlog, argumentando que nao e
+-- exploravel hoje: `login_attempts` esta VAZIA (0 linhas, conferido) porque o
+-- Password Verification Hook e de plano pago e nao esta ligado.
+--
+-- O dono corrigiu, e a regra que ele citou e literal (POSTURA §1.3):
+--
+--     "Brecha que so vira problema amanha se fecha hoje. Base pequena nao e
+--      desculpa. Achou algo que 'nao quebrou ainda' por sorte ou baixo volume?
+--      Corrigir igual."
+--
+--     "Desconfiar de protecao acidental. Se algo so esta seguro por efeito
+--      colateral de outra regra, isso nao e protecao — e sorte esperando
+--      expirar."
+--
+-- A segunda descreve este caso com exatidao: a protecao nao era a funcao, era
+-- a tabela estar vazia. No dia em que o hook for ligado, quem estiver com
+-- bloqueio temporario e tiver sessao aberta em outra aba limpa o proprio
+-- bloqueio — e o contador passa a mentir para a equipe.
+--
+-- Mesmo racional e mesmo dia da SEC-022 (`check_login_status`), que era a
+-- segunda porta da familia. Esta e a terceira e ultima.
+--
+-- ── O que NAO muda ──────────────────────────────────────────────────────────
+--
+-- A funcao continua existindo, para `postgres` e `service_role`. Testado em
+-- ROLLBACK com papel assumido, 6 asercoes — inclusive a que prova que a porta
+-- estava ABERTA antes, sem a qual o teste seria verde sem ter testado nada.
+-- O `hook_de_verificacao_de_senha` mantem `supabase_auth_admin=X`: o login do
+-- site nao encosta nisto.
+--
+-- Ao religar o contador no plano pago: NAO reconceda por reflexo. Escreva
+-- antes qual tela chama, ou deixe o hook zerar como ele ja faz.
+
+REVOKE EXECUTE ON FUNCTION public.reset_login_attempts() FROM PUBLIC, anon, authenticated;
+
+COMMENT ON FUNCTION public.reset_login_attempts() IS
+  'Apaga o historico de tentativas do PROPRIO e-mail de quem chama. SEM grant para anon/authenticated desde 17/09 (SEC-024): ninguem no projeto a chama, e quem zera em login bem-sucedido e o proprio hook_de_verificacao_de_senha. Guardada para postgres/service_role.';

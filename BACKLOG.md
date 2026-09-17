@@ -311,7 +311,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**46 itens abertos** (+ 1 ideia sem compromisso)
+**45 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -406,7 +406,16 @@ então o crawler pede `robots.txt` e recebe **o HTML do site com status 200**.
 É pior do que 404: o 404 diz "não existe"; o 200 com HTML diz "existe" e entrega
 lixo. Ninguém vê, nada loga, nenhum teste falha (§1.5).
 
-### ⬜ PROMPT 2 · A EVOLUÇÃO VISUAL FUTURA DA LANDING — documento, NÃO implementação 🟡
+### ✅ PROMPT 2 · A EVOLUÇÃO VISUAL FUTURA DA LANDING — **FEITO em 17/09** 🟡
+
+**Escrito em [`docs/identidade/EVOLUCAO-VISUAL-DA-LANDING.md`](docs/identidade/EVOLUCAO-VISUAL-DA-LANDING.md)**,
+com `STATUS: FUTURO — NÃO IMPLEMENTAR AGORA` no topo. Os dois princípios dele
+estão gravados com o teste prático de cada um, junto do retrato medido de hoje
+(7 cenas × 6 recortes) e da lista do que fica proibido mesmo no futuro.
+**Nada foi implementado** — a landing vigente continua inteira.
+
+O pedido original, mantido abaixo para o documento poder ser conferido contra
+ele:
 
 **Ordem explícita:** *"NÃO implemente essa evolução agora"*. A tarefa é
 **analisar a landing atual e registrar a visão** num documento. A landing
@@ -426,24 +435,16 @@ AGORA** escrito nele.
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
 
-- ⬜ **SEC-024 · `[17/09]` 🔵 `reset_login_attempts()` é a terceira porta morta
-  da mesma família — PROPOSTA de revogação, esperando decisão.**
-  Chamável por `authenticated` e **ninguém a chama**: nem `src/`, nem Edge
-  Function, nem outra função do banco (`prosrc ilike '%reset_login_attempts%'`
-  devolveu vazio). Apareceu ao conferir a documentação da Etapa 3, não por
-  varredura de segurança.
-  **Impacto hoje: nenhum.** `login_attempts` está vazia e continua vazia (o hook
-  que a encheria é de plano pago), e o corpo é escopado por `auth.uid()` — não há
-  alvo a forjar. **O risco é o do dia em que o hook existir:** quem estiver com
-  bloqueio temporário e tiver sessão aberta em outra aba limpa o próprio
-  bloqueio.
-  **Solução:** `REVOKE EXECUTE ... FROM authenticated`, como na SEC-022. Quem
-  zera em login bem-sucedido é o próprio hook, com `DELETE FROM login_attempts`
-  dentro do ramo `IF v_valid THEN` — servidor, sem passar pelo cliente.
-  **Por que não executei:** permissão é 🟡 pelo §7 (proponho e espero), e a
-  exceção do §1.3 vale para brecha **explorável** — esta não é hoje.
-  *(A auditoria de 12/09 leu esta função e a liberou pelo escopo, o que estava
-  certo. O que ninguém perguntou foi "e quem a chama?".)*
+- ✅ **SEC-024 · `[17/09]` `reset_login_attempts()`, a terceira porta morta do
+  contador de login** — **FECHADA no mesmo dia.** Eu tinha deixado como
+  proposta, argumentando que não é explorável hoje; **o dono corrigiu e estava
+  certo** — a POSTURA §1.3 é literal: *"brecha que só vira problema amanhã se
+  fecha hoje"* e *"desconfiar de proteção acidental… é sorte esperando
+  expirar"*. A proteção não era a função: era `login_attempts` estar vazia.
+  Revogada de `PUBLIC, anon, authenticated`, provada em `ROLLBACK` com 6
+  asserções — inclusive a que mostra que a porta **estava aberta** antes — e a
+  metade anônima travada em `e2e/portas-do-banco.mjs` (49/49). Relatório em
+  `db/2026-09-17-readme-sec024-e-o-vigia-cego.md`.
 
 - ✅ **SEC-011 · `anon` lia 26 das 29 tabelas** — **FECHADO em 12/09**, e com
   escopo maior do que o achado. O dono definiu a régua de papéis (*"não quero
@@ -1056,17 +1057,34 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[17/09]` 🟢 **A landing tem DOIS `<h1>` — proposta, não mudança.** Medido
-  em navegador na Etapa 3. Não quebra nada e não é defeito grave de
-  acessibilidade: é **ambiguidade sobre qual é o título da página**. Quem lê a
-  árvore de acessibilidade (e quem indexa) encontra dois candidatos a "sobre o
-  que é esta página".
+- ⬜ `[17/09]` 🟠 **O roteiro `portas-do-banco.mjs` aprova RPC pelo motivo
+  errado — e o número final sugere mais do que ele prova.** *Precisa de decisão
+  dele: a correção muda o que o teste FAZ contra produção.*
 
-  **Não mexi porque a landing é área protegida** — palavra dele: *"está
-  finalizada"*. A correção seria rebaixar um dos dois para `<h2>` ou `<p>`, com
-  as classes ficando onde estão (troca só semântica, renderiza igual — foi
-  exatamente o que foi feito no `/login`, e lá a caixa da marca não se moveu um
-  pixel). **Decisão dele: mexe ou fica.**
+  **O achado, medido contra produção com a chave anônima:** o roteiro chama cada
+  RPC com corpo vazio, e o PostgREST devolve **404 para função com parâmetro
+  obrigatório** — porque não acha a sobrecarga, não porque negou privilégio. Os
+  dois 404 são indistinguíveis daqui.
+
+  ```
+  username_disponivel  {}                        -> 404   (parece fechada)
+  username_disponivel  {"p_username":"zzteste"}  -> 200   <- ABERTA de propósito
+  ```
+
+  **Impacto:** quase todas as entradas de `RPCS_FECHADAS` têm parâmetro
+  obrigatório. Se alguém der `GRANT` em `ban_user` amanhã, o 404 de assinatura
+  chega antes e o teste **continua verde**. É a classe "teste que não consegue
+  falhar" — a mesma que originou o `varrerFontes.js` — de volta em outro lugar.
+
+  **Isto NÃO é brecha:** nenhuma porta abriu, e as três do contador de login
+  foram conferidas uma a uma com o argumento certo (as três deram `401`). É
+  **vigia cego**, que é §1.5.
+
+  **A correção, e por que ela pede decisão:** mandar o argumento nomeado de cada
+  função. Isso faria o roteiro **invocar de verdade** `ban_user`,
+  `soft_delete_post` e afins, caso alguma estivesse aberta. O caminho seguro é
+  UUID zerado (`00000000-…`), que não casa com ninguém — mas é um teste de CI
+  passando a escrever contra produção, e isso é 🟡 pelo §7.
 
 - ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
   de painel — eu não alcanço.*
@@ -1486,7 +1504,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->122<!--/n--> arq ·
-  <!--n:src.lib.linhas-->13.111<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->13.164<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
