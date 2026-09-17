@@ -107,8 +107,19 @@ transforma esta pegadinha em bug silencioso (§4).
 
 **Chamadas pelo front (RPC):**
 
-- Auth/segurança: `check_login_status`, `reset_login_attempts`,
-  `record_banned_login_attempt`, `delete_own_account(p_senha)`.
+- Auth/segurança: `record_banned_login_attempt`, `delete_own_account(p_senha)`.
+
+  > **`[17/09]` Esta linha listava mais duas, e as duas eram mentira** — não por
+  > terem sido apagadas, mas porque o frontend **parou de chamá-las** e a lista
+  > ficou. Conferido por `grep` em `src/`: zero chamadas.
+  >
+  > `check_login_status` foi revogada hoje (SEC-022). `reset_login_attempts`
+  > continua no ar e continua sem chamador — proposta de revogação no
+  > `BACKLOG.md`.
+  >
+  > O título da seção é **"Chamadas pelo front"**. Uma função que ninguém chama
+  > não pertence a ela, e deixá-la aqui é o que faz alguém procurar no código
+  > uma chamada que não existe.
 
   > **`[12/09]` `delete_own_account` passou a EXIGIR a senha** (SEC-012). Ela era
   > uma linha — `DELETE FROM auth.users WHERE id = auth.uid()` — protegida só por

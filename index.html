@@ -22,6 +22,33 @@
          `?fbclid=…` não virar uma segunda versão da landing. -->
     <link rel="canonical" href="https://gamerhub-nine.vercel.app/" />
 
+    <!-- `[17/09]` Dados estruturados — Etapa 3 do Prompt 1.
+         SÓ `WebSite`, e a escolha é deliberada. Cada campo aqui existe no site:
+         o nome, o endereço, a descrição (a mesma da meta acima) e o idioma.
+
+         `Organization` ficou de FORA de propósito. O GamerHub é um projeto, não
+         uma organização com endereço, contato ou quadro de pessoas — declarar
+         esse tipo seria inflar o que ele é. E `sameAs` apontando para o
+         repositório no GitHub não é perfil de organização: é onde o código
+         mora. "Não invente dados estruturados" foi pedido explícito.
+
+         `SearchAction` também ficou fora: ele declara uma URL de busca, e o
+         site não tem busca pública. Declará-la seria prometer uma página que
+         devolve 404.
+
+         Fica no HTML estático, e não no `MetaDaRota`: dado estruturado é lido
+         por quem NÃO executa JavaScript com mais frequência do que o título. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "GamerHub",
+      "url": "https://gamerhub-nine.vercel.app/",
+      "description": "Rede social gamer brasileira: feed de dicas, curiosidades e news, mural da comunidade, lives com chat ao vivo, keys grátis e sistema de ranks por XP.",
+      "inLanguage": "pt-BR"
+    }
+    </script>
+
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="GamerHub" />
     <meta property="og:title" content="GamerHub — a comunidade gamer brasileira" />

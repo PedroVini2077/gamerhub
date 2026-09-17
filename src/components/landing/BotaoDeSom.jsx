@@ -155,7 +155,13 @@ export default function BotaoDeSom({ introTerminou = false }) {
             type="button"
             onClick={dispensarAviso}
             aria-label="Dispensar aviso de som"
-            className="text-gray-600 hover:text-gray-300 transition-colors"
+            // `[17/09]` O ícone tem 13 px, então a área de clique tinha 13x13 —
+            // abaixo dos 24x24 que o alvo de toque pede, num botão que alguém
+            // tenta acertar com o polegar. `p-1.5 -m-1.5`: o padding cresce a
+            // área clicável para ~25 px e a margem negativa devolve o espaço ao
+            // layout. O ícone não muda de tamanho nem de lugar — só o que
+            // responde ao dedo cresce.
+            className="text-gray-600 hover:text-gray-300 transition-colors p-1.5 -m-1.5"
           >
             <X size={13} />
           </button>

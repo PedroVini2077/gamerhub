@@ -632,6 +632,16 @@ A porta forjável foi **apagada**: `register_login_attempt` não existe mais, e 
 contagem vive em `contabilizar_falha_de_login`, com `EXECUTE` revogado de `anon`
 e de `authenticated`. A tela de login agora só **lê**, por `check_login_status`.
 
+> **`[17/09]` Esta última frase deixou de ser verdade, e o jeito como ela morreu
+> vale mais do que a correção.** Ela era fato em 28/08. Em **11/09** a tela de
+> login parou de chamar `check_login_status` — e ninguém voltou aqui, porque
+> apagar uma chamada não estoura nada. Hoje (SEC-022) a função foi **revogada**
+> de `anon` e `authenticated`: não é mais "a tela só lê", é *ninguém lê*.
+>
+> Frase datada envelhece sem avisar quando o "agora" dela sobrevive ao fato
+> (§1.4). Quem ler daqui a seis meses procuraria a leitura no código e não a
+> acharia.
+
 **O hook devolve sempre `decision: 'continue'`, e isso é decisão de produto.**
 Recusar ali transformaria o contador num portão de verdade — e portão desses é
 negação de serviço contra a conta: bastaria errar a senha de alguém 10 vezes
