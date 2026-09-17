@@ -27,12 +27,13 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/DECISOES.md`](docs/DECISOES.md) | Por que **o site** se comporta assim — decisões de produto, com o que foi **descartado** |
 | [`docs/DECISOES-FERRAMENTAL.md`](docs/DECISOES-FERRAMENTAL.md) | Por que **a esteira** é assim — CI, Vercel, Sentry, Dependabot, Edge Functions, email |
 | [`docs/VISAO-DE-FUTURO.md`](docs/VISAO-DE-FUTURO.md) | **Onde o site pode chegar.** Mapa de possibilidades, sem compromisso e sem data — não é fila |
-| [`BACKLOG.md`](BACKLOG.md) | O que falta fazer — só isso, é um checklist |
+| [`BACKLOG.md`](BACKLOG.md) | **Dois trabalhos:** a fila do que falta, e a seção **EM EXECUÇÃO**, que guarda o plano da tarefa em curso |
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |
-| [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
+| [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md), [execução](docs/regras/EXECUCAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
 | [`docs/MANIFESTO.md`](docs/MANIFESTO.md) | Como o dono e o Claude trabalham **juntos** — papéis, quando explicar mais, continuidade |
+| [`docs/identidade/`](docs/identidade/README.md) | A marca: o [briefing do dono](docs/identidade/BRIEFING-2026-09.md), o [briefing da landing](docs/identidade/BRIEFING-LANDING-2026-09.md), a [evolução visual futura](docs/identidade/EVOLUCAO-VISUAL-DA-LANDING.md) e os arquivos de arte |
 | [`supabase/functions/`](supabase/functions/README.md) | As Edge Functions em produção, e por que este espelho pode mentir |
-| [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — <!--n:migrations-->177<!--/n--> migrations que recriam o banco |
+| [`supabase/migrations/`](supabase/migrations/README.md) | **A verdade sobre o schema** — <!--n:migrations-->178<!--/n--> migrations que recriam o banco |
 | `db/AAAA-MM-DD-*.md` | Relatórios de auditoria, com o que foi achado e como foi provado |
 
 ---
@@ -41,8 +42,15 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 
 O GamerHub é uma rede social temática para gamers, com estética "neon/cyber"
 (tema escuro, verde-neon, roxo e ciano). Visitantes não logados chegam a uma
-**landing page institucional** animada com cena 3D; após criar conta e confirmar
-o email, acessam a plataforma completa.
+**landing page institucional** — uma travessia em cenas, com arte em tela cheia
+e animação em 2D; após criar conta e confirmar o email, acessam a plataforma
+completa.
+
+> **`[17/09]` Esta linha dizia "animada com cena 3D", e a cena 3D foi removida
+> em 11/09** — o próprio briefing do dono já dizia *"prefiro isso a adicionar 3D
+> apenas para deixar a página mais impressionante"*. Custo medido da remoção:
+> **−708 kB** de chunk. O motivo de ninguém ter percebido está logo abaixo, na
+> nota sobre o portão que não alcança este arquivo.
 
 Dentro da plataforma, o usuário pode criar posts com texto, imagens, vídeos,
 áudio (upload ou gravado) e embeds de YouTube/Twitch/TikTok; interagir via
@@ -71,15 +79,20 @@ toda ação sensível registrada em **logs de auditoria** e protegida por funç�
 | `react-router-dom`       | 7.x    | Roteamento SPA                                   |
 | `@supabase/supabase-js`  | 2.x    | Auth, Postgres, Realtime, Storage                |
 | `framer-motion`          | 12.x   | Animações (transições, listas, tabs, landing)    |
-| `@react-three/fiber`     | 8.x    | Cena 3D da landing (Canvas/WebGL)                |
-| `three`                  | 0.x    | Geometrias e materiais 3D                        |
 | `@tanstack/react-query`  | 5.x    | Cache de dados, dedupe de requests, invalidação  |
 | `lucide-react`           | 1.x    | Ícones de UI                                     |
 | `react-icons`            | 5.x    | Ícones de marca (Discord/Twitch/YouTube — fa6)   |
 | `react-hot-toast`        | 2.x    | Toasts/notificações                              |
 
+> **`[17/09]` Esta tabela listava `@react-three/fiber` e `three`, e as duas
+> saíram junto com a cena 3D.** Não é imprecisão de redação: o README anunciava
+> duas dependências que **não existem** — conferido no `package.json` e em
+> `src/`, zero ocorrências nos dois. Quem chegasse aqui esperaria achar WebGL no
+> projeto e não acharia.
+
 **Build/dev:** Vite 8, Tailwind 3, PostCSS/Autoprefixer, ESLint 10
 (`eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`), Vitest.
+*(Conferido no `package.json` em 17/09: as quatro versões batem.)*
 
 **Infra:** Supabase (Postgres + Auth + Realtime + Storage + Edge Functions) ·
 Deploy na Vercel (`vercel.json` com rewrite SPA e headers de segurança).
@@ -113,14 +126,22 @@ npm install
 criar o `.env` na raiz com a URL e a anon key do seu projeto Supabase.
 
 **4. Recriar o banco** (se for um projeto Supabase novo): aplicar as
-**[migrations](supabase/migrations/)** em ordem — são <!--n:migrations-->177<!--/n-->, e elas reconstroem o
+**[migrations](supabase/migrations/)** em ordem — são <!--n:migrations-->178<!--/n-->, e elas reconstroem o
 schema inteiro. O passo a passo e o que elas *não* cobrem (buckets, secrets,
 Auth Hook) estão no [README daquela pasta](supabase/migrations/README.md).
 
 > O `DATABASE_SCHEMA_BACKUP.sql` na raiz é de **11/06/2026**: conhece 52
-> funções contra as **73 `SECURITY DEFINER` de hoje** (medido em 02/09 no
-> `pg_proc`, não estimado). Está mantido só como referência histórica;
-> **não use para recriar o banco.**
+> funções contra as **80 `SECURITY DEFINER` medidas em 17/09** no `pg_proc`.
+> Está mantido só como referência histórica; **não use para recriar o banco.**
+>
+> Este número é um **retrato com data**, e não um número vigiado: `pg_proc` vive
+> no Postgres, e o portão `npm run numeros` não alcança o banco (o motivo está
+> escrito em [`docs/regras/AUDITORIA.md`](docs/regras/AUDITORIA.md)). Para saber
+> o valor de agora, a consulta leva 5 segundos e está lá.
+>
+> *`[17/09]` Ele dizia "73 … de hoje", medido em **02/09**. Eram 80. Um retrato
+> congelado que se anuncia como atual é a mesma armadilha que o `AUDITORIA.md`
+> já tinha registrado — e ela voltou aqui, onde nenhum portão olhava.*
 
 **5. Rodar**
 

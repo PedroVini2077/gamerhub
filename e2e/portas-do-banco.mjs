@@ -128,6 +128,38 @@ const ABERTAS = [
  *   404 -> `REVOKE ... FROM PUBLIC, anon`: o PostgREST nem lista a função
  *   401 -> a função é visível, mas o `EXECUTE` foi negado
  * Qualquer 2xx aqui é escalada de privilégio.
+ *
+ * ── ⚠️ `[17/09]` O 404 DESTA LISTA É AMBÍGUO, e isso enfraquece o verde ─────
+ *
+ * Achado ao acrescentar as três RPCs do contador de login. Este roteiro chama
+ * cada função com **corpo vazio**, e o PostgREST devolve **404 para função com
+ * parâmetro obrigatório** — porque não acha a sobrecarga, não porque o
+ * privilégio foi negado. Os dois 404 são indistinguíveis daqui.
+ *
+ * A prova, medida contra produção com a chave anônima de verdade:
+ *
+ *     username_disponivel  {}                        -> 404
+ *     username_disponivel  {"p_username":"zzteste"}  -> 200   <- ABERTA
+ *
+ * `username_disponivel` é aberta **de propósito** (é a checagem de nome no
+ * cadastro). Posta nesta lista por engano, ela passaria como "revogada".
+ *
+ * **O que isso quer dizer na prática:** para as entradas com parâmetro
+ * obrigatório — que são quase todas as de cima — este roteiro hoje prova menos
+ * do que o número final sugere. Se alguém der `GRANT` em `ban_user` amanhã, o
+ * 404 de assinatura chega antes e o teste continua verde.
+ *
+ * **O que continua provado:** as três do contador foram conferidas **uma a
+ * uma, com o argumento certo**, e as três responderam `401` — recusa de
+ * privilégio, não de assinatura. E `reset_login_attempts` não tem parâmetro,
+ * então o 404/401 dela nunca foi ambíguo.
+ *
+ * **Por que não consertei aqui:** a correção é mandar o argumento nomeado de
+ * cada função, e isso muda o que este roteiro FAZ contra produção — passaria a
+ * invocar `ban_user`, `soft_delete_post` e afins de verdade caso alguma
+ * estivesse aberta. Existe caminho seguro (UUID zerado, que não casa com
+ * ninguém), mas é decisão do dono e está no `BACKLOG.md` com a análise.
+ * Isto NÃO é brecha — nenhuma porta abriu. É vigia cego, que é §1.5.
  */
 const RPCS_FECHADAS = [
   ['ban_user', 'banir qualquer usuário'],
@@ -145,6 +177,28 @@ const RPCS_FECHADAS = [
   // estiver fechada: com ela aberta, basta um POST direto aqui para pular a
   // verificação inteira (§1.3).
   ['enviar_mensagem_de_contato', 'pular o captcha e encher o canal de contato'],
+
+  // ── `[17/09]` As três portas mortas do contador de login ─────────────────
+  //
+  // As três foram revogadas no mesmo dia, pelo mesmo motivo: **ninguém as
+  // chama**, e a única coisa que as mantinha inofensivas era `login_attempts`
+  // estar vazia — o hook que a encheria é de plano pago.
+  //
+  // Isso é "protecao acidental", que a POSTURA §1.3 manda tratar como sorte
+  // esperando expirar. O dono foi quem cobrou: *"independente da brecha, ser
+  // exploravel ou nao, podendo quebrar hoje ou nao, era pra ser fechada na
+  // hora"*. Ele estava certo — eu tinha deixado a terceira como proposta.
+  //
+  // O QUE ESTA LINHA COBRE, E O QUE NAO COBRE — dito para ninguem confiar
+  // demais no verde: este roteiro bate com a chave ANONIMA. Ele prova que
+  // quem nao tem conta nao alcanca as tres. A `reset_login_attempts` estava
+  // aberta a `authenticated`, e cobrir ESSE lado exigiria uma credencial de
+  // usuario no CI — a mesma troca ja recusada aqui e no alerta de cota. O
+  // estado de `authenticated` foi provado em ROLLBACK (6 asercoes) e conferido
+  // no `pg_proc`; o que roda sozinho e a metade anonima.
+  ['check_login_status', 'perguntar por qualquer e-mail sem ter conta (SEC-022)'],
+  ['reset_login_attempts', 'apagar o proprio historico de tentativas (SEC-024)'],
+  ['contabilizar_falha_de_login', 'fabricar bloqueio sem saber a senha'],
 ];
 
 const falhas = [];
