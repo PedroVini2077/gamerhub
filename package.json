@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:e2e": "node e2e/smoke.mjs",
     "test:e2e:fluxos": "node e2e/fluxos.mjs",
+    "test:e2e:lives": "node e2e/lives.mjs",
     "test:portas": "node e2e/portas-fechadas.mjs",
     "test:e2e:painel": "node e2e/painel-admin.mjs",
     "test:e2e:quadros": "node e2e/quadros-de-video.mjs",

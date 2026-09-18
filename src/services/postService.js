@@ -135,6 +135,16 @@ export async function fetchActiveLives() {
     .from('posts')
     .select('*, profiles(id, username, avatar_url, role, bio, created_at)')
     .eq('is_live', true)
+    // `[18/09]` SEC-034: sem este filtro, uma live APAGADA continuava listada
+    // como "AO VIVO" — para quem é da equipe. A `posts_select` libera conteúdo
+    // apagado a partir de `role_rank >= 2`, então a RLS escondia o problema de
+    // todo mundo menos de quem mais olha essa tela.
+    //
+    // O trigger `set_live_ended_at` agora encerra a live ao apagar o post, o
+    // que já resolveria sozinho. Este filtro fica como segunda camada: a
+    // primeira correção de segurança que dependeu de UM só mecanismo neste
+    // projeto foi a do SEC-025, e a lição foi não repetir isso.
+    .is('deleted_at', null)
     .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
     .not('embed_url', 'is', null)
     .order('created_at', { ascending: false });

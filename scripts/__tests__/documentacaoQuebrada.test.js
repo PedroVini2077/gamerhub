@@ -168,15 +168,34 @@ describe('BACKLOG.md — o contador bate com a lista', () => {
 describe('relatório de documentação envelhecida', () => {
   const RELATORIO = join(RAIZ, 'scripts/documentacao-envelhecida.mjs');
 
+  // `[18/09]` UMA execução, compartilhada pelos dois testes.
+  //
+  // Antes cada `it` chamava `execFileSync` no mesmo script, que leva ~1,05 s
+  // sozinho (medido, 3 execuções) e roda `git log` por documento. Sob a carga
+  // paralela da suíte inteira isso passou a estourar o timeout padrão do vitest
+  // de forma intermitente — falhou duas vezes em 18/09 e passou na re-execução
+  // seguinte das duas.
+  //
+  // **A causa raiz é INFERÊNCIA, não fato:** eu não capturei o texto do erro,
+  // só o arquivo e a linha. O que sustenta a hipótese é o tempo medido, o
+  // número de spawns e a intermitência. Rodar uma vez em vez de duas é bom
+  // independentemente disso — mas se voltar a piscar, o próximo passo é
+  // capturar a mensagem antes de mexer de novo (§1.2: duas tentativas, depois
+  // instrumentar).
+  //
+  // Por que importa mesmo sendo "só" flaky: portão que falha sozinho ensina a
+  // ignorar o portão, e aí ele deixa de proteger no dia em que acusa de
+  // verdade (§0.2, 4ª regra).
+  const saida = execFileSync('node', [RELATORIO], { encoding: 'utf8' });
+
   it('roda sem estourar e não reprova nada', () => {
     // Ele é relatório, não portão: precisa sair com 0 mesmo tendo achado algo,
     // senão viraria build vermelho por indício (§0.2, 4ª regra).
-    const saida = execFileSync('node', [RELATORIO], { encoding: 'utf8' });
+    // O `execFileSync` acima já teria estourado se o script saísse != 0.
     expect(saida.length).toBeGreaterThan(0);
   });
 
   it('todo documento de docs/ tem território mapeado', () => {
-    const saida = execFileSync('node', [RELATORIO], { encoding: 'utf8' });
     expect(
       saida,
       'Documento novo sem entrada em TERRITORIO nunca seria apontado como\n'

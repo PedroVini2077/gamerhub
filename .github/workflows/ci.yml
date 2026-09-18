@@ -670,6 +670,28 @@ jobs:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
 
+      # `[18/09]` O módulo que o `fluxos` declarava NÃO cobrir. Ele fica no
+      # mesmo job de propósito: precisa do mesmo servidor de pé e da mesma
+      # conta, e escreve em produção pelo mesmo motivo (cria e apaga uma live).
+      #
+      # Ele é a única coisa na esteira que confere a TELA contra o ESTADO
+      # PERSISTIDO usando o token de verdade do usuário. As travas de `npm test`
+      # leem migration; a transação em ROLLBACK prova a RLS; só este prova o
+      # caminho inteiro — PostgREST, JWT, policy e trigger juntos.
+      - name: Lives — criar, encerrar, reativar, apagar (tela x banco)
+        run: npm run test:e2e:lives
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          # `vars.`, NAO `secrets.` — a anon key e publica por construcao (ela vai
+          # no bundle que o navegador baixa), e todo o resto do CI ja a le assim.
+          # Escrever `secrets.` resolve para vazio, e a guarda do script sai com
+          # 1: foi exatamente o que aconteceu na primeira tentativa, e o job
+          # falhou alto em vez de pular em silencio.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
       # Sem isto, uma falha no CI só diz "timeout" e não dá para diagnosticar
       # sem reproduzir na mão.
       - name: Guardar a evidência da falha
