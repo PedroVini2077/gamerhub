@@ -1,0 +1,65 @@
+-- SEC-026 · `[18/09]` `admin_set_role` sai de `authenticated`. Porta morta, e a
+-- ULTIMA revogacao da auditoria das 48 SECURITY DEFINER.
+--
+-- ── O metodo, porque ele importa mais que o resultado ──────────────────────
+--
+-- O Security Advisor aponta **48** funcoes `SECURITY DEFINER` executaveis por
+-- `authenticated`. O pedido dele foi explicito: *"NAO revogue as 48 em massa"*
+-- e *"nao altere uma funcao apenas porque o Security Advisor a marcou"*.
+--
+-- Primeiro corte — quem o frontend chama: **9 das 48 nao sao chamadas por
+-- tela nenhuma**. Se o criterio parasse ai, revogar essas 9 teria **derrubado
+-- o site**, e por um motivo que nao aparece em grep de `src/`:
+--
+--   is_staff              usada em **14 policies**
+--   can_moderate_content  usada em **8 policies**
+--   pode_publicar         usada em **4 policies**
+--   is_super              usada em **2 policies**
+--
+-- Funcao chamada DENTRO de policy precisa de `EXECUTE` para o papel que a
+-- dispara. Sem o grant, a policy inteira falha — e falha para todo mundo.
+--
+-- Segundo corte — quem chama de fora do frontend:
+--
+--   contagem_de_migrations       o `espelho-de-migrations.mjs`, no CI, com a
+--                                chave anonima
+--   contato_dados_para_resposta  a Edge Function `responder-contato`, e ela usa
+--   contato_registrar_resposta   o **JWT de quem pediu**, nao `service_role` —
+--                                o proprio codigo avisa que trocar "abriria a
+--                                funcao para qualquer usuario logado"
+--   is_owner                     chamada por outras duas funcoes; preservada
+--                                por conservadorismo, o ganho seria zero
+--
+-- Sobrou **uma**.
+--
+-- ── Por que esta, e so esta ────────────────────────────────────────────────
+--
+-- `admin_set_role` nao e chamada por: nenhuma tela, nenhuma policy, nenhuma
+-- outra funcao, nenhuma Edge Function. Orfa nas quatro frentes.
+--
+-- Quem muda cargo no painel e `owner_set_role` — conferido em
+-- `hooks/useOwnerUserActions.js`, e e a unica das duas que aparece no codigo.
+--
+-- E ha um motivo de produto junto: `admin_set_role` permite que um `admin`
+-- (rank 2) promova alguem a `admin`. Nenhuma tela oferece isso, e a regua de
+-- papeis de 12/09 nao previa — o caminho de promocao passa por indicacao
+-- (`nominate_staff` -> `review_staff_nomination` -> `decide_staff_trial`), que
+-- tem periodo de avaliacao e exige rank 3.
+--
+-- **A funcao continua existindo** para `postgres` e `service_role`. Isto e
+-- revogacao de porta, nao remocao de capacidade.
+--
+-- ── Validacao (ROLLBACK, papel assumido, 3 asercoes) ───────────────────────
+--
+--   0. antes  -> CHAMAVEL (parou so no guard interno)  <- sem esta, o teste
+--                                                        nao provaria nada
+--   1. depois -> recusada por PRIVILEGIO
+--   2. `owner_set_role` -> CONTINUA chamavel, parando no guard do fundador
+--
+-- Mesma familia das SEC-022 e SEC-024: porta que ninguem usa e que so estava
+-- inofensiva pelo guard interno. Defesa em profundidade quer as duas.
+
+REVOKE EXECUTE ON FUNCTION public.admin_set_role(uuid, text) FROM PUBLIC, anon, authenticated;
+
+COMMENT ON FUNCTION public.admin_set_role(uuid, text) IS
+  'Promove/rebaixa cargo com hierarquia. SEM grant para anon/authenticated desde 18/09 (SEC-026): nenhuma tela, policy, funcao ou Edge Function a chama — o painel usa owner_set_role. Guardada para postgres/service_role. Se voltar a ser necessaria, escreva ao lado QUAL tela a chama antes de reconceder.';

@@ -342,7 +342,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**45 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -466,41 +466,12 @@ AGORA** escrito nele.
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
 
-- ⬜ **SEC-025 · `[18/09]` 🟠 `authenticated` tem UPDATE nas NOVE colunas
-  privilegiadas de `profiles`, e só um trigger impede o estrago.**
-  *Achado dele. Investigado em 18/09, read-only — diagnóstico em
-  `db/2026-09-18-checkmate-profiles-escalacao.md`.*
-
-  **Não há escalação hoje** (classificação B): o `trg_guard_profile_privileged`
-  reverte `role`, `banned`, `ban_count`, `suspended_until` e mais cinco quando
-  `current_user` é `authenticated`. Provado em `ROLLBACK` com papel de usuário
-  comum real: o UPDATE é aceito (HTTP 204), o valor gravado continua `user`, e
-  `is_staff()`/`is_owner()` seguem `false`.
-
-  **O problema é a CAMADA ÚNICA.** O grant diz "pode escrever `role`"; só o
-  trigger diz "não". Desabilitado, renomeado, ou num caminho onde `current_user`
-  não seja `authenticated`, a escalação abre **em silêncio** — sem erro, sem
-  log, sem teste vermelho.
-
-  **Correção proposta:** `REVOKE UPDATE (role, banned, ban_count,
-  suspended_until, banned_by, banned_by_username, banned_at, ban_reason,
-  ban_details, role_changed_at) FROM authenticated`, mantendo o UPDATE das 11
-  colunas que o frontend de fato edita. O trigger deixa de ser a única barreira
-  e vira a segunda.
-
-  **Vai junto com a proposta das 48 `SECURITY DEFINER`** — é o mesmo princípio
-  (least privilege / deny by default), e ele pediu para propor antes de mexer.
-
-- ⬜ **`[18/09]` 🟠 AUDITORIA DAS 48 `SECURITY DEFINER` — pedido dele, EM CURSO.**
-  Números conferidos: **80** funções `SECURITY DEFINER` em `public`, **48**
-  executáveis por `authenticated` (o número do Security Advisor está correto),
-  **2** por `anon`, e **0 sem `search_path`**.
-
-  Falta a classificação das 48 nas quatro categorias que ele definiu, a proposta
-  de revogação com justificativa por função, e a validação de que o caminho
-  legítimo de administração continua funcionando. **Abordagem conservadora: não
-  revogar em massa, não alterar função só porque o Advisor marcou.**
-
+- ✅ **SEC-025 e SEC-026 · `[18/09]` A escalação em `profiles` e a auditoria das
+  48 — FECHADAS.** `authenticated` perdeu UPDATE nas 13 colunas que não edita
+  (era a tabela inteira), e `admin_set_role` saiu de `authenticated` por ser
+  órfã nas quatro frentes. Advisor 48 → 47. Relatórios:
+  `db/2026-09-18-checkmate-profiles-escalacao.md` e
+  `db/2026-09-18-auditoria-48-security-definer.md`.
 
 - ✅ **SEC-024 · `[17/09]` `reset_login_attempts()`, a terceira porta morta do
   contador de login** — **FECHADA no mesmo dia.** Eu tinha deixado como
@@ -1109,6 +1080,27 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[18/09]` 🟠 **Ligar a proteção contra senha vazada.** *Ação de painel — eu
+  não alcanço.* Apareceu no Security Advisor durante a auditoria das 48:
+  `auth_leaked_password_protection` está **desligado**.
+
+  **O que é:** o Supabase checa a senha escolhida contra o HaveIBeenPwned e
+  recusa as que já vazaram em outros sites. Sem isso, alguém cadastra aqui a
+  mesma senha que já está num dump público.
+
+  **O passo a passo** (conferido no painel antes de escrever — ver
+  `docs/OPERACAO.md`):
+  1. Abrir https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/auth/providers
+  2. Seção **Email** → procurar **"Prevent use of leaked passwords"**
+  3. Ligar o toggle e **Save**
+
+  **Como conferir:** tentar cadastrar com a senha `password123` — tem que
+  recusar dizendo que ela é conhecida.
+
+  **O que pode dar errado:** nada quebra para quem já tem conta — a checagem só
+  roda no cadastro e na troca de senha.
+
+
 - ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
   de painel — eu não alcanço.*
 
@@ -1526,8 +1518,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->123<!--/n--> arq ·
-  <!--n:src.lib.linhas-->13.319<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->124<!--/n--> arq ·
+  <!--n:src.lib.linhas-->13.461<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
