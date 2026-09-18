@@ -1169,3 +1169,162 @@ A diferença importa: a transação prova a RLS; o token prova o caminho inteiro
 privilegiadas feito como o navegador faria, com releitura obrigatória — porque
 `204` não prova nada, o que já transformou um "achado confirmado" em falso
 positivo uma vez.
+
+---
+
+## `[18/09]` 3ª RODADA — a auditoria externa achou a MESMA regra pela metade, três vezes
+
+Um terceiro levantamento trouxe N8–N24. O padrão dos que eram reais é único, e
+ele não é sobre uma brecha: é sobre **eu escrever uma regra e aplicá-la em um
+lugar só**.
+
+| ID | O que estava aberto | Fechado por |
+| --- | --- | --- |
+| **N8** | live ocultada ou apagada pela equipe continuava pagando 30 XP | LIVE-040 |
+| **N9** | comentário de post **apagado** continuava pagando 3 XP | LIVE-040 |
+| **N10** | comentário de post **oculto** idem | LIVE-040 |
+| **N11** | comentário de post fora do ar continuava **legível** por conta comum | SEC-041 |
+| **N12** | mensagem de live chat idem — a policy era `USING (true)` | SEC-041 |
+| **N13** | curtidas | **não é falha**, e a decisão está medida e escrita |
+| **N16** | `lives_realizadas` órfã depois do post apagado | **é o desenho**, não achado |
+
+### A regra que eu tinha escrito, e cumprido pela metade
+
+> **XP paga pelo que ESTÁ NO AR.** Conteúdo que a moderação tirou não paga em
+> **nenhuma** forma — post, comentário ou live.
+
+A SEC-028 (17/09) escreveu essa frase e aplicou em `posts`. No dia seguinte:
+
+| Quem abriu o buraco | Como |
+| --- | --- |
+| **eu, na LIVE-036/037** | soltei o XP de live do post para o registro sobreviver ao cron. Ao soltar do **post**, soltei da **moderação** — que age no post |
+| **eu, na SEC-028** | filtrei `comments.hidden_at` e parei ali. O comentário nunca olhou o **pai** |
+
+Medido em `ROLLBACK`, e é o número que define os três achados de uma vez:
+
+| A moderação faz | XP do autor |
+| --- | --- |
+| ocultar um **post comum** | 1 → **0** ✓ |
+| ocultar uma **live** | 1 → **1** ✗ |
+| apagar uma **live** | 1 → **1** ✗ |
+
+**A lição é a mesma da 2ª rodada, e ela voltou porque eu não a apliquei
+inteira:** varredura de **classe**, não de caso (§1.3). Ao escrever "o XP conta
+só o que está no ar", a pergunta seguinte era *"quais são TODAS as formas de
+ganhar XP, e cada uma olha o estado do conteúdo?"*. São quatro (post,
+comentário, curtida, live) e eu confirmei **uma**.
+
+### N11 e N12 — ler não é o mesmo que escrever, e a policy sabia só metade
+
+A `post_aceita_interacao` foi criada na SEC-029 para o **INSERT**: não dá para
+comentar embaixo do que a moderação tirou. Ninguém perguntou pelo **SELECT**.
+
+Medido com papel `authenticated` real: depois de apagar o post, o comum lia
+**1 comentário** e **1 mensagem de chat**, enquanto o **post** devolvia 0 linhas.
+
+Isso importa porque ocultar um post costuma ser por causa da **conversa**, não
+do texto do post — e o `EmbedPlayer` some junto com o post, então a única coisa
+que continuava legível era exatamente o que a equipe quis tirar do ar.
+
+Detalhe de RLS que vale registrar: `comments_select` **parecia** olhar
+moderação (`hidden_at IS NULL OR role_rank >= 2`), e por isso passou por três
+auditorias. Ela olhava a moderação do **próprio comentário**. A `live_chat` era
+`USING (true)` sem disfarce nenhum.
+
+### N13 — o achado que eu concordo que NÃO é achado
+
+Curtidas ficaram de fora da SEC-041, e a decisão é medida:
+
+1. **curtida não carrega conteúdo** — o que vaza é *"fulano curtiu o post X"*,
+   para quem já tem o id do post;
+2. **`post_likes` é a leitura mais quente do site** — o `attachEngagement` busca
+   as curtidas de 30 posts de uma vez, em **todo** carregamento de feed.
+
+Trocar o caminho mais quente do app por um vazamento de valor ≈ zero é a conta
+errada. Está escrito na migration e travado por teste, para não voltar como
+*"esqueceram"*.
+
+### N16 — `lives_realizadas` órfã é o DESENHO, não o defeito
+
+O levantamento apontou que a linha sobrevive ao post apagado. Ela sobrevive **de
+propósito**: o cron apaga a live 15 minutos depois de encerrar, e uma FK levaria
+junto a única testemunha de que a transmissão aconteceu. Sem isso, **o XP de
+live durava 15 minutos** — foi o bug de 18/09, não a correção dele.
+
+### O modo de falhar, que foi a decisão mais importante da rodada
+
+A primeira versão da invalidação também agia no `DELETE` físico, distinguindo
+cron de moderação por `auth.uid()` ser `NULL`. **O teste reprovou**, e como ele
+reprovou vale mais que o resultado: `RESET role` não limpa
+`request.jwt.claims`, então o "cron" de mentira ainda tinha um admin dentro.
+
+Isso expôs a fragilidade do **desenho**. Os dois erros não são simétricos:
+
+| Erro | Consequência |
+| --- | --- |
+| não invalidar quando devia | um banido guarda XP que não usa |
+| invalidar quando não devia | **o site inteiro perde XP de live 15 min depois de cada live**, calado, para sempre |
+
+O `DELETE` físico nunca invalida. A trava reprova se alguém acrescentar `DELETE`
+ao gatilho, e a mensagem conta esta história inteira — porque quem esbarrar nela
+daqui a seis meses vai achar que é uma omissão.
+
+---
+
+## `[18/09]` SEC-042 — a faxina da própria rodada achou o que a rodada criou
+
+O `get_advisors`, rodado na bateria de faxina (§6.1) depois da LIVE-040, acusou
+duas funções de **trigger** chamáveis como RPC por `anon` e `authenticated`:
+
+```
+registrar_live_realizada            (LIVE-036, hoje)
+invalidar_lives_do_post_moderado    (LIVE-040, hoje)
+```
+
+**As duas são minhas, das últimas cinco horas.** E a classe já estava escrita no
+`AUDITORIA.md`, Fase 4 — o `checar_palavras_bloqueadas` tinha passado por isso
+antes. Varredura da classe inteira: **duas**, e todo o resto já estava fechado.
+A higiene do projeto estava certa; quem furou fui eu.
+
+### Severidade 🔵 BAIXO, dito para não inflar o achado
+
+Chamada como RPC, uma função de trigger não tem `NEW` nem `OLD` e estoura em
+*"record new is not assigned yet"*. Não dá para forjar live nem invalidar XP por
+ali. Fecha mesmo assim porque *"só é inofensiva enquanto o corpo não mexer em
+nada antes de tocar em `NEW`"* é a proteção acidental do §1.3.
+
+### O que eu **não** deduzi do manual
+
+O `BANCO.md` diz que revogar `EXECUTE` não desliga o trigger. Se isso estivesse
+errado, eu teria desligado o registro de live inteiro **sem nada estourar**.
+Medido em `ROLLBACK`, com o revoke dentro da transação:
+
+```
+1_trigger_de_registro_ainda_dispara ...... OK: gravou
+2_trigger_de_invalidacao_ainda_dispara ... OK: invalidou
+3_rpc_registrar (papel authenticated) .... OK: negado
+4_rpc_invalidar (papel authenticated) .... OK: negado
+```
+
+### A causa raiz é maior do que as duas funções
+
+`pg_default_acl` do schema `public`, para função criada pelo papel `postgres` —
+que é o papel do `apply_migration`:
+
+```
+{postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
+```
+
+**Toda função nova nasce com `EXECUTE` para `anon`.** Para **tabela** o projeto
+já fechou esse padrão no SEC-005 — é o que faz a régua de papéis funcionar, com
+coluna nova nascendo fechada. Para **função**, não.
+
+O estado de hoje continua limpo: conferido, são **3** funções alcançáveis por
+`anon`, as três intencionais — `contagem_de_migrations` (o portão de espelho do
+CI usa a anon key), `username_disponivel` (o cadastro precisa) e `role_rank(text)`,
+que é função pura e não toca dado.
+
+Fechar na raiz com `ALTER DEFAULT PRIVILEGES` é mudança de contrato de todo
+trabalho futuro no schema (§7 🟡), então está **proposta ao dono** no
+`BACKLOG.md`, com o modo de falhar dos dois lados na mesa. Até lá, quem segura a
+classe é `src/lib/__tests__/funcaoDeTriggerNaoEhRpc.test.js`.

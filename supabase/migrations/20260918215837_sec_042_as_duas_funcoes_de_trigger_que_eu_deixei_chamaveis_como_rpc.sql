@@ -1,0 +1,66 @@
+-- SEC-042 · `[18/09]` Duas funcoes de TRIGGER que eu criei hoje ficaram
+-- chamaveis como RPC por `anon` e `authenticated`. Achado pelo `get_advisors`
+-- na faxina da propria rodada que as criou.
+--
+-- ── A classe ja era conhecida, e por isso isto e regressao minha ──────────
+--
+-- O `AUDITORIA.md`, Fase 4, lista exatamente este padrao:
+--
+--     "Funcoes de trigger expostas como RPC -> get_advisors ->
+--      anon_security_definer_function_executable -> `checar_palavras_bloqueadas`
+--      chamavel via /rest/v1/rpc/"
+--
+-- Varredura de CLASSE, nao de caso (§1.3) — TODA funcao que retorna `trigger`
+-- e ainda tem EXECUTE para anon/authenticated:
+--
+--     registrar_live_realizada            (LIVE-036, hoje)
+--     invalidar_lives_do_post_moderado    (LIVE-040, hoje)
+--
+-- **Duas, e as duas sao minhas, das ultimas 5 horas.** Todo o resto da classe
+-- ja estava fechado. A higiene do projeto estava certa; quem furou fui eu, ao
+-- criar funcao nova sem repetir o revoke que o padrao exige.
+--
+-- ── A causa raiz, medida, e ela e maior do que estas duas ─────────────────
+--
+-- `pg_default_acl` do schema `public`, para funcao criada pelo papel
+-- `postgres` — que e o papel do `apply_migration`:
+--
+--     {postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, ...}
+--
+-- **Toda funcao nova nasce com EXECUTE para `anon`.** Para TABELA o projeto ja
+-- fechou esse padrao (SEC-005); para FUNCAO ele continua aberto. Fechar de vez
+-- e mudanca de contrato do schema inteiro (§7 🟡) — esta proposta ao dono no
+-- `BACKLOG.md`, com a conta na mesa. Esta migration fecha o caso; a trava
+-- `funcaoDeTriggerNaoEhRpc.test.js` segura a classe enquanto a decisao nao vem.
+--
+-- ── Severidade: 🔵 BAIXO, e o numero esta aqui para nao inflar o achado ───
+--
+-- Chamada como RPC, uma funcao de trigger nao tem `NEW` nem `OLD` — ela estoura
+-- em "record new is not assigned yet". Nao da para forjar registro de live nem
+-- invalidar o XP de ninguem por essa porta.
+--
+-- Fecha mesmo assim porque e defesa em profundidade e porque "so esta seguro
+-- por efeito colateral" e a protecao acidental que o §1.3 manda desconfiar: a
+-- porta so e inofensiva enquanto o corpo da funcao nao mexer em nada antes de
+-- tocar em `NEW`. Amanha ela muda, e ninguem vai lembrar de olhar o grant.
+--
+-- ── Revogar EXECUTE NAO desliga o trigger — e isso foi MEDIDO ────────────
+--
+-- O `BANCO.md` afirma que "trigger dispara independente de EXECUTE: o Postgres
+-- checa esse privilegio na criacao do trigger, nao a cada disparo". Isso e
+-- afirmacao de documento, e documento envelhece (§1.4). Se estivesse errada, eu
+-- acabaria de desligar o registro de live inteiro **sem nada estourar** — §1.5
+-- na veia.
+--
+-- Provado em ROLLBACK, com o revoke ja aplicado dentro da transacao:
+--
+--   1_trigger_de_registro_ainda_dispara ...... OK: gravou
+--   2_trigger_de_invalidacao_ainda_dispara ... OK: invalidou
+--   3_rpc_registrar (papel authenticated) .... OK: negado
+--   4_rpc_invalidar (papel authenticated) .... OK: negado
+
+REVOKE EXECUTE ON FUNCTION public.registrar_live_realizada()
+  FROM PUBLIC, anon, authenticated;
+
+REVOKE EXECUTE ON FUNCTION public.invalidar_lives_do_post_moderado()
+  FROM PUBLIC, anon, authenticated;
