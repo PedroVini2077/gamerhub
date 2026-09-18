@@ -79,6 +79,9 @@ const primeiraPosicao = (texto, agulhas) => agulhas
  * onde alguém esconde uma função que só deu trabalho de arrumar.
  */
 const AUTORIZA_PELO_ALVO = {
+  solicitar_reativacao_da_propria_live:
+    'so o DONO da live pede, e descobrir quem e o dono exige o lookup. Fecha '
+    + 'unificando a mensagem: "Live nao encontrada ou nao e sua" cobre os dois.',
   soft_delete_post:
     'quem pode apagar depende de QUEM É O DONO, e descobrir o dono exige o '
     + 'lookup. Fecha unificando a mensagem: "Post não encontrado ou sem permissão".',

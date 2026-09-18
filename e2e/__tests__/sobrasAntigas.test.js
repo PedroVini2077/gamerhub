@@ -43,6 +43,32 @@ describe('sobras de teste no feed', () => {
     ).toEqual([]);
   });
 
+  // `[18/09]` A regressão que uma revisão externa pediu, e ela é específica de
+  // propósito: o caso que quebrou NÃO era "prefixo novo não detectado" — era
+  // "prefixo novo detectado, relógio ILEGÍVEL".
+  //
+  // O `sobrasAntigas` faz duas leituras: `REGEX_DE_SOBRA` (é marca de teste?) e
+  // o relógio de dentro dela (de que rodada?). As duas nasciam de listas
+  // separadas, e o `[e2e-live ` entrou só na primeira. Efeito: a live de teste
+  // passava no primeiro filtro, falhava na leitura do relógio e caía no
+  // `return true` — chamada de sobra com UM SEGUNDO de vida.
+  //
+  // O teste de cima ("acusa sobra antiga de QUALQUER prefixo") não pegava isso,
+  // porque ele só usa marcas VELHAS, e velha é sobra pelos dois caminhos. É
+  // preciso um caso RECENTE por prefixo para separar os dois.
+  it.each(PREFIXOS_DE_TESTE)('lê o relógio do prefixo %s, e não chuta', (prefixo) => {
+    expect(
+      sobrasAntigas([`${prefixo}${recente}] acabou de nascer`], agora),
+      `O relógio de "${prefixo}" deixou de ser lido, então TODA marca deste\n`
+      + 'prefixo virou "sobra" — inclusive a do job que está rodando agora.\n\n'
+      + 'Causa provável: alguém escreveu um segundo regex à mão em vez de\n'
+      + 'derivar de PREFIXOS_DE_TESTE. Já aconteceu duas vezes: na primeira o\n'
+      + 'detector não via `[painel `, na segunda não lia o relógio de\n'
+      + '`[e2e-live `. Os dois regex saem de ALTERNATIVA_DE_PREFIXOS — mantenha\n'
+      + 'assim.',
+    ).toEqual([]);
+  });
+
   it('post de usuário de verdade nunca é tocado', () => {
     expect(sobrasAntigas(['Melhor build de Elden Ring', '[naoehteste 1] x'], agora)).toEqual([]);
   });

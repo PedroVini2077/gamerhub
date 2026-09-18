@@ -186,6 +186,10 @@ export const NOTIF_META = {
   new_live:             A(Radio,       'text-red-400',     '#f87171'),
   live_ended:           A(Tv,          'text-gray-500',    '#6b7280'),
   live_reactivated:     A(RotateCcw,   'text-neon-green',  '#39ff14'),
+  // `[18/09]` LIVE-038: o AUTOR pede para reativar a própria live. Amarelo
+  // porque é pedido esperando decisão, não evento consumado — o verde do
+  // `live_reactivated` é o desfecho, este é a fila.
+  live_reactivation_request: A(RotateCcw, 'text-yellow-400', '#facc15'),
   reactivation_request: A(RotateCcw,   'text-yellow-400',  '#facc15'),
   user_banned:          A(Ban,         'text-red-400',     '#f87171'),
   user_suspended:       A(Clock,       'text-yellow-400',  '#facc15'),
