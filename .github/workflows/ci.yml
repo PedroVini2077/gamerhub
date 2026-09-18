@@ -341,6 +341,35 @@ jobs:
             const cfg = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
             const mapa = cfg.git?.deploymentEnabled ?? {};
 
+            // `[17/09]` A branch `preview` e a UNICA excecao, e ela e o
+            // contrario das outras: tem que estar LIGADA.
+            //
+            // Ela nasceu de uma pergunta do dono — "nao daria pra eu mexer num
+            // pre-site antes de implementar?" — e a resposta era que isso ja
+            // existia na Vercel e nos tinhamos desligado em 23/08, quando o
+            // preview nao servia a ninguem. Passou a servir.
+            //
+            // O desenho e sob demanda de proposito: ela so recebe push quando
+            // ele pede para ver, entao o custo e EXATAMENTE 1 deploy por pedido.
+            // Foi o que ele escolheu entre as duas opcoes, e a razao foi a
+            // pergunta dele: nao era "cabe?", era "como garanto que nao volta?".
+            //
+            // A asercao invertida existe porque o modo de isto falhar e
+            // silencioso (§1.5): se alguem puser `false` aqui, a branch para de
+            // deployar, e ele fica esperando uma URL que nunca chega — sem erro,
+            // sem log, sem nada.
+            if (ref === "preview") {
+              if (mapa.preview !== true) {
+                console.log("::error::A branch `preview` NAO esta ligada em vercel.json.");
+                console.log("::error::Ela e a unica que DEVE deployar: e o pre-site que o dono abre");
+                console.log("::error::antes de mergear. Desligada, ele espera uma URL que nunca vem.");
+                console.log("::error::Em vercel.json, git.deploymentEnabled:  \"preview\": true");
+                process.exit(1);
+              }
+              console.log("OK — `preview` ligada, como ela precisa estar.");
+              process.exit(0);
+            }
+
             if (mapa[ref] !== false) {
               console.log(`::error::A branch "${ref}" nao esta desligada em vercel.json.`);
               console.log("::error::Cada push nela cria um deploy de preview que ninguem olha —");

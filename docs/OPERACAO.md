@@ -528,11 +528,77 @@ checagens seguintes produzem a mensagem precisa (`TELA BRANCA`, `guard levou
 para X`, `sem o conteúdo esperado`), que diagnostica muito melhor que um
 timeout cru.
 
+## `[17/09]` O PRÉ-SITE — a branch `preview`, sob demanda
+
+> Pergunta do dono: *"não ficaria mais fácil, ao invés de jogar algo pra produção
+> com erros, vc conseguir me mostrar aqui e eu poder mexer num 'pré-site' antes
+> de implementar? Imagina poder fazer uma mudança na landing — hoje eu não
+> consigo ver se não for pra produção com o merge"*.
+
+**Isso já existia e nós tínhamos desligado.** A Vercel cria um site por branch
+por padrão; em 23/08 nós desligamos, e o motivo escrito era honesto para a época:
+*"o preview existiria para alguém clicar e olhar. **Ninguém olha**"*. Passou a
+ter quem olhe.
+
+### Como funciona, e por que é sob demanda
+
+A branch `preview` é a **única** com deploy ligado além da `main`. Ela **só
+recebe push quando ele pede** — e é isso que responde à preocupação dele, que não
+era *"cabe na cota?"* e sim ***"como garanto que não volta?"***.
+
+| | Branch de trabalho | Branch `preview` |
+| --- | --- | --- |
+| quem dispara | **eu**, a cada push do fluxo normal | **ele**, quando pede para ver |
+| custo | imprevisível — depende do meu ritmo | **exatamente 1 deploy por pedido** |
+
+**O número que sustentou a decisão**, medido na API da Vercel (17 dias, tudo
+produção porque o preview estava desligado): pior dia **20 de 100**, média perto
+de 8. Ligar na branch de trabalho caberia — mas seria estimativa, e ele pediu
+certeza.
+
+### O passo a passo
+
+**Para ele:** dizer *"sobe pra eu ver"*. Nada mais.
+
+**Para mim:**
+
+```bash
+git push -f origin claude/<branch-de-trabalho>:preview
+```
+
+A URL sai no painel da Vercel, no projeto `gamerhub`, na aba **Deployments** —
+a linha com a branch `preview`. Também chega por email, se a notificação estiver
+ligada na conta dele.
+
+### O que ele precisa saber antes de confiar no que vê
+
+| | |
+| --- | --- |
+| **O banco é o de PRODUÇÃO** | mudança visual é segura; mudança de schema **não fica isolada** |
+| Banco separado por branch | existe no Supabase, é **plano pago** |
+| Demora ~1–2 min | é o tempo do build, não é instantâneo |
+
+### As TRÊS peças que precisam concordar — e a que quase me pegou
+
+Ligar isto exigiu mexer em três lugares, e eu quase entreguei quebrado:
+
+1. `vercel.json` → `"preview": true`
+2. **`scripts/vercel-ignore.sh`** → a linha dizia `!= "main"` e **cancelaria o
+   build**. Sem ela, a Vercel começaria e o script pararia: ele ficaria esperando
+   uma URL que nunca chega, **sem erro em lugar nenhum** (§1.5)
+3. O portão do CI → ele exige que toda branch de PR esteja **desligada**; a
+   `preview` é a exceção, e a asserção dela é **invertida** — se alguém puser
+   `false`, o CI reprova dizendo por quê
+
+As duas últimas têm trava provada reinjetando o bug.
+
+---
+
 ## Quando a Vercel constrói, e quando não
 
-`scripts/vercel-ignore.sh` decide. Ele pula quando a branch não é a `main`, e
-quando o commit não toca em nada que vá para o navegador — documentação, SQL,
-Edge Function, CI **e teste dentro de `src/`**.
+`scripts/vercel-ignore.sh` decide. Ele pula quando a branch não é a `main`
+**nem a `preview`**, e quando o commit não toca em nada que vá para o navegador —
+documentação, SQL, Edge Function, CI **e teste dentro de `src/`**.
 
 **`[28/08]` A exclusão dos testes veio de um caso real:** o merge do PR #68
 gastou um deploy de produção mexendo só em `src/lib/__tests__/`. Testes moram
@@ -1190,7 +1256,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->21.138<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->21.461<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
