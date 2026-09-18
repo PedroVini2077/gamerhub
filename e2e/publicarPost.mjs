@@ -99,7 +99,7 @@ export async function publicarEEsperarNoFeed(page, {
  * Quem publicar com um prefixo novo acrescenta aqui, e o detector passa a
  * enxergar sozinho.
  */
-export const PREFIXOS_DE_TESTE = ['[e2e ', '[painel '];
+export const PREFIXOS_DE_TESTE = ['[e2e ', '[painel ', '[e2e-live '];
 
 /** A marca desta execução: prefixo + relógio, para não colidir entre rodadas. */
 export function marcaDeTeste(prefixo) {
