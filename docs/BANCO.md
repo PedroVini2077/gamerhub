@@ -517,3 +517,91 @@ trg_guard_post_privileged  <  trg_set_live_ended_at  <  trg_wordlist_posts
 gravar `now()` **depois**, no encerramento legítimo — e o que deixa o
 `trg_wordlist_posts` marcar `hidden_at` num INSERT mesmo com o guard zerando
 `deleted_at` antes. Renomear qualquer um dos três muda a ordem.
+
+---
+
+## `[18/09]` `lives_realizadas` — a testemunha de que a live aconteceu
+
+> **Por que ela existe, e ela não foi criada por capricho.** O XP deste site é
+> **contado na hora**, somando linhas que existem no instante em que a tela
+> abre. E um cron apaga **fisicamente** toda live encerrada há mais de 15
+> minutos, desde junho.
+>
+> As duas decisões nunca se encontraram. Consequência medida: **o XP de live
+> durava 15 minutos.** Ninguém escolheu isso — caiu por efeito colateral.
+
+| | |
+| --- | --- |
+| **O que guarda** | `user_id`, `post_id`, `titulo`, `live_kind`, `iniciada_em`, `encerrada_em` |
+| **Quem escreve** | só o trigger `registrar_live_realizada` (`AFTER UPDATE` em `posts`) |
+| **Quem lê** | a view `xp_dos_usuarios` |
+| **Grant** | **nenhum** — nem `anon`, nem `authenticated` |
+| **Uma linha por** | **SESSÃO**, não por post |
+
+### Por que NÃO tem foreign key para `posts`
+
+Uma FK levaria o registro junto quando o post fosse apagado — que é exatamente
+o que esta tabela existe para impedir. O `post_id` fica como referência solta,
+de propósito.
+
+### Por que isto NÃO é o erro do `posts.likes`
+
+A regra deste documento diz que contador desnormalizado desincroniza no primeiro
+caminho que alguém esquecer — foi por isso que `posts.likes` foi apagada.
+
+**A diferença está no que a fonte faz depois.** `posts.likes` duplicava uma
+fonte que **continuava existindo** (`post_likes`), então as duas divergiam. Aqui
+a fonte é **apagada de propósito**: não há o que duplicar, e esta tabela é a
+única testemunha. É registro de evento, não contador espelhado.
+
+### Uma linha por SESSÃO, e isso protege sozinho
+
+Reativar e encerrar de novo grava uma segunda linha — foram duas transmissões.
+E o abuso se auto-limita: uma reativação de dois segundos vira uma sessão de
+dois segundos, que não passa na regra de duração.
+
+### `posts.live_started_at` — por que `created_at` não servia
+
+Duração precisa do início da **sessão**, não do nascimento do post. Sem essa
+coluna, uma live reativada pela equipe três dias depois teria "duração de três
+dias" e passaria em qualquer regra de tempo mínimo.
+
+---
+
+## `[18/09]` O ciclo de vida da live, de ponta a ponta
+
+| Quem | Pode | Não pode |
+| --- | --- | --- |
+| **autor** | abrir a live · **encerrar** a própria · pedir reativação | reativar |
+| **equipe** (`role_rank >= 2`) | tudo acima · **reativar** · decidir os pedidos | — |
+| **cron** (5 em 5 min) | encerrar live vencida ou com +24h · apagar live encerrada há +15 min | apagar live com **pedido pendente** |
+
+### `solicitar_reativacao_da_propria_live(uuid, text)`
+
+A porta do autor. É RPC e não policy porque a tabela `live_reactivation_requests`
+continua **fechada** — as regras ("é o dono, a live é dele, já acabou, não há
+pedido pendente") ficam num lugar que dá para ler, em vez de dentro de um
+`WITH CHECK`.
+
+Espelha o `solicitar_revisao_do_proprio_ban`, inclusive a marca
+`auto_solicitado` — sem ela o painel mostraria *"@joao pediu reativação da live
+de @joao"* sem explicar por que o solicitante é o próprio dono.
+
+> **O cron precisou mudar junto.** Sem a cláusula que segura o post com pedido
+> pendente, a porta seria decorativa: a equipe não reativa o que já foi apagado.
+
+### `live_minutos_para_xp()` e a chave `live_xp_minutos`
+
+Quanto tempo uma live precisa durar para contar como live no XP. Padrão **10
+minutos**, e o número mora no `site_config` porque é chute honesto — não existe
+uma única live real no banco para medir.
+
+| Camada | O que faz |
+| --- | --- |
+| `owner_set_site_config` | **recusa** valor fora de 1..600, com mensagem |
+| `live_minutos_para_xp()` | volta 10 se a chave sumir ou vier inválida |
+| `SiteTab.jsx` | o campo onde o dono troca |
+
+O piso de leitura **não é o fallback silencioso do §4**: o valor errado é
+impossível de gravar, e o piso existe para um valor ruim nunca derrubar o XP de
+todo mundo numa tela que só lê.

@@ -35,6 +35,38 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### ✅ `[18/09]` O CICLO DE VIDA DA LIVE — três das quatro decisões, fechadas
+
+**Como isto começou:** ele perguntou o que fazer sobre XP de live, e a
+investigação achou **5 cron jobs** que eu não sabia que existiam — nas
+migrations desde junho, e eu nunca tinha lido. Um deles **apaga fisicamente**
+toda live encerrada há mais de 15 minutos.
+
+**O que isso revelou:** o XP deste site é contado na hora, das linhas que
+existem. Então **o XP de live durava 15 minutos** e sumia. Ninguém decidiu isso
+— caiu do encontro de duas decisões que nunca se falaram.
+
+> **Eu tinha afirmado a ele que `expires_at` "não tem dono e nada no site
+> escreve".** Verdade sobre o frontend, falso sobre o sistema. A informação
+> estava no repo; eu não fui olhar.
+
+| Decisão dele | O que foi feito |
+| --- | --- |
+| a live que aconteceu tem que continuar valendo XP | `lives_realizadas` — registro que sobrevive ao DELETE (LIVE-036) |
+| XP de live exige **duração** | ≥ 10 min, configurável no painel (LIVE-037) |
+| usuário comum **não** reativa | guard + RPC para ele pedir + o cron segura o post (LIVE-038) |
+| live tem prazo? | **aberta** — virou item próprio, porque o teto de 24h já existia |
+
+**Um bug meu, achado por teste meu:** a SEC-027 pôs a derivação de `was_live`
+dentro do ramo de usuário comum. Live criada por **admin/owner** nascia com
+`was_live = false` — e o cron nunca a apagaria, acumulando card com embed morto
+no feed. Fechado na LIVE-039.
+
+**Falta do pacote** (não entrou nesta rodada): o popup de confirmação ao
+encerrar/excluir e a tela onde o autor pede a reativação. O banco está pronto
+para os dois; é trabalho de frontend.
+
+
 ### ✅ `[18/09]` AUDITORIA EXTERNA (2ª rodada) — fechada nesta sessão
 
 Um documento de auditoria externa retestou o pentest e trouxe 3 achados novos.
@@ -428,7 +460,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**45 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1100,38 +1132,22 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[18/09]` 🟠 **AS DECISÕES DE LIVE — quatro perguntas que só você responde.**
+- ⬜ `[18/09]` 🟠 **Live tem prazo? — a última das quatro decisões de live.**
 
-  A auditoria externa e o pentest fecharam o que era brecha. O que sobrou é
-  produto, e eu **não** decidi sozinho. As quatro estão relacionadas, então vale
-  responder juntas.
+  As outras três foram respondidas em 18/09 e estão feitas (ver EM EXECUÇÃO).
+  Esta sobrou, e ela mudou de forma quando a investigação achou os crons:
 
-  **1. O que faz uma live valer 30 XP?**
-  Hoje `was_live` significa *"o autor marcou a caixa no formulário de edição"*.
-  A SEC-027 matou a manipulação via API, mas o clique continua pagando.
+  **O prazo JÁ EXISTE e eu não sabia quando perguntei.** Um cron encerra
+  qualquer live com mais de **24 horas** no ar, desde junho, e nunca esteve
+  escrito em documento nenhum.
 
-  | Regra | Efeito | Custo |
-  | --- | --- | --- |
-  | live precisa ter sido **encerrada** (`live_ended_at` preenchido) | abrir e fechar na hora ainda paga | trivial |
-  | live precisa ter **durado** N minutos | clique não paga mais | escolher o N |
-  | live precisa ter tido **chat** | só live com plateia paga | pune live pequena legítima |
-  | deixar como está | XP de live é "declarei que fiz live" | zero |
+  O que continua aberto é outra coisa: **`expires_at` é um prazo por live que
+  nada no site escreve.** Nenhum post no banco tem valor nele. As saídas:
 
-  **2. Usuário comum pode REATIVAR a própria live?**
-  Hoje pode: `is_live` é gravável nos dois sentidos pelo autor, porque o
-  formulário de edição depende disso. Existe uma tabela
-  `live_reactivation_requests` — ou seja, o desenho original tratava reativação
-  como ação de equipe. Os dois caminhos existem ao mesmo tempo.
-
-  **3. A notificação `live_reactivated` precisa existir?**
-  A SEC-034 pôs teto (30 min, vira contador). Mas se a resposta da 2 for "só a
-  equipe reativa", esta notificação deixa de ser sobre usuário comum e talvez
-  não precise existir.
-
-  **4. Live tem prazo?**
-  `expires_at` existe na tabela, a `cleanup_expired_posts` **apaga de verdade**
-  por ela, e **nada no site escreve esse campo** — nenhum post no banco tem
-  valor. É uma feature pela metade: ou ganha dono, ou some.
+  | Saída | O que muda |
+  | --- | --- |
+  | dar dono a `expires_at` | o autor escolhe "essa live acaba às 22h" |
+  | deixar só o teto de 24h | `expires_at` vira coluna morta e some |
 
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
@@ -1149,30 +1165,6 @@ dependência técnica real** que decide o resto:
   usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
   sujeira para gente de verdade ver. Um por vez, com limpeza provada.
 
-
-- ⬜ `[18/09]` 🟠 **O que faz uma live VALER 30 XP? — a decisão que o pentest
-  encostou e eu não tomei sozinho.** *Decisão de PRODUTO.*
-
-  A SEC-027 tornou `was_live` **derivado e não-gravável pelo cliente**: acabou
-  toda manipulação via REST API (era o achado GH-XP-LIVE-001/002/011).
-
-  **O que continua valendo:** marcar a caixa "é uma live" no formulário de
-  edição do post acende `is_live`, que acende `was_live`, que paga **30 XP**.
-  Sem live nenhuma — só o clique.
-
-  Fechar isso exige decidir **o que conta como live que aconteceu**, e as
-  opções têm preços diferentes:
-
-  | Regra | O que muda | Custo |
-  | --- | --- | --- |
-  | live precisa ter sido **encerrada** (`live_ended_at` preenchido) | abrir e fechar na hora ainda paga | trivial |
-  | live precisa ter **durado** N minutos | clique não paga mais | precisa escolher o N |
-  | live precisa ter tido **chat** | só live com plateia paga | pune live pequena legítima |
-  | deixar como está | XP de live é "declarei que fiz live" | zero |
-
-  Não executei nada porque o prompt do pentest foi explícito — *"não altere a
-  direção do GamerHub… preserve o sistema legítimo de lives, o sistema de XP"* —
-  e isto é §7 🟡: regra de produto, não brecha.
 
 - ⬜ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
   para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
@@ -1677,7 +1669,7 @@ dependência técnica real** que decide o resto:
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->126<!--/n--> arq ·
-  <!--n:src.lib.linhas-->14.095<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->14.102<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.858<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

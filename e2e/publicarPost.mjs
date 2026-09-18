@@ -112,10 +112,38 @@ export function marcaDeTeste(prefixo) {
   return `${prefixo}${Date.now()}]`;
 }
 
+/**
+ * Os prefixos, escapados e prontos para virar alternativa de regex.
+ *
+ * ── `[18/09]` Ele existe porque a lista DIVERGIU DE NOVO ────────────────────
+ *
+ * O comentário do `PREFIXOS_DE_TESTE`, logo acima, diz que a lista escrita à
+ * mão num lugar só ia divergir quando o segundo prefixo nascesse. Divergiu — e
+ * o conserto daquela vez criou a constante, mas deixou **uma segunda cópia**
+ * escrita à mão dentro do `sobrasAntigas`:
+ *
+ *     const m = t.match(/\[(?:e2e|painel) (\d+)\]/);   // <- não conhecia o 3º
+ *
+ * Quando o `[e2e-live ` nasceu, o `REGEX_DE_SOBRA` passou a enxergá-lo e essa
+ * segunda cópia não. O título casava no primeiro filtro, falhava na leitura do
+ * relógio, e caía no `return true` — ou seja, **toda live de teste era chamada
+ * de sobra, com um segundo de vida**.
+ *
+ * É exatamente o alarme falso que o `IDADE_DE_SOBRA_MS` foi criado para apagar,
+ * reintroduzido pela porta dos fundos. O CI não pegou porque o `fluxos` roda
+ * ANTES do `lives`, então na hora da conferência o post ainda não existe — bug
+ * latente, esperando alguém trocar a ordem dos jobs.
+ *
+ * Agora os dois regex saem DAQUI. Acrescentar prefixo volta a ser uma linha.
+ */
+const ALTERNATIVA_DE_PREFIXOS = PREFIXOS_DE_TESTE
+  .map((p) => p.replace(/[[\]]/g, '\\$&')).join('|');
+
 /** Um seletor que casa QUALQUER marca de teste, para o detector de sobras. */
-export const REGEX_DE_SOBRA = new RegExp(
-  PREFIXOS_DE_TESTE.map((p) => p.replace(/[[\]]/g, '\\$&')).join('|'),
-);
+export const REGEX_DE_SOBRA = new RegExp(ALTERNATIVA_DE_PREFIXOS);
+
+/** O relógio de dentro da marca — `[prefixo 1789…]`. Mesma fonte de prefixos. */
+const RELOGIO_DA_MARCA = new RegExp(`(?:${ALTERNATIVA_DE_PREFIXOS})(\\d+)\\]`);
 
 /**
  * Há quanto tempo uma marca precisa existir para ser considerada SOBRA.
@@ -155,7 +183,7 @@ export const IDADE_DE_SOBRA_MS = 30 * 60 * 1000;
 export function sobrasAntigas(titulos, agora = Date.now()) {
   return titulos.filter((t) => {
     if (!REGEX_DE_SOBRA.test(t)) return false;
-    const m = t.match(/\[(?:e2e|painel) (\d+)\]/);
+    const m = t.match(RELOGIO_DA_MARCA);
     if (!m) return true;
     return agora - Number(m[1]) > IDADE_DE_SOBRA_MS;
   });

@@ -31,6 +31,7 @@ const KEY_LABEL = {
   mod_ai_enabled: 'moderação por IA',
   mod_ai_text_threshold: 'limiar de IA (texto)',
   mod_ai_image_threshold: 'limiar de IA (imagem)',
+  live_xp_minutos: 'tempo mínimo de live p/ valer XP',
 };
 
 // Desligar a Comunidade ou ligar a manutenção derruba o site inteiro pros
@@ -45,6 +46,7 @@ export default function SiteTab() {
     feature_keys: 'true', feature_lives: 'true', feature_community: 'true',
     mod_report_threshold: '3', mod_suspend_threshold: '8', mod_ban_threshold: '15',
     mod_ai_enabled: 'false', mod_ai_text_threshold: '0.7', mod_ai_image_threshold: '0.85',
+    live_xp_minutos: '10',
   });
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -222,6 +224,35 @@ export default function SiteTab() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* `[18/09]` LIVE-037 — quanto tempo uma live precisa durar para valer XP.
+          Mora aqui, e não no código, porque o valor é um chute honesto: não
+          existe uma única live real no banco para medir. Quando houver, trocar
+          o número passa a custar um clique em vez de uma migration. */}
+      <div className="card p-5">
+        <p className="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">Lives</p>
+        <div className="flex items-center justify-between gap-4 py-2">
+          <div>
+            <p className="text-xs font-mono text-gray-300">Tempo mínimo para valer XP</p>
+            <p className="text-xs font-mono text-gray-600">
+              Live mais curta que isso não conta como live no XP. De 1 a 600 minutos. Padrão: 10
+            </p>
+          </div>
+          <input
+            type="number" min="1" max="600" step="1"
+            value={config.live_xp_minutos}
+            onChange={e => setConfig(c => ({ ...c, live_xp_minutos: e.target.value }))}
+            onBlur={e => {
+              // A mesma faixa que a RPC exige. Aqui é conveniência: quem decide
+              // é o banco, e ele recusa fora de 1..600 com mensagem própria.
+              const v = Math.round(Math.max(1, Math.min(600, parseInt(e.target.value, 10) || 10)));
+              setConfig(c => ({ ...c, live_xp_minutos: String(v) }));
+              saveKey('live_xp_minutos', v);
+            }}
+            className="w-20 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-neon-green/50 focus:outline-none shrink-0"
+          />
         </div>
       </div>
 
