@@ -540,6 +540,26 @@ por padrão; em 23/08 nós desligamos, e o motivo escrito era honesto para a ép
 *"o preview existiria para alguém clicar e olhar. **Ninguém olha**"*. Passou a
 ter quem olhe.
 
+> ### `[18/09]` É o SITE INTEIRO, e não só a landing — eu escrevi errado
+>
+> Correção dele: *"ela não vai servir apenas para a landing ok? Mas para todo o
+> site, caso eu precise ver como está funcionando algo e se der bug, que eu
+> consiga ver na preview antes de ir para a produção"*.
+>
+> A primeira versão desta seção chamava a `preview` de *"o pré-site que o dono
+> abre antes de mergear"* no contexto da landing, porque foi a landing que
+> originou a pergunta. **O escopo é o site todo:** feed, mural, lives, painéis,
+> cadastro — qualquer coisa que ele queira ver funcionando, ou ver quebrada,
+> antes de a mudança virar produção.
+>
+> Isso muda o que eu devo oferecer: sempre que uma mudança tiver **efeito
+> visível ou risco de bug em tela**, a pergunta é *"quer ver no preview antes?"*
+> — não só quando o assunto for a landing.
+>
+> **O login funciona lá**, com as contas de verdade: o preview aponta para o
+> Supabase de produção. Isso é o que torna o teste real, e é também o que exige
+> cuidado — ver o quadro de limites abaixo.
+
 ### Como funciona, e por que é sob demanda
 
 A branch `preview` é a **única** com deploy ligado além da `main`. Ela **só
@@ -1206,8 +1226,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->390<!--/n--> arquivos e
-<!--n:src.linhas-->41.409<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->392<!--/n--> arquivos e
+<!--n:src.linhas-->41.992<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1231,7 +1251,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->390<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->392<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1256,7 +1276,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->21.620<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->22.235<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 

@@ -69,6 +69,12 @@ const FECHADAS = [
   ['posts', 'inclusive os ocultados pela moderação e os excluídos'],
   ['login_attempts', 'quais e-mails existem e quem está sob ataque'],
   ['unban_requests', 'o texto do recurso de quem foi banido'],
+  // `[18/09]` SEC-028. Não é tabela, é VIEW — e por isso ela é mais perigosa,
+  // não menos: view roda com os direitos do DONO (`security_invoker` é falso
+  // por padrão), então ela ATRAVESSA a RLS. Exposta na REST API, entregaria o
+  // XP e a contagem de posts/likes/comentários de todo mundo numa chamada só,
+  // sem login. Quem lê a view são as três RPCs `SECURITY DEFINER`.
+  ['xp_dos_usuarios', 'o XP e a atividade de todos os perfis, de uma vez'],
 ];
 
 /**

@@ -157,8 +157,19 @@ export async function createPost({ userId, title, content, category, audioUrl, a
     embed_url: embedUrl?.trim() || null,
     embed_type: embedInfo?.type || null,
     is_live: isLive,
-    was_live: isLive,
-    expires_at: null,
+    // `[18/09]` SEC-027: `was_live` e `expires_at` saíram do corpo.
+    //
+    // `was_live` é **derivado** agora — o trigger `guard_post_privileged_cols`
+    // o define a partir de `is_live`. Mandá-lo daqui não fazia diferença
+    // nenhuma para o site (o valor era sempre igual a `is_live`) e abria um
+    // buraco que o pentest não chegou a testar: um POST direto na REST API
+    // nascia com `was_live: true` e ganhava os 30 XP de live sem live alguma.
+    //
+    // `expires_at: null` era só o valor padrão escrito à mão. Mandá-lo obrigava
+    // a manter o privilégio de escrita numa coluna que a `cleanup_expired_posts`
+    // usa para **apagar de verdade** — era o caminho para destruir conteúdo sob
+    // moderação pulando a janela de 30 dias.
+    //
     // Tipo de live de jogador (null = post/live comum). Rótulo só faz sentido
     // quando "outro".
     live_kind: liveKind || null,
@@ -166,11 +177,15 @@ export async function createPost({ userId, title, content, category, audioUrl, a
   }).select().single());
 }
 
-export async function updatePost(postId, { content, isLive, wasLive }, userId, isAdmin) {
+// `[18/09]` SEC-027: `wasLive` saiu da assinatura. Quem decide `was_live` é o
+// banco, a partir de `is_live` — e de forma **monotônica**, então marcar o post
+// como live continua acendendo o marcador, e desmarcar não o apaga (a live
+// aconteceu). Antes o cliente mandava o valor, e quem chamasse a REST API
+// direto mandava o que quisesse.
+export async function updatePost(postId, { content, isLive }, userId, isAdmin) {
   let q = supabase.from('posts').update({
     content: content?.trim() || null,
     is_live: isLive,
-    was_live: wasLive,
     edited_at: new Date().toISOString(),
   }, { count: 'exact' }).eq('id', postId);
   if (!isAdmin) q = q.eq('user_id', userId);

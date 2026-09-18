@@ -264,3 +264,87 @@
   .convergencia { transform: scale(1.55); transform-origin: 50% 49%; }
 }
 
+
+/* ── `[18/09]` O PORTAL do Ato 0 — EXPERIMENTO, para ver no preview ────────
+ *
+ * Pedido dele: trocar a arte da primeira cena por SVG feito à mão, com tema de
+ * portal, ver no preview e decidir. Ver `components/landing/PortalDoAtoZero.jsx`.
+ *
+ * TUDO aqui anima `transform` ou `opacity`, e só. O desfoque do SVG é estático —
+ * animar `filter` numa figura de tela cheia é o travamento clássico de celular
+ * que o §0.3 registra, e que este projeto já pagou uma vez.
+ */
+.portal-ato-zero { background: #060608; }
+
+/* Os anéis respiram para DENTRO: a escala cai um pouco e volta, o que lê como
+ * profundidade sem mover nada de lugar. As durações vêm do JS e são primas
+ * entre si (23/19/17/13/11 s) para o olho não achar a repetição — mesma ideia
+ * das luzes da arena. */
+.portal-anel {
+  transform-origin: 50px 48px;
+  will-change: transform;
+  animation-name: portalRespira;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes portalRespira {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(0.94); }
+}
+
+/* A boca pulsa MUITO pouco: ela é o ponto de fuga, e ponto de fuga que se mexe
+ * demais desfaz a perspectiva que os anéis constroem. */
+.portal-boca {
+  transform-origin: 50px 48px;
+  will-change: transform;
+  animation: portalBoca 6s ease-in-out infinite;
+}
+
+@keyframes portalBoca {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.06); }
+}
+
+/* O halo anima SÓ `transform`. A primeira versão mexia em `opacity` junto, e a
+ * trava `animacaoComAtraso` reprovou — com razão: o elemento tem uma opacidade
+ * parado e o keyframe partia de outra, o que vira pisca. E a escala sozinha já
+ * dá a pulsação; menos propriedade animada é sempre melhor. */
+.portal-halo {
+  transform-origin: 50px 48px;
+  will-change: transform;
+  animation: portalPulsa 8s ease-in-out infinite;
+}
+
+@keyframes portalPulsa {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.14); }
+}
+
+/* As fagulhas sobem e somem. `backwards`: durante o atraso vale o keyframe 0%
+ * (apagado) — sem isso todas aparecem de uma vez e somem uma a uma, que foi o
+ * mesmo tropeço dos arcos do ElectricTitle. */
+.portal-fagulha {
+  will-change: transform, opacity;
+  animation-name: portalFagulha;
+  animation-timing-function: cubic-bezier(0.3, 0, 0.5, 1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: backwards;
+}
+
+@keyframes portalFagulha {
+  0%   { opacity: 0;    transform: translateY(0)      scale(1);   }
+  15%  { opacity: 0.85; }
+  70%  { opacity: 0.45; }
+  100% { opacity: 0;    transform: translateY(-26px)  scale(0.4); }
+}
+
+/* Quem pediu menos movimento recebe a composição PARADA, não uma tela vazia:
+ * o portal continua contando a mesma coisa. */
+@media (prefers-reduced-motion: reduce) {
+  .portal-anel,
+  .portal-boca,
+  .portal-halo,
+  .portal-fagulha { animation: none; }
+  .portal-fagulha { opacity: 0.5; }
+}

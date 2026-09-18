@@ -1,6 +1,5 @@
-import ArteDaCena from './ArteDaCena';
+import PortalDoAtoZero from './PortalDoAtoZero';
 import Hero from './Hero';
-import { CENAS } from '../../lib/cenasDaLanding';
 import { FRASE_DO_ATO_ZERO } from '../../lib/atosDaLanding';
 
 /**
@@ -29,7 +28,10 @@ export default function PrologoParado({ introDone = true }) {
   return (
     <>
       <section className="relative h-[100svh] w-full overflow-hidden">
-        <ArteDaCena arte={CENAS.hero} prioridade />
+        {/* `[18/09]` EXPERIMENTO: o portal em SVG no lugar da arte. O caminho
+            de `prefers-reduced-motion` recebe a MESMA cena, parada — senão quem
+            pede menos movimento veria uma landing diferente, não mais calma. */}
+        <PortalDoAtoZero />
 
         <div
           aria-hidden

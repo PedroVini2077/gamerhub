@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Activity, RotateCcw, Archive } from 'lucide-react';
 import {
-  LOG_CATEGORIES, actionMeta, LOG_RETENTION_DAYS,
+  LOG_CATEGORIES, actionMeta, LOG_RETENTION_DAYS, textoDoLog,
 } from '../../lib/logMeta';
 
 // Ícones e rótulos de categoria vêm de `lib/logMeta` — antes este arquivo tinha
@@ -74,7 +74,10 @@ export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchL
           }`}>
             <Icon size={14} className={`${cls} shrink-0 mt-0.5`} />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-mono text-gray-300 leading-relaxed">{log.details}</p>
+              {/* `[18/09]` `textoDoLog` e não `log.details` cru: linha sem
+                  detalhe ficava COMPLETAMENTE em branco no painel. Ver
+                  `lib/logMeta.js`. */}
+              <p className="text-xs font-mono text-gray-300 leading-relaxed">{textoDoLog(log)}</p>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${severityDot}`} />
                 <span className="text-xs font-mono text-gray-600">{log.actor_username || log.admin_username}</span>
