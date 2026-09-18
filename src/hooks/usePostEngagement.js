@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { fetchLikeStatus, likePost, unlikePost, fetchPostMedia } from '../services/postService';
+import { fetchLikeStatus, likePost, unlikePost } from '../services/postService';
+import { fetchPostMedia } from '../services/postMediaService';
 import { runLikeToggle } from '../lib/like';
 
 // Mídia sobe DEPOIS do post (upload assíncrono). Enquanto o post é novo, vale

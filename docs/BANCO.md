@@ -588,6 +588,100 @@ gravar `now()` **depois**, no encerramento legítimo — e o que deixa o
 
 ---
 
+## `[18/09]` LIVE-041 — o prazo da live, e o modo de segurança do guard
+
+`expires_at` era feature **meio construída**, e só o escritor faltava:
+
+| Já existia | Onde |
+| --- | --- |
+| a tela mostra "até HH:MM" no card, e o player marca a live como encerrada | `LivesList.jsx`, `EmbedPlayer.jsx` |
+| o cron lê a coluna, em dois jobs | `expire-lives`, `expire-lives-every-minute` |
+| o cliente **não** escreve | o guard pina desde a SEC-027 |
+
+Nenhuma linha de `posts` tinha valor ali. Na prática: uma live esquecida no ar
+ocupava o topo do feed por **24 horas** com um embed morto — regra que existia
+desde junho e nunca esteve escrita.
+
+### O desenho: o cliente declara INTENÇÃO, o banco calcula o VALOR
+
+```
+live_duracao_minutos  ->  o autor escolhe ("minha live dura 2h")
+expires_at            ->  o guard deriva: now() + duração
+```
+
+Mesmo princípio do `was_live`. Devolver `expires_at` ao cliente reabriria o
+achado do pentest: a `cleanup_expired_posts` **APAGA de verdade** por essa
+coluna, então escrevê-la é destruir conteúdo sob moderação pulando a janela de
+30 dias.
+
+A faixa é `CHECK` e não validação de tela — o site usa a anon key:
+
+| | |
+| --- | --- |
+| **15 min** | abaixo disso não é transmissão, é engano de clique |
+| **1440 min** | 24h, o **mesmo** teto que o cron já impunha. O número não é novo; ele só deixou de ser invisível |
+
+### A reativação reconta do zero
+
+Se o prazo ficasse congelado, a live reativada voltaria **já vencida** e o cron
+a mataria no minuto seguinte — reativar viraria um clique que não faz nada
+(§1.5). O ramo `false → true` recalcula `now() + duração`.
+
+### O guard NÃO é `SECURITY DEFINER`, e isso quase me custou a SEC-027 inteira
+
+Eu escrevi `SECURITY DEFINER` no rascunho. A função decide se está diante de um
+usuário comum **lendo `current_user`**:
+
+```sql
+v_comum := current_user IN ('authenticated','anon') AND role_rank(...) < 2;
+```
+
+Com o privilégio do dono, `current_user` vira `postgres`, `v_comum` fica sempre
+falso, e **toda a pinagem para de rodar**: `was_live`, `expires_at`,
+`deleted_at`, `hidden_at` e `user_id` voltam a aceitar valor forjado por PATCH.
+
+**E nada estoura.** O trigger continua disparando, o INSERT continua passando.
+Seria a correção de segurança inteira revertida por uma palavra, dentro de um
+commit que dizia "prazo de live".
+
+> **Se algum dia o guard precisar de privilégio elevado** para uma leitura nova,
+> o caminho é uma função auxiliar `SECURITY DEFINER` chamada por ele (com
+> `REVOKE`, ver SEC-042) — **não** mudar o modo do guard.
+
+Trava: `src/lib/__tests__/prazoDaLive.test.js`, 5 asserções.
+
+---
+
+## `[18/09]` LIVE-042 — o pedido de reativação passou a deixar rastro
+
+`solicitar_reativacao_da_propria_live` foi escrita (LIVE-038) dizendo no próprio
+comentário que "espelha o `solicitar_revisao_do_proprio_ban`". Espelhava em tudo
+menos numa coisa:
+
+| RPC | grava em `admin_logs`? |
+| --- | --- |
+| `solicitar_revisao_do_proprio_ban` | **sim** |
+| `solicitar_reativacao_da_propria_live` | **não** |
+
+O dono via a notificação de admin, mas a **trilha** — o lugar onde ele procura
+"o que aconteceu neste site" — não tinha linha nenhuma. Notificação se marca
+como lida e some; trilha fica.
+
+**Quem grava é a RPC, não o cliente.** Um `logAudit` do lado de cá pode ser
+recusado pelo banco (foi), pode ser pulado e pode ser forjado — e `logAudit`
+engole o erro de propósito (§1.5). Na RPC a linha entra na **mesma transação**
+do pedido: ou os dois existem, ou nenhum.
+
+`severity = 'info'`, porque pedir reativação é o sistema **funcionando**. Marcar
+como alerta seria a mentira que o §0.2 (4ª regra) proíbe.
+
+> Como isto apareceu: as travas `trilhaNaoEhForjavel` e `logMeta` reprovaram
+> juntas ao ligar a tela. Elas estavam medindo outra coisa — que o cliente
+> registrava uma action que o banco recusa — e foi ao investigar **por que** o
+> banco recusava que o buraco real apareceu.
+
+---
+
 ## `[18/09]` `lives_realizadas` — a testemunha de que a live aconteceu
 
 > **Por que ela existe, e ela não foi criada por capricho.** O XP deste site é

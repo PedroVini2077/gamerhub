@@ -2,7 +2,6 @@ import { supabase } from '../lib/supabase';
 import { getEmbedInfo } from '../lib/embed';
 
 import { ok, fail, from, fromCount } from './result';
-import { compressMedias } from '../lib/image';
 
 // Colunas explícitas em vez de `*`: cada coluna a mais viaja em TODA linha de
 // TODO feed. `live_ended_at`, `ban_*` e afins não são usados pelo card.
@@ -154,7 +153,7 @@ export async function fetchActiveLives() {
 
 // ─── Post CRUD ───────────────────────────────────────────────────────────────
 
-export async function createPost({ userId, title, content, category, audioUrl, audioType, audioName, embedUrl, isLive, liveKind, liveKindLabel }) {
+export async function createPost({ userId, title, content, category, audioUrl, audioType, audioName, embedUrl, isLive, liveKind, liveKindLabel, liveDuracaoMinutos }) {
   const embedInfo = embedUrl ? getEmbedInfo(embedUrl) : null;
   return from(await supabase.from('posts').insert({
     user_id: userId,
@@ -184,6 +183,11 @@ export async function createPost({ userId, title, content, category, audioUrl, a
     // quando "outro".
     live_kind: liveKind || null,
     live_kind_label: liveKind === 'outro' ? (liveKindLabel?.trim() || null) : null,
+    // `[18/09]` LIVE-041: a DURAÇÃO é intenção, não valor. Quem calcula o
+    // `expires_at` é o guard no banco — mandar o instante daqui reabriria o
+    // achado do pentest, porque a `cleanup_expired_posts` APAGA de verdade por
+    // essa coluna. `null` = sem prazo próprio, e aí vale o teto de 24h do cron.
+    live_duracao_minutos: isLive ? (liveDuracaoMinutos ?? null) : null,
   }).select().single());
 }
 
@@ -242,56 +246,4 @@ export async function likePost(postId, userId) {
 export async function unlikePost(postId, userId) {
   // 0-linhas-ok: descurtir o que já não está curtido é o objetivo atingido.
   return from(await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', userId));
-}
-
-// ─── Media ───────────────────────────────────────────────────────────────────
-
-export async function fetchPostMedia(postId) {
-  const { data, error } = await supabase.from('post_media').select('*').eq('post_id', postId).order('position');
-  if (error) return fail(error, []);
-  return ok(data || []);
-}
-
-export async function uploadAudio(userId, audioFile) {
-  const ext = audioFile.name.split('.').pop();
-  const path = `${userId}/audio-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from('post-media').upload(path, audioFile, { contentType: audioFile.type, cacheControl: '31536000' });
-  if (error) return fail(error);
-  const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
-  return ok(publicUrl);
-}
-
-export async function uploadPostMediaFiles(userId, postId, medias) {
-  const rows = [];
-  const imageUrls = [];
-  // `[29/08]` As URLs de vídeo saem daqui também. Elas são o plano B da
-  // moderação: quando o navegador recusa decodificar o arquivo LOCAL, a mesma
-  // mídia já está publicada e pode ser lida do storage. Ver `moderateVideos`.
-  const videoUrls = [];
-  // Comprime ANTES de subir: o arquivo no bucket é o que o CDN serve a cada
-  // view. Vídeo/áudio passam intactos.
-  const prepared = await compressMedias(medias);
-  let failed = 0;
-  for (let i = 0; i < prepared.length; i++) {
-    const { file, type } = prepared[i];
-    const ext = file.name.split('.').pop();
-    const path = `${userId}/${postId}-${i}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from('post-media')
-      .upload(path, file, { contentType: file.type, cacheControl: '31536000' });
-    // O erro do upload era ignorado: a linha ia pro banco mesmo assim e o post
-    // ficava com uma imagem quebrada pra sempre, apontando pra um arquivo que
-    // nunca existiu. Agora a mídia que falhou simplesmente não é registrada.
-    if (uploadError) { failed++; continue; }
-    const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path);
-    rows.push({ post_id: postId, url: publicUrl, type, position: i });
-    if (type === 'image') imageUrls.push(publicUrl);
-    if (type === 'video') videoUrls.push(publicUrl);
-  }
-  const carga = { imageUrls, videoUrls, failed };
-  if (!rows.length) {
-    return failed ? { data: carga, error: { message: 'Falha ao enviar a mídia.' } } : ok(carga);
-  }
-  const { error } = await supabase.from('post_media').insert(rows);
-  return error ? { data: carga, error } : ok(carga);
 }

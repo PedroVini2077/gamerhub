@@ -17,6 +17,7 @@ import LazyVisible from '../ui/LazyVisible';
 import MediaPlayer from '../ui/MediaPlayer';
 import EmbedPlayer from '../ui/EmbedPlayer';
 import ConfirmModal from '../ui/ConfirmModal';
+import PedirReativacaoDaLive from '../lives/PedirReativacaoDaLive';
 import ReportModal from '../ui/ReportModal';
 
 const categoryConfig = {
@@ -213,6 +214,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
               <Tv size={32} className="text-gray-600 mx-auto mb-3" />
               <p className="text-neon-green font-mono text-sm font-bold">Live encerrada</p>
               <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
+              {isOwner && <PedirReativacaoDaLive postId={post.id} titulo={post.title} />}
             </div>
           )
           : <EmbedPlayer url={post.embed_url} isLive={post.is_live} expiresAt={post.expires_at} />
@@ -252,10 +254,18 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
       {confirming && (
         <ConfirmModal
-          title="Deletar post"
+          title={post.was_live ? 'Deletar a live' : 'Deletar post'}
           icon={Trash2}
           accent="red"
-          message="Tem certeza que quer deletar este post? Essa ação não pode ser desfeita."
+          /* `[18/09]` O texto genérico mentia por omissão numa live: apagar
+             encerra a transmissão (trigger da SEC-034) e, desde a LIVE-038, o
+             autor não a coloca de volta sozinho. Quem lê "não pode ser
+             desfeita" num post comum entende o tamanho da ação; numa live,
+             não — faltava dizer QUAL parte não tem volta. */
+          message={post.was_live
+            ? 'Deletar "' + post.title + '"? Isso encerra a live e tira ela do ar. '
+              + 'Só a equipe consegue reativá-la depois, e o post some do seu perfil.'
+            : 'Tem certeza que quer deletar este post? Essa ação não pode ser desfeita.'}
           confirmLabel={deleting ? 'Deletando...' : 'Deletar'}
           confirmIcon={Trash2}
           onConfirm={handleDelete}

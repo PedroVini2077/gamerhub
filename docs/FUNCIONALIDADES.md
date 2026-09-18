@@ -614,6 +614,11 @@ A aba `Lives` exibe duas categorias de conteúdo lado a lado via **sub-tabs**:
   automaticamente), e tipo (Gameplay / React / Outro).
 - Para "Outro": campo de texto livre (`kindLabel`) é obrigatório — ex.:
   "Speedrun", "Ranqueada", "Just Chatting".
+- **`[18/09]` Duração prevista**: Sem prazo · 1h · 2h · 4h. O padrão é **Sem
+  prazo**, que é exatamente o comportamento que o site já tinha. A escolha vira
+  um prazo real (a live se encerra sozinha no fim); sem ela vale o teto de 24h,
+  que o texto abaixo do seletor agora **diz na tela** — antes era uma regra
+  invisível do cron.
 - Internamente cria um post com `is_live = true`, `live_kind` e
   `live_kind_label`. Reutiliza toda a infraestrutura existente de
   chat/moderação/presença/player.
@@ -632,8 +637,26 @@ A aba `Lives` exibe duas categorias de conteúdo lado a lado via **sub-tabs**:
   mensagens (autor da mensagem, dono da live ou admin).
 - **Encerramento automático** quando aplicável; trigger `set_live_ended_at`
   grava `live_ended_at`; `was_live` marca quem já transmitiu (usado no XP).
+- **`[18/09]` Encerrar pede confirmação.** O botão do autor abria direto, e a
+  ação **não tem volta pelo usuário**: desde a LIVE-038 só a equipe reativa. O
+  popup diz as duas coisas que importam — que ele não reativa sozinho, e que
+  existe uma porta —, senão o aviso vira só um susto.
+- **`[18/09]` Excluir uma live diz que é uma live.** O texto genérico ("não pode
+  ser desfeita") mentia por omissão: apagar **encerra a transmissão** e tira o
+  post do perfil. Num post comum a frase basta; numa live faltava dizer QUAL
+  parte não tem volta.
 - **Reativação de live**: admin solicita → super admin aprova/nega
   (`live_reactivation_requests`).
+- **`[18/09]` O AUTOR pede a própria live de volta** (`PedirReativacaoDaLive`).
+  Ele escreve o motivo (mín. 10 caracteres) e o pedido vai para a equipe.
+  Enquanto estiver pendente, **o cron não apaga a live** — sem isso a porta
+  seria decorativa, porque a live encerrada é apagada 15 minutos depois.
+  > A janela é curta de propósito, e por isso o botão aparece em **dois**
+  > lugares: no painel "Live encerrada" (na hora) e no card do feed (depois).
+  > É um componente só usado nos dois — duas cópias divergiriam.
+  >
+  > A tela **não sabe** se já existe um pedido pendente: a tabela é fechada para
+  > `authenticated`, então a resposta vem no clique, com a mensagem do banco.
 
 ### Keys & promoções
 

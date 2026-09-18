@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Tv, X, Users, Shield, Radio } from 'lucide-react';
+import ConfirmModal from '../components/ui/ConfirmModal';
+import PedirReativacaoDaLive from '../components/lives/PedirReativacaoDaLive';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useRole } from '../hooks/useRole';
 import { useLivesList } from '../hooks/useLivesList';
@@ -30,6 +32,7 @@ export default function Lives() {
   const [showModPanel, setShowModPanel] = useState(false);
   const [liveTab, setLiveTab] = useState('comunidade');
   const [showGoLive, setShowGoLive] = useState(false);
+  const [confirmandoFim, setConfirmandoFim] = useState(false);
 
   const {
     messages, msg, setMsg, sending, isSilenced, liveEnded, viewerCount,
@@ -90,7 +93,7 @@ export default function Lives() {
         </div>
         <h2 className="font-display text-sm text-white truncate flex-1 min-w-0">{activeLive.title}</h2>
         {isLiveOwner && !liveEnded && (
-          <button type="button" onClick={endLive}
+          <button type="button" onClick={() => setConfirmandoFim(true)}
             className="flex items-center gap-1 px-2 py-1 rounded border border-red-500/40 text-red-400 text-xs font-mono hover:bg-red-500/10 transition-all shrink-0 cursor-pointer">
             <X size={11} /><span>Encerrar</span>
           </button>
@@ -113,6 +116,9 @@ export default function Lives() {
           <Tv size={36} className="text-gray-600 mx-auto mb-3" />
           <p className="text-neon-green font-mono text-sm font-bold">Live encerrada</p>
           <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
+          {/* A janela é de 15 minutos: é o cron que apaga a live encerrada. Por
+              isso o botão aparece AQUI, e não só no card do feed. */}
+          {isLiveOwner && <PedirReativacaoDaLive postId={activeLive.id} titulo={activeLive.title} />}
         </div>
       ) : (
         <EmbedPlayer url={activeLive.embed_url} isLive={true} expiresAt={activeLive.expires_at} />
@@ -148,6 +154,28 @@ export default function Lives() {
         bottomRef={bottomRef}
         chatInputRef={chatInputRef}
       />
+
+      {/* `[18/09]` Encerrar era um clique direto, e ele NÃO TEM VOLTA pelo
+          usuário: desde a LIVE-038 reativar é ato de equipe. Um clique sem
+          aviso numa ação irreversível é o tipo de coisa que a pessoa descobre
+          depois de fazer.
+
+          O texto diz as DUAS coisas que importam: que ele não reativa sozinho,
+          e que existe uma porta — senão o aviso vira só um susto. */}
+      {confirmandoFim && (
+        <ConfirmModal
+          title="Encerrar a live"
+          icon={Tv}
+          accent="red"
+          message={'Encerrar "' + activeLive.title + '"? Depois disso você NÃO consegue '
+            + 'colocá-la de volta no ar sozinho — só a equipe reativa. Você poderá pedir a '
+            + 'reativação pelo card da live, e ela fica guardada até alguém responder.'}
+          confirmLabel="Encerrar live"
+          confirmIcon={X}
+          onConfirm={async () => { await endLive(); setConfirmandoFim(false); }}
+          onClose={() => setConfirmandoFim(false)}
+        />
+      )}
     </div>
   );
 

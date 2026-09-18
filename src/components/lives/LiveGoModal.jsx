@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Radio, Gamepad2, Clapperboard, Sparkles, Check } from 'lucide-react';
+import { X, Radio, Gamepad2, Clapperboard, Sparkles, Check, Timer } from 'lucide-react';
 import { createPost } from '../../services/postService';
 import { getEmbedInfo } from '../../lib/embed';
 import { logAudit } from '../../lib/auditLog';
@@ -12,6 +12,25 @@ const KINDS = [
   { id: 'outro',    label: 'Outro',    Icon: Sparkles },
 ];
 
+// `[18/09]` LIVE-041 — o prazo da live.
+//
+// `null` é o padrão de propósito: é **exatamente** o comportamento que o site
+// já tinha, então ligar esta tela não muda a vida de ninguém que não escolher
+// nada (§7, mudança aditiva).
+//
+// O que ele ganha mesmo assim: o texto abaixo torna VISÍVEL uma regra que
+// existia desde junho e nunca esteve escrita em lugar nenhum — o cron encerra
+// qualquer live com mais de 24h no ar.
+//
+// Os valores precisam caber na faixa do `CHECK posts_live_duracao_faixa`
+// (15..1440). O banco é quem manda; esta lista é só o atalho da tela.
+const DURACOES = [
+  { minutos: null, label: 'Sem prazo' },
+  { minutos: 60,   label: '1h' },
+  { minutos: 120,  label: '2h' },
+  { minutos: 240,  label: '4h' },
+];
+
 // Modal pra um jogador ficar ao vivo trazendo o link do Twitch/YouTube.
 // Reaproveita createPost (a live é um post com is_live + live_kind), então
 // chat/moderação/presença/player já funcionam de graça.
@@ -20,6 +39,7 @@ export default function LiveGoModal({ profile, onClose, onCreated }) {
   const [url, setUrl] = useState('');
   const [kind, setKind] = useState('gameplay');
   const [kindLabel, setKindLabel] = useState('');
+  const [duracao, setDuracao] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const info = url.trim() ? getEmbedInfo(url.trim()) : null;
@@ -43,6 +63,7 @@ export default function LiveGoModal({ profile, onClose, onCreated }) {
         isLive: true,
         liveKind: kind,
         liveKindLabel: kind === 'outro' ? kindLabel.trim() : null,
+        liveDuracaoMinutos: duracao,
       });
       if (error) throw error;
       toast.success('Você está ao vivo!', { id: toastId });
@@ -117,6 +138,33 @@ export default function LiveGoModal({ profile, onClose, onCreated }) {
                 value={kindLabel} onChange={e => setKindLabel(e.target.value)} maxLength={40} />
             </div>
           )}
+
+          <div>
+            <label className="block text-xs text-gray-400 font-mono mb-1.5 uppercase tracking-wider">
+              Duração prevista
+            </label>
+            <div className="flex gap-2">
+              {DURACOES.map(({ minutos, label }) => (
+                <button key={label} type="button" onClick={() => setDuracao(minutos)}
+                  aria-pressed={duracao === minutos}
+                  className={`flex-1 py-2 rounded-lg border text-xs font-mono transition-all ${
+                    duracao === minutos
+                      ? 'border-neon-green text-neon-green bg-neon-green/10'
+                      : 'border-dark-400 text-gray-500 hover:text-gray-300'
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs font-mono text-gray-600 mt-1.5 flex items-start gap-1.5">
+              <Timer size={11} className="mt-0.5 shrink-0" />
+              <span>
+                {duracao
+                  ? 'A live se encerra sozinha no fim do prazo. Você pode encerrar antes.'
+                  : 'Sem prazo, ela fica no ar até você encerrar — ou por até 24h.'}
+              </span>
+            </p>
+          </div>
         </div>
 
         <button onClick={handleSubmit} disabled={loading}

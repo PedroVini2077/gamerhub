@@ -162,6 +162,10 @@ export const ACTION_META = {
   live_created:              A(Radio,        'text-red-400',     '#f87171'),
   live_ended:                A(Tv,           'text-gray-500',    '#6b7280'),
   live_reactivated:          A(RotateCcw,    'text-neon-green',  '#39ff14'),
+  // `[18/09]` LIVE-042: quem grava esta action e a RPC, no BANCO — nao o
+  // cliente. Sem ela aqui, o pedido aparece na trilha com o icone generico.
+  // Amarelo porque e pedido esperando decisao; o verde e o desfecho.
+  live_reactivation_request: A(RotateCcw,    'text-yellow-400',  '#facc15'),
   live_chat_delete:          A(Trash2,       'text-red-400',     '#f87171'),
   live_silence:              A(MicOff,       'text-yellow-400',  '#facc15'),
   live_unsilence:            A(Mic,          'text-neon-green',  '#39ff14'),

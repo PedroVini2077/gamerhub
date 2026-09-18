@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { createPost, uploadAudio, uploadPostMediaFiles } from '../services/postService';
+import { createPost } from '../services/postService';
+import { uploadAudio, uploadPostMediaFiles } from '../services/postMediaService';
 import { moderateText, moderateImages, moderateVideos, moderateLinks } from '../services/moderationAiService';
 import { useAuth } from './useAuth.jsx';
 import { useBlockedWords } from './useBlockedWords';
