@@ -1,5 +1,6 @@
-import PortalDoAtoZero from './PortalDoAtoZero';
+import ArteDaCena from './ArteDaCena';
 import Hero from './Hero';
+import { CENAS } from '../../lib/cenasDaLanding';
 import { FRASE_DO_ATO_ZERO } from '../../lib/atosDaLanding';
 
 /**
@@ -31,7 +32,10 @@ export default function PrologoParado({ introDone = true }) {
         {/* `[18/09]` EXPERIMENTO: o portal em SVG no lugar da arte. O caminho
             de `prefers-reduced-motion` recebe a MESMA cena, parada — senão quem
             pede menos movimento veria uma landing diferente, não mais calma. */}
-        <PortalDoAtoZero />
+        {/* `[18/09]` O experimento do PORTAL em SVG vive na branch `preview`,
+            não aqui. A produção continua com a arte gerada até o dono ver e
+            decidir. Ver `PortalDoAtoZero.jsx`. */}
+        <ArteDaCena arte={CENAS.hero} prioridade />
 
         <div
           aria-hidden

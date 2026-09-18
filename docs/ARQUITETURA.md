@@ -485,12 +485,11 @@ src/
     │   │   │              # A lista de seções vem de `secoesDaLanding` — tem trava
     │   │   └── CreditosDoRodape.jsx # créditos e o "Voltar ao início", que é
     │   │                  # `button` e não âncora (âncora empilha histórico)
-    │   ├── PortalDoAtoZero.jsx # `[18/09]` EXPERIMENTO, para ver no preview e
-    │   │                  # decidir: o Ato 0 desenhado à mão em SVG (anéis em
-    │   │                  # perspectiva, cor por distância) no lugar da arte
-    │   │                  # gerada. É para OLHAR E DECIDIR, não para ficar —
-    │   │                  # a linha que o desfaz é o `<PortalDoAtoZero />` do
-    │   │                  # `PrologoDaLanding` e do `PrologoParado`
+    │   ├── PortalDoAtoZero.jsx # `[18/09]` EXPERIMENTO que vive na branch
+    │   │                  # `preview`, NÃO na produção: o Ato 0 desenhado à
+    │   │                  # mão em SVG (anéis em perspectiva, cor por
+    │   │                  # distância) no lugar da arte gerada. É para OLHAR
+    │   │                  # E DECIDIR — na `main` o prólogo usa `CENAS.hero`
     │   ├── PrologoDaLanding.jsx # `[12/09]` OS CINCO ATOS que a rolagem conduz
     │   │                  # — ARTE, TRANSFORMAÇÃO, CONVERGÊNCIA, MARCA,
     │   │                  # GAMERHUB. Ele monta as camadas; o ritmo vem de
