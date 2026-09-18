@@ -35,6 +35,57 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### ✅ `[18/09]` PENTEST DE SETEMBRO — fechado nesta sessão
+
+**Pedido dele:** *"olhe o prompt mais pesquise mais a fundo ainda pra ver se vc
+acha algo a mais que isso e conserte tudo na hora sem deixar pra depois"*, mais
+*"algum log não está sendo tratado corretamente… está sem título algum nos
+logs"*.
+
+**Resultado:** 15 achados relatados → **11 confirmados e corrigidos**, 3
+desmentidos com evidência (10, 13, 14), 1 corrigido em forma diferente da
+sugerida (15). **6 achados NOVOS** encontrados por fora do relatório — inclusive
+a causa dos logs em branco.
+
+6 migrations (SEC-027 … SEC-031 + SEC-028b), 25 asserções de trava novas, todas
+provadas reinjetando o bug. Relatório completo em
+[`db/2026-09-18-pentest-de-setembro.md`](db/2026-09-18-pentest-de-setembro.md).
+
+**O que NÃO fechou, e por quê:** marcar a caixa "é uma live" na UI continua
+valendo 30 XP. É decisão de produto (§7 🟡) — item próprio na seção do dono.
+
+**Impacto visível:** o XP cai para quem tinha conteúdo apagado/oculto. As contas
+de teste do e2e vão de 3575→255 e 3120→0; a sua (`opedrovini`) fica em 65,
+inalterada.
+
+
+### 🧪 `[18/09]` EXPERIMENTO NO PREVIEW — o Ato 0 como PORTAL em SVG
+
+**Pedido dele:** *"na documentação fala algo sobre tirar as cenas em imagem e
+usar SVG, quero que vc faça a mudança só na primeira cena, algo que faça sentido
+com portal… e queria ver na preview, **depois pode desfazer**"*.
+
+**O que está no ar (na branch, não na `main`):** `PortalDoAtoZero.jsx` substitui
+`CENAS.hero` nos **dois** caminhos do prólogo — o normal e o de
+`prefers-reduced-motion`. As outras seis cenas continuam sendo arte gerada.
+
+**⚠️ A ARTE DO HERO FICOU ÓRFÃ.** As seis variantes de `1-hero-*` continuam no
+repositório sem ninguém mostrá-las (~500 kB). Isso é exatamente o defeito que a
+trava `prologo.test.js` existe para impedir — e ela **passou a exigir este item
+escrito** enquanto o experimento durar.
+
+**As duas saídas, e as duas são decisão dele:**
+
+| Se ele… | O que acontece |
+| --- | --- |
+| **gostar do portal** | os seis `1-hero-*` são APAGADOS, e o `cenasDaLanding.js` perde a entrada |
+| **não gostar** | uma linha em cada prólogo volta o `<ArteDaCena arte={CENAS.hero} prioridade />`, e o portal + o CSS saem |
+
+**Nada disto é permanente até ele decidir.** Registrado aqui porque achado que
+vive só na conversa é o que o §6.2 proíbe.
+
+---
+
 ### 🗣️ `[17/09]` A MESA — a visão de futuro e a landing, decididas JUNTOS
 
 **Pedido dele, na letra:** *"a gente coloca na mesa tudo o que está na visão de
@@ -341,8 +392,8 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 
 ---
 
-**Última conferência contra o sistema:** 11/09/2026 ·
-**43 itens abertos** (+ 1 ideia sem compromisso)
+**Última conferência contra o sistema:** 18/09/2026 ·
+**47 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1080,6 +1131,30 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[18/09]` 🟠 **O que faz uma live VALER 30 XP? — a decisão que o pentest
+  encostou e eu não tomei sozinho.** *Decisão de PRODUTO.*
+
+  A SEC-027 tornou `was_live` **derivado e não-gravável pelo cliente**: acabou
+  toda manipulação via REST API (era o achado GH-XP-LIVE-001/002/011).
+
+  **O que continua valendo:** marcar a caixa "é uma live" no formulário de
+  edição do post acende `is_live`, que acende `was_live`, que paga **30 XP**.
+  Sem live nenhuma — só o clique.
+
+  Fechar isso exige decidir **o que conta como live que aconteceu**, e as
+  opções têm preços diferentes:
+
+  | Regra | O que muda | Custo |
+  | --- | --- | --- |
+  | live precisa ter sido **encerrada** (`live_ended_at` preenchido) | abrir e fechar na hora ainda paga | trivial |
+  | live precisa ter **durado** N minutos | clique não paga mais | precisa escolher o N |
+  | live precisa ter tido **chat** | só live com plateia paga | pune live pequena legítima |
+  | deixar como está | XP de live é "declarei que fiz live" | zero |
+
+  Não executei nada porque o prompt do pentest foi explícito — *"não altere a
+  direção do GamerHub… preserve o sistema legítimo de lives, o sistema de XP"* —
+  e isto é §7 🟡: regra de produto, não brecha.
+
 - ⬜ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
   para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
 
@@ -1343,6 +1418,58 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[18/09]` **Revogar as colunas derivadas de `posts` — a SEGUNDA camada da
+  SEC-027.** *Só depois do deploy desta branch, e a ordem importa.*
+
+  A SEC-027 fechou a manipulação com um trigger. O trigger funciona, mas é
+  **camada única** — e a lição do SEC-025 é exatamente essa: desabilitado,
+  renomeado, ou num caminho onde `current_user` não seja `authenticated`, a
+  porta reabre em silêncio.
+
+  ```sql
+  REVOKE UPDATE (was_live, expires_at, created_at, live_ended_at,
+                 live_kind, live_kind_label, id, user_id) ON public.posts FROM authenticated;
+  REVOKE INSERT (was_live, expires_at, created_at, live_ended_at,
+                 deleted_at, hidden_at, edited_at)        ON public.posts FROM authenticated;
+  ```
+
+  **Por que não foi junto:** até o deploy desta branch o `postService` ainda
+  manda `was_live` no corpo do INSERT, e revogar antes faria **publicar post
+  parar** na janela entre a migration e o deploy. O código já foi corrigido —
+  falta o deploy chegar na `main`.
+
+  **O que NUNCA pode entrar nesse revoke:** `hidden_at` e `deleted_at` no
+  UPDATE. A moderação grava `hidden_at` por UPDATE direto de tabela e admin
+  também é `authenticated` — revogar derruba o painel.
+
+- ⬜ `[18/09]` 🔵 **`documentacaoQuebrada.test.js` falha de forma intermitente.**
+
+  Apareceu uma vez em 18/09 e passou na re-execução seguinte. Os dois `it` do
+  bloco "relatório de documentação envelhecida" chamam `execFileSync` no mesmo
+  script, que leva **~1,05 s** sozinho (medido, 3 execuções) e roda `git log`
+  por documento.
+
+  **Isto é INFERÊNCIA, não fato:** eu não capturei o texto do erro, só vi o
+  arquivo e a linha. A hipótese é estouro do timeout padrão do vitest sob carga
+  paralela. **Para confirmar:** rodar a suíte cheia até falhar de novo e ler a
+  mensagem.
+
+  Por que importa mesmo sendo intermitente: portão que falha sozinho ensina a
+  ignorar o portão (§0.2, 4ª regra). O conserto provável é rodar o script **uma
+  vez** e compartilhar a saída entre os dois testes, em vez de duas vezes.
+
+- ⬜ `[18/09]` 🔵 **326 posts no banco, ZERO vivos.**
+
+  Encontrado durante o pentest: **todos** os posts têm `deleted_at` preenchido.
+  É consistente com um site novo (o conteúdo real ainda não existe) somado ao
+  e2e, que cria e apaga post a cada rodada de CI — as contas `claudetester` e
+  `claudestaff` sozinhas respondem por **322** deles.
+
+  Não é achado de segurança e não mexi em nada. Está aqui porque é o tipo de
+  número que ninguém confere e que explicaria um feed vazio, e porque agora o
+  XP depende dele (SEC-028): post apagado deixou de pagar.
+
+
 
 - ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail.** *`[05/09]` O
   CÓDIGO JÁ ESTÁ PRONTO — o que falta é ação de painel, e ela é do dono.*
@@ -1525,10 +1652,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->124<!--/n--> arq ·
-  <!--n:src.lib.linhas-->13.461<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->125<!--/n--> arq ·
+  <!--n:src.lib.linhas-->13.845<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.848<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

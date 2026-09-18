@@ -81,7 +81,8 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
     const { error } = await updatePost(
       post.id,
-      { content: editContent, isLive: editIsLive, wasLive: post.was_live || editIsLive },
+      // `[18/09]` SEC-027: `wasLive` não vai mais daqui — o banco deriva.
+      { content: editContent, isLive: editIsLive },
       user.id,
       isAdmin
     );

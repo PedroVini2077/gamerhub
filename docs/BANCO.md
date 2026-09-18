@@ -396,3 +396,124 @@ Convenções:
 ---
 
 [← voltar para o README](../README.md)
+
+---
+
+## `[18/09]` A VIEW `xp_dos_usuarios` — a fonte única do XP
+
+Primeira **view** do schema, criada pela SEC-028 depois de o pentest de setembro
+encontrar que existiam **três** fórmulas de XP independentes (`get_user_xp`,
+`owner_get_users`, `owner_get_metrics`).
+
+| | |
+| --- | --- |
+| **O que devolve** | por perfil: `posts`, `lives`, `likes`, `comentarios`, `profile_bonus` |
+| **Quem lê** | as três RPCs `SECURITY DEFINER` acima. **Mais ninguém** |
+| **Grant** | **nenhum**. Nem `anon`, nem `authenticated` |
+| **A fórmula** | `posts*20 + lives*30 + likes*5 + comentarios*3 + profile_bonus` |
+| **Bônus de perfil** | bio 50 · avatar 30 · platform 15 · discord 15 · twitch 15 · youtube 15 (teto 140) |
+
+### Por que ela NÃO pode receber grant
+
+Uma view roda com os direitos do **dono**, não de quem consulta
+(`security_invoker` é `false` por padrão no Postgres). Ou seja: **ela atravessa
+a RLS**. Exposta na REST API, entregaria o XP e a contagem de atividade de todo
+mundo numa chamada só — e sem login, se o grant fosse para `anon`.
+
+Isso é a régua de papéis desta pasta aplicada a um objeto novo: *o público
+alcança **função**, nunca tabela nem view*. O `e2e/portas-do-banco.mjs` exige
+`HTTP 401` nela, então a porta não reabre em silêncio.
+
+### O que ela filtra, e por que isso É a correção
+
+```sql
+posts       WHERE deleted_at IS NULL AND hidden_at IS NULL
+comments    WHERE hidden_at IS NULL
+post_likes  -> só de post vivo, e `l.user_id <> po.user_id` (self-like nunca valeu)
+```
+
+Sem esses filtros, **ocultar conteúdo era punição sem efeito**: a moderação
+tirava o post da tela e o autor ficava com o XP — inclusive o XP que conta para
+`check_staff_eligibility` (≥ 1000 para virar admin).
+
+### O bônus de perfil exige CONTEÚDO, não campo não-nulo
+
+`IS NOT NULL` sozinho pagava por **string vazia**. Medido em `ROLLBACK` com
+papel `authenticated` real: escrever `''` em `discord`, `twitch`, `youtube` e
+`avatar_url` levou o bônus de **95 para 140** — o teto — sem preencher nada.
+Hoje é `length(trim(COALESCE(campo,'')))> 0` nos seis campos.
+
+> `platform` já estava protegida pelo `CHECK check_platform`, que só aceita a
+> lista fechada de plataformas. Foi o único dos seis que resistiu ao teste.
+
+---
+
+## `[18/09]` `post_aceita_interacao(uuid)` — e a regra sobre função DENTRO de policy
+
+```sql
+post_aceita_interacao(p_post_id) -> boolean   -- o post existe, não está apagado nem oculto
+```
+
+Usada no `WITH CHECK` de **três** policies de INSERT: `comments_insert`,
+`live_chat_insert` e `User insere proprio like`. Sem ela dava para comentar,
+curtir e conversar embaixo de conteúdo que a moderação já tirou do ar.
+
+**Ela é `SECURITY DEFINER` de propósito.** Um `EXISTS` cru sobre `posts` dentro
+da policy passaria pela RLS de `posts`, que já esconde apagado e oculto — e o
+resultado seria o mesmo **hoje**. Mas ficaria dependendo de um efeito colateral
+da policy de SELECT de outra tabela: bastaria alguém afrouxar aquele SELECT para
+reabrir isto aqui, em silêncio. É a "proteção acidental" que o §1.3 manda
+desconfiar.
+
+> **A regra que vale para qualquer função nova usada em policy:** ela precisa de
+> `GRANT EXECUTE` para o papel que **dispara** a policy. Sem isso a policy não
+> falha "para o invasor" — ela falha **para todo mundo**. Foi a lição do
+> SEC-026, onde revogar 9 funções "sem chamador no frontend" teria derrubado 28
+> policies (`is_staff` em 14, `can_moderate_content` em 8, `pode_publicar` em 4,
+> `is_super` em 2).
+
+---
+
+## `[18/09]` As colunas de `posts` que o cliente NÃO declara
+
+O `trg_guard_post_privileged` passou a ser `BEFORE INSERT OR UPDATE` (era só
+`UPDATE`) e a fixar sete colunas para quem tem `role_rank < 2`:
+
+| Coluna | Por que não pode vir do cliente |
+| --- | --- |
+| `was_live` | vale +30 XP de live. **Derivado**: `OLD.was_live OR NEW.is_live`, e monotônico |
+| `expires_at` | a `cleanup_expired_posts` faz `DELETE` **real** por ela — some a janela de 30 dias da moderação |
+| `live_ended_at` | quem grava é o `trg_set_live_ended_at`; vindo do cliente dá live "no ar" que já terminou |
+| `created_at` | data de nascimento não se escolhe |
+| `user_id` | trocar o dono transfere autoria |
+| `hidden_at` · `deleted_at` | são **ações de moderação** — o autor desfazendo anula a punição |
+
+**`is_live` continua gravável pelo autor nos dois sentidos**, de propósito: o
+formulário de edição do `PostCard` deixa marcar o próprio post como live, e
+tirar isso mudaria o produto em vez de fechar uma brecha.
+
+### Por que o `GRANT` das colunas NÃO foi revogado junto
+
+Seria a segunda camada, e a tentação é óbvia. Mas `hidden_at` e `deleted_at`
+**não podem** ser revogadas de `authenticated`: a moderação grava `hidden_at`
+por `UPDATE` direto de tabela (`moderationService.js`, `setHiddenAt`), e admin
+também é `authenticated`. Revogar teria derrubado o painel — a classe exata do
+erro do SEC-025.
+
+As demais (`was_live`, `expires_at`, `created_at`, `live_ended_at`) podem ser
+revogadas, e **vão** ser: o revoke ficou fora desta rodada porque o cliente
+ainda mandava `was_live` no corpo até o deploy, e revogar antes quebraria
+publicar post na janela entre a migration e o deploy. Está no `BACKLOG.md`.
+
+### A ordem dos triggers, que aqui não é detalhe
+
+Em `BEFORE` do mesmo evento o Postgres dispara por ordem **alfabética de nome**:
+
+```
+trg_guard_post_privileged  <  trg_set_live_ended_at  <  trg_wordlist_posts
+```
+
+É o que faz o guard fixar `live_ended_at := OLD` e o `trg_set_live_ended_at`
+gravar `now()` **depois**, no encerramento legítimo — e o que deixa o
+`trg_wordlist_posts` marcar `hidden_at` num INSERT mesmo com o guard zerando
+`deleted_at` antes. Renomear qualquer um dos três muda a ordem.

@@ -151,9 +151,16 @@ describe('o mecanismo', () => {
     ).toBe(true);
 
     const parado = FONTE(PARADO);
+    // `[18/09]` A CENA do Ato 0 pode ser a arte gerada (`CENAS.hero`) OU o
+    // portal em SVG (`PortalDoAtoZero`) — ele pediu o segundo como experimento
+    // para ver no preview. A pergunta desta trava nunca foi "qual imagem":
+    // é "o caminho reduzido continua tendo CENA e FRASE, ou virou tela vazia?".
+    // Aceitar as duas formas mantém a pergunta; travar a forma antiga só
+    // reprovaria o experimento sem proteger ninguém.
+    const temCena = parado.includes('CENAS.hero') || parado.includes('PortalDoAtoZero');
     expect(
-      parado.includes('FRASE_DO_ATO_ZERO') && parado.includes('CENAS.hero'),
-      'A versão sem movimento perdeu a arte ou a frase do ATO 0.\n'
+      parado.includes('FRASE_DO_ATO_ZERO') && temCena,
+      'A versão sem movimento perdeu a cena ou a frase do ATO 0.\n'
       + '  Elas são CONTEÚDO, não efeito: entregar a landing sem elas para quem\n'
       + '  desligou animação é trocar acessibilidade por decoração.',
     ).toBe(true);
@@ -171,15 +178,40 @@ describe('o mecanismo', () => {
     ).toContain('pointerEvents');
   });
 
-  it('a arte do hero é REALMENTE usada — ela já ficou mapeada sem chamador', () => {
+  it('o ATO 0 tem uma cena de verdade, e a arte órfã é DECLARADA', () => {
     // Aconteceu: `CENAS.hero` existia no mapa, com as seis variantes geradas, e
     // não era renderizada em lugar nenhum. Nada acusa uma arte órfã.
-    const usada = [PROLOGO, PARADO].some((c) => FONTE(c).includes('CENAS.hero'));
+    //
+    // `[18/09]` O experimento do portal em SVG tirou a arte do hero de cena — e
+    // isso deixa as SEIS variantes de `1-hero-*` órfãs no repositório, que é
+    // exatamente o que esta trava existe para impedir.
+    //
+    // A saída NÃO é afrouxar: é exigir que a cena exista de alguma forma E que
+    // a arte sem uso esteja registrada como pendência. Enquanto o experimento
+    // durar, o item fica no `BACKLOG.md`; quando ele decidir, ou a arte volta
+    // ao ar, ou os seis arquivos são apagados.
+    const fontes = [PROLOGO, PARADO].map(FONTE);
+    const comArte = fontes.some((f) => f.includes('CENAS.hero'));
+    const comPortal = fontes.some((f) => f.includes('PortalDoAtoZero'));
+
     expect(
-      usada,
-      'Nenhum componente do prólogo usa `CENAS.hero`.\n'
-      + '  A arte de abertura voltou a ser um arquivo gerado que ninguém mostra.',
+      comArte || comPortal,
+      'O ATO 0 ficou sem cena nenhuma.\n'
+      + '  Nem a arte gerada (`CENAS.hero`) nem o portal em SVG aparecem no\n'
+      + '  prólogo — a primeira tela da landing virou fundo liso.',
     ).toBe(true);
+
+    if (!comArte) {
+      const backlog = readFileSync('BACKLOG.md', 'utf8');
+      expect(
+        /1-hero|arte do hero|CENAS\.hero/.test(backlog),
+        'A arte do hero saiu de cena e NÃO está registrada no `BACKLOG.md`.\n\n'
+        + '  As seis variantes de `1-hero-*` continuam no repositório sem\n'
+        + '  ninguém mostrá-las — e arte órfã foi o defeito que originou esta\n'
+        + '  trava. Enquanto o experimento do portal durar, isso precisa estar\n'
+        + '  escrito; quando ele decidir, ou a arte volta, ou os arquivos saem.',
+      ).toBe(true);
+    }
     expect(
       FONTE(LANDING),
       'A `Landing` deixou de montar o prólogo.',

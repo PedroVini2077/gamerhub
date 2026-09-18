@@ -232,3 +232,25 @@ export const LOG_RETENTION_DAYS = 365;
 // Nenhuma delas aparece como string em `src/`, então o teste que varre o
 // código-fonte não as veria. Listadas aqui à mão para entrarem na cobertura.
 // Ao criar uma função/trigger nova que escreva em `admin_logs`, acrescentar.
+
+// ─── `[18/09]` Linha de log SEM DETALHE ──────────────────────────────────────
+//
+// O dono encontrou entradas **completamente em branco** no painel: só a data e
+// a categoria, sem texto nenhum. Não era formatação — era a
+// `record_banned_login_attempt` aceitando `p_email = NULL` e gravando
+// `details = NULL` (a causa está fechada na SEC-030).
+//
+// Só que a causa fechada não resolve as linhas que JÁ existem, e não resolve a
+// próxima função que esquecer o `details`. O `LogsPanel` renderizava
+// `{log.details}` cru: `null` vira string vazia e o card fica mudo.
+//
+// **Log que ninguém consegue ler é log que não existe** (§1.5). Então a UI
+// passa a sempre dizer alguma coisa — no mínimo qual foi a ação —, e diz
+// explicitamente que o detalhe faltou, em vez de fingir que a linha é normal.
+//
+// O texto é diferente das duas formas de propósito: "(sem detalhe registrado)"
+// avisa que falta informação; um card vazio não avisa nada.
+export function textoDoLog(log) {
+  if (log?.details && String(log.details).trim().length > 0) return log.details;
+  return `${log?.action || 'ação desconhecida'} — (sem detalhe registrado)`;
+}

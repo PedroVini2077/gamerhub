@@ -974,3 +974,97 @@ As **34** funções não alcançáveis por `anon`/`authenticated` não foram lid
 a uma. Não há caminho pela API para chamá-las — mas *"não é chamável"* é uma
 afirmação sobre os `GRANT`s de hoje, e um `GRANT` novo derruba essa premissa em
 silêncio.
+
+---
+
+## `[18/09]` PENTEST DE SETEMBRO — 15 achados relatados, 4 mecanismos reais
+
+> Um pentest autorizado rodou contra produção com uma **conta comum** e relatou
+> 15 achados. O pedido do dono foi *"pesquise mais a fundo ainda pra ver se vc
+> acha algo a mais que isso e conserte tudo na hora"*.
+
+### Os 15 achados eram 4 mecanismos
+
+Contar achados engana. Quase todos vinham da mesma causa, e é a causa que se
+corrige — corrigir achado a achado deixa o próximo aparecer amanhã.
+
+| Mecanismo | Achados que ele explica | Fechado por |
+| --- | --- | --- |
+| `posts` dava `UPDATE`/`INSERT` a `authenticated` nas **22 colunas**, e a policy `posts_update` não tem `WITH CHECK`. O trigger guardava **3** colunas e nada de live | XP-LIVE-001, 8, 9, 10, 11 | SEC-027 |
+| `get_user_xp` contava `posts`/`comments`/`post_likes` **sem filtrar** `deleted_at` nem `hidden_at` | XP-LIVE-003, XP-001, XP-002, 7 | SEC-028 |
+| Existiam **3 fórmulas de XP** independentes | 12 | SEC-028 |
+| Autorização checada **depois** da validação de entrada | 15 | SEC-031 |
+
+### O que a investigação DESMENTIU do relatório
+
+Achado relatado não é achado confirmado. Três não sobreviveram à verificação:
+
+| Achado | Veredito | Evidência |
+| --- | --- | --- |
+| **10** — "dá para doar o post para outra conta" | **NÃO EXISTE** | o `PATCH` retorna 204, mas `trg_guard_post_privileged` reverte `user_id`. Lendo o valor final, o dono continua o mesmo |
+| **13** — "XP de terceiro é vulnerabilidade" | **NÃO É** | XP é público por desenho: a página de perfil e a de Ranks mostram o XP alheio. Nada a corrigir |
+| **14** — "oráculo de existência via `get_user_xp`" | **FRACO demais para valer** | conta real sem atividade e uuid inexistente devolvem o **mesmo** `0`. A resposta não distingue |
+
+> **O erro que quase entrou no relatório, e a lição que ele repete.** A primeira
+> rodada de teste marcou o achado 10 como *"BRECHA CONFIRMADA"* porque olhou
+> `ROW_COUNT > 0`. O `UPDATE` **é** aceito; o trigger desfaz depois. É a fonte
+> de silêncio nº 3 do §1.5 — *"o comando passou sem erro, e o guarda reverteu
+> por baixo"* — aplicada ao próprio teste de segurança.
+>
+> **`ROW_COUNT` não prova efeito. Só o valor relido prova.**
+
+### O que o pentest NÃO encontrou, e foi achado aqui
+
+| Novo | Achado | Severidade |
+| --- | --- | --- |
+| **N1** | `record_banned_login_attempt(NULL)` fura o guard de identidade e planta linha **forjada** na trilha de segurança, **sem teto** | 🟠 Alto |
+| **N2** | `was_live` é forjável no **INSERT**, não só no `PATCH` — o post nasce valendo +30 XP | 🟠 Alto |
+| **N3** | `discord`/`twitch`/`youtube`/`avatar_url` aceitam **string vazia** e pagavam bônus. Medido: **95 → 140 XP** escrevendo `''` | 🟡 Médio |
+| **N4** | `expires_at` gravável pelo autor + `cleanup_expired_posts` faz `DELETE` real por ela = caminho para destruir conteúdo sob moderação | 🟡 Médio |
+| **N5** | `request_role_demotion` distinguia conta que existe de conta que não existe, para **qualquer logado** | 🔵 Baixo |
+| **N6** | `LogsPanel` renderizava `{log.details}` cru — `details` nulo virava linha **em branco** no painel | 🔵 Baixo |
+
+**N1 e N6 são a mesma coisa vista de dois lados.** O dono perguntou por que
+havia logs sem título nenhum no painel. A resposta não era formatação: em SQL,
+`v_caller_email <> NULL` devolve `NULL`, `false OR NULL` devolve `NULL`, e um
+`IF NULL` **não dispara**. O guard deixava passar, e como `'texto' || NULL` é
+`NULL`, a linha nascia sem detalhe.
+
+> Esta armadilha **já estava escrita** em [`regras/BANCO.md`](regras/BANCO.md),
+> na seção *"Toda entrada de RPC precisa de FAIXA"*. A regra existia, o guard
+> foi escrito depois dela, e caiu no mesmo buraco. Por isso a correção saiu com
+> **teste**, não só com a linha corrigida.
+
+### A varredura de classe (§1.3) — onde MAIS o padrão existia
+
+O relatório trouxe **um** caso de "interagir com conteúdo que não existe":
+comentar em post apagado. Três tabelas penduram linha em `posts.id`, e as três
+tinham o mesmo buraco:
+
+```
+comments    -> comentar em post apagado/oculto     (o único relatado)
+post_likes  -> curtir post apagado/oculto
+live_chat   -> mandar mensagem no chat de live apagada
+```
+
+Corrigir só a primeira deixaria duas iguais no ar — foi assim que 14 policies
+ficaram sem `owner`, três vezes seguidas.
+
+### A armadilha evitada, e ela teria derrubado o site
+
+A correção "óbvia" para o mecanismo 1 era revogar as colunas de `posts` de
+`authenticated`. **`hidden_at` e `deleted_at` não podem ser revogadas:** a
+moderação grava `hidden_at` por `UPDATE` direto de tabela
+(`moderationService.js`, `setHiddenAt`), e admin também é `authenticated`.
+Revogar teria quebrado o painel inteiro — a classe exata do erro do SEC-025.
+
+Quem separa admin de usuário comum nessas duas colunas é o `role_rank >= 2`
+dentro do próprio trigger, que já fazia isso.
+
+### O que continua em aberto, e é decisão de produto
+
+`was_live` hoje significa *"o autor marcou uma caixa no formulário de edição"*,
+não *"uma live aconteceu"*. A SEC-027 tornou o campo **derivado e não-gravável
+pelo cliente**, o que mata toda manipulação via REST — mas **marcar a caixa na
+UI continua valendo 30 XP**, porque tirar isso muda o produto, não fecha uma
+brecha. Está no `BACKLOG.md` como decisão do dono.

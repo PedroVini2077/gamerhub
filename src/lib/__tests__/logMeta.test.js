@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   ACTION_META, NOTIF_META, LOG_CATEGORIES, CATEGORY_META,
-  actionMeta, notifMeta, feedItemMeta, LOG_RETENTION_DAYS,
+  actionMeta, notifMeta, feedItemMeta, LOG_RETENTION_DAYS, textoDoLog,
 } from '../logMeta';
 import { actionsDoBanco, tiposDeNotificacaoDoBanco } from './actionsDoBanco';
 
@@ -151,5 +151,41 @@ describe('consistência dos mapas', () => {
   it('a retenção mostrada na UI bate com a do script SQL', () => {
     const sql = readFileSync(join(ROOT, '../db/2026-08-otimizacao.sql'), 'utf8');
     expect(sql).toContain(`interval '${LOG_RETENTION_DAYS} days'`);
+  });
+});
+
+// ─── `[18/09]` A linha de log que aparecia EM BRANCO ──────────────────────────
+//
+// O dono mandou print do painel com entradas sem título nenhum: só data e
+// categoria. A causa (`record_banned_login_attempt` aceitando `p_email` nulo e
+// gravando `details = NULL`) está fechada na SEC-030 — mas causa fechada não
+// conserta as linhas que já existem, nem a próxima função que esquecer o
+// `details`.
+//
+// **Log que ninguém consegue ler é log que não existe** (§1.5): a fonte de
+// silêncio nº 7 é exatamente "o erro foi registrado onde ninguém vê".
+describe('log sem detalhe ainda diz alguma coisa', () => {
+  it('cai para a action quando `details` é nulo', () => {
+    const texto = textoDoLog({ action: 'auth_banned_attempt', details: null });
+    expect(texto, 'Log sem detalhe voltou a virar string vazia no painel.')
+      .toContain('auth_banned_attempt');
+    expect(texto, 'O card precisa DIZER que o detalhe faltou, senão a linha '
+      + 'parece normal e ninguém investiga.').toMatch(/sem detalhe/i);
+  });
+
+  it('string vazia e só-espaços contam como ausente', () => {
+    // `details: ''` e `details: '   '` renderizam igual a `null`: um card mudo.
+    for (const vazio of ['', '   ']) {
+      expect(textoDoLog({ action: 'post_edited', details: vazio }))
+        .toMatch(/sem detalhe/i);
+    }
+  });
+
+  it('não mexe no log normal', () => {
+    // A trava não pode "consertar" o caminho feliz — se ela reescrevesse o
+    // texto de todo log, o painel passaria a mentir em 100% das linhas para
+    // resolver as 2 que estavam quebradas.
+    expect(textoDoLog({ action: 'auth_logout', details: '@fulano fez logout' }))
+      .toBe('@fulano fez logout');
   });
 });
