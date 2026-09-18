@@ -97,6 +97,32 @@ async function xpDe(token, userId) {
   return r.json();
 }
 
+/**
+ * Abre a aba onde a live do `LiveGoModal` REALMENTE cai.
+ *
+ * ── A primeira versao deste teste errou aqui, e o erro foi util ─────────────
+ *
+ * As abas de `/lives` sao, na ordem:
+ *
+ *   Da comunidade  ->  !live_kind      <- ABA PADRAO
+ *   Gameplays      ->  live_kind = 'gameplay'
+ *   Reacts / Outros
+ *
+ * O `LiveGoModal` SEMPRE define um `live_kind` (o padrao dele e `gameplay`),
+ * entao uma live criada por ali **nunca** aparece na aba padrao. O teste
+ * procurava o titulo na tela recem-carregada e falhava com "nao apareceu" —
+ * enquanto o cabecalho, na mesma tela, dizia "1 ao vivo".
+ *
+ * Isso e comportamento de produto, nao defeito: as abas separam live de jogador
+ * de live da comunidade de proposito. O que o E2E expos foi a leitura da tela
+ * (cabecalho e aba discordando), e isso esta anotado no BACKLOG — nao e papel
+ * deste teste decidir.
+ */
+async function abrirAbaDaLive(page) {
+  await page.getByRole('button', { name: /^Gameplays/i }).first().click();
+  await page.waitForTimeout(800);
+}
+
 const browser = await abrirNavegador();
 const ctx = await browser.newContext();
 const page = await ctx.newPage();
@@ -148,9 +174,10 @@ try {
   await page.getByPlaceholder('Ex: Ranqueada até o topo — bora?').fill(TITULO);
   await page.getByPlaceholder('https://twitch.tv/seucanal').fill(LINK);
   await page.getByRole('button', { name: /Iniciar live/i }).click();
+  await abrirAbaDaLive(page);
   await page.getByText(TITULO).first().waitFor({ state: 'visible', timeout: 30000 })
-    .catch(() => { throw new Error('a live criada nao apareceu na lista'); });
-  ok('criou a live pela interface e ela apareceu na lista');
+    .catch(() => { throw new Error('a live criada nao apareceu na aba Gameplays'); });
+  ok('criou a live pela interface e ela apareceu na aba certa');
 
   // ── 3. A TELA diz "ao vivo". O BANCO concorda? ────────────────────────────
   const achado = await fetch(
@@ -192,6 +219,7 @@ try {
 
   // ── 5. Encerrar pela interface ────────────────────────────────────────────
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await abrirAbaDaLive(page);
   await page.getByText(TITULO).first().click().catch(() => {});
   await page.waitForTimeout(1500);
   const botaoEncerrar = page.getByRole('button', { name: /Encerrar/i }).first();
@@ -233,6 +261,7 @@ try {
   }
   await page.goto(`${BASE}/lives`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(2500);
+  await abrirAbaDaLive(page);
   if (await page.getByText(TITULO).count()) {
     throw new Error('a live apagada continua aparecendo na lista');
   }

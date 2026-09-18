@@ -428,7 +428,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**44 itens abertos** (+ 1 ideia sem compromisso)
+**45 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1516,6 +1516,27 @@ dependência técnica real** que decide o resto:
 
 
 ## 🟢 Recomendado
+
+- ⬜ `[18/09]` 🟢 **A tela de lives diz "1 ao vivo" e "Nenhuma live acontecendo
+  agora" ao mesmo tempo.** *Achado pelo E2E novo, não por análise de código.*
+
+  As abas de `/lives` são: `Da comunidade` (`!live_kind`, **a padrão**),
+  `Gameplays`, `Reacts`, `Outros`. O `LiveGoModal` SEMPRE define um `live_kind`
+  (padrão `gameplay`), então **uma live criada por "Ficar ao vivo" nunca aparece
+  na aba padrão**.
+
+  Resultado, com a tela recém-carregada: o cabeçalho conta `1 ao vivo`, a aba
+  `Gameplays` mostra `(1)`, e o miolo diz *"Nenhuma live acontecendo agora —
+  volte mais tarde!"*.
+
+  **Não é defeito**: separar live de jogador de live da comunidade é de
+  propósito. É leitura de tela. Quem acabou de ficar ao vivo cai numa aba que
+  diz que não tem nada.
+
+  Saídas possíveis (decisão de produto): abrir na primeira aba **que tem
+  conteúdo** · esconder a contagem quando a aba está vazia mas o site não ·
+  trocar o texto vazio por *"nenhuma aqui — veja em Gameplays (1)"*.
+
 
 - ⬜ `[12/09]` 🟢 **A falha do `e2e/fluxos.mjs` manda investigar o lugar
   errado.** *Achado hoje, custou alguns minutos de investigação minha.*
