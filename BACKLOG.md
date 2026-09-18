@@ -65,9 +65,20 @@ inalterada.
 usar SVG, quero que vc faça a mudança só na primeira cena, algo que faça sentido
 com portal… e queria ver na preview, **depois pode desfazer**"*.
 
-**O que está no ar (na branch, não na `main`):** `PortalDoAtoZero.jsx` substitui
-`CENAS.hero` nos **dois** caminhos do prólogo — o normal e o de
-`prefers-reduced-motion`. As outras seis cenas continuam sendo arte gerada.
+**Onde ele está:** na branch **`preview`**, e SÓ nela. O `PortalDoAtoZero.jsx`
+substitui `CENAS.hero` nos dois caminhos do prólogo (o normal e o de
+`prefers-reduced-motion`); as outras seis cenas continuam sendo arte gerada.
+
+> **`[18/09]` Ele foi para a `main` por engano e voltou no mesmo dia.** O PR #211
+> levou junto a fiação do portal, e mergear pôs em PRODUÇÃO um experimento que o
+> pedido dele mandava ver **na preview** — *"queria ver na preview, depois pode
+> desfazer"*. Pior: contrariava o que ele já tinha dito em 17/09, *"vc não vai
+> alterar nada, pq da última vez vc deixou a landing feia"*.
+>
+> A produção voltou para `CENAS.hero`. O arquivo continua no repo, testado e
+> documentado — o que mudou é **onde ele está ligado**. A lição é do §9.9:
+> LOCAL, COMMIT, PUSH, PR, MERGE e PRODUÇÃO não são o mesmo estado, e juntar um
+> experimento visual com correção de segurança num PR só apaga essa diferença.
 
 **⚠️ A ARTE DO HERO FICOU ÓRFÃ.** As seis variantes de `1-hero-*` continuam no
 repositório sem ninguém mostrá-las (~500 kB). Isso é exatamente o defeito que a

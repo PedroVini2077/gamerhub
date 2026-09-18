@@ -4,10 +4,11 @@ import PalcoDeRolagem from './PalcoDeRolagem';
 import ConvergenciaDoHub from './ConvergenciaDoHub';
 import MarcaFlutuante from './MarcaFlutuante';
 import ConteudoDoHero from './ConteudoDoHero';
-import PortalDoAtoZero from './PortalDoAtoZero';
+import ArteDaCena from './ArteDaCena';
 import PrologoParado from './PrologoParado';
 import SinaisDeVida from './prologo/SinaisDeVida';
 import { OPACIDADE_NO_HERO } from '../../lib/marcaNoHero';
+import { CENAS } from '../../lib/cenasDaLanding';
 import { ALTURA_DO_PROLOGO, JANELAS, FRASE_DO_ATO_ZERO } from '../../lib/atosDaLanding';
 import { heroFade } from '../../lib/landingMotion';
 
@@ -133,11 +134,10 @@ function Camadas({ progresso, introDone }) {
           vertical — ver `PalcoDeRolagem`. */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div className="h-full" style={{ scale: escalaDaArte, opacity: opacidadeDaArte }}>
-          {/* `[18/09]` EXPERIMENTO, para ele ver no preview e decidir: a arte
-              do Ato 0 saiu e entrou um PORTAL desenhado à mão, em SVG. Só esta
-              cena — as outras seis continuam sendo arte gerada.
-              Ver `PortalDoAtoZero.jsx`. Para desfazer, é esta linha. */}
-          <PortalDoAtoZero />
+          {/* `[18/09]` O experimento do PORTAL em SVG vive na branch `preview`,
+              não aqui — ele foi pedido para ser OLHADO e decidido, e produção
+              não é lugar de decidir. Ver `PortalDoAtoZero.jsx`. */}
+          <ArteDaCena arte={CENAS.hero} prioridade />
         </motion.div>
       </div>
 
