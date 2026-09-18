@@ -684,8 +684,13 @@ jobs:
           SMOKE_BASE: http://127.0.0.1:4173
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # `vars.`, NAO `secrets.` — a anon key e publica por construcao (ela vai
+          # no bundle que o navegador baixa), e todo o resto do CI ja a le assim.
+          # Escrever `secrets.` resolve para vazio, e a guarda do script sai com
+          # 1: foi exatamente o que aconteceu na primeira tentativa, e o job
+          # falhou alto em vez de pular em silencio.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
 
       # Sem isto, uma falha no CI só diz "timeout" e não dá para diagnosticar
       # sem reproduzir na mão.
