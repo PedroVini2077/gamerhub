@@ -1068,3 +1068,104 @@ não *"uma live aconteceu"*. A SEC-027 tornou o campo **derivado e não-graváve
 pelo cliente**, o que mata toda manipulação via REST — mas **marcar a caixa na
 UI continua valendo 30 XP**, porque tirar isso muda o produto, não fecha uma
 brecha. Está no `BACKLOG.md` como decisão do dono.
+
+---
+
+## `[18/09]` AUDITORIA EXTERNA, 2ª RODADA — e a lição é sobre CLASSE
+
+> Um documento de auditoria externa retestou as correções do pentest e trouxe 3
+> achados novos. Os três eram reais. **Mas o que importa aqui não são os três —
+> é que a varredura que eles obrigaram encontrou mais três.**
+
+### A falha de método, e ela é minha
+
+A SEC-031 (17/09) moveu autorização para antes de validação em **duas** funções.
+Eu tratei como dois casos isolados e segui em frente.
+
+O §1.3 é explícito: *"ao achar um bug, perguntar sempre: onde MAIS esse mesmo
+padrão existe?"*. Não perguntei. No dia seguinte:
+
+| Quem achou | O quê |
+| --- | --- |
+| A auditoria externa | `restore_post` — que **eu escrevi no mesmo dia**, com o lookup antes da autorização |
+| A varredura que eu deveria ter feito na SEC-031 | `soft_delete_post`, `lift_suspension`, `nominate_staff` |
+| **A trava de regressão da própria SEC-032** | `admin_set_role` — que a varredura do banco não viu, porque o `EXECUTE` dela está revogado |
+
+**Seis funções, e eu tinha corrigido duas.** Corrigir caso a caso protege contra
+o passado; varrer a classe protege contra o próximo.
+
+> A `nominate_staff` era a pior: devolvia *"Usuário já possui cargo de staff"*
+> para quem não pode indicar ninguém — vazava **cargo**, não só existência.
+
+### A armadilha da varredura, pela 9ª vez
+
+A primeira versão da consulta acusou **cinco**, e uma delas era a que eu tinha
+acabado de corrigir. Motivo: o comentário que eu escrevi na SEC-031 **cita**
+`'Usuário não encontrado'` em prosa, e a busca leu comentário como código.
+
+Ler prosa como se fosse código já me pegou **nove vezes** neste projeto. A
+regra, agora em todas as travas que olham SQL: **tirar comentário ANTES de
+qualquer medida de posição.**
+
+### Duas formas de fechar um oráculo, e a escolha não é de gosto
+
+| Quando | Como |
+| --- | --- |
+| A permissão de quem chama **não** depende do alvo | **Autorização primeiro.** Quem está autorizado continua recebendo a mensagem útil |
+| A permissão **depende** do alvo (ex.: "só o dono apaga") | **Unificar a mensagem.** "Não existe" e "não é seu" passam a dizer o mesmo |
+
+O segundo caso é o `soft_delete_post`, e a decisão já existia neste projeto,
+escrita no `fetchPostById`: *"dizer 'existe, mas você não pode ver' já é vazar a
+existência"*.
+
+### Os outros dois achados
+
+**06L — a resposta que sumia da tela.** A FK de `parent_id` garantia que o pai
+existe, não que ele está no **mesmo post**. O efeito não é vazamento (o
+`fetchComments` filtra por `post_id`): é que o `rootIdOf` do `CommentSection`
+para quando o pai não está na lista e devolve o id do próprio órfão — que não é
+raiz, e por isso **nunca renderiza**. O `fetchCommentCount` conta. O contador diz
+3, a thread mostra 2. Fechado com FK **composta** — trava de 1ª força.
+
+**N7 — a live em estado impossível.** `set_live_ended_at` gravava a data de fim e
+nunca a limpava na reativação: `is_live = true` **e** `live_ended_at = 12:46`.
+Fechado com o ramo que falta + um `CHECK`, porque trigger é 3ª força e constraint
+é 1ª.
+
+> **O que apareceu investigando isso, e ninguém tinha pedido:** apagar o post
+> **não encerrava a live**. O `fetchActiveLives` não filtrava `deleted_at`, e a
+> `posts_select` libera conteúdo apagado a partir de `role_rank >= 2` — então a
+> live apagada continuava listada como "AO VIVO" **para a equipe**, que é quem
+> mais olha essa tela.
+
+### O spam de notificação — a 4ª regra do §0.2 aplicada
+
+Cada `false → true` disparava `live_reactivated` para todos os admins, sem teto.
+Medido: **36 das 116** notificações de admin eram de live (31%), geradas por um
+teste alternando o mesmo post.
+
+A pergunta da 4ª regra é *"quem pode disparar isto?"*. Podia qualquer um. Hoje
+tem dedup de 30 minutos e vira contador: **5 ciclos geram 3 linhas, não 11.**
+
+### Um item do BACKLOG que estava aberto embaixo do meu nariz
+
+`soft_delete_post` e `restore_post` não tratavam `auth.uid()` NULL — a **mesma**
+armadilha da SEC-030, registrada desde 11/09 com prova anexada. Eu reescrevi as
+duas funções nesta sessão sem ler o item.
+
+Não é explorável hoje (`anon` não tem `EXECUTE`), e é exatamente por isso que
+não podia ficar: proteção que depende só de um `GRANT` é a "proteção acidental"
+do §1.3. Fechado na SEC-035, com duas camadas (`IS NULL` explícito **e**
+`IS DISTINCT FROM`).
+
+### O E2E que passou a existir
+
+Nenhuma dessas travas roda num navegador. `e2e/lives.mjs` é o primeiro teste da
+esteira que confere a **tela** contra o **estado persistido** usando o token real
+do usuário — não `SET LOCAL role` numa transação.
+
+A diferença importa: a transação prova a RLS; o token prova o caminho inteiro
+(PostgREST, JWT, policy, trigger). E ele inclui o ataque de PATCH nas colunas
+privilegiadas feito como o navegador faria, com releitura obrigatória — porque
+`204` não prova nada, o que já transformou um "achado confirmado" em falso
+positivo uma vez.

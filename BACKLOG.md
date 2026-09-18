@@ -35,6 +35,30 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### ✅ `[18/09]` AUDITORIA EXTERNA (2ª rodada) — fechada nesta sessão
+
+Um documento de auditoria externa retestou o pentest e trouxe 3 achados novos.
+Resultado: **os 3 confirmados e fechados**, mais **3 que a varredura de classe
+encontrou por fora** — incluindo um que a minha própria trava achou.
+
+| | |
+| --- | --- |
+| 06C — oráculo de existência no `restore_post` | SEC-032 · e a classe tinha **5**, não 1 |
+| 06L — resposta apontando para pai de outro post | SEC-033 · FK composta |
+| N7 — estado impossível de live + spam de notificação | SEC-034 · e apagar o post não encerrava a live |
+| N1/N2/N3/N4/N5/N6 (retestes) | confirmados fechados, com evidência |
+
+**A falha minha que isto expôs:** a SEC-031 (ontem) corrigiu a ordem
+autorização/validação em **duas** funções e eu não varri a classe. A auditoria
+achou a terceira; a varredura que eu deveria ter feito achou a quarta, quinta e
+sexta — uma delas escrita por mim horas antes.
+
+E um item do BACKLOG de 11/09 (`auth.uid()` NULL nos guards) estava aberto
+enquanto eu reescrevia exatamente aquelas funções, sem lê-lo. Fechado na
+SEC-035.
+
+Relatório em [`db/2026-09-18-auditoria-externa-2a-rodada.md`](db/2026-09-18-auditoria-externa-2a-rodada.md).
+
 ### ✅ `[18/09]` PENTEST DE SETEMBRO — fechado nesta sessão
 
 **Pedido dele:** *"olhe o prompt mais pesquise mais a fundo ainda pra ver se vc
@@ -404,7 +428,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**47 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -593,13 +617,6 @@ AGORA** escrito nele.
   não é 🟠. Mas se for, precisa estar escrito e a mensagem precisa parar de
   prometer o que não entrega. **Decisão de produto.**
 
-- ⬜ `[12/09]` 🔵 **`auth_account_deleted` virou entrada morta na lista do
-  cliente.** *Criado pelo meu próprio conserto do SEC-012.* A gravação passou
-  para dentro da RPC, mas a action continua na lista que `log_audit_event`
-  aceita do cliente — ninguém legítimo a usa, e qualquer pessoa logada pode
-  injetar um registro falso. Não dá poder nem expõe dado: é ruído forjável na
-  trilha. Uma linha para remover.
-
 - ⬜ `[12/09]` 🔵 **A política de senha do painel de Auth nunca foi conferida.**
   *BLOCO F, e vem com a parte que eu quase errei.* O advisor pede para ligar a
   proteção contra senha vazada (HaveIBeenPwned). **Pesquisei antes de virar
@@ -619,13 +636,23 @@ AGORA** escrito nele.
   egress (§6.1): a cota mais apertada do Supabase paga por coluna que ninguém
   lê. Trocar por lista explícita de colunas.
 
-- ⬜ `[17/09]` 🟡 **DUAS soluções para o mesmo problema de alarme repetido — e
-  eu criei a segunda hoje.** *DECISÃO DELE.*
+- ⬜ `[17/09]` 🟡 **TRÊS soluções para o mesmo problema de alarme repetido — e
+  eu criei a segunda e a terceira.** *DECISÃO DELE.*
 
   | Função | Estratégia | Ganha | Perde |
   | --- | --- | --- | --- |
   | `registrar_falha_de_edge_function` | **suprime** a repetição | trilha estritamente append-only | a contagem |
   | `record_banned_login_attempt` (SEC-023) | **atualiza** a linha | "9 vezes" é sinal de verdade | a linha deixa de ser imutável |
+  | `notify_admin_new_live` (SEC-034, `[18/09]`) | **atualiza** a linha | idem | idem |
+
+  > **`[18/09]` Eu piorei a divergência em vez de resolvê-la.** A SEC-034
+  > precisava de deduplicação urgente (31% das notificações de admin eram spam
+  > de live), e eu copiei o desenho do `record_banned_login_attempt` por
+  > consistência — sem trazer a decisão para cá primeiro. Foi a escolha certa
+  > para não inventar um quarto padrão, e a errada por adiar de novo o que já
+  > estava esperando decisão há um dia. Agora são 2 a 1 a favor de "atualizar";
+  > se for essa a decisão, sobra só o `registrar_falha_de_edge_function` para
+  > alinhar.
 
   A primeira tem a razão escrita no código: *"a trilha é append-only, então não
   dá para incrementar um contador na linha existente sem mudar essa natureza"*.
@@ -645,18 +672,6 @@ AGORA** escrito nele.
   bug: o `DESCONHECIDO` é fallback deliberado e visível. Mas a RPC promete mais
   do que a tela desenha, e escolher ícone é decisão de design. Ou entram no
   mapa, ou saem da lista da RPC.
-
-- ⬜ `[12/09]` 🔵 **`restore_post` restaura post que não está apagado.** *BLOCO
-  D.* Falta `AND deleted_at IS NOT NULL` no `UPDATE`. Efeito nulo e nenhuma
-  mentira na tela — é a irmã fraca do que o `unban_user` tinha, e por isso não
-  entrou no mesmo PR.
-
-- ⬜ `[12/09]` 🔵 **`deny_unban_request` não avisa a PESSOA.** *BLOCO C.* A
-  aprovação insere em `notifications` ("seu pedido foi aceito"); a negativa
-  **não insere nada**. Quem recorreu do próprio banimento fica sem resposta — a
-  `BannedScreen` mostra o estado do pedido, então ele não some de vez, mas a
-  simetria quebrada é do tipo que ninguém percebe do lado de fora. Uma linha,
-  espelhando o `approve_unban_request`.
 
 - ⬜ `[12/09]` 🔵 **O buraco que sobrou da régua de `anon`: `GRANT` explícito.**
   O `ALTER DEFAULT PRIVILEGES` fecha a tabela NOVA por padrão, mas não impede
@@ -732,63 +747,6 @@ AGORA** escrito nele.
 > `db/2026-09-10-auditoria-seguranca.md`.
 
 ## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
-
-- ⬜ `[11/09]` 🔵 **`soft_delete_post` e `restore_post`: o guard não trata
-  `auth.uid()` NULL.** *Proposta — NÃO executei, porque não é explorável hoje
-  (§7 🟡: migration pede aprovação).*
-
-  **O risco.** As duas fazem
-  `IF auth.uid() <> v_owner AND NOT can_moderate_content(v_owner) THEN RAISE`.
-  Em SQL, `NULL <> qualquer_coisa` é **NULL**, e um `IF` com NULL **não
-  dispara** — então sem sessão o guard não barra ninguém.
-
-  **Provado em ROLLBACK**, nas duas vias:
-
-  | Papel | Resultado |
-  | --- | --- |
-  | `anon` | bloqueado — mas por `permission denied for table profiles`, **não pelo guard** |
-  | `authenticated` com JWT **sem `sub`** | **apagou post alheio** |
-
-  **O impacto hoje é ZERO**, e isso precisa estar escrito: `anon` não está na
-  ACL das funções, e um JWT com `role: authenticated` só existe assinado com o
-  segredo do projeto — e o GoTrue sempre põe `sub`. Não há caminho de fora.
-
-  **Por que mesmo assim vale corrigir:** é proteção acidental, exatamente o que
-  o §1.3 manda desconfiar. Ela depende de um `GRANT` e de um erro de privilégio
-  em `profiles` — não do guard. Este projeto já mudou grant de `anon` mais de
-  uma vez; no dia em que isso acontecer, a porta abre sem ninguém perceber.
-
-  **A solução é uma linha em cada função:**
-  `IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Sem sessão'; END IF;`
-  mais a trava: o teste em ROLLBACK acima, que hoje passa no caso (b) e
-  passaria a falhar.
-
-
-*Encontrados durante a auditoria de segurança, e **fora do escopo dela**. Estão
-aqui, e não corrigidos junto, porque o §21 do protocolo proíbe expandir tarefa
-por oportunidade — e nenhum deles é brecha.*
-
-- ✅ `[10/09]` 🟠 **Os `update()` que não conferiam quantas linhas mudaram** —
-  **FECHADO**, junto do SEC-009. **6 corrigidos**, sendo dois graves: o item da
-  fila de moderação podia não sair de `pending` depois de o conteúdo já ter sido
-  ocultado (voltava para a fila e era tratado de novo), e os dois pedidos de
-  reativação de live não conferiam **nem `error`, nem contagem**.
-
-  **O número "13" desta linha estava errado, e é correção minha:** o `grep` era
-  por LINHA, e chamada quebrada em várias linhas põe o `{ count: 'exact' }` numa
-  linha diferente da do `.update(`. O `contatoService.js` já estava certo e foi
-  contado como faltando.
-
-- ✅ `[10/09]` 🟡 **A trilha atribuía ao AUTOR a ação feita por outra pessoa** —
-  **FECHADO** (SEC-010). `log_post_event` gravava `actor_id := NEW.user_id`, e
-  staff editando ou apagando post alheio aparecia como se o próprio autor
-  tivesse feito, com `severity = info`. Agora o ator é `auth.uid()` (com queda
-  para o autor quando não há sessão — o cron), o texto nomeia os dois, e a
-  severidade vira `warning` quando quem age não é o autor.
-
-  **O que isso NÃO recupera:** a trilha **anterior** a hoje. Não dá para saber,
-  olhando `admin_logs`, se alguém usou a brecha do SEC-009 antes de ela ser
-  fechada — as linhas antigas dizem "o autor fez".
 
 - ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
   diferentes: `liveService.unsilenceUser({postId, userId})` e
@@ -1142,6 +1100,56 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[18/09]` 🟠 **AS DECISÕES DE LIVE — quatro perguntas que só você responde.**
+
+  A auditoria externa e o pentest fecharam o que era brecha. O que sobrou é
+  produto, e eu **não** decidi sozinho. As quatro estão relacionadas, então vale
+  responder juntas.
+
+  **1. O que faz uma live valer 30 XP?**
+  Hoje `was_live` significa *"o autor marcou a caixa no formulário de edição"*.
+  A SEC-027 matou a manipulação via API, mas o clique continua pagando.
+
+  | Regra | Efeito | Custo |
+  | --- | --- | --- |
+  | live precisa ter sido **encerrada** (`live_ended_at` preenchido) | abrir e fechar na hora ainda paga | trivial |
+  | live precisa ter **durado** N minutos | clique não paga mais | escolher o N |
+  | live precisa ter tido **chat** | só live com plateia paga | pune live pequena legítima |
+  | deixar como está | XP de live é "declarei que fiz live" | zero |
+
+  **2. Usuário comum pode REATIVAR a própria live?**
+  Hoje pode: `is_live` é gravável nos dois sentidos pelo autor, porque o
+  formulário de edição depende disso. Existe uma tabela
+  `live_reactivation_requests` — ou seja, o desenho original tratava reativação
+  como ação de equipe. Os dois caminhos existem ao mesmo tempo.
+
+  **3. A notificação `live_reactivated` precisa existir?**
+  A SEC-034 pôs teto (30 min, vira contador). Mas se a resposta da 2 for "só a
+  equipe reativa", esta notificação deixa de ser sobre usuário comum e talvez
+  não precise existir.
+
+  **4. Live tem prazo?**
+  `expires_at` existe na tabela, a `cleanup_expired_posts` **apaga de verdade**
+  por ela, e **nada no site escreve esse campo** — nenhum post no banco tem
+  valor. É uma feature pela metade: ou ganha dono, ou some.
+
+- ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
+  "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
+  GamerHub está seguro'".*
+
+  **Feito nesta rodada:** `e2e/lives.mjs` — criar, encerrar, reativar e apagar
+  live pela interface, conferindo a TELA contra o ESTADO PERSISTIDO com o token
+  real do usuário. Roda no CI junto do `fluxos`.
+
+  **Falta**, na ordem em que ele listou: likes · live chat · respostas em
+  thread · atualização de perfil · notificações na tela · o comportamento
+  depois de ocultar (não só apagar) · usuário comum × moderador na mesma tela.
+
+  **Por que não foi tudo agora:** cada fluxo desses escreve em produção (o CI
+  usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
+  sujeira para gente de verdade ver. Um por vez, com limpeza provada.
+
+
 - ⬜ `[18/09]` 🟠 **O que faz uma live VALER 30 XP? — a decisão que o pentest
   encostou e eu não tomei sozinho.** *Decisão de PRODUTO.*
 
@@ -1453,22 +1461,6 @@ dependência técnica real** que decide o resto:
   UPDATE. A moderação grava `hidden_at` por UPDATE direto de tabela e admin
   também é `authenticated` — revogar derruba o painel.
 
-- ⬜ `[18/09]` 🔵 **`documentacaoQuebrada.test.js` falha de forma intermitente.**
-
-  Apareceu uma vez em 18/09 e passou na re-execução seguinte. Os dois `it` do
-  bloco "relatório de documentação envelhecida" chamam `execFileSync` no mesmo
-  script, que leva **~1,05 s** sozinho (medido, 3 execuções) e roda `git log`
-  por documento.
-
-  **Isto é INFERÊNCIA, não fato:** eu não capturei o texto do erro, só vi o
-  arquivo e a linha. A hipótese é estouro do timeout padrão do vitest sob carga
-  paralela. **Para confirmar:** rodar a suíte cheia até falhar de novo e ler a
-  mensagem.
-
-  Por que importa mesmo sendo intermitente: portão que falha sozinho ensina a
-  ignorar o portão (§0.2, 4ª regra). O conserto provável é rodar o script **uma
-  vez** e compartilhar a saída entre os dois testes, em vez de duas vezes.
-
 - ⬜ `[18/09]` 🔵 **326 posts no banco, ZERO vivos.**
 
   Encontrado durante o pentest: **todos** os posts têm `deleted_at` preenchido.
@@ -1663,10 +1655,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->125<!--/n--> arq ·
-  <!--n:src.lib.linhas-->13.845<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->126<!--/n--> arq ·
+  <!--n:src.lib.linhas-->14.095<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.848<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.858<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
