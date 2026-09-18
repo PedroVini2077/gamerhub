@@ -143,3 +143,46 @@ describe('quando o script manda PULAR', () => {
     ).toBe(PULA);
   });
 });
+
+/**
+ * `[17/09]` A branch `preview` é a ÚNICA exceção ao "só a main vira site".
+ *
+ * Ela nasceu de uma pergunta do dono — *"não daria pra eu mexer num pré-site
+ * antes de implementar?"* —, e a resposta é que isso já existia na Vercel e nós
+ * tínhamos desligado em 23/08, quando o preview não servia a ninguém. Passou a
+ * servir.
+ *
+ * **Por que ela não reabre o problema de 23/08:** o gatilho mudou de dono. A
+ * branch de trabalho recebe push toda vez que EU empurro; a `preview` só recebe
+ * quando ELE pede para ver. Um deploy por pedido, e quem controla o número é
+ * quem paga a cota.
+ *
+ * **Por que estes dois testes existem, e o primeiro é o que importa.** Ao ligar
+ * a `preview` no `vercel.json`, eu quase entreguei uma armadilha: a Vercel
+ * começaria o build e **este script o cancelaria**, porque a linha dizia
+ * `!= "main"`. O dono ficaria esperando uma URL que nunca chega — sem erro, sem
+ * log, sem teste vermelho. Duas peças que precisam concordar, e só uma mexida:
+ * é a forma mais fácil de cometer a §1.5.
+ */
+describe('a branch `preview` — o pré-site sob demanda', () => {
+  it('constrói quando o commit muda o que vai para o navegador', () => {
+    commitar('src/App.jsx', 'mudou');
+    expect(
+      decidir('preview'),
+      'A `preview` PRECISA construir: ela é o pré-site que o dono abre antes de\n'
+      + '  mergear. Se este teste falhar, `vercel.json` marca a branch como\n'
+      + '  habilitada e este script cancela o build — e ele fica esperando uma\n'
+      + '  URL que nunca chega, sem erro em lugar nenhum.',
+    ).toBe(CONSTROI);
+  });
+
+  it('e continua economizando: commit que não vai para o navegador PULA', () => {
+    commitar('docs/ALGO.md', 'mudou');
+    expect(
+      decidir('preview'),
+      'A excecao da `preview` e sobre QUAL BRANCH constroi, nao sobre construir\n'
+      + '  sempre. Documentacao, SQL e Edge Function continuam nao gerando deploy\n'
+      + '  nela — senao a economia de 23/08 valeria so para a main.',
+    ).toBe(PULA);
+  });
+});

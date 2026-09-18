@@ -50,7 +50,7 @@ valor.** Nenhuma destas ideias precisa nascer inteira, e quase nenhuma deveria.
 
 | | Direção | A menor versão que já vale |
 | --- | --- | --- |
-| 🏆 | **Conquistas** | 5 a 8 conquistas fixas em cima do que o XP já conta hoje, mostradas no perfil |
+| ~~🏆~~ | ~~**Conquistas**~~ | **JÁ FEITO** — ver abaixo |
 | 🎮 | **Jogos** | uma página por jogo, montada a partir dos jogos que as pessoas já citam no perfil |
 | 👥 | **Comunidades / grupos** | o mural que já existe, com dono e um punhado de membros |
 | 🎬 | **Clips** | vídeo curto no feed com um marcador próprio — a moderação de mídia já cobre |
@@ -60,6 +60,33 @@ valor.** Nenhuma destas ideias precisa nascer inteira, e quase nenhuma deveria.
 | 🤝 | **Amigos e presença** | seguir alguém; "jogando agora" e "ao vivo agora" reaproveitam o canal de presença que já existe |
 | 📰 | **Notícias gamer** | curadoria manual da equipe antes de qualquer integração automática |
 | 🔎 | **Busca global** | busca por usuário primeiro; jogos, posts, lives e o resto entram um por vez |
+
+> ### `[17/09]` CONQUISTAS saíram da lista — elas já EXISTEM
+>
+> **Quem pegou foi o dono**, e ele estava certo: *"conquistas já foi feito…
+> deve ser desatualizado"*. Eu tinha acabado de apresentá-las como possibilidade
+> numa conversa de decisão — ou seja, **este documento me fez recomendar uma
+> coisa pronta**.
+>
+> Conferido no código, não na memória: `src/lib/conquistas.js` (182 linhas) e
+> `src/components/profile/ConquistasCard.jsx`, montados no `Profile.jsx`.
+>
+> **E a implementação é melhor do que a "menor versão" que estava escrita aqui.**
+> A linha previa 5 a 8 conquistas em cima do XP; o que existe é **derivado** —
+> sem tabela, sem trigger, sem escrita. A `get_user_xp` já devolve posts,
+> curtidas, comentários e lives numa chamada que o perfil **já faz**, e a lista
+> é avaliada em cima disso: zero consulta nova, zero egress, zero linha no banco.
+>
+> **Por que isto passou.** O varredor de documentação envelhecida cruza
+> documento × pastas de código, e o território deste arquivo é **vazio de
+> propósito** — mapa de possibilidades não envelhece por commit. Só que ele
+> envelhece por **uma possibilidade virar realidade**, e isso nenhum script vê.
+> É o mesmo buraco do README, na outra ponta: lá o documento afirmava algo que
+> deixou de existir; aqui ele propõe algo que **passou a existir**.
+>
+> A lição fica registrada e não vira mecanismo novo (§9.8): **item que sai
+> daqui tem que ser riscado daqui no mesmo PR** — é a regra 2 do §6.2 aplicada
+> a este arquivo, que é a fonte que eu leio quando ele pede opções.
 
 > **`[05/09]` Silenciar por tempo numa live.** A coluna `live_muted.muted_until`
 > existia no banco e nunca foi ligada — silenciar é "existe linha = calado", e

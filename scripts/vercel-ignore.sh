@@ -70,11 +70,24 @@ NAO_VAO_PRO_NAVEGADOR=(
   ':(exclude)src/**/__tests__/**'
 )
 
-# ── 1. Só a main vira site ─────────────────────────────────────────────────
-if [ "$BRANCH" != "main" ]; then
-  echo "PULANDO: '$BRANCH' não é a main. Quem revisa branch aqui é o CI do"
-  echo "GitHub (build + lint + testes + Chromium + E2E autenticado), não o"
-  echo "preview da Vercel."
+# ── 1. Só a main e a `preview` viram site ──────────────────────────────────
+#
+# `[17/09]` A `preview` entrou aqui, e sem esta linha o conserto inteiro seria
+# uma armadilha: `vercel.json` a marcaria como habilitada, a Vercel começaria o
+# build, e ESTE script o cancelaria — o dono ficaria esperando uma URL que nunca
+# chega, sem erro em lugar nenhum. É o §1.5 no formato mais fácil de cometer:
+# duas peças que precisam concordar, e só uma foi mexida.
+#
+# **Ela não reabre o problema de 23/08**, e a diferença é o gatilho. A branch de
+# trabalho recebe push toda vez que EU empurro; a `preview` só recebe quando ELE
+# pede para ver. O custo é 1 deploy por pedido, e quem controla o número é ele.
+#
+# O resto do script continua valendo para as duas: commit que não toca no que
+# vai para o navegador não constrói, nem na `main` nem na `preview`.
+if [ "$BRANCH" != "main" ] && [ "$BRANCH" != "preview" ]; then
+  echo "PULANDO: '$BRANCH' não é a main nem a preview. Quem revisa branch aqui"
+  echo "é o CI do GitHub (build + lint + testes + Chromium + E2E autenticado),"
+  echo "não o preview da Vercel."
   exit 0
 fi
 

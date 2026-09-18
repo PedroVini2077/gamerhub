@@ -342,7 +342,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**43 itens abertos** (+ 1 ideia sem compromisso)
+**44 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -465,6 +465,13 @@ AGORA** escrito nele.
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
+
+- ✅ **SEC-025 e SEC-026 · `[18/09]` A escalação em `profiles` e a auditoria das
+  48 — FECHADAS.** `authenticated` perdeu UPDATE nas 13 colunas que não edita
+  (era a tabela inteira), e `admin_set_role` saiu de `authenticated` por ser
+  órfã nas quatro frentes. Advisor 48 → 47. Relatórios:
+  `db/2026-09-18-checkmate-profiles-escalacao.md` e
+  `db/2026-09-18-auditoria-48-security-definer.md`.
 
 - ✅ **SEC-024 · `[17/09]` `reset_login_attempts()`, a terceira porta morta do
   contador de login** — **FECHADA no mesmo dia.** Eu tinha deixado como
@@ -1073,6 +1080,27 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[18/09]` 🟠 **Ligar a proteção contra senha vazada.** *Ação de painel — eu
+  não alcanço.* Apareceu no Security Advisor durante a auditoria das 48:
+  `auth_leaked_password_protection` está **desligado**.
+
+  **O que é:** o Supabase checa a senha escolhida contra o HaveIBeenPwned e
+  recusa as que já vazaram em outros sites. Sem isso, alguém cadastra aqui a
+  mesma senha que já está num dump público.
+
+  **O passo a passo** (conferido no painel antes de escrever — ver
+  `docs/OPERACAO.md`):
+  1. Abrir https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/auth/providers
+  2. Seção **Email** → procurar **"Prevent use of leaked passwords"**
+  3. Ligar o toggle e **Save**
+
+  **Como conferir:** tentar cadastrar com a senha `password123` — tem que
+  recusar dizendo que ela é conhecida.
+
+  **O que pode dar errado:** nada quebra para quem já tem conta — a checagem só
+  roda no cadastro e na troca de senha.
+
+
 - ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
   de painel — eu não alcanço.*
 
@@ -1490,8 +1518,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->123<!--/n--> arq ·
-  <!--n:src.lib.linhas-->13.319<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->124<!--/n--> arq ·
+  <!--n:src.lib.linhas-->13.461<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.833<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
