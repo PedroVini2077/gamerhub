@@ -342,7 +342,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 11/09/2026 ·
-**44 itens abertos** (+ 1 ideia sem compromisso)
+**43 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1080,26 +1080,35 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[18/09]` 🟠 **Ligar a proteção contra senha vazada.** *Ação de painel — eu
-  não alcanço.* Apareceu no Security Advisor durante a auditoria das 48:
-  `auth_leaked_password_protection` está **desligado**.
+- ⬜ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
+  para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
 
-  **O que é:** o Supabase checa a senha escolhida contra o HaveIBeenPwned e
-  recusa as que já vazaram em outros sites. Sem isso, alguém cadastra aqui a
-  mesma senha que já está num dump público.
+  Apareceu no Security Advisor durante a auditoria das 48:
+  `auth_leaked_password_protection` desligado. O Supabase checaria a senha
+  escolhida contra o HaveIBeenPwned e recusaria as que já vazaram.
 
-  **O passo a passo** (conferido no painel antes de escrever — ver
-  `docs/OPERACAO.md`):
-  1. Abrir https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/auth/providers
-  2. Seção **Email** → procurar **"Prevent use of leaked passwords"**
-  3. Ligar o toggle e **Save**
+  > **`[18/09]` EU ESCREVI ESTE ITEM ERRADO E O DONO QUASE PAGOU POR ISSO.**
+  > A primeira versão era um passo a passo mandando ele abrir o painel e ligar
+  > um toggle. **O toggle não existe no plano Free.** A documentação oficial é
+  > explícita: *"Leaked password protection is available on the **Pro Plan and
+  > above**"* — conferido em 18/09 em
+  > https://supabase.com/docs/guides/auth/password-security
+  >
+  > O item `[22/08]` já dizia isso — *"só no plano Pro (~US$25/mês)"* — e eu
+  > criei um segundo item contradizendo o primeiro, sem conferir nenhum dos
+  > dois. Os dois estão unificados aqui.
+  >
+  > **A falha é exatamente a que o §9.12 descreve:** *"passo a passo sem essa
+  > conferência é armadilha bem formatada"*. E ela veio no mesmo dia em que eu
+  > declarei ao dono que tinha pulado a pesquisa de documentação no prompt das
+  > 48 — ou seja, não foi descuido isolado: foi a mesma omissão, duas vezes.
 
-  **Como conferir:** tentar cadastrar com a senha `password123` — tem que
-  recusar dizendo que ela é conhecida.
+  **O que o Advisor não diz:** ele marca o recurso como desligado mesmo em
+  projeto que não pode ligá-lo. O alerta é genérico, não é acionável aqui.
 
-  **O que pode dar errado:** nada quebra para quem já tem conta — a checagem só
-  roda no cadastro e na troca de senha.
-
+  **Custo:** ~US$25/mês (Pro). **Decisão dele.** Enquanto não for, a política
+  de senha do próprio site é o que protege — ver o item `[12/09]` sobre a
+  política do painel de Auth nunca ter sido conferida.
 
 - ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
   de painel — eu não alcanço.*
@@ -1309,8 +1318,6 @@ dependência técnica real** que decide o resto:
   > `comment` (1) — **nenhum `sem_analise`**. Mesma ressalva do item acima:
   > nada foi postado desde 28/08, então o zero é falta de amostra, não prova.
 
-- ⬜ `[22/08]` **Proteção contra senha vazada (HIBP).** Só no plano Pro
-  (~US$25/mês). Decisão de custo.
 - ⬜ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
   `hook_de_verificacao_de_senha` está no banco, testada e com `EXECUTE` só para
   o `supabase_auth_admin` — mas o *Password Verification Attempt hook* aparece
