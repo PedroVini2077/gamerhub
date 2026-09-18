@@ -67,6 +67,32 @@ encerrar/excluir e a tela onde o autor pede a reativação. O banco está pronto
 para os dois; é trabalho de frontend.
 
 
+### ✅ `[18/09]` AUDITORIA EXTERNA (3ª rodada) — a MESMA regra, aplicada pela metade
+
+**Pedido dele:** *"tá difícil em Claude? Vc fecha e tô achando várias coisas
+abertas"*. Ele está certo, e o padrão dos achados reais diz por quê.
+
+| | |
+| --- | --- |
+| N8 — live ocultada/apagada continuava pagando 30 XP | LIVE-040 |
+| N9/N10 — comentário de post apagado/oculto continuava pagando 3 XP | LIVE-040 |
+| N11/N12 — comentário e chat de post fora do ar continuavam **legíveis** | SEC-041 |
+| N13 — curtidas | **não é falha**; decisão medida e escrita na migration |
+| N16 — `lives_realizadas` órfã | **é o desenho**: sem isso o XP de live dura 15 min |
+
+**A falha minha, e ela não é a mesma da 2ª rodada — é pior.** Lá eu não varri a
+classe depois de achar um caso. Aqui eu **escrevi a regra** (*"XP paga pelo que
+está no ar"*, SEC-028, ontem) e a apliquei em **um** dos quatro caminhos. Os
+outros três continuaram abertos com a regra já escrita em cima deles.
+
+E o N8 eu **reabri**: a LIVE-036/037, de horas antes, soltou o XP de live do
+post para sobreviver ao cron — e, ao soltar do post, soltou da moderação.
+
+Medido em `ROLLBACK`: ocultar um post comum levava o XP de 1 → 0; ocultar uma
+**live**, de 1 → **1**.
+
+Relatório em [`db/2026-09-18-auditoria-externa-3a-rodada.md`](db/2026-09-18-auditoria-externa-3a-rodada.md).
+
 ### ✅ `[18/09]` AUDITORIA EXTERNA (2ª rodada) — fechada nesta sessão
 
 Um documento de auditoria externa retestou o pentest e trouxe 3 achados novos.
@@ -460,7 +486,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**44 itens abertos** (+ 1 ideia sem compromisso)
+**46 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1149,6 +1175,35 @@ dependência técnica real** que decide o resto:
   | dar dono a `expires_at` | o autor escolhe "essa live acaba às 22h" |
   | deixar só o teto de 24h | `expires_at` vira coluna morta e some |
 
+  **`[18/09]` Minha recomendação: DAR DONO, e derivado — não digitado.**
+
+  Três fatos que mudam a conta, e os três foram conferidos no sistema:
+
+  | Fato | Onde |
+  | --- | --- |
+  | a **tela já sabe mostrar** o prazo — "até HH:MM" no card, e o player marca a live como encerrada | `LivesList.jsx`, `EmbedPlayer.jsx`, `PostCard.jsx` |
+  | o **cron já lê** `expires_at`, em dois jobs (`expire-lives` e `expire-lives-every-minute`) | `cron.job` |
+  | depois da SEC-027 o **cliente não escreve mais** a coluna — o guard a pina | `guard_post_privileged_cols` |
+
+  Ou seja: não é feature nova, é uma feature **meio construída** onde só o
+  escritor falta. Apagar a coluna custaria mexer nos dois crons e jogar fora o
+  que já está na tela.
+
+  **Como dar dono sem reabrir o achado do pentest:** o autor escolhe uma
+  *duração* ("1h · 2h · 4h · sem prazo"), e o **servidor** deriva
+  `expires_at = now() + duração`, com teto de 24h. Mesmo princípio do
+  `was_live`: o cliente declara **intenção**, o banco calcula o **valor**. Uma
+  faixa explícita, como o `BANCO.md` exige de toda entrada.
+
+  **O que isso resolve na prática:** hoje uma live esquecida no ar ocupa o topo
+  do feed por 24 horas com um embed morto. Com prazo, ela se encerra sozinha na
+  hora que o autor disse.
+
+  **Fica para ele decidir**, porque é decisão de produto (§7 🟡): se ele achar
+  que escolher prazo é atrito demais na hora de abrir a live, o teto de 24h
+  sozinho já é um comportamento defensável — e aí `expires_at` sai, com a
+  limpeza dos dois crons junto.
+
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -1165,6 +1220,62 @@ dependência técnica real** que decide o resto:
   usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
   sujeira para gente de verdade ver. Um por vez, com limpeza provada.
 
+
+- ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *Medido hoje;
+  é proposta de mudança de contrato do schema (§7 🟡), então espera decisão.*
+
+  `pg_default_acl` do schema `public`, para função criada pelo papel `postgres`
+  — que é o papel do `apply_migration`:
+
+  ```
+  {postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
+  ```
+
+  **Para TABELA isso já foi fechado** (SEC-005, e é o que faz a régua de papéis
+  do `BANCO.md` funcionar: coluna nova nasce fechada). **Para FUNÇÃO não.** Cada
+  RPC nova nasce com `EXECUTE` para quem não tem conta, e só fecha porque
+  alguém lembra de revogar.
+
+  **Como isso apareceu:** as duas funções de trigger que eu criei hoje
+  (`registrar_live_realizada`, `invalidar_lives_do_post_moderado`) nasceram
+  abertas e o `get_advisors` acusou. Fechei as duas (SEC-042) e travei a classe
+  por teste — mas a trava lê migration, não banco: ela pega funções de
+  **trigger**, não a RPC que alguém criar sem `GRANT` explícito.
+
+  **O estado de hoje está limpo** — conferido, e são só 3 funções alcançáveis
+  por `anon`, as três intencionais: `contagem_de_migrations` (o portão de
+  espelho do CI usa a anon key), `username_disponivel` (o cadastro precisa) e
+  `role_rank(text)`, que é função pura e não toca dado.
+
+  | Saída | O que muda | Custo |
+  | --- | --- | --- |
+  | `ALTER DEFAULT PRIVILEGES ... REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated` | função nova nasce **fechada**; quem precisa dá `GRANT` explícito e escrito | toda RPC nova passa a exigir o `GRANT`. Esquecer dá **403 barulhento**, não falha silenciosa |
+  | deixar como está | nada quebra hoje | a próxima função nasce aberta, e a proteção volta a depender de alguém lembrar — a "proteção acidental" do §1.3 |
+
+  **Minha recomendação é a primeira**, e o motivo é o modo de falhar: esquecer o
+  `GRANT` produz um erro que aparece na primeira chamada; esquecer o `REVOKE`
+  produz uma porta que ninguém vê. Mas é decisão dele porque muda o contrato de
+  **todo** trabalho futuro no schema, e o §7 marca isso como 🟡.
+
+- ⬜ `[18/09]` 🔵 **`lives_realizadas` é append-only e o E2E escreve nela a cada
+  execução.** *Achado enquanto eu limpava as 3 órfãs do N16.*
+
+  Cada `e2e/lives.mjs` no CI acrescenta **uma linha permanente**. Ela é órfã por
+  desenho (o post é apagado pelo cron), então nada a remove — nem cascade, nem
+  retenção.
+
+  Hoje é ~1 linha por PR e não custa nada. Mas é exatamente o padrão que a
+  faxina (§6.1, item 5) manda vigiar: tabela append-only sem retenção, igual a
+  `admin_logs`, `login_attempts` e `live_chat`.
+
+  **Por que não resolvi agora:** a saída óbvia — o E2E apagar a própria linha —
+  exigiria dar `DELETE` em `lives_realizadas` para `authenticated`, que é a
+  régua de papéis ao contrário. A saída certa é entrar no
+  `cleanup_old_data()` (o cron das 04:00), com uma regra de retenção que valha
+  para **todo mundo**, não só para a conta de teste. Isso é decisão de produto:
+  *por quantos meses a prova de que uma live aconteceu precisa existir?*
+
+  As 3 órfãs de hoje já foram apagadas — eram minhas, do `claudetester`.
 
 - ⬜ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
   para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
@@ -1668,8 +1779,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->126<!--/n--> arq ·
-  <!--n:src.lib.linhas-->14.102<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->128<!--/n--> arq ·
+  <!--n:src.lib.linhas-->14.518<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->17<!--/n--> arq ·
   <!--n:src.services.linhas-->1.858<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

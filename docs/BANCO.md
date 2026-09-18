@@ -428,13 +428,40 @@ alcança **função**, nunca tabela nem view*. O `e2e/portas-do-banco.mjs` exige
 
 ```sql
 posts       WHERE deleted_at IS NULL AND hidden_at IS NULL
-comments    WHERE hidden_at IS NULL
+comments    WHERE c.hidden_at IS NULL AND po.deleted_at IS NULL AND po.hidden_at IS NULL
 post_likes  -> só de post vivo, e `l.user_id <> po.user_id` (self-like nunca valeu)
+lives       WHERE invalidada_em IS NULL AND duração >= live_minutos_para_xp()
 ```
 
 Sem esses filtros, **ocultar conteúdo era punição sem efeito**: a moderação
 tirava o post da tela e o autor ficava com o XP — inclusive o XP que conta para
 `check_staff_eligibility` (≥ 1000 para virar admin).
+
+#### `[18/09]` A regra em uma linha, porque eu a apliquei pela METADE três vezes
+
+> **XP paga pelo que ESTÁ NO AR** — post, comentário, curtida ou live. Conteúdo
+> que a moderação tirou não paga em **nenhuma** forma.
+
+A SEC-028 escreveu essa regra e aplicou em `posts`. No dia seguinte uma
+auditoria externa achou três buracos nela, e **os três eram meus**:
+
+| | O que continuava pagando | De onde veio |
+| --- | --- | --- |
+| **N8** | a **live** ocultada ou apagada pela equipe | a LIVE-036/037 soltou o XP de live do post para ele sobreviver ao cron — e, ao soltar do post, soltou da moderação, que age no post |
+| **N9** | comentário cujo **post pai foi apagado** | a SEC-028 filtrou `comments.hidden_at` e parou ali |
+| **N10** | comentário cujo **post pai foi ocultado** | idem |
+
+Medido em `ROLLBACK` antes da LIVE-040, e é o número que define o achado:
+
+| A moderação faz | XP do autor |
+| --- | --- |
+| ocultar um **post comum** | 1 → **0** ✓ |
+| ocultar uma **live** | 1 → **1** ✗ |
+| apagar uma **live** | 1 → **1** ✗ |
+
+**A trava:** `src/lib/__tests__/xpSegueOQueEstaNoAr.test.js` lê a última
+definição da view nas migrations e exige as quatro condições. Provada
+reinjetando cada uma e vendo a falha nomear o achado.
 
 ### O bônus de perfil exige CONTEÚDO, não campo não-nulo
 
@@ -471,6 +498,47 @@ desconfiar.
 > SEC-026, onde revogar 9 funções "sem chamador no frontend" teria derrubado 28
 > policies (`is_staff` em 14, `can_moderate_content` em 8, `pode_publicar` em 4,
 > `is_super` em 2).
+
+---
+
+## `[18/09]` SEC-041 — a mesma função, agora também no `SELECT`
+
+A `post_aceita_interacao` nasceu fechando o **INSERT**: não dá para comentar
+embaixo do que a moderação tirou do ar. A auditoria seguinte perguntou a outra
+metade, e ela estava aberta: **dá para LER?**
+
+| Policy | Como estava | O que o comum lia de um post apagado |
+| --- | --- | --- |
+| `comments_select` | `hidden_at IS NULL OR role_rank >= 2` | **1 comentário** |
+| `live_chat_select` (era `"Todos veem chat"`) | **`USING (true)`** | **1 mensagem** |
+
+Medido com papel `authenticated` real, em `ROLLBACK`: o **post** devolvia 0
+linhas e a conversa embaixo dele devolvia 1 cada. Nenhuma das duas policies
+perguntava pelo **post pai**.
+
+**Por que isso não é teoria.** Ocultar um post costuma ser por causa da
+**conversa**, não do texto do post. E o `EmbedPlayer` some junto com o post, de
+modo que a única coisa que continuava legível pela REST API era exatamente o que
+a equipe quis tirar do ar.
+
+Hoje as duas exigem `post_aceita_interacao(post_id)`, com a escapatória
+`role_rank(...) >= 2` — sem ela a fila de moderação ficaria cega justamente para
+o conteúdo que precisa julgar, que é trocar um buraco por outro (SEC-025).
+
+### `post_likes` ficou de FORA, e a decisão é medida
+
+A mesma auditoria levantou o ponto para curtidas e concluiu que não é falha.
+Concordo, por dois motivos somados:
+
+1. **curtida não carrega conteúdo.** O que vaza é *"fulano curtiu o post X"*,
+   para quem já tem o id do post;
+2. **`post_likes` é a leitura mais quente do site.** O `attachEngagement` busca
+   as curtidas de 30 posts de uma vez, em **todo** carregamento de feed. Uma
+   policy com subconsulta por linha ali custa caro para sempre.
+
+Trocar o caminho mais quente do app por um vazamento de valor próximo de zero é
+a conta errada. Está escrito no SQL da migration e travado por teste, para não
+voltar como *"esqueceram"* na próxima auditoria.
 
 ---
 
@@ -532,8 +600,8 @@ gravar `now()` **depois**, no encerramento legítimo — e o que deixa o
 
 | | |
 | --- | --- |
-| **O que guarda** | `user_id`, `post_id`, `titulo`, `live_kind`, `iniciada_em`, `encerrada_em` |
-| **Quem escreve** | só o trigger `registrar_live_realizada` (`AFTER UPDATE` em `posts`) |
+| **O que guarda** | `user_id`, `post_id`, `titulo`, `live_kind`, `iniciada_em`, `encerrada_em`, `invalidada_em`, `invalidada_motivo` |
+| **Quem escreve** | os triggers `registrar_live_realizada` e `invalidar_lives_do_post_moderado` (os dois `AFTER UPDATE` em `posts`) |
 | **Quem lê** | a view `xp_dos_usuarios` |
 | **Grant** | **nenhum** — nem `anon`, nem `authenticated` |
 | **Uma linha por** | **SESSÃO**, não por post |
@@ -559,6 +627,49 @@ a fonte é **apagada de propósito**: não há o que duplicar, e esta tabela é 
 Reativar e encerrar de novo grava uma segunda linha — foram duas transmissões.
 E o abuso se auto-limita: uma reativação de dois segundos vira uma sessão de
 dois segundos, que não passa na regra de duração.
+
+### `[18/09]` `invalidada_em` — como a moderação alcança uma live que já acabou
+
+A LIVE-036 soltou o registro do post para ele sobreviver ao cron. Isso o soltou
+da **moderação** junto (achado N8) — a equipe ocultava a live e o XP ficava.
+
+**A invalidação não apaga a linha, e a escolha é deliberada.** A tabela é a
+testemunha de que a live aconteceu; apagá-la destruiria o fato junto com a
+punição, e tornaria a restauração impossível. `invalidada_em` separa
+*"aconteceu"* de *"conta para XP"*.
+
+**E ela tem INVERSA**, como este documento exige de toda ação de estado:
+restaurar o post limpa a invalidação e devolve o XP. Sem isso, um engano da
+moderação seria permanente — foi o caso da `apply_suspension` sem
+`lift_suspension`.
+
+| O que acontece com o post | A live |
+| --- | --- |
+| a equipe **oculta** | invalidada (`ocultada pela moderacao`) |
+| a equipe **restaura** | volta a contar — só desfaz o que a ocultação causou |
+| **outra pessoa** que não o autor apaga | invalidada (`apagada pela equipe`) |
+| o **autor** apaga o próprio post | continua contando — a live aconteceu |
+| o **cron** apaga fisicamente | continua contando (ver abaixo) |
+
+#### O `DELETE` físico NUNCA invalida, e esta é a parte que importa
+
+A primeira versão também invalidava no `DELETE`, distinguindo cron de moderação
+por `auth.uid()` ser `NULL`. **O teste reprovou** — e o modo como reprovou vale
+mais do que o resultado: `RESET role` não limpa `request.jwt.claims`, então o
+"cron" de mentira ainda tinha um admin dentro.
+
+Isso expôs a fragilidade do **desenho**, não do teste. Os dois modos de errar
+não são equivalentes:
+
+| Erro | Consequência |
+| --- | --- |
+| não invalidar quando devia | um banido guarda XP que não usa |
+| invalidar quando não devia | **o site inteiro perde XP de live 15 min depois de cada live**, em silêncio, para sempre |
+
+Como `ban_user` apaga conteúdo fisicamente, o XP de quem foi banido sobrevive.
+É aceitável: a conta está banida. A trava em
+`xpSegueOQueEstaNoAr.test.js` **reprova** se alguém acrescentar `DELETE` ao
+gatilho, e a mensagem conta esta história inteira.
 
 ### `posts.live_started_at` — por que `created_at` não servia
 

@@ -156,12 +156,9 @@ describe('SEC-028 — o XP conta só o que existe', () => {
     ].join('\n')).toMatch(/FROM\s+posts\s+WHERE\s+deleted_at\s+IS\s+NULL\s+AND\s+hidden_at\s+IS\s+NULL/i);
   });
 
-  it('não conta comentário oculto', () => {
-    expect(view, [
-      'A view voltou a contar comentário oculto pela moderação (achado 7).',
-      'O bloco de `comments` precisa de `WHERE hidden_at IS NULL`.',
-    ].join('\n')).toMatch(/FROM\s+comments\s+WHERE\s+hidden_at\s+IS\s+NULL/i);
-  });
+  // O bloco de `comments` da view tem trava PRÓPRIA, em
+  // `xpSegueOQueEstaNoAr.test.js`: a LIVE-040 mostrou que a regra tem DUAS
+  // metades (o comentário e o post pai) e esta aqui cobria só a primeira.
 
   it('o bônus de perfil exige conteúdo, não só campo não-nulo', () => {
     // `IS NOT NULL` sozinho pagava por string vazia: medido em ROLLBACK,

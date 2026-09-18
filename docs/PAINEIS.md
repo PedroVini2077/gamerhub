@@ -137,6 +137,13 @@ Tabela `site_config` (chave/valor), editável só pelo owner via
 - Banner global (`GlobalBanner`): texto, cor e visibilidade.
 - `mod_report_threshold`, `mod_suspend_threshold`, `mod_ban_threshold` —
   gatilhos do sistema de moderação (ajustáveis na aba Site).
+- **`[18/09]` `live_xp_minutos`** — quantos minutos uma transmissão precisa
+  durar para valer os 30 XP de live. Padrão **10**; lido pelo banco em
+  `live_minutos_para_xp()`, que é quem a view de XP consulta.
+  > Abrir e fechar a live no mesmo segundo passou a não pagar nada. O número
+  > mora aqui, e não no SQL, porque é **decisão de produto**: descobrir se 10
+  > minutos é pouco ou muito exige ver gente usando, e isso não se ajusta por
+  > migration.
 
 ### Logs de auditoria & notificações de admin
 
