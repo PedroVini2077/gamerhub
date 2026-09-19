@@ -99,8 +99,12 @@ duplicar fonte de verdade (§4):
 
 #### Ordem proposta (cada uma é um PR, e nenhuma apaga nada)
 
-1. `docs/INVARIANTES.md` só com o que JÁ é protegido por trava hoje (derivado,
-   não inventado). Zero mudança de código.
+1. ✅ **FEITO** — `docs/INVARIANTES.md`: **31 invariantes** em 8 famílias (XP,
+   LIVE, CONTEUDO, AUTZ, WF, PORTA, TRILHA, CONTRATO, CONTA), cada uma com o
+   achado que a originou e a trava que a protege. **Derivado** dos `describe()`
+   das travas que já rodam — nada inventado. Registrado no `README`, no
+   `territorio.mjs`, no `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`.
+   **0 arquivos de código tocados.**
 2. `docs/TRAVAS.md` — inventário dos 147, classificados, com `INV-*` ao lado.
    Fecha o buraco dos 29%.
 3. Os 7 comentários do `index.html`.

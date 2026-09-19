@@ -136,6 +136,16 @@ export const TERRITORIO = {
     'docs/identidade/referencias',
   ],
 
+  // `[19/09]` O registro das regras permanentes. O territorio dele sao as
+  // TRAVAS: se uma delas muda, a linha que a cita aqui pode ter deixado de ser
+  // verdade. Nao inclui `src/` inteiro de proposito — ele nao descreve codigo,
+  // descreve regra, e um territorio largo demais o deixaria "atrasado" sempre.
+  'docs/INVARIANTES.md': [
+    'src/lib/__tests__',
+    'src/hooks/__tests__',
+    'e2e/portas-do-banco.mjs',
+    'e2e/portas-da-web.mjs',
+  ],
   'docs/SEGURANCA.md': [
     'supabase/functions',
     'src/hooks/useAuth.jsx',
