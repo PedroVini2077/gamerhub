@@ -779,6 +779,7 @@ que falhou, e o gatilho de início a mostra em toda sessão:
 
 > medição → `DESEMPENHO.md` · decisão → `DECISOES.md` · arquivo novo →
 > `ARQUITETURA.md` · o que falta → `BACKLOG.md` · quando quebra → `OPERACAO.md`
+> · **regra que nunca pode quebrar → `INVARIANTES.md`**
 
 ### Nada fica para a próxima sessão — o que isso quer dizer de verdade
 

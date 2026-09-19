@@ -1,0 +1,197 @@
+# Invariantes do GamerHub
+
+> **Para que este arquivo existe:** guardar, com ID estável, as regras que
+> **nunca podem ser quebradas** — e ligar cada uma ao achado que a originou, à
+> trava que a protege e ao código que a implementa.
+>
+> Ele responde uma pergunta só: **"o que nunca pode acontecer?"**.
+>
+> Para *"como a segurança funciona hoje"* → [SEGURANCA.md](SEGURANCA.md).
+> Para *"o que encontramos e como investigamos"* → `db/AAAA-MM-DD-*.md`.
+> Para *"por que escolhemos esta solução"* → [DECISOES.md](DECISOES.md).
+> Para *"o que falta fazer"* → [`BACKLOG.md`](../BACKLOG.md).
+
+[← voltar para o README](../README.md)
+
+---
+
+## Por que esta camada passou a existir
+
+Até 19/09 toda regra permanente deste projeto existia **implícita, dentro do
+teste que a protegia**. Isso funciona enquanto alguém lembra do teste — e falha
+exatamente quando não lembra.
+
+O sintoma mediu-se assim: existem **147** arquivos de teste, roteiro e portão no
+repositório, e o inventário do `CLAUDE.md` citava **43**. O problema nunca foi a
+diferença de número; foi não haver como perguntar *"esta regra tem proteção?"*
+sem abrir 147 arquivos.
+
+**A inversão que este arquivo faz:**
+
+```
+ANTES   achado -> teste            "será que alguém lembrou de testar isso?"
+HOJE    achado -> INVARIANTE -> testes que a protegem
+                                   "essa coisa nova cabe em qual INV?"
+```
+
+A diferença aparece quando surge uma fonte de XP nova amanhã: a pergunta deixa
+de ser sobre memória e passa a ser sobre cobertura de uma regra escrita.
+
+### O que este arquivo NÃO é
+
+- **Não é a história.** O relato de cada achado continua em `db/` e no
+  `SEGURANCA.md`. Aqui fica a regra que sobreviveu ao achado.
+- **Não substitui trava nenhuma.** Documento não impede bug; quem impede é a
+  coluna "protegida por". Invariante sem trava é intenção, e está marcada como
+  tal.
+- **Não inventa regra.** Toda linha abaixo foi **derivada** de uma trava que já
+  existe e já roda. Nada aqui é aspiracional.
+
+### Como os IDs funcionam
+
+`INV-<DOMÍNIO>-<NNN>`. O ID **não muda** e **não é reaproveitado**: se uma regra
+deixar de valer, ela é marcada como revogada com a data e o motivo, e o número
+morre com ela. Isso é o que permite `git log -S'INV-XP-001'` achar tudo que
+encostou naquela regra.
+
+Os IDs históricos (`N*`, `SEC-*`, `LIVE-*`) **continuam valendo** e aparecem na
+coluna "nasceu de". Eles ligam a regra ao commit, à migration e ao relatório —
+a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
+
+---
+
+## XP — o que pode e o que não pode pagar
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-XP-001** | Conteúdo **fora do ar não paga XP**, em nenhuma das quatro formas de ganhar: post, curtida, comentário e live | N8, N9, N10 · SEC-028 · LIVE-040 | `src/lib/__tests__/xpSegueOQueEstaNoAr.test.js` |
+| **INV-XP-002** | O bônus de perfil exige **caractere visível** — `trim()` não basta, porque não corta U+200B, U+00A0, U+3000, U+FEFF nem U+2060 | N3 · SEC-046 | `src/lib/__tests__/xpSoPagaOQueAparece.test.js` |
+| **INV-XP-003** | Ninguém soma `posts.likes` — a coluna **foi apagada**, e três lugares já somaram ela achando que valia algo | — | `src/lib/__tests__/xpNaoLeColunaMorta.test.js` |
+| **INV-XP-004** | A moderação alcança o XP de uma live **mesmo depois que o cron apagou o post** | LIVE-052 | `src/lib/__tests__/moderacaoDeXpDeLive.test.js` |
+
+> **INV-XP-001 é a que mais voltou.** Ela foi aplicada em *uma* das quatro
+> formas de ganhar XP e as outras três ficaram abertas por um dia — é o caso que
+> deu origem a esta página inteira.
+
+---
+
+## LIVE — os estados que não coexistem
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-LIVE-001** | Live **no ar** não tem `live_ended_at` | SEC-034 | `CHECK posts_live_no_ar_nao_tem_fim` · `autorizacaoAntesDeExistencia.test.js` |
+| **INV-LIVE-002** | Live **apagada** não fica no ar (`is_live` × `deleted_at`) | LIVE-050 | `CHECK posts_live_apagada_nao_fica_no_ar` · `liveApagadaNaoVoltaAoAr.test.js` |
+| **INV-LIVE-003** | Live **oculta** não fica no ar (`is_live` × `hidden_at`) | LIVE-051 | `CHECK posts_live_oculta_nao_fica_no_ar` · `moderacaoAlcancaLiveNoAr.test.js` |
+| **INV-LIVE-004** | O prazo da live é **derivado de uma duração**, nunca declarado pelo cliente | LIVE-041 | `src/lib/__tests__/prazoDaLive.test.js` |
+
+> **As três primeiras são a MESMA regra em pares de coluna diferentes**, e é por
+> isso que elas estão juntas: a 001 existia sozinha, e as outras duas foram
+> encontradas perguntando *"onde mais esse par existe?"*. Se aparecer uma quarta
+> coluna de "fora do ar", ela entra aqui antes de virar bug.
+
+---
+
+## CONTEÚDO — ciclo de vida e interação
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-CONTEUDO-001** | Coluna de ciclo de vida é **derivada pelo servidor**, nunca declarada pelo cliente (`was_live`, `expires_at`, `live_ended_at`, `created_at`, `user_id`, `hidden_at`, `deleted_at`) | N2, N4 · SEC-027 | `src/lib/__tests__/colunasDerivadasDoPost.test.js` |
+| **INV-CONTEUDO-002** | Não se **interage** com conteúdo que não está no ar, e interação de post fora do ar não é **legível** por conta comum | N11, N12 · SEC-029 · SEC-041 | `xpSegueOQueEstaNoAr.test.js` · `colunasDerivadasDoPost.test.js` |
+| **INV-CONTEUDO-003** | Resposta pertence ao **mesmo post** do comentário pai | SEC-033 | `src/lib/__tests__/autorizacaoAntesDeExistencia.test.js` |
+| **INV-CONTEUDO-004** | Escrever em conteúdo alheio respeita a **hierarquia de cargo** | SEC-009 | `src/lib/__tests__/hierarquiaNoConteudo.test.js` |
+
+---
+
+## AUTORIZAÇÃO — quem pode, e em que ordem se pergunta
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-AUTZ-001** | **Autorização antes de existência.** `SECURITY DEFINER` que procura o alvo antes de checar quem chama vira oráculo de existência | N5 · SEC-032 | `src/lib/__tests__/autorizacaoAntesDeExistencia.test.js` |
+| **INV-AUTZ-002** | **Autorização antes de validar entrada** — senão a mensagem de erro distingue alvo que existe de alvo que não existe | SEC-031 | `src/lib/__tests__/colunasDerivadasDoPost.test.js` |
+| **INV-AUTZ-003** | **Operador punido não manda.** Banido ou suspenso não exerce ação administrativa — o cargo não basta, o estado dele faz parte da autorização | N43, N44, N46, N47 · SEC-043 | `src/lib/__tests__/estadoDoOperador.test.js` |
+| **INV-AUTZ-004** | Hierarquia sempre por **função** (`role_rank`, `is_staff`, `is_super`, `can_moderate_content`), **nunca lista literal** de papéis | SEC-025 · (3 falhas repetidas) | `punicaoRespeitaHierarquia.test.js` · `src/lib/roles.js` |
+| **INV-AUTZ-005** | Guard de papel **não compara com NULL** — em SQL `NULL < 1` é `NULL` e o `IF` não dispara | N1 · SEC-030 | `src/lib/__tests__/guardDePapelNaoAceitaNull.test.js` |
+
+---
+
+## WORKFLOW — decisão administrativa sobre estado que muda
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-WF-001** | Uma decisão está vinculada à **geração do estado** que ela contesta — aprovar um pedido do BAN A não pode remover o BAN B | N41, N42 · SEC-044 | `src/lib/__tests__/decisaoRevalidaEstado.test.js` |
+| **INV-WF-002** | Toda decisão **revalida o alvo no momento em que é tomada**, nunca sobre o retrato guardado quando o pedido foi criado | N25, N26, N27, N38, N39 · SEC-045 | `src/lib/__tests__/decisaoRevalidaEstado.test.js` |
+
+> As duas são a mesma família vista de dois ângulos: **autorização criada para um
+> estado antigo agindo sobre um estado novo**. Sete achados distintos do
+> levantamento externo eram esta única coisa.
+
+---
+
+## PORTAS — o que cada papel alcança
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-PORTA-001** | **Função de trigger não é RPC.** Ela nasce chamável por `anon` em `/rest/v1/rpc/`, porque o `pg_default_acl` dá `EXECUTE` a toda função criada pelo `postgres` | SEC-042 | `src/lib/__tests__/funcaoDeTriggerNaoEhRpc.test.js` |
+| **INV-PORTA-002** | `anon` alcança **`site_config (key, value, updated_at)` e mais nada** | SEC-005 · régua de papéis de 12/09 | `e2e/portas-do-banco.mjs` (as duas direções) |
+| **INV-PORTA-003** | As colunas pessoais de `profiles` não são legíveis por quem não é dono | SEC-025 | `colunasPrivilegiadasDeProfiles.test.js` · `e2e/portas-do-banco.mjs` |
+| **INV-PORTA-004** | Os cabeçalhos de segurança da borda existem **com o valor certo** — presença não basta, `SAMEORIGIN` no lugar de `DENY` é proteção enfraquecida | — | `e2e/portas-da-web.mjs` · `portasDaWebNaoEsvaziam.test.js` |
+| **INV-PORTA-005** | As três portas do contador de login ficam fechadas para `authenticated` | — | `src/lib/__tests__/contadorDeLoginFechado.test.js` |
+
+---
+
+## TRILHA — o que fica gravado
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-TRILHA-001** | A trilha de auditoria **não é forjável** pelo cliente | — | `src/lib/__tests__/trilhaNaoEhForjavel.test.js` |
+| **INV-TRILHA-002** | Toda `action` que o banco grava tem **ícone registrado** — senão aparece no painel com o genérico e ninguém nota | Fase 4 (11 actions órfãs) | `src/lib/__tests__/logMeta.test.js` |
+
+---
+
+## CONTRATO — código e banco têm de concordar
+
+> Esta família inteira nasceu da **Fase 4** da auditoria: os dois lados estavam
+> certos por dentro, e errados **entre si**. O sintoma é sempre o mesmo — nada
+> estoura, nada loga, a funcionalidade simplesmente não acontece.
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-CONTRATO-001** | Assinatura de realtime só em tabela **publicada** — senão `subscribe()` responde `SUBSCRIBED` e nenhum evento chega, para sempre | Fase 4 | `src/lib/__tests__/realtimeTables.test.js` |
+| **INV-CONTRATO-002** | As chaves do `site_config` são as mesmas na RPC e no painel | — | `src/lib/__tests__/siteConfigChavesFechadas.test.js` |
+| **INV-CONTRATO-003** | O que o banco grava em notificação é o que o sino sabe mostrar | — | `src/lib/__tests__/notifMeta.test.js` |
+| **INV-CONTRATO-004** | Os motivos de ban são os mesmos no modal e no banco | — | `src/lib/__tests__/guardDePapelNaoAceitaNull.test.js` |
+| **INV-CONTRATO-005** | Ninguém dá `update` em tabela **sem policy de UPDATE** — a RLS nega em silêncio, com 0 linhas e nenhum erro | (moderação quebrada por meses) | `src/lib/__tests__/tabelasSemUpdate.test.js` |
+| **INV-CONTRATO-006** | Escrita que pode ser negada **confere quantas linhas caíram** | idem | `src/lib/__tests__/apagarConfereLinhas.test.js` |
+
+---
+
+## CONTA — sessão, exclusão e aceite
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-CONTA-001** | Apagar a conta **exige a senha**, conferida no servidor | — | `src/lib/__tests__/exclusaoPedeSenha.test.js` |
+| **INV-CONTA-002** | Sair é **local**: o `supabase-js` usa escopo global por omissão, então sair no celular derrubaria o PC | — | `src/hooks/__tests__/logoutEhLocal.test.js` |
+| **INV-CONTA-003** | O aceite dos documentos legais **nasce com a conta**, e o que o cliente manda tem de bater com o que o `handle_new_user` aceita | — | `src/lib/__tests__/aceiteNasceComAConta.test.js` |
+| **INV-CONTA-004** | O código do cofre **nunca é guardado em texto** | — | `src/lib/__tests__/cofre.test.js` |
+| **INV-CONTA-005** | Texto de documento legal não muda **por baixo de quem já aceitou** | — | `src/lib/__tests__/documentosLegais.test.js` |
+
+---
+
+## Como usar isto no dia a dia
+
+**Ao criar qualquer coisa nova**, a pergunta deixa de ser *"lembrei de testar?"*
+e passa a ser **"isto cai em qual INV?"**. Uma fonte de XP nova cai em
+`INV-XP-001`; uma RPC administrativa nova cai em `INV-AUTZ-003`; uma coluna de
+"fora do ar" nova cai na família `INV-LIVE`.
+
+**Ao achar um bug**, depois de corrigir: ele confirma um INV que já existe, ou
+revela um que faltava? Se revela, ele entra aqui **junto com a trava** — nunca
+sozinho, porque linha sem trava é intenção, não proteção.
+
+**Ao mexer numa trava citada acima**, o INV é o contexto: o teste não está ali
+para passar, está ali para segurar aquela regra.
+
+> **Este arquivo é vigiado pelos portões que já existem.** Todo caminho citado
+> aqui é conferido pelo `scripts/documentacao-quebrada.mjs`, que reprova o PR se
+> um arquivo sumir ou for renomeado. Não foi preciso criar mecanismo novo — e
+> criar um a mais seria a espiral de controle que o `EXECUCAO.md` §9.8 proíbe.
