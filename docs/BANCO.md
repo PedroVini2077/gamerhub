@@ -797,6 +797,57 @@ e `sessoes_validas_em_post_apagado = 0` — nenhum dado existente precisava de
 limpeza. A trava é `src/lib/__tests__/liveApagadaNaoVoltaAoAr.test.js`, provada
 reinjetando os **seis** modos de desfazer as três camadas.
 
+### `[19/09]` LIVE-051 — a invalidação não alcançava a live que ainda está NO AR
+
+Achado pela **varredura de classe** do LIVE-050, não por relato. A pergunta do
+§1.3 — *"onde mais esse mesmo padrão existe?"* — feita na coluna irmã.
+
+**O mecanismo, em uma frase:** `invalidar_lives_do_post_moderado` faz
+`UPDATE lives_realizadas WHERE post_id = ...`. Uma live que está **no ar** não
+tem linha ali, então moderar não invalida nada — e a sessão que nasce depois
+nunca é revisitada.
+
+**Duas portas, as duas medidas em `ROLLBACK`:**
+
+| O que a equipe faz | O que acontecia |
+| --- | --- |
+| **oculta** uma live no ar | `is_live` seguia `true` (oculto **e** no ar), a sessão nascia ao encerrar, `lives` no XP ia de **0 → 1** |
+| **apaga** uma live no ar | a sessão nasce no mesmo statement, e os `AFTER` disparam em ordem alfabética: `trg_invalidar_lives_moderadas` **antes** de `trg_registrar_live_realizada`. `lives` no XP: **0 → 1** |
+
+É o achado N8 de volta por outra porta — a LIVE-040 o fechou **só para a live
+que já tinha acabado**.
+
+**A correção é na certidão de nascimento, não em mais uma varredura.** Inverter
+a ordem dos triggers fecharia só a porta do apagar: o ocultar encerra a live
+minutos depois, em **outro** statement. Então a sessão passa a **nascer**
+invalidada quando o post já está sob moderação, e a varredura retrospectiva
+continua para a live que já acabou — duas camadas independentes.
+
+**`motivo_de_invalidacao()` é a fonte única do motivo.** A inversa (restaurar
+devolve o XP) casa por `invalidada_motivo`; com o texto escrito em dois lugares,
+mudar um deixa o outro órfão e a inversa passa a não achar nada — falhando em
+silêncio, que é o pior modo (§1.5).
+
+**O CHECK `posts_live_oculta_nao_fica_no_ar` tem um pré-requisito**, e ele é a
+parte delicada: `checar_palavras_bloqueadas` é `BEFORE INSERT` e roda **depois**
+do `trg_set_live_ended_at` (ordem alfabética), então o auto-ocultar da wordlist
+escapava do guard. Sem zerar `is_live` ali junto, este CHECK transformaria
+*"post de live com termo `high` nasce oculto"* em *"publicação recusada"* — a
+classe exata do erro do SEC-025. Provado em `ROLLBACK` que publicar continua
+publicando, oculto e fora do ar.
+
+> A edição do `checar_palavras_bloqueadas` foi **mecânica**
+> (`pg_get_functiondef` + `replace`), não reescrita à mão — a função tem um
+> `regexp_replace` de escape que eu já tinha manguado ao copiar. E a conferência
+> da âncora usa `replace`/`length`, **não regex**: os parênteses de `now()`
+> viram grupo vazio num padrão, e o meu próprio verificador chegou a acusar
+> 0 ocorrências num texto que tinha 1.
+
+Verificado em produção antes do CHECK: `posts_no_estado_impossivel = 0` e
+`sessoes_validas_de_post_moderado = 0` — nada a higienizar. Trava:
+`src/lib/__tests__/moderacaoAlcancaLiveNoAr.test.js`, provada reinjetando os
+**oito** modos de desfazer as camadas, incluindo os dois do lado da tela.
+
 ### `[18/09]` `invalidada_em` — como a moderação alcança uma live que já acabou
 
 A LIVE-036 soltou o registro do post para ele sobreviver ao cron. Isso o soltou

@@ -16,6 +16,58 @@
 
 ## Ferramental
 
+### `[19/09]` Scanner de vulnerabilidade genérico (ZAP / Nuclei) — DESCARTADO por medição, e um portão PRÓPRIO no lugar
+
+**Pergunta do dono:** *"existe uma ferramenta à parte de pentest... algum bot ou
+e2e que pense como atacante do tipo: como eu faço pra quebrar esse site ou achar
+um caminho indevido sem passar pelo óbvio?"*.
+
+**O que a pesquisa devolveu, e é a parte útil.** As ferramentas existem e são
+boas: OWASP ZAP e Nuclei são gratuitas, rodam em CI e pegam o *conhecido* —
+CVE, header faltando, arquivo exposto. Agentes de IA (XBOW, PentestGPT) vão
+além. Mas o limite delas é documentado e bate exatamente onde este projeto
+vive: no estudo **ARTEMIS (dez/2025)**, numa rede real de 8.000 hosts, o melhor
+agente autônomo ganhou de 9 dos 10 testadores humanos e **perdeu para o melhor
+humano justamente no encadeamento criativo e na lógica de negócio**. Falha de
+lógica não tem assinatura: o scanner vê um endpoint autenticado devolver dado e
+diz "ok" — ele não entra como A para ler o dado de B.
+
+Traduzindo: nenhum scanner teria achado o farm de XP, o LIVE-050 ou o LIVE-051.
+
+**Mas o motivo do descarte não é esse — é uma medição nossa.** O `vercel.json`
+tem o rewrite de SPA `"/(.*)" -> "/"`. Consequência medida em produção em 19/09:
+
+```
+GET /.env        -> 200, text/html, 6593 bytes   (= o index.html)
+GET /.git/config -> 200, text/html, 6593 bytes   (= o index.html)
+```
+
+**Toda** URL responde 200. Um scanner de caminho marca as duas como "arquivo
+sensível exposto", e seriam dois alarmes falsos no primeiro minuto — em cima de
+uma esteira onde a 4ª regra do §0.2 já custou caro: *alarme que grita à toa
+cega igual ao silêncio*. O que separa vazamento de rewrite não é o código HTTP;
+é o corpo da resposta, e disso o scanner genérico não sabe nada.
+
+**O que entrou no lugar:** `e2e/portas-da-web.mjs`, irmão do
+`portas-do-banco.mjs`. Ele conhece o rewrite e exige que o caminho sensível
+devolva **o app**; confere os cabeçalhos de segurança **por valor**, não por
+presença (`X-Frame-Options: SAMEORIGIN` no lugar de `DENY` é proteção
+enfraquecida que a checagem de presença aprovaria); e cobre as duas direções,
+porque cabeçalho que **some** não quebra tela nenhuma. Zero falso positivo por
+construção, porque a lista é escrita para este site.
+
+**O que se perde, com todas as letras:** o Nuclei traz templates de CVE nova
+sem ninguém escrever nada, e o nosso portão não. A troca foi aceita porque a
+nossa superfície de servidor é Vercel estático + Supabase gerenciado — os dois
+atualizados pelo fornecedor —, e a dependência de aplicação já tem `npm audit`
+no CI. **Se algum dia subir um serviço nosso**, essa conta muda e o Nuclei volta
+para a mesa.
+
+**Registrado aqui porque vai voltar a ser sugerido** — a ideia "é só ligar um
+scanner" é a primeira que qualquer um tem, inclusive outras IAs.
+
+---
+
 ### `[02/09]` Teste de mutação (Stryker) — ADOTADO, sob demanda e com escopo pequeno
 
 **Decisão do dono:** *"pode fazer esse teste de mutações"*. Era o último item

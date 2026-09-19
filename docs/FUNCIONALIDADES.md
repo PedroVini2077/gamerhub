@@ -647,6 +647,11 @@ A aba `Lives` exibe duas categorias de conteúdo lado a lado via **sub-tabs**:
   parte não tem volta.
 - **Reativação de live**: admin solicita → super admin aprova/nega
   (`live_reactivation_requests`).
+- **`[19/09]` Live OCULTADA pela moderação encerra na hora**, sai da lista de
+  "ao vivo" (inclusive para a equipe) e **não paga os 30 XP**. Se a equipe
+  restaurar o post, o XP volta — ocultar é reversível, e a volta é parte da
+  ação. Reativar a live de um post oculto é recusado com
+  *"Esta live está oculta pela moderação. Restaure o post antes de reativar."*
 - **`[19/09]` Live APAGADA não volta ao ar.** O painel deixava reativar a live
   de um post excluído: o post ficava no ar e apagado ao mesmo tempo, e cada
   ciclo gravava uma sessão que paga XP. A tela nunca mostrou essa live — o

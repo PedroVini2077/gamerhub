@@ -691,6 +691,8 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **eu rodo antes de fechar** | quais documentos **esta sessão** tornou suspeitos, e o que mudou embaixo de cada um |
 | `scripts/documentacao-envelhecida.mjs` | dia 1º, **abre issue** | documento atrás do código — **inclusive `CLAUDE.md` e os `docs/regras/`**, que até 02/09 eram os únicos sem vigilância |
 | `e2e/portas-do-banco.mjs` | CI, **reprova** | porta do banco que abriu — **e porta que fechou**, que já derrubou o site 3× |
+| `e2e/portas-da-web.mjs` (`npm run test:web`) | CI, **reprova** | a BORDA HTTP: cabeçalho de segurança que sumiu **ou que foi enfraquecido** (compara por VALOR, não por presença), arquivo sensível vazando e mapa de fonte publicado. Escrito à mão em vez de scanner pronto porque o rewrite de SPA faz `/.env` devolver **200 com o `index.html`** — medido —, e todo scanner de caminho chamaria isso de vazamento |
+| `portasDaWebNaoEsvaziam.test.js` | `npm test`, **reprova** | a lista do portão acima sendo **esvaziada**. Portão de lista vazia não falha nunca e continua imprimindo "nenhuma falha" — o `varrerFontes` para quem lê lista em vez de pasta |
 | `e2e/conteudo-visivel.mjs` | CI, **reprova** | conteúdo no DOM e invisível na tela, em janela de celular |
 | `e2e/navegacao.mjs` | CI, **reprova** | página abrindo no lugar errado, âncora morta, botão voltar atropelado |
 | `e2e/sem-banco.mjs` | CI, **reprova** | banco fora do ar derrubando o que **não** depende dele |
@@ -722,6 +724,7 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `decisaoRevalidaEstado.test.js` | `npm test`, **reprova** | decisão administrativa julgando um **retrato velho**. Aprovar um pedido de unban do BAN A removia o BAN B, porque o pedido não carregava a geração do estado que ele contestava |
 | `xpSoPagaOQueAparece.test.js` | `npm test`, **reprova** | bônus de perfil pago por campo que não tem **caractere visível**. `trim()` só corta espaço ASCII: U+200B, U+00A0, U+3000, U+FEFF e U+2060 sobrevivem a ele, e um perfil de espaços invisíveis pagava igual a um preenchido |
 | `liveApagadaNaoVoltaAoAr.test.js` | `npm test`, **reprova** | live de post **apagado** voltando ao ar pelo painel, e cada ciclo gravando uma sessão que paga XP. O CHECK do SEC-034 cobria `is_live` × `live_ended_at` e deixou `is_live` × `deleted_at` de fora — mesma classe, o par que ninguém olhou |
+| `moderacaoAlcancaLiveNoAr.test.js` | `npm test`, **reprova** | moderação que não alcança a live **ainda no ar**. A invalidação do XP é retrospectiva e a live no ar não tem sessão para invalidar — ocultar ou apagar durante a transmissão deixava os 30 XP com o autor. Cobre as duas pontas: o banco e os dois lugares da TELA que listavam a live oculta como "ao vivo" para a própria equipe |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 

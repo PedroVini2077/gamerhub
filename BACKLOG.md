@@ -35,6 +35,27 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### ✅ `[19/09]` LIVE-051 — a moderação não alcançava a live AINDA NO AR
+
+**Não foi relatado: saiu da varredura de classe do LIVE-050.** A pergunta do
+§1.3 feita na coluna irmã (`hidden_at` em vez de `deleted_at`) devolveu um bug
+**pior**, porque ocultar é o que a moderação mais faz.
+
+**Medido em `ROLLBACK`:** ocultar uma live no ar deixava `is_live = true`
+(oculta **e** no ar) e o XP `lives` ia de **0 → 1**. Apagar uma live no ar pela
+equipe: mesma coisa, por ordem de trigger. E a live oculta continuava listada
+como "AO VIVO" **para a equipe** — o comum via 0, quem moderou via 1.
+
+**Causa:** a invalidação do XP é retrospectiva, e live no ar não tem sessão para
+invalidar. Corrigido na **certidão de nascimento** da sessão, não em mais uma
+varredura. `motivo_de_invalidacao()` virou fonte única do motivo, porque a
+inversa casa por ele.
+
+Trava `moderacaoAlcancaLiveNoAr.test.js`, provada com **8** reinjeções (6 no
+banco, 2 na tela). Produção conferida antes do CHECK: 0 a higienizar.
+
+---
+
 ### ✅ `[19/09]` LIVE-050 — live APAGADA voltava ao ar pelo painel
 
 **Bug que ele encontrou clicando:** *"assim que exclui um post de live, eu
@@ -551,7 +572,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**46 itens abertos** (+ 1 ideia sem compromisso)
+**48 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1223,6 +1244,54 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[19/09]` 🟠 **Depois de 15 minutos, a equipe não alcança mais o XP de uma
+  live.** *Achado na varredura de classe do LIVE-051, medido em produção hoje:*
+
+  | | |
+  | --- | --- |
+  | sessões em `lives_realizadas` | **10** |
+  | com o post **já apagado** pelo cron | **10** |
+  | **válidas E sem post** (moderação não alcança) | **8** |
+
+  **O mecanismo:** a invalidação é um trigger em `posts`
+  (`invalidar_lives_do_post_moderado`). O cron apaga o post **15 minutos**
+  depois que a live encerra. Sem post, não há `UPDATE` para disparar o trigger —
+  então o XP daquela live vira **permanente**, e nem o fundador desfaz.
+
+  Isso é a regra da INVERSA do `docs/regras/BANCO.md` pelo avesso: aqui existe a
+  ida (invalidar) e a volta (restaurar), mas as duas **expiram** junto com o
+  post. O LIVE-036 desacoplou o registro do post de propósito, para o XP
+  sobreviver ao cron — o efeito colateral é que a moderação não sobreviveu junto.
+
+  **Por que não corrigi agora:** exige uma RPC nova de moderação sobre
+  `lives_realizadas` **e uma tela para acionar ela**, além de decidir quem pode
+  (a hierarquia do `can_moderate_content` precisa do autor, que a tabela tem).
+  É §7 🟡 — *"mudança relevante na moderação"*. **Proponho, não executo.**
+
+  **Menor versão que resolveria:** um botão na aba de lives encerradas do painel
+  que chama `invalidar_live_realizada(id, motivo)`, com a mesma hierarquia das
+  outras ações e registro em `admin_logs`. O alcance passaria de 15 minutos para
+  a janela de retenção da tabela.
+
+- ⬜ `[19/09]` 🟠 **O site não tem `Content-Security-Policy`.** *Medido em 19/09
+  nos cabeçalhos de produção: existem `X-Frame-Options`, HSTS, `nosniff`,
+  `Referrer-Policy` e `Permissions-Policy`. CSP é o que falta — e é o único que
+  limita o ESTRAGO de um XSS armazenado, que este projeto já teve de verdade
+  (via `href` vindo de usuário).*
+
+  **Por que não entrou junto com o portão da borda:** CSP errada **derruba o
+  site**. React+Vite gera estilo inline, e Supabase, Sentry e Google Fonts
+  precisam estar liberados por nome; um `default-src` apertado demais apaga a
+  tela inteira — a classe do erro do SEC-025.
+
+  **O caminho seguro é `Content-Security-Policy-Report-Only` primeiro**, que não
+  quebra nada. Só que relatório sem coletor vira `console.error` que ninguém lê
+  (§1.5), e coletor é serviço novo com cota própria (§0.2). **Por isso é decisão
+  de custo, portanto dele.**
+
+  O `e2e/portas-da-web.mjs` diz **explicitamente** que não cobre CSP, para o
+  verde dele não ser confundido com cobertura (§6.3).
+
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -1818,10 +1887,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->133<!--/n--> arq ·
-  <!--n:src.lib.linhas-->15.454<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->135<!--/n--> arq ·
+  <!--n:src.lib.linhas-->15.807<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->18<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.894<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.898<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

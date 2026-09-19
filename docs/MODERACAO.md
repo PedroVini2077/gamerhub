@@ -121,6 +121,27 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   seguiam. Um `admin` não oculta conteúdo de outro `admin`; quem faz isso é um
   `super_admin` ou o fundador. Detalhes e as medições em
   [SEGURANCA.md](SEGURANCA.md) (SEC-009).
+- **`[19/09]` Ocultar uma live ENCERRA a transmissão, e tira o XP dela.**
+  Antes não fazia nem uma coisa nem outra: a live ocultada continuava com
+  `is_live = true` — oculta **e** no ar ao mesmo tempo — e o XP dos 30 pontos
+  ficava com o autor. A causa era de ORDEM, não de regra: a invalidação do XP
+  é retrospectiva (`UPDATE lives_realizadas WHERE post_id = ...`) e uma live
+  que ainda está no ar **não tem sessão gravada** para invalidar. Quando a
+  sessão nascia, minutos depois, ninguém voltava nela.
+
+  Vale igual para **apagar uma live no ar pela equipe**, pelo mesmo motivo —
+  ali a sessão nasce no mesmo statement, e os dois `AFTER` disparam em ordem
+  alfabética, com a invalidação **antes** do registro.
+
+  Hoje a sessão **nasce invalidada** quando o post já está sob moderação, e a
+  varredura retrospectiva continua existindo para a live que já tinha acabado.
+  A inversa segue valendo: restaurar o post devolve o XP. Detalhes e as
+  medições em [BANCO.md](BANCO.md) (LIVE-051).
+
+  > **E a live oculta sumiu da lista "ao vivo".** Ela continuava aparecendo
+  > como AO VIVO — só para quem é da **equipe**, porque a RLS a escondia de
+  > todo mundo menos de quem tem `role_rank >= 2`. Ou seja: quem ocultava era
+  > exatamente quem continuava vendo.
 - **Conteúdo apagado limpa a fila sozinho** (trigger `AFTER DELETE` nas quatro
   tabelas de conteúdo): sem isso, banir alguém deixava os itens dele `pending`
   apontando para linhas mortas, sem jeito de sair da tela. Fica na tabela e não

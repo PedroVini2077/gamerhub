@@ -144,6 +144,10 @@ export async function fetchActiveLives() {
     // primeira correção de segurança que dependeu de UM só mecanismo neste
     // projeto foi a do SEC-025, e a lição foi não repetir isso.
     .is('deleted_at', null)
+    // `[19/09]` LIVE-051: o mesmo buraco, na coluna irmã. Ocultar era a outra
+    // metade — e a mais usada pela moderação, que oculta bem mais do que apaga.
+    // Medido: com a live oculta, o usuário comum via 0 e a EQUIPE via 1.
+    .is('hidden_at', null)
     .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
     .not('embed_url', 'is', null)
     .order('created_at', { ascending: false });
