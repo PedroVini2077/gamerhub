@@ -85,6 +85,15 @@ const AUTORIZA_PELO_ALVO = {
   soft_delete_post:
     'quem pode apagar depende de QUEM É O DONO, e descobrir o dono exige o '
     + 'lookup. Fecha unificando a mensagem: "Post não encontrado ou sem permissão".',
+  // `[19/09]` SEC-045
+  exige_alvo_apto:
+    'NÃO é porta de entrada: `EXECUTE` é revogado de anon e authenticated, e '
+    + 'ela só roda DEPOIS que a função chamadora (decide_role_demotion, '
+    + 'review_staff_nomination, decide_staff_trial) já provou o cargo de quem '
+    + 'chama. Como ninguém consegue invocá-la direto, a mensagem "Usuario nao '
+    + 'encontrado" nunca chega a quem não estava autorizado — não há oráculo. '
+    + 'Se algum dia ela ganhar GRANT para authenticated, esta exceção deixa de '
+    + 'valer e a mensagem precisa ser unificada.',
 };
 
 describe('SEC-032 — autorização antes de existência, pela CLASSE', () => {
