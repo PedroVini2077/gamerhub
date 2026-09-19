@@ -1420,3 +1420,82 @@ o banco no CI, credencial que este projeto já recusou três vezes. Está no
 `BACKLOG.md` como risco residual.
 
 Trava: `src/lib/__tests__/estadoDoOperador.test.js`, 31 asserções.
+
+---
+
+## `[19/09]` SEC-044 / SEC-045 — a decisão parou de confiar em snapshot
+
+Sete achados (N25, N26, N27, N32, N38, N39, N41) descrevem a mesma coisa por
+sete ângulos: **uma autorização criada para um estado antigo agindo sobre um
+estado novo.**
+
+O projeto já tinha o princípio certo em outro lugar — o N40 (perder privilégio
+no meio do fluxo) foi PASS porque a autorização do **chamador** é recalculada na
+decisão. Faltava aplicar o mesmo ao **alvo** e ao **estado**:
+
+| | Como estava |
+|---|---|
+| autorização do chamador | recalculada → **N40 PASS** |
+| estado do alvo | snapshot → N25/N26/N27 falham |
+| geração do banimento | inexistente → **N41 falha** |
+
+### N41, o pior deles — medido
+
+```
+BAN A -> pedido de revisão -> unban -> BAN B -> aprovar o pedido velho
+resultado: "REMOVIDO — pedido velho matou ban novo"
+```
+
+A assimetria que revela o bug: `unban_user` **já** conferia `IF v_target_banned
+IS NOT TRUE THEN RAISE`. `approve_unban_request` não conferia nada. Duas portas
+para o mesmo ato, uma trancada.
+
+### Por que a geração é `ban_count` e não `banned_at`
+
+Minha primeira versão usou `banned_at`, e **o teste reprovou**:
+
+> `now()` em PostgreSQL é a hora da **transação**, não do comando.
+
+Dois bans na mesma transação recebem o mesmo instante, a guarda compara dois
+valores iguais e passa. **Ela teria ficado no código parecendo proteger** — que
+é pior do que não existir. `ban_count` é incrementado por `ban_user` e por
+`apply_mod_auto_ban`: muda por banimento, não por relógio.
+
+A geração é **derivada por trigger**, não declarada — assim os dois caminhos de
+criação (`request_unban` e `solicitar_revisao_do_proprio_ban`) ficam cobertos
+sem tocar em nenhum dos dois.
+
+### N33/N42 — a regra de produto, escrita para ser contestada
+
+Medido: suspenso 10 dias → banido → desbanido. Resultado: `banned = false` e
+`suspended_until` ainda no futuro. O admin vê "desbanido", a pessoa continua sem
+publicar, e **ninguém sabe por quê** — §1.5 exato.
+
+**A regra:** o ban **absorve** a suspensão, e o unban limpa as duas. Quem quiser
+manter reaplica, que é ato visível com log e hierarquia. A alternativa
+(restaurar o saldo da suspensão) é defensável; escolhi limpar porque o modo de
+falhar do silêncio é pior.
+
+### N34 — a corrida deixou de ser hipótese
+
+`request_unban` fazia `IF EXISTS ... INSERT`, sem nada atômico no meio. Não
+precisei reproduzir concorrência: um **índice único parcial** torna dois
+pendentes para o mesmo alvo **impossíveis**. Trava de 1ª força.
+
+### N25 e N27 quase viraram PASS sem teste
+
+Na primeira tentativa a nomeação nem chegou a ser criada (o candidato não tinha
+elegibilidade), e os *"Indicação não encontrada"* seguintes eram **artefato do
+meu teste**, não prova de proteção. O achado é sobre a **decisão**, então a
+linha passou a ser inserida direto e as funções de decisão foram exercidas de
+verdade.
+
+### `exige_alvo_apto` só roda no caminho que AVANÇA
+
+`reject`, `revert` e `extend` não revalidam **de propósito**: negar a indicação
+de alguém que foi banido no meio precisa continuar possível, senão a fila trava
+com itens que ninguém consegue encerrar.
+
+Travas: `decisaoRevalidaEstado.test.js` (10 asserções) e a exceção documentada
+de `exige_alvo_apto` em `autorizacaoAntesDeExistencia.test.js` — ela não é porta
+de entrada (`EXECUTE` revogado), então não é oráculo de enumeração.

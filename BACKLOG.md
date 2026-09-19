@@ -35,37 +35,27 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### 🔄 `[19/09]` AUDITORIA DE SEGURANÇA — 4ª rodada (N25–N48)
+### ✅ `[19/09]` AUDITORIA DE SEGURANÇA — 4ª rodada, fechada nesta sessão
 
-**Ordem dele:** *"corrija a CAUSA-RAIZ e use os achados como casos de
-regressão"*, e *"não presuma que um patch anterior está correto"*.
+**Cobrança dele:** *"o chat gpt tá achando mais coisa... fecha tudo e qualquer
+coisa que vc achar, não deixe nada passar"*.
 
-| Etapa | O que é | Estado |
+| Família | Achados | Fechada por |
 | --- | --- | --- |
-| 0 | Inventário medido das 31 RPCs administrativas | ✅ |
-| 1 | **SEC-043** — N43–N48: estado do operador entra na autorização | ✅ |
-| 2 | **N25/N27/N26/N38/N32/N41/N39** — decisão administrativa sobre snapshot velho (TOCTOU) | ⬜ **próxima** |
-| 3 | **N33/N42** — ban/unban não reconcilia `suspended_until` | ⬜ |
-| 4 | **N34** — corrida em `request_unban` (hipótese, precisa de prova) | ⬜ |
-| 5 | Varredura por caminhos equivalentes fora da lista dele | 🔄 parcial — achei a porta da RLS |
-| 6 | Travas, documentação, PR | 🔄 por fase |
+| estado do operador não era autorização | N43, N44, N46, N47 | **SEC-043** |
+| decisão sobre geração velha do estado | N41, N32, N33/N42, N34 | **SEC-044** |
+| decisão sobre snapshot do alvo | N25, N26, N27, N38, N39 | **SEC-045** |
 
-**O que a etapa 1 entregou:** a família N43–N48 era **um** bug — o projeto
-aplicava `NOT banned AND NOT suspended` a *publicar* e nunca a *moderar*. E o
-ataque contra a minha própria correção achou uma porta que não estava na lista
-dele: **`UPDATE posts SET hidden_at` direto pela RLS**, que é o caminho real do
+**Três achados NÃO reproduzem hoje**, e isso é correção ao levantamento:
+N45/N48 (`admin_set_role` sem `EXECUTE`, `owner_set_role` exige fundador).
+
+**N13 e N16 continuam decisão de design**, como ele mesmo classificou.
+
+**A porta que o levantamento NÃO listou** e que o ataque contra a minha própria
+correção achou: `UPDATE posts SET hidden_at` direto pela RLS — o caminho real do
 `moderationService`. Guardar só as RPCs teria deixado a moderação aberta.
 
-**Correções ao relatório dele** (medido, não suposto):
-
-- **N45/N48 não reproduzem hoje** — `admin_set_role` está sem `EXECUTE` (SEC-026)
-  e `owner_set_role` exige o fundador.
-- **N13 e N16 continuam decisão de design**, como ele mesmo classificou.
-
-**O que ele proibiu explicitamente**, registrado para eu não escorregar:
-`migration criada` ≠ corrigido · `UI bloqueou` ≠ corrigido · `HTTP 204` ≠
-persistiu · não afirmar que o teste de senha errada do `delete_own_account`
-passou · ausência de teste **não** vira PASS.
+---
 
 ### ✅ `[18/09]` O PACOTE DE LIVE QUE FALTAVA — fechado nesta sessão
 
@@ -1781,8 +1771,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->130<!--/n--> arq ·
-  <!--n:src.lib.linhas-->14.879<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->131<!--/n--> arq ·
+  <!--n:src.lib.linhas-->15.067<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->18<!--/n--> arq ·
   <!--n:src.services.linhas-->1.894<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
