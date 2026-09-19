@@ -572,7 +572,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**47 itens abertos** (+ 1 ideia sem compromisso)
+**48 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1243,6 +1243,35 @@ dependência técnica real** que decide o resto:
   arquivo que inchei, ou eu uso o §4 como desculpa para refatorar o que quiser.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[19/09]` 🟠 **Depois de 15 minutos, a equipe não alcança mais o XP de uma
+  live.** *Achado na varredura de classe do LIVE-051, medido em produção hoje:*
+
+  | | |
+  | --- | --- |
+  | sessões em `lives_realizadas` | **10** |
+  | com o post **já apagado** pelo cron | **10** |
+  | **válidas E sem post** (moderação não alcança) | **8** |
+
+  **O mecanismo:** a invalidação é um trigger em `posts`
+  (`invalidar_lives_do_post_moderado`). O cron apaga o post **15 minutos**
+  depois que a live encerra. Sem post, não há `UPDATE` para disparar o trigger —
+  então o XP daquela live vira **permanente**, e nem o fundador desfaz.
+
+  Isso é a regra da INVERSA do `docs/regras/BANCO.md` pelo avesso: aqui existe a
+  ida (invalidar) e a volta (restaurar), mas as duas **expiram** junto com o
+  post. O LIVE-036 desacoplou o registro do post de propósito, para o XP
+  sobreviver ao cron — o efeito colateral é que a moderação não sobreviveu junto.
+
+  **Por que não corrigi agora:** exige uma RPC nova de moderação sobre
+  `lives_realizadas` **e uma tela para acionar ela**, além de decidir quem pode
+  (a hierarquia do `can_moderate_content` precisa do autor, que a tabela tem).
+  É §7 🟡 — *"mudança relevante na moderação"*. **Proponho, não executo.**
+
+  **Menor versão que resolveria:** um botão na aba de lives encerradas do painel
+  que chama `invalidar_live_realizada(id, motivo)`, com a mesma hierarquia das
+  outras ações e registro em `admin_logs`. O alcance passaria de 15 minutos para
+  a janela de retenção da tabela.
 
 - ⬜ `[19/09]` 🟠 **O site não tem `Content-Security-Policy`.** *Medido em 19/09
   nos cabeçalhos de produção: existem `X-Frame-Options`, HSTS, `nosniff`,
