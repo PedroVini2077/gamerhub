@@ -812,6 +812,64 @@ o que já está lá.
   `git ls-files --others --exclude-standard`, que respeita o `.gitignore`,
   então `.env` de verdade continua fora.
 
+- **`[19/09]` portas da web** (`e2e/portas-da-web.mjs`, dentro do job de fumaça)
+  — o irmão do de cima, uma camada acima: o que um estranho recebe **antes de
+  qualquer JS**. Roda contra a **produção**, porque é lá que o `vercel.json`
+  vira cabeçalho de verdade — um `vite preview` local não tem essa camada e
+  daria verde sem ter testado nada.
+
+  | Direção | O que pega |
+  | --- | --- |
+  | ligado continua ligado | os 5 cabeçalhos do `vercel.json` + HSTS, comparados **por valor** |
+  | fechado continua fechado | `/.env`, `/.git/config`, `/package.json` e mapa de fonte publicado |
+
+  **Por valor, não por presença**, e a diferença importa:
+  `X-Frame-Options: SAMEORIGIN` no lugar de `DENY` é proteção enfraquecida que
+  a checagem de presença aprovaria sorrindo.
+
+  > **Ele existe porque um scanner genérico não serviria aqui**, e isso foi
+  > medido, não suposto: o rewrite de SPA faz `/.env` responder **200 com o
+  > `index.html`**. Qualquer scanner de caminho chamaria isso de "arquivo
+  > exposto" — dois alarmes falsos no primeiro minuto. O que separa vazamento de
+  > rewrite é o **corpo** da resposta. A decisão inteira está em
+  > [DECISOES-FERRAMENTAL.md](DECISOES-FERRAMENTAL.md).
+  >
+  > **O que ele NÃO cobre:** CSP, porque o site ainda não tem (item aberto no
+  > `BACKLOG.md`). Portão não inventa cobertura que não tem.
+
+  A lista dele é escrita à mão, então tem trava própria
+  (`portasDaWebNaoEsvaziam.test.js`): lista esvaziada faz um portão passar
+  **para sempre**, ainda imprimindo "nenhuma falha".
+
+- **`[19/09]` portas da web** (`e2e/portas-da-web.mjs`, dentro do job de fumaça)
+  — o irmão do de baixo, uma camada acima: o que um estranho recebe **antes de
+  qualquer JS**. Roda contra a **produção**, porque é lá que o `vercel.json`
+  vira cabeçalho de verdade — um `vite preview` local não tem essa camada e
+  daria verde sem ter testado nada.
+
+  | Direção | O que pega |
+  | --- | --- |
+  | ligado continua ligado | os 5 cabeçalhos do `vercel.json` + HSTS, comparados **por valor** |
+  | fechado continua fechado | `/.env`, `/.git/config`, `/package.json` e mapa de fonte publicado |
+
+  **Por valor, não por presença**, e a diferença importa:
+  `X-Frame-Options: SAMEORIGIN` no lugar de `DENY` é proteção enfraquecida que
+  a checagem de presença aprovaria sorrindo.
+
+  > **Ele existe porque um scanner genérico não serviria aqui**, e isso foi
+  > medido, não suposto: o rewrite de SPA faz `/.env` responder **200 com o
+  > `index.html`**. Qualquer scanner de caminho chamaria isso de "arquivo
+  > exposto" — dois alarmes falsos no primeiro minuto. O que separa vazamento
+  > de rewrite é o **corpo** da resposta. A decisão inteira está em
+  > [DECISOES-FERRAMENTAL.md](DECISOES-FERRAMENTAL.md).
+  >
+  > **O que ele NÃO cobre:** CSP, porque o site ainda não tem (item aberto no
+  > `BACKLOG.md`). Portão não inventa cobertura que não tem.
+
+  A lista dele é escrita à mão, então tem trava própria
+  (`portasDaWebNaoEsvaziam.test.js`): lista esvaziada faz um portão passar
+  **para sempre**, ainda imprimindo "nenhuma falha".
+
 - **portas do banco** (`e2e/portas-do-banco.mjs`, dentro do job de fumaça) —
   bate na REST API do Supabase **como um estranho sem conta** e reprova o PR se
   alguma porta saiu do lugar. Era a **única camada sem portão nenhum**: o
@@ -1226,8 +1284,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->402<!--/n--> arquivos e
-<!--n:src.linhas-->43.870<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->404<!--/n--> arquivos e
+<!--n:src.linhas-->44.230<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1251,7 +1309,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->402<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->404<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1276,7 +1334,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->23.810<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->24.040<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 

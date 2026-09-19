@@ -524,6 +524,27 @@ jobs:
         env:
           SMOKE_BASE: http://127.0.0.1:4173
 
+      # `[19/09]` A BORDA HTTP — o que um estranho recebe antes de qualquer JS.
+      #
+      # Pergunta do dono: existe ferramenta de pentest para apontar no site?
+      # Existem (ZAP, Nuclei, Burp), e contra ESTA arquitetura a maioria grita
+      # errado: o rewrite de SPA do `vercel.json` faz toda URL devolver 200 com
+      # o `index.html`, então `/.env` e `/.git/config` viram "arquivo exposto"
+      # em qualquer scanner de caminho. Medido em produção no mesmo dia.
+      # O porquê de não ligarmos um genérico está no DECISOES-FERRAMENTAL.md.
+      #
+      # Este passo faz o que o scanner genérico não sabe fazer aqui: conhece o
+      # rewrite, e exige que o caminho sensível devolva o APP, não conteúdo.
+      # E confere as DUAS direções, como o `portas-do-banco.mjs`: cabeçalho de
+      # segurança que SUMIU ou que foi ENFRAQUECIDO também reprova.
+      #
+      # Roda contra a PRODUÇÃO porque é lá que o `vercel.json` vira cabeçalho —
+      # um `vite preview` local não tem essa camada e daria verde sem testar.
+      - name: As portas da web (cabeçalhos e vazamento na borda)
+        run: npm run test:web
+        env:
+          SITE_URL: https://gamerhub-nine.vercel.app
+
       # `[01/09]` Com o banco fora, o site inteiro ficava inacessível: um
       # `return <OfflineGate />` acima do <Routes> matava até /sobre e /login,
       # que não dependem do banco. A regra que ficou: fora do ar bloqueia SÓ o

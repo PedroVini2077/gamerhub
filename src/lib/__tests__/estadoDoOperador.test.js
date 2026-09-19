@@ -127,9 +127,23 @@ describe('SEC-043 — a lista de RPCs guardadas não encolhe', () => {
     'get_blocked_logins', 'contato_dados_para_resposta',
   ];
 
+  /**
+   * O bloco de injeção da SEC-043, achado pelo QUE ELE FAZ.
+   *
+   * `[19/09]` Antes isto pegava `m[m.length - 1]` — "o último bloco `DO $inj$`".
+   * Funcionou até a LIVE-051 criar um **segundo** bloco com a mesma marcação,
+   * para outra coisa. As 25 asserções abaixo passaram a ler o bloco errado e
+   * reprovaram em massa, anunciando que a guarda tinha sido removida de RPCs
+   * que estavam intactas (conferido no `pg_proc`: 14 de 14 com a guarda).
+   *
+   * Alarme falso em massa é tão ruim quanto silêncio (§0.2, 4ª regra) — e este
+   * ainda por cima mentia sobre segurança. A âncora certa é o CONTEÚDO: o bloco
+   * que injeta `exige_operador_ativo`, esteja ele em que posição estiver.
+   */
   const blocoDeInjecao = (() => {
-    const m = SQL.match(/DO\s+\$inj\$[\s\S]*?\$inj\$/g);
-    return m ? m[m.length - 1] : null;
+    const m = SQL.match(/DO\s+\$inj\$[\s\S]*?\$inj\$/g) || [];
+    const daSec043 = m.filter(b => b.includes('exige_operador_ativo'));
+    return daSec043.length ? daSec043[daSec043.length - 1] : null;
   })();
 
   it('o bloco de injeção da SEC-043 existe', () => {

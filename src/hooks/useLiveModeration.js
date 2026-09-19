@@ -23,8 +23,11 @@ export function useLiveModeration() {
     const [{ data: silenced }, { data: lives }, { data: endedLives }, { data: requests }] = await Promise.all([
       supabase.from('live_chat_timeouts').select('id, post_id, user_id, expires_at, profiles(username)')
         .gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }),
+      // `[19/09]` LIVE-051: `hidden_at` faltava aqui também. Uma live ocultada
+      // pela equipe continuava aparecendo na lista "ao vivo agora" DELA MESMA —
+      // moderação que, para quem moderou, parecia não ter funcionado.
       supabase.from('posts').select('id, title, user_id, profiles(username)')
-        .eq('is_live', true).not('embed_url', 'is', null),
+        .eq('is_live', true).is('hidden_at', null).not('embed_url', 'is', null),
       supabase.from('posts').select('id, title, user_id, created_at, profiles(username)')
         .eq('was_live', true).eq('is_live', false).not('embed_url', 'is', null)
         .gte('created_at', since).order('created_at', { ascending: false }).limit(ENDED_LIVES_LIMIT),
