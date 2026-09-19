@@ -24,6 +24,29 @@ on:
   push:
     branches: [main]
 
+# `[19/09]` SEC-047 — MENOR PRIVILEGIO PARA O `GITHUB_TOKEN`.
+#
+# Este era o UNICO dos 6 workflows sem bloco `permissions`, e justamente o que
+# roda codigo vindo de PR. Sem ele o token herda o padrao do repositorio — que
+# pode ser "read and write" sem ninguem notar, porque nada aqui usa o token.
+#
+# ── O modelo de ameaca, dito com honestidade ────────────────────────────────
+#
+# Isto NAO e vulnerabilidade confirmada, e nao vou vende-la como tal:
+#
+#   PR de FORK ......... o gatilho e `pull_request` (nao `pull_request_target`),
+#                        entao o GitHub NAO entrega secret nenhum e o
+#                        `GITHUB_TOKEN` ja vem somente-leitura. Os jobs de E2E
+#                        falham alto, que e o desenho.
+#   PR de COLABORADOR .. os secrets existem, mas quem tem escrita ja podia
+#                        exfiltra-los por outros caminhos. Nao e escalada.
+#
+# O que isto fecha e DEFESA EM PROFUNDIDADE e a INCONSISTENCIA: cinco workflows
+# declaram o privilegio e um nao declarava. Nenhum job aqui precisa de escrita —
+# o resumo do PR usa `GITHUB_STEP_SUMMARY`, que nao passa por token.
+permissions:
+  contents: read
+
 # `[11/09]` NÃO cancela mais, e isso conserta um bug que chegou ao site.
 #
 # ── O que acontecia ─────────────────────────────────────────────────────────
@@ -61,6 +84,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # SEC-047: o checkout nao deixa o token do git no disco do runner.
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
@@ -209,6 +235,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # SEC-047: o checkout nao deixa o token do git no disco do runner.
+          persist-credentials: false
           # Precisa do histórico para comparar com a base do PR.
           fetch-depth: 0
 
@@ -322,6 +350,9 @@ jobs:
       && !startsWith(github.head_ref, 'dependabot/')
     steps:
       - uses: actions/checkout@v7
+        with:
+          # SEC-047: o checkout nao deixa o token do git no disco do runner.
+          persist-credentials: false
 
       # Em 23/08/2026 batemos no teto do plano Free (100 deploys/dia) com 3
       # usuários no site. A causa não foi mergear demais: a Vercel constrói a
@@ -400,6 +431,9 @@ jobs:
     if: vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_ANON_KEY != ''
     steps:
       - uses: actions/checkout@v7
+        with:
+          # SEC-047: o checkout nao deixa o token do git no disco do runner.
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
@@ -635,6 +669,9 @@ jobs:
       && github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v7
+        with:
+          # SEC-047: o checkout nao deixa o token do git no disco do runner.
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
@@ -748,6 +785,9 @@ jobs:
           fi
 
       - uses: actions/checkout@v7
+        with:
+          # SEC-047: o checkout nao deixa o token do git no disco do runner.
+          persist-credentials: false
         if: steps.conta.outputs.rodar == 'sim'
 
       - uses: actions/setup-node@v7

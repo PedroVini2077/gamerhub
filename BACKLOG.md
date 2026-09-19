@@ -35,6 +35,30 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### ✅ `[19/09]` O RESTO DA 4ª RODADA — fechado
+
+**Ordem dele:** *"É pra fechar tudo!!"*.
+
+| # | O que era | Fechado por |
+| --- | --- | --- |
+| 1 | XP: bônus de perfil pago por caractere INVISÍVEL (o N3 só estava fechado para ASCII) | **SEC-046** |
+| 2 | CI: único workflow sem `permissions` + `persist-credentials` | **SEC-047** |
+| 3 | `delete_own_account`: senha errada sem rastro + handles sem validação | **SEC-048** |
+| 4 | O risco residual da SEC-043: lista de 25 nomes à mão | **SEC-049** |
+
+**O que o auditor da SEC-049 achou na PRIMEIRA execução — as duas minhas:**
+`request_unban` (esqueci na lista) e `texto_visivel` (nasceu aberta para `anon`,
+o padrão que eu mesmo documentei na SEC-042, repetido 20 min depois).
+
+**Três travas minhas eram DECORAÇÃO até eu reinjetar o bug.** Em todas, o teste
+passava verde com a falha presente. Isso é o argumento mais forte desta sessão
+a favor da regra §2 — e está no `MANIFESTO.md`.
+
+**Não testado, e não vira PASS:** o teste dinâmico de senha errada do
+`delete_own_account` foi bloqueado pela ferramenta. Só há análise estrutural.
+
+---
+
 ### ✅ `[19/09]` AUDITORIA DE SEGURANÇA — 4ª rodada, fechada nesta sessão
 
 **Cobrança dele:** *"o chat gpt tá achando mais coisa... fecha tudo e qualquer
@@ -1771,8 +1795,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->131<!--/n--> arq ·
-  <!--n:src.lib.linhas-->15.067<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->132<!--/n--> arq ·
+  <!--n:src.lib.linhas-->15.256<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->18<!--/n--> arq ·
   <!--n:src.services.linhas-->1.894<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

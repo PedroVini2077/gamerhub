@@ -66,6 +66,9 @@ export const ACTION_META = {
   auth_password_changed:     A(KeyRound,     'text-yellow-400',  '#facc15'),
   auth_email_change_requested: A(Mail,       'text-yellow-400',  '#facc15'),
   auth_account_deleted:      A(UserMinus,    'text-red-400',     '#f87171'),
+  // `[19/09]` SEC-048: quem grava e o BANCO, no `delete_own_account`. Amarelo
+  // porque uma tentativa errada e ruido; uma RAJADA delas e que e o sinal.
+  auth_delete_senha_errada:  A(UserMinus,    'text-yellow-400',  '#facc15'),
   admin_unlock_login:        A(LockOpen,     'text-neon-green',  '#39ff14'),
 
   // segurança — moderação de contas
