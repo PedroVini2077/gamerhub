@@ -35,6 +35,29 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### ✅ `[19/09]` LIVE-050 — live APAGADA voltava ao ar pelo painel
+
+**Bug que ele encontrou clicando:** *"assim que exclui um post de live, eu
+consigo ativar e reativar a live mesmo estando apagado, lá pelo painel"*.
+
+**Medido em `ROLLBACK`, e era pior que o relato:** o post ficava `is_live=true`
+com `deleted_at IS NOT NULL` — estado impossível — e cada ciclo ativar/desativar
+gravava uma sessão em `lives_realizadas`, que paga XP. **2 cliques = 2 sessões.**
+A tela não mostrava a live (o filtro `deleted_at` segurava), então o único
+sintoma visível era um botão que parecia funcionar.
+
+**Causa raiz:** o CHECK do SEC-034 travou `is_live` × `live_ended_at` e deixou
+`is_live` × `deleted_at` de fora — mesma classe, o par que ninguém olhou. E o
+`set_live_ended_at` tinha a **ida** (apagar live no ar encerra) sem a **volta**.
+
+Fechado em três camadas independentes: o trigger **levanta**, o registro exige
+`OLD.deleted_at IS NULL`, e o CHECK torna o estado impossível. Trava
+`liveApagadaNaoVoltaAoAr.test.js`, provada reinjetando os **seis** modos de
+desfazê-las. Produção conferida antes do CHECK: 0 posts no estado impossível,
+0 sessões inválidas — nada a limpar.
+
+---
+
 ### ✅ `[19/09]` O RESTO DA 4ª RODADA — fechado
 
 **Ordem dele:** *"É pra fechar tudo!!"*.
@@ -1795,8 +1818,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->132<!--/n--> arq ·
-  <!--n:src.lib.linhas-->15.256<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->133<!--/n--> arq ·
+  <!--n:src.lib.linhas-->15.454<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->18<!--/n--> arq ·
   <!--n:src.services.linhas-->1.894<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
