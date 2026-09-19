@@ -35,6 +35,11 @@
   — inclusive quando ele já está oculto. Ver [MODERACAO.md](MODERACAO.md).
 - **Mod de Lives**: usuários silenciados (com tempo restante), lives ativas
   (encerrar), lives encerradas (solicitar reativação), fila de solicitações.
+  **`[19/09]` + XP das lives**: as sessões gravadas em `lives_realizadas`, com
+  *Tirar XP* (pede motivo, avisa o autor, fica na trilha) e *Devolver*. É o
+  único alcance depois que o cron apaga o post, 15 min após a live — antes
+  disso, 8 das 10 sessões eram intocáveis. Linha de quem você não pode moderar
+  aparece como "sem alcance", e o banco confere de novo no clique.
 - **Keys & Promos**: adicionar/editar/remover keys e promoções (paginado).
 - **Notificações**: feed de `admin_notifications` (novo usuário, nova live,
   alertas de segurança…), marca como lida ao visualizar.

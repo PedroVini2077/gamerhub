@@ -797,6 +797,51 @@ e `sessoes_validas_em_post_apagado = 0` — nenhum dado existente precisava de
 limpeza. A trava é `src/lib/__tests__/liveApagadaNaoVoltaAoAr.test.js`, provada
 reinjetando os **seis** modos de desfazer as três camadas.
 
+### `[19/09]` LIVE-052 — as três RPCs que devolvem alcance à moderação
+
+O LIVE-051 consertou o **momento** da invalidação. Faltava o **prazo**: medido
+em produção, das 10 sessões gravadas, **10** já não tinham post (o cron apaga
+15 min depois da live) e **8** eram válidas e fora do alcance de qualquer
+moderação. Sem post não há `UPDATE` para disparar o trigger.
+
+| RPC | O que faz |
+| --- | --- |
+| `listar_lives_realizadas(p_limite)` | as sessões, para `role_rank >= 2`. Devolve `post_existe` e `posso_moderar` |
+| `invalidar_live_realizada(p_id, p_motivo)` | tira o XP. Exige motivo de 3 a 200 caracteres |
+| `revalidar_live_realizada(p_id)` | a **inversa** — só desfaz invalidação manual |
+
+**Por que RPC e não policy.** `lives_realizadas` tem RLS ligada, **zero
+policies e zero grants**. Abrir a tabela daria leitura e escrita amplas a todo
+`authenticated` com cargo. As três são `SECURITY DEFINER`, e a tabela continua
+fechada.
+
+**O prefixo do motivo é mecanismo, não cosmética.** Três formas de invalidar
+convivem na mesma coluna, e o texto dela *é* o que as distingue:
+
+| `invalidada_motivo` | Origem | Como volta |
+| --- | --- | --- |
+| `ocultada pela moderacao` | trigger | restaurar o post (o trigger limpa) |
+| `apagada pela equipe` | trigger | não volta — o post foi apagado |
+| `invalidada pela equipe: …` | **RPC manual** | só `revalidar_live_realizada` |
+
+Se o prefixo manual colidisse com o automático, **restaurar um post desfaria
+por baixo uma decisão que uma pessoa tomou** — e nada avisaria, porque
+restaurar é ação legítima que continua funcionando. Por isso a
+`revalidar_live_realizada` **recusa** motivo automático: duas portas para o
+mesmo estado divergem (§4).
+
+**A guarda do operador chega por um caminho diferente aqui.** As 25 RPCs da
+SEC-043 foram guardadas por injeção mecânica, e o corpo resultante não existe
+em arquivo nenhum — a migration guarda a versão pré-injeção. Estas três
+nasceram depois e chamam `exige_operador_ativo()` no próprio corpo. A trava
+aceita os dois caminhos de propósito; exigir só o bloco de injeção deixaria
+toda RPC administrativa nova fora da vigilância.
+
+Validado em `ROLLBACK`, 14 de 14, incluindo: comum não alcança nada, uuid
+inexistente é negado **antes** da busca (oráculo de existência), `admin` não
+modera outro `admin`, motivo de 2 caracteres e `NULL` recusados, invalidar duas
+vezes recusado. E o efeito medido em produção: XP `lives` **1 → 0 → 1**.
+
 ### `[19/09]` LIVE-051 — a invalidação não alcançava a live que ainda está NO AR
 
 Achado pela **varredura de classe** do LIVE-050, não por relato. A pergunta do

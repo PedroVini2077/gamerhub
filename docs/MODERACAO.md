@@ -121,6 +121,20 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   seguiam. Um `admin` não oculta conteúdo de outro `admin`; quem faz isso é um
   `super_admin` ou o fundador. Detalhes e as medições em
   [SEGURANCA.md](SEGURANCA.md) (SEC-009).
+- **`[19/09]` O XP de uma live pode ser tirado DEPOIS, mesmo sem o post.** O
+  cron apaga o post 15 minutos depois que a live encerra, e até então a
+  invalidação dependia de um `UPDATE` nele — passado o prazo, o XP era
+  permanente. Medido: **8 das 10** sessões estavam nesse estado.
+
+  Hoje a aba **XP das lives** (dentro de Mod de Lives) lista as sessões
+  gravadas e tem os dois botões: *Tirar XP*, que exige motivo e **avisa o
+  autor**, e *Devolver*, que é a inversa. A hierarquia é a mesma do resto —
+  `can_moderate_content`, então ninguém modera igual ou acima.
+
+  > **Invalidação automática não se desfaz por aqui.** Se o XP caiu porque o
+  > post foi ocultado, a volta é **restaurar o post**; a tela diz isso. Duas
+  > portas para o mesmo estado divergem.
+
 - **`[19/09]` Ocultar uma live ENCERRA a transmissão, e tira o XP dela.**
   Antes não fazia nem uma coisa nem outra: a live ocultada continuava com
   `is_live = true` — oculta **e** no ar ao mesmo tempo — e o XP dos 30 pontos

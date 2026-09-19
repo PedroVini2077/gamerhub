@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield, Clock, VolumeX, Tv, RotateCcw } from 'lucide-react';
+import XpDasLives from './XpDasLives';
 
 export default function LivesPanel({
   liveMod, refreshing, fetchLiveMod,
@@ -131,6 +132,12 @@ export default function LivesPanel({
           </div>
         )}
       </div>
+
+      {/* `[19/09]` LIVE-052: a lista acima le `posts`, e o cron apaga o post
+          15 min depois da live. Esta le `lives_realizadas`, que sobrevive ao
+          cron — e era o unico jeito de alcancar as 8 sessoes que a moderacao
+          ja nao pegava. */}
+      <XpDasLives />
     </div>
   );
 }

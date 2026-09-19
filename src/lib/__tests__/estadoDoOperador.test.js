@@ -125,6 +125,10 @@ describe('SEC-043 — a lista de RPCs guardadas não encolhe', () => {
     'contato_registrar_resposta', 'request_role_demotion', 'admin_set_role',
     'owner_set_role', 'admin_list_users', 'admin_get_unconfirmed_users',
     'get_blocked_logins', 'contato_dados_para_resposta',
+    // `[19/09]` LIVE-052. Estas TRES nao passaram pela injecao da SEC-043 —
+    // elas nasceram depois e chamam `exige_operador_ativo()` no proprio
+    // corpo. A assercao abaixo aceita os dois caminhos de proposito.
+    'listar_lives_realizadas', 'invalidar_live_realizada', 'revalidar_live_realizada',
   ];
 
   /**
@@ -153,13 +157,36 @@ describe('SEC-043 — a lista de RPCs guardadas não encolhe', () => {
     ].join('\n')).toBeTruthy();
   });
 
-  it.each(EXIGEM_GUARDA)('`%s` continua na lista que recebe a guarda', (nome) => {
-    expect(blocoDeInjecao?.includes(`'${nome}'`), [
+  /**
+   * A guarda chega por DOIS caminhos, e a trava precisa aceitar os dois.
+   *
+   * `[19/09]` As 25 originais foram guardadas por INJECAO MECANICA: o bloco
+   * `DO $inj$` leu `pg_get_functiondef` e reescreveu cada funcao no banco. O
+   * corpo resultante **nao existe em arquivo nenhum** — a migration guarda a
+   * versao pre-injecao. Medido: uma varredura de arquivo pura acusa 7 delas
+   * como desguardadas, e as 7 estao guardadas em producao (`pg_proc`).
+   *
+   * Funcao NOVA nao passa por aquele bloco: ela chama `exige_operador_ativo()`
+   * no proprio corpo. Exigir so o bloco deixaria toda RPC administrativa nova
+   * fora da vigilancia — que e o item aberto do BACKLOG.
+   */
+  function temGuarda(nome) {
+    if (blocoDeInjecao?.includes(`'${nome}'`)) return true;
+    const corpo = ultimaDefinicao(nome);
+    return !!corpo && /exige_operador_ativo/.test(corpo);
+  }
+
+  it.each(EXIGEM_GUARDA)('`%s` recebe a guarda do operador', (nome) => {
+    expect(temGuarda(nome), [
       `A RPC \`${nome}\` saiu da lista da SEC-043.`,
       '',
       'Ela é administrativa e muda estado (ou lê dado administrativo). Fora da',
       'lista, um operador BANIDO ou SUSPENSO volta a executá-la — e nada',
       'estoura: a função continua existindo e respondendo normalmente.',
+      '',
+      'Ela recebe a guarda por UM de dois caminhos: estar na lista do bloco de',
+      'injeção da SEC-043, ou chamar `exige_operador_ativo()` no próprio corpo.',
+      'Nenhum dos dois está presente.',
       '',
       'Se ela foi removida do sistema, tire o nome DESTA lista também, no mesmo',
       'PR, para a trava não virar decoração.',
