@@ -227,6 +227,23 @@ Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
 - `role_rank(text)` — ranqueia os cargos (user 1 → owner 4). **Papel
   desconhecido ou NULL vira 0**, abaixo de `user` — e isso não é descuido do
   `ELSE`: é o que torna toda a família abaixo NULL-safe, porque o piso nega.
+- **`[19/09]` `operador_ativo()` — a pergunta que FALTAVA (SEC-043).** Cargo é
+  uma coisa; **estado operacional** é outra. Até esta data o projeto perguntava
+  `NOT banned AND NOT suspended` só para **publicar** (`pode_publicar()`) e
+  nunca para **moderar** — então um admin **banido** continuava suspendendo,
+  banindo e ocultando conteúdo. Medido, com o valor relido do banco.
+
+  `is_staff()`, `is_super()` e `can_moderate_content()` passaram a exigi-la, e
+  com isso **24 policies herdam a regra de uma vez**. Ela tem duas formas, da
+  mesma fonte: a booleana (para RLS, que não levanta exceção) e a
+  `exige_operador_ativo()` (para RPC, porque o usuário precisa saber por quê).
+
+  > **O owner é isento, e a razão foi medida:** `role_rank('owner') = 4`, o
+  > maior rank não-owner é 2, e `ban_user` exige rank estritamente maior. Logo
+  > ninguém consegue banir o owner pelo produto — isentá-lo não abre caminho, e
+  > **não** isentá-lo criaria um travamento sem volta, já que não existe
+  > autoridade acima dele para restaurar o acesso.
+
 - `is_staff()` (rank ≥ 2) · `is_super()` (rank ≥ 3) · **`is_owner()`** (rank ≥ 4,
   `[12/09]`). São a forma correta de perguntar por cargo, e **o motivo é
   mecânico, não estilo**: `v_caller_role NOT IN ('super_admin','owner')` não
