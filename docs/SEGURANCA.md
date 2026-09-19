@@ -1499,3 +1499,83 @@ com itens que ninguém consegue encerrar.
 Travas: `decisaoRevalidaEstado.test.js` (10 asserções) e a exceção documentada
 de `exige_alvo_apto` em `autorizacaoAntesDeExistencia.test.js` — ela não é porta
 de entrada (`EXECUTE` revogado), então não é oráculo de enumeração.
+
+---
+
+## `[19/09]` SEC-046 a SEC-049 — o que eu achei sozinho, fora da lista
+
+### SEC-046 — o N3 estava fechado para ESPAÇO e aberto para UNICODE
+
+O levantamento deu N3 (*"campos vazios geravam XP"*) como **PASS**, e o teste
+dele estava certo — o alcance é que era menor do que parecia:
+
+> `trim()` do PostgreSQL remove **branco ASCII**. Só isso.
+
+| | |
+|---|---|
+| `length(trim('   '))` | **0** ← o que foi testado |
+| `length(trim(U+200B))` | **1** ← ZERO WIDTH SPACE |
+| `length(trim(U+00A0))` | **1** ← NO-BREAK SPACE |
+| `length(trim(U+FEFF))` | **1** ← BOM |
+
+**Exploração medida:** colando invisível em bio/avatar/discord/twitch/youtube,
+`profile_bonus` foi de **0 → 125**. Com `platform` o teto seria 140 — o bônus
+inteiro, **sem nada aparecer na tela**. E XP alimenta o
+`check_staff_eligibility` (≥ 1000 vira admin).
+
+🟠 **ALTO**: explorável por qualquer conta, sem ferramenta — copiar e colar.
+
+`texto_visivel()` responde a pergunta certa e fica em **um** lugar; antes a
+regra estava repetida seis vezes na view.
+
+### SEC-047 — o CI era o único workflow sem `permissions`
+
+Cinco dos seis workflows declaram o privilégio do `GITHUB_TOKEN`. O `ci.yml`,
+justamente o que roda código vindo de PR, não declarava.
+
+**Não é vulnerabilidade confirmada, e não vou vender como tal:**
+
+| Cenário | Por quê |
+|---|---|
+| PR de **fork** | o gatilho é `pull_request` (não `pull_request_target`) → o GitHub **não entrega secret** e o token já vem somente-leitura |
+| PR de **colaborador** | os secrets existem, mas quem tem escrita já podia exfiltrá-los. Não é escalada |
+
+O que fecha é defesa em profundidade e a **inconsistência**. Nenhum job precisa
+de escrita — o resumo do PR usa `GITHUB_STEP_SUMMARY`, que não passa por token.
+Junto: `persist-credentials: false` nos 6 checkouts.
+
+### SEC-048 — os handles que viram `href`, e a senha errada que era muda
+
+`discord`, `twitch` e `youtube` são interpolados em `href` e **não tinham
+CHECK nenhum**. Não é redirecionamento aberto (o host é literal) — o que dava
+para fazer era `bio` de 5.000 caracteres viajando em todo carregamento de
+perfil, e link torto na tela.
+
+> **Lista branca, não lista negra.** A primeira versão barrava `@fulano`, que é
+> handle **legítimo** do YouTube — minha própria regressão pegou.
+
+E `delete_own_account`: a análise estrutural mostrou tudo certo (auth.uid
+obrigatório, bcrypt, `a_senha_confere` sem `EXECUTE`, log antes de apagar), mas
+**sem limite de tentativa e sem rastro**. Não inventei um teto (é decisão de
+produto): a tentativa errada passou a **gritar** em `admin_logs`.
+
+> **O teste dinâmico de senha errada NÃO foi executado** — foi bloqueado pela
+> ferramenta. O que existe é análise estrutural, e digo isso com todas as
+> letras.
+
+### SEC-049 — um auditor que pergunta ao BANCO
+
+A SEC-043 guardava uma **lista de 25 nomes escrita à mão**, e eu registrei o
+risco residual no próprio PR. **Registrar o risco não é fechar o risco.**
+
+`auditoria_de_operadores()` pergunta ao Postgres quais funções administrativas
+ficaram sem guarda. Na **primeira execução** achou duas — **as duas minhas**:
+
+| | |
+|---|---|
+| `request_unban` | eu esqueci na lista da SEC-043 (pus a irmã `request_role_demotion` e não pus ela) |
+| `texto_visivel` | nasceu alcançável por `anon` — o padrão que **eu mesmo documentei** na SEC-042, repetido 20 minutos depois |
+
+Uso: `SELECT * FROM auditoria_de_operadores();` — zero linhas = superfície
+limpa. Fica fora do CI pelo mesmo motivo do `npm run edges`: consultar
+`pg_proc` exige credencial de banco.

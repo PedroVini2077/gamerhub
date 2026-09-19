@@ -647,6 +647,12 @@ A aba `Lives` exibe duas categorias de conteúdo lado a lado via **sub-tabs**:
   parte não tem volta.
 - **Reativação de live**: admin solicita → super admin aprova/nega
   (`live_reactivation_requests`).
+- **`[19/09]` Live APAGADA não volta ao ar.** O painel deixava reativar a live
+  de um post excluído: o post ficava no ar e apagado ao mesmo tempo, e cada
+  ciclo gravava uma sessão que paga XP. A tela nunca mostrou essa live — o
+  sintoma era só o botão parecer funcionar. Hoje o banco recusa, com a frase
+  *"Esta live foi apagada. Restaure o post antes de reativar."* chegando no
+  toast de quem clicou.
 - **`[18/09]` O AUTOR pede a própria live de volta** (`PedirReativacaoDaLive`).
   Ele escreve o motivo (mín. 10 caracteres) e o pedido vai para a equipe.
   Enquanto estiver pendente, **o cron não apaga a live** — sem isso a porta

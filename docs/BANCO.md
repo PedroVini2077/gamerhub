@@ -577,6 +577,10 @@ O `trg_guard_post_privileged` passou a ser `BEFORE INSERT OR UPDATE` (era só
 formulário de edição do `PostCard` deixa marcar o próprio post como live, e
 tirar isso mudaria o produto em vez de fechar uma brecha.
 
+> **`[19/09]` Com um limite que faltava:** ligar `is_live` num post **apagado**
+> passou a ser recusado (LIVE-050, abaixo). A coluna continua do autor; o que
+> deixou de existir é a combinação impossível.
+
 ### Por que o `GRANT` das colunas NÃO foi revogado junto
 
 Seria a segunda camada, e a tentação é óbvia. Mas `hidden_at` e `deleted_at`
@@ -738,6 +742,60 @@ a fonte é **apagada de propósito**: não há o que duplicar, e esta tabela é 
 Reativar e encerrar de novo grava uma segunda linha — foram duas transmissões.
 E o abuso se auto-limita: uma reativação de dois segundos vira uma sessão de
 dois segundos, que não passa na regra de duração.
+
+> **`[19/09]` "Foram duas transmissões" pressupunha uma coisa que o banco não
+> exigia: que o post estivesse NO AR.** Num post apagado não havia transmissão
+> nenhuma, e cada ciclo gravava uma linha assim mesmo. Fechado na LIVE-050,
+> logo abaixo.
+
+### `[19/09]` LIVE-050 — post apagado não volta ao ar, e não grava sessão
+
+Bug encontrado pelo dono clicando no painel: *"assim que exclui um post de
+live, eu consigo ativar e reativar a live mesmo estando apagado"*.
+
+**O que eu medi foi pior do que o relato.** Em `ROLLBACK`, com o post já
+apagado:
+
+| | |
+| --- | --- |
+| depois de apagar | `is_live=false` · `deleted_at=SIM` |
+| depois de **reativar** pelo painel | `is_live=true` · `deleted_at=SIM` |
+| estado impossível | **SIM** — no ar e apagado ao mesmo tempo |
+| aparece no `fetchActiveLives` | **não** — o filtro `deleted_at` segura |
+| sessões gravadas em `lives_realizadas` | **2** |
+
+A linha "não aparece" é a que engana: a tela não mostrava nada, então o sintoma
+visível era só um botão que parecia funcionar. O estrago estava na última — cada
+ciclo ativar/desativar de um post apagado gravava uma sessão, e a view de XP
+paga por sessão registrada.
+
+**A causa raiz foi o par de colunas errado.** O SEC-034 já tinha travado
+`is_live` × `live_ended_at` com o CHECK `posts_live_no_ar_nao_tem_fim`. O par
+`is_live` × `deleted_at` ficou de fora — mesma classe de estado impossível, a
+metade que ninguém olhou. E o `set_live_ended_at` tinha o caminho de **ida**
+(apagar uma live no ar encerra ela) sem a **volta**, que é o padrão que a seção
+"toda ação de estado precisa da inversa" deste projeto descreve.
+
+**Três camadas, e elas são independentes de propósito:**
+
+| Camada | Onde | O que ela sozinha impede |
+| --- | --- | --- |
+| 1 | `set_live_ended_at` **levanta** ao ligar a live de um post apagado | o clique do painel |
+| 2 | `registrar_live_realizada` exige `OLD.deleted_at IS NULL` | a sessão ser gravada, mesmo que a camada 1 caia |
+| 3 | CHECK `posts_live_apagada_nao_fica_no_ar` | o estado existir, venha de onde vier |
+
+**Levanta em vez de forçar `false` em silêncio**, e isso é escolha: o painel já
+faz `toast.error('Erro ao reativar: ' + err.message)`, então a mensagem chega na
+tela de quem clicou. Forçar o valor daria um botão que não faz nada e não
+explica — o §1.5 por outro nome.
+
+**Apagar uma live que está NO AR continua registrando a sessão** (SEC-034): a
+transmissão aconteceu. A diferença está em `OLD.deleted_at`, não em `NEW`.
+
+Verificado em produção antes de criar o CHECK: `posts_no_estado_impossivel = 0`
+e `sessoes_validas_em_post_apagado = 0` — nenhum dado existente precisava de
+limpeza. A trava é `src/lib/__tests__/liveApagadaNaoVoltaAoAr.test.js`, provada
+reinjetando os **seis** modos de desfazer as três camadas.
 
 ### `[18/09]` `invalidada_em` — como a moderação alcança uma live que já acabou
 
