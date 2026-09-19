@@ -222,14 +222,30 @@ try {
   await abrirAbaDaLive(page);
   await page.getByText(TITULO).first().click().catch(() => {});
   await page.waitForTimeout(1500);
-  const botaoEncerrar = page.getByRole('button', { name: /Encerrar/i }).first();
+  const botaoEncerrar = page.getByRole('button', { name: /^Encerrar$/i }).first();
   if (await botaoEncerrar.count()) {
     await botaoEncerrar.click();
+
+    // `[18/09]` DOIS cliques agora, e o teste pegou a mudanca sozinho: encerrar
+    // passou a abrir um `ConfirmModal` (LIVE-041), entao a versao anterior
+    // deste passo clicava uma vez e reclamava que "o banco continua
+    // is_live=true" — com a captura de tela mostrando o proprio popup aberto.
+    //
+    // Conferir o POPUP antes de confirmar nao e enfeite: se ele sumir um dia, a
+    // acao volta a ser um clique so numa coisa que NAO TEM VOLTA pelo usuario,
+    // e nada acusaria — o passo seguinte continuaria passando.
+    const popup = page.getByText(/NÃO consegue colocá-la de volta no ar sozinho/i);
+    if (!await popup.count()) {
+      throw new Error('clicou em Encerrar e o aviso de confirmacao NAO apareceu '
+        + '— a acao voltou a ser um clique so, e ela e irreversivel para o autor');
+    }
+    await page.getByRole('button', { name: /^Encerrar live$/i }).click();
     await page.waitForTimeout(2000);
+
     linha = await lerPost(token, postId);
-    if (linha.is_live) throw new Error('clicou em Encerrar e o banco continua is_live=true');
+    if (linha.is_live) throw new Error('confirmou o encerramento e o banco continua is_live=true');
     if (!linha.live_ended_at) throw new Error('encerrou e live_ended_at nao foi gravado');
-    ok('encerrou pela interface e o banco gravou a data de fim');
+    ok('encerrou pela interface (com confirmacao) e o banco gravou a data de fim');
   } else {
     // Não falha o teste: o botão só existe dentro da própria live, e o layout
     // dessa tela pode mudar. Mas DIZ que não testou, em vez de fingir.

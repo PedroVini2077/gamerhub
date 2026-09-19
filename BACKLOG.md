@@ -1764,7 +1764,7 @@ dependência técnica real** que decide o resto:
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->129<!--/n--> arq ·
   <!--n:src.lib.linhas-->14.725<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->18<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.895<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->1.894<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
