@@ -35,37 +35,37 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### ✅ `[18/09]` O CICLO DE VIDA DA LIVE — três das quatro decisões, fechadas
+### 🔄 `[19/09]` AUDITORIA DE SEGURANÇA — 4ª rodada (N25–N48)
 
-**Como isto começou:** ele perguntou o que fazer sobre XP de live, e a
-investigação achou **5 cron jobs** que eu não sabia que existiam — nas
-migrations desde junho, e eu nunca tinha lido. Um deles **apaga fisicamente**
-toda live encerrada há mais de 15 minutos.
+**Ordem dele:** *"corrija a CAUSA-RAIZ e use os achados como casos de
+regressão"*, e *"não presuma que um patch anterior está correto"*.
 
-**O que isso revelou:** o XP deste site é contado na hora, das linhas que
-existem. Então **o XP de live durava 15 minutos** e sumia. Ninguém decidiu isso
-— caiu do encontro de duas decisões que nunca se falaram.
+| Etapa | O que é | Estado |
+| --- | --- | --- |
+| 0 | Inventário medido das 31 RPCs administrativas | ✅ |
+| 1 | **SEC-043** — N43–N48: estado do operador entra na autorização | ✅ |
+| 2 | **N25/N27/N26/N38/N32/N41/N39** — decisão administrativa sobre snapshot velho (TOCTOU) | ⬜ **próxima** |
+| 3 | **N33/N42** — ban/unban não reconcilia `suspended_until` | ⬜ |
+| 4 | **N34** — corrida em `request_unban` (hipótese, precisa de prova) | ⬜ |
+| 5 | Varredura por caminhos equivalentes fora da lista dele | 🔄 parcial — achei a porta da RLS |
+| 6 | Travas, documentação, PR | 🔄 por fase |
 
-> **Eu tinha afirmado a ele que `expires_at` "não tem dono e nada no site
-> escreve".** Verdade sobre o frontend, falso sobre o sistema. A informação
-> estava no repo; eu não fui olhar.
+**O que a etapa 1 entregou:** a família N43–N48 era **um** bug — o projeto
+aplicava `NOT banned AND NOT suspended` a *publicar* e nunca a *moderar*. E o
+ataque contra a minha própria correção achou uma porta que não estava na lista
+dele: **`UPDATE posts SET hidden_at` direto pela RLS**, que é o caminho real do
+`moderationService`. Guardar só as RPCs teria deixado a moderação aberta.
 
-| Decisão dele | O que foi feito |
-| --- | --- |
-| a live que aconteceu tem que continuar valendo XP | `lives_realizadas` — registro que sobrevive ao DELETE (LIVE-036) |
-| XP de live exige **duração** | ≥ 10 min, configurável no painel (LIVE-037) |
-| usuário comum **não** reativa | guard + RPC para ele pedir + o cron segura o post (LIVE-038) |
-| live tem prazo? | **aberta** — virou item próprio, porque o teto de 24h já existia |
+**Correções ao relatório dele** (medido, não suposto):
 
-**Um bug meu, achado por teste meu:** a SEC-027 pôs a derivação de `was_live`
-dentro do ramo de usuário comum. Live criada por **admin/owner** nascia com
-`was_live = false` — e o cron nunca a apagaria, acumulando card com embed morto
-no feed. Fechado na LIVE-039.
+- **N45/N48 não reproduzem hoje** — `admin_set_role` está sem `EXECUTE` (SEC-026)
+  e `owner_set_role` exige o fundador.
+- **N13 e N16 continuam decisão de design**, como ele mesmo classificou.
 
-**Falta do pacote** (não entrou nesta rodada): o popup de confirmação ao
-encerrar/excluir e a tela onde o autor pede a reativação. O banco está pronto
-para os dois; é trabalho de frontend.
-
+**O que ele proibiu explicitamente**, registrado para eu não escorregar:
+`migration criada` ≠ corrigido · `UI bloqueou` ≠ corrigido · `HTTP 204` ≠
+persistiu · não afirmar que o teste de senha errada do `delete_own_account`
+passou · ausência de teste **não** vira PASS.
 
 ### ✅ `[18/09]` O PACOTE DE LIVE QUE FALTAVA — fechado nesta sessão
 
@@ -514,7 +514,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**45 itens abertos** (+ 1 ideia sem compromisso)
+**46 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1203,6 +1203,26 @@ dependência técnica real** que decide o resto:
   sujeira para gente de verdade ver. Um por vez, com limpeza provada.
 
 
+- ⬜ `[19/09]` 🟠 **RPC administrativa NOVA não entra sozinha na guarda da
+  SEC-043.** *Risco residual da própria correção, dito na hora.*
+
+  A SEC-043 injeta `exige_operador_ativo()` numa **lista de 25 nomes**. A trava
+  `estadoDoOperador.test.js` pega a lista **encolhendo** — não pega a lista
+  ficando para trás quando alguém criar a 26ª função administrativa.
+
+  **Por que não resolvi agora:** detectar isso exige perguntar ao BANCO quais
+  funções administrativas existem, e isso pede credencial de banco no CI — a
+  troca que este projeto já recusou três vezes.
+
+  | Saída | Custo |
+  | --- | --- |
+  | aceitar e confiar na revisão | o buraco volta na próxima RPC administrativa |
+  | script manual (`npm run operadores`) antes de fechar a sessão | mais um passo meu, fora do CI — igual ao `npm run edges` |
+  | credencial de leitura no CI | resolve de vez, e é a troca recusada |
+
+  **Minha recomendação é a do meio**, pelo precedente do `npm run edges`: fora
+  do CI de propósito, mas existindo e rodável.
+
 - ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *Medido hoje;
   é proposta de mudança de contrato do schema (§7 🟡), então espera decisão.*
 
@@ -1761,8 +1781,8 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->129<!--/n--> arq ·
-  <!--n:src.lib.linhas-->14.725<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->130<!--/n--> arq ·
+  <!--n:src.lib.linhas-->14.879<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->18<!--/n--> arq ·
   <!--n:src.services.linhas-->1.894<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

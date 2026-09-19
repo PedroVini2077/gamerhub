@@ -1328,3 +1328,95 @@ Fechar na raiz com `ALTER DEFAULT PRIVILEGES` é mudança de contrato de todo
 trabalho futuro no schema (§7 🟡), então está **proposta ao dono** no
 `BACKLOG.md`, com o modo de falhar dos dois lados na mesa. Até lá, quem segura a
 classe é `src/lib/__tests__/funcaoDeTriggerNaoEhRpc.test.js`.
+
+---
+
+## `[19/09]` SEC-043 — o estado do operador virou parte da autorização
+
+4ª rodada de auditoria externa. Os achados N43–N48 pareciam seis bugs; são
+**um**, e a forma dele é uma **assimetria que o projeto já tinha resolvido do
+outro lado**.
+
+### A causa-raiz em quatro linhas
+
+```
+pode_publicar()         ->  NOT banned AND NOT suspended     usada no INSERT
+is_staff()              ->  role_rank >= 2                   só cargo
+is_super()              ->  role_rank >= 3                   só cargo
+can_moderate_content()  ->  rank(caller) > rank(autor)       só cargo
+```
+
+O projeto aplicou o estado operacional a **publicar** e nunca a **moderar**.
+
+### Medido antes, com papel `authenticated` real e o valor RELIDO
+
+Não "sem exceção" — o valor **persistido** depois da chamada:
+
+| | O que o operador punido conseguiu |
+|---|---|
+| **N43** | admin **banido** suspendeu um usuário |
+| **N44** | admin **banido** baniu um usuário |
+| **N46** | super_admin **banido** desbaniu, e destravou login |
+| **N47** | admin **suspenso** suspendeu e baniu |
+
+> **Correção ao relatório:** N45 e N48 (troca de cargo) **não reproduzem hoje**.
+> `admin_set_role` está sem `EXECUTE` desde a SEC-026 e `owner_set_role` exige o
+> fundador. O relatório os deu como reproduzidos; medido, não estão.
+
+### A porta que o ataque contra a própria correção encontrou
+
+A 1ª versão guardava só as RPCs. O admin banido moderou assim mesmo:
+
+```sql
+UPDATE posts SET hidden_at = now() WHERE id = ...   -- PERSISTIU
+```
+
+É o caminho do `moderationService.setHiddenAt`: **UPDATE direto, RLS, sem RPC
+nenhuma**. Fechar só a RPC teria deixado a moderação inteira aberta pela porta
+ao lado — e o relatório teria dito "corrigido". Por isso a guarda entra nos três
+**helpers**, e daí **24 policies** a herdam de uma vez.
+
+### A política, e de onde ela veio
+
+Não foi inventada — está no `MODERACAO.md`:
+
+> *"Suspensão… bloqueia o usuário de **criar conteúdo**… continua navegando/lendo
+> — diferente do ban, que **tranca o site**."*
+
+| Estado do operador | Pode operar? |
+|---|---|
+| **banido** | não, em nada |
+| **suspenso** | não age; o site público continua aberto a ele |
+| **owner** | isento |
+
+**Onde eu estendi a documentação, e digo para poder ser contestado:** a doc fala
+do usuário comum; suspender um **operador** nunca foi definido. Decidi que
+suspensão tira também a **leitura administrativa** — "continua navegando" é
+sobre o site público, não sobre o painel, e quem está punido por abuso não
+deveria seguir lendo e-mail de usuário. É temporário e reversível, então errar
+para o lado restritivo custa pouco.
+
+### Por que o owner é isento, e a razão foi medida
+
+```
+role_rank('owner') = 4   ·   maior rank não-owner = 2
+ban_user exige rank(caller) > rank(alvo)
+```
+
+**Ninguém consegue banir o owner pelo produto.** Isentá-lo não abre caminho no
+modelo de ameaça; **não** isentá-lo cria um travamento sem volta, porque não
+existe autoridade acima dele para restaurar o acesso.
+
+### Por que `role_rank()` não mudou
+
+Ele também calcula o rank do **alvo**. Misturar o estado do chamador ali faria
+"banir alguém banido" mudar de significado. `role_rank` continua puro.
+
+### O que esta correção NÃO cobre
+
+Uma RPC administrativa **nova** não entra sozinha na lista da SEC-043. A trava
+pega a lista **encolhendo**, não ficando para trás — para isso seria preciso ler
+o banco no CI, credencial que este projeto já recusou três vezes. Está no
+`BACKLOG.md` como risco residual.
+
+Trava: `src/lib/__tests__/estadoDoOperador.test.js`, 31 asserções.
