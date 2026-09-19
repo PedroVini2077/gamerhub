@@ -18,6 +18,13 @@ vi.mock('../useBlockedWords', () => ({
 }));
 vi.mock('../../services/postService', () => ({
   createPost: vi.fn(async () => ({ data: { id: 'post1' }, error: null })),
+}));
+// `[18/09]` `uploadAudio` e `uploadPostMediaFiles` mudaram de arquivo quando o
+// `postService` passou de 300 linhas e a parte de STORAGE saiu para o
+// `postMediaService`. É exatamente a armadilha descrita no comentário abaixo,
+// acontecendo pela segunda vez — e desta vez os 5 testes caíram na hora, que é
+// o comportamento certo: mock que não intercepta nada deve falhar alto.
+vi.mock('../../services/postMediaService', () => ({
   uploadAudio: vi.fn(async () => ({ data: 'audio-url', error: null })),
   uploadPostMediaFiles: vi.fn(async () => ({ data: { imageUrls: [], failed: 0 }, error: null })),
 }));

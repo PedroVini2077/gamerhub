@@ -67,6 +67,34 @@ encerrar/excluir e a tela onde o autor pede a reativação. O banco está pronto
 para os dois; é trabalho de frontend.
 
 
+### ✅ `[18/09]` O PACOTE DE LIVE QUE FALTAVA — fechado nesta sessão
+
+**Pedido dele:** *"pode fazer oq vc recomendou das lives e pode fazer o popup de
+confirmação da melhor forma que vc achar"*.
+
+| | |
+| --- | --- |
+| **LIVE-041** | `expires_at` ganhou dono: o autor escolhe a DURAÇÃO, o servidor deriva o instante. Seletor no `LiveGoModal` |
+| **LIVE-042** | o pedido de reativação passou a deixar rastro em `admin_logs` — ele **não deixava** |
+| popup ao **encerrar** | o botão do autor abria direto uma ação sem volta |
+| popup ao **excluir** | o texto genérico não dizia que apagar encerra a live |
+| `PedirReativacaoDaLive` | a porta do autor, em dois lugares (a janela é de 15 min) |
+
+**O que quase foi para produção, e é o que importa desta sessão:** escrevi
+`SECURITY DEFINER` no rascunho do `guard_post_privileged_cols`. Em produção ele
+é **INVOKER** de propósito — ele lê `current_user`. Como DEFINER, `v_comum` fica
+sempre falso e **toda a pinagem da SEC-027 desliga em silêncio**.
+
+Pegou porque as asserções 9, 10 e 11 do ROLLBACK reprovaram juntas. A regra que
+teria evitado isso **já estava escrita** no `docs/regras/BANCO.md` — o que
+faltava era mecanismo, não texto (§9.8). Hoje há trava.
+
+**Dívida que eu mesmo criei e paguei no mesmo bloco:** o `postService.js` passou
+de 300 linhas (302). Corte mecânico, a parte de **storage** saiu para o
+`postMediaService.js`: 302 → 250 + 64.
+
+---
+
 ### ✅ `[18/09]` AUDITORIA EXTERNA (3ª rodada) — a MESMA regra, aplicada pela metade
 
 **Pedido dele:** *"tá difícil em Claude? Vc fecha e tô achando várias coisas
@@ -486,7 +514,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**46 itens abertos** (+ 1 ideia sem compromisso)
+**45 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1158,52 +1186,6 @@ dependência técnica real** que decide o resto:
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[18/09]` 🟠 **Live tem prazo? — a última das quatro decisões de live.**
-
-  As outras três foram respondidas em 18/09 e estão feitas (ver EM EXECUÇÃO).
-  Esta sobrou, e ela mudou de forma quando a investigação achou os crons:
-
-  **O prazo JÁ EXISTE e eu não sabia quando perguntei.** Um cron encerra
-  qualquer live com mais de **24 horas** no ar, desde junho, e nunca esteve
-  escrito em documento nenhum.
-
-  O que continua aberto é outra coisa: **`expires_at` é um prazo por live que
-  nada no site escreve.** Nenhum post no banco tem valor nele. As saídas:
-
-  | Saída | O que muda |
-  | --- | --- |
-  | dar dono a `expires_at` | o autor escolhe "essa live acaba às 22h" |
-  | deixar só o teto de 24h | `expires_at` vira coluna morta e some |
-
-  **`[18/09]` Minha recomendação: DAR DONO, e derivado — não digitado.**
-
-  Três fatos que mudam a conta, e os três foram conferidos no sistema:
-
-  | Fato | Onde |
-  | --- | --- |
-  | a **tela já sabe mostrar** o prazo — "até HH:MM" no card, e o player marca a live como encerrada | `LivesList.jsx`, `EmbedPlayer.jsx`, `PostCard.jsx` |
-  | o **cron já lê** `expires_at`, em dois jobs (`expire-lives` e `expire-lives-every-minute`) | `cron.job` |
-  | depois da SEC-027 o **cliente não escreve mais** a coluna — o guard a pina | `guard_post_privileged_cols` |
-
-  Ou seja: não é feature nova, é uma feature **meio construída** onde só o
-  escritor falta. Apagar a coluna custaria mexer nos dois crons e jogar fora o
-  que já está na tela.
-
-  **Como dar dono sem reabrir o achado do pentest:** o autor escolhe uma
-  *duração* ("1h · 2h · 4h · sem prazo"), e o **servidor** deriva
-  `expires_at = now() + duração`, com teto de 24h. Mesmo princípio do
-  `was_live`: o cliente declara **intenção**, o banco calcula o **valor**. Uma
-  faixa explícita, como o `BANCO.md` exige de toda entrada.
-
-  **O que isso resolve na prática:** hoje uma live esquecida no ar ocupa o topo
-  do feed por 24 horas com um embed morto. Com prazo, ela se encerra sozinha na
-  hora que o autor disse.
-
-  **Fica para ele decidir**, porque é decisão de produto (§7 🟡): se ele achar
-  que escolher prazo é atrito demais na hora de abrir a live, o teto de 24h
-  sozinho já é um comportamento defensável — e aí `expires_at` sai, com a
-  limpeza dos dois crons junto.
-
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -1779,10 +1761,10 @@ dependência técnica real** que decide o resto:
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->128<!--/n--> arq ·
-  <!--n:src.lib.linhas-->14.518<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->17<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.858<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->129<!--/n--> arq ·
+  <!--n:src.lib.linhas-->14.725<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->18<!--/n--> arq ·
+  <!--n:src.services.linhas-->1.894<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

@@ -80,3 +80,23 @@ export async function unsilenceUser({ postId, userId }) {
     'Não foi possível remover o silêncio — sem permissão, ou ele já havia expirado.',
   );
 }
+
+// `[18/09]` LIVE-038/041 — a porta do AUTOR para pedir a live de volta.
+//
+// É RPC e não um INSERT direto porque `live_reactivation_requests` continua
+// FECHADA para `authenticated`: as regras ("é o dono, é live, já acabou, não há
+// pedido pendente") ficam num lugar que dá para ler, em vez de espalhadas num
+// `WITH CHECK`.
+//
+// **A consequência disso na tela, dita aqui para ninguém "consertar" depois:**
+// o cliente NÃO consegue saber se já existe um pedido pendente — ele não lê a
+// tabela. Então a resposta vem no clique, e a mensagem do banco é a que o
+// usuário vê. Inventar um estado otimista aqui seria fingir um dado que este
+// lado não tem.
+export async function pedirReativacaoDaLive(postId, motivo) {
+  const { error } = await supabase.rpc('solicitar_reativacao_da_propria_live', {
+    p_post_id: postId,
+    p_motivo: motivo,
+  });
+  return { error };
+}

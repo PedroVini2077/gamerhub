@@ -312,7 +312,9 @@ src/
 │   │                      # recusava sempre. Hoje as coordenadas vão no
 │   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
-│   ├── postService.js     # Posts, likes, mídia, comentários, lives ativas
+│   ├── postService.js     # Posts, likes, comentários, lives ativas
+│   ├── postMediaService.js # Upload e storage da mídia de post — a única
+│   │                      # parte do domínio que conversa com o BUCKET
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
 │   ├── communityService.js# Mural da comunidade
 │   ├── liveService.js     # Chat de live, silenciamentos
@@ -405,7 +407,8 @@ src/
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
-    ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal
+    ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal,
+    │                      # PedirReativacaoDaLive (o autor pede a live de volta)
     ├── admin/             # UsersPanel, PostsPanel, LivesPanel, KeysPanel,
     │   ├── CartaoDeContato.jsx # Uma mensagem do formulário público na visão
     │   │                  # da equipe, com a caixa de resposta. Cada estado só
@@ -589,7 +592,8 @@ src/
     │   └── composer/      # ComposerToolbar, MediaPreviewGrid, AudioAttachment,
     │                      # EmbedComposer
     ├── community/         # MuralCard, MuralForm
-    ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal
+    ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal,
+    │                      # PedirReativacaoDaLive (o autor pede a live de volta)
     ├── keys/              # KeyEditor
     ├── profile/           # ProfileIdentityCard, PersonalInfoCard, GamingCard,
     │                      # SocialLinksCard, PlayerStatsCard, AvatarModal,
