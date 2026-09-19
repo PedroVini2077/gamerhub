@@ -21,7 +21,7 @@ import {
   Tv, Radio, MicOff, Mic, RotateCcw, CheckCircle, XCircle,
   Crown, Shield, UserCog, Image, Mail, UserMinus, Clock, ScrollText,
   Lock, Settings2, Wrench, Siren, Bell, SlidersHorizontal, Filter, EyeOff, Eye,
-  Flag, MailQuestion, MailCheck, ShieldCheck,
+  Flag, MailQuestion, MailCheck, ShieldCheck, Trophy,
 } from 'lucide-react';
 
 // ─── Categorias ──────────────────────────────────────────────────────────────
@@ -169,6 +169,11 @@ export const ACTION_META = {
   // cliente. Sem ela aqui, o pedido aparece na trilha com o icone generico.
   // Amarelo porque e pedido esperando decisao; o verde e o desfecho.
   live_reactivation_request: A(RotateCcw,    'text-yellow-400',  '#facc15'),
+  // `[19/09]` LIVE-052: a equipe tira (ou devolve) o XP de uma live que JA
+  // ACONTECEU — o unico caminho depois que o cron apagou o post. Vermelho na
+  // ida porque e punicao; verde na volta, que e o desfecho reparador.
+  live_xp_invalidado:        A(Ban,          'text-red-400',     '#f87171'),
+  live_xp_revalidado:        A(Trophy,       'text-neon-green',  '#39ff14'),
   live_chat_delete:          A(Trash2,       'text-red-400',     '#f87171'),
   live_silence:              A(MicOff,       'text-yellow-400',  '#facc15'),
   live_unsilence:            A(Mic,          'text-neon-green',  '#39ff14'),
@@ -197,6 +202,8 @@ export const NOTIF_META = {
   // porque é pedido esperando decisão, não evento consumado — o verde do
   // `live_reactivated` é o desfecho, este é a fila.
   live_reactivation_request: A(RotateCcw, 'text-yellow-400', '#facc15'),
+  live_xp_invalidado:   A(Ban,         'text-red-400',     '#f87171'),
+  live_xp_revalidado:   A(Trophy,      'text-neon-green',  '#39ff14'),
   reactivation_request: A(RotateCcw,   'text-yellow-400',  '#facc15'),
   user_banned:          A(Ban,         'text-red-400',     '#f87171'),
   user_suspended:       A(Clock,       'text-yellow-400',  '#facc15'),

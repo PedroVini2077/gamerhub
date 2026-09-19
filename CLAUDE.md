@@ -725,6 +725,7 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `xpSoPagaOQueAparece.test.js` | `npm test`, **reprova** | bônus de perfil pago por campo que não tem **caractere visível**. `trim()` só corta espaço ASCII: U+200B, U+00A0, U+3000, U+FEFF e U+2060 sobrevivem a ele, e um perfil de espaços invisíveis pagava igual a um preenchido |
 | `liveApagadaNaoVoltaAoAr.test.js` | `npm test`, **reprova** | live de post **apagado** voltando ao ar pelo painel, e cada ciclo gravando uma sessão que paga XP. O CHECK do SEC-034 cobria `is_live` × `live_ended_at` e deixou `is_live` × `deleted_at` de fora — mesma classe, o par que ninguém olhou |
 | `moderacaoAlcancaLiveNoAr.test.js` | `npm test`, **reprova** | moderação que não alcança a live **ainda no ar**. A invalidação do XP é retrospectiva e a live no ar não tem sessão para invalidar — ocultar ou apagar durante a transmissão deixava os 30 XP com o autor. Cobre as duas pontas: o banco e os dois lugares da TELA que listavam a live oculta como "ao vivo" para a própria equipe |
+| `moderacaoDeXpDeLive.test.js` | `npm test`, **reprova** | o acoplamento invisível das três formas de invalidar o XP de uma live: elas convivem na MESMA coluna e o TEXTO dela é o mecanismo. Se o motivo manual colidir com o automático, restaurar um post passa a desfazer por baixo uma decisão que uma pessoa tomou — e nada quebra, porque restaurar continua funcionando |
 
 ### O que os mecanismos NÃO fazem — e por que isso está escrito aqui
 

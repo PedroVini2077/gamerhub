@@ -108,6 +108,7 @@ src/
 │   ├── usePostEngagement.js # Curtidas e comentários de um post
 │   ├── useLiveChat.js     # Chat da live
 │   ├── useLiveModeration.js # Silenciar e remover no chat da live
+│   ├── useXpDasLives.js   # `[19/09]` Sessões de live e o XP delas, para o painel
 │   ├── useLivesList.js    # Lista de lives, com debounce (INSERT e UPDATE quase juntos)
 │   ├── useProfileForm.js  # Estado do formulário de perfil
 │   ├── useProfileStats.js # Números do perfil
@@ -318,6 +319,7 @@ src/
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
 │   ├── communityService.js# Mural da comunidade
 │   ├── liveService.js     # Chat de live, silenciamentos
+│   ├── liveXpService.js   # `[19/09]` As 3 RPCs de XP de live que já aconteceu
 │   ├── keyService.js      # Keys/promos, stats do site
 │   ├── authService.js     # Trocar senha/email, deletar conta
 │   ├── commentService.js  # Comentários e curtidas de comentário (saiu do
@@ -410,6 +412,9 @@ src/
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal,
     │                      # PedirReativacaoDaLive (o autor pede a live de volta)
     ├── admin/             # UsersPanel, PostsPanel, LivesPanel, KeysPanel,
+    │   ├── XpDasLives.jsx # `[19/09]` Tirar/devolver o XP de uma live que já
+    │   │                  # aconteceu. Lê `lives_realizadas`, que sobrevive ao
+    │   │                  # cron — é o único alcance depois de 15 min
     │   ├── CartaoDeContato.jsx # Uma mensagem do formulário público na visão
     │   │                  # da equipe, com a caixa de resposta. Cada estado só
     │   │                  # oferece o que faz sentido — e todo estado tem a
