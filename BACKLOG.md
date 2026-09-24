@@ -116,7 +116,7 @@ duplicar fonte de verdade (§4):
    `INV-CONTA-006/007`. O `INVARIANTES.md` passou a **46 invariantes em 12
    famílias**, e nenhuma linha do `TRAVAS.md` diz mais "sem INV".
 4. Os 7 comentários do `index.html`.
-4. ADRs, um a um, **copiando** a prosa; o comentário original vira referência
+5. ADRs, um a um, **copiando** a prosa; o comentário original vira referência
    **só depois** de o ADR estar no ar e validado.
 
 **Nada de banco. Nada de RLS. Nada de comportamento.**
@@ -661,7 +661,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**47 itens abertos** (+ 1 ideia sem compromisso)
+**46 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1244,11 +1244,6 @@ M riscos · **N o que precisa da aprovação dele**.
   Enquanto não decide, as cinco estão isentas **com o motivo escrito** na
   migration, e a trava reprova se a lista crescer.
 
-- ⬜ `[24/09]` 🟢 **Exigir o cabeçalho `Content-Security-Policy` no
-  `portas-da-web.mjs`.** *Sequência obrigatória, não esquecimento: aquele
-  roteiro bate na **produção**, então exigir o cabeçalho **antes** do deploy
-  reprovaria o próprio PR que o publica. Entra assim que a CSP estiver no ar —
-  conferir com `SITE_URL=... node e2e/portas-da-web.mjs`.*
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -1849,7 +1844,7 @@ M riscos · **N o que precisa da aprovação dele**.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->137<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.235<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->16.276<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

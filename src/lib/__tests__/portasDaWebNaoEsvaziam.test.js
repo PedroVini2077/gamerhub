@@ -33,6 +33,17 @@ import { readFileSync } from 'node:fs';
  *   . lista de cabeçalhos esvaziada      -> falhou apontando o esvaziamento
  *   . `x-frame-options` removido da lista -> falhou nomeando o cabeçalho
  *   . lista de caminhos esvaziada         -> falhou apontando o vazamento
+ *   . `[24/09]` CSP_TRAVADAS esvaziada    -> falhou apontando o esvaziamento
+ *   . `[24/09]` `script-src` TROCADO por uma diretiva decorativa (o total
+ *     continua 6) -> falhou nomeando `script-src`. A remocao simples falharia
+ *     antes, na contagem — e provaria menos do que a trava promete.
+ *
+ * ── `[24/09]` Por que CSP_TRAVADAS precisa da mesma vigilância ────────────
+ *
+ * Ela é a única parte do portão que julga o VALOR da CSP — o cabeçalho pode
+ * continuar presente, e presente não é protegido. Esvaziada, o portão volta a
+ * responder só "existe uma CSP?", que é a pergunta que `script-src 'self'
+ * 'unsafe-inline'` responde com sim.
  */
 
 const PORTAO = 'e2e/portas-da-web.mjs';
@@ -79,6 +90,7 @@ describe('o portão da borda HTTP não pode ser esvaziado', () => {
       ['x-frame-options',           'clickjacking'],
       ['referrer-policy',           'vazamento de URL no Referer'],
       ['strict-transport-security', 'downgrade para HTTP'],
+      ['content-security-policy',   'XSS e injeção de script'],
     ]) {
       expect(corpo, [
         `O cabeçalho \`${nome}\` saiu da lista do ${PORTAO}.`,
@@ -101,5 +113,34 @@ describe('o portão da borda HTTP não pode ser esvaziado', () => {
       'Ela é o que separa "o rewrite do SPA devolveu o app" de "existe um',
       'arquivo de verdade ali". Vazia, o portão deixa de fazer essa pergunta.',
     ].join('\n')).toBeGreaterThanOrEqual(3);
+  });
+  it('as diretivas travadas da CSP continuam sendo julgadas por valor', () => {
+    const corpo = lista('CSP_TRAVADAS');
+    const itens = (corpo.match(/^\s*\[/gm) || []).length;
+    expect(itens, [
+      `A lista CSP_TRAVADAS de ${PORTAO} ficou com ${itens} diretiva(s).`,
+      '',
+      'Vazia, o portão volta a perguntar apenas "existe um cabeçalho de CSP?"',
+      "— e `script-src 'self' 'unsafe-inline'` responde que sim.",
+    ].join('\n')).toBeGreaterThanOrEqual(6);
+
+    for (const [diretiva, ataque] of [
+      ['default-src',     'o piso de tudo que a política não nomeia'],
+      ['script-src',      'XSS inline e script de origem arbitrária'],
+      ['object-src',      'plugin legado usado como vetor'],
+      ['base-uri',        'sequestro de caminho relativo via <base>'],
+      ['frame-ancestors', 'clickjacking'],
+      ['form-action',     'credencial postada em outro domínio'],
+    ]) {
+      expect(corpo, [
+        `A diretiva \`${diretiva}\` saiu de CSP_TRAVADAS em ${PORTAO}.`,
+        '',
+        `Ela protege contra ${ataque}. Fora da lista, o dia em que alguém`,
+        'afrouxar essa diretiva no vercel.json passa batido: a tela continua',
+        'funcionando — melhor, até — e o job fica verde.',
+        '',
+        'Se a saída foi deliberada, o motivo vai escrito ao lado no portão.',
+      ].join('\n')).toContain(`'${diretiva}'`);
+    }
   });
 });
