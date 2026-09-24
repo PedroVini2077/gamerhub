@@ -368,7 +368,7 @@ transições discretas das páginas internas.
     (painel admin/moderação).
 - **Edição com janela de 30 minutos** (contador regressivo).
 - **Retry de mídia** com backoff caso a mídia ainda não tenha subido.
-- Feed (`Home`): busca por texto, aviso de **"novas
+- Feed (`Home`): aviso de **"novas
   publicações"** — **`[24/09]`** ele passou a contar só o que a recarga de fato
   traz (live e post que nasce oculto ficam de fora) e a mostrar `20+` no teto,
   em vez de acumular eventos da aba sem limite. **`[24/09]` O feed passou a

@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**52 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1484,6 +1484,49 @@ depois. A trava mudou de lado e agora impede o retorno da leitura.
   rodada morreu no meio. Por isso eles **não** são apagados pela retenção
   automática — saem na mão, e isso é dívida minha até sair.
 
+### ✅ `[24/09]` FASE 4 — a busca de verdade
+
+**O que ela era:** `posts.filter(...)` sobre o que estava carregado. Com a
+paginação ficou pior: o campo dizia "Buscar posts" e procurava nos 20 que a
+pessoa tinha rolado. Resposta errada apresentada como completa.
+
+**O dicionário foi escolhido por medição.** `to_tsvector('portuguese', …)` puro
+**não casa** `configuracao` com `configuração` — num site brasileiro isso é
+inaceitável, ninguém digita acento na busca. Entrou uma configuração própria,
+`portugues_sem_acento` (`unaccent` antes do radicalizador): casa nos dois
+sentidos e a flexão continua (`jogo` acha `jogos`).
+
+> **Por que configuração e não `unaccent()` na expressão:** `unaccent(text)` é
+> `STABLE`, e coluna gerada exige `IMMUTABLE`. Já `to_tsvector(regconfig, text)`
+> é `IMMUTABLE` (conferido em `pg_proc.provolatile`) qualquer que seja o
+> dicionário dentro. Embrulhar resolve sem o `IMMUTABLE` mentiroso, que é o
+> atalho comum e errado.
+
+**Duas RPCs, com regras de acesso opostas e cada uma justificada:**
+`buscar_posts` é `INVOKER` (a RLS recorta — provado em ROLLBACK: usuário comum
+buscando o termo de um post **ocultado** recebe zero, `postgres` recebe 1), e
+`buscar_pessoas` é `DEFINER` **por necessidade** (colunas de `profiles`
+revogadas na SEC-025) — então a defesa é o **recorte**: id, username,
+avatar_url, role, e mais nada. Banido não aparece.
+
+**Ela não pagina, e isso é decisão:** `ts_rank` é calculado, não indexado, então
+keyset por relevância não existe e paginar seria `OFFSET` disfarçado — o que a
+fase 2 acabou de tirar do feed. Corta em 50 e **a tela diz que cortou**.
+
+**Trava:** `buscaNaoVazaNemMente.test.js`, as três falhas mudas — `DEFINER` na
+busca de posts, coluna nova no `RETURNS` de pessoas, e aba oferecida sem área
+que a atenda. Provadas reinjetando. `INV-PORTA-010`.
+
+**Prova de navegador:** o `cicloDoPost` passou a buscar o post que ele mesmo
+acabou de publicar, pelo número da marca — exercita FTS → RPC → RLS →
+`POST_SELECT` → tela. E `/busca` entrou em `ROTAS_LOGADO` (foi a trava
+`rotasE2E` que exigiu, sozinha, assim que a rota nasceu).
+
+- ⬜ `[24/09]` 🔵 **A busca acha palavra, não pedaço de palavra.** *`pg_trgm`
+  ficou de fora: é outra extensão, outro índice e outra conta de custo. Hoje
+  "config" não acha "configuração" — só a palavra inteira (com flexão e sem
+  depender de acento). Entra quando houver acervo que justifique.*
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 - ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
@@ -2162,10 +2205,10 @@ depois. A trava mudou de lado e agora impede o retorno da leitura.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->144<!--/n--> arq ·
-  <!--n:src.lib.linhas-->17.187<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->20<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.043<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->146<!--/n--> arq ·
+  <!--n:src.lib.linhas-->17.373<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->21<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

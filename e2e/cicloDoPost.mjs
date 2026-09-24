@@ -85,6 +85,46 @@ export async function percorrerCicloDoPost(page, { base, marca, ok, main }) {
   await comentarEEsperarNaLista(page, { card, texto: COMENTARIO });
   ok('comentário publicado e visível na lista');
 
+  // ── 4b-bis. A BUSCA acha o post recém-publicado ─────────────────────────
+  //
+  // `[24/09]` A prova de ponta a ponta da busca nova: FTS no Postgres -> RPC
+  // `buscar_posts` -> RLS -> `POST_SELECT` -> tela. Nenhum pedaço dessa
+  // corrente tinha cobertura de navegador.
+  //
+  // Busca pelo NÚMERO da marca (`[e2e 1790…]`), e não por palavra do texto:
+  // o número é único por execução, então o resultado não depende de quantos
+  // posts existem no banco nem de quais. O `to_tsvector` transforma o número
+  // num lexema próprio — conferido no banco antes de escrever isto.
+  const numeroDaMarca = marca.match(/(\d{10,})/)?.[1];
+  if (!numeroDaMarca) {
+    throw new Error(
+      `nao consegui extrair o numero da marca "${marca}".\n`
+      + '    O `marcaDeTeste` escreve `[prefixo <epoch>]`. Se o formato mudou,\n'
+      + '    este passo precisa de outro termo de busca — um que continue\n'
+      + '    sendo unico por execucao.');
+  }
+
+  await page.goto(`${base}/busca?q=${numeroDaMarca}`, {
+    waitUntil: 'domcontentloaded', timeout: 30000,
+  });
+
+  const achado = page.locator('h2', { hasText: marca }).first();
+  await achado.waitFor({ state: 'visible', timeout: 30000 }).catch(async () => {
+    const naTela = await page.locator('main').innerText().catch(() => '(sem main)');
+    throw new Error(
+      `a busca por "${numeroDaMarca}" nao achou o post desta execucao.\n`
+      + `    O que a tela disse: ${JSON.stringify(naTela.slice(0, 200))}\n`
+      + '\n'
+      + '    Como ler isso:\n'
+      + '      "Nada encontrado"  -> a corrente quebrou em algum ponto. Suspeitos,\n'
+      + '                            do banco para a tela: a coluna gerada `busca`\n'
+      + '                            nao indexou, a RPC `buscar_posts` nao\n'
+      + '                            devolveu, ou a RLS escondeu o post.\n'
+      + '      "Buscando..."      -> a consulta nao voltou; e rede ou erro na RPC.\n'
+      + '      "Escreva algo"     -> o `?q=` nao chegou ao componente.');
+  });
+  ok('a busca achou o post recém-publicado');
+
   // ── 4c. Responder ao próprio comentário ─────────────────────────────────
   //
   // `[24/09]` Segundo dos fluxos de 18/09. O cabeçalho do `comentar.mjs` dizia
@@ -96,6 +136,11 @@ export async function percorrerCicloDoPost(page, { base, marca, ok, main }) {
   // passo ficou DEPOIS do `Deletar post` e o CI reprovou no passo 22 — sem
   // post, não há comentário para responder. Ancorar no marcador errado é o
   // tipo de erro que só o roteiro rodando de verdade mostra.
+  // Volta ao feed: os passos seguintes mexem no card de lá, e a busca deixou
+  // a navegação em `/busca`.
+  await page.goto(`${base}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await card.waitFor({ state: 'visible', timeout: 30000 });
+
   await responderEEsperarAninhada(page, { card, aoComentario: COMENTARIO, texto: RESPOSTA });
   ok('resposta aninhada publicada e recuada sob o comentário pai');
 
