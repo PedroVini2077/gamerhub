@@ -203,7 +203,13 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-TELA-001** | A tela **não carimba efeito que o servidor não confirmou**: nenhum componente marca `answered` direto, a resposta passa pela Edge Function, e a tela mostra o **texto** da resposta — não só o carimbo | — | `src/components/admin/__tests__/respostaDeContatoNaoMente.test.js` |
 | **INV-TELA-002** | Todo campo de senha passa pelo `CampoDeSenha` — `<input type="password">` solto perde o olho de mostrar/ocultar, e no Android ficam **dois** olhos | — | `src/lib/__tests__/campoDeSenhaUnico.test.js` |
 | **INV-TELA-003** | A marca de entrada é escrita **antes** de pedir o login ao servidor, e **desfeita em todo caminho que não termina em entrada** | — | `src/lib/__tests__/portaoAntesDoSite.test.js` |
+| **INV-TELA-004** | **`[24/09]`** O efeito otimista **sobrevive ao recarregamento**: curtir e descurtir mudam a tela na hora, e o que vale é o que o servidor guardou. O lado de trás é o perigoso — `DELETE` negado pela RLS devolve **204 e zero linhas**, sem erro, então o `runLikeToggle` não reverte e a tela apaga uma curtida que continua no banco | — | `e2e/curtir.mjs` (dentro do `e2e/fluxos.mjs`) |
 
+> `INV-TELA-004` é o caso mais puro desta família: aqui a tela mente **por
+> desenho**, e isso é a coisa certa para quem usa. O que a torna uma
+> testemunha ruim é justamente isso — por isso a prova é o reload, nunca o
+> número logo depois do clique.
+>
 > `INV-TELA-001` é o §1.5 pelo lado da interface: falha tem de gritar, e tela
 > que afirma o que não aconteceu é o oposto — ela **silencia** a falha com uma
 > mentira. As duas outras são a mesma ideia em miniatura: o estado que a tela

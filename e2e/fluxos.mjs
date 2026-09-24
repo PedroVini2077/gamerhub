@@ -26,6 +26,7 @@ import {
   publicarEEsperarNoFeed, marcaDeTeste, REGEX_DE_SOBRA, sobrasAntigas, IDADE_DE_SOBRA_MS,
 } from './publicarPost.mjs';
 import { comentarEEsperarNaLista } from './comentar.mjs';
+import { curtirEConferirPersistencia } from './curtir.mjs';
 import { conferirPortaoDeEntrada } from './portaoDeEntrada.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -180,7 +181,16 @@ try {
   // execução, nunca o de um vizinho.
   const card = page.locator('.card').filter({ has: tituloNoFeed });
 
-  // ── 4a. Comentar no próprio post ────────────────────────────────────────
+  // ── 4a. Curtir → recarregar → descurtir → recarregar ────────────────────
+  //
+  // `[24/09]` Primeiro dos fluxos que ele listou em 18/09. A curtida e
+  // otimista, entao a tela mente por design entre o clique e a resposta — o
+  // que prova alguma coisa e o RELOAD. O porque de cada passo esta no
+  // `curtir.mjs`, inclusive por que o DESCURTIR e o lado perigoso.
+  await curtirEConferirPersistencia(page, { base: BASE, marca: MARCA });
+  ok('curtida gravada e removida de verdade (conferido depois de recarregar)');
+
+  // ── 4b. Comentar no próprio post ────────────────────────────────────────
   //
   // `[05/09]` Este passo nasceu de um número, não de um bug relatado: a
   // produção tinha 150 posts e ZERO comentários, e NENHUM roteiro comentava.
@@ -190,7 +200,7 @@ try {
   //
   // Vai no próprio post do teste porque o comentário some junto com ele:
   // `comments_post_id_fkey` é ON DELETE CASCADE, verificado no banco. Comentar
-  // no post de outra pessoa deixaria lixo que o passo 4b não apanha.
+  // no post de outra pessoa deixaria lixo que o passo 4c não apanha.
   await comentarEEsperarNaLista(page, { card, texto: COMENTARIO });
   ok('comentário publicado e visível na lista');
 
@@ -204,7 +214,7 @@ try {
   await tituloNoFeed.first().waitFor({ state: 'detached', timeout: 30000 });
   ok('post apagado e fora do feed depois da contagem');
 
-  // ── 4b. NENHUM post de teste sobrando de execuções anteriores ────────────
+  // ── 4c. NENHUM post de teste sobrando de execuções anteriores ────────────
   //
   // `[01/09]` Padrão de falha meu, catalogado: "crio dado de teste que confunde
   // o dono". Já aconteceu duas vezes — uma fila de moderação com itens falsos

@@ -1252,7 +1252,16 @@ M riscos · **N o que precisa da aprovação dele**.
   live pela interface, conferindo a TELA contra o ESTADO PERSISTIDO com o token
   real do usuário. Roda no CI junto do `fluxos`.
 
-  **Falta**, na ordem em que ele listou: likes · live chat · respostas em
+  **`[24/09]` Feito: likes.** `e2e/curtir.mjs`, chamado de dentro do
+  `fluxos.mjs`, no post da própria execução. O que ele prova e nenhum teste
+  anterior provava: a curtida é **otimista** (`src/lib/like.js` acende o
+  coração antes de o servidor responder), então conferir o número logo depois
+  do clique não prova nada — a prova é **recarregar**. E o descurtir é o lado
+  perigoso: `DELETE` negado pela RLS devolve **204 e zero linhas, sem erro**,
+  o cliente não reverte, e a tela apaga uma curtida que continua no banco.
+  Nenhum status HTTP pega isso. Virou `INV-TELA-004`.
+
+  **Falta**, na ordem em que ele listou: live chat · respostas em
   thread · atualização de perfil · notificações na tela · o comportamento
   depois de ocultar (não só apagar) · usuário comum × moderador na mesma tela.
 

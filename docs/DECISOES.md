@@ -2326,7 +2326,7 @@ Sem erro, sem log, sem teste.
 
 Os três foram encontrados por ele, no telefone dele. **Essa é a definição de
 falha muda** (§1.5), e a resposta certa não era corrigir os três: era perguntar
-por que nenhum dos <!--n:e2e.roteiros-->21<!--/n--> roteiros de navegador fazia
+por que nenhum dos <!--n:e2e.roteiros-->22<!--/n--> roteiros de navegador fazia
 a pergunta.
 
 Agora o `e2e/conteudo-visivel.mjs` faz, e ele foi escolhido por já ser o roteiro
