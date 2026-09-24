@@ -25,7 +25,7 @@ import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from
 import {
   publicarEEsperarNoFeed, marcaDeTeste, REGEX_DE_SOBRA, sobrasAntigas, IDADE_DE_SOBRA_MS,
 } from './publicarPost.mjs';
-import { comentarEEsperarNaLista } from './comentar.mjs';
+import { comentarEEsperarNaLista, responderEEsperarAninhada } from './comentar.mjs';
 import { curtirEConferirPersistencia } from './curtir.mjs';
 import { conferirPortaoDeEntrada } from './portaoDeEntrada.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
@@ -40,6 +40,7 @@ const MARCA  = marcaDeTeste('[e2e ');
 const TITULO = `${MARCA} post automatico`;
 const CORPO  = 'Publicado pelo teste automatizado. Se este post ficou no ar, o E2E falhou na limpeza.';
 const COMENTARIO = `${MARCA} comentario automatico`;
+const RESPOSTA   = `${MARCA} resposta automatica`;
 
 if (!EMAIL || !SENHA) {
   console.error('\n  E2E_EMAIL e E2E_PASSWORD nao definidos.');
@@ -200,9 +201,23 @@ try {
   //
   // Vai no próprio post do teste porque o comentário some junto com ele:
   // `comments_post_id_fkey` é ON DELETE CASCADE, verificado no banco. Comentar
-  // no post de outra pessoa deixaria lixo que o passo 4c não apanha.
+  // no post de outra pessoa deixaria lixo que o passo 4d não apanha.
   await comentarEEsperarNaLista(page, { card, texto: COMENTARIO });
   ok('comentário publicado e visível na lista');
+
+  // ── 4c. Responder ao próprio comentário ─────────────────────────────────
+  //
+  // `[24/09]` Segundo dos fluxos de 18/09. O cabeçalho do `comentar.mjs` dizia
+  // desde 05/09 que a resposta aninhada NÃO era coberta — era verdade, e ficou
+  // verdade por 19 dias. A assertiva que importa é o RECUO: resposta que entra
+  // na lista como comentário solto não estoura nada.
+  //
+  // ANTES de apagar o post, e isso não é detalhe: a primeira versão deste
+  // passo ficou DEPOIS do `Deletar post` e o CI reprovou no passo 22 — sem
+  // post, não há comentário para responder. Ancorar no marcador errado é o
+  // tipo de erro que só o roteiro rodando de verdade mostra.
+  await responderEEsperarAninhada(page, { card, aoComentario: COMENTARIO, texto: RESPOSTA });
+  ok('resposta aninhada publicada e recuada sob o comentário pai');
 
   await card.getByRole('button', { name: 'Deletar post' }).click();
   await page.getByRole('button', { name: /^Deletar$/ }).click();
@@ -214,7 +229,7 @@ try {
   await tituloNoFeed.first().waitFor({ state: 'detached', timeout: 30000 });
   ok('post apagado e fora do feed depois da contagem');
 
-  // ── 4c. NENHUM post de teste sobrando de execuções anteriores ────────────
+  // ── 4d. NENHUM post de teste sobrando de execuções anteriores ────────────
   //
   // `[01/09]` Padrão de falha meu, catalogado: "crio dado de teste que confunde
   // o dono". Já aconteceu duas vezes — uma fila de moderação com itens falsos

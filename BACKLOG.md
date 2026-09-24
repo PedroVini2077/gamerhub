@@ -115,14 +115,63 @@ duplicar fonte de verdade (§4):
    `INV-TELA-001/002/003`, `INV-LEGAL-001/002`, `INV-CONTRATO-007` e
    `INV-CONTA-006/007`. O `INVARIANTES.md` passou a **46 invariantes em 12
    famílias**, e nenhuma linha do `TRAVAS.md` diz mais "sem INV".
-4. Os 7 comentários do `index.html`.
-5. ADRs, um a um, **copiando** a prosa; o comentário original vira referência
-   **só depois** de o ADR estar no ar e validado.
+4. ✅ **FEITO** `[24/09]` — os **7 comentários do `index.html`**. Eles eram os
+   únicos comentários do projeto que **chegam ao navegador**: o JSX tem 227
+   blocos no fonte e zero no build, o de HTML vai inteiro para o `dist/`. A
+   prosa foi **copiada** para a seção "O `index.html` — o que cada linha faz, e
+   por quê" do `ARQUITETURA.md` (nada apagado), e a trava
+   `htmlNaoVazaProsa.test.js` confere as duas pontas — nenhum comentário no
+   HTML **e** a seção continuar de pé com o conteúdo dentro, senão ela premiaria
+   quem apaga a explicação. `INV-PORTA-009`.
+5. ✅ **FEITO** `[24/09]` — e **saiu diferente do planejado, de propósito.**
+   Virou **um índice**, `docs/DECISOES-DE-BANCO.md`, e não uma pasta de ADRs.
+   Três desvios, todos escritos dentro do próprio arquivo:
+
+   | O plano dizia | O que foi feito | Por quê |
+   | --- | --- | --- |
+   | criar `ADR-001`, `ADR-002`… | usar os IDs que **já existem** (`SEC-*`, `LIVE-*`) | um segundo espaço de IDs para o mesmo fato é a duplicação do §4 — `SEC-027` já é citado em migration, teste, `SEGURANCA.md` e `INVARIANTES.md` |
+   | um arquivo por decisão | um índice | *"NÃO CRIE 500 ARQUIVOS"* foi pedido explícito, e o que faltava era **navegação** |
+   | **copiar** a prosa | **resumir** decisão + descarte e apontar a migration | copiar cria a segunda fonte que envelhece. E **nenhuma migration foi tocada** — 23 travas leem o texto delas |
+
+   12 decisões indexadas em 5 temas. Registrado no `README`, no
+   `territorio.mjs`, no `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`.
 
 **Nada de banco. Nada de RLS. Nada de comportamento.**
 
 ---
 
+
+- ⬜ `[24/09]` 🟢 **O `CLAUDE.md` está a DUAS linhas do próprio teto (898 de
+  900).** *Descoberto pela trava `regrasCarregadas.test.js`, que reprovou quando
+  uma linha nova o levou a exatamente 900 — ela funcionou. A próxima regra que
+  entrar não cabe, e a saída certa não é subir o teto: é o §6.2 regra 5 (seção
+  acima de ~150 linhas vira arquivo próprio), que foi como nasceram os
+  `docs/regras/`. Candidatos a sair: §0.2 (cotas, ~90 linhas) e §6.3 (a tabela
+  dos mecanismos, ~80). Não é urgente — vira urgente no dia em que eu precisar
+  escrever uma regra e não puder.*
+
+- ⬜ `[24/09]` 🟡 **A seção de comentários FECHA sozinha logo depois de comentar,
+  e o contador volta a ZERO.** *Achado sem querer, montando o E2E de responder —
+  e é defeito do SITE, não do roteiro.*
+
+  **A evidência, medida no CI e não deduzida:** o roteiro comenta, confere o
+  comentário na tela (passo verde), e segundos depois o despejo da página mostra
+  o card com o botão **"Comentar"** — ou seja, contagem **zero** — e a lista
+  fora da tela. O comentário está **vivo no banco**, com `hidden_at` nulo
+  (conferido em consulta). Do lado de quem usa: você comenta, o comentário
+  aparece, e em seguida ele some da tela e o contador diz que não há nenhum.
+
+  **O que eu NÃO provei, e por isso isto é hipótese:** a causa. Dois suspeitos,
+  os dois em `src/components/feed/CommentSection.jsx` — (a) o card **remonta**
+  num refresh do feed e o `open` volta a `false`; (b) o
+  `useEffect([postId, initialCount])` chama `setCount(initialCount)` com a
+  contagem **em lote** do feed, que é anterior ao comentário. O (b) explica o
+  contador; o (a) explicaria a lista sumir junto. **O teste que separa os dois:**
+  logar a montagem do componente e ver se o `open` é perdido.
+
+  Enquanto isso, o `e2e/comentar.mjs` **reabre a seção** antes de responder, e o
+  comentário ao lado do `garantirSecaoAberta` aponta para cá. O roteiro contorna;
+  o defeito continua aberto.
 
 ### ✅ `[19/09]` LIVE-051 — a moderação não alcançava a live AINDA NO AR
 
@@ -661,7 +710,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**46 itens abertos** (+ 1 ideia sem compromisso)
+**48 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1261,9 +1310,28 @@ M riscos · **N o que precisa da aprovação dele**.
   o cliente não reverte, e a tela apaga uma curtida que continua no banco.
   Nenhum status HTTP pega isso. Virou `INV-TELA-004`.
 
-  **Falta**, na ordem em que ele listou: live chat · respostas em
-  thread · atualização de perfil · notificações na tela · o comportamento
-  depois de ocultar (não só apagar) · usuário comum × moderador na mesma tela.
+  **`[24/09]` Feito: respostas em thread.** `responderEEsperarAninhada`, no
+  próprio `e2e/comentar.mjs` — o cabeçalho dele dizia desde 05/09 que a
+  resposta aninhada NÃO era coberta, e ficou verdade por 19 dias. A assertiva
+  que importa não é o texto aparecer: é o **recuo**. Resposta que entra na
+  lista como comentário solto tem o `INSERT` aprovado, o texto na tela e só a
+  estrutura errada — nada estoura. Conferido por **estrutura** — o bloco do
+  comentário pai tem de CONTER o texto da resposta. Comparar a POSIÇÃO dos dois
+  textos foi a primeira tentativa e reprovou uma resposta CERTA: o recuo do
+  bloco convive com um avatar menor na resposta, e a soma pode dar para
+  qualquer lado. Envia por **Enter**
+  porque os dois compositores têm o mesmo `aria-label` no botão, e o caminho de
+  teclado não era exercitado por roteiro nenhum. `INV-CONTEUDO-003`.
+
+  **Falta**, na ordem em que ele listou: live chat · atualização de perfil ·
+  notificações na tela · o comportamento depois de ocultar (não só apagar) ·
+  usuário comum × moderador na mesma tela.
+
+  **`[24/09]` Atenção ao tamanho:** o `e2e/fluxos.mjs` está em **288 linhas**
+  e o teto do §4 é 300. Os próximos fluxos não cabem lá dentro — o corte
+  natural é o bloco 4 (publicar → curtir → comentar → responder → apagar)
+  virar um roteiro próprio do ciclo do post, deixando o `fluxos.mjs` com login, rotas,
+  permissão e logout.
 
   **Por que não foi tudo agora:** cada fluxo desses escreve em produção (o CI
   usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
@@ -1852,8 +1920,8 @@ M riscos · **N o que precisa da aprovação dele**.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->137<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.276<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->138<!--/n--> arq ·
+  <!--n:src.lib.linhas-->16.379<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

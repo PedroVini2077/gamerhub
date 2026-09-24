@@ -134,6 +134,7 @@ Garantem que dois lugares do código continuem concordando.
 | `tabelasSemUpdate.test.js` | `update` em tabela sem policy — 0 linhas, nenhum erro | `INV-CONTRATO-005` |
 | `apagarConfereLinhas.test.js` | escrita que pode ser negada sem conferir linhas | `INV-CONTRATO-006` |
 | `portasDaWebNaoEsvaziam.test.js` | as **duas** listas do portão da borda sendo esvaziadas — cabeçalhos e diretivas travadas da CSP | `INV-PORTA-004` · `INV-PORTA-008` |
+| `htmlNaoVazaProsa.test.js` | **`[24/09]`** comentário de implementação voltando ao HTML que o visitante baixa — e, do outro lado, a prosa sendo **apagada** em vez de mudada de lugar | `INV-PORTA-009` |
 | `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** — e, desde a SEC-051, também a lista de **isentas da checagem de literal de papel** | `INV-PORTA-006` |
 | `cofre.test.js` | código do cofre guardado em texto; reset em 2 cliques | `INV-CONTA-004` |
 | `documentosLegais.test.js` | texto legal mudando por baixo de quem aceitou | `INV-CONTA-005` |
@@ -170,7 +171,7 @@ Garantem que dois lugares do código continuem concordando.
 | `politica-de-conteudo.mjs` | **`[24/09]`** a CSP quebrando o site: 6 rotas num Chromium de verdade, mais sonda de `frame-src` e `connect-src` — e um **controle** que prova que o roteiro distingue política de falha de rede |
 | `portas-da-web.mjs` | a borda HTTP: cabeçalho por VALOR, vazamento, source map — **`[24/09]`** e as seis diretivas travadas da CSP, comparadas por igualdade |
 | `portas-fechadas.mjs` | as Edge Functions recusando quem não deve |
-| `fluxos.mjs` · `publicarPost.mjs` · `comentar.mjs` · `curtir.mjs` | publicar, comentar, **curtir** e o caminho autenticado. **`[24/09]`** o `curtir.mjs` (`INV-TELA-004`) confere depois de **recarregar**: a curtida é otimista, então a tela sozinha não é testemunha — e o descurtir é o lado que a RLS nega em 204 **sem erro** |
+| `fluxos.mjs` · `publicarPost.mjs` · `comentar.mjs` · `curtir.mjs` | publicar, comentar, **responder**, **curtir** e o caminho autenticado. **`[24/09]`** a resposta aninhada é conferida por **estrutura** (`INV-CONTEUDO-003`): o bloco do comentário pai tem de conter o texto da resposta, que é o que o aninhamento é. Resposta que entra como comentário solto não estoura nada. **`[24/09]`** o `curtir.mjs` (`INV-TELA-004`) confere depois de **recarregar**: a curtida é otimista, então a tela sozinha não é testemunha — e o descurtir é o lado que a RLS nega em 204 **sem erro** |
 | `lives.mjs` | criar, encerrar, reativar e apagar live, conferindo o ESTADO |
 | `painel-admin.mjs` | o painel da equipe |
 | `smoke.mjs` · `rotas.mjs` · `navegacao.mjs` | rotas de pé, âncora morta, botão voltar |

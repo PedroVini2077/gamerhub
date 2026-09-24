@@ -149,6 +149,12 @@ export const TERRITORIO = {
     'e2e',
     '.github/workflows',
   ],
+  // `[24/09]` O indice de decisoes de banco. O territorio dele sao as
+  // migrations: decisao de desenho nova nasce la, e este indice precisa
+  // crescer no mesmo PR — senao ele vira um retrato de setembro.
+  'docs/DECISOES-DE-BANCO.md': [
+    'supabase/migrations',
+  ],
   'docs/INVARIANTES.md': [
     'src/lib/__tests__',
     'src/hooks/__tests__',
@@ -166,6 +172,11 @@ export const TERRITORIO = {
   ],
   'docs/ARQUITETURA.md': [
     'src/App.jsx',
+    // `[24/09]` O `index.html` tem DOIS donos de propósito: a `identidade`
+    // responde pelos ícones e pelo cartão, e o `ARQUITETURA` pela seção que
+    // recebeu a prosa que saía no HTML servido ao visitante. Mudou o HTML, os
+    // dois precisam de conferência.
+    'index.html',
     'src/paginasLazy.js',
     'src/services',
     'src/hooks',

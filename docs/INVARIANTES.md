@@ -97,7 +97,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | --- | --- | --- | --- |
 | **INV-CONTEUDO-001** | Coluna de ciclo de vida é **derivada pelo servidor**, nunca declarada pelo cliente (`was_live`, `expires_at`, `live_ended_at`, `created_at`, `user_id`, `hidden_at`, `deleted_at`) | N2, N4 · SEC-027 | `src/lib/__tests__/colunasDerivadasDoPost.test.js` |
 | **INV-CONTEUDO-002** | Não se **interage** com conteúdo que não está no ar, e interação de post fora do ar não é **legível** por conta comum | N11, N12 · SEC-029 · SEC-041 | `xpSegueOQueEstaNoAr.test.js` · `colunasDerivadasDoPost.test.js` |
-| **INV-CONTEUDO-003** | Resposta pertence ao **mesmo post** do comentário pai | SEC-033 | `src/lib/__tests__/autorizacaoAntesDeExistencia.test.js` |
+| **INV-CONTEUDO-003** | Resposta pertence ao **mesmo post** do comentário pai — e **aparece como resposta**: recuada sob o pai, nunca como comentário solto | SEC-033 | `src/lib/__tests__/autorizacaoAntesDeExistencia.test.js` · **`[24/09]`** `e2e/comentar.mjs` (o lado visível: o bloco do pai tem de CONTER a resposta) |
 | **INV-CONTEUDO-004** | Escrever em conteúdo alheio respeita a **hierarquia de cargo** | SEC-009 | `src/lib/__tests__/hierarquiaNoConteudo.test.js` |
 
 ---
@@ -139,6 +139,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-PORTA-006** | Nenhuma função nasce alcançável por `anon` **fora da lista branca escrita** — e o auditor que verifica isso tem de ser **ouvível pelo CI** | SEC-042 · SEC-043 · SEC-050 | `e2e/portas-do-banco.mjs` · `src/lib/__tests__/auditorDoBancoEhOuvido.test.js` |
 | **INV-PORTA-007** | O navegador **não executa script de origem que não esteja na CSP** — e a política é verificada num navegador de verdade antes de ir ao ar, nunca só escrita | — | `e2e/politica-de-conteudo.mjs` |
 | **INV-PORTA-008** | **`[24/09]`** A CSP continua **no ar** e as seis diretivas que não têm motivo legítimo de crescer (`default-src`, `script-src`, `object-src`, `base-uri`, `frame-ancestors`, `form-action`) continuam **com o valor exato** — presença não é proteção: `script-src 'self' 'unsafe-inline'` passa em qualquer checagem de "contém 'self'" | — | `e2e/portas-da-web.mjs` · `portasDaWebNaoEsvaziam.test.js` |
+| **INV-PORTA-009** | **`[24/09]`** O HTML servido ao visitante **não carrega prosa de implementação** — comentário de HTML, diferente do JSX, não é removido pelo build e vai inteiro para o `dist/`. A explicação mora no `ARQUITETURA.md`, e a trava confere as **duas** pontas: nenhum comentário no HTML **e** a seção de destino continuar de pé com o conteúdo dentro | — | `src/lib/__tests__/htmlNaoVazaProsa.test.js` |
 
 ---
 
