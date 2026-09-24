@@ -47,6 +47,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/VISAO-DE-FUTURO.md` | **Onde o produto pode chegar** — possibilidades, sem data e sem compromisso, com a menor versão de cada uma | Fila, prazo, especificação |
 | `docs/DECISOES.md` | O que foi decidido e **descartado** no PRODUTO, com data e motivo | Item a fazer |
 | `docs/DECISOES-FERRAMENTAL.md` | O mesmo, para a **esteira**: CI, Vercel, Sentry, email | Decisão de produto |
+| `docs/DECISOES-DE-BANCO.md` | **`[24/09]`** O mesmo, para o **banco**: desenho de autorização, ciclo de vida, XP e live — cada entrada com a alternativa **recusada** e o caminho da migration que tem a história inteira | A história completa (fica na migration), a regra permanente (`INVARIANTES.md`) e a trava (`TRAVAS.md`) |
 | `docs/MANIFESTO.md` | Como o dono e o Claude trabalham **juntos** — papéis, continuidade | Regra executável (vai no `CLAUDE.md`) |
 | `docs/regras/*.md` | Partes do `CLAUDE.md` puxadas por `@import` — instrução de trabalho | Documentação do produto |
 | `docs/regras/EXECUCAO.md` | **Como executar** (`[03/09]`): sequência antes de mexer em arquivo, classificação da tarefa, território como recorte de contexto, e o que fazer ao perder o fio | Regra sobre o produto |
@@ -54,7 +55,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `BACKLOG.md` | **DOIS trabalhos** (`[03/09]`): a fila do que falta, e a seção **EM EXECUÇÃO**, que é a memória operacional da tarefa em curso | Decisão, histórico, item já feito, pensamento solto |
 | `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado. **Retrato de um dia — deve envelhecer**, e o varredor o ignora de propósito | Estado atual do sistema |
 
-> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->54<!--/n-->
+> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->55<!--/n-->
 > documentos.** Os que faltavam não eram menores — eram `PRIVACIDADE.md`,
 > `PAINEIS.md` e os próprios `docs/regras/`, que são regra executável. Tabela de
 > "onde cada coisa mora" incompleta é pior do que tabela nenhuma: ela responde
@@ -287,12 +288,12 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->24.926<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->25.195<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
 **o que mudou embaixo de cada um**. `npm run docs -- --tudo` lista os
-<!--n:docs.arquivos-->54<!--/n--> por idade, para varredura completa.
+<!--n:docs.arquivos-->55<!--/n--> por idade, para varredura completa.
 
 **A regra prática, e ela é curta:** rodar `npm run docs` **antes de fechar
 qualquer bloco de trabalho**, e abrir o que ele apontar. Um documento marcado

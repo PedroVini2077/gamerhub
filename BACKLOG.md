@@ -123,13 +123,32 @@ duplicar fonte de verdade (§4):
    `htmlNaoVazaProsa.test.js` confere as duas pontas — nenhum comentário no
    HTML **e** a seção continuar de pé com o conteúdo dentro, senão ela premiaria
    quem apaga a explicação. `INV-PORTA-009`.
-5. ADRs, um a um, **copiando** a prosa; o comentário original vira referência
-   **só depois** de o ADR estar no ar e validado.
+5. ✅ **FEITO** `[24/09]` — e **saiu diferente do planejado, de propósito.**
+   Virou **um índice**, `docs/DECISOES-DE-BANCO.md`, e não uma pasta de ADRs.
+   Três desvios, todos escritos dentro do próprio arquivo:
+
+   | O plano dizia | O que foi feito | Por quê |
+   | --- | --- | --- |
+   | criar `ADR-001`, `ADR-002`… | usar os IDs que **já existem** (`SEC-*`, `LIVE-*`) | um segundo espaço de IDs para o mesmo fato é a duplicação do §4 — `SEC-027` já é citado em migration, teste, `SEGURANCA.md` e `INVARIANTES.md` |
+   | um arquivo por decisão | um índice | *"NÃO CRIE 500 ARQUIVOS"* foi pedido explícito, e o que faltava era **navegação** |
+   | **copiar** a prosa | **resumir** decisão + descarte e apontar a migration | copiar cria a segunda fonte que envelhece. E **nenhuma migration foi tocada** — 23 travas leem o texto delas |
+
+   12 decisões indexadas em 5 temas. Registrado no `README`, no
+   `territorio.mjs`, no `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`.
 
 **Nada de banco. Nada de RLS. Nada de comportamento.**
 
 ---
 
+
+- ⬜ `[24/09]` 🟢 **O `CLAUDE.md` está a DUAS linhas do próprio teto (898 de
+  900).** *Descoberto pela trava `regrasCarregadas.test.js`, que reprovou quando
+  uma linha nova o levou a exatamente 900 — ela funcionou. A próxima regra que
+  entrar não cabe, e a saída certa não é subir o teto: é o §6.2 regra 5 (seção
+  acima de ~150 linhas vira arquivo próprio), que foi como nasceram os
+  `docs/regras/`. Candidatos a sair: §0.2 (cotas, ~90 linhas) e §6.3 (a tabela
+  dos mecanismos, ~80). Não é urgente — vira urgente no dia em que eu precisar
+  escrever uma regra e não puder.*
 
 ### ✅ `[19/09]` LIVE-051 — a moderação não alcançava a live AINDA NO AR
 
@@ -668,7 +687,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**46 itens abertos** (+ 1 ideia sem compromisso)
+**47 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 

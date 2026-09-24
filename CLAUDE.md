@@ -779,10 +779,10 @@ voltar. A resposta de cada um vai **dita ao dono no relatório de entrega**, que
 Está no §6.2 por extenso. Repetida aqui em uma linha porque foi **este** acerto
 que falhou, e o gatilho de início a mostra em toda sessão:
 
-> medição → `DESEMPENHO.md` · decisão → `DECISOES.md` · arquivo novo →
-> `ARQUITETURA.md` · o que falta → `BACKLOG.md` · quando quebra → `OPERACAO.md`
-> · **regra que nunca pode quebrar → `INVARIANTES.md`**
-> · **quem protege a regra → `TRAVAS.md`**
+> medição → `DESEMPENHO.md` · decisão de produto → `DECISOES.md` · **decisão de
+> BANCO → `DECISOES-DE-BANCO.md`** · arquivo novo → `ARQUITETURA.md` · o que
+> falta → `BACKLOG.md` · quando quebra → `OPERACAO.md` · **regra que nunca pode
+> quebrar → `INVARIANTES.md`** · **quem protege a regra → `TRAVAS.md`**
 
 ### Nada fica para a próxima sessão — o que isso quer dizer de verdade
 

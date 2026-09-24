@@ -149,6 +149,12 @@ export const TERRITORIO = {
     'e2e',
     '.github/workflows',
   ],
+  // `[24/09]` O indice de decisoes de banco. O territorio dele sao as
+  // migrations: decisao de desenho nova nasce la, e este indice precisa
+  // crescer no mesmo PR — senao ele vira um retrato de setembro.
+  'docs/DECISOES-DE-BANCO.md': [
+    'supabase/migrations',
+  ],
   'docs/INVARIANTES.md': [
     'src/lib/__tests__',
     'src/hooks/__tests__',
