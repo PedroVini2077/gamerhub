@@ -56,6 +56,7 @@ Rodam no `ci.yml` (salvo onde indicado) e barram a classe inteira.
 | `scripts/territorio-coberto.mjs` | pasta do sistema sem documento responsável | — |
 | `scripts/orcamento-de-bytes.mjs` | regressão de peso no carregamento inicial | — |
 | `scripts/espelho-de-migrations.mjs` | migration aplicada no banco e ausente do repositório | — |
+| `e2e/portas-do-banco.mjs` → `contagem_de_achados_de_seguranca()` | **`[24/09]`** RPC administrativa sem a guarda do operador · função de trigger virando RPC · função nova alcançável por `anon`. O auditor já existia desde a SEC-049 e **ninguém conseguia chamá-lo** | `INV-PORTA-006` |
 | `scripts/vercel-ignore.sh` | branch nova gastando deploy da Vercel | — |
 | `scripts/edges-implantadas.mjs` | Edge Function **no ar** que não veio deste código | — |
 
@@ -133,6 +134,7 @@ Garantem que dois lugares do código continuem concordando.
 | `tabelasSemUpdate.test.js` | `update` em tabela sem policy — 0 linhas, nenhum erro | `INV-CONTRATO-005` |
 | `apagarConfereLinhas.test.js` | escrita que pode ser negada sem conferir linhas | `INV-CONTRATO-006` |
 | `portasDaWebNaoEsvaziam.test.js` | a lista do portão da borda sendo esvaziada | `INV-PORTA-004` |
+| `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** | `INV-PORTA-006` |
 | `cofre.test.js` | código do cofre guardado em texto; reset em 2 cliques | `INV-CONTA-004` |
 | `documentosLegais.test.js` | texto legal mudando por baixo de quem aceitou | `INV-CONTA-005` |
 | `logoutEhLocal.test.js` | `signOut()` com escopo global derrubando outro aparelho | `INV-CONTA-002` |

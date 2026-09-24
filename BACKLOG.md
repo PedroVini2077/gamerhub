@@ -1471,74 +1471,65 @@ M riscos · **N o que precisa da aprovação dele**.
   sujeira para gente de verdade ver. Um por vez, com limpeza provada.
 
 
-- ⬜ `[19/09]` 🟠 **RPC administrativa NOVA não entra sozinha na guarda da
-  SEC-043.** *Risco residual da própria correção, dito na hora.*
+- ⬜ `[19/09]` 🟢 **RPC administrativa NOVA não entra sozinha na guarda da
+  SEC-043.** *`[24/09]` **Rebaixado de 🟠 para 🟢**: a parte que importava foi
+  fechada pela SEC-050.*
 
-  A SEC-043 injeta `exige_operador_ativo()` numa **lista de 25 nomes**. A trava
-  `estadoDoOperador.test.js` pega a lista **encolhendo** — não pega a lista
-  ficando para trás quando alguém criar a 26ª função administrativa.
+  **O que mudou.** O `auditoria_de_operadores()` sempre soube responder — ele
+  varre `pg_proc` e acha RPC administrativa sem `exige_operador_ativo()`. O que
+  faltava era **alguém ouvi-lo**: a função tinha `EXECUTE` revogado de todos, e
+  só rodava quando eu perguntava à mão. Hoje o `e2e/portas-do-banco.mjs` a
+  consulta pelo mensageiro, com a anon key, **a cada PR**. Provado: uma RPC
+  administrativa nova sem a guarda leva o contador de 0 para 2.
 
-  > **`[19/09]` Metade disto foi fechada pelo LIVE-052, e vale registrar como.**
-  > As três RPCs novas não passaram pela injeção — elas chamam
-  > `exige_operador_ativo()` no próprio corpo. A trava passou a aceitar os
-  > **dois** caminhos (estar na lista da injeção **ou** ter a chamada inline),
-  > então função nova escrita nesse padrão já entra na vigilância.
-  >
-  > **O que continua aberto é o mesmo de antes:** ninguém garante que a 26ª
-  > função *seja escrita* nesse padrão, nem que seu nome entre na lista. Medir
-  > isso sozinho continua exigindo perguntar ao banco quais funções são
-  > administrativas — a troca por credencial no CI que este projeto já recusou
-  > três vezes. O que existe hoje é a varredura de arquivo, que acusa 7 falsos
-  > positivos porque o corpo injetado não mora em arquivo nenhum.
+  **O que sobra, e é pouco:** a detecção é por **heurística de corpo** (a função
+  menciona `role_rank`/`is_staff`/`is_super`/`is_owner`). Uma RPC administrativa
+  que decidisse permissão por outro caminho não seria vista. Não conheço nenhuma
+  assim hoje; se aparecer, o jeito é a lista de exceções **com motivo escrito**,
+  que a trava `auditorDoBancoEhOuvido.test.js` já vigia.
 
-  **Por que não resolvi agora:** detectar isso exige perguntar ao BANCO quais
-  funções administrativas existem, e isso pede credencial de banco no CI — a
-  troca que este projeto já recusou três vezes.
+- ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *`[24/09]` O
+  dono autorizou fechar, e a MEDIÇÃO mostrou que a correção na raiz **não é
+  alcançável com a minha credencial**. Registrado aqui para ninguém tentar de
+  novo pelo mesmo caminho.*
 
-  | Saída | Custo |
+  **O estado de hoje é bom:** das 100 funções em `public`, **3** são alcançadas
+  por `anon`, e as três se justificam — `username_disponivel` (a tela de
+  cadastro, que roda sem conta), `contagem_de_migrations` (o portão
+  `espelho-de-migrations` a chama **com a anon key**, conferido no script) e
+  `role_rank` (aparece em policy; revogar é a classe das 3 quedas do
+  `POSTURA.md`, então **não** foi tocada).
+
+  **O problema é a função NOVA**, e o mecanismo foi isolado em `ROLLBACK`:
+
+  | Tentativa | Resultado medido |
   | --- | --- |
-  | aceitar e confiar na revisão | o buraco volta na próxima RPC administrativa |
-  | script manual (`npm run operadores`) antes de fechar a sessão | mais um passo meu, fora do CI — igual ao `npm run edges` |
-  | credencial de leitura no CI | resolve de vez, e é a troca recusada |
+  | `ALTER DEFAULT PRIVILEGES FOR ROLE postgres … REVOKE … FROM anon` | pega — o `anon=X` sai do `pg_default_acl` |
+  | mas a função nova continua aberta | ela nasce com `=X/postgres`, ou seja **PUBLIC** tem `EXECUTE` |
+  | `… REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` | **não pega** — o `pg_default_acl` volta inalterado |
+  | `ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin …` | **`permission denied to change default privileges`** |
 
-  **Minha recomendação é a do meio**, pelo precedente do `npm run edges`: fora
-  do CI de propósito, mas existindo e rodável.
+  Existem **dois** `pg_default_acl` de função em `public` (dono `postgres` e
+  dono `supabase_admin`), e o segundo é intocável por mim.
 
-- ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *Medido hoje;
-  é proposta de mudança de contrato do schema (§7 🟡), então espera decisão.*
+  **O que fica como caminho, em ordem de força:**
 
-  `pg_default_acl` do schema `public`, para função criada pelo papel `postgres`
-  — que é o papel do `apply_migration`:
+  1. ✅ **FEITO `[24/09]` — SEC-050.** A detecção está no CI: o
+     `contagem_de_achados_de_seguranca()` devolve **quantas** funções o `anon`
+     alcança fora da lista branca, e o `e2e/portas-do-banco.mjs` o chama com a
+     anon key. Devolve **número**, não nomes — assim não vira mapa para quem
+     chamar de fora. Provado: uma função nova aberta leva o contador de 0 a 3.
+  2. **Ação do dono / suporte Supabase** — mudar o default do `supabase_admin`
+     é fora do meu alcance. Só vale abrir se a detecção mostrar que o caso é
+     frequente.
+  3. **O que já segura hoje:** cada função nova sai com `REVOKE EXECUTE`
+     explícito na própria migration, e o `funcaoDeTriggerNaoEhRpc.test.js`
+     cobre a classe dos triggers.
 
-  ```
-  {postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
-  ```
-
-  **Para TABELA isso já foi fechado** (SEC-005, e é o que faz a régua de papéis
-  do `BANCO.md` funcionar: coluna nova nasce fechada). **Para FUNÇÃO não.** Cada
-  RPC nova nasce com `EXECUTE` para quem não tem conta, e só fecha porque
-  alguém lembra de revogar.
-
-  **Como isso apareceu:** as duas funções de trigger que eu criei hoje
-  (`registrar_live_realizada`, `invalidar_lives_do_post_moderado`) nasceram
-  abertas e o `get_advisors` acusou. Fechei as duas (SEC-042) e travei a classe
-  por teste — mas a trava lê migration, não banco: ela pega funções de
-  **trigger**, não a RPC que alguém criar sem `GRANT` explícito.
-
-  **O estado de hoje está limpo** — conferido, e são só 3 funções alcançáveis
-  por `anon`, as três intencionais: `contagem_de_migrations` (o portão de
-  espelho do CI usa a anon key), `username_disponivel` (o cadastro precisa) e
-  `role_rank(text)`, que é função pura e não toca dado.
-
-  | Saída | O que muda | Custo |
-  | --- | --- | --- |
-  | `ALTER DEFAULT PRIVILEGES ... REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated` | função nova nasce **fechada**; quem precisa dá `GRANT` explícito e escrito | toda RPC nova passa a exigir o `GRANT`. Esquecer dá **403 barulhento**, não falha silenciosa |
-  | deixar como está | nada quebra hoje | a próxima função nasce aberta, e a proteção volta a depender de alguém lembrar — a "proteção acidental" do §1.3 |
-
-  **Minha recomendação é a primeira**, e o motivo é o modo de falhar: esquecer o
-  `GRANT` produz um erro que aparece na primeira chamada; esquecer o `REVOKE`
-  produz uma porta que ninguém vê. Mas é decisão dele porque muda o contrato de
-  **todo** trabalho futuro no schema, e o §7 marca isso como 🟡.
+  > **Continua ABERTO, e o motivo é preciso:** a prevenção na raiz não foi
+  > feita — função nova **ainda nasce** alcançável pelo `anon`. O que mudou é
+  > que a brecha deixou de ser silenciosa: o CI reprova no mesmo PR. Chamar isso
+  > de fechado seria exatamente o que o §1.1 proíbe.
 
 - ⬜ `[18/09]` 🔵 **`lives_realizadas` é append-only e o E2E escreve nela a cada
   execução.** *Achado enquanto eu limpava as 3 órfãs do N16.*
@@ -2062,8 +2053,8 @@ M riscos · **N o que precisa da aprovação dele**.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->136<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.011<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->137<!--/n--> arq ·
+  <!--n:src.lib.linhas-->16.184<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

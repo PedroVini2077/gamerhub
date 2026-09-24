@@ -1579,3 +1579,63 @@ ficaram sem guarda. Na **primeira execução** achou duas — **as duas minhas**
 Uso: `SELECT * FROM auditoria_de_operadores();` — zero linhas = superfície
 limpa. Fica fora do CI pelo mesmo motivo do `npm run edges`: consultar
 `pg_proc` exige credencial de banco.
+
+---
+
+## `[24/09]` SEC-050 — o auditor existia, e ninguém conseguia ouvi-lo
+
+A `auditoria_de_operadores()` foi criada na SEC-049 e faz **três** checagens de
+classe: RPC administrativa sem `exige_operador_ativo()` (SEC-043), função de
+trigger chamável como RPC (SEC-042), e função alcançável por `anon` fora da
+lista branca.
+
+**Ela tinha `EXECUTE` revogado de `anon` e de `authenticated`.** Rodava só
+quando eu a chamava à mão pelo MCP. Auditor que depende de alguém lembrar de
+perguntar é a mesma classe do §1.5: a informação existe e não chega a lugar
+nenhum.
+
+### O mensageiro devolve NÚMERO, nunca nome
+
+| Função | Devolve | Quem alcança |
+| --- | --- | --- |
+| `auditoria_de_operadores()` | os **nomes** | ninguém — só `postgres` |
+| `contagem_de_achados_de_seguranca()` | um **inteiro** | `anon` e `authenticated` |
+
+Abrir o auditor direto entregaria, para qualquer um na internet, a lista das
+funções fracas do site — um mapa de onde bater. **O que o mensageiro expõe,
+dito com todas as letras:** um inteiro que vale 0 quando está tudo certo. Quem
+chamar de fora aprende *"existem N problemas"*, nunca quais.
+
+**Por que pelo `anon` e não por credencial de banco no CI.** Já existe
+precedente que funciona: o portão `espelho-de-migrations` chama
+`contagem_de_migrations()` com a anon key. Pôr `service_role` no CI seria trocar
+incerteza de monitoramento por credencial exposta.
+
+### Isto é DETECÇÃO, não prevenção — e a diferença foi medida
+
+A prevenção na raiz seria fechar o `pg_default_acl` para que função nova
+nascesse fechada. Medido em 24/09, em `ROLLBACK`:
+
+| Tentativa | Resultado |
+| --- | --- |
+| `ALTER DEFAULT PRIVILEGES FOR ROLE postgres … REVOKE … FROM anon` | pega, mas é insuficiente |
+| a função nova continua aberta | ela nasce com `=X/postgres` — **PUBLIC** tem `EXECUTE` |
+| `… REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` | **não pega** — o ACL volta inalterado |
+| `… FOR ROLE supabase_admin …` | **`permission denied to change default privileges`** |
+
+Existem **dois** `pg_default_acl` de função em `public`, e o do `supabase_admin`
+é intocável com a credencial que eu tenho. Então função nova **continua
+nascendo alcançável pelo `anon`** — a diferença é que agora o CI reprova no
+mesmo dia, em vez de a brecha viver até alguém perguntar.
+
+> **O estado de hoje:** das 100 funções em `public`, **3** são alcançadas pelo
+> `anon`, e as três têm motivo escrito na lista branca do auditor. A
+> `contagem_de_migrations` é uma delas porque **o próprio portão do CI a chama
+> com a anon key** — conferido no script, não suposto. Revogá-la quebraria o CI.
+
+Trava: `src/lib/__tests__/auditorDoBancoEhOuvido.test.js`, provada com 4
+reinjeções — e a **segunda delas achou um defeito meu**: a asserção original
+procurava o `REVOKE` em todas as migrations juntas e passava mesmo com um
+`GRANT` novo, porque encontrava o `REVOKE` da SEC-049. Era decoração. Hoje ela
+olha o **último** movimento de privilégio, não a existência de um bom em algum
+lugar do histórico.
