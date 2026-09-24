@@ -6,7 +6,7 @@ import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
 import { useFeed } from '../hooks/useFeed';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { Search, X, ArrowUp } from 'lucide-react';
+import { Search, X, ArrowUp, ChevronDown } from 'lucide-react';
 import MarcaGH from '../components/ui/MarcaGH';
 import { rotuloDeNovos } from '../lib/novidadeDoFeed';
 
@@ -21,7 +21,10 @@ export default function Home() {
   // `useFeed`. O corte foi MECÂNICO — nada de comportamento mudou —, e o
   // motivo está lá: a paginação do bloco do Feed entra nesse hook, e ela não
   // cabe numa tela que também desenha (§4, "mistura responsabilidades").
-  const { posts, carregando: loading, novos: newPosts, recarregar: reloadPosts } = useFeed(user?.id);
+  const {
+    posts, carregando: loading, novos: newPosts, recarregar: reloadPosts,
+    carregarMais, temMais, carregandoMais,
+  } = useFeed(user?.id);
 
   // Filtragem memoizada — não recalcula se posts/search/filterCat não mudarem
   const filtered = useMemo(() => posts.filter(p => {
@@ -126,6 +129,20 @@ export default function Home() {
               </motion.div>
             ))}
           </motion.div>
+        )}
+
+        {/* `[24/09]` Carregar mais é ATO DA PESSOA, não rolagem infinita: o
+            pedido do dono é "indicador discreto -> usuário decide -> atualiza".
+            Só aparece quando o banco disse que existe próxima página. */}
+        {temMais && !search && filterCat === 'todos' && (
+          <button
+            onClick={() => carregarMais()}
+            disabled={carregandoMais}
+            className="w-full card p-3 flex items-center justify-center gap-1.5 text-xs font-mono text-gray-400 border-dark-400 hover:text-neon-green hover:border-neon-green/30 transition-colors disabled:opacity-50"
+          >
+            <ChevronDown size={13} className={carregandoMais ? 'animate-bounce' : ''} />
+            {carregandoMais ? 'Carregando...' : 'Carregar mais'}
+          </button>
         )}
       </div>
       <RightPanel />
