@@ -32,7 +32,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/VISAO-DE-FUTURO.md`](docs/VISAO-DE-FUTURO.md) | **Onde o site pode chegar.** Mapa de possibilidades, sem compromisso e sem data — não é fila |
 | [`BACKLOG.md`](BACKLOG.md) | **Dois trabalhos:** a fila do que falta, e a seção **EM EXECUÇÃO**, que guarda o plano da tarefa em curso |
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |
-| [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md), [execução](docs/regras/EXECUCAO.md). Valem exatamente como se estivessem no `CLAUDE.md` |
+| [`docs/regras/`](docs/regras/POSTURA.md) | As seções grandes do `CLAUDE.md`, puxadas por `@import`: [postura](docs/regras/POSTURA.md), [banco](docs/regras/BANCO.md), [auditoria e faxina](docs/regras/AUDITORIA.md), [documentação](docs/regras/DOCUMENTACAO.md), [execução](docs/regras/EXECUCAO.md), [cotas](docs/regras/COTAS.md), [mecanismos](docs/regras/MECANISMOS.md). Valem exatamente como se estivessem no `CLAUDE.md` |
 | [`docs/MANIFESTO.md`](docs/MANIFESTO.md) | Como o dono e o Claude trabalham **juntos** — papéis, quando explicar mais, continuidade |
 | [`docs/identidade/`](docs/identidade/README.md) | A marca: o [briefing do dono](docs/identidade/BRIEFING-2026-09.md), o [briefing da landing](docs/identidade/BRIEFING-LANDING-2026-09.md), a [evolução visual futura](docs/identidade/EVOLUCAO-VISUAL-DA-LANDING.md) e os arquivos de arte |
 | [`supabase/functions/`](supabase/functions/README.md) | As Edge Functions em produção, e por que este espelho pode mentir |

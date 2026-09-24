@@ -293,6 +293,16 @@ export const TERRITORIO = {
     'e2e/portas-do-banco.mjs',
     'src/lib/tabelasSemUpdate.js',
   ],
+  // `[24/09]` Saiu do CLAUDE.md quando ele bateu no próprio teto de 900
+  // linhas. O território são os arquivos que definem o que cada cota conta:
+  // mexer no que a Vercel constrói, ou ligar Edge Function nova, muda o
+  // inventário que este arquivo afirma.
+  'docs/regras/COTAS.md': [
+    'vercel.json',
+    'scripts/vercel-ignore.sh',
+    'supabase/functions',
+    'src/lib/tetoDeEventos.js',
+  ],
   'docs/regras/BANCO.md': [
     'supabase/migrations',
     'e2e/portas-do-banco.mjs',
@@ -311,6 +321,15 @@ export const TERRITORIO = {
     'scripts/territorio.mjs',
     'scripts/fim-de-sessao.mjs',
     'scripts/inicio-de-sessao.sh',
+  ],
+  // `[24/09]` Ele é o INVENTÁRIO dos portões e robôs. Portão novo, robô novo
+  // ou trava nova torna a tabela dele incompleta — e tabela que se apresenta
+  // como inventário e não é deixa de ser verdade para quem a lê.
+  'docs/regras/MECANISMOS.md': [
+    'scripts',
+    '.github/workflows',
+    'e2e',
+    'src/lib/__tests__',
   ],
   'docs/regras/DOCUMENTACAO.md': [
     'scripts/documentacao-quebrada.mjs',

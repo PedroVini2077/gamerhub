@@ -66,6 +66,13 @@ const ANCORAS = [
   ['§6.1  faxina', 'Medir antes e depois'],
   ['§6.2  contrato de evolução', 'Contrato de Evolução'],
   ['§6.2  as três camadas de documentação', 'TODOS os documentos têm que estar atualizados'],
+  // `[24/09]` As duas que saíram do CLAUDE.md quando ele bateu no próprio
+  // teto de 900 linhas. Sem âncora, um arquivo esvaziado até 501 caracteres
+  // passaria pela checagem de tamanho logo abaixo.
+  ['§0.2  toda cota estoura', '`git push` não é de graça'],
+  ['§0.2  alarme que grita à toa', 'A severidade é verdade?'],
+  ['§6.3  o que os mecanismos NÃO fazem', 'Fingir que verifica seria pior do que não verificar'],
+  ['§6.3  onde cada coisa escrita mora', 'quem protege a regra → `TRAVAS.md`'],
 ];
 
 describe('CLAUDE.md — as regras continuam sendo carregadas', () => {

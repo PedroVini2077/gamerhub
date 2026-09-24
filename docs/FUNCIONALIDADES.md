@@ -574,7 +574,9 @@ que é paginada, e uma mensagem antiga podia nem estar na primeira página.
 ### Comentários, likes e notificações
 
 - **Comentários** (`CommentSection` / `CommentCard`): abrir/fechar, criar,
-  deletar (autor ou admin), contagem, envio com Enter.
+  deletar (autor ou admin), contagem, envio com Enter. **`[24/09]`** O
+  comentário recém-criado **não some mais da tela**: duas buscas disputavam a
+  lista e a mais velha, chegando atrasada, devolvia o estado de antes.
 - **Respostas em thread** (replies): coluna `comments.parent_id` (self-FK com
   `ON DELETE CASCADE`). UI achatada em 1 nível (respostas de respostas viram
   irmãs sob o comentário raiz), com composer inline ao clicar "Responder".
