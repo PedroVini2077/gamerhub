@@ -155,6 +155,13 @@ export const TERRITORIO = {
   'docs/DECISOES-DE-BANCO.md': [
     'supabase/migrations',
   ],
+  // `[24/09]` A Fase 0 do proximo bloco. O territorio e o que ela MEDIU: se o
+  // feed, a busca ou o composer mudarem, os numeros dela envelhecem.
+  'docs/PLANO-FEED-BUSCA-NEWS.md': [
+    'src/pages/Home.jsx',
+    'src/services/postService.js',
+    'src/components/feed',
+  ],
   'docs/INVARIANTES.md': [
     'src/lib/__tests__',
     'src/hooks/__tests__',

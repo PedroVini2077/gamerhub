@@ -44,6 +44,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/MODERACAO-IA.md` | A moderação por IA de mídia: política por categoria, limiares e as medições que os produziram | Moderação humana |
 | `docs/PAINEIS.md` | O que **a equipe** opera: painéis, banimento, config, trilha | O que o usuário comum vê |
 | `docs/PRIVACIDADE.md` | O que o site coleta **de verdade**, medido na implementação | Promessa não verificada |
+| `docs/PLANO-FEED-BUSCA-NEWS.md` | **`[24/09]`** A **Fase 0** do bloco feed/busca/formatação/news: o que foi MEDIDO, a arquitetura proposta e o que depende de decisão do dono | Implementação, e fila (a fila é o `BACKLOG.md`) |
 | `docs/VISAO-DE-FUTURO.md` | **Onde o produto pode chegar** — possibilidades, sem data e sem compromisso, com a menor versão de cada uma | Fila, prazo, especificação |
 | `docs/DECISOES.md` | O que foi decidido e **descartado** no PRODUTO, com data e motivo | Item a fazer |
 | `docs/DECISOES-FERRAMENTAL.md` | O mesmo, para a **esteira**: CI, Vercel, Sentry, email | Decisão de produto |
@@ -57,7 +58,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `BACKLOG.md` | **DOIS trabalhos** (`[03/09]`): a fila do que falta, e a seção **EM EXECUÇÃO**, que é a memória operacional da tarefa em curso | Decisão, histórico, item já feito, pensamento solto |
 | `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado. **Retrato de um dia — deve envelhecer**, e o varredor o ignora de propósito | Estado atual do sistema |
 
-> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->57<!--/n-->
+> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->58<!--/n-->
 > documentos.** Os que faltavam não eram menores — eram `PRIVACIDADE.md`,
 > `PAINEIS.md` e os próprios `docs/regras/`, que são regra executável. Tabela de
 > "onde cada coisa mora" incompleta é pior do que tabela nenhuma: ela responde
@@ -290,12 +291,12 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->25.309<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->25.687<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
 **o que mudou embaixo de cada um**. `npm run docs -- --tudo` lista os
-<!--n:docs.arquivos-->57<!--/n--> por idade, para varredura completa.
+<!--n:docs.arquivos-->58<!--/n--> por idade, para varredura completa.
 
 **A regra prática, e ela é curta:** rodar `npm run docs` **antes de fechar
 qualquer bloco de trabalho**, e abrir o que ele apontar. Um documento marcado
