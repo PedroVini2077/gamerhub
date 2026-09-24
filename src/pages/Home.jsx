@@ -10,12 +10,9 @@ import { Search, X, ArrowUp, ChevronDown } from 'lucide-react';
 import MarcaGH from '../components/ui/MarcaGH';
 import { rotuloDeNovos } from '../lib/novidadeDoFeed';
 
-const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
-
 export default function Home() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
-  const [filterCat, setFilterCat] = useState('todos');
 
   // `[24/09]` Buscar dado, assinar realtime e contar novidade saíram para o
   // `useFeed`. O corte foi MECÂNICO — nada de comportamento mudou —, e o
@@ -26,15 +23,15 @@ export default function Home() {
     carregarMais, temMais, carregandoMais,
   } = useFeed(user?.id);
 
-  // Filtragem memoizada — não recalcula se posts/search/filterCat não mudarem
+  // `[24/09]` O filtro por CATEGORIA saiu: publicar não pede mais que a pessoa
+  // classifique o que escreveu. A busca continua aqui por enquanto, e ela é
+  // limitada de propósito — só enxerga o que já foi carregado. A busca de
+  // verdade (consulta ao banco, com /busca) é a fase seguinte do plano.
   const filtered = useMemo(() => posts.filter(p => {
-    const matchCat = filterCat === 'todos' || p.category === filterCat;
+    if (!search) return true;
     const q = search.toLowerCase();
-    const matchSearch = !search ||
-      p.title?.toLowerCase().includes(q) ||
-      p.content?.toLowerCase().includes(q);
-    return matchCat && matchSearch;
-  }), [posts, search, filterCat]);
+    return p.title?.toLowerCase().includes(q) || p.content?.toLowerCase().includes(q);
+  }), [posts, search]);
 
   return (
     <div className="flex gap-6">
@@ -50,13 +47,13 @@ export default function Home() {
               Bem-vindo ao <span className="text-neon">Hub</span>
             </h1>
             <p className="text-sm text-gray-400 font-body">
-              Dicas, curiosidades, news e a melhor comunidade gamer do Brasil.
+              O que a comunidade gamer brasileira está publicando agora.
             </p>
           </div>
         </div>
 
-        {/* Busca e filtros */}
-        <div className="card p-4 space-y-3">
+        {/* Busca — limitada ao que já foi carregado, até a fase da busca real */}
+        <div className="card p-4">
           <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green transition-all">
             <span className="pl-3 text-gray-500 shrink-0"><Search size={14} /></span>
             <input
@@ -70,21 +67,6 @@ export default function Home() {
                 <X size={14} />
               </button>
             )}
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {CATEGORIES.map(c => (
-              <button
-                key={c}
-                onClick={() => setFilterCat(c)}
-                className={`tag cursor-pointer transition-all ${
-                  filterCat === c
-                    ? c === 'todos' ? 'tag-green' : c === 'dica' ? 'tag-green' : c === 'curiosidade' ? 'tag-purple' : 'tag-cyan'
-                    : 'opacity-40 hover:opacity-70 tag-cyan'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -117,7 +99,7 @@ export default function Home() {
         ) : filtered.length === 0 ? (
           <div className="card p-8 text-center">
             <p className="font-mono text-gray-500 text-sm">
-              {search || filterCat !== 'todos' ? 'Nenhum post encontrado.' : 'Nenhum post ainda. Seja o primeiro!'}
+              {search ? 'Nenhum post encontrado.' : 'Nenhum post ainda. Seja o primeiro!'}
             </p>
           </div>
         ) : (
@@ -134,7 +116,7 @@ export default function Home() {
         {/* `[24/09]` Carregar mais é ATO DA PESSOA, não rolagem infinita: o
             pedido do dono é "indicador discreto -> usuário decide -> atualiza".
             Só aparece quando o banco disse que existe próxima página. */}
-        {temMais && !search && filterCat === 'todos' && (
+        {temMais && !search && (
           <button
             onClick={() => carregarMais()}
             disabled={carregandoMais}

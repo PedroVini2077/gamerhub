@@ -21,7 +21,6 @@ export function usePostComposer(onPost) {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [category, setCategory] = useState('dica');
   const [medias, setMedias] = useState([]);
   const [audio, setAudio] = useState(null);
   const [audioName, setAudioName] = useState('');
@@ -153,7 +152,6 @@ export function usePostComposer(onPost) {
         userId: profile?.id,
         title: title.trim(),
         content: content.trim() || null,
-        category,
         audioUrl: audio_url,
         audioType: audio_type,
         audioName: audioName.trim() || null,
@@ -249,7 +247,7 @@ export function usePostComposer(onPost) {
 
   return {
     user, profile,
-    title, setTitle, content, setContent, category, setCategory,
+    title, setTitle, content, setContent,
     medias, audio, audioName, setAudioName,
     embedUrl, setEmbedUrl, showEmbed, setShowEmbed, closeEmbed,
     isLive, setIsLive, showRecorder, setShowRecorder,

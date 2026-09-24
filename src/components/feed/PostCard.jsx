@@ -20,12 +20,6 @@ import ConfirmModal from '../ui/ConfirmModal';
 import PedirReativacaoDaLive from '../lives/PedirReativacaoDaLive';
 import ReportModal from '../ui/ReportModal';
 
-const categoryConfig = {
-  dica: { label: 'Dica', cls: 'tag-green' },
-  curiosidade: { label: 'Curiosidade', cls: 'tag-purple' },
-  news: { label: 'News', cls: 'tag-cyan' },
-};
-
 const EDIT_LIMIT_MINUTES = 30;
 // Janela pra cancelar antes do post sumir de fato.
 const DELETE_COUNTDOWN_SECONDS = 5;
@@ -44,7 +38,6 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
   const [deleting, setDeleting] = useState(false);
   const [reporting, setReporting] = useState(false);
 
-  const cat = categoryConfig[post.category] || categoryConfig.dica;
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
   const canDelete = canDeleteContent(user?.id, role, post.user_id, post.profiles?.role);
   const isOwner = user && user.id === post.user_id;
@@ -141,7 +134,6 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className={`tag ${cat.cls}`}>{cat.label}</span>
           {canReport && (
             <button onClick={() => setReporting(true)} aria-label="Denunciar post"
               className="text-gray-600 hover:text-orange-400 transition-colors">

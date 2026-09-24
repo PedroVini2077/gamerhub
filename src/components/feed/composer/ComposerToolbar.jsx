@@ -1,7 +1,5 @@
 import { Send, Image, Film, Music, Mic, Link } from 'lucide-react';
 
-const CATEGORIES = ['dica', 'curiosidade', 'news'];
-
 function IconAction({ icon: Icon, label, title, onClick }) {
   return (
     <button type="button" onClick={onClick} title={title || label} aria-label={label}
@@ -11,22 +9,14 @@ function IconAction({ icon: Icon, label, title, onClick }) {
   );
 }
 
-/** Categorias, anexos e o botão de publicar. */
+/** Anexos e o botão de publicar. */
 export default function ComposerToolbar({
-  category, setCategory,
   canAddMedia, hasAudio, showRecorder, showEmbed,
   onPickImage, onPickVideo, onPickAudio, onRecord, onAddEmbed,
   loading, onSubmit, perfilPronto = true,
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {CATEGORIES.map(c => (
-        <button key={c} type="button" onClick={() => setCategory(c)} aria-pressed={category === c}
-          className={`tag cursor-pointer transition-all ${category === c ? 'tag-green' : 'tag-purple opacity-50 hover:opacity-100'}`}>
-          {c}
-        </button>
-      ))}
-
       <div className="flex gap-1 ml-1">
         {canAddMedia && (
           <>
