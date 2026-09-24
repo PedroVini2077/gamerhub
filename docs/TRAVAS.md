@@ -134,7 +134,7 @@ Garantem que dois lugares do código continuem concordando.
 | `tabelasSemUpdate.test.js` | `update` em tabela sem policy — 0 linhas, nenhum erro | `INV-CONTRATO-005` |
 | `apagarConfereLinhas.test.js` | escrita que pode ser negada sem conferir linhas | `INV-CONTRATO-006` |
 | `portasDaWebNaoEsvaziam.test.js` | a lista do portão da borda sendo esvaziada | `INV-PORTA-004` |
-| `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** | `INV-PORTA-006` |
+| `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** — e, desde a SEC-051, também a lista de **isentas da checagem de literal de papel** | `INV-PORTA-006` |
 | `cofre.test.js` | código do cofre guardado em texto; reset em 2 cliques | `INV-CONTA-004` |
 | `documentosLegais.test.js` | texto legal mudando por baixo de quem aceitou | `INV-CONTA-005` |
 | `logoutEhLocal.test.js` | `signOut()` com escopo global derrubando outro aparelho | `INV-CONTA-002` |

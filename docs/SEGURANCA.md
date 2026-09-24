@@ -1639,3 +1639,56 @@ procurava o `REVOKE` em todas as migrations juntas e passava mesmo com um
 `GRANT` novo, porque encontrava o `REVOKE` da SEC-049. Era decoração. Hoje ela
 olha o **último** movimento de privilégio, não a existência de um bom em algum
 lugar do histórico.
+
+---
+
+## `[24/09]` SEC-051 — o auditor não via autorização escrita por LITERAL
+
+Saiu da **parte 1 da auditoria profunda**: o pedido era transformar em regressão
+os quatro `400 Acesso negado` que o dono reproduziu adulterando o `role` no
+DevTools. Ao conferir as quatro funções, uma delas não usava `role_rank`,
+`is_staff`, `is_super` nem `is_owner`:
+
+```sql
+-- owner_get_stats
+IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'owner')
+```
+
+**Isso não é vulnerabilidade** — o efeito é correto, só o fundador passa. É a
+*forma* que o `POSTURA.md` proíbe, e que já causou três falhas aqui.
+
+### O que importa é que era um ponto cego do próprio auditor
+
+A heurística da SEC-049 procura `role_rank|is_staff|is_super|is_owner` para
+decidir *"isto é administrativo"*. Função que autoriza por literal **não casa
+com nenhum deles** — logo era invisível para as três checagens.
+
+Eu havia registrado esse risco residual no `BACKLOG.md` **na mesma manhã**:
+*"uma RPC administrativa que decidisse permissão por outro caminho não seria
+vista"*. A varredura de classe achou **seis**.
+
+| Função | O que é |
+| --- | --- |
+| `operador_ativo` | a própria maquinaria da guarda — compara papel por desenho |
+| `owner_get_stats` · `owner_get_users` · `owner_get_metrics` · `owner_get_audit_logs` · `owner_get_notifications` | o painel do **próprio** fundador |
+
+### Por que as cinco NÃO foram consertadas aqui
+
+Duas razões, e as duas dizem para não agir sozinho:
+
+1. **A troca por `is_owner()` não é mecânica.** `is_owner()` é
+   `role_rank(...) >= 4`; o literal é `= 'owner'`. Hoje dão o mesmo resultado,
+   mas um cargo futuro de rank 5 passaria num e não no outro. É decisão de
+   semântica — §7 🟡.
+2. **Pôr `exige_operador_ativo()` nelas seria pior.** Ninguém consegue banir o
+   fundador: `ban_user` e `apply_suspension` têm hierarquia estrita e ele é o
+   topo. Guardar a leitura do painel dele criaria o risco de **trancá-lo fora do
+   próprio painel, sem inversa** — a classe do erro da `apply_suspension` sem
+   `lift_suspension`.
+
+As duas estão propostas no `BACKLOG.md`. Até lá os nomes ficam na lista de
+exceção **com o motivo escrito na migration**, e a trava
+`auditorDoBancoEhOuvido.test.js` reprova se a lista crescer em silêncio.
+
+**O que muda de verdade:** função **nova** que autorize por literal passa a ser
+vista. O ponto cego fecha para o futuro, que é onde ele doía.

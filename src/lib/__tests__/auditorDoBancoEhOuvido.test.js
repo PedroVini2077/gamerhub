@@ -58,6 +58,26 @@ const SQL = (() => {
  * Cada uma tem motivo escrito, e o motivo é o que separa "lista branca" de
  * "lugar onde se escondem achados":
  */
+/**
+ * `[24/09]` SEC-051 — as funções isentas da checagem de LITERAL de papel.
+ *
+ * Autorizar com `role = 'owner'` em vez de `is_owner()` é a forma que o
+ * `POSTURA.md` proíbe, e era um **ponto cego do próprio auditor**: a heurística
+ * procura `role_rank|is_staff|is_super|is_owner` para decidir "isto é
+ * administrativo", então quem autoriza por literal não casava com nada.
+ *
+ * Estas seis ficam isentas **com motivo**, e o motivo é o que impede a lista de
+ * virar esconderijo:
+ */
+const ISENTAS_DO_LITERAL = {
+  operador_ativo: 'é a própria maquinaria da guarda — compara papel por desenho',
+  owner_get_stats: 'painel do Fundador: a troca por `is_owner()` muda semântica (rank >= 4 vs = owner)',
+  owner_get_users: 'idem',
+  owner_get_metrics: 'idem',
+  owner_get_audit_logs: 'idem',
+  owner_get_notifications: 'idem',
+};
+
 const PORTAS_PUBLICAS = {
   contagem_de_migrations: 'o portão `espelho-de-migrations` a chama COM A ANON KEY',
   username_disponivel: 'a tela de cadastro roda sem conta',
@@ -169,5 +189,36 @@ describe('SEC-050 — o auditor do banco é ouvido, e a lista branca é delibera
       'Atenção ao `contagem_de_achados_de_seguranca`: sem ele na lista, o',
       'auditor **se acusa sozinho** e o portão nasce vermelho para sempre.',
     ].join('\n')).toEqual([]);
+  });
+
+  it('a lista de isentas do LITERAL é exatamente a escrita aqui', () => {
+    const corpo = auditor();
+    const bloco = corpo.match(
+      /LITERAL de papel[\s\S]*?nome\s+NOT\s+IN\s*\(([\s\S]*?)\)/i);
+
+    expect(bloco, [
+      'O bloco de isenção da checagem de LITERAL sumiu do auditor.',
+      '',
+      'Sem ele a SEC-051 deixa de existir, e função que autoriza com',
+      "`role = 'owner'` volta a ser invisível para as outras três checagens —",
+      'que foi exatamente o ponto cego que a SEC-051 fechou.',
+    ].join('\n')).toBeTruthy();
+
+    const naLista = [...bloco[1].matchAll(/'([a-z0-9_]+)'/gi)].map(m => m[1]).sort();
+    const esperado = Object.keys(ISENTAS_DO_LITERAL).sort();
+
+    expect(naLista, [
+      `Na migration: ${naLista.join(', ') || '(vazia)'}`,
+      `Nesta trava:  ${esperado.join(', ')}`,
+      '',
+      'Isentar uma função aqui **silencia** o auditor para ela. Às vezes é',
+      'legítimo — mas então o nome entra TAMBÉM no mapa `ISENTAS_DO_LITERAL`',
+      'desta trava, **com o motivo escrito ao lado**.',
+      '',
+      'As cinco do painel do Fundador estão isentas por duas razões medidas:',
+      'trocar o literal por `is_owner()` muda semântica, e pôr a guarda de',
+      'operador arriscaria trancar o fundador FORA do próprio painel, sem',
+      'inversa. As duas estão propostas no BACKLOG — não decididas.',
+    ].join('\n')).toEqual(esperado);
   });
 });
