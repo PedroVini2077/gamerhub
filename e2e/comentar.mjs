@@ -137,10 +137,32 @@ export async function responderEEsperarAninhada(page, { card, aoComentario, text
   const pai = card.getByText(aoComentario, { exact: false }).first();
   await pai.waitFor({ state: 'visible', timeout: 15000 });
 
-  // O botão "Responder" do comentário PAI, e não o de um vizinho: subimos até
-  // o bloco do comentário antes de procurar.
-  const blocoDoPai = card.locator('div').filter({ has: pai }).last();
-  await blocoDoPai.getByRole('button', { name: /^Responder$/ }).click();
+  // ── Por que NÃO se procura o botão "dentro do bloco do pai" ──────────────
+  //
+  // A primeira versão subia do texto até o `div` que o contém
+  // (`card.locator('div').filter({ has: pai }).last()`) para pegar o
+  // "Responder" daquele comentário. O CI reprovou com timeout, e a causa está
+  // no log: o `has:` do Playwright espera um locator relativo ao de fora, e eu
+  // passei um construído a partir do `card` — a cadeia se re-ancorou na página
+  // e a interseção nunca casou.
+  //
+  // A saída não é uma cadeia mais esperta: é **exigir o que se sabe ser
+  // verdade**. Este post é o da própria execução e tem exatamente UM
+  // comentário, então existe exatamente UM "Responder". Contar antes é o que
+  // transforma "cliquei no botão errado" — que passaria verde — numa falha
+  // que diz o que aconteceu.
+  const botoes = card.getByRole('button', { name: /^Responder$/ });
+  const quantos = await botoes.count();
+  if (quantos !== 1) {
+    throw new Error(
+      `esperava UM botao "Responder" no card e achei ${quantos}.\n`
+      + '    Zero: o `onReply` parou de ser passado pelo `CommentSection`, ou o\n'
+      + '    comentario nao esta na tela — a secao fecha sozinha?\n'
+      + '    Mais de um: o post ganhou outro comentario. Este passo assume que\n'
+      + '    o post e o da execucao e tem so o comentario dela; se isso mudou,\n'
+      + '    o passo precisa escolher o pai de proposito, nao por sorte.');
+  }
+  await botoes.click();
 
   const campo = card.getByLabel(/Escreva uma resposta/i);
   await campo.waitFor({ state: 'visible', timeout: 15000 });
