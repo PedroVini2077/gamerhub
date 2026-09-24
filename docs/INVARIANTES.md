@@ -205,6 +205,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-TELA-002** | Todo campo de senha passa pelo `CampoDeSenha` — `<input type="password">` solto perde o olho de mostrar/ocultar, e no Android ficam **dois** olhos | — | `src/lib/__tests__/campoDeSenhaUnico.test.js` |
 | **INV-TELA-003** | A marca de entrada é escrita **antes** de pedir o login ao servidor, e **desfeita em todo caminho que não termina em entrada** | — | `src/lib/__tests__/portaoAntesDoSite.test.js` |
 | **INV-TELA-004** | **`[24/09]`** O efeito otimista **sobrevive ao recarregamento**: curtir e descurtir mudam a tela na hora, e o que vale é o que o servidor guardou. O lado de trás é o perigoso — `DELETE` negado pela RLS devolve **204 e zero linhas**, sem erro, então o `runLikeToggle` não reverte e a tela apaga uma curtida que continua no banco | — | `e2e/curtir.mjs` (dentro do `e2e/fluxos.mjs`) |
+| **INV-TELA-005** | **`[24/09]`** Busca que roda de **dois gatilhos** descarta a resposta já superada — a resposta VELHA nunca sobrescreve a nova. Sem isso o que a pessoa acabou de criar some da tela, com o dado certo no banco, sem erro e sem log | — | `src/hooks/__tests__/useApenasAUltimaResposta.test.js` · `comentarioNaoSomeDepoisDeAparecer.test.jsx` · `buscaConcorrenteTemGuarda.test.js` |
 
 > `INV-TELA-004` é o caso mais puro desta família: aqui a tela mente **por
 > desenho**, e isso é a coisa certa para quem usa. O que a torna uma

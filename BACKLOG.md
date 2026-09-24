@@ -150,28 +150,41 @@ duplicar fonte de verdade (§4):
   dos mecanismos, ~80). Não é urgente — vira urgente no dia em que eu precisar
   escrever uma regra e não puder.*
 
-- ⬜ `[24/09]` 🟡 **A seção de comentários FECHA sozinha logo depois de comentar,
-  e o contador volta a ZERO.** *Achado sem querer, montando o E2E de responder —
-  e é defeito do SITE, não do roteiro.*
+### ✅ `[24/09]` O comentário sumia da tela — resposta velha sobrescrevendo a nova
 
-  **A evidência, medida no CI e não deduzida:** o roteiro comenta, confere o
-  comentário na tela (passo verde), e segundos depois o despejo da página mostra
-  o card com o botão **"Comentar"** — ou seja, contagem **zero** — e a lista
-  fora da tela. O comentário está **vivo no banco**, com `hidden_at` nulo
-  (conferido em consulta). Do lado de quem usa: você comenta, o comentário
-  aparece, e em seguida ele some da tela e o contador diz que não há nenhum.
+**Era o item 🟡 aberto hoje de manhã, e a causa NÃO era nenhum dos dois
+suspeitos que eu tinha anotado.** Eu havia escrito "o card remonta" ou "o
+`setCount(initialCount)` sobrescreve" — e as duas estavam erradas. O que
+derrubou a hipótese foi a instrumentação: no despejo da tela, o compositor
+estava visível junto do rótulo "Comentar", ou seja **a seção estava ABERTA**
+com a lista vazia. Remontagem teria fechado.
 
-  **O que eu NÃO provei, e por isso isto é hipótese:** a causa. Dois suspeitos,
-  os dois em `src/components/feed/CommentSection.jsx` — (a) o card **remonta**
-  num refresh do feed e o `open` volta a `false`; (b) o
-  `useEffect([postId, initialCount])` chama `setCount(initialCount)` com a
-  contagem **em lote** do feed, que é anterior ao comentário. O (b) explica o
-  contador; o (a) explicaria a lista sumir junto. **O teste que separa os dois:**
-  logar a montagem do componente e ver se o `open` é perdido.
+**A causa real é uma CORRIDA**, e ela é a 3ª armadilha da FASE 1 do §6 —
+*"resposta velha sobrescrevendo a nova"*, que estava escrita na régua de
+auditoria desde sempre e nunca tinha sido testada:
 
-  Enquanto isso, o `e2e/comentar.mjs` **reabre a seção** antes de responder, e o
-  comentário ao lado do `garantirSecaoAberta` aponta para cá. O roteiro contorna;
-  o defeito continua aberto.
+```
+abrir a seção   -> busca A, devolve []          (conexão lenta, demora)
+enviar comentário -> busca B, devolve [c]        (responde primeiro)
+                 -> a tela mostra o comentário
+A responde      -> setComments([])               -> o comentário SOME
+```
+
+**Reproduzido antes de consertar** (§1.2): `comentarioNaoSomeDepoisDeAparecer.test.jsx`
+resolve as duas buscas fora de ordem e viu o comentário desaparecer. Vermelho
+primeiro, verde depois do conserto.
+
+**Varredura de CLASSE, não de caso** (§1.3): o mesmo desenho existia em mais
+dois lugares — `useMensagensDeContato` (trocar o filtro × marcar/responder, e o
+piso de 500 ms ALARGA a janela) e `useXpDasLives` (evento de realtime ×
+invalidar/revalidar), que eu mesmo escrevi ontem. Os três passaram a usar
+`useApenasAUltimaResposta`, um hook só — cópia diverge (§4).
+
+**Três travas, todas provadas reinjetando:** a do hook (guarda sempre
+verdadeira · contador que não incrementa · contador vazando entre montagens), a
+da tela (o bug original) e a de classe (guarda removida de um dos três · lista
+esvaziada · a marca `novoPedido()` migrando para depois do `await`).
+`INV-TELA-005`.
 
 ### ✅ `[19/09]` LIVE-051 — a moderação não alcançava a live AINDA NO AR
 
@@ -710,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**48 itens abertos** (+ 1 ideia sem compromisso)
+**47 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1920,8 +1933,8 @@ M riscos · **N o que precisa da aprovação dele**.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->138<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.379<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->139<!--/n--> arq ·
+  <!--n:src.lib.linhas-->16.489<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
