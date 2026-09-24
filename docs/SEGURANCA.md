@@ -1753,9 +1753,13 @@ Provado reinjetando **quatro** políticas quebradas: youtube fora do `frame-src`
 > | --- | --- | --- |
 > | 1ª | `iframe.contentWindow` | continua **verdadeiro** num frame barrado — ele aponta para `about:blank`. Reinjetar "youtube fora do `frame-src`" passou **verde** |
 > | 2ª | `contentWindow` **ou** violação no console | o CI reprovou com o Twitch "bloqueado" — lá a rede **não alcança** twitch.tv, e o iframe não carrega **por rede** |
+> | 3ª | só a violação no console | o CI **reprovou de novo**: `page.on('console')` recebe mensagem dos **iframes** também, e a Twitch tem CSP própria. No runner o embed carrega de verdade, e as mensagens **dela** chegavam como se fossem nossas |
 >
-> A única evidência que distingue política de rede é a **mensagem do
-> navegador**: bloqueio de CSP vira `Refused to frame ... because it violates`.
-> Hoje o roteiro olha só isso — e o **controle** é o que prova que ele consegue
-> ver essa mensagem. Sem o controle, *"nenhum frame bloqueado"* poderia
-> significar *"não escutei nada"*.
+> Hoje ele exige **as duas coisas**: a mensagem tem de ser uma recusa de CSP
+> **e** ter sido emitida pelo **nosso** documento, não por um iframe de
+> terceiro. E o **controle** prova que ele consegue ouvir — sem ele, *"nenhum
+> frame bloqueado"* poderia significar *"não escutei nada"*.
+>
+> As três versões erraram pelo mesmo motivo de fundo: **eu aceitei um sinal
+> barato no lugar da evidência certa.** Vale registrar porque a mesma tentação
+> vai aparecer na próxima trava que dependa de navegador.

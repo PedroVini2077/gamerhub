@@ -102,6 +102,19 @@ const violacoes = [];
 const erros = [];
 const eViolacao = (t) => /Content Security Policy|Refused to (connect|load|execute|frame)/i.test(t);
 
+/**
+ * `[24/09]` `page.on('console')` recebe mensagem dos IFRAMES tambem — e a
+ * Twitch tem CSP propria. No CI, onde o embed carrega de verdade, as mensagens
+ * DELA chegavam aqui e eu acusava a NOSSA politica por elas.
+ *
+ * So conta o que foi emitido pelo nosso proprio documento.
+ */
+const NOSSA_ORIGEM = `http://127.0.0.1:${PORTA}`;
+const daNossaPagina = (m) => {
+  const u = m.location()?.url || '';
+  return u === '' || u.startsWith(NOSSA_ORIGEM);
+};
+
 let navegador;
 try {
   navegador = await chromium.launch(
@@ -115,7 +128,7 @@ try {
 
 for (const rota of ROTAS) {
   const pg = await navegador.newPage();
-  pg.on('console', m => { if (eViolacao(m.text())) violacoes.push(`${rota} :: ${m.text().slice(0, 200)}`); });
+  pg.on('console', m => { if (daNossaPagina(m) && eViolacao(m.text())) violacoes.push(`${rota} :: ${m.text().slice(0, 200)}`); });
   pg.on('pageerror', e => erros.push(`${rota} :: ${String(e).slice(0, 150)}`));
   await pg.goto(`http://127.0.0.1:${PORTA}${rota}`, { waitUntil: 'networkidle', timeout: 30000 })
     .catch(() => {});
@@ -131,7 +144,7 @@ for (const rota of ROTAS) {
 // ── A sonda das duas diretivas, e o controle que a torna confiavel ──────────
 const sonda = await navegador.newPage();
 const violacoesDaSonda = [];
-sonda.on('console', m => { if (eViolacao(m.text())) violacoesDaSonda.push(m.text()); });
+sonda.on('console', m => { if (daNossaPagina(m) && eViolacao(m.text())) violacoesDaSonda.push(m.text()); });
 await sonda.goto(`http://127.0.0.1:${PORTA}/`, { waitUntil: 'domcontentloaded' });
 
 const frames = await sonda.evaluate(async (alvos) => {
