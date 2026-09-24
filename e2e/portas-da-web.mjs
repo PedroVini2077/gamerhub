@@ -38,10 +38,12 @@
  * testa permissão, não testa XSS — nada do que um humano ou uma auditoria (§6)
  * faz.
  *
- * `[24/09]` A **CSP** passou a existir, e o `e2e/politica-de-conteudo.mjs` a
- * verifica num navegador de verdade. A exigência do cabeçalho AQUI entra no PR
- * seguinte, e a ordem é obrigatória: este roteiro bate na **produção**, então
- * exigir o cabeçalho antes do deploy reprovaria o próprio PR que o publica.
+ * `[24/09]` A **CSP** entrou aqui no PR seguinte ao que a publicou, e a ordem
+ * era obrigatória: este roteiro bate na **produção**, então exigir o cabeçalho
+ * antes do deploy teria reprovado o próprio PR que o publica. O
+ * `e2e/politica-de-conteudo.mjs` continua sendo o que prova, num navegador de
+ * verdade, que a política **não quebra a tela**; aqui se prova outra coisa —
+ * que ela **continua no ar e não afrouxou** (ver `CSP_TRAVADAS`).
  *
  * Uso:  SITE_URL=https://exemplo.app node e2e/portas-da-web.mjs
  */
@@ -61,6 +63,37 @@ const CABECALHOS = [
   ['referrer-policy',          'strict-origin-when-cross-origin',    'vazamento de URL no Referer'],
   ['permissions-policy',       'camera=(self), microphone=(self), geolocation=()', 'câmera/mic/GPS'],
   ['strict-transport-security', /max-age=\d{7,}/,                    'downgrade para HTTP'],
+  // O valor e julgado em CSP_TRAVADAS; aqui so se pergunta se AINDA e uma CSP.
+  ['content-security-policy',  /script-src/,                         'XSS e injecao de script'],
+];
+
+/**
+ * Diretivas da CSP cujo valor e TRAVADO — comparado inteiro, nao "contem".
+ *
+ * ── Por que so ALGUMAS, e nao a politica inteira ────────────────────────────
+ *
+ * Comparar a politica inteira com a do `vercel.json` seria a fonte unica ideal
+ * (§4) e um portao que se auto-bloqueia: este roteiro bate na **producao**,
+ * entao o PR que soma uma origem nova ao `connect-src` reprovaria a si mesmo,
+ * porque a producao ainda serve a politica antiga. Portao que reprova o
+ * caminho correto ensina a ignora-lo (§0.2, 4a regra).
+ *
+ * As diretivas abaixo sao as que **nao tem motivo legitimo de crescer**:
+ * afrouxar qualquer uma delas e sempre uma decisao de seguranca, nunca
+ * manutencao de rotina. `connect-src`, `frame-src`, `img-src` e `font-src`
+ * ficam de fora de proposito — eles crescem quando entra um servico novo.
+ *
+ * A comparacao e por IGUALDADE, e e isso que pega o afrouxamento silencioso:
+ * `script-src 'self' 'unsafe-inline'` passaria numa checagem de "contem
+ * 'self'" sorrindo, e e exatamente o XSS que a CSP existe para barrar.
+ */
+const CSP_TRAVADAS = [
+  ['default-src',     "'self'", 'o piso de tudo que a politica nao nomeia'],
+  ['script-src',      "'self'", 'XSS inline e script de origem arbitraria'],
+  ['object-src',      "'none'", 'plugin legado (Flash/PDF) usado como vetor'],
+  ['base-uri',        "'self'", 'sequestro de todo caminho relativo via <base>'],
+  ['frame-ancestors', "'none'", 'clickjacking — a versao moderna do X-Frame-Options'],
+  ['form-action',     "'self'", 'formulario do site postando credencial em outro dominio'],
 ];
 
 /** Caminhos que, por causa do rewrite, DEVEM devolver o app — nunca conteúdo. */
@@ -74,6 +107,16 @@ function reprova(titulo, detalhe) { falhas.push({ titulo, detalhe }); }
 async function pegar(caminho) {
   const r = await fetch(SITE + caminho, { redirect: 'follow' });
   return { status: r.status, headers: r.headers, corpo: await r.text() };
+}
+
+/** Quebra o valor do cabecalho em `{ diretiva: 'valor' }`. */
+function diretivasDaCsp(valor) {
+  const mapa = {};
+  for (const parte of valor.split(';')) {
+    const t = parte.trim().split(/\s+/);
+    if (t[0]) mapa[t[0].toLowerCase()] = t.slice(1).join(' ');
+  }
+  return mapa;
 }
 
 async function main() {
@@ -113,6 +156,33 @@ async function main() {
         + '    fraca — e a checagem de PRESENCA aprovaria isso sorrindo.');
     } else {
       ok.push(`${nome}: ${valor}`);
+    }
+  }
+
+  // ── Direção 2b: a CSP não afrouxa nas diretivas travadas ─────────────────
+  //
+  // O cabeçalho pode estar presente e valer pouco. Presença não é proteção.
+  const csp = raiz.headers.get('content-security-policy');
+  if (csp) {
+    const d = diretivasDaCsp(csp);
+    for (const [diretiva, exigido, protege] of CSP_TRAVADAS) {
+      const valor = d[diretiva];
+      if (valor === undefined) {
+        reprova(`a diretiva "${diretiva}" SUMIU da CSP`,
+          `Ela protege contra ${protege}.\n`
+          + '    Diretiva que some nao quebra tela nenhuma. E o default-src nao\n'
+          + '    cobre o buraco: frame-ancestors, form-action e base-uri NAO tem\n'
+          + '    fallback nenhum — sem a diretiva, nao ha restricao alguma.');
+      } else if (valor !== exigido) {
+        reprova(`a diretiva "${diretiva}" da CSP AFROUXOU`,
+          `esperado: ${diretiva} ${exigido}\n    recebido: ${diretiva} ${valor}\n`
+          + `    Ela protege contra ${protege}. Uma checagem de "contem 'self'"\n`
+          + '    aprovaria isto sorrindo — por isso a comparacao e por igualdade.\n'
+          + '    Se o afrouxamento foi deliberado, mude a expectativa em\n'
+          + '    CSP_TRAVADAS com o motivo escrito ao lado.');
+      } else {
+        ok.push(`csp ${diretiva}: ${valor}`);
+      }
     }
   }
 

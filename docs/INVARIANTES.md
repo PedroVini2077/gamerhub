@@ -138,6 +138,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-PORTA-005** | As três portas do contador de login ficam fechadas para `authenticated` | — | `src/lib/__tests__/contadorDeLoginFechado.test.js` |
 | **INV-PORTA-006** | Nenhuma função nasce alcançável por `anon` **fora da lista branca escrita** — e o auditor que verifica isso tem de ser **ouvível pelo CI** | SEC-042 · SEC-043 · SEC-050 | `e2e/portas-do-banco.mjs` · `src/lib/__tests__/auditorDoBancoEhOuvido.test.js` |
 | **INV-PORTA-007** | O navegador **não executa script de origem que não esteja na CSP** — e a política é verificada num navegador de verdade antes de ir ao ar, nunca só escrita | — | `e2e/politica-de-conteudo.mjs` |
+| **INV-PORTA-008** | **`[24/09]`** A CSP continua **no ar** e as seis diretivas que não têm motivo legítimo de crescer (`default-src`, `script-src`, `object-src`, `base-uri`, `frame-ancestors`, `form-action`) continuam **com o valor exato** — presença não é proteção: `script-src 'self' 'unsafe-inline'` passa em qualquer checagem de "contém 'self'" | — | `e2e/portas-da-web.mjs` · `portasDaWebNaoEsvaziam.test.js` |
 
 ---
 

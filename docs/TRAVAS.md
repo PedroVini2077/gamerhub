@@ -133,7 +133,7 @@ Garantem que dois lugares do código continuem concordando.
 | `realtimeTables.test.js` | assinatura de realtime em tabela não publicada | `INV-CONTRATO-001` |
 | `tabelasSemUpdate.test.js` | `update` em tabela sem policy — 0 linhas, nenhum erro | `INV-CONTRATO-005` |
 | `apagarConfereLinhas.test.js` | escrita que pode ser negada sem conferir linhas | `INV-CONTRATO-006` |
-| `portasDaWebNaoEsvaziam.test.js` | a lista do portão da borda sendo esvaziada | `INV-PORTA-004` |
+| `portasDaWebNaoEsvaziam.test.js` | as **duas** listas do portão da borda sendo esvaziadas — cabeçalhos e diretivas travadas da CSP | `INV-PORTA-004` · `INV-PORTA-008` |
 | `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** — e, desde a SEC-051, também a lista de **isentas da checagem de literal de papel** | `INV-PORTA-006` |
 | `cofre.test.js` | código do cofre guardado em texto; reset em 2 cliques | `INV-CONTA-004` |
 | `documentosLegais.test.js` | texto legal mudando por baixo de quem aceitou | `INV-CONTA-005` |
@@ -168,7 +168,7 @@ Garantem que dois lugares do código continuem concordando.
 | --- | --- |
 | `portas-do-banco.mjs` | REST API com a `anon key` real — as duas direções |
 | `politica-de-conteudo.mjs` | **`[24/09]`** a CSP quebrando o site: 6 rotas num Chromium de verdade, mais sonda de `frame-src` e `connect-src` — e um **controle** que prova que o roteiro distingue política de falha de rede |
-| `portas-da-web.mjs` | a borda HTTP: cabeçalho por VALOR, vazamento, source map |
+| `portas-da-web.mjs` | a borda HTTP: cabeçalho por VALOR, vazamento, source map — **`[24/09]`** e as seis diretivas travadas da CSP, comparadas por igualdade |
 | `portas-fechadas.mjs` | as Edge Functions recusando quem não deve |
 | `fluxos.mjs` · `publicarPost.mjs` · `comentar.mjs` | publicar, comentar, o caminho autenticado |
 | `lives.mjs` | criar, encerrar, reativar e apagar live, conferindo o ESTADO |
