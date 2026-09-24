@@ -590,6 +590,8 @@ que é paginada, e uma mensagem antiga podia nem estar na primeira página.
 - **Likes em comentários** (`comment_likes`): toggle por usuário, exibido com
   coração em `CommentCard`.
 - **Likes em posts**: toggle por usuário (constraint única `post_id+user_id`).
+  **`[24/09]`** O coração fica **na mesma linha** do "Comentar" — antes eram
+  duas faixas empilhadas, cada uma com a própria borda. Pedido do dono.
 - **Notificações ao usuário** (`notifications`):
   - Like num post → notifica o autor (se `notif_likes`).
   - Comentário num post → notifica o autor do post (se `notif_comments`).
