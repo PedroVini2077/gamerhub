@@ -22,6 +22,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/BANCO.md`](docs/BANCO.md) | Tabelas, RPCs, RLS, storage, realtime, custo de banda |
 | [`docs/SEGURANCA.md`](docs/SEGURANCA.md) | O que protege o quê, e por quê |
 | [`docs/INVARIANTES.md`](docs/INVARIANTES.md) | **O que nunca pode acontecer** — as regras permanentes, com a trava que protege cada uma |
+| [`docs/TRAVAS.md`](docs/TRAVAS.md) | **O que impede** — os 149 testes, roteiros e portões classificados, com o invariante que cada um protege |
 | [`docs/PRIVACIDADE.md`](docs/PRIVACIDADE.md) | **O que o site coleta de verdade**, medido na implementação — e o que fica **A DEFINIR** |
 | [`docs/OPERACAO.md`](docs/OPERACAO.md) | **Quando algo quebra.** Monitoramento, site fora do ar, CI |
 | [`docs/DESEMPENHO.md`](docs/DESEMPENHO.md) | **O histórico das medições.** O que cada rodada mediu, o que ela desmentiu, e onde o custo estava de verdade |

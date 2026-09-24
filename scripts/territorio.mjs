@@ -140,6 +140,15 @@ export const TERRITORIO = {
   // TRAVAS: se uma delas muda, a linha que a cita aqui pode ter deixado de ser
   // verdade. Nao inclui `src/` inteiro de proposito — ele nao descreve codigo,
   // descreve regra, e um territorio largo demais o deixaria "atrasado" sempre.
+  // `[24/09]` O inventario das travas. Territorio: as pastas de teste E os
+  // scripts, porque ele classifica os dois. Portao novo em `scripts/` ou trava
+  // nova em `__tests__/` torna este arquivo suspeito — que e o sinal certo.
+  'docs/TRAVAS.md': [
+    'src/lib/__tests__',
+    'scripts',
+    'e2e',
+    '.github/workflows',
+  ],
   'docs/INVARIANTES.md': [
     'src/lib/__tests__',
     'src/hooks/__tests__',
