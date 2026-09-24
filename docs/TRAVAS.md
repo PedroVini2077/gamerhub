@@ -136,22 +136,27 @@ Garantem que dois lugares do código continuem concordando.
 | `cofre.test.js` | código do cofre guardado em texto; reset em 2 cliques | `INV-CONTA-004` |
 | `documentosLegais.test.js` | texto legal mudando por baixo de quem aceitou | `INV-CONTA-005` |
 | `logoutEhLocal.test.js` | `signOut()` com escopo global derrubando outro aparelho | `INV-CONTA-002` |
-| `voltarNaoEhRedirecionador.test.jsx` | `?de=` aceitando destino de fora do site | **— sem INV** |
-| `campoDeSenhaUnico.test.js` | `<input type="password">` fora do `CampoDeSenha` | **— sem INV** |
-| `portaoAntesDoSite.test.js` | o site pintando antes do portão de entrada | **— sem INV** |
-| `queueLabels.test.js` | tipo da fila faltando num dos três mapas | **— sem INV** |
+| `voltarNaoEhRedirecionador.test.jsx` | `?de=` aceitando destino de fora do site | `INV-NAV-001` |
+| `campoDeSenhaUnico.test.js` | `<input type="password">` fora do `CampoDeSenha` | `INV-TELA-002` |
+| `portaoAntesDoSite.test.js` | o site pintando antes do portão de entrada | `INV-TELA-003` |
+| `queueLabels.test.js` | tipo da fila faltando num dos três mapas | `INV-CONTRATO-007` |
 | `roles.test.js` | `canModerateLive` com combinação de papel errada | `INV-AUTZ-004` |
-| `conteudoDoSobre.test.js` | mídia de terceiro sem crédito visível (CC-BY) | **— sem INV** |
-| `conteudoDaPrivacidade.test.js` | a política dizendo o que o site não faz | **— sem INV** |
-| `cadastroSemSelectEmProfiles.test.js` | cadastro lendo `profiles` antes de existir | **— sem INV** |
-| `cacheNaoAtravessaTrocaDeConta.test.js` | dado de uma conta vazando para a seguinte | **— sem INV** |
-| `respostaDeContatoNaoMente.test.js` | resposta de contato afirmando envio que não houve | **— sem INV** |
+| `conteudoDoSobre.test.js` | mídia de terceiro sem crédito visível (CC-BY) | `INV-LEGAL-001` · `INV-LEGAL-002` |
+| `conteudoDaPrivacidade.test.js` | o texto legal chegando quebrado na tela | `INV-LEGAL-002` |
+| `cadastroSemSelectEmProfiles.test.js` | cadastro lendo `profiles` antes de existir | `INV-CONTA-006` |
+| `cacheNaoAtravessaTrocaDeConta.test.js` | dado de uma conta vazando para a seguinte | `INV-CONTA-007` |
+| `respostaDeContatoNaoMente.test.js` | resposta de contato afirmando envio que não houve | `INV-TELA-001` |
 | `varrerFontes.test.js` | **meta-trava**: trava que varre pasta e não lê arquivo nenhum | — |
 
-> **As 9 linhas "sem INV" são o resultado mais útil deste inventário.** Elas
-> protegem algo real e a regra nunca foi escrita — exatamente o estado em que a
-> regra do XP viveu até ser aplicada em 1 dos 4 caminhos. Entram no
-> `INVARIANTES.md` no próximo passo, **derivadas**, como as outras.
+> **`[24/09]` As 9 linhas "sem INV" foram fechadas.** Elas protegiam algo real
+> e a regra nunca tinha sido escrita — exatamente o estado em que a regra do XP
+> viveu até ser aplicada em 1 dos 4 caminhos. Viraram `INV-NAV-001`,
+> `INV-TELA-001/002/003`, `INV-LEGAL-001/002`, `INV-CONTRATO-007` e
+> `INV-CONTA-006/007`, todas **derivadas** do que a trava já afirma.
+>
+> **Nenhuma linha desta tabela deve voltar a dizer "sem INV" sem motivo escrito
+> ao lado.** Trava sem regra escrita é conhecimento que só existe dentro do
+> teste.
 
 ---
 
