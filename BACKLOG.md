@@ -1300,26 +1300,36 @@ dependência técnica real** que decide o resto:
   volta é apagar o segredo `SMTP_HOST`: sem ele o código cai no Gmail sozinho,
   sem deploy.
 
-- ⬜ `[11/09]` 🟠 **A MARCA E A LANDING — briefing gravado, esperando UMA decisão.**
-  *Tudo em [`docs/identidade/BRIEFING-2026-09.md`](docs/identidade/BRIEFING-2026-09.md);
-  as duas imagens dele em `docs/identidade/referencias/12-` e `13-`.*
+- ⬜ `[11/09]` 🟠 **A LANDING — só faltam TRÊS DECISÕES dele.** *`[24/09]`
+  **Item renomeado e corrigido contra o sistema.** Ele dizia "A MARCA E A
+  LANDING" e afirmava que *"a landing continua a estrutura antiga"*. As duas
+  coisas envelheceram.*
 
-  **O que o dono já decidiu:** *"eu queria realmente usar GamerHub, G e o GH
-  como marca em lugares distintos"* — não é escolher um, é um **sistema** com os
-  três. Isso encerra a pergunta que eu tinha feito.
+  **O que foi conferido hoje, arquivo a arquivo:**
 
-  **`[11/09]` A MARCA ESTÁ IMPLANTADA.** O dono trouxe a arte pronta e escolheu
-  a proposta 03; ela foi derivada por medição (não redesenhada) e está no
-  favicon, nos ícones do PWA, no cabeçalho e em 11 telas. Ver
-  `docs/identidade/README.md`.
+  | O que o backlog dizia | O que o sistema diz |
+  | --- | --- |
+  | "a marca espera decisão" | **implantada** desde 11/09 — proposta 03, favicon, PWA, cabeçalho, 11 telas |
+  | "a landing continua a estrutura antiga" | **falso.** `FeatureSection` **não existe mais** no código |
+  | "os três atos não foram implementados" | `PrologoDaLanding`, `PortalDoAtoZero`, `ConvergenciaDoHub` e 4 `CenaPresa` estão de pé |
+  | — | **42 arquivos** de arte das 7 cenas em `src/assets/landing/cenas/`, em 6 variantes cada |
 
-  **O que sobra deste item é a LANDING**, que continua a estrutura antiga: a
-  recomendação dos três atos — a fenda, o que converge, e você já está dentro —
-  não foi implementada. E a decisão do raio 3D no hero está no item acima.
+  **O que sobra é decisão, não código.** Os três pontos que o briefing levantou
+  e que ele nunca respondeu:
 
-  Duas decisões menores esperam junto: a **tese da fenda** (o verde e o roxo
-  param de brigar e passam a se encontrar — custo zero, é narrativa) e a **troca
-  da fonte de display**, que pode esperar porque atinge o site inteiro.
+  1. **A tese da fenda.** Hoje o verde e o roxo são dois lutadores de costas,
+     separados por um corte vertical — imagem de **duelo**. O nome promete
+     **encontro**. A proposta é a fenda deixar de ser onde eles brigam e passar
+     a ser onde eles se tocam. **Custo: zero linha de código — é narrativa.**
+  2. **A fonte de display.** `Orbitron` é a fonte mais usada do mundo em "coisa
+     gamer". Se o objetivo é não parecer mais um site gamer, é a alavanca mais
+     forte — e a mudança mais cara, porque atinge o site **inteiro**.
+  3. **De onde vem a arte daqui pra frente.** O que deu certo neste projeto (a
+     arena, as 7 cenas) foi **arte dele + composição minha**. O que falhou duas
+     vezes (3D, ícones) fui eu tentando produzir a arte.
+
+  **Nenhuma das três me impede de trabalhar** — elas mudam o rumo, não
+  destravam tarefa. Por isso o item é 🟠 e não 🔴.
 
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
