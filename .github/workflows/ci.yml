@@ -545,6 +545,19 @@ jobs:
         env:
           SITE_URL: https://gamerhub-nine.vercel.app
 
+      # `[24/09]` A CSP, conferida num NAVEGADOR de verdade antes de ir ao ar.
+      #
+      # Ele sobe o `dist` com a política lida do `vercel.json` — fonte única, sem
+      # cópia para envelhecer — e carrega as rotas públicas num Chromium. Sonda
+      # `frame-src` e `connect-src` de propósito, porque rota pública não as
+      # exercita: embed só aparece com live no ar.
+      #
+      # E tem um CONTROLE: uma origem que a política proíbe de verdade. Sem ele,
+      # "0 violações" poderia significar "a rede do CI não saiu", e não "a
+      # política está certa" — foi o que quase me enganou ao escrevê-lo.
+      - name: A CSP não quebra o site (navegador de verdade)
+        run: npm run test:csp
+
       # `[01/09]` Com o banco fora, o site inteiro ficava inacessível: um
       # `return <OfflineGate />` acima do <Routes> matava até /sobre e /login,
       # que não dependem do banco. A regra que ficou: fora do ar bloqueia SÓ o

@@ -171,3 +171,42 @@ todos visíveis no perfil público.
 **A auditoria de funções está fechada.** O que continua aberto é o que sempre
 esteve: as Fases 1 (frontend) e 3 (banco) da rodada, e as decisões de produto
 que não são minhas.
+
+---
+
+## `[24/09]` O item ficou aberto no backlog por sete dias, e o erro foi meu
+
+Este relatório fechou a auditoria em 17/09 — **66 de 66** funções
+`SECURITY DEFINER` não-gatilho, depois dos blocos A, A2 e B. Mas o item do
+`BACKLOG.md` continuou marcado como aberto, com a frase *"as partes 2 e 3 ainda
+não chegaram"*, escrita em 10/09 e nunca revisada.
+
+**Em 24/09 eu repeti essa frase ao dono como se fosse fato.** Ele corrigiu: as
+três partes tinham sido enviadas, e a auditoria tinha acontecido. Fui conferir e
+ele estava certo — os blocos A, A2 e B estão em `db/`, datados de 12 e 17/09.
+
+É exatamente a falha que o `DOCUMENTACAO.md` registra com número: *"o backlog
+listava 31 itens abertos, sendo que cinco já estavam feitos"*. A regra que
+existe para isso — **item concluído SAI do backlog** — não foi cumprida por mim
+no dia em que este relatório foi escrito.
+
+### O que mudou no universo desde o fechamento
+
+| | 17/09 | 24/09 |
+| --- | --- | --- |
+| `SECURITY DEFINER` não-gatilho | 66 | **75** |
+| alcançáveis por `anon` | 3 | **3** |
+
+As **9 novas** nasceram entre 18 e 24/09 (SEC-041 a SEC-051, LIVE-040 a
+LIVE-052). Nenhuma passou por esta auditoria — mas cada uma saiu com prova em
+`ROLLBACK` e trava própria no mesmo PR, que é o padrão que substituiu a
+varredura em bloco.
+
+### E o que o fechamento NÃO conseguia dar, e hoje existe
+
+Esta auditoria foi um **retrato**: 66 funções lidas num dia. O que faltava era
+vigilância contínua — e é o que a **SEC-050** e a **SEC-051** passaram a fazer.
+As três classes que a auditoria procurou à mão (guarda do operador, função de
+trigger virando RPC, alcance do `anon`) agora reprovam o PR sozinhas, e a
+SEC-051 acrescentou a quarta que ninguém tinha visto: autorização por literal
+de papel.

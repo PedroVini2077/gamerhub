@@ -1692,3 +1692,85 @@ exceção **com o motivo escrito na migration**, e a trava
 
 **O que muda de verdade:** função **nova** que autorize por literal passa a ser
 vista. O ponto cego fecha para o futuro, que é onde ele doía.
+
+---
+
+## `[24/09]` A CSP entrou — e o que destravou foi medir, não coragem
+
+O item ficou aberto desde 19/09 com um motivo honesto: **CSP errada derruba o
+site**. React+Vite gera estilo inline, e Supabase, Sentry, Google Fonts e os
+embeds de live precisam estar liberados por nome; um `default-src` apertado
+demais apaga a tela inteira — a classe do erro do SEC-025.
+
+A resposta certa não era evitar. Era **medir num navegador de verdade antes de
+publicar**.
+
+### A política
+
+| Diretiva | Valor | Por quê |
+| --- | --- | --- |
+| `script-src` | `'self'` | **é a que importa.** Nenhum script externo, nenhum inline |
+| `frame-src` | youtube · youtube-nocookie · player.twitch · clips.twitch | as três origens que o `EmbedPlayer` realmente usa — lidas no código |
+| `connect-src` | `'self'` · `*.supabase.co` · `wss://*.supabase.co` · sentry · vitals | REST, realtime, erro e métrica |
+| `style-src` | `'self' 'unsafe-inline'` + fonts.googleapis | o `unsafe-inline` é obrigatório: React e Framer Motion escrevem estilo inline |
+| `img-src` / `media-src` | `'self' data: blob: https:` | o `avatar_url` do usuário é uma URL arbitrária; apertar aqui quebraria foto de perfil |
+| `base-uri` · `object-src` · `frame-ancestors` · `form-action` | `'self'` / `'none'` | fecham sequestro de base, plugin, clickjacking e post para fora |
+
+### Como foi verificada — e o controle sem o qual a medição mentiria
+
+`e2e/politica-de-conteudo.mjs` sobe o `dist` com a política **lida do
+`vercel.json`** e carrega 6 rotas públicas num Chromium. Resultado: **0
+violações, 0 erros de página**.
+
+Rota pública não exercita `frame-src` nem `connect-src`, então ele **sonda as
+duas**: cria um iframe para cada origem de embed e dispara `fetch` para as
+origens permitidas.
+
+> **A armadilha que quase me pegou.** Na primeira execução o `fetch` para o
+> Supabase falhou com `Failed to fetch` e **zero violações de CSP**. Concluir
+> *"a CSP bloqueou"* teria sido inferência vestida de fato (§1.1) — o ambiente
+> não tem saída de rede na página.
+>
+> Por isso existe o **controle**: uma origem que a política proíbe de verdade.
+> Ela falha **com** violação no console; as outras falharam **sem**. A diferença
+> é a prova de que o que barrou as outras foi a rede, não a política.
+
+### O que ela NÃO cobre
+
+**Rota autenticada.** O roteiro não faz login, então feed, lives, perfil e
+painel não passam por ele. O risco é baixo e nomeável: essas telas não
+introduzem origem nova — usam o mesmo Supabase e os mesmos embeds que a sonda já
+cobre. Domínio novo tem de ser somado ali.
+
+Provado reinjetando **quatro** políticas quebradas: youtube fora do `frame-src`,
+`script-src 'none'`, `style-src` sem `unsafe-inline`, e a CSP apagada do
+`vercel.json`.
+
+> **Este roteiro errou DUAS vezes antes de ficar de pé, e as duas foram o mesmo
+> engano meu: usar "carregou?" como evidência.**
+>
+> | Versão | O que eu media | Como quebrou |
+> | --- | --- | --- |
+> | 1ª | `iframe.contentWindow` | continua **verdadeiro** num frame barrado — ele aponta para `about:blank`. Reinjetar "youtube fora do `frame-src`" passou **verde** |
+> | 2ª | `contentWindow` **ou** violação no console | o CI reprovou com o Twitch "bloqueado" — lá a rede **não alcança** twitch.tv, e o iframe não carrega **por rede** |
+> | 3ª | só a violação no console | o CI **reprovou de novo**: `page.on('console')` recebe mensagem dos **iframes** também, e a Twitch tem CSP própria. No runner o embed carrega de verdade, e as mensagens **dela** chegavam como se fossem nossas |
+> | 4ª | idem, filtrando por origem da mensagem | **reprovou ainda assim** — e aqui a recusa era *verdadeira*: com rede, `player.twitch.tv/?channel=x` **redireciona**, e a CSP se aplica ao destino. A sonda estava testando o comportamento da **Twitch**, não a nossa política |
+>
+> **A saída foi separar duas perguntas que eu estava misturando:**
+>
+> | Pergunta | Como se responde |
+> | --- | --- |
+> | a política **lista** as origens do `EmbedPlayer`? | **estático** — lê a CSP do `vercel.json`. Não depende de terceiro, e CI e local concordam sempre |
+> | o navegador **cumpre** a política? | **navegador** — o controle, com uma origem que não está na lista |
+>
+> Estático prova o **conteúdo**; o controle prova o **cumprimento**. Nenhum dos
+> dois depende de a Twitch estar no ar.
+>
+> As quatro versões erraram pelo mesmo motivo de fundo: **eu aceitei um sinal
+> barato no lugar da evidência certa**, e três vezes esse sinal dependia de um
+> terceiro responder. Vale registrar porque a mesma tentação vai aparecer na
+> próxima trava que dependa de navegador.
+>
+> As três versões erraram pelo mesmo motivo de fundo: **eu aceitei um sinal
+> barato no lugar da evidência certa.** Vale registrar porque a mesma tentação
+> vai aparecer na próxima trava que dependa de navegador.
