@@ -548,6 +548,54 @@ for (const [tabela, { pode, naoPode, estrago }] of Object.entries(SUPERFICIE_ANO
   }
 }
 
+// ── 5. O auditor do banco, ouvido pelo CI ──────────────────────────────────
+//
+// `[24/09]` SEC-050. A `auditoria_de_operadores()` ja existia desde a SEC-049 e
+// fazia tres checagens — RPC administrativa sem a guarda do operador, funcao de
+// trigger chamavel como RPC, e funcao alcancavel por `anon` fora da lista
+// branca. Só que ela tinha `EXECUTE` revogado de TODO MUNDO: rodava apenas
+// quando eu a chamava a mao. Auditor que depende de alguem lembrar de perguntar
+// e a mesma classe do §1.5.
+//
+// O `contagem_de_achados_de_seguranca()` e o mensageiro dela: devolve um
+// NUMERO, nunca os nomes. Abrir o auditor direto entregaria a lista das funcoes
+// fracas para qualquer um na internet — um mapa de onde bater.
+//
+// Isto e DETECCAO, nao prevencao: funcao nova continua nascendo alcancavel pelo
+// `anon`, porque fechar o `pg_default_acl` foi medido em 24/09 e **nao da** (o
+// default do `supabase_admin` responde `permission denied`). O que mudou e que
+// a brecha passa a reprovar o PR no mesmo dia, em vez de viver ate alguem
+// perguntar.
+{
+  const r = await fetch(`${URL_BASE}/rest/v1/rpc/contagem_de_achados_de_seguranca`, {
+    method: 'POST', headers: { ...cabecalhos, 'Content-Type': 'application/json' }, body: '{}',
+  });
+  const corpo = await r.text();
+
+  if (r.status !== 200) {
+    falhou(`o auditor do banco nao respondeu (HTTP ${r.status})`,
+      'A RPC `contagem_de_achados_de_seguranca` deveria ser chamavel com a\n'
+      + '    anon key — e o unico jeito de o CI ouvir o auditor sem credencial\n'
+      + `    de banco. Resposta: ${corpo.slice(0, 160)}\n`
+      + '    Se ela foi revogada de proposito, este passo precisa sair junto,\n'
+      + '    com o motivo escrito — senao o portao vira alarme falso.');
+  } else if (Number(corpo) !== 0) {
+    falhou(`o auditor do banco achou ${corpo} problema(s)`,
+      'Um destes tres nasceu desde o ultimo PR:\n'
+      + '      . RPC administrativa que NAO chama `exige_operador_ativo()` (SEC-043)\n'
+      + '      . funcao de TRIGGER chamavel como RPC (SEC-042)\n'
+      + '      . funcao alcancavel por ANON fora da lista branca\n\n'
+      + '    O numero nao diz QUAIS de proposito — nomes viram mapa para quem\n'
+      + '    chamar de fora. Para ver, rode pelo MCP como `postgres`:\n'
+      + '      select * from auditoria_de_operadores();\n\n'
+      + '    Se o achado for intencional (uma porta publica nova, por exemplo),\n'
+      + '    o lugar de registrar isso e a lista branca DENTRO do auditor, com\n'
+      + '    o motivo ao lado — nao aqui.');
+  } else {
+    ok('auditor do banco: 0 achados (guarda do operador, trigger-RPC e anon)');
+  }
+}
+
 // ── Veredicto ──────────────────────────────────────────────────────────────
 if (falhas.length > 0) {
   console.error(`\n  ${falhas.length} porta(s) do banco fora do lugar:\n`);

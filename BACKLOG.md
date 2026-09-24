@@ -1471,38 +1471,22 @@ M riscos · **N o que precisa da aprovação dele**.
   sujeira para gente de verdade ver. Um por vez, com limpeza provada.
 
 
-- ⬜ `[19/09]` 🟠 **RPC administrativa NOVA não entra sozinha na guarda da
-  SEC-043.** *Risco residual da própria correção, dito na hora.*
+- ⬜ `[19/09]` 🟢 **RPC administrativa NOVA não entra sozinha na guarda da
+  SEC-043.** *`[24/09]` **Rebaixado de 🟠 para 🟢**: a parte que importava foi
+  fechada pela SEC-050.*
 
-  A SEC-043 injeta `exige_operador_ativo()` numa **lista de 25 nomes**. A trava
-  `estadoDoOperador.test.js` pega a lista **encolhendo** — não pega a lista
-  ficando para trás quando alguém criar a 26ª função administrativa.
+  **O que mudou.** O `auditoria_de_operadores()` sempre soube responder — ele
+  varre `pg_proc` e acha RPC administrativa sem `exige_operador_ativo()`. O que
+  faltava era **alguém ouvi-lo**: a função tinha `EXECUTE` revogado de todos, e
+  só rodava quando eu perguntava à mão. Hoje o `e2e/portas-do-banco.mjs` a
+  consulta pelo mensageiro, com a anon key, **a cada PR**. Provado: uma RPC
+  administrativa nova sem a guarda leva o contador de 0 para 2.
 
-  > **`[19/09]` Metade disto foi fechada pelo LIVE-052, e vale registrar como.**
-  > As três RPCs novas não passaram pela injeção — elas chamam
-  > `exige_operador_ativo()` no próprio corpo. A trava passou a aceitar os
-  > **dois** caminhos (estar na lista da injeção **ou** ter a chamada inline),
-  > então função nova escrita nesse padrão já entra na vigilância.
-  >
-  > **O que continua aberto é o mesmo de antes:** ninguém garante que a 26ª
-  > função *seja escrita* nesse padrão, nem que seu nome entre na lista. Medir
-  > isso sozinho continua exigindo perguntar ao banco quais funções são
-  > administrativas — a troca por credencial no CI que este projeto já recusou
-  > três vezes. O que existe hoje é a varredura de arquivo, que acusa 7 falsos
-  > positivos porque o corpo injetado não mora em arquivo nenhum.
-
-  **Por que não resolvi agora:** detectar isso exige perguntar ao BANCO quais
-  funções administrativas existem, e isso pede credencial de banco no CI — a
-  troca que este projeto já recusou três vezes.
-
-  | Saída | Custo |
-  | --- | --- |
-  | aceitar e confiar na revisão | o buraco volta na próxima RPC administrativa |
-  | script manual (`npm run operadores`) antes de fechar a sessão | mais um passo meu, fora do CI — igual ao `npm run edges` |
-  | credencial de leitura no CI | resolve de vez, e é a troca recusada |
-
-  **Minha recomendação é a do meio**, pelo precedente do `npm run edges`: fora
-  do CI de propósito, mas existindo e rodável.
+  **O que sobra, e é pouco:** a detecção é por **heurística de corpo** (a função
+  menciona `role_rank`/`is_staff`/`is_super`/`is_owner`). Uma RPC administrativa
+  que decidisse permissão por outro caminho não seria vista. Não conheço nenhuma
+  assim hoje; se aparecer, o jeito é a lista de exceções **com motivo escrito**,
+  que a trava `auditorDoBancoEhOuvido.test.js` já vigia.
 
 - ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *`[24/09]` O
   dono autorizou fechar, e a MEDIÇÃO mostrou que a correção na raiz **não é
@@ -1530,12 +1514,11 @@ M riscos · **N o que precisa da aprovação dele**.
 
   **O que fica como caminho, em ordem de força:**
 
-  1. **Detecção no CI** — uma RPC `SECURITY DEFINER` que devolve **quantas**
-     funções o `anon` alcança fora de uma lista branca escrita, chamada pelo
-     `e2e/portas-do-banco.mjs` com a anon key (o mesmo padrão que o
-     `contagem_de_migrations` já usa, sem credencial nova). Devolve **número**,
-     não nomes — assim não vira mapa para quem chamar de fora. Isso **não
-     previne**, mas reprova o PR no dia em que nascer a primeira.
+  1. ✅ **FEITO `[24/09]` — SEC-050.** A detecção está no CI: o
+     `contagem_de_achados_de_seguranca()` devolve **quantas** funções o `anon`
+     alcança fora da lista branca, e o `e2e/portas-do-banco.mjs` o chama com a
+     anon key. Devolve **número**, não nomes — assim não vira mapa para quem
+     chamar de fora. Provado: uma função nova aberta leva o contador de 0 a 3.
   2. **Ação do dono / suporte Supabase** — mudar o default do `supabase_admin`
      é fora do meu alcance. Só vale abrir se a detecção mostrar que o caso é
      frequente.
@@ -1543,8 +1526,10 @@ M riscos · **N o que precisa da aprovação dele**.
      explícito na própria migration, e o `funcaoDeTriggerNaoEhRpc.test.js`
      cobre a classe dos triggers.
 
-  > **Não vou chamar isto de fechado.** Prevenção na raiz continua aberta, e
-  > dizer o contrário seria exatamente o que o §1.1 proíbe.
+  > **Continua ABERTO, e o motivo é preciso:** a prevenção na raiz não foi
+  > feita — função nova **ainda nasce** alcançável pelo `anon`. O que mudou é
+  > que a brecha deixou de ser silenciosa: o CI reprova no mesmo PR. Chamar isso
+  > de fechado seria exatamente o que o §1.1 proíbe.
 
 - ⬜ `[18/09]` 🔵 **`lives_realizadas` é append-only e o E2E escreve nela a cada
   execução.** *Achado enquanto eu limpava as 3 órfãs do N16.*
@@ -2068,8 +2053,8 @@ M riscos · **N o que precisa da aprovação dele**.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->136<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.011<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->137<!--/n--> arq ·
+  <!--n:src.lib.linhas-->16.184<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
