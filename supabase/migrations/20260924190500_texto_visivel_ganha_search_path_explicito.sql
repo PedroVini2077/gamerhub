@@ -1,0 +1,17 @@
+-- `[24/09]` `texto_visivel` era a UNICA funcao do schema sem `search_path`.
+--
+-- Achada pelo `get_advisors` ao conferir a migration da retencao. Ela e
+-- `SECURITY INVOKER` e `IMMUTABLE`, e so chama builtin de `pg_catalog`
+-- (`regexp_replace`, `length`, `coalesce`) -- que o Postgres resolve antes de
+-- qualquer schema do `search_path`. Ou seja: o risco pratico de sequestro e
+-- nulo, e por isso isto NAO esta sendo tratado como falha exploravel.
+--
+-- Entra por dois motivos, os dois de higiene:
+--
+--   1. a regra do BANCO.md e "explicito", nao "provavelmente seguro";
+--   2. um WARN permanente no advisor e ruido, e ruido ensina a ignorar o
+--      canal (§0.2, 4a regra). O proximo achado de verdade apareceria ao lado
+--      de um aviso que todo mundo ja aprendeu a pular.
+--
+-- `public` e o suficiente: a funcao nao alcanca nenhum outro schema.
+ALTER FUNCTION public.texto_visivel(text) SET search_path = public;

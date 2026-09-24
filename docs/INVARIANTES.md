@@ -99,6 +99,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-CONTEUDO-002** | Não se **interage** com conteúdo que não está no ar, e interação de post fora do ar não é **legível** por conta comum | N11, N12 · SEC-029 · SEC-041 | `xpSegueOQueEstaNoAr.test.js` · `colunasDerivadasDoPost.test.js` |
 | **INV-CONTEUDO-003** | Resposta pertence ao **mesmo post** do comentário pai — e **aparece como resposta**: recuada sob o pai, nunca como comentário solto | SEC-033 | `src/lib/__tests__/autorizacaoAntesDeExistencia.test.js` · **`[24/09]`** `e2e/comentar.mjs` (o lado visível: o bloco do pai tem de CONTER a resposta) |
 | **INV-CONTEUDO-004** | Escrever em conteúdo alheio respeita a **hierarquia de cargo** | SEC-009 | `src/lib/__tests__/hierarquiaNoConteudo.test.js` |
+| **INV-CONTEUDO-005** | **`[24/09]`** O post que o CI publica **não fica no banco para sempre**: a retenção o apaga de verdade 2h depois do soft delete, e o padrão exige o **relógio** da marca — título de gente que comece com `[e2e ` não casa | — | `src/lib/__tests__/retencaoDePostDeTeste.test.js` |
 
 ---
 

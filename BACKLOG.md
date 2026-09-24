@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**51 itens abertos** (+ 1 ideia sem compromisso)
+**50 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1348,12 +1348,32 @@ live · teto removido → falhou no acúmulo · **filtro novo na consulta que o
 aviso ignora → falhou nomeando a coluna**. A terceira é a que impede a deriva
 de voltar.
 
-- ⬜ `[24/09]` 🟢 **`posts` acumula lixo de CI sem retenção.** *Medido: 404
-  linhas, **403 criadas por robô** ([e2e …] e [painel …]), todas soft-deletadas
-  e nenhuma jamais removida. É a mesma classe de "tabela append-only sem
-  retenção" que o §6.1 lista para `admin_logs` e `login_attempts` — e ninguém
-  tinha olhado `posts` sob essa luz. Apagar de verdade é destrutivo (🔴) e
-  depende dele.*
+### ✅ `[24/09]` As 410 linhas de lixo de CI — APAGADAS, e a torneira fechada
+
+**Aprovado por ele depois de eu explicar.** Dimensionado em `ROLLBACK` antes
+(§5): 409 posts, autores **`claudestaff` e `claudetester`** (nenhuma conta de
+gente), 138 comentários em cascata, 0 curtidas, 0 mídia, e **zero** linhas de
+`lives_realizadas` apontando para eles — o registro de XP de live não foi
+tocado. `admin_logs` também não: a trilha registra o que aconteceu, e apagar o
+rastro seria mentir por omissão.
+
+**`[24/09]` Correção do que eu disse antes:** eu havia relatado "403 de robô e
+1 que parece de gente". Errado — o que sobrou era `[e2e-live …] live
+automatica`, que minha heurística não pegou porque procurava "automatico" no
+masculino. **Todos os 410 posts do banco eram de teste. Nenhum era de gente.**
+
+**A torneira:** `cleanup_old_data()` (cron diário das 4h, que já era o lugar da
+retenção das outras cinco tabelas) passou a apagar de verdade o post de teste
+já soft-deletado há mais de 2h. Não criei cron novo — seria a espiral do §9.8.
+
+**O padrão é apertado de propósito:** `^\[(e2e|painel|e2e-live) [0-9]{10,}\]`
+exige o RELÓGIO que o `marcaDeTeste` escreve. Provado em ROLLBACK:
+`[e2e coisas da vida] meu post` **não** casa, `[e2e 1790269082501] …` casa, e
+o post apagado há 10 minutos sobrevive.
+
+**Trava:** `retencaoDePostDeTeste.test.js` cruza `PREFIXOS_DE_TESTE` (JS) com o
+padrão do SQL — prefixo novo de um lado e não do outro reprova nomeando ele.
+Provada reinjetando os dois sentidos. `INV-CONTEUDO-005`.
 
 - ⬜ `[24/09]` 🟢 **O feed trunca em 30 sem dizer.** *`fetchFeedPosts(30)` é
   consulta única, sem paginação: **o post nº 31 é inalcançável** a não ser por
@@ -2049,8 +2069,8 @@ de voltar.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->141<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.712<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->142<!--/n--> arq ·
+  <!--n:src.lib.linhas-->16.842<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
