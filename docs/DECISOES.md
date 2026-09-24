@@ -55,10 +55,44 @@ valia pouco — o filtro só enxergava o que já estava carregado — e o que
 substitui essa necessidade é a **busca de verdade**, que é a fase seguinte.
 
 **Consequências.** `category` saiu também do `POST_SELECT`: ela viajava em toda
-linha de todo feed sem ninguém ler. E uma trava
-(`categoriaSaiuDaExperiencia.test.js`) reprova tanto o retorno do seletor
-quanto um `DROP COLUMN` — daqui a dois meses, quem achar a coluna órfã vai
-esbarrar na decisão em vez de "limpar".
+linha de todo feed sem ninguém ler.
+
+### `[24/09]` E algumas horas depois a coluna FOI apagada — o que mudou
+
+A decisão acima durou meia tarde, e o registro da reviravolta importa mais do
+que o resultado.
+
+**O dono desfez a condição, e explicou de onde ela vinha:** *"esse prompt que
+te enviei foi do ChatGPT, pode descartar o `posts.category` — ele disse isso
+porque ficou preocupado, muitos lugares a mencionavam"*. A preocupação era
+razoável e a resposta certa não era obedecer nem ignorar: era **medir**.
+
+**Ele autorizou sob condição** — *"apenas dê uma olhada, se tiver de boa e não
+quebrar nada"* — e a olhada achou o que a Fase 0 tinha perdido:
+
+> **`log_post_event` lia `NEW.category` e `OLD.category`.** O trigger da trilha
+> de auditoria. Apagar a coluna antes de consertá-lo teria quebrado **publicar**
+> — medido em ROLLBACK: `record "new" has no field "category"`.
+>
+> A Fase 0 disse "nada no banco lê a coluna" porque varreu com
+> `prosrc ILIKE '%category%'` e **afogou o sinal em `admin_logs.category`**, que
+> é homônima e aparece em dezenas de funções. O erro não foi falta de cuidado;
+> foi uma busca que não separava duas colunas de nomes iguais.
+
+**A ordem foi a que o próprio prompt pede** — migrar, validar, só então
+remover: primeiro o trigger parou de ler, depois a coluna caiu.
+
+**O que se perdeu: nada.** 50 linhas, todas com o `DEFAULT 'dica'`, zero fora do
+padrão — e 45 delas eram posts de prova semeados naquele dia. **Nenhum ser
+humano jamais escolheu uma categoria neste site.** É isso que torna um `DROP`
+irreversível aceitável aqui; com uma única escolha humana na tabela, o certo
+seria guardá-la antes.
+
+**A trava mudou de lado, e fez o trabalho dela antes de mudar:** ela foi escrita
+de manhã para reprovar exatamente este `DROP`, e **reprovou** — o `DROP` não
+chegou à `main` sem que a decisão fosse revista. Agora ela protege o oposto:
+nenhuma função de trigger pode voltar a ler a coluna (viraria erro em tempo de
+execução no caminho mais importante do site), e o seletor não volta à tela.
 
 ---
 

@@ -101,7 +101,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-CONTEUDO-004** | Escrever em conteúdo alheio respeita a **hierarquia de cargo** | SEC-009 | `src/lib/__tests__/hierarquiaNoConteudo.test.js` |
 | **INV-CONTEUDO-005** | **`[24/09]`** O post que o CI publica **não fica no banco para sempre**: a retenção o apaga de verdade 2h depois do soft delete, e o padrão exige o **relógio** da marca — título de gente que comece com `[e2e ` não casa | — | `src/lib/__tests__/retencaoDePostDeTeste.test.js` |
 | **INV-CONTEUDO-006** | **`[24/09]`** A página do feed é **keyset por `(created_at, id)`** e a RPC que a produz é **`SECURITY INVOKER`** — é a RLS que recorta. Sob `DEFINER` o feed listaria conteúdo moderado para todo mundo, sem erro nenhum. E o lote do cliente + 1 nunca passa do teto da RPC, senão o "carregar mais" some com posts por ler | — | `src/lib/__tests__/paginacaoDoFeed.test.js` |
-| **INV-CONTEUDO-007** | **`[24/09]`** `posts.category` **não é apagada do banco** sem decisão escrita do dono — saiu da experiência, não do schema. E não volta para a tela do feed sem passar por `DECISOES.md` | pedido explícito no prompt de 24/09 | `src/lib/__tests__/categoriaSaiuDaExperiencia.test.js` |
+| **INV-CONTEUDO-007** | **`[24/09]`** `posts.category` **foi apagada** — e nenhuma função de trigger pode voltar a lê-la: `NEW.category` num trigger de `posts` derruba o **publicar** para todo mundo (`record "new" has no field "category"`, medido). A classificação também não volta à tela sem passar por `DECISOES.md` | autorizado em 24/09, depois de a trava reprovar o primeiro DROP | `src/lib/__tests__/categoriaSaiuDaExperiencia.test.js` |
 
 ---
 

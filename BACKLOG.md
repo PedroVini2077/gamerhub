@@ -1458,11 +1458,31 @@ substitui.
 as duas, **mais um controle**: prosa que CITA o comando não pode acusar, senão
 o comentário que explica a decisão acusaria a si mesmo. `INV-CONTEUDO-007`.
 
-- ⬜ `[24/09]` 🔵 **Decidir o destino de `posts.category`.** *Ela está órfã de
-  propósito desde hoje: nada no banco a lê, nada na tela a escreve, e o
-  `DEFAULT 'dica'` mantém o INSERT funcionando. A decisão é sua, e o combinado
-  é esperar um ciclo inteiro sem ninguém sentir falta. Quando decidir, a trava
-  sai no MESMO PR, com a decisão em `docs/DECISOES-DE-BANCO.md`.*
+**`[24/09]` E a coluna FOI apagada no mesmo dia.** Ele desfez a condição —
+*"esse prompt foi do ChatGPT, pode descartar"* — e autorizou sob outra:
+*"se tiver de boa e não quebrar nada"*. Não estava de boa: o trigger
+`log_post_event` lia `NEW.category`, e apagar antes de consertá-lo teria
+derrubado o **publicar** (`record "new" has no field "category"`, medido em
+ROLLBACK). A Fase 0 tinha dito que ninguém lia — errado, a varredura afogou o
+sinal em `admin_logs.category`, que é homônima. Consertado primeiro, apagado
+depois. A trava mudou de lado e agora impede o retorno da leitura.
+
+- ⬜ `[24/09]` 🟠 **45 posts de prova estão NO AR, esperando você conferir a
+  paginação — e eu preciso apagá-los depois.** *Semeados a pedido dele em
+  24/09, autor `claudetester` (nunca a conta dele), títulos `[prova 01]` a
+  `[prova 45]`. O `[prova 01]` é o **mais novo** e abre o feed.*
+
+  **O que conferir no site, logado:** a primeira tela mostra `[prova 01]` até
+  `[prova 20]` · o botão **"Carregar mais"** aparece no fim · clicar traz
+  `[prova 21]` a `[prova 40]` **sem repetir e sem pular** · clicar de novo traz
+  `[prova 41]` a `[prova 45]` e o botão **some** · e, o que mais importa: a
+  página **não pula** para o topo ao carregar, o card que você estava lendo
+  fica onde estava.
+
+  **O prefixo `[prova ` NÃO está em `PREFIXOS_DE_TESTE` de propósito:** se
+  estivesse, o detector de sobras reprovaria o próximo CI achando que uma
+  rodada morreu no meio. Por isso eles **não** são apagados pela retenção
+  automática — saem na mão, e isso é dívida minha até sair.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
@@ -2143,9 +2163,9 @@ o comentário que explica a decisão acusaria a si mesmo. `INV-CONTEUDO-007`.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->144<!--/n--> arq ·
-  <!--n:src.lib.linhas-->17.144<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->17.187<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->20<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.044<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->2.043<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

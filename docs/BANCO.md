@@ -54,8 +54,23 @@ todas as tabelas públicas.**
 | `live_kind`     | text   | Tipo de live de jogador: `'gameplay'`, `'react'`, `'outro'`      |
 | `live_kind_label` | text | Label livre quando `live_kind = 'outro'` (obrigatório nesse caso) |
 
-Constraints: `CHECK (live_kind IN ('gameplay','react','outro'))` e
-`CHECK (live_kind IS DISTINCT FROM 'outro' OR live_kind_label IS NOT NULL)`.
+> ### `[24/09]` `posts.category` foi APAGADA
+>
+> Ela saiu da experiência de manhã (seletor, filtro, badge, `INSERT`,
+> `POST_SELECT`) e **a coluna caiu à tarde**, autorizada pelo dono.
+>
+> **A ordem importou.** O trigger `log_post_event` ainda lia `NEW.category` e
+> `OLD.category` para a trilha de auditoria; apagar antes de consertá-lo teria
+> quebrado **publicar** — medido em ROLLBACK:
+> `record "new" has no field "category"`. Primeiro o trigger parou de ler,
+> depois a coluna caiu.
+>
+> **Cuidado com o homônimo:** `admin_logs.category` é outra coluna, de outra
+> tabela, viva e em uso. Foi essa homonímia que escondeu o leitor na primeira
+> varredura — `prosrc ILIKE '%category%'` devolvia dezenas de falsos positivos.
+>
+> O porquê está em [`DECISOES.md`](DECISOES.md) (seção Feed), e a trava
+> `categoriaSaiuDaExperiencia.test.js` reprova qualquer trigger que volte a lê-la.
 
 #### Colunas relevantes em `comments`
 
