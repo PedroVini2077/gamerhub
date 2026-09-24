@@ -1,89 +1,26 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
-import { recarregarAteAparecer } from '../lib/recarregarAteAparecer';
-import { fetchFeedPosts } from '../services/postService';
 import PostCard from '../components/feed/PostCard';
 import PostForm from '../components/feed/PostForm';
 import RightPanel from '../components/layout/RightPanel';
-import { useRealtime } from '../hooks/useRealtime';
+import { useFeed } from '../hooks/useFeed';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { Search, X, ArrowUp } from 'lucide-react';
-import { apenasData } from '../services/result';
 import MarcaGH from '../components/ui/MarcaGH';
 
 const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
 
 export default function Home() {
   const { user } = useAuth();
-  const [newPosts, setNewPosts] = useState(0);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('todos');
-  // O handler de realtime precisa do usuário ATUAL sem re-assinar o canal a
-  // cada render. O ref é atualizado num efeito (escrever em ref durante o
-  // render é inseguro com renderização concorrente).
-  const userRef = useRef(user);
-  const fetchDebounceRef = useRef(null);
-  useEffect(() => { userRef.current = user; }, [user]);
 
-  // O viewer entra na queryKey: "eu curti" faz parte do resultado em lote, então
-  // o cache não pode ser compartilhado entre usuários diferentes.
-  const { data: posts = [], isPending: loading, isSuccess, refetch } = useQuery({
-    queryKey: ['feed_posts', user?.id ?? null],
-    queryFn: () => apenasData(fetchFeedPosts(30, user?.id ?? null)),
-  });
-
-  /**
-   * Recarrega o feed e zera o contador de "novos posts".
-   *
-   * ── `[02/09]` Por que ele CONFERE em vez de só recarregar ─────────────────
-   *
-   * O bug que estava no backlog há dias: publicar e o post não aparecer.
-   * Aconteceu de novo no CI, e desta vez sobrou evidência no banco:
-   *
-   *   post criado ....... 10:18:03, `deleted_at` nulo (existia mesmo)
-   *   feed capturado .... 10:18:33, TRINTA segundos depois, sem ele
-   *   e mostrando ....... um post que já tinha sido apagado às 10:18:10
-   *
-   * Ou seja: a leitura trouxe dado ANTERIOR à escrita. É leitura logo após
-   * escrita caindo numa conexão do pool que ainda não enxergava a linha — o
-   * `createPost` já tinha retornado com sucesso.
-   *
-   * O `refetch()` sozinho não tem como saber disso: ele recebeu uma resposta
-   * válida, só que velha. E como nada tentava de novo, o feed ficava mentindo
-   * até a pessoa navegar — do lado dela, o site comeu o que ela escreveu.
-   *
-   * Com o id em mãos dá para PERGUNTAR se a resposta já contém o post, e
-   * insistir por alguns instantes se não contiver. Sem id (deletar, botão de
-   * novos posts), o comportamento é o de antes.
-   */
-  const reloadPosts = useCallback(async (idEsperado) => {
-    setNewPosts(0);
-    // A decisão de insistir mora em `lib/recarregarAteAparecer.js`, separada
-    // de propósito: a corrida acontece no pool do Supabase e não se reproduz
-    // num navegador de teste. Como função pura ela é testável de verdade.
-    await recarregarAteAparecer(
-      async () => (await refetch()).data,
-      idEsperado,
-    );
-  }, [refetch]);
-
-  // Só INSERT e DELETE: o handler não faz nada com UPDATE, e cada UPDATE de
-  // post (edição, contadores) viraria uma mensagem de realtime pra todo mundo
-  // que está com o feed aberto.
-  useRealtime('posts', (payload) => {
-    if (!isSuccess) return;
-    if (payload.eventType === 'INSERT') {
-      if (payload.new?.user_id === userRef.current?.id) {
-        setTimeout(() => reloadPosts(), 5000);
-      } else setNewPosts(n => n + 1);
-    }
-    if (payload.eventType === 'DELETE') {
-      clearTimeout(fetchDebounceRef.current);
-      fetchDebounceRef.current = setTimeout(() => reloadPosts(), 500);
-    }
-  }, { events: ['INSERT', 'DELETE'] });
+  // `[24/09]` Buscar dado, assinar realtime e contar novidade saíram para o
+  // `useFeed`. O corte foi MECÂNICO — nada de comportamento mudou —, e o
+  // motivo está lá: a paginação do bloco do Feed entra nesse hook, e ela não
+  // cabe numa tela que também desenha (§4, "mistura responsabilidades").
+  const { posts, carregando: loading, novos: newPosts, recarregar: reloadPosts } = useFeed(user?.id);
 
   // Filtragem memoizada — não recalcula se posts/search/filterCat não mudarem
   const filtered = useMemo(() => posts.filter(p => {

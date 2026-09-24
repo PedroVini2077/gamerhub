@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**52 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1311,6 +1311,17 @@ M riscos · **N o que precisa da aprovação dele**.
   link direto. Hoje é invisível porque há zero posts vivos; com acervo vira "o
   site perdeu meus posts antigos". Resolvido pela fase 2 do plano.*
 
+- ⬜ `[24/09]` 🟢 **O portão de "nenhum arquivo acima de 300 linhas" NÃO
+  enxerga `e2e/` nem `scripts/`.** *Achado ao fazer o split: o
+  `fim-de-sessao.mjs` varre só `src/` e ainda exclui `__tests__`. Hoje há
+  **dois arquivos acima do teto fora do alcance dele** — `e2e/portas-do-banco.mjs`
+  (608 linhas) e `e2e/painel-admin.mjs` (384). O portão não está errado, está
+  **incompleto**, e o efeito é o mesmo das cotas que estouram em silêncio: ele
+  imprime "OK nenhum arquivo acima de 300" e a frase não é verdade. Duas saídas:
+  ampliar a varredura (e aí os dois reprovam até serem divididos) ou dizer na
+  mensagem QUAL pasta ele olhou. Prefiro ampliar — mas isso obriga a dividir os
+  dois antes, então é trabalho, não ajuste.*
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 - ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
@@ -1385,11 +1396,10 @@ M riscos · **N o que precisa da aprovação dele**.
   notificações na tela · o comportamento depois de ocultar (não só apagar) ·
   usuário comum × moderador na mesma tela.
 
-  **`[24/09]` Atenção ao tamanho:** o `e2e/fluxos.mjs` está em **288 linhas**
-  e o teto do §4 é 300. Os próximos fluxos não cabem lá dentro — o corte
-  natural é o bloco 4 (publicar → curtir → comentar → responder → apagar)
-  virar um roteiro próprio do ciclo do post, deixando o `fluxos.mjs` com login, rotas,
-  permissão e logout.
+  **`[24/09]` O corte foi FEITO:** o bloco do ciclo do post virou
+  `e2e/cicloDoPost.mjs` (148 linhas) e o `fluxos.mjs` caiu de 288 para **189**.
+  Ele ficou com a SESSÃO — entrar, alcançar cada rota, ser negado no painel,
+  sair — e os fluxos que faltam cabem no roteiro do conteúdo.
 
   **Por que não foi tudo agora:** cada fluxo desses escreve em produção (o CI
   usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
