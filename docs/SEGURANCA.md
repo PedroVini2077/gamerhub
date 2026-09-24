@@ -1754,11 +1754,22 @@ Provado reinjetando **quatro** políticas quebradas: youtube fora do `frame-src`
 > | 1ª | `iframe.contentWindow` | continua **verdadeiro** num frame barrado — ele aponta para `about:blank`. Reinjetar "youtube fora do `frame-src`" passou **verde** |
 > | 2ª | `contentWindow` **ou** violação no console | o CI reprovou com o Twitch "bloqueado" — lá a rede **não alcança** twitch.tv, e o iframe não carrega **por rede** |
 > | 3ª | só a violação no console | o CI **reprovou de novo**: `page.on('console')` recebe mensagem dos **iframes** também, e a Twitch tem CSP própria. No runner o embed carrega de verdade, e as mensagens **dela** chegavam como se fossem nossas |
+> | 4ª | idem, filtrando por origem da mensagem | **reprovou ainda assim** — e aqui a recusa era *verdadeira*: com rede, `player.twitch.tv/?channel=x` **redireciona**, e a CSP se aplica ao destino. A sonda estava testando o comportamento da **Twitch**, não a nossa política |
 >
-> Hoje ele exige **as duas coisas**: a mensagem tem de ser uma recusa de CSP
-> **e** ter sido emitida pelo **nosso** documento, não por um iframe de
-> terceiro. E o **controle** prova que ele consegue ouvir — sem ele, *"nenhum
-> frame bloqueado"* poderia significar *"não escutei nada"*.
+> **A saída foi separar duas perguntas que eu estava misturando:**
+>
+> | Pergunta | Como se responde |
+> | --- | --- |
+> | a política **lista** as origens do `EmbedPlayer`? | **estático** — lê a CSP do `vercel.json`. Não depende de terceiro, e CI e local concordam sempre |
+> | o navegador **cumpre** a política? | **navegador** — o controle, com uma origem que não está na lista |
+>
+> Estático prova o **conteúdo**; o controle prova o **cumprimento**. Nenhum dos
+> dois depende de a Twitch estar no ar.
+>
+> As quatro versões erraram pelo mesmo motivo de fundo: **eu aceitei um sinal
+> barato no lugar da evidência certa**, e três vezes esse sinal dependia de um
+> terceiro responder. Vale registrar porque a mesma tentação vai aparecer na
+> próxima trava que dependa de navegador.
 >
 > As três versões erraram pelo mesmo motivo de fundo: **eu aceitei um sinal
 > barato no lugar da evidência certa.** Vale registrar porque a mesma tentação

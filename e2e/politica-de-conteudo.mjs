@@ -91,10 +91,11 @@ const srv = createServer((req, res) => {
 await new Promise(r => srv.listen(PORTA, r));
 
 const ROTAS = ['/', '/login', '/cadastro', '/sobre', '/privacidade', '/termos'];
+/** As origens que o `EmbedPlayer` realmente usa — lidas do codigo, nao supostas. */
 const EMBEDS = [
-  'https://www.youtube.com/embed/dQw4w9WgXcQ',
-  'https://player.twitch.tv/?channel=x&parent=localhost',
-  'https://clips.twitch.tv/embed?clip=x&parent=localhost',
+  'https://www.youtube.com/embed/',
+  'https://player.twitch.tv/',
+  'https://clips.twitch.tv/embed',
 ];
 const PROIBIDA = 'https://origem-que-a-csp-proibe.invalid/x';
 
@@ -147,34 +148,27 @@ const violacoesDaSonda = [];
 sonda.on('console', m => { if (daNossaPagina(m) && eViolacao(m.text())) violacoesDaSonda.push(m.text()); });
 await sonda.goto(`http://127.0.0.1:${PORTA}/`, { waitUntil: 'domcontentloaded' });
 
-const frames = await sonda.evaluate(async (alvos) => {
-  const r = [];
-  for (const src of alvos) {
-    const f = document.createElement('iframe');
-    f.src = src; document.body.appendChild(f);
-    await new Promise(res => setTimeout(res, 800));
-    r.push([new URL(src).host, !!f.contentWindow]);
-  }
-  return r;
-}, EMBEDS);
-
-// `[24/09]` SO o console decide. Duas versoes erradas antes desta:
+// ── `frame-src`: conferido na POLITICA, nao na Twitch ──────────────────────
 //
-//   1. `f.contentWindow` continua verdadeiro num iframe BLOQUEADO — ele aponta
-//      para `about:blank`. Reinjetar "youtube fora do frame-src" passou VERDE.
-//   2. Entao somei `|| !carregou`, e o CI reprovou com o Twitch "bloqueado":
-//      la a rede nao alcanca a twitch.tv, e o iframe nao carrega **por rede**.
-//      Acusar a CSP por isso e mandar procurar no lugar errado (§1.5).
+// `[24/09]` A sonda anterior criava um iframe de verdade para cada origem. Isso
+// testava a TWITCH, nao a nossa CSP:
 //
-// A unica evidencia que distingue politica de rede e a mensagem do navegador:
-// bloqueio de CSP vira `Refused to frame ... because it violates`. O CONTROLE
-// la embaixo e o que prova que este roteiro CONSEGUE ver essa mensagem — sem
-// ele, "nenhum frame bloqueado" poderia significar "nao escutei nada".
-for (const [host] of frames) {
-  const recusadoPelaPolitica = violacoesDaSonda.some(
-    v => v.includes(host) && /Refused to frame|violates the following Content Security Policy/i.test(v));
-  if (recusadoPelaPolitica) {
-    violacoes.push(`frame-src :: ${host} foi BLOQUEADO PELA CSP — o player de live nao abriria`);
+//   . sem rede (local), o iframe nunca carrega
+//   . com rede (CI), `player.twitch.tv/?channel=x` REDIRECIONA, e a CSP se
+//     aplica ao destino do redirecionamento — entao a recusa era verdadeira, e
+//     sobre uma URL que o nosso site nunca usa
+//
+// O que eu preciso saber e outra coisa, e ela nao depende de terceiro: **a
+// politica lista as origens que o `EmbedPlayer` usa?** Isso e estatico.
+//
+// O navegador continua sendo necessario para provar que a politica e APLICADA —
+// e quem prova isso e o CONTROLE logo abaixo, com uma origem que nao esta na
+// lista. Estatico prova o CONTEUDO; o controle prova o CUMPRIMENTO.
+const frameSrc = (CSP.match(/frame-src([^;]*)/i) || [, ''])[1];
+for (const alvo of EMBEDS) {
+  const origem = new URL(alvo).origin;
+  if (!frameSrc.includes(origem)) {
+    violacoes.push(`frame-src :: ${origem} NAO esta na politica — o player de live nao abriria`);
   }
 }
 
@@ -183,7 +177,7 @@ await sonda.evaluate(async (u) => { try { await fetch(u, { mode: 'no-cors' }); }
 await sonda.waitForTimeout(600);
 
 for (const v of violacoesDaSonda) {
-  if (!v.includes('origem-que-a-csp-proibe') && !EMBEDS.some(e => v.includes(new URL(e).host))) {
+  if (!v.includes('origem-que-a-csp-proibe')) {
     violacoes.push(`sonda :: ${v.slice(0, 200)}`);
   }
 }
