@@ -146,11 +146,10 @@ export async function createPost({ userId, title, content, audioUrl, audioType, 
     user_id: userId,
     title: title.trim(),
     content: content?.trim() || null,
-    // `[24/09]` `category` saiu do corpo do INSERT. A coluna CONTINUA no banco
-    // (com DEFAULT 'dica'), de propósito: o prompt do dono é explícito — "não
-    // executar DROP COLUMN simplesmente porque a UI não usa mais o campo".
-    // Quem decide o destino dela é ele, depois de um ciclo inteiro sem
-    // ninguém sentir falta.
+    // `[24/09]` `category` saiu do corpo do INSERT de manhã, e à tarde a
+    // COLUNA foi apagada do banco — nesta ordem, e a ordem importou: o
+    // trigger `log_post_event` ainda lia `NEW.category`, e apagar antes de
+    // consertá-lo teria derrubado o publicar inteiro.
     audio_url: audioUrl,
     audio_type: audioType,
     audio_name: audioName?.trim() || null,

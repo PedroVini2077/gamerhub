@@ -53,29 +53,24 @@ todas as tabelas públicas.**
 | `expires_at`    | tstz   | Quando a live expira (encerramento automático)                   |
 | `live_kind`     | text   | Tipo de live de jogador: `'gameplay'`, `'react'`, `'outro'`      |
 | `live_kind_label` | text | Label livre quando `live_kind = 'outro'` (obrigatório nesse caso) |
-| `category`      | text   | **`[24/09]` DESATIVADA.** Existe, ninguém lê — ver abaixo |
 
-> ### `[24/09]` `posts.category` está DESATIVADA, e isso é deliberado
+> ### `[24/09]` `posts.category` foi APAGADA
 >
-> Ela saiu da **experiência** em 24/09: seletor do compositor, filtro do feed,
-> badge do card, o corpo do `INSERT` e o `POST_SELECT`. Publicar deixou de
-> exigir que a pessoa classifique o que escreveu.
+> Ela saiu da experiência de manhã (seletor, filtro, badge, `INSERT`,
+> `POST_SELECT`) e **a coluna caiu à tarde**, autorizada pelo dono.
 >
-> **A coluna permanece no schema**, com `DEFAULT 'dica'` — é ele que mantém o
-> `INSERT` funcionando sem mandá-la. Pedido explícito do dono: *"não executar
-> `DROP COLUMN` simplesmente porque a UI não usa mais o campo"*.
+> **A ordem importou.** O trigger `log_post_event` ainda lia `NEW.category` e
+> `OLD.category` para a trilha de auditoria; apagar antes de consertá-lo teria
+> quebrado **publicar** — medido em ROLLBACK:
+> `record "new" has no field "category"`. Primeiro o trigger parou de ler,
+> depois a coluna caiu.
 >
-> **Nada no banco a lê:** zero policy, função, view, índice ou constraint
-> (medido na Fase 0). O aviso também está **na própria coluna**, como
-> `COMMENT` — quem abrir a tabela num dump ou num `\d+ posts` esbarra nele sem
-> precisar achar o documento certo.
+> **Cuidado com o homônimo:** `admin_logs.category` é outra coluna, de outra
+> tabela, viva e em uso. Foi essa homonímia que escondeu o leitor na primeira
+> varredura — `prosrc ILIKE '%category%'` devolvia dezenas de falsos positivos.
 >
-> O porquê da decisão está em [`DECISOES.md`](DECISOES.md) (seção Feed), e a
-> trava `categoriaSaiuDaExperiencia.test.js` reprova tanto um `DROP COLUMN`
-> quanto o seletor voltando à tela.
-
-Constraints: `CHECK (live_kind IN ('gameplay','react','outro'))` e
-`CHECK (live_kind IS DISTINCT FROM 'outro' OR live_kind_label IS NOT NULL)`.
+> O porquê está em [`DECISOES.md`](DECISOES.md) (seção Feed), e a trava
+> `categoriaSaiuDaExperiencia.test.js` reprova qualquer trigger que volte a lê-la.
 
 #### Colunas relevantes em `comments`
 

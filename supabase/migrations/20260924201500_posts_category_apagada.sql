@@ -1,0 +1,50 @@
+-- ============================================================================
+-- `[24/09]` `posts.category` APAGADA — e o passo que teve de vir antes
+-- ============================================================================
+--
+-- AUTORIZADO PELO DONO, E A AUTORIZACAO VEIO COM CONDICAO
+-- --------------------------------------------------------
+-- Palavras dele: "pode descartar o posts.category [...] apenas de uma olhada,
+-- se tiver de boa e nao quebrar nada, pode sumir com ela do projeto".
+--
+-- A olhada achou uma coisa, e ela nao estava "de boa".
+--
+-- O QUE A CONFERENCIA ACHOU, E QUE A FASE 0 TINHA PERDIDO
+-- --------------------------------------------------------
+-- A Fase 0 afirmou "nada no banco le a coluna". ERRADO. Aquela varredura usou
+-- `prosrc ILIKE '%category%'` e afogou o sinal em `admin_logs.category`, que e
+-- HOMONIMA e aparece em dezenas de funcoes.
+--
+-- Procurando `\m(NEW|OLD)\.category\M`, o leitor apareceu: `log_post_event`, o
+-- trigger da trilha de auditoria. Apagar a coluna antes de consertar ele teria
+-- quebrado PUBLICAR — medido em ROLLBACK, com o trigger antigo e a coluna
+-- apagada:
+--
+--     INSERT INTO posts ... -> ERRO: record "new" has no field "category"
+--
+-- Por isso esta migration vem DEPOIS de `log_post_event_para_de_ler_category`.
+-- E a sequencia que o proprio prompt pede: migrar, validar, so entao remover.
+--
+-- O QUE SE PERDE
+-- --------------
+-- Nada de valor. Medido no minuto anterior ao DROP: 50 linhas, TODAS com
+-- `'dica'` (o DEFAULT), zero fora do padrao — e 45 dessas 50 sao posts de
+-- prova que eu mesmo semeei hoje. Nenhum ser humano jamais escolheu uma
+-- categoria neste site.
+--
+-- E IRREVERSIVEL (§7 🔴)
+-- ----------------------
+-- Um `DROP COLUMN` nao volta com o dado. O que torna isso aceitavel aqui nao e
+-- a autorizacao sozinha: e o dado ser inteiramente o valor padrao. Se houvesse
+-- UMA linha com escolha humana, o certo seria guarda-la antes.
+--
+-- PROVADO EM ROLLBACK ANTES DE APLICAR
+-- -------------------------------------
+--   com o trigger NOVO e a coluna apagada:
+--     publicar .......... OK
+--     log de criacao .... 'Post "..." criado por @claudetester'
+--     metadata .......... {"post_id": "..."}
+--     apagar ............ OK
+--     log de exclusao ... 'Post "..." de @claudetester excluido pelo proprio'
+
+ALTER TABLE public.posts DROP COLUMN category;
