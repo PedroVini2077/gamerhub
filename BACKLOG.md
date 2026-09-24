@@ -661,7 +661,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**47 itens abertos** (+ 1 ideia sem compromisso)
+**48 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1086,6 +1086,18 @@ dependência técnica real** que decide o resto:
   **`npm test` precisa passar a provar esses quatro 400.** Hoje nada impede uma
   migration futura de afrouxar uma delas em silêncio.
 
+  > **`[24/09]` Ao conferir as quatro, apareceu um achado.** Três usam
+  > `role_rank`/`is_staff`/`is_super` e chamam `exige_operador_ativo()`. A
+  > quarta — `owner_get_stats` — autoriza por **literal** (`role = 'owner'`) e
+  > por isso era **invisível ao auditor**. A varredura de classe achou mais
+  > quatro iguais, todas do painel do Fundador. Fechado o ponto cego do auditor
+  > na **SEC-051**; a decisão sobre as cinco virou item próprio acima.
+  >
+  > **Ainda falta** da parte 1: a frente **A** (as 13 perguntas por tabela nas
+  > 10 tabelas administrativas), a frente **B** (mapear todas as consultas
+  > diretas a `profiles`) e a frente **C** (30 perguntas × 78 funções
+  > `SECURITY DEFINER`, que é trabalho de várias sessões).
+
   ### A regra do método, e ela proíbe o meu atalho favorito
 
   *"NÃO faça uma caça superficial por palavras como SECURITY DEFINER, role,
@@ -1434,6 +1446,32 @@ M riscos · **N o que precisa da aprovação dele**.
 ---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[24/09]` 🟠 **O painel do Fundador autoriza por LITERAL, e as duas saídas
+  têm risco.** *Achado na parte 1 da auditoria (SEC-051). **Não é
+  vulnerabilidade** — o efeito é correto. É decisão de semântica, e por isso
+  não decidi sozinho.*
+
+  Cinco funções (`owner_get_stats`, `owner_get_users`, `owner_get_metrics`,
+  `owner_get_audit_logs`, `owner_get_notifications`) autorizam assim:
+
+  ```sql
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'owner')
+  ```
+
+  | Saída | O que ganha | O que arrisca |
+  | --- | --- | --- |
+  | **trocar por `is_owner()`** | some o literal que já causou 3 falhas; elas voltam a ser visíveis para o auditor | **muda semântica**: `is_owner()` é `role_rank >= 4`, o literal é `= 'owner'`. Um cargo futuro de rank 5 passaria num e não no outro |
+  | **pôr `exige_operador_ativo()`** | cumpre o `INV-AUTZ-003` à risca | **risco de trancar o fundador fora do próprio painel, sem inversa** — e ninguém consegue puni-lo por RPC de qualquer forma (hierarquia estrita), então o ganho é ~zero |
+  | **deixar como está** | zero risco | o literal continua, e as cinco ficam na lista de isenção do auditor |
+
+  **Minha recomendação:** trocar por `is_owner()` **se** você quiser que um
+  cargo futuro acima de owner herde o painel; manter o literal **se** o painel
+  deve ser do fundador e de mais ninguém, para sempre. **Não** pôr a guarda de
+  operador nas cinco — o ganho não paga o risco de lockout.
+
+  Enquanto não decide, as cinco estão isentas **com o motivo escrito** na
+  migration, e a trava reprova se a lista crescer.
 
 - ⬜ `[19/09]` 🟠 **O site não tem `Content-Security-Policy`.** *Medido em 19/09
   nos cabeçalhos de produção: existem `X-Frame-Options`, HSTS, `nosniff`,
@@ -2054,7 +2092,7 @@ M riscos · **N o que precisa da aprovação dele**.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->137<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.184<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->16.235<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
