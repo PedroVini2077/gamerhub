@@ -14,7 +14,14 @@ import SuspendedNotice from '../ui/SuspendedNotice';
 
 // `initialCount` vem do feed (contagem em lote). Quando existe, o card não
 // dispara a própria query de contagem — era mais um request por post.
-const CommentSection = memo(function CommentSection({ postId, registerRefresh, initialCount }) {
+/**
+ * @param {object} p
+ * @param {import('react').ReactNode} [p.acoes]  botões que ficam na MESMA linha
+ *   do "Comentar" — hoje é o de curtir, que o `PostCard` entrega. Antes ele
+ *   morava numa faixa própria acima desta, e o resultado eram duas bordas e o
+ *   coração empilhado sobre o comentário.
+ */
+const CommentSection = memo(function CommentSection({ postId, registerRefresh, initialCount, acoes }) {
   const { user, profile } = useAuth();
   const { checkContent } = useBlockedWords();
   const suspended = suspendedUntil(profile);
@@ -89,13 +96,16 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh, i
 
   return (
     <div className="mt-3 pt-3 border-t border-dark-500">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-neon-green transition-colors"
-      >
-        <MessageSquare size={13} />
-        {count > 0 ? `${count} comentário${count !== 1 ? 's' : ''}` : 'Comentar'}
-      </button>
+      <div className="flex items-center gap-4">
+        {acoes}
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-neon-green transition-colors"
+        >
+          <MessageSquare size={13} />
+          {count > 0 ? `${count} comentário${count !== 1 ? 's' : ''}` : 'Comentar'}
+        </button>
+      </div>
 
       {open && (
         <div className="mt-3 space-y-1 animate-fade-up">

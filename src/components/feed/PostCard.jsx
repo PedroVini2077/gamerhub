@@ -99,6 +99,18 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   const canReport = user && user.id !== post.user_id;
 
+  const botaoDeCurtir = (
+    <button onClick={toggleLike} disabled={likeLoading}
+      aria-label={`${liked ? 'Descurtir' : 'Curtir'} — ${likeCount} curtida(s)`}
+      aria-pressed={liked}
+      className={`flex items-center gap-1.5 text-xs font-mono transition-all ${
+        liked ? 'text-neon-green' : 'text-gray-500 hover:text-neon-green'
+      }`}>
+      <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
+      {likeCount}
+    </button>
+  );
+
   return (
     <div className={`card p-5 animate-fade-up ${post.hidden_at ? 'border-yellow-500/30' : ''}`}>
       {deleteCountdown !== null && (
@@ -220,20 +232,16 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
         </LazyVisible>
       )}
 
-      <div className="mt-4 pt-3 border-t border-dark-500 flex items-center gap-4">
-        <button onClick={toggleLike} disabled={likeLoading}
-          aria-label={`${liked ? 'Descurtir' : 'Curtir'} — ${likeCount} curtida(s)`}
-          aria-pressed={liked}
-          className={`flex items-center gap-1.5 text-xs font-mono transition-all ${
-            liked ? 'text-neon-green' : 'text-gray-500 hover:text-neon-green'
-          }`}>
-          <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
-          {likeCount}
-        </button>
-      </div>
-
-{post.is_live && (!post.expires_at || new Date(post.expires_at) > new Date()) ? (
-        <div className="mt-4 pt-3 border-t border-dark-500">
+      {/* `[24/09]` Curtir e comentar na MESMA linha, a pedido do dono. Antes
+          eram duas faixas empilhadas, cada uma com a própria borda de cima: o
+          coração ficava ACIMA do "Comentar". O botão vai como `acoes` para a
+          `CommentSection`, que é quem desenha a linha — assim existe uma
+          borda só, e as duas ações ficam lado a lado. */}
+      {post.is_live && (!post.expires_at || new Date(post.expires_at) > new Date()) ? (
+        <div className="mt-3 pt-3 border-t border-dark-500 space-y-3">
+          {/* Na live não há seção de comentário para hospedar o botão, então a
+              faixa é desenhada aqui — com o mesmo espaçamento. */}
+          <div className="flex items-center gap-4">{botaoDeCurtir}</div>
           <a href="/lives"
             className="flex items-center justify-center gap-2 w-full btn-neon py-2 text-xs">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
@@ -241,7 +249,8 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
           </a>
         </div>
       ) : (
-        <CommentSection postId={post.id} postOwnerId={post.user_id} initialCount={post.comment_count} />
+        <CommentSection postId={post.id} postOwnerId={post.user_id}
+          initialCount={post.comment_count} acoes={botaoDeCurtir} />
       )}
 
       {confirming && (
