@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**52 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1463,6 +1463,23 @@ o comentário que explica a decisão acusaria a si mesmo. `INV-CONTEUDO-007`.
   `DEFAULT 'dica'` mantém o INSERT funcionando. A decisão é sua, e o combinado
   é esperar um ciclo inteiro sem ninguém sentir falta. Quando decidir, a trava
   sai no MESMO PR, com a decisão em `docs/DECISOES-DE-BANCO.md`.*
+
+- ⬜ `[24/09]` 🟠 **45 posts de prova estão NO AR, esperando você conferir a
+  paginação — e eu preciso apagá-los depois.** *Semeados a pedido dele em
+  24/09, autor `claudetester` (nunca a conta dele), títulos `[prova 01]` a
+  `[prova 45]`. O `[prova 01]` é o **mais novo** e abre o feed.*
+
+  **O que conferir no site, logado:** a primeira tela mostra `[prova 01]` até
+  `[prova 20]` · o botão **"Carregar mais"** aparece no fim · clicar traz
+  `[prova 21]` a `[prova 40]` **sem repetir e sem pular** · clicar de novo traz
+  `[prova 41]` a `[prova 45]` e o botão **some** · e, o que mais importa: a
+  página **não pula** para o topo ao carregar, o card que você estava lendo
+  fica onde estava.
+
+  **O prefixo `[prova ` NÃO está em `PREFIXOS_DE_TESTE` de propósito:** se
+  estivesse, o detector de sobras reprovaria o próximo CI achando que uma
+  rodada morreu no meio. Por isso eles **não** são apagados pela retenção
+  automática — saem na mão, e isso é dívida minha até sair.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 

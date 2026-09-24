@@ -53,6 +53,26 @@ todas as tabelas públicas.**
 | `expires_at`    | tstz   | Quando a live expira (encerramento automático)                   |
 | `live_kind`     | text   | Tipo de live de jogador: `'gameplay'`, `'react'`, `'outro'`      |
 | `live_kind_label` | text | Label livre quando `live_kind = 'outro'` (obrigatório nesse caso) |
+| `category`      | text   | **`[24/09]` DESATIVADA.** Existe, ninguém lê — ver abaixo |
+
+> ### `[24/09]` `posts.category` está DESATIVADA, e isso é deliberado
+>
+> Ela saiu da **experiência** em 24/09: seletor do compositor, filtro do feed,
+> badge do card, o corpo do `INSERT` e o `POST_SELECT`. Publicar deixou de
+> exigir que a pessoa classifique o que escreveu.
+>
+> **A coluna permanece no schema**, com `DEFAULT 'dica'` — é ele que mantém o
+> `INSERT` funcionando sem mandá-la. Pedido explícito do dono: *"não executar
+> `DROP COLUMN` simplesmente porque a UI não usa mais o campo"*.
+>
+> **Nada no banco a lê:** zero policy, função, view, índice ou constraint
+> (medido na Fase 0). O aviso também está **na própria coluna**, como
+> `COMMENT` — quem abrir a tabela num dump ou num `\d+ posts` esbarra nele sem
+> precisar achar o documento certo.
+>
+> O porquê da decisão está em [`DECISOES.md`](DECISOES.md) (seção Feed), e a
+> trava `categoriaSaiuDaExperiencia.test.js` reprova tanto um `DROP COLUMN`
+> quanto o seletor voltando à tela.
 
 Constraints: `CHECK (live_kind IN ('gameplay','react','outro'))` e
 `CHECK (live_kind IS DISTINCT FROM 'outro' OR live_kind_label IS NOT NULL)`.
