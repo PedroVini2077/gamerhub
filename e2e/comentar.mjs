@@ -243,23 +243,36 @@ export async function responderEEsperarAninhada(page, { card, aoComentario, text
   //
   // Se essa estrutura mudar, isto estoura — e estourar é o certo: quem mexeu
   // precisa reconferir o que significa "aninhada" depois da mudança.
-  const aninhada = await pai.evaluate((elPai, textoDaResposta) => {
+  // Re-resolve o `pai` a cada tentativa: a lista se remonta sozinha (ver
+  // `garantirSecaoAberta`), e um elemento capturado antes da remontagem
+  // responde pela árvore VELHA, onde a resposta ainda não existe.
+  const medirAninhamento = () => pai.evaluate((elPai, textoDaResposta) => {
     const raiz = elPai.parentElement?.parentElement?.parentElement;
     if (!raiz) return { erro: 'nao achei a raiz do CommentCard 3 niveis acima do <p>' };
     return {
       contem: raiz.innerText.includes(textoDaResposta),
-      // Informativo, para o log: o recuo existe, mas NÃO é o veredito.
-      recuoDaLinha: raiz.querySelector('div')?.getBoundingClientRect().x ?? null,
+      noDocumento: elPai.isConnected,
       recuoDaRaiz: raiz.getBoundingClientRect().x,
+      recuoDaLinha: raiz.querySelector('div')?.getBoundingClientRect().x ?? null,
+      textoDaRaiz: raiz.innerText.replace(/\s+/g, ' ').slice(0, 300),
     };
   }, texto);
+
+  let aninhada = await medirAninhamento();
+  const prazo = Date.now() + 15000;
+  while (!aninhada.contem && !aninhada.erro && Date.now() < prazo) {
+    await page.waitForTimeout(500);
+    aninhada = await medirAninhamento();
+  }
 
   if (aninhada.erro) throw new Error(`${aninhada.erro} — a estrutura do CommentCard mudou.`);
 
   if (!aninhada.contem) {
     throw new Error(
-      `a resposta "${texto}" NAO esta dentro do bloco do comentario pai.\n`
-      + `    (raiz do pai em x=${aninhada.recuoDaRaiz}, linha em x=${aninhada.recuoDaLinha})\n`
+      `a resposta "${texto}" NAO esta dentro do bloco do comentario pai (15s).\n`
+      + `    pai ainda no documento: ${aninhada.noDocumento}\n`
+      + `    raiz em x=${aninhada.recuoDaRaiz}, linha em x=${aninhada.recuoDaLinha}\n`
+      + `    texto da raiz do pai: ${JSON.stringify(aninhada.textoDaRaiz)}\n`
       + '    Ela entrou na lista como comentario de primeiro nivel. O texto na\n'
       + '    tela nao prova que o `parent_id` chegou — e resposta que vira\n'
       + '    comentario solto nao estoura, nao loga e nao quebra nada (§1.5).\n'
