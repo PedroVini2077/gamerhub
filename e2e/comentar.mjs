@@ -154,10 +154,19 @@ export async function responderEEsperarAninhada(page, { card, aoComentario, text
   const botoes = card.getByRole('button', { name: /^Responder$/ });
   const quantos = await botoes.count();
   if (quantos !== 1) {
+    // Instrumentar em vez de chutar (§1.2). Sem a lista, "achei 0" manda
+    // procurar no `onReply` — e pode ser o nome acessivel, o botao estar
+    // escondido, ou a secao ter fechado. A lista responde as tres de uma vez.
+    const nomes = await card.getByRole('button').evaluateAll(
+      (bs) => bs.map((b) => JSON.stringify((b.getAttribute('aria-label') || b.innerText || '').trim())),
+    ).catch(() => ['(nao consegui listar)']);
+
     throw new Error(
       `esperava UM botao "Responder" no card e achei ${quantos}.\n`
-      + '    Zero: o `onReply` parou de ser passado pelo `CommentSection`, ou o\n'
-      + '    comentario nao esta na tela — a secao fecha sozinha?\n'
+      + `    Botoes que existem no card: ${nomes.join(', ')}\n`
+      + '    Zero: o `onReply` parou de ser passado pelo `CommentSection`, o\n'
+      + '    comentario nao esta na tela, ou o nome acessivel mudou — a lista\n'
+      + '    acima diz qual dos tres.\n'
       + '    Mais de um: o post ganhou outro comentario. Este passo assume que\n'
       + '    o post e o da execucao e tem so o comentario dela; se isso mudou,\n'
       + '    o passo precisa escolher o pai de proposito, nao por sorte.');
