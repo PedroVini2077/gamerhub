@@ -369,9 +369,10 @@ transições discretas das páginas internas.
 - Feed (`Home`): busca por texto, filtro por categoria, aviso de **"novas
   publicações"** — **`[24/09]`** ele passou a contar só o que a recarga de fato
   traz (live e post que nasce oculto ficam de fora) e a mostrar `20+` no teto,
-  em vez de acumular eventos da aba sem limite. O feed em si continua sendo
-  **uma consulta única de 30 posts, sem paginação** — o nº 31 só é alcançável
-  por link direto, e isso está na fila do bloco do Feed.
+  em vez de acumular eventos da aba sem limite. **`[24/09]` O feed passou a
+  PAGINAR**: lotes de 20 por cursor, com um botão "Carregar mais" que só
+  aparece quando o banco diz que existe próxima página. Antes era uma consulta
+  única de 30 e o post nº 31 era inalcançável.
 - Posts com `live_kind` (lives de jogadores) são **excluídos do feed** — só
   aparecem na aba Lives.
 

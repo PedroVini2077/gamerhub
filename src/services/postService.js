@@ -3,90 +3,73 @@ import { getEmbedInfo } from '../lib/embed';
 
 import { ok, fail, from, fromCount } from './result';
 
-// Colunas explícitas em vez de `*`: cada coluna a mais viaja em TODA linha de
-// TODO feed. `live_ended_at`, `ban_*` e afins não são usados pelo card.
-const POST_COLUMNS = [
-  'id', 'user_id', 'title', 'content', 'category', 'created_at',
-  'media_url', 'media_type', 'edited_at',
-  'audio_url', 'audio_type', 'audio_name',
-  'embed_url', 'embed_type', 'expires_at',
-  'is_live', 'was_live', 'live_kind', 'live_kind_label',
-  'hidden_at', 'deleted_at',
-].join(', ');
+import { POST_SELECT, attachEngagement } from './postSelect';
 
-const AUTHOR_SELECT = 'profiles(id, username, avatar_url, role, bio, created_at)';
+export const TAMANHO_DO_LOTE = 20;
 
-// `post_media` aninhado: o Postgrest já devolve as mídias junto com o post.
-// Antes cada card fazia a própria query — 30 posts = 30 requests só de mídia.
-const POST_SELECT = `${POST_COLUMNS}, ${AUTHOR_SELECT}, post_media(id, url, type, position)`;
+/**
+ * Uma página do feed, por CURSOR (keyset).
+ *
+ * ── Por que passa por RPC, com número ─────────────────────────────────────
+ *
+ * Keyset precisa comparar LINHA: `(created_at, id) < (cursor…)`. O PostgREST
+ * não sabe expressar isso. Medido no banco com 300 linhas semeadas, página do
+ * meio:
+ *
+ *   `ROW(created_at,id) < ROW(…)`        Index Cond,   0 filtradas,  20 heap
+ *   `.or(lt, and(eq, id.lt))`            **Filter**, 100 filtradas, 239 heap
+ *
+ * A segunda forma varre o índice desde o topo e joga fora o que já passou —
+ * é o custo do `OFFSET` com outro nome, e piora a cada página. O porquê
+ * inteiro está na migration `feed_pagina_cursor_keyset`.
+ *
+ * ── Por que a RPC devolve só os IDS ───────────────────────────────────────
+ *
+ * Porque o `POST_SELECT` daqui já traz autor e mídia por embed. Reescrever o
+ * embed em SQL criaria uma **segunda definição** do que é um post no feed — a
+ * duplicação do §4 no lugar mais caro. A RPC entrega a ORDEM; esta função
+ * busca as linhas e reordena.
+ *
+ * @param {object} p
+ * @param {number} [p.limite]   quantos posts nesta página
+ * @param {{created_at: string, id: string}|null} [p.cursor]  o último post já visto
+ * @param {string|null} [p.viewerId]
+ * @returns {Promise<{data: {posts: Array, proximoCursor: object|null, temMais: boolean}, error: object|null}>}
+ */
+export async function fetchFeedPosts({ limite = TAMANHO_DO_LOTE, cursor = null, viewerId = null } = {}) {
+  const vazio = { posts: [], proximoCursor: null, temMais: false };
 
-// ─── Feed ────────────────────────────────────────────────────────────────────
+  // Pede UM a mais do que vai mostrar: se voltar o extra, existe próxima
+  // página. Sem isso, "tem mais?" viraria uma segunda consulta ou um palpite —
+  // e palpite aqui vira botão de "carregar mais" que não carrega nada.
+  const { data: ordem, error } = await supabase.rpc('feed_pagina', {
+    p_limite: limite + 1,
+    p_cursor_created_at: cursor?.created_at ?? null,
+    p_cursor_id: cursor?.id ?? null,
+  });
+  if (error) return fail(error, vazio);
+  if (!ordem?.length) return ok(vazio);
 
-// `.in(...)` vira querystring: cada uuid custa ~40 caracteres na URL, e uma
-// lista grande demais estoura o limite do gateway. O feed é limitado a 30, mas
-// o perfil de um usuário prolífico não é — daí o fatiamento.
-const IN_CHUNK = 50;
+  const temMais = ordem.length > limite;
+  const daPagina = temMais ? ordem.slice(0, limite) : ordem;
 
-async function fetchInChunks(ids, run) {
-  const rows = [];
-  for (let i = 0; i < ids.length; i += IN_CHUNK) {
-    const { data } = await run(ids.slice(i, i + IN_CHUNK));
-    if (data) rows.push(...data);
-  }
-  return rows;
-}
+  const { data: linhas, error: erroLinhas } = await supabase
+    .from('posts').select(POST_SELECT).in('id', daPagina.map((o) => o.id));
+  if (erroLinhas) return fail(erroLinhas, vazio);
 
-// Engajamento em LOTE. Antes cada PostCard disparava 3 queries próprias
-// (contagem de likes, "eu curti?" e contagem de comentários) — um feed de 30
-// posts fazia ~90 requests. Aqui são 2, independentemente do tamanho do feed.
-//
-// Traz as linhas e conta no cliente em vez de pedir `count` por post: para o
-// volume atual isso é ordens de grandeza melhor. Se um dia um post passar da
-// casa dos milhares de curtidas, o caminho é trocar por uma RPC que agrega no
-// banco (anotado no BACKLOG) — o shape de retorno daqui não muda.
-async function attachEngagement(posts, viewerId) {
-  const ids = posts.map((p) => p.id);
-  if (!ids.length) return posts;
+  // Reordena pela ordem que veio do banco: o `.in()` não garante ordem nenhuma.
+  const porId = new Map((linhas || []).map((l) => [l.id, l]));
+  // `filter(Boolean)`: entre as duas consultas o post pode ter sido apagado ou
+  // ocultado, e aí a RLS não o devolve. Sumir é o comportamento certo — o que
+  // não pode é virar buraco `undefined` na lista.
+  const posts = daPagina.map((o) => porId.get(o.id)).filter(Boolean);
 
-  const [likes, comments] = await Promise.all([
-    fetchInChunks(ids, (chunk) =>
-      supabase.from('post_likes').select('post_id, user_id').in('post_id', chunk)),
-    fetchInChunks(ids, (chunk) =>
-      supabase.from('comments').select('post_id').in('post_id', chunk)),
-  ]);
-
-  const likeCount = new Map();
-  const liked = new Set();
-  const commentCount = new Map();
-
-  for (const l of likes) {
-    likeCount.set(l.post_id, (likeCount.get(l.post_id) || 0) + 1);
-    if (viewerId && l.user_id === viewerId) liked.add(l.post_id);
-  }
-  for (const c of comments) {
-    commentCount.set(c.post_id, (commentCount.get(c.post_id) || 0) + 1);
-  }
-
-  return posts.map((p) => ({
-    ...p,
-    // O embed aninhado não garante ordem — o carrossel depende de `position`.
-    post_media: [...(p.post_media || [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
-    like_count: likeCount.get(p.id) || 0,
-    liked_by_me: liked.has(p.id),
-    comment_count: commentCount.get(p.id) || 0,
-  }));
-}
-
-export async function fetchFeedPosts(limit = 30, viewerId = null) {
-  const { data, error } = await supabase
-    .from('posts')
-    .select(POST_SELECT)
-    .is('live_kind', null)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) return fail(error, []);
-  return ok(await attachEngagement(data || [], viewerId));
+  const ultimo = daPagina[daPagina.length - 1];
+  return ok({
+    posts: await attachEngagement(posts, viewerId),
+    proximoCursor: { created_at: ultimo.created_at, id: ultimo.id },
+    temMais,
+  });
 }
 
 /**

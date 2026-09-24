@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   entraNoFeed, somarNovo, rotuloDeNovos, TETO_DE_NOVOS, COLUNAS_QUE_O_FEED_FILTRA,
 } from '../novidadeDoFeed';
@@ -26,21 +27,31 @@ import {
  *   . filtro novo na consulta e não aqui          -> falhou nomeando a coluna
  */
 
-const SERVICE = 'src/services/postService.js';
+const MIGRATIONS = 'supabase/migrations';
 
-/** O corpo do `fetchFeedPosts`, para o contrato abaixo poder lê-lo. */
+/**
+ * O corpo da RPC `feed_pagina`, que é onde a consulta do feed mora desde
+ * `[24/09]`.
+ *
+ * **Antes este contrato lia o `postService.js`**, porque os filtros eram
+ * `.is('coluna', null)` no cliente. A paginação por keyset mudou isso: o
+ * PostgREST não expressa comparação de linha, então a consulta virou RPC — e
+ * o contrato tinha de seguir o alvo, senão passaria a conferir um lugar onde
+ * não há mais nada, ficando verde para sempre.
+ */
 function corpoDaConsultaDoFeed() {
-  const fonte = readFileSync(SERVICE, 'utf8');
-  const i = fonte.indexOf('export async function fetchFeedPosts');
-  if (i < 0) {
+  const arquivo = readdirSync(MIGRATIONS)
+    .filter((n) => n.includes('feed_pagina'))
+    .sort()
+    .pop();
+  if (!arquivo) {
     throw new Error(
-      `Não achei \`fetchFeedPosts\` em ${SERVICE}.\n`
-      + '  Se a consulta do feed mudou de nome ou de arquivo, atualize a busca\n'
-      + '  aqui — senão este contrato passa a não olhar nada e fica verde para\n'
+      `Não achei a migration da \`feed_pagina\` em ${MIGRATIONS}.\n`
+      + '  É ela que define o recorte do feed. Se mudou de nome, atualize a\n'
+      + '  busca aqui — senão este contrato não olha nada e fica verde para\n'
       + '  sempre, que é o oposto do que ele existe para fazer.');
   }
-  const fim = fonte.indexOf('\n}', i);
-  return fonte.slice(i, fim);
+  return readFileSync(join(MIGRATIONS, arquivo), 'utf8');
 }
 
 describe('o que conta como nova publicação', () => {
@@ -72,11 +83,14 @@ describe('o que conta como nova publicação', () => {
 
   it('CONTRATO: a consulta do feed não ganhou filtro que o aviso ignora', () => {
     const consulta = corpoDaConsultaDoFeed();
-    // `.is('coluna', null)` é o formato que o service usa para os dois filtros.
-    const filtrados = [...consulta.matchAll(/\.is\(\s*'([a-z_]+)'/g)].map(m => m[1]);
+    // O recorte do feed no SQL é `p.<coluna> IS NULL`, repetido nos dois ramos
+    // (com cursor e sem). O `Set` colapsa a repetição.
+    const filtrados = [...new Set(
+      [...consulta.matchAll(/p\.([a-z_]+)\s+IS\s+NULL/gi)].map((m) => m[1]),
+    )];
 
     expect(filtrados.length, [
-      `Não achei nenhum \`.is('coluna', null)\` em \`fetchFeedPosts\`.`,
+      'Não achei nenhum `p.<coluna> IS NULL` na migration da `feed_pagina`.',
       '',
       'Ou a consulta mudou de forma, ou este contrato parou de enxergá-la.',
       'Nos dois casos ele deixaria de proteger sem avisar.',
@@ -91,6 +105,9 @@ describe('o que conta como nova publicação', () => {
         '',
         `O conserto é ensinar \`entraNoFeed\` a olhar \`${coluna}\` e somar a coluna`,
         'em COLUNAS_QUE_O_FEED_FILTRA, em `src/lib/novidadeDoFeed.js`.',
+        '',
+        '(O recorte do feed mora na RPC `feed_pagina` desde 24/09 — o keyset',
+        ' precisa de comparação de linha, que o PostgREST não expressa.)',
       ].join('\n')).toContain(coluna);
     }
   });

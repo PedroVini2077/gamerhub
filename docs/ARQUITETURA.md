@@ -325,6 +325,9 @@ src/
 │   │                      # recusava sempre. Hoje as coordenadas vão no
 │   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
+│   ├── postSelect.js      # `[24/09]` COMO um post do feed é montado: colunas,
+│   │                      # autor, mídia e engajamento em lote. Fonte ÚNICA do
+│   │                      # que uma tela recebe ao pedir um post
 │   ├── postService.js     # Posts, likes, comentários, lives ativas
 │   ├── postMediaService.js # Upload e storage da mídia de post — a única
 │   │                      # parte do domínio que conversa com o BUCKET

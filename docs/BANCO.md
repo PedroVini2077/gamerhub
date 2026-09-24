@@ -107,6 +107,22 @@ transforma esta pegadinha em bug silencioso (§4).
 
 **Chamadas pelo front (RPC):**
 
+- **`[24/09]` Feed:** `feed_pagina(p_limite, p_cursor_created_at, p_cursor_id)`
+  — uma página do feed por **keyset**. `SECURITY INVOKER` de propósito: a RLS
+  de `posts` já esconde apagado e oculto, e `DEFINER` aqui desligaria isso.
+  Devolve **só a ordem** (id + created_at); o cliente busca as linhas por `id`
+  para não existir uma segunda definição do que é um post no feed.
+
+  > **Por que RPC e não consulta direta.** Keyset exige comparação de LINHA,
+  > `(created_at, id) < (cursor…)`, que o PostgREST não expressa. Medido com
+  > 300 linhas semeadas, página do meio: a forma de linha usa `Index Cond` e lê
+  > 20; a alternativa `.or(lt, and(eq, id.lt))` vira `Filter` e lê 239, jogando
+  > 100 fora. É o custo do `OFFSET` com outro nome.
+  >
+  > O índice que a sustenta é `idx_posts_feed_cursor (created_at DESC, id DESC)`,
+  > parcial pelo mesmo `WHERE` da RPC. O `id` é o desempate — sem ele, posts com
+  > o mesmo `created_at` fazem o cursor pular ou repetir.
+
 - Auth/segurança: `record_banned_login_attempt`, `delete_own_account(p_senha)`.
 
   > **`[17/09]` Esta linha listava mais duas, e as duas eram mentira** — não por

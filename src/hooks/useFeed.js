@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { fetchFeedPosts } from '../services/postService';
 import { recarregarAteAparecer } from '../lib/recarregarAteAparecer';
 import { useRealtime } from './useRealtime';
@@ -24,9 +24,9 @@ import { entraNoFeed, somarNovo } from '../lib/novidadeDoFeed';
  *
  * ── O que ele NÃO faz, e é de propósito ───────────────────────────────────
  *
- * Não pagina. O feed continua sendo uma consulta única de 30, e o post nº 31
- * continua inalcançável — é o defeito que a Fase 0 mediu e que a fase 2 do
- * plano vai resolver. Trocar isso aqui seria implementar sem aprovação.
+ * `[24/09]` **Passou a paginar** — era o defeito que a Fase 0 mediu (o post
+ * nº 31 era inalcançável). O cursor e o porquê do keyset estão no
+ * `postService.fetchFeedPosts`.
  *
  * Não filtra. Busca e categoria continuam no `Home`, porque as duas vão
  * embora no bloco do Feed (busca vira consulta ao banco, categoria sai da
@@ -42,12 +42,28 @@ export function useFeed(userId) {
   const debounceRef = useRef(null);
   useEffect(() => { userRef.current = userId; }, [userId]);
 
+  // `[24/09]` Paginação por CURSOR. `useInfiniteQuery` e não `useQuery`: é ele
+  // que guarda as páginas já carregadas e o cursor da próxima, sem o feed
+  // precisar remontar a lista inteira a cada lote — que é o requisito de "não
+  // interromper quem está lendo".
+  //
   // O viewer entra na queryKey: "eu curti" faz parte do resultado em lote,
   // então o cache não pode ser compartilhado entre usuários diferentes.
-  const { data: posts = [], isPending: carregando, isSuccess, refetch } = useQuery({
+  const {
+    data, isPending: carregando, isSuccess, refetch,
+    fetchNextPage, hasNextPage, isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['feed_posts', userId ?? null],
-    queryFn: () => apenasData(fetchFeedPosts(30, userId ?? null)),
+    initialPageParam: null,
+    queryFn: ({ pageParam }) =>
+      apenasData(fetchFeedPosts({ cursor: pageParam, viewerId: userId ?? null })),
+    // `temMais` vem do banco (a página pediu um item a mais), então o botão de
+    // "carregar mais" some no lote certo em vez de aparecer e não trazer nada.
+    getNextPageParam: (ultima) => (ultima?.temMais ? ultima.proximoCursor : undefined),
   });
+
+  // A lista que a tela desenha é a concatenação das páginas, na ordem.
+  const posts = (data?.pages ?? []).flatMap((p) => p?.posts ?? []);
 
   /**
    * Recarrega o feed e zera o contador de "novos posts".
@@ -105,5 +121,12 @@ export function useFeed(userId) {
     }
   }, { events: ['INSERT', 'DELETE'] });
 
-  return { posts, carregando, novos, recarregar };
+  return {
+    posts, carregando, novos, recarregar,
+    // O "carregar mais" é do USUÁRIO, não automático: o pedido do dono é
+    // indicador discreto -> ele decide -> atualiza.
+    carregarMais: fetchNextPage,
+    temMais: !!hasNextPage,
+    carregandoMais: isFetchingNextPage,
+  };
 }

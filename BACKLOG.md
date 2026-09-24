@@ -1348,17 +1348,33 @@ live · teto removido → falhou no acúmulo · **filtro novo na consulta que o
 aviso ignora → falhou nomeando a coluna**. A terceira é a que impede a deriva
 de voltar.
 
-- ⬜ `[24/09]` 🟢 **`posts` acumula lixo de CI sem retenção.** *Medido: 404
-  linhas, **403 criadas por robô** ([e2e …] e [painel …]), todas soft-deletadas
-  e nenhuma jamais removida. É a mesma classe de "tabela append-only sem
-  retenção" que o §6.1 lista para `admin_logs` e `login_attempts` — e ninguém
-  tinha olhado `posts` sob essa luz. Apagar de verdade é destrutivo (🔴) e
-  depende dele.*
+### ✅ `[24/09]` As 410 linhas de lixo de CI — APAGADAS, e a torneira fechada
 
-- ⬜ `[24/09]` 🟢 **O feed trunca em 30 sem dizer.** *`fetchFeedPosts(30)` é
-  consulta única, sem paginação: **o post nº 31 é inalcançável** a não ser por
-  link direto. Hoje é invisível porque há zero posts vivos; com acervo vira "o
-  site perdeu meus posts antigos". Resolvido pela fase 2 do plano.*
+**Aprovado por ele depois de eu explicar.** Dimensionado em `ROLLBACK` antes
+(§5): 409 posts, autores **`claudestaff` e `claudetester`** (nenhuma conta de
+gente), 138 comentários em cascata, 0 curtidas, 0 mídia, e **zero** linhas de
+`lives_realizadas` apontando para eles — o registro de XP de live não foi
+tocado. `admin_logs` também não: a trilha registra o que aconteceu, e apagar o
+rastro seria mentir por omissão.
+
+**`[24/09]` Correção do que eu disse antes:** eu havia relatado "403 de robô e
+1 que parece de gente". Errado — o que sobrou era `[e2e-live …] live
+automatica`, que minha heurística não pegou porque procurava "automatico" no
+masculino. **Todos os 410 posts do banco eram de teste. Nenhum era de gente.**
+
+**A torneira:** `cleanup_old_data()` (cron diário das 4h, que já era o lugar da
+retenção das outras cinco tabelas) passou a apagar de verdade o post de teste
+já soft-deletado há mais de 2h. Não criei cron novo — seria a espiral do §9.8.
+
+**O padrão é apertado de propósito:** `^\[(e2e|painel|e2e-live) [0-9]{10,}\]`
+exige o RELÓGIO que o `marcaDeTeste` escreve. Provado em ROLLBACK:
+`[e2e coisas da vida] meu post` **não** casa, `[e2e 1790269082501] …` casa, e
+o post apagado há 10 minutos sobrevive.
+
+**Trava:** `retencaoDePostDeTeste.test.js` cruza `PREFIXOS_DE_TESTE` (JS) com o
+padrão do SQL — prefixo novo de um lado e não do outro reprova nomeando ele.
+Provada reinjetando os dois sentidos. `INV-CONTEUDO-005`.
+
 
 - ⬜ `[24/09]` 🟢 **O portão de "nenhum arquivo acima de 300 linhas" NÃO
   enxerga `e2e/` nem `scripts/`.** *Achado ao fazer o split: o
@@ -1370,6 +1386,56 @@ de voltar.
   ampliar a varredura (e aí os dois reprovam até serem divididos) ou dizer na
   mensagem QUAL pasta ele olhou. Prefiro ampliar — mas isso obriga a dividir os
   dois antes, então é trabalho, não ajuste.*
+
+### ✅ `[24/09]` FASE 2 — o feed pagina por cursor (keyset)
+
+**O defeito que morreu:** `fetchFeedPosts(30)` era consulta única. O post nº 31
+era inalcançável a não ser por link direto, e nada na tela dizia isso.
+
+**A forma foi ESCOLHIDA POR MEDIÇÃO, não por preferência.** Com 300 linhas
+semeadas, página do meio:
+
+| Forma | Plano | Linhas filtradas | Heap fetches |
+| --- | --- | --- | --- |
+| `ROW(created_at,id) < ROW(…)` | **Index Cond** | 0 | 20 |
+| `.or(lt, and(eq, id.lt))` | Filter | 100 | 239 |
+| `OR` só para o cursor nulo | Filter | 100 | 120 |
+
+A segunda é o que o PostgREST conseguiria expressar — e é o custo do `OFFSET`
+com outro nome. A terceira mostrou que **até o `OR` do "primeira página"**
+derruba o índice, e é por isso que a RPC tem dois `RETURN QUERY` separados.
+
+**Provado em ROLLBACK antes de aplicar:** 3 páginas somam 60 ids distintos com
+**`created_at` IDÊNTICO** nos 60 — o caso que o desempate por `id` existe para
+resolver — e zero repetidos, zero de fora. Faixa: `feed_pagina(5000)` devolve
+50, `feed_pagina(0)` devolve 1. Cursor pela metade **estoura** em vez de
+devolver vazio em silêncio. `anon`: negado.
+
+**O lote é 20, e o que sustenta esse número não é medição** — o feed tem zero
+posts vivos, então medir render por card não mediria nada. O que sustenta é
+mais modesto e verificável: **é menor que os 30 de antes**, então nenhuma
+página ficou mais pesada do que já era. A medição de verdade continua na fila.
+
+**Split junto:** `postService.js` passou de 300 linhas e o que define **a forma
+de um post** saiu para `src/services/postSelect.js`.
+
+**Trava:** `paginacaoDoFeed.test.js`, as três falhas mudas — RPC virando
+`DEFINER` (a RLS deixa de valer), os dois ramos virando um `OR` (fica certo e
+lento), e o lote passando do teto (o "carregar mais" some com posts por ler).
+As três provadas reinjetando. `INV-CONTEUDO-006`.
+
+- ⬜ `[24/09]` 🟢 **Medir o tamanho do lote do feed com dado de verdade.** *O 20
+  foi escolhido por ser menor que os 30 de antes, não por medição — o feed
+  está vazio. O que medir, com dado semeado: custo de render por card (com e
+  sem mídia, em aparelho lento), bytes por lote, e rolagem no celular. Muda um
+  número só (`TAMANHO_DO_LOTE`), e a trava garante que ele não passe do teto
+  da RPC.*
+
+- ⬜ `[24/09]` 🟢 **O E2E não exercita a paginação nem o aviso de novidade.**
+  *O `cicloDoPost` publica um post só, então nunca há segunda página; e o aviso
+  de novidade exigiria duas sessões simultâneas. Os dois caminhos estão
+  cobertos por trava de contrato e por prova em ROLLBACK, mas não por navegador
+  — e é honesto dizer qual é qual.*
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
@@ -2049,10 +2115,10 @@ de voltar.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->141<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.712<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->19<!--/n--> arq ·
-  <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->143<!--/n--> arq ·
+  <!--n:src.lib.linhas-->17.033<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->20<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.037<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
