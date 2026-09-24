@@ -171,7 +171,7 @@ Garantem que dois lugares do código continuem concordando.
 | `politica-de-conteudo.mjs` | **`[24/09]`** a CSP quebrando o site: 6 rotas num Chromium de verdade, mais sonda de `frame-src` e `connect-src` — e um **controle** que prova que o roteiro distingue política de falha de rede |
 | `portas-da-web.mjs` | a borda HTTP: cabeçalho por VALOR, vazamento, source map — **`[24/09]`** e as seis diretivas travadas da CSP, comparadas por igualdade |
 | `portas-fechadas.mjs` | as Edge Functions recusando quem não deve |
-| `fluxos.mjs` · `publicarPost.mjs` · `comentar.mjs` · `curtir.mjs` | publicar, comentar, **curtir** e o caminho autenticado. **`[24/09]`** o `curtir.mjs` (`INV-TELA-004`) confere depois de **recarregar**: a curtida é otimista, então a tela sozinha não é testemunha — e o descurtir é o lado que a RLS nega em 204 **sem erro** |
+| `fluxos.mjs` · `publicarPost.mjs` · `comentar.mjs` · `curtir.mjs` | publicar, comentar, **responder**, **curtir** e o caminho autenticado. **`[24/09]`** a resposta aninhada é conferida por **geometria** (`INV-CONTEUDO-003`): resposta que entra na lista sem recuo virou comentário solto, e isso não estoura nada. **`[24/09]`** o `curtir.mjs` (`INV-TELA-004`) confere depois de **recarregar**: a curtida é otimista, então a tela sozinha não é testemunha — e o descurtir é o lado que a RLS nega em 204 **sem erro** |
 | `lives.mjs` | criar, encerrar, reativar e apagar live, conferindo o ESTADO |
 | `painel-admin.mjs` | o painel da equipe |
 | `smoke.mjs` · `rotas.mjs` · `navegacao.mjs` | rotas de pé, âncora morta, botão voltar |

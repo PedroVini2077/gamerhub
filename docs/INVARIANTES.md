@@ -97,7 +97,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | --- | --- | --- | --- |
 | **INV-CONTEUDO-001** | Coluna de ciclo de vida é **derivada pelo servidor**, nunca declarada pelo cliente (`was_live`, `expires_at`, `live_ended_at`, `created_at`, `user_id`, `hidden_at`, `deleted_at`) | N2, N4 · SEC-027 | `src/lib/__tests__/colunasDerivadasDoPost.test.js` |
 | **INV-CONTEUDO-002** | Não se **interage** com conteúdo que não está no ar, e interação de post fora do ar não é **legível** por conta comum | N11, N12 · SEC-029 · SEC-041 | `xpSegueOQueEstaNoAr.test.js` · `colunasDerivadasDoPost.test.js` |
-| **INV-CONTEUDO-003** | Resposta pertence ao **mesmo post** do comentário pai | SEC-033 | `src/lib/__tests__/autorizacaoAntesDeExistencia.test.js` |
+| **INV-CONTEUDO-003** | Resposta pertence ao **mesmo post** do comentário pai — e **aparece como resposta**: recuada sob o pai, nunca como comentário solto | SEC-033 | `src/lib/__tests__/autorizacaoAntesDeExistencia.test.js` · **`[24/09]`** `e2e/comentar.mjs` (o lado visível, medido por geometria) |
 | **INV-CONTEUDO-004** | Escrever em conteúdo alheio respeita a **hierarquia de cargo** | SEC-009 | `src/lib/__tests__/hierarquiaNoConteudo.test.js` |
 
 ---

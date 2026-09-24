@@ -21,8 +21,10 @@
  * `pode_publicar()`), o trigger de moderação não derruba a escrita, e a lista
  * relê e mostra.
  *
- * **Não** prova a moderação do comentário nem a resposta aninhada — essas são
- * outras telas, e prometer cobertura que não existe é pior do que não ter (§1.1).
+ * **Não** prova a moderação do comentário — essa é outra tela, e prometer
+ * cobertura que não existe é pior do que não ter (§1.1). A **resposta
+ * aninhada** ficou fora daqui de 05/09 a 24/09; hoje ela tem passo próprio,
+ * logo abaixo (`responderEEsperarAninhada`).
  *
  * ── Limpeza ────────────────────────────────────────────────────────────────
  *
@@ -97,4 +99,78 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
     + '                                 Veja a evidencia salva: se o campo de\n'
     + '                                 texto nao esta na imagem, o problema e o\n'
     + '                                 botao que ABRE, nao o que envia.');
+}
+
+/**
+ * `[24/09]` RESPONDER a um comentário — e conferir que a resposta é RESPOSTA.
+ *
+ * ── Por que este passo existe ───────────────────────────────────────────────
+ *
+ * O cabeçalho acima dizia, em 05/09, que este roteiro **não** prova a resposta
+ * aninhada. Era verdade e continuou verdade por 19 dias. Segundo dos sete
+ * fluxos que o dono listou em 18/09.
+ *
+ * ── O que ele prova, e por que a indentação é uma assertiva de verdade ─────
+ *
+ * Resposta que aparece na lista como se fosse comentário solto é um bug que
+ * **nada acusa**: o `INSERT` passou, o texto está na tela, e só a estrutura
+ * está errada. A conferência é o `parent_id` ter chegado — e o sinal visível
+ * disso é a resposta nascer **recuada** em relação ao comentário pai.
+ *
+ * Comparado por GEOMETRIA (`boundingBox().x`), não pela classe do Tailwind: a
+ * classe é o mecanismo de hoje e renomeá-la não muda o que a pessoa vê. Medir
+ * o que aparece é o que o `conteudo-visivel.mjs` já faz pelo mesmo motivo.
+ *
+ * ── Envia por ENTER, e não é atalho ────────────────────────────────────────
+ *
+ * O botão do compositor de resposta tem o MESMO `aria-label` do compositor
+ * principal (`Enviar comentário`), então dentro do card os dois são ambíguos —
+ * e o Playwright recusa seletor ambíguo, ainda bem. O `CommentComposer` envia
+ * com Enter, então o caminho de teclado resolve a ambiguidade **e** cobre um
+ * caminho que nenhum roteiro exercitava.
+ *
+ * ── Limpeza ───────────────────────────────────────────────────────────────
+ *
+ * Nenhuma, e pelo mesmo motivo do comentário: cascata do post do teste.
+ */
+export async function responderEEsperarAninhada(page, { card, aoComentario, texto, timeout = 30000 }) {
+  const pai = card.getByText(aoComentario, { exact: false }).first();
+  await pai.waitFor({ state: 'visible', timeout: 15000 });
+
+  // O botão "Responder" do comentário PAI, e não o de um vizinho: subimos até
+  // o bloco do comentário antes de procurar.
+  const blocoDoPai = card.locator('div').filter({ has: pai }).last();
+  await blocoDoPai.getByRole('button', { name: /^Responder$/ }).click();
+
+  const campo = card.getByLabel(/Escreva uma resposta/i);
+  await campo.waitFor({ state: 'visible', timeout: 15000 });
+  await campo.fill(texto);
+  await campo.press('Enter');
+
+  const alvo = card.getByText(texto, { exact: false }).first();
+  await alvo.waitFor({ state: 'visible', timeout }).catch(() => {
+    throw new Error(
+      `a resposta "${texto}" nao apareceu em ${timeout / 1000}s.\n`
+      + '    O compositor de resposta envia com Enter (CommentComposer). Se o\n'
+      + '    campo aceitou o texto e nada aconteceu, o INSERT falhou: suspeitos\n'
+      + '    sao a policy `comments_insert` e a FK composta da SEC-033, que\n'
+      + '    exige que o comentario pai seja do MESMO post.');
+  });
+
+  // A prova de que é RESPOSTA, e não comentário solto com o mesmo texto.
+  const caixaPai = await pai.boundingBox();
+  const caixaResposta = await alvo.boundingBox();
+  if (!caixaPai || !caixaResposta) {
+    throw new Error('nao consegui medir a posicao do comentario ou da resposta na tela.');
+  }
+  if (caixaResposta.x <= caixaPai.x) {
+    throw new Error(
+      `a resposta apareceu SEM recuo (x=${caixaResposta.x} contra x=${caixaPai.x} do pai).\n`
+      + '    Ela entrou na lista como comentario solto. O texto estar na tela\n'
+      + '    nao prova que o `parent_id` chegou — e resposta que vira comentario\n'
+      + '    de primeiro nivel nao estoura, nao loga e nao quebra nada (§1.5).\n'
+      + '    Confira o `submitReply` do CommentCard e o `isReply` que aplica o\n'
+      + '    recuo.');
+  }
+  return alvo;
 }

@@ -1287,9 +1287,25 @@ M riscos · **N o que precisa da aprovação dele**.
   o cliente não reverte, e a tela apaga uma curtida que continua no banco.
   Nenhum status HTTP pega isso. Virou `INV-TELA-004`.
 
-  **Falta**, na ordem em que ele listou: live chat · respostas em
-  thread · atualização de perfil · notificações na tela · o comportamento
-  depois de ocultar (não só apagar) · usuário comum × moderador na mesma tela.
+  **`[24/09]` Feito: respostas em thread.** `responderEEsperarAninhada`, no
+  próprio `e2e/comentar.mjs` — o cabeçalho dele dizia desde 05/09 que a
+  resposta aninhada NÃO era coberta, e ficou verdade por 19 dias. A assertiva
+  que importa não é o texto aparecer: é o **recuo**. Resposta que entra na
+  lista como comentário solto tem o `INSERT` aprovado, o texto na tela e só a
+  estrutura errada — nada estoura. Medido por **geometria** (`boundingBox().x`)
+  e não pela classe do Tailwind, que é o mecanismo de hoje. Envia por **Enter**
+  porque os dois compositores têm o mesmo `aria-label` no botão, e o caminho de
+  teclado não era exercitado por roteiro nenhum. `INV-CONTEUDO-003`.
+
+  **Falta**, na ordem em que ele listou: live chat · atualização de perfil ·
+  notificações na tela · o comportamento depois de ocultar (não só apagar) ·
+  usuário comum × moderador na mesma tela.
+
+  **`[24/09]` Atenção ao tamanho:** o `e2e/fluxos.mjs` está em **283 linhas**
+  e o teto do §4 é 300. Os próximos fluxos não cabem lá dentro — o corte
+  natural é o bloco 4 (publicar → curtir → comentar → responder → apagar)
+  virar um roteiro próprio do ciclo do post, deixando o `fluxos.mjs` com login, rotas,
+  permissão e logout.
 
   **Por que não foi tudo agora:** cada fluxo desses escreve em produção (o CI
   usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
