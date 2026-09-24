@@ -229,8 +229,25 @@ com uma exceção a decidir no eixo News (ver N).
 
 ## H. SEO — os trade-offs, sem migrar de framework
 
-O site é SPA Vite+React. O `index.html` tem canonical, Open Graph e `WebSite`
-em JSON-LD, e o `MetaDaRota` reescreve por rota **depois que o JS roda**.
+> **`[24/09]` Correção do que eu mesmo escrevi.** A primeira versão desta seção
+> listava só o `index.html` e o `MetaDaRota`, e deixava passar a impressão de
+> que o SEO do projeto era um começo. **Não é** — conferido arquivo a arquivo
+> depois que o dono aprovou "SEO agora":
+
+| Já existe | Estado |
+| --- | --- |
+| `public/robots.txt` | escrito à mão, com as áreas de conta em `Disallow` e o motivo comentado no arquivo |
+| `public/sitemap.xml` | só as páginas públicas e indexáveis |
+| `MetaDaRota` | `<title>`, `description` e `canonical` por rota, com teste de contrato que reprova rota pública fora do catálogo |
+| `index.html` | canonical base, Open Graph, Twitter card, JSON-LD `WebSite` |
+| `llms.txt` | existe |
+
+E duas ausências são **deliberadas**, com o porquê escrito: `og:`/`twitter:` não
+mudam por rota (raspador de cartão social não executa JavaScript, então mexer
+neles no cliente criaria a ilusão de que mudam), e `Organization` ficou fora do
+JSON-LD porque o GamerHub é um projeto, não uma organização com endereço.
+
+O site é SPA Vite+React.
 
 | Caminho | Ganha | Custa |
 | --- | --- | --- |
@@ -239,9 +256,33 @@ em JSON-LD, e o `MetaDaRota` reescreve por rota **depois que o JS roda**.
 | **SSR** | sempre atual | muda a arquitetura do projeto inteiro |
 | **SSG por artigo** | ótimo para notícia, que é imutável depois de publicada | mesmo problema de rebuild do pré-render |
 
-**Recomendação:** não decidir agora. O SEO do News só importa quando existir
-artigo publicado, e a decisão fica mais barata depois que o modelo estiver de
-pé. Registrar como decisão pendente em vez de escolher no escuro.
+### `[24/09]` O que "SEO agora" significa DEPOIS de o News ser logado
+
+O dono decidiu duas coisas no mesmo pedido: **News só para quem tem conta** e
+**SEO agora**. Elas se cruzam, e é preciso dizer como — senão eu entregaria
+trabalho que não serve para nada.
+
+**Artigo atrás de login não é indexável, e não deve ser.** Se o News é logado,
+o `Article` schema, o pré-render e o SSG **perdem o objeto**: o rastreador
+encontraria uma parede de login, e forçar a indexação de conteúdo que exige
+conta é pedir para o Google mostrar uma página que o visitante não consegue
+ler. A tabela de trade-offs acima continua registrada — ela volta a valer **no
+dia em que existir artigo público**, e não antes.
+
+**O que "SEO agora" entrega, então, é a superfície pública que JÁ existe:**
+
+| Cabe agora | Não cabe agora |
+| --- | --- |
+| auditar `title`/`description`/canonical das 6 páginas públicas contra o que elas realmente são | `Article` schema |
+| conferir hierarquia de `<h1>`/`<h2>` — heading errado é o defeito mais comum e o mais invisível | pré-render / SSR / SSG |
+| `sitemap.xml` ganhar a landing de News **quando ela existir** | indexar `/noticias/:slug` |
+| `robots.txt` receber `/noticias` no `Disallow`, junto das outras áreas de conta | — |
+
+**Minha recomendação:** fazer a auditoria das seis páginas públicas agora (é
+barata e o portão de meta já existe para sustentá-la), e manter a decisão de
+pré-render/SSR **congelada** até haver conteúdo público. Não é adiar por
+preguiça: é não pagar complexidade por um benefício que a decisão do News
+acabou de tirar da mesa.
 
 ---
 
@@ -315,17 +356,180 @@ mesmo trabalho duas vezes.
 
 ---
 
-## N. O que precisa da aprovação dele
+---
 
-1. **A ordem das fases** — proponho paginação antes de categorias e busca
-   (item L). Contraria a ordem do prompt, e a porta foi aberta por ele.
-2. **O que o contador de novos posts deve dizer.** Três saídas: número exato
-   (exige consulta periódica — custo), número com teto (*"20+"*), ou só
-   *"há novidades"*. **Recomendo o teto**: entrega a informação útil sem
-   prometer um número que o sistema não mede bem.
-3. **News público ou logado.** Se público, `anon` ganha leitura de artigos
-   publicados — exceção à régua de 12/09, e é decisão dele, não minha. Se
-   logado, o eixo SEO inteiro deixa de fazer sentido e a fase some.
-4. **SEO: adiar ou decidir agora.** Recomendo adiar até existir artigo.
-5. **A retenção de `posts`** — o que fazer com as 403 linhas de CI. Apagar de
-   verdade é destrutivo (🔴) e não faço sem ele dizer.
+## O. `[24/09]` PERMISSÕES DA UI — o eixo que o último prompt somou
+
+> Medido, não lembrado: **112 usos** de `isAdmin`/`isOwner`/`isSuperAdmin` em
+> **30 arquivos**, mais literais de cargo (`role === 'admin'`) espalhados.
+
+### O que já existe, e é bom
+
+| Camada | O que faz |
+| --- | --- |
+| `lib/roles.js` | `ROLE_RANK` · `roleRank()` · `canModerate()` · `canDeleteContent()` · `canModerateLive()` · `suspendedUntil()`. **Espelha o banco de propósito** e diz isso no cabeçalho |
+| `hooks/useRole.js` | expõe `role`, `isUser`, `isAdmin`, `isSuperAdmin`, `isOwner`, `isBanned` |
+| banco | `role_rank()` · `is_staff()` · `is_super()` · `is_owner()` · `can_moderate_content()` · `exige_operador_ativo()` |
+
+**Nada disso deve ser recriado.** A hierarquia estrita (`>` e não `>=`) é a
+regra que impede admin de moderar admin, e o projeto já a quebrou **três vezes**
+escrevendo lista de papéis à mão. `canModerate(viewer, alvo)` é sobre
+**hierarquia entre duas pessoas** — uma capacidade booleana nunca vai expressar
+isso, e trocar uma pela outra seria destruir semântica.
+
+### O problema real, em números
+
+| Onde | Usos | O que costuma ser |
+| --- | --- | --- |
+| `pages/` | 6 arquivos | decidir se monta painel |
+| `hooks/` | 6 arquivos | decidir o que buscar |
+| `components/admin/` | 5 arquivos | mostrar/esconder controle |
+| `services/` | **3 arquivos** | **mudar a QUERY** — é a categoria diferente |
+| resto | 10 arquivos | badge, cor, rótulo — isso é IDENTIDADE, não capacidade |
+
+**Os três serviços são o achado que muda o desenho:**
+
+```js
+deleteComment(commentId, userId, isAdmin)   // if (!isAdmin) q = q.eq('user_id', userId)
+deleteMuralPost(id, userId, isAdmin)        // idem
+updatePost(postId, {...}, userId, isAdmin)  // idem
+```
+
+O `isAdmin` ali **não é autorização** — é um recorte de consulta. Sem ele, o
+autor comum mandaria um `DELETE` sem `user_id` e a RLS recusaria em silêncio
+(0 linhas, nenhum erro), que é a 2ª fonte de silêncio do `POSTURA.md`. Ou seja:
+o parâmetro existe para que a **mensagem de erro seja verdadeira**, não para
+liberar nada. Removê-lo "porque o banco decide" pioraria o produto.
+
+> Isto responde direto ao ponto 28 do prompt: os três **não** devem perder o
+> parâmetro. O que eles podem ganhar é um nome honesto — não é "sou admin", é
+> "posso apagar conteúdo alheio", e quem responde isso é a mesma
+> `canDeleteContent` que já existe.
+
+### O modelo proposto — `can()` por cima, nunca no lugar
+
+```
+    role (identidade)        ──>  badge, cor, rótulo, rank        mantém role
+    hierarquia (duas pessoas) ──>  canModerate(viewer, alvo)      mantém função
+    capacidade (uma pessoa)   ──>  can('publish_news')            NOVO
+```
+
+`can()` é **derivado** de `roleRank`, não uma segunda tabela de verdade — um
+mapa `capacidade → rank mínimo`, no mesmo arquivo que já guarda a hierarquia.
+Sem isso, seriam duas fontes divergindo (§4), que é exatamente como os ícones
+de log e os rótulos de cargo divergiram.
+
+E o hook não duplica a função: `usePermissions()` lê o papel do `useRole` e
+chama a **mesma** função pura que o código fora do React chama.
+
+### O mapa cargo → capacidade → tela → operação → proteção no banco
+
+Este é o item 7 do prompt, e a coluna que importa é a **última**: se ela
+estiver vazia, a capacidade é decoração.
+
+| Capacidade | Rank mínimo | Tela | Proteção REAL no banco |
+| --- | --- | --- | --- |
+| `moderate_content` | admin (2) | fila, denúncias, botão ocultar | policies de `posts`/`comments` + `can_moderate_content()` |
+| `ban_users` | admin (2) | painel de usuários | `ban_user` / `unban_user` (DEFINER, hierarquia estrita) |
+| `manage_roles` | super_admin (3) | cargos | `admin_set_role` · `owner_set_role` |
+| `view_audit_logs` | admin (2) | trilha | `owner_get_audit_logs` · policy de `admin_logs` |
+| `manage_site` | owner (4) | config | `owner_set_site_config` (lista fechada de chaves) |
+| `manage_live` | admin (2) **ou dono da live** | chat da live | policies de `live_chat*` — **é o caso que não cabe num rank só** |
+| `publish_news` | **a definir** | painel editorial | **não existe ainda** |
+
+**A linha `manage_live` é a prova de que `can()` sozinho não basta**: a regra é
+*"é staff **OU** é o dono desta live"*, e depende do objeto. Ela continua no
+`canModerateLive(isAdmin, live, user)`, e é por isso que o modelo mantém as
+três camadas em vez de achatar tudo em capacidades.
+
+### O que NÃO muda
+
+- `role` continua existindo para badge, cor, rótulo e rank (ponto 26 do prompt).
+- `roleRank`/`canModerate` continuam sendo a hierarquia (ponto 27).
+- Os três serviços mantêm o recorte de consulta (ponto 28, com o motivo acima).
+- **Nenhuma policy, RPC ou função SQL muda por causa disto.** `can()` é UI.
+
+### O teste de DOM (pontos 29 e 30)
+
+Já existe base: o `e2e/fluxos.mjs` percorre `ROTAS_PROIBIDAS_PARA_USUARIO` e
+falha se `MARCAS_DE_PAINEL` aparecer para conta comum. O que falta é a
+granularidade — **botão** administrativo dentro de tela compartilhada, e texto
+interno de staff. É ampliação do que existe, não invenção.
+
+> E vale registrar o que o próprio dono escreveu no prompt, porque é a parte
+> que costuma se perder: esconder botão **não é segurança**. O ganho de não
+> renderizar UI administrativa é não entregar ruído e detalhe interno a quem
+> não precisa — a autoridade continua sendo RLS, RPC e constraint.
+
+---
+
+## P. `[24/09]` O que NÃO precisa mudar
+
+O prompt pede isto explicitamente (item 5), e é a parte que evita refatoração
+por refatoração:
+
+| Continua como está | Por quê |
+| --- | --- |
+| `lib/roles.js` e `useRole` | são a hierarquia, e ela está certa e espelha o banco |
+| toda a camada de RLS/RPC | `can()` é UI; a autorização real não muda uma linha |
+| `attachEngagement` (2 consultas em lote) | já resolve o N+1; paginação não o afeta |
+| `recarregarAteAparecer` | trata leitura-após-escrita no pool, problema ortogonal |
+| `robots.txt`, `sitemap.xml`, `MetaDaRota` | já existem e estão corretos |
+| o cartão social estático no `index.html` | mudar por rota não chegaria ao WhatsApp |
+| `FeatureGate` | é o mecanismo de migração — será usado, não trocado |
+| `posts.category` **no banco** | sai da experiência; a coluna fica |
+
+---
+
+## Q. `[24/09]` Migrations previstas (item 14 do prompt)
+
+Nenhuma escrita ainda. O que o plano prevê, em ordem:
+
+| # | Migration | Natureza | Depende de |
+| --- | --- | --- | --- |
+| 1 | índice `(created_at DESC, id DESC)` parcial para o cursor | aditiva | — |
+| 2 | RPC de contagem de novos com **teto** | aditiva | decisão 2 (aprovada: `"20+"`) |
+| 3 | coluna gerada `busca tsvector` + índice GIN em `posts` | aditiva | fase da busca |
+| 4 | RPC de busca paginada | aditiva | 3 |
+| 5 | `news_sources` · `news_items_raw` · `news_articles` · `news_tags` · `news_article_tags` | aditivas, **com RLS na criação** | decisão 3 (aprovada: logado) |
+| 6 | RPCs editoriais (criar, editar, publicar, arquivar) | aditivas | 5 |
+
+**Nenhuma é destrutiva.** `DROP COLUMN category` não está nesta lista de
+propósito — ela só entra depois de um ciclo inteiro sem ninguém sentir falta,
+e com decisão dele.
+
+## N. Decisões — o que ele respondeu em `[24/09]`
+
+| # | A decisão | Resposta dele | Estado |
+| --- | --- | --- | --- |
+| 1 | ordem das fases (paginação antes de categorias e busca) | *"de resto pode fazer tudo"* | ✅ **aprovada** |
+| 2 | o que o contador deve dizer | **teto `"20+"`** | ✅ **aprovada** |
+| 3 | News público ou logado | **só logado** | ✅ **decidida** |
+| 4 | SEO agora ou depois | **agora** | ✅ **decidida, com ressalva** — ver H |
+| 5 | as 403 linhas de CI em `posts` | *"não entendi, me explica"* | ⏳ **pendente** |
+
+### O que a decisão 3 obriga, e ele viu antes de mim
+
+Palavras dele: *"como é nova feature, precisamos pôr isso lá na landing page"*.
+Está certo, e é consequência direta: **se o News exige conta, a landing é o
+único lugar onde alguém sem conta descobre que ele existe.** Sem isso, a
+funcionalidade nasce invisível para quem ainda não entrou — que é exatamente o
+público que ela deveria atrair.
+
+A landing já tem o mecanismo pronto: `components/landing/secoesDaLanding.js` é
+**fonte única** das cinco seções (faixa do topo, navegação lateral e rodapé
+leem dela). Somar News é uma entrada ali mais uma cena.
+
+**A ressalva, e ela é de honestidade, não de preguiça:** a entrada na landing
+só pode ir ao ar **junto** com o News. Anunciar antes é a landing prometendo
+uma área que não existe — o §1.5 pelo lado da interface, e o mesmo defeito que
+o `INV-TELA-001` existe para impedir. Por isso o item entra na **fase do News**,
+com a razão dele registrada.
+
+### A ressalva da decisão 4
+
+Está no item H: **artigo atrás de login não é indexável, e não deve ser.** "SEO
+agora" passa a significar auditar a superfície pública que já existe — e ela
+está em estado melhor do que a primeira versão desta análise dava a entender
+(`robots.txt`, `sitemap.xml` e `MetaDaRota` já existem, com teste de contrato).
+Pré-render, SSR e SSG ficam congelados até haver conteúdo público.

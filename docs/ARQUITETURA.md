@@ -208,6 +208,9 @@ src/
 │   │                      # aparecer. Leitura logo após escrita pode cair numa
 │   │                      # conexão do pool que ainda não vê a linha — o feed
 │   │                      # engolia o post e nada estourava (§1.5)
+│   ├── novidadeDoFeed.js  # `[24/09]` O aviso de "novas publicações": o que CONTA
+│   │                      # (só o que apareceria no feed — live e post oculto
+│   │                      # ficam de fora) e o teto de 20, decidido pelo dono
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
 │   ├── cenasDaLanding.js  # `[12/09]` As 7 artes das cenas da landing e o
 │   │                      # `srcset` de cada uma, numa fonte só. Os arquivos

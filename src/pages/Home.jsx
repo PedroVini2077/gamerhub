@@ -8,6 +8,7 @@ import { useFeed } from '../hooks/useFeed';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { Search, X, ArrowUp } from 'lucide-react';
 import MarcaGH from '../components/ui/MarcaGH';
+import { rotuloDeNovos } from '../lib/novidadeDoFeed';
 
 const CATEGORIES = ['todos', 'dica', 'curiosidade', 'news'];
 
@@ -84,7 +85,7 @@ export default function Home() {
           </div>
         </div>
 
-        {newPosts > 0 && (
+        {rotuloDeNovos(newPosts) && (
           <button
             // `() => reloadPosts()` e não `reloadPosts`: passar a função direto
             // entregaria o EVENTO de clique como `idEsperado`, e a recarga
@@ -94,7 +95,7 @@ export default function Home() {
             className="w-full card p-3 flex items-center justify-center gap-1.5 text-xs font-mono text-neon-green border-neon-green/30 hover:bg-neon-green/5 transition-colors animate-fade-up"
           >
             <ArrowUp size={13} />
-            {newPosts} novo{newPosts > 1 ? 's' : ''} post{newPosts > 1 ? 's' : ''} — clique para ver
+            {rotuloDeNovos(newPosts)}
           </button>
         )}
 

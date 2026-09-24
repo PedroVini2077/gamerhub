@@ -4,6 +4,7 @@ import { fetchFeedPosts } from '../services/postService';
 import { recarregarAteAparecer } from '../lib/recarregarAteAparecer';
 import { useRealtime } from './useRealtime';
 import { apenasData } from '../services/result';
+import { entraNoFeed, somarNovo } from '../lib/novidadeDoFeed';
 
 /**
  * `[24/09]` O estado do Feed — busca, recarga e detecção de novidade.
@@ -89,9 +90,14 @@ export function useFeed(userId) {
   useRealtime('posts', (payload) => {
     if (!isSuccess) return;
     if (payload.eventType === 'INSERT') {
+      // `[24/09]` Só conta o que APARECERIA no feed. Antes contava todo
+      // INSERT, e abrir uma live somava "1 nova publicação" para todo mundo —
+      // com a recarga não trazendo nada, porque a consulta exclui live. O
+      // porquê inteiro e o teto estão em `lib/novidadeDoFeed.js`.
+      if (!entraNoFeed(payload.new)) return;
       if (payload.new?.user_id === userRef.current) {
         setTimeout(() => recarregar(), 5000);
-      } else setNovos(n => n + 1);
+      } else setNovos(somarNovo);
     }
     if (payload.eventType === 'DELETE') {
       clearTimeout(debounceRef.current);
