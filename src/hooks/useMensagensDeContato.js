@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from './useAuth.jsx';
+import { useApenasAUltimaResposta } from './useApenasAUltimaResposta';
 import {
   listarMensagensDeContato, marcarMensagemDeContato, responderMensagemDeContato,
 } from '../services/contatoService';
@@ -19,7 +20,13 @@ export function useMensagensDeContato() {
   const [carregando, setCarregando] = useState(false);
   const [filtro, setFiltro] = useState('new');
 
+  // `[24/09]` `carregar` roda por troca de filtro E depois de marcar/responder.
+  // Duas em voo e a velha sobrescreve — aqui o piso de 500 ms abaixo ALARGA a
+  // janela de propósito, então a corrida é mais provável do que parece.
+  const novoPedido = useApenasAUltimaResposta();
+
   const carregar = useCallback(async (status = filtro) => {
+    const aindaVale = novoPedido();
     setCarregando(true);
     // O piso de 500 ms do §4: sem ele o giro do ícone pisca e a pessoa não tem
     // como saber se o botão funcionou.
@@ -27,13 +34,14 @@ export function useMensagensDeContato() {
       listarMensagensDeContato({ status: status === 'todos' ? null : status }),
       new Promise(r => setTimeout(r, 500)),
     ]);
+    if (!aindaVale()) return;
     setCarregando(false);
     if (error) {
       toast.error('Não foi possível carregar as mensagens: ' + error.message);
       return;
     }
     setMensagens(data);
-  }, [filtro]);
+  }, [filtro, novoPedido]);
 
   const marcar = useCallback(async (id, status) => {
     const { error } = await marcarMensagemDeContato(id, status, {

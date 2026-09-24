@@ -85,6 +85,10 @@ src/
 │   ├── usePresenca.js     # Canal de presence: quantos estão online agora
 │   ├── useRole.js         # Deriva flags isOwner/isAdmin/isSuperAdmin/isBanned
 │   ├── useRealtime.js     # Helper genérico de subscription Postgres changes
+│   ├── useApenasAUltimaResposta.js # `[24/09]` Guarda de corrida: descarta resposta
+│   │                      # de busca já superada por outra. Sem ela, a busca
+│   │                      # VELHA chega por último e apaga o que acabou de
+│   │                      # aparecer — foi o comentário sumindo da tela
 │   ├── useCommentLike.js  # Estado de like de comentário
 │   ├── useBlockedWords.js # Cache da wordlist + checkContent() (filtro de moderação)
 │   ├── useAdminData.js    # Dados do painel admin, paginados em blocos (posts e

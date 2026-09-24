@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { fetchComments, fetchCommentCount, addComment } from '../../services/commentService';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useBlockedWords } from '../../hooks/useBlockedWords';
+import { useApenasAUltimaResposta } from '../../hooks/useApenasAUltimaResposta';
 import { moderateText } from '../../services/moderationAiService';
 import { suspendedUntil } from '../../lib/roles';
 import { logAudit } from '../../lib/auditLog';
@@ -26,13 +27,22 @@ const CommentSection = memo(function CommentSection({ postId, registerRefresh, i
     setCount(c);
   }
 
+  // `[24/09]` Duas buscas disputam o mesmo `setComments`: a que abre a seção e
+  // a que roda depois de comentar. Se a primeira pegar uma conexão lenta e
+  // responder POR ÚLTIMO, ela devolve a lista de ANTES do comentário e apaga o
+  // que acabou de aparecer — medido num E2E, com o comentário vivo no banco,
+  // sem erro e sem log. O porquê inteiro está no hook.
+  const novoPedido = useApenasAUltimaResposta();
+
   // Estável por `postId`: entra nas deps dos efeitos abaixo sem provocar
   // busca em loop, e é a mesma referência entregue ao `registerRefresh`.
   const fetchCommentList = useCallback(async () => {
+    const aindaVale = novoPedido();
     const { data } = await fetchComments(postId);
+    if (!aindaVale()) return;
     setComments(data);
     setCount(data.length);
-  }, [postId]);
+  }, [postId, novoPedido]);
 
   useEffect(() => {
     if (typeof initialCount === 'number') setCount(initialCount);
