@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**52 itens abertos** (+ 1 ideia sem compromisso)
+**51 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1224,6 +1224,47 @@ Rotas: `/noticias`, `/noticias/:slug`, `/busca?q=`.
 - **SEO:** o site é SPA Vite+React. Apresentar os trade-offs (SPA · pré-render ·
   SSR · SSG) **sem migrar de framework** por conta própria.
 
+### `[24/09]` TERCEIRO PROMPT — permissões da UI, DOM administrativo e o resto
+
+> **Gravado, e a Fase 0 dele também está feita** — a parte nova virou as seções
+> **O**, **P** e **Q** do [`PLANO-FEED-BUSCA-NEWS.md`](docs/PLANO-FEED-BUSCA-NEWS.md).
+> Ele repete e amplia os dois anteriores; aqui fica só **o que ele somou**.
+
+**PARTE VI — permissões da UI.** Estudar `can('manage_users')`,
+`can('ban_users')`, `can('publish_news')`… em vez de `isAdmin` espalhado.
+Regras dele, na letra:
+
+- **`can()` NÃO é a segurança** — a autoridade continua em RLS, RPC e
+  constraint. *"O frontend pode ser manipulado."*
+- **não converter cargo em permissão cegamente** — mapear
+  `cargo → capacidade → componente → ação → regra do banco` antes.
+- **não eliminar `role`** — badge, rank e hierarquia continuam sendo sobre
+  identidade. O alvo é *"não usar role como mecanismo espalhado de decisão de
+  capacidade"*.
+- **não achatar a hierarquia** — `roleRank()` e `canModerate(viewer, alvo)`
+  continuam; a pergunta é como convivem com `can()`.
+- **auditar os serviços que recebem `isAdmin`** — sem remover cegamente.
+
+**PARTE VI (29–30) — DOM administrativo.** Não entregar a usuário comum UI de
+staff que só seria escondida por CSS. E ele mesmo escreve a ressalva: *"não
+confundir isso com segurança"*.
+
+**PARTE VII — permissões editoriais** (`create_news`, `publish_news`,
+`archive_news`, `manage_news_sources`…), sem assumir que todo admin tem todas.
+
+**PARTE VIII — banco.** Toda tabela nova nasce com RLS, policy, grant e modelo
+de acesso explícito. `SECURITY INVOKER` por padrão; `DEFINER` só quando
+necessário, com `search_path` e `EXECUTE` restrito.
+
+**PARTES IX–XIV** — SEO, performance, testes, migração aditiva, documentação de
+decisões e um plano de 14 fases.
+
+**A regra final dele:** depois da análise, **PARE**. E ao implementar: uma fase
+→ testar → auditar → regressão → segurança → build → documentar → apresentar →
+só então continuar.
+
+---
+
 ### `[24/09]` COMPLEMENTO — o comportamento de novas publicações no Feed
 
 > Segundo prompt dele, para somar ao bloco acima. **Também não iniciado.**
@@ -1285,19 +1326,27 @@ M riscos · **N o que precisa da aprovação dele**.
 > tarefas da feature — por isso entram como itens próprios e vêm antes do bloco
 > (§0: bug na frente de feature).
 
-- ⬜ `[24/09]` 🟡 **O contador de "novos posts" promete o que o feed não
-  mostra.** *O handler de realtime conta **todo** INSERT em `posts`; a consulta
-  do feed exclui `live_kind IS NOT NULL`. Alguém abrir uma live incrementa
-  "1 novo post" para todo mundo com a aba aberta — e o clique não traz nada.
-  Mesma classe para post que a RLS esconde de quem está olhando. O conserto é
-  o handler aplicar o mesmo recorte da consulta.*
+### ✅ `[24/09]` Os dois defeitos do contador de novidade — FEITOS
 
-- ⬜ `[24/09]` 🟡 **O contador conta EVENTOS, não posts.** *Quem fica com a aba
-  aberta duas horas acumula um número que não corresponde a nada no banco; quem
-  acabou de entrar vê zero com 200 posts novos desde a última visita. O pedido
-  do dono — "existem 500 novos posts" — presume um número que hoje **não é
-  medido**. Ele é contado na memória da aba. Decisão de produto envolvida: ver
-  o item N.2 do `PLANO-FEED-BUSCA-NEWS.md`.*
+**1. Ele prometia post que a recarga não trazia.** O handler de realtime
+contava TODO `INSERT` em `posts`; a consulta do feed exclui
+`live_kind IS NOT NULL`. Abrir uma live somava "1 nova publicação" para todo
+mundo com a aba aberta, e o clique não trazia nada. Conferido no banco: o
+`checar_palavras_bloqueadas` **escreve `hidden_at` no próprio INSERT**, então
+post que nasce oculto tinha o mesmo efeito — não era hipótese.
+
+**2. Ele contava EVENTOS, não posts.** Teto de **20** (`"20+"`), decisão dele
+em 24/09 entre três saídas: número exato (exigiria consulta periódica por
+usuário — custo), teto, ou só "há novidades".
+
+As regras saíram para `src/lib/novidadeDoFeed.js`, puro, porque a concordância
+com o `fetchFeedPosts` é **deriva entre dois lugares** (FASE 4 do §6) e precisa
+de teste de contrato. `INV-TELA-006`.
+
+**Provado reinjetando:** `entraNoFeed` sem `live_kind` → falhou no caso da
+live · teto removido → falhou no acúmulo · **filtro novo na consulta que o
+aviso ignora → falhou nomeando a coluna**. A terceira é a que impede a deriva
+de voltar.
 
 - ⬜ `[24/09]` 🟢 **`posts` acumula lixo de CI sem retenção.** *Medido: 404
   linhas, **403 criadas por robô** ([e2e …] e [painel …]), todas soft-deletadas
@@ -1311,19 +1360,42 @@ M riscos · **N o que precisa da aprovação dele**.
   link direto. Hoje é invisível porque há zero posts vivos; com acervo vira "o
   site perdeu meus posts antigos". Resolvido pela fase 2 do plano.*
 
+- ⬜ `[24/09]` 🟢 **O portão de "nenhum arquivo acima de 300 linhas" NÃO
+  enxerga `e2e/` nem `scripts/`.** *Achado ao fazer o split: o
+  `fim-de-sessao.mjs` varre só `src/` e ainda exclui `__tests__`. Hoje há
+  **dois arquivos acima do teto fora do alcance dele** — `e2e/portas-do-banco.mjs`
+  (608 linhas) e `e2e/painel-admin.mjs` (384). O portão não está errado, está
+  **incompleto**, e o efeito é o mesmo das cotas que estouram em silêncio: ele
+  imprime "OK nenhum arquivo acima de 300" e a frase não é verdade. Duas saídas:
+  ampliar a varredura (e aí os dois reprovam até serem divididos) ou dizer na
+  mensagem QUAL pasta ele olhou. Prefiro ampliar — mas isso obriga a dividir os
+  dois antes, então é trabalho, não ajuste.*
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 - ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
   *Detalhe e recomendação em cada uma no item N de
   [`docs/PLANO-FEED-BUSCA-NEWS.md`](docs/PLANO-FEED-BUSCA-NEWS.md). Resumo:*
 
-  | # | A decisão | Minha recomendação |
+  | # | A decisão | Resposta dele em `[24/09]` |
   | --- | --- | --- |
-  | 1 | **Ordem das fases** — proponho paginação ANTES de tirar categorias e trocar a busca | fazer a paginação primeiro: ela é o alicerce das outras duas, e mexer numa tela que vai ser reescrita é trabalho em dobro |
-  | 2 | **O que o contador de novos posts deve dizer** | número **com teto** (`"20+"`): entrega o útil sem prometer um número que o sistema não mede bem |
-  | 3 | **News público ou logado** | é a **primeira** área pública com conteúdo do site; se público, `anon` ganha leitura de artigos publicados — exceção à régua de 12/09, e é decisão sua |
-  | 4 | **SEO: decidir agora ou adiar** | adiar até existir artigo publicado; decidir no escuro custa mais |
-  | 5 | **Retenção de `posts`** — o que fazer com as 403 linhas de CI | apagar de verdade é 🔴 e não faço sem você dizer |
+  | 1 | ordem das fases (paginação primeiro) | ✅ aprovada |
+  | 2 | o que o contador deve dizer | ✅ **teto `"20+"`** |
+  | 3 | News público ou logado | ✅ **só logado** — e por isso ele **tem de ser anunciado na landing**, senão nasce invisível para quem não tem conta |
+  | 4 | SEO agora ou depois | ✅ **agora**, com a ressalva do item H: artigo logado não é indexável, então "agora" é a superfície pública que já existe |
+  | 5 | as 403 linhas de CI em `posts` | ⏳ **pendente** — ele pediu explicação, está abaixo |
+
+  **`[24/09]` A decisão 5, explicada, porque ele pediu:** cada execução do E2E
+  no CI **publica um post de verdade** na produção (as contas de teste são
+  reais — é isso que torna o teste honesto) e o apaga no fim. O apagar do site
+  é **soft**: a linha fica no banco com `deleted_at` preenchido, invisível no
+  feed e visível para a equipe no painel. São **403 linhas** assim, de agosto
+  para cá, e elas nunca saem. Não quebram nada e não são segredo — é
+  desperdício e ruído: a tabela `posts` tem 404 linhas e **403 são cadáver de
+  robô**, o que atrapalha qualquer medição futura do feed. **Minha
+  recomendação:** apagar de verdade só as que têm prefixo de teste
+  (`[e2e `/`[painel `) e criar uma retenção automática para as próximas —
+  mas `DELETE` é irreversível (🔴), então não faço sem você dizer.
 
 - ⬜ `[24/09]` 🟠 **O painel do Fundador autoriza por LITERAL, e as duas saídas
   têm risco.** *Achado na parte 1 da auditoria (SEC-051). **Não é
@@ -1385,11 +1457,10 @@ M riscos · **N o que precisa da aprovação dele**.
   notificações na tela · o comportamento depois de ocultar (não só apagar) ·
   usuário comum × moderador na mesma tela.
 
-  **`[24/09]` Atenção ao tamanho:** o `e2e/fluxos.mjs` está em **288 linhas**
-  e o teto do §4 é 300. Os próximos fluxos não cabem lá dentro — o corte
-  natural é o bloco 4 (publicar → curtir → comentar → responder → apagar)
-  virar um roteiro próprio do ciclo do post, deixando o `fluxos.mjs` com login, rotas,
-  permissão e logout.
+  **`[24/09]` O corte foi FEITO:** o bloco do ciclo do post virou
+  `e2e/cicloDoPost.mjs` (148 linhas) e o `fluxos.mjs` caiu de 288 para **189**.
+  Ele ficou com a SESSÃO — entrar, alcançar cada rota, ser negado no painel,
+  sair — e os fluxos que faltam cabem no roteiro do conteúdo.
 
   **Por que não foi tudo agora:** cada fluxo desses escreve em produção (o CI
   usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
@@ -1978,8 +2049,8 @@ M riscos · **N o que precisa da aprovação dele**.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->139<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.489<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->141<!--/n--> arq ·
+  <!--n:src.lib.linhas-->16.712<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

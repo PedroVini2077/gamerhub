@@ -85,6 +85,11 @@ src/
 │   ├── usePresenca.js     # Canal de presence: quantos estão online agora
 │   ├── useRole.js         # Deriva flags isOwner/isAdmin/isSuperAdmin/isBanned
 │   ├── useRealtime.js     # Helper genérico de subscription Postgres changes
+│   ├── useFeed.js         # `[24/09]` O estado do Feed: a consulta (limit 30, sem
+│   │                      # paginação AINDA), a recarga que confere se o post já
+│   │                      # apareceu, e o contador de novidade por realtime.
+│   │                      # Saiu do `Home.jsx` porque a paginação do bloco do
+│   │                      # Feed entra aqui e não cabe numa tela que desenha
 │   ├── useApenasAUltimaResposta.js # `[24/09]` Guarda de corrida: descarta resposta
 │   │                      # de busca já superada por outra. Sem ela, a busca
 │   │                      # VELHA chega por último e apaga o que acabou de
@@ -203,6 +208,9 @@ src/
 │   │                      # aparecer. Leitura logo após escrita pode cair numa
 │   │                      # conexão do pool que ainda não vê a linha — o feed
 │   │                      # engolia o post e nada estourava (§1.5)
+│   ├── novidadeDoFeed.js  # `[24/09]` O aviso de "novas publicações": o que CONTA
+│   │                      # (só o que apareceria no feed — live e post oculto
+│   │                      # ficam de fora) e o teto de 20, decidido pelo dono
 │   ├── notifMeta.js       # Ícone e cor de cada tipo de notificação do sino
 │   ├── cenasDaLanding.js  # `[12/09]` As 7 artes das cenas da landing e o
 │   │                      # `srcset` de cada uma, numa fonte só. Os arquivos
@@ -699,7 +707,7 @@ src/
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
 | `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, **segredos vazados**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
 | `stryker.config.json` | Configuração do teste de mutação (`npm run mutacao`). Escopo deliberadamente pequeno: só a lógica pura de `src/lib/` |
-| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados (publicar, comentar e **curtir** — `curtir.mjs`, `[24/09]`, que confere a curtida DEPOIS de recarregar, porque a tela é otimista e mente por desenho entre o clique e a resposta), painel de admin, portas das Edge Functions, **portas do banco** (`portas-do-banco.mjs`, o único que fala com o Postgres), **portas da web** (`portas-da-web.mjs`, `[19/09]` — a borda HTTP: cabeçalho de segurança por VALOR, **as seis diretivas travadas da CSP** (`[24/09]`) e vazamento de arquivo; o único que bate na PRODUÇÃO), **a CSP num navegador** (`politica-de-conteudo.mjs`, `[24/09]` — que ela não quebra a tela, enquanto o de cima confere que ela continua no ar), e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
+| `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados (publicar, comentar e **curtir** — `curtir.mjs`, `[24/09]`, que confere a curtida DEPOIS de recarregar, porque a tela é otimista e mente por desenho entre o clique e a resposta), painel de admin, portas das Edge Functions, **portas do banco** (`portas-do-banco.mjs`, o único que fala com o Postgres), **o ciclo de vida de um post** (`cicloDoPost.mjs`, `[24/09]` — publicar, curtir, comentar, responder, apagar e varrer sobras; saiu do `fluxos.mjs`, que ficou com a SESSÃO), **portas da web** (`portas-da-web.mjs`, `[19/09]` — a borda HTTP: cabeçalho de segurança por VALOR, **as seis diretivas travadas da CSP** (`[24/09]`) e vazamento de arquivo; o único que bate na PRODUÇÃO), **a CSP num navegador** (`politica-de-conteudo.mjs`, `[24/09]` — que ela não quebra a tela, enquanto o de cima confere que ela continua no ar), e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
 | `.claude/` | `settings.json` com o hook `SessionStart` — o gatilho que injeta o estado real do projeto no começo de toda sessão |
 | `docs/regras/` | As seções grandes do `CLAUDE.md`, puxadas por `@import` — valem como se estivessem lá dentro |
 | `db/` | Scripts SQL avulsos para o SQL Editor e os relatórios de auditoria (`AAAA-MM-DD-*.md`). Não são migrations |

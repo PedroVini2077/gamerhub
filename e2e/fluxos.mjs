@@ -22,11 +22,8 @@
  * Exige E2E_EMAIL e E2E_PASSWORD (conta comum, nunca de staff — ver passo 3).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
-import {
-  publicarEEsperarNoFeed, marcaDeTeste, REGEX_DE_SOBRA, sobrasAntigas, IDADE_DE_SOBRA_MS,
-} from './publicarPost.mjs';
-import { comentarEEsperarNaLista, responderEEsperarAninhada } from './comentar.mjs';
-import { curtirEConferirPersistencia } from './curtir.mjs';
+import { marcaDeTeste } from './publicarPost.mjs';
+import { percorrerCicloDoPost } from './cicloDoPost.mjs';
 import { conferirPortaoDeEntrada } from './portaoDeEntrada.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
@@ -37,10 +34,6 @@ const SENHA = process.env.E2E_PASSWORD;
 // Título único por execução: nunca mexe num post que não seja o desta rodada,
 // mesmo se uma execução anterior tiver morrido no meio.
 const MARCA  = marcaDeTeste('[e2e ');
-const TITULO = `${MARCA} post automatico`;
-const CORPO  = 'Publicado pelo teste automatizado. Se este post ficou no ar, o E2E falhou na limpeza.';
-const COMENTARIO = `${MARCA} comentario automatico`;
-const RESPOSTA   = `${MARCA} resposta automatica`;
 
 if (!EMAIL || !SENHA) {
   console.error('\n  E2E_EMAIL e E2E_PASSWORD nao definidos.');
@@ -166,105 +159,13 @@ try {
   }
   ok(`fundo do site logado  ${pecasNaTela.dentro}/${pecasNaTela.total} pecas na tela`);
 
-  // ── 4. Publicar → conferir → apagar ─────────────────────────────────────
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  // O post aparecendo no feed prova a ida INTEIRA: o INSERT passou pela RLS,
-  // os triggers rodaram sem estourar, e o feed releu.
+  // ── 4. O ciclo de vida de um post ───────────────────────────────────────
   //
-  // `[02/09]` O passo virou helper compartilhado com o `painel-admin.mjs` — as
-  // duas copias eram identicas, e as duas precisavam da mesma melhoria: dizer
-  // O QUE A TELA DISSE quando o post nao aparece.
-  await publicarEEsperarNoFeed(page, { marca: MARCA, titulo: TITULO, corpo: CORPO });
-  const tituloNoFeed = page.locator('h2', { hasText: MARCA });
-  ok('post publicado e visível no feed');
-
-  // `.card` é a raiz do PostCard: garante que o botão é o do post desta
-  // execução, nunca o de um vizinho.
-  const card = page.locator('.card').filter({ has: tituloNoFeed });
-
-  // ── 4a. Curtir → recarregar → descurtir → recarregar ────────────────────
-  //
-  // `[24/09]` Primeiro dos fluxos que ele listou em 18/09. A curtida e
-  // otimista, entao a tela mente por design entre o clique e a resposta — o
-  // que prova alguma coisa e o RELOAD. O porque de cada passo esta no
-  // `curtir.mjs`, inclusive por que o DESCURTIR e o lado perigoso.
-  await curtirEConferirPersistencia(page, { base: BASE, marca: MARCA });
-  ok('curtida gravada e removida de verdade (conferido depois de recarregar)');
-
-  // ── 4b. Comentar no próprio post ────────────────────────────────────────
-  //
-  // `[05/09]` Este passo nasceu de um número, não de um bug relatado: a
-  // produção tinha 150 posts e ZERO comentários, e NENHUM roteiro comentava.
-  // "Comentar funciona" era suposição minha — e as duas piores falhas deste
-  // projeto (moderação de comentário quebrada por meses, IA falhando em 26 de
-  // 26) eram exatamente isto: caminho sem usuário e sem teste.
-  //
-  // Vai no próprio post do teste porque o comentário some junto com ele:
-  // `comments_post_id_fkey` é ON DELETE CASCADE, verificado no banco. Comentar
-  // no post de outra pessoa deixaria lixo que o passo 4d não apanha.
-  await comentarEEsperarNaLista(page, { card, texto: COMENTARIO });
-  ok('comentário publicado e visível na lista');
-
-  // ── 4c. Responder ao próprio comentário ─────────────────────────────────
-  //
-  // `[24/09]` Segundo dos fluxos de 18/09. O cabeçalho do `comentar.mjs` dizia
-  // desde 05/09 que a resposta aninhada NÃO era coberta — era verdade, e ficou
-  // verdade por 19 dias. A assertiva que importa é o RECUO: resposta que entra
-  // na lista como comentário solto não estoura nada.
-  //
-  // ANTES de apagar o post, e isso não é detalhe: a primeira versão deste
-  // passo ficou DEPOIS do `Deletar post` e o CI reprovou no passo 22 — sem
-  // post, não há comentário para responder. Ancorar no marcador errado é o
-  // tipo de erro que só o roteiro rodando de verdade mostra.
-  await responderEEsperarAninhada(page, { card, aoComentario: COMENTARIO, texto: RESPOSTA });
-  ok('resposta aninhada publicada e recuada sob o comentário pai');
-
-  await card.getByRole('button', { name: 'Deletar post' }).click();
-  await page.getByRole('button', { name: /^Deletar$/ }).click();
-
-  // A exclusão só acontece quando a contagem de 5s zera (janela pra cancelar).
-  // A conta de teste é `role = 'user'`: para ela o post soft-deletado some do
-  // feed. Para admin ele continuaria visível com o aviso "Post excluído" — por
-  // isso o passo 3 existe e por isso o E2E não pode rodar com conta de staff.
-  await tituloNoFeed.first().waitFor({ state: 'detached', timeout: 30000 });
-  ok('post apagado e fora do feed depois da contagem');
-
-  // ── 4d. NENHUM post de teste sobrando de execuções anteriores ────────────
-  //
-  // `[01/09]` Padrão de falha meu, catalogado: "crio dado de teste que confunde
-  // o dono". Já aconteceu duas vezes — uma fila de moderação com itens falsos
-  // marcados como se a IA tivesse detectado, e um post de e2e que ficou no ar
-  // porque o teste morreu antes do passo que apaga.
-  //
-  // Até agora a única defesa era eu lembrar de conferir. Isto passa a olhar
-  // sozinho: se o feed tiver marca `[e2e` que não seja a desta execução, é
-  // lixo de uma rodada que quebrou no meio.
-  //
-  // Por que aqui e não num script próprio: só uma conta LOGADA enxerga o feed
-  // (o anônimo leva 401), e este é o único teste que tem sessão.
-  // `[11/09]` O filtro era `/\[e2e /` escrito à mão, e por isso NÃO enxergava
-  // o `[painel `. Um post do teste de painel ficou visível no site desde 10/09
-  // com este detector ligado e verde. Agora o padrão vem de
-  // `PREFIXOS_DE_TESTE`, que é a lista única.
-  //
-  // `[11/09]` E o filtro passou a ser por IDADE, porque ver os dois prefixos
-  // sozinho produziu alarme falso: o job `painel de admin` roda EM PARALELO
-  // contra o mesmo banco, e o post dele estava no feed legitimamente. O
-  // porquê do corte de 30 min está em `IDADE_DE_SOBRA_MS`.
-  const titulos = await main.locator('h2').filter({ hasText: REGEX_DE_SOBRA })
-    .filter({ hasNotText: MARCA }).allInnerTexts();
-  const sobras = sobrasAntigas(titulos);
-  if (sobras.length > 0) {
-    throw new Error(
-      `${sobras.length} post(s) de teste sobrando no feed de execucoes anteriores:\n`
-      + sobras.map((t) => `    ${t}`).join('\n') + '\n'
-      + '  Alguma rodada morreu antes do passo que apaga, e o lixo ficou no ar\n'
-      + '  para quem usa o site. Apague pelo painel admin (aba Posts) e veja\n'
-      + '  POR QUE aquela rodada quebrou — o post sobrando e o sintoma, nao a causa.\n'
-      + `  (So conta o que tem mais de ${IDADE_DE_SOBRA_MS / 60000} min: o job do\n`
-      + '   painel roda em paralelo, e o post DELE nao e sobra.)');
-  }
-  ok('nenhum post de teste sobrando de execuções anteriores');
+  // `[24/09]` Saiu para o `cicloDoPost.mjs`: publicar, curtir, comentar,
+  // responder, apagar e varrer sobras. Este roteiro ficou com a SESSÃO —
+  // entrar, alcançar cada rota, ser negado no painel e sair — e os próximos
+  // fluxos de conteúdo que faltam cabem lá, não aqui (§4).
+  await percorrerCicloDoPost(page, { base: BASE, marca: MARCA, ok, main });
 
   // ── 5. Sair ─────────────────────────────────────────────────────────────
   await page.getByRole('button', { name: /^Sair$/i }).click();

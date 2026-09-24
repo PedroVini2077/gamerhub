@@ -135,6 +135,7 @@ Garantem que dois lugares do código continuem concordando.
 | `apagarConfereLinhas.test.js` | escrita que pode ser negada sem conferir linhas | `INV-CONTRATO-006` |
 | `portasDaWebNaoEsvaziam.test.js` | as **duas** listas do portão da borda sendo esvaziadas — cabeçalhos e diretivas travadas da CSP | `INV-PORTA-004` · `INV-PORTA-008` |
 | `useApenasAUltimaResposta.test.js` | **`[24/09]`** a guarda de corrida em si: pedido velho se declarando válido, identidade instável (que reassinaria realtime em laço) e contador vazando entre montagens | `INV-TELA-005` |
+| `novidadeDoFeed.test.js` | **`[24/09]`** o aviso de novidade prometendo post que a recarga não traz, e o contador sem teto. O caso de CONTRATO **lê o `fetchFeedPosts`**: filtro novo na consulta que o aviso ignore reprova nomeando a coluna | `INV-TELA-006` |
 | `comentarioNaoSomeDepoisDeAparecer.test.jsx` | **`[24/09]`** o bug real numa tela: a busca disparada ao abrir a seção respondendo depois da disparada ao enviar, e apagando o comentário recém-criado | `INV-TELA-005` |
 | `buscaConcorrenteTemGuarda.test.js` | **`[24/09]`** a guarda sendo removida de uma das buscas conhecidas — e a marca `novoPedido()` migrando para DEPOIS do `await`, que a deixaria verde sem proteger nada | `INV-TELA-005` |
 | `htmlNaoVazaProsa.test.js` | **`[24/09]`** comentário de implementação voltando ao HTML que o visitante baixa — e, do outro lado, a prosa sendo **apagada** em vez de mudada de lugar | `INV-PORTA-009` |
