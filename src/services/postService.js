@@ -140,13 +140,17 @@ export async function fetchActiveLives() {
 
 // ─── Post CRUD ───────────────────────────────────────────────────────────────
 
-export async function createPost({ userId, title, content, category, audioUrl, audioType, audioName, embedUrl, isLive, liveKind, liveKindLabel, liveDuracaoMinutos }) {
+export async function createPost({ userId, title, content, audioUrl, audioType, audioName, embedUrl, isLive, liveKind, liveKindLabel, liveDuracaoMinutos }) {
   const embedInfo = embedUrl ? getEmbedInfo(embedUrl) : null;
   return from(await supabase.from('posts').insert({
     user_id: userId,
     title: title.trim(),
     content: content?.trim() || null,
-    category,
+    // `[24/09]` `category` saiu do corpo do INSERT. A coluna CONTINUA no banco
+    // (com DEFAULT 'dica'), de propósito: o prompt do dono é explícito — "não
+    // executar DROP COLUMN simplesmente porque a UI não usa mais o campo".
+    // Quem decide o destino dela é ele, depois de um ciclo inteiro sem
+    // ninguém sentir falta.
     audio_url: audioUrl,
     audio_type: audioType,
     audio_name: audioName?.trim() || null,

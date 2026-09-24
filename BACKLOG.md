@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**51 itens abertos** (+ 1 ideia sem compromisso)
+**52 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1437,6 +1437,33 @@ As três provadas reinjetando. `INV-CONTEUDO-006`.
   cobertos por trava de contrato e por prova em ROLLBACK, mas não por navegador
   — e é honesto dizer qual é qual.*
 
+### ✅ `[24/09]` FASE 3 — a categoria saiu da experiência (a coluna FICA)
+
+Saíram da tela: o **seletor** do compositor, o **filtro** do feed, o **badge**
+do card, os textos que citavam "dicas, curiosidades, news", e o `category` do
+corpo do `INSERT`. Saiu também do `POST_SELECT` — ela viajava em toda linha de
+todo feed sem ninguém ler.
+
+**A coluna `posts.category` continua no banco**, com o `DEFAULT 'dica'`.
+Palavras dele: *"Não executar DROP COLUMN simplesmente porque a UI não usa mais
+o campo."*
+
+**A decisão de produto está escrita** em `docs/DECISOES.md`, com as três
+alternativas descartadas e o trade-off aceito — perde-se filtrar por tipo, que
+valia pouco (o filtro só via o que estava carregado) e que a busca de verdade
+substitui.
+
+**Trava:** `categoriaSaiuDaExperiencia.test.js` reprova as duas pontas — um
+`DROP COLUMN` numa migration e o seletor voltando ao feed. Provada reinjetando
+as duas, **mais um controle**: prosa que CITA o comando não pode acusar, senão
+o comentário que explica a decisão acusaria a si mesmo. `INV-CONTEUDO-007`.
+
+- ⬜ `[24/09]` 🔵 **Decidir o destino de `posts.category`.** *Ela está órfã de
+  propósito desde hoje: nada no banco a lê, nada na tela a escreve, e o
+  `DEFAULT 'dica'` mantém o INSERT funcionando. A decisão é sua, e o combinado
+  é esperar um ciclo inteiro sem ninguém sentir falta. Quando decidir, a trava
+  sai no MESMO PR, com a decisão em `docs/DECISOES-DE-BANCO.md`.*
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 - ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
@@ -2115,10 +2142,10 @@ As três provadas reinjetando. `INV-CONTEUDO-006`.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->143<!--/n--> arq ·
-  <!--n:src.lib.linhas-->17.033<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->144<!--/n--> arq ·
+  <!--n:src.lib.linhas-->17.144<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->20<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.037<!--/n--> linhas) concentram quase todo o
+  <!--n:src.services.linhas-->2.044<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

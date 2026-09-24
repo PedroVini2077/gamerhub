@@ -19,7 +19,7 @@ function Shell({ children }) {
 
 const PostForm = memo(function PostForm({ onPost }) {
   const {
-    user, profile, title, setTitle, content, setContent, category, setCategory,
+    user, profile, title, setTitle, content, setContent,
     medias, audio, audioName, setAudioName,
     embedUrl, setEmbedUrl, showEmbed, setShowEmbed, closeEmbed,
     isLive, setIsLive, showRecorder, setShowRecorder,
@@ -67,7 +67,6 @@ const PostForm = memo(function PostForm({ onPost }) {
       )}
 
       <ComposerToolbar
-        category={category} setCategory={setCategory}
         canAddMedia={medias.length < MAX_MEDIAS}
         hasAudio={!!audio} showRecorder={showRecorder} showEmbed={showEmbed}
         onPickImage={() => handleMediaSelect('image')}

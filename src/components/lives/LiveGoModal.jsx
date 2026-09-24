@@ -58,7 +58,6 @@ export default function LiveGoModal({ profile, onClose, onCreated }) {
         userId: profile?.id,
         title: title.trim(),
         content: null,
-        category: 'dica',
         embedUrl: url.trim(),
         isLive: true,
         liveKind: kind,

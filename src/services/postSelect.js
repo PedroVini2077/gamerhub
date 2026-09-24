@@ -21,7 +21,10 @@ import { supabase } from '../lib/supabase';
 // Colunas explícitas em vez de `*`: cada coluna a mais viaja em TODA linha de
 // TODO feed. `live_ended_at`, `ban_*` e afins não são usados pelo card.
 const POST_COLUMNS = [
-  'id', 'user_id', 'title', 'content', 'category', 'created_at',
+  // `[24/09]` `category` saiu daqui junto com a UI que a lia. A coluna existe
+  // no banco e ninguém a consome mais — trazê-la custaria bytes em TODA linha
+  // de TODO feed, que é a conta que esta lista inteira existe para evitar.
+  'id', 'user_id', 'title', 'content', 'created_at',
   'media_url', 'media_type', 'edited_at',
   'audio_url', 'audio_type', 'audio_name',
   'embed_url', 'embed_type', 'expires_at',

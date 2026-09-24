@@ -346,7 +346,9 @@ transições discretas das páginas internas.
 ### Feed de posts
 
 - Criação de posts (`PostForm`) com:
-  - Título + conteúdo; categorias `dica` / `curiosidade` / `news`.
+  - Título + conteúdo. **`[24/09]` Sem categoria** — publicar não pede mais que
+    a pessoa classifique o que escreveu. A coluna `posts.category` continua no
+    banco; ver `docs/DECISOES.md`.
   - Até **10 mídias** por post: imagens (≤5MB) e vídeos (≤10MB — reduzido de
     100MB→25MB→10MB para poupar cota de egress; clipes longos via embed são
     recomendados). As imagens ainda são **comprimidas no browser** antes de
@@ -366,7 +368,7 @@ transições discretas das páginas internas.
     (painel admin/moderação).
 - **Edição com janela de 30 minutos** (contador regressivo).
 - **Retry de mídia** com backoff caso a mídia ainda não tenha subido.
-- Feed (`Home`): busca por texto, filtro por categoria, aviso de **"novas
+- Feed (`Home`): busca por texto, aviso de **"novas
   publicações"** — **`[24/09]`** ele passou a contar só o que a recarga de fato
   traz (live e post que nasce oculto ficam de fora) e a mostrar `20+` no teto,
   em vez de acumular eventos da aba sem limite. **`[24/09]` O feed passou a

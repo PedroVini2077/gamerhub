@@ -22,6 +22,46 @@ aqui continua *"por que o site se comporta assim"*.
 
 ---
 
+## Feed
+
+### `[24/09]` O feed deixa de pedir categoria — e a coluna fica no banco
+
+**Problema.** Publicar exigia escolher entre `dica`, `curiosidade` e `news`. Um
+post da comunidade é pergunta, desabafo, conquista, recomendação, dúvida — e
+obrigar a escolher uma gaveta dessas três é atrito na hora mais sensível do
+fluxo, que é a pessoa decidir publicar.
+
+**Contexto medido na Fase 0.** Nada no banco lia a coluna: zero policy, função,
+view, índice ou constraint. E os 404 posts existentes eram **todos** `'dica'`.
+
+> **O que essa evidência NÃO prova.** 403 dos 404 eram de robô — o E2E nunca
+> escolhe categoria. O "ninguém usa" se apoia em **um** post humano. Não dá
+> para concluir que o recurso foi rejeitado; dá para concluir que não há dado.
+
+**Decisão.** Sai da **experiência**: seletor, filtro, badge e os textos que
+citavam as três. A **coluna permanece**, com o `DEFAULT 'dica'` — o `INSERT`
+simplesmente parou de mandá-la.
+
+**Alternativas descartadas.**
+
+| Alternativa | Por que não |
+| --- | --- |
+| trocar por tags livres | é feature nova disfarçada de limpeza, e sem dado para dimensionar |
+| manter o seletor, opcional | campo opcional que ninguém preenche é ruído com passo extra |
+| apagar a coluna junto | pedido explícito dele: *"não executar DROP COLUMN simplesmente porque a UI não usa mais o campo"* |
+
+**Trade-off aceito.** Perde-se a possibilidade de filtrar por tipo no feed. Ela
+valia pouco — o filtro só enxergava o que já estava carregado — e o que
+substitui essa necessidade é a **busca de verdade**, que é a fase seguinte.
+
+**Consequências.** `category` saiu também do `POST_SELECT`: ela viajava em toda
+linha de todo feed sem ninguém ler. E uma trava
+(`categoriaSaiuDaExperiencia.test.js`) reprova tanto o retorno do seletor
+quanto um `DROP COLUMN` — daqui a dois meses, quem achar a coluna órfã vai
+esbarrar na decisão em vez de "limpar".
+
+---
+
 ## Moderação
 
 ### `[27/08]` O ritual de publicar conteúdo: trava sim, refatoração não
