@@ -150,6 +150,29 @@ duplicar fonte de verdade (§4):
   dos mecanismos, ~80). Não é urgente — vira urgente no dia em que eu precisar
   escrever uma regra e não puder.*
 
+- ⬜ `[24/09]` 🟡 **A seção de comentários FECHA sozinha logo depois de comentar,
+  e o contador volta a ZERO.** *Achado sem querer, montando o E2E de responder —
+  e é defeito do SITE, não do roteiro.*
+
+  **A evidência, medida no CI e não deduzida:** o roteiro comenta, confere o
+  comentário na tela (passo verde), e segundos depois o despejo da página mostra
+  o card com o botão **"Comentar"** — ou seja, contagem **zero** — e a lista
+  fora da tela. O comentário está **vivo no banco**, com `hidden_at` nulo
+  (conferido em consulta). Do lado de quem usa: você comenta, o comentário
+  aparece, e em seguida ele some da tela e o contador diz que não há nenhum.
+
+  **O que eu NÃO provei, e por isso isto é hipótese:** a causa. Dois suspeitos,
+  os dois em `src/components/feed/CommentSection.jsx` — (a) o card **remonta**
+  num refresh do feed e o `open` volta a `false`; (b) o
+  `useEffect([postId, initialCount])` chama `setCount(initialCount)` com a
+  contagem **em lote** do feed, que é anterior ao comentário. O (b) explica o
+  contador; o (a) explicaria a lista sumir junto. **O teste que separa os dois:**
+  logar a montagem do componente e ver se o `open` é perdido.
+
+  Enquanto isso, o `e2e/comentar.mjs` **reabre a seção** antes de responder, e o
+  comentário ao lado do `garantirSecaoAberta` aponta para cá. O roteiro contorna;
+  o defeito continua aberto.
+
 ### ✅ `[19/09]` LIVE-051 — a moderação não alcançava a live AINDA NO AR
 
 **Não foi relatado: saiu da varredura de classe do LIVE-050.** A pergunta do
@@ -687,7 +710,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**47 itens abertos** (+ 1 ideia sem compromisso)
+**48 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 

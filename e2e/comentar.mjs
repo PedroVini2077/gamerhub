@@ -34,6 +34,29 @@
  */
 
 /**
+ * Abre a seção de comentários do card — e não presume que ela CONTINUOU aberta.
+ *
+ * `[24/09]` Medido no CI: segundos depois de comentar com sucesso, o card
+ * voltava a mostrar o botão "Comentar" (ou seja, contagem ZERO) e a lista some
+ * da tela, com o comentário vivo no banco (`hidden_at` nulo, conferido). Seja
+ * remontagem do feed ou o `initialCount` em lote sobrescrevendo a contagem, o
+ * passo de responder não pode herdar o estado de tela do passo anterior.
+ *
+ * O defeito em si está no BACKLOG — ele é do SITE, não do roteiro.
+ */
+async function garantirSecaoAberta(card) {
+  const composer = card.getByLabel(/Escreva um comentário/i);
+  if (await composer.isVisible().catch(() => false)) return;
+
+  // O rótulo MUDA com a contagem: "Comentar" quando é zero, "N comentários"
+  // quando não é. Casar os dois evita um passo que só funciona num dos casos.
+  const abrir = card.getByRole('button', { name: /^(Comentar|\d+ comentários?)$/ });
+  await abrir.waitFor({ state: 'visible', timeout: 15000 });
+  await abrir.click();
+  await composer.waitFor({ state: 'visible', timeout: 15000 });
+}
+
+/**
  * @param {import('playwright').Page} page
  * @param {object} opcoes
  * @param {import('playwright').Locator} opcoes.card  o `.card` do post alvo
@@ -53,15 +76,9 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
     }
   };
 
-  // O rótulo do botão MUDA com a contagem: "Comentar" quando é zero,
-  // "N comentários" quando não é. Casar os dois evita um teste que só funciona
-  // no post recém-criado.
-  const abrir = card.getByRole('button', { name: /^(Comentar|\d+ comentários?)$/ });
-  await abrir.waitFor({ state: 'visible', timeout: 15000 });
-  await abrir.click();
+  await garantirSecaoAberta(card);
 
   const campo = card.getByLabel(/Escreva um comentário/i);
-  await campo.waitFor({ state: 'visible', timeout: 15000 });
   await campo.fill(texto);
   await card.getByRole('button', { name: 'Enviar comentário' }).click();
 
@@ -134,25 +151,35 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
  * Nenhuma, e pelo mesmo motivo do comentário: cascata do post do teste.
  */
 export async function responderEEsperarAninhada(page, { card, aoComentario, texto, timeout = 30000 }) {
+  // Reabre a seção se ela fechou — ver `garantirSecaoAberta`. E tenta de novo
+  // por até 20s, porque o fechamento acontece DEPOIS de a lista aparecer: a
+  // primeira versão deste passo viu o comentário, contou os botões no instante
+  // seguinte e achou zero.
   const pai = card.getByText(aoComentario, { exact: false }).first();
-  await pai.waitFor({ state: 'visible', timeout: 15000 });
+  const botoes = card.getByRole('button', { name: /^Responder$/ });
 
-  // ── Por que NÃO se procura o botão "dentro do bloco do pai" ──────────────
+  let quantos = 0;
+  const limite = Date.now() + 20000;
+  do {
+    await garantirSecaoAberta(card);
+    if (await pai.isVisible().catch(() => false)) quantos = await botoes.count();
+    if (quantos === 1) break;
+    await page.waitForTimeout(500);
+  } while (Date.now() < limite);
+
+  // ── Por que se CONTA o botão em vez de caçar o do comentário pai ────────
   //
   // A primeira versão subia do texto até o `div` que o contém
-  // (`card.locator('div').filter({ has: pai }).last()`) para pegar o
-  // "Responder" daquele comentário. O CI reprovou com timeout, e a causa está
-  // no log: o `has:` do Playwright espera um locator relativo ao de fora, e eu
-  // passei um construído a partir do `card` — a cadeia se re-ancorou na página
-  // e a interseção nunca casou.
+  // (`card.locator('div').filter({ has: pai }).last()`) e deu timeout. Eu
+  // culpei o `has:` do Playwright — e essa explicação estava ERRADA, coisa que
+  // a instrumentação mostrou depois: o card não tinha botão "Responder"
+  // NENHUM, porque a seção de comentários tinha se fechado sozinha. Cadeia
+  // nenhuma acharia o que não estava lá.
   //
-  // A saída não é uma cadeia mais esperta: é **exigir o que se sabe ser
-  // verdade**. Este post é o da própria execução e tem exatamente UM
-  // comentário, então existe exatamente UM "Responder". Contar antes é o que
-  // transforma "cliquei no botão errado" — que passaria verde — numa falha
-  // que diz o que aconteceu.
-  const botoes = card.getByRole('button', { name: /^Responder$/ });
-  const quantos = await botoes.count();
+  // Fica como está porque é melhor do jeito certo: este post é o da própria
+  // execução e tem exatamente UM comentário, então existe exatamente UM
+  // "Responder". Contar antes transforma "cliquei no botão errado" — que
+  // passaria verde — numa falha que diz o que aconteceu.
   if (quantos !== 1) {
     // Instrumentar em vez de chutar (§1.2). Sem a lista, "achei 0" manda
     // procurar no `onReply` — e pode ser o nome acessivel, o botao estar
@@ -164,9 +191,10 @@ export async function responderEEsperarAninhada(page, { card, aoComentario, text
     throw new Error(
       `esperava UM botao "Responder" no card e achei ${quantos}.\n`
       + `    Botoes que existem no card: ${nomes.join(', ')}\n`
-      + '    Zero: o `onReply` parou de ser passado pelo `CommentSection`, o\n'
-      + '    comentario nao esta na tela, ou o nome acessivel mudou — a lista\n'
-      + '    acima diz qual dos tres.\n'
+      + '    Zero por 20s, mesmo reabrindo a secao a cada meio segundo: o\n'
+      + '    `onReply` parou de ser passado pelo `CommentSection`, o comentario\n'
+      + '    nao volta para a lista, ou o nome acessivel mudou — a lista acima\n'
+      + '    diz qual dos tres.\n'
       + '    Mais de um: o post ganhou outro comentario. Este passo assume que\n'
       + '    o post e o da execucao e tem so o comentario dela; se isso mudou,\n'
       + '    o passo precisa escolher o pai de proposito, nao por sorte.');
