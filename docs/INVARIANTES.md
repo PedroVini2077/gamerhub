@@ -162,6 +162,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-CONTRATO-004** | Os motivos de ban são os mesmos no modal e no banco | — | `src/lib/__tests__/guardDePapelNaoAceitaNull.test.js` |
 | **INV-CONTRATO-005** | Ninguém dá `update` em tabela **sem policy de UPDATE** — a RLS nega em silêncio, com 0 linhas e nenhum erro | (moderação quebrada por meses) | `src/lib/__tests__/tabelasSemUpdate.test.js` |
 | **INV-CONTRATO-006** | Escrita que pode ser negada **confere quantas linhas caíram** | idem | `src/lib/__tests__/apagarConfereLinhas.test.js` |
+| **INV-CONTRATO-007** | Todo tipo da fila de moderação existe nos **três** mapas: rótulo, tabela de leitura e tabela de autor — e o link leva ao lugar certo, ou a lugar nenhum | (o `chat` que caiu no `else`) | `src/components/moderation/__tests__/queueLabels.test.js` |
 
 ---
 
@@ -174,6 +175,55 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-CONTA-003** | O aceite dos documentos legais **nasce com a conta**, e o que o cliente manda tem de bater com o que o `handle_new_user` aceita | — | `src/lib/__tests__/aceiteNasceComAConta.test.js` |
 | **INV-CONTA-004** | O código do cofre **nunca é guardado em texto** | — | `src/lib/__tests__/cofre.test.js` |
 | **INV-CONTA-005** | Texto de documento legal não muda **por baixo de quem já aceitou** | — | `src/lib/__tests__/documentosLegais.test.js` |
+| **INV-CONTA-006** | O cadastro **não lê nem escreve `profiles`** — a linha ainda não existe. Username se checa por RPC, e os campos extras vão no `metadata` do `signUp` | — | `src/services/__tests__/cadastroSemSelectEmProfiles.test.js` |
+| **INV-CONTA-007** | O cache **não atravessa troca de conta**, e a limpeza é por **identidade** — não a cada evento de auth, que dispararia em refresh de token | — | `src/hooks/__tests__/cacheNaoAtravessaTrocaDeConta.test.js` |
+
+---
+
+## NAVEGAÇÃO — para onde o site manda a pessoa
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-NAV-001** | O destino do botão "Voltar" é **sempre interno**, e quem **escreve** o `?de=` concorda com quem o **lê** — o link nunca carrega um valor que o leitor recusaria | — | `src/components/conteudo/__tests__/voltarNaoEhRedirecionador.test.jsx` |
+
+> Redirecionamento aberto é a classe: um `?de=` que aceite destino de fora vira
+> ponte para phishing com o domínio do GamerHub na barra. A trava cobre os
+> **dois lados** de propósito — escritor e leitor discordando é como o buraco
+> volta sem ninguém mexer na validação.
+
+---
+
+## TELA — o que o site afirma
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-TELA-001** | A tela **não carimba efeito que o servidor não confirmou**: nenhum componente marca `answered` direto, a resposta passa pela Edge Function, e a tela mostra o **texto** da resposta — não só o carimbo | — | `src/components/admin/__tests__/respostaDeContatoNaoMente.test.js` |
+| **INV-TELA-002** | Todo campo de senha passa pelo `CampoDeSenha` — `<input type="password">` solto perde o olho de mostrar/ocultar, e no Android ficam **dois** olhos | — | `src/lib/__tests__/campoDeSenhaUnico.test.js` |
+| **INV-TELA-003** | A marca de entrada é escrita **antes** de pedir o login ao servidor, e **desfeita em todo caminho que não termina em entrada** | — | `src/lib/__tests__/portaoAntesDoSite.test.js` |
+
+> `INV-TELA-001` é o §1.5 pelo lado da interface: falha tem de gritar, e tela
+> que afirma o que não aconteceu é o oposto — ela **silencia** a falha com uma
+> mentira. As duas outras são a mesma ideia em miniatura: o estado que a tela
+> mostra tem de corresponder ao que de fato existe.
+
+---
+
+## LEGAL — licença e texto público
+
+| ID | A regra | Nasceu de | Protegida por |
+| --- | --- | --- | --- |
+| **INV-LEGAL-001** | **Mídia de terceiro tem crédito visível.** A trilha da landing é CC BY 4.0: usar sem crédito é usar **sem licença** | — | `src/components/sobre/__tests__/conteudoDoSobre.test.js` |
+| **INV-LEGAL-002** | O texto das páginas legais e institucionais chega **íntegro** na tela: bloco completo, ícone existente no mapa, tabela com o mesmo número de colunas, sem âncora repetida | — | `src/components/privacidade/__tests__/conteudoDaPrivacidade.test.js` · `conteudoDoSobre.test.js` |
+
+> **Por que `INV-CONTA-005` não mudou de família.** Ela também é sobre documento
+> legal, mas o que ela protege é o **consentimento** — o texto mudando por baixo
+> de quem já aceitou. É uma regra de conta, não de licença. E o ID não se move:
+> a regra deste arquivo diz que `INV-*` não muda e não é reaproveitado, senão
+> `git log -S` deixa de achar a história.
+>
+> **O risco que a `INV-LEGAL-001` cobre não é a trilha de hoje** — é a segunda
+> mídia, o dia em que alguém largar um arquivo em `src/assets/som/` e esquecer o
+> crédito. O site passaria a violar uma licença sem nada acusar.
 
 ---
 

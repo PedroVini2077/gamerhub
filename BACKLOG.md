@@ -99,19 +99,23 @@ duplicar fonte de verdade (§4):
 
 #### Ordem proposta (cada uma é um PR, e nenhuma apaga nada)
 
-1. ✅ **FEITO** — `docs/INVARIANTES.md`: **31 invariantes** em 8 famílias (XP,
-   LIVE, CONTEUDO, AUTZ, WF, PORTA, TRILHA, CONTRATO, CONTA), cada uma com o
-   achado que a originou e a trava que a protege. **Derivado** dos `describe()`
-   das travas que já rodam — nada inventado. Registrado no `README`, no
-   `territorio.mjs`, no `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`.
-   **0 arquivos de código tocados.**
+1. ✅ **FEITO** — `docs/INVARIANTES.md`. **`[24/09]` correção: eu disse "31
+   invariantes em 8 famílias" e eram 37 em 9** — contei errado ao relatar, o
+   arquivo sempre teve as 37. Derivadas dos `describe()` das travas que já
+   rodam; nada inventado. Registrado no `README`, no `territorio.mjs`, no
+   `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`. **0 arquivos de código
+   tocados.**
 2. ✅ **FEITO** — `docs/TRAVAS.md`: os **149** classificados em 7 naturezas
    (9 portões de CI · 23 travas de invariante · 18 de contrato · 19 E2E ·
    4 robôs que avisam · 62 testes comuns · **14 que NÃO são trava**, nomeados).
    Achou **9 travas sem invariante escrito** e **1 erro no `CLAUDE.md`**
    (o `edges-implantadas` dizia estar fora do CI; roda no `implantar-edges.yml`).
    **0 arquivos de código tocados.**
-3. Os 7 comentários do `index.html`.
+3. ✅ **FEITO** — as **9 travas órfãs** viraram invariante: `INV-NAV-001`,
+   `INV-TELA-001/002/003`, `INV-LEGAL-001/002`, `INV-CONTRATO-007` e
+   `INV-CONTA-006/007`. O `INVARIANTES.md` passou a **46 invariantes em 12
+   famílias**, e nenhuma linha do `TRAVAS.md` diz mais "sem INV".
+4. Os 7 comentários do `index.html`.
 4. ADRs, um a um, **copiando** a prosa; o comentário original vira referência
    **só depois** de o ADR estar no ar e validado.
 
@@ -1373,6 +1377,53 @@ Rotas: `/noticias`, `/noticias/:slug`, `/busca?q=`.
   legado. Nunca apagar e descobrir depois quem dependia.
 - **SEO:** o site é SPA Vite+React. Apresentar os trade-offs (SPA · pré-render ·
   SSR · SSG) **sem migrar de framework** por conta própria.
+
+### `[24/09]` COMPLEMENTO — o comportamento de novas publicações no Feed
+
+> Segundo prompt dele, para somar ao bloco acima. **Também não iniciado.**
+
+**O problema, na letra dele:** *"500 novos posts foram publicados → aparece '500
+novos posts' → usuário clica → o sistema tenta carregar os 500"*. Isso não pode
+acontecer.
+
+**O princípio, que ele quer tratado como requisito de arquitetura:**
+
+```
+"existem 500 novos posts"   ≠   "carregar 500 posts"
+
+descoberta -> lote limitado -> renderização incremental -> próximo lote
+```
+
+| Requisito | O que ele pede |
+| --- | --- |
+| **Contador limitado** | *"Há novas publicações"* ou *"+20"* — o número mostrado não precisa ser o total do banco |
+| **Tamanho de lote** | 10–20 é o exemplo dele, mas **tem de ser validado tecnicamente** contra card, imagem, celular, custo de render |
+| **Posição de rolagem** | não jogar para o topo, não duplicar, não mover card que a pessoa está lendo. **Testar no celular** |
+| **Sem duplicar** | ID único e/ou **cursor**; avaliar keyset pagination em vez de `OFFSET` |
+| **Atualização é do usuário** | indicador discreto → ele decide → entra no topo |
+
+**A frase que resume a experiência desejada:** o Feed deve parecer **vivo sem
+parecer instável** — *"tem coisa nova aqui"*, não *"o app reorganizou tudo
+enquanto eu lia"*.
+
+#### Feed cronológico agora, ranking DEPOIS
+
+Fase 1 é recência com paginação e carregamento incremental. A arquitetura tem de
+**permitir** ranking futuro (recência, interação, pessoas seguidas, afinidade,
+diversidade) **sem implementá-lo agora**. Ele foi explícito: *"não queremos um
+clone do Instagram/TikTok"*, e *"não implementar coleta invasiva simplesmente
+para ter dados"* — as métricas se definem quando houver necessidade real.
+
+#### Os 10 passos que ele exige ANTES de mexer no Feed
+
+descobrir como o mecanismo de "novos posts" funciona hoje · como a paginação
+funciona · como os posts são ordenados · como o React mantém o estado da lista ·
+como novas publicações são detectadas · **medir** o impacto de lotes maiores ·
+achar duplicação · achar race condition · propor · **só implementar após
+aprovação**.
+
+> E vale o de sempre: a mudança do Feed continua sujeita a XP, comentários,
+> likes, moderação, RLS e a todos os invariantes do `INVARIANTES.md`.
 
 ### O formato da primeira resposta (14 itens, exigido por ele)
 
