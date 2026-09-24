@@ -105,8 +105,12 @@ duplicar fonte de verdade (§4):
    das travas que já rodam — nada inventado. Registrado no `README`, no
    `territorio.mjs`, no `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`.
    **0 arquivos de código tocados.**
-2. `docs/TRAVAS.md` — inventário dos 147, classificados, com `INV-*` ao lado.
-   Fecha o buraco dos 29%.
+2. ✅ **FEITO** — `docs/TRAVAS.md`: os **149** classificados em 7 naturezas
+   (9 portões de CI · 23 travas de invariante · 18 de contrato · 19 E2E ·
+   4 robôs que avisam · 62 testes comuns · **14 que NÃO são trava**, nomeados).
+   Achou **9 travas sem invariante escrito** e **1 erro no `CLAUDE.md`**
+   (o `edges-implantadas` dizia estar fora do CI; roda no `implantar-edges.yml`).
+   **0 arquivos de código tocados.**
 3. Os 7 comentários do `index.html`.
 4. ADRs, um a um, **copiando** a prosa; o comentário original vira referência
    **só depois** de o ADR estar no ar e validado.
@@ -1322,6 +1326,61 @@ dependência técnica real** que decide o resto:
   limpeza do meu próprio trabalho, não descoberta —, mas a fronteira precisa
   estar escrita, senão vira brecha nos dois sentidos: ou eu paro de dividir
   arquivo que inchei, ou eu uso o §4 como desculpa para refatorar o que quiser.
+
+## 🔮 `[24/09]` O PRÓXIMO GRANDE BLOCO — Feed, Busca, Formatação e News
+
+> **Registrado, não iniciado.** Pedido dele em 24/09: *"quero que vc guarde ele
+> e anote tudo… depois dessas tarefas de organização do código, olhamos oq falta
+> fazer e depois vamos pra esse prompt"*. A ordem é: **terminar a reorganização
+> → revisar esta fila → só então começar**. E o prompt é explícito: **Fase 0 é
+> só análise, nada de implementar** — nem migration, nem RLS, nem código.
+
+### Os quatro eixos
+
+| # | O que é | Ponto crítico |
+| --- | --- | --- |
+| **1** | **Feed sem categorias.** Tirar `dica`/`curiosidade`/`news` da EXPERIÊNCIA: seletor, filtro, badge, textos | ⚠️ **NÃO apagar `posts.category` do banco.** Primeiro auditar RPCs, triggers, policies, consultas, testes, componentes e histórico |
+| **2** | **Busca de verdade.** Hoje ela filtra o que já está carregado no cliente — isso não é busca global | Avaliar Full Text Search do Postgres, índices, ranking, paginação. **Sem tecnologia externa** sem necessidade |
+| **3** | **Formatação nos posts.** Negrito, itálico, tachado, listas, citação, link | ⚠️ **Nunca `dangerouslySetInnerHTML` com conteúdo do usuário.** Markdown controlado / AST / rich text estruturado — a escolha tem de ser justificada ANTES |
+| **4** | **GamerHub News.** Área editorial separada de `posts`, com fontes, tags, ingestão e revisão humana | `posts.category = 'news'` **não** vira sistema editorial. Domínios diferentes, modelos diferentes |
+
+### As 11 fases propostas por ele
+
+`1` inventário e arquitetura · `2` tirar categorias do Feed · `3` busca nova ·
+`4` formatação · `5` fundação do News · `6` painel editorial · `7` SEO ·
+`8` ingestão de fontes · `9` IA assistente · `10` automação ·
+`11` integração News ↔ comunidade.
+
+> A ordem pode mudar **se a análise mostrar dependência melhor** — ele abriu
+> essa porta explicitamente.
+
+### O que ele quer de MODELO (nomes ainda não definitivos)
+
+`news_sources` · `news_items_raw` · `news_articles` · `news_tags` ·
+`news_article_tags`. Status: `draft` · `scheduled` · `published` · `archived`.
+Rotas: `/noticias`, `/noticias/:slug`, `/busca?q=`.
+
+### As regras que NÃO são negociáveis no bloco
+
+- **Editorial é humano.** IA pode classificar, sugerir tag, resumir, achar
+  duplicata e apontar afirmação sem fonte — **não publica sozinha**.
+- **Direito autoral.** Não copiar artigo inteiro: fonte → verificação → redação
+  própria → atribuição → link. Imagem não vai no Postgres.
+- **Autorização é do banco.** `if (role === 'admin')` no frontend **não** é
+  autorização; RLS/RPC decide. Toda tabela nova nasce com RLS pensada, não
+  "depois".
+- **Compatibilidade:** adicionar → migrar → validar → substituir → remover
+  legado. Nunca apagar e descobrir depois quem dependia.
+- **SEO:** o site é SPA Vite+React. Apresentar os trade-offs (SPA · pré-render ·
+  SSR · SSG) **sem migrar de framework** por conta própria.
+
+### O formato da primeira resposta (14 itens, exigido por ele)
+
+A estado atual · B dependências · C problemas · D arquitetura · E banco ·
+F frontend · G segurança · H SEO · I automação · J IA · K testes · L fases ·
+M riscos · **N o que precisa da aprovação dele**.
+
+---
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 

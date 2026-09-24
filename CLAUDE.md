@@ -713,7 +713,7 @@ exatamente o que não funcionou. Por isso o que entrou foi mecanismo, não texto
 | `cofre.test.js` (reset) | `npm test`, **reprova** | o "Esqueci o código" do cofre voltando a ser **dois cliques** — cobre as duas pontas: a tela abrir o `ResetDoCofre`, e ele conferir a senha no SERVIDOR **antes** de confirmar |
 | `scripts/branches-abandonadas.mjs` + `branchesAbandonadas.test.js` | segunda, **abre issue** · `npm test`, **reprova** | branch que sobrou de PR fechado. A issue é semanal e **não reprova** — branch órfã não quebra nada. O teste reprova outra coisa: a branch de trabalho do §8 sair da lista de protegidas, o que faria o robô sugerir apagar onde o trabalho vive |
 | `scripts/impressao-das-edges.mjs` + `impressaoDasEdges.test.js` | `npm test`, **reprova** | Edge Function editada com a **impressão velha**. A impressão é derivada do código — inclusive dos arquivos IRMÃOS da pasta —, e não uma data escrita à mão, que reproduziria o problema: esquecer de subir o número faz os dois lados concordarem num valor velho |
-| `scripts/edges-implantadas.mjs` (`npm run edges`) | **eu rodo** — ainda NÃO está no CI | função **no ar** que não foi gerada deste código. Foi o buraco que deixou as duas correções da `send-email` mortas por 5 dias. Fora do CI de propósito: 7 das 8 esperam uma ação do dono (`BACKLOG.md`), e portão que grita por algo que ninguém pode resolver ensina a ignorar o canal |
+| `scripts/edges-implantadas.mjs` (`npm run edges`) | **CI** (`implantar-edges.yml`), em `push` para `main` que toque `supabase/functions` — `[24/09]` esta coluna dizia *"ainda NÃO está no CI"*, e envelheceu | função **no ar** que não foi gerada deste código. Foi o buraco que deixou as duas correções da `send-email` mortas por 5 dias. Fora do CI de propósito: 7 das 8 esperam uma ação do dono (`BACKLOG.md`), e portão que grita por algo que ninguém pode resolver ensina a ignorar o canal |
 | `e2e/__tests__/sobrasAntigas.test.js` | `npm test`, **reprova** | as DUAS falhas opostas do detector de post de teste esquecido: deixar de ver um prefixo (foi assim que um `[painel ]` ficou no ar), e chamar de sobra o post do job que roda **em paralelo** contra o mesmo banco |
 | `colunasDerivadasDoPost.test.js` | `npm test`, **reprova** | coluna de `posts` que o cliente voltou a declarar. `was_live` vale +30 XP: sem o trigger, um `PATCH` na REST API dava XP de live sem live. Cobre INSERT **e** UPDATE — testar só o `PATCH` deixava metade do buraco |
 | `autorizacaoAntesDeExistencia.test.js` | `npm test`, **reprova** | `SECURITY DEFINER` que procura o alvo **antes** de checar quem chama, virando oráculo de existência. Varre a **classe**: o mapa de exceções exige motivo escrito, e foi ele que achou a 6ª função que a auditoria externa não viu |
@@ -780,6 +780,7 @@ que falhou, e o gatilho de início a mostra em toda sessão:
 > medição → `DESEMPENHO.md` · decisão → `DECISOES.md` · arquivo novo →
 > `ARQUITETURA.md` · o que falta → `BACKLOG.md` · quando quebra → `OPERACAO.md`
 > · **regra que nunca pode quebrar → `INVARIANTES.md`**
+> · **quem protege a regra → `TRAVAS.md`**
 
 ### Nada fica para a próxima sessão — o que isso quer dizer de verdade
 
