@@ -1315,8 +1315,11 @@ M riscos · **N o que precisa da aprovação dele**.
   resposta aninhada NÃO era coberta, e ficou verdade por 19 dias. A assertiva
   que importa não é o texto aparecer: é o **recuo**. Resposta que entra na
   lista como comentário solto tem o `INSERT` aprovado, o texto na tela e só a
-  estrutura errada — nada estoura. Medido por **geometria** (`boundingBox().x`)
-  e não pela classe do Tailwind, que é o mecanismo de hoje. Envia por **Enter**
+  estrutura errada — nada estoura. Conferido por **estrutura** — o bloco do
+  comentário pai tem de CONTER o texto da resposta. Comparar a POSIÇÃO dos dois
+  textos foi a primeira tentativa e reprovou uma resposta CERTA: o recuo do
+  bloco convive com um avatar menor na resposta, e a soma pode dar para
+  qualquer lado. Envia por **Enter**
   porque os dois compositores têm o mesmo `aria-label` no botão, e o caminho de
   teclado não era exercitado por roteiro nenhum. `INV-CONTEUDO-003`.
 

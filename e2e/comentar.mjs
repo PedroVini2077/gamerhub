@@ -134,9 +134,13 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
  * está errada. A conferência é o `parent_id` ter chegado — e o sinal visível
  * disso é a resposta nascer **recuada** em relação ao comentário pai.
  *
- * Comparado por GEOMETRIA (`boundingBox().x`), não pela classe do Tailwind: a
- * classe é o mecanismo de hoje e renomeá-la não muda o que a pessoa vê. Medir
- * o que aparece é o que o `conteudo-visivel.mjs` já faz pelo mesmo motivo.
+ * A conferência é **estrutural**: o bloco do comentário pai tem de CONTER o
+ * texto da resposta, porque é isso que o aninhamento é — o `CommentCard` da
+ * resposta é renderizado dentro do `CommentCard` do pai.
+ *
+ * Comparar a POSIÇÃO dos dois textos foi a primeira tentativa e estava errada:
+ * o recuo do bloco convive com um avatar menor na resposta, a soma pode dar
+ * para qualquer lado, e o CI reprovou uma resposta que estava certa.
  *
  * ── Envia por ENTER, e não é atalho ────────────────────────────────────────
  *
@@ -216,20 +220,52 @@ export async function responderEEsperarAninhada(page, { card, aoComentario, text
       + '    exige que o comentario pai seja do MESMO post.');
   });
 
-  // A prova de que é RESPOSTA, e não comentário solto com o mesmo texto.
-  const caixaPai = await pai.boundingBox();
-  const caixaResposta = await alvo.boundingBox();
-  if (!caixaPai || !caixaResposta) {
-    throw new Error('nao consegui medir a posicao do comentario ou da resposta na tela.');
-  }
-  if (caixaResposta.x <= caixaPai.x) {
+  // ── A prova de que é RESPOSTA, e não comentário solto ────────────────────
+  //
+  // `[24/09]` A primeira versão comparava a posição X dos DOIS textos e exigia
+  // que a resposta estivesse mais à direita. O CI reprovou com `x=321` contra
+  // `x=335` — e a resposta estava CERTA: conferido no banco, ela tinha
+  // `parent_id`. O recuo do bloco (`pl-6`) convive com um avatar MENOR na
+  // resposta (24px contra 28), e a soma dos dois pode dar para qualquer lado.
+  // Eu tinha transformado um detalhe de layout em veredito.
+  //
+  // A pergunta certa não é "está mais à direita?", é **"está DENTRO do bloco
+  // do comentário pai?"** — que é literalmente o que o aninhamento é: o
+  // `CommentCard` da resposta é renderizado dentro do `CommentCard` do pai.
+  //
+  // A subida é de 3 níveis, e a estrutura está em `CommentCard.jsx`:
+  //
+  //     <div ... pl-6 se for resposta>   <- raiz do CommentCard   (3 acima)
+  //       <div class="flex items-start"> <- a linha               (2 acima)
+  //         <AvatarPopup/>
+  //         <div class="flex-1 min-w-0"> <- a coluna              (1 acima)
+  //           <p>conteúdo</p>            <- o texto
+  //
+  // Se essa estrutura mudar, isto estoura — e estourar é o certo: quem mexeu
+  // precisa reconferir o que significa "aninhada" depois da mudança.
+  const aninhada = await pai.evaluate((elPai, textoDaResposta) => {
+    const raiz = elPai.parentElement?.parentElement?.parentElement;
+    if (!raiz) return { erro: 'nao achei a raiz do CommentCard 3 niveis acima do <p>' };
+    return {
+      contem: raiz.innerText.includes(textoDaResposta),
+      // Informativo, para o log: o recuo existe, mas NÃO é o veredito.
+      recuoDaLinha: raiz.querySelector('div')?.getBoundingClientRect().x ?? null,
+      recuoDaRaiz: raiz.getBoundingClientRect().x,
+    };
+  }, texto);
+
+  if (aninhada.erro) throw new Error(`${aninhada.erro} — a estrutura do CommentCard mudou.`);
+
+  if (!aninhada.contem) {
     throw new Error(
-      `a resposta apareceu SEM recuo (x=${caixaResposta.x} contra x=${caixaPai.x} do pai).\n`
-      + '    Ela entrou na lista como comentario solto. O texto estar na tela\n'
-      + '    nao prova que o `parent_id` chegou — e resposta que vira comentario\n'
-      + '    de primeiro nivel nao estoura, nao loga e nao quebra nada (§1.5).\n'
-      + '    Confira o `submitReply` do CommentCard e o `isReply` que aplica o\n'
-      + '    recuo.');
+      `a resposta "${texto}" NAO esta dentro do bloco do comentario pai.\n`
+      + `    (raiz do pai em x=${aninhada.recuoDaRaiz}, linha em x=${aninhada.recuoDaLinha})\n`
+      + '    Ela entrou na lista como comentario de primeiro nivel. O texto na\n'
+      + '    tela nao prova que o `parent_id` chegou — e resposta que vira\n'
+      + '    comentario solto nao estoura, nao loga e nao quebra nada (§1.5).\n'
+      + '    Confira o `submitReply` do CommentCard, o `repliesByRoot` do\n'
+      + '    CommentSection, e a FK composta da SEC-033.');
   }
+
   return alvo;
 }
