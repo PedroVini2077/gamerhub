@@ -205,6 +205,20 @@ try {
   await comentarEEsperarNaLista(page, { card, texto: COMENTARIO });
   ok('comentário publicado e visível na lista');
 
+  // ── 4c. Responder ao próprio comentário ─────────────────────────────────
+  //
+  // `[24/09]` Segundo dos fluxos de 18/09. O cabeçalho do `comentar.mjs` dizia
+  // desde 05/09 que a resposta aninhada NÃO era coberta — era verdade, e ficou
+  // verdade por 19 dias. A assertiva que importa é o RECUO: resposta que entra
+  // na lista como comentário solto não estoura nada.
+  //
+  // ANTES de apagar o post, e isso não é detalhe: a primeira versão deste
+  // passo ficou DEPOIS do `Deletar post` e o CI reprovou no passo 22 — sem
+  // post, não há comentário para responder. Ancorar no marcador errado é o
+  // tipo de erro que só o roteiro rodando de verdade mostra.
+  await responderEEsperarAninhada(page, { card, aoComentario: COMENTARIO, texto: RESPOSTA });
+  ok('resposta aninhada publicada e recuada sob o comentário pai');
+
   await card.getByRole('button', { name: 'Deletar post' }).click();
   await page.getByRole('button', { name: /^Deletar$/ }).click();
 
@@ -214,15 +228,6 @@ try {
   // isso o passo 3 existe e por isso o E2E não pode rodar com conta de staff.
   await tituloNoFeed.first().waitFor({ state: 'detached', timeout: 30000 });
   ok('post apagado e fora do feed depois da contagem');
-
-  // ── 4c. Responder ao próprio comentário ─────────────────────────────────
-  //
-  // `[24/09]` Segundo dos fluxos de 18/09. O cabeçalho do `comentar.mjs` dizia
-  // desde 05/09 que a resposta aninhada NÃO era coberta — era verdade, e ficou
-  // verdade por 19 dias. A assertiva que importa é o RECUO: resposta que entra
-  // na lista como comentário solto não estoura nada.
-  await responderEEsperarAninhada(page, { card, aoComentario: COMENTARIO, texto: RESPOSTA });
-  ok('resposta aninhada publicada e recuada sob o comentário pai');
 
   // ── 4d. NENHUM post de teste sobrando de execuções anteriores ────────────
   //

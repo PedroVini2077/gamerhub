@@ -1301,7 +1301,7 @@ M riscos · **N o que precisa da aprovação dele**.
   notificações na tela · o comportamento depois de ocultar (não só apagar) ·
   usuário comum × moderador na mesma tela.
 
-  **`[24/09]` Atenção ao tamanho:** o `e2e/fluxos.mjs` está em **283 linhas**
+  **`[24/09]` Atenção ao tamanho:** o `e2e/fluxos.mjs` está em **288 linhas**
   e o teto do §4 é 300. Os próximos fluxos não cabem lá dentro — o corte
   natural é o bloco 4 (publicar → curtir → comentar → responder → apagar)
   virar um roteiro próprio do ciclo do post, deixando o `fluxos.mjs` com login, rotas,
