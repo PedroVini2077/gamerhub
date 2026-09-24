@@ -29,6 +29,7 @@ separado por assunto — assim nada vira um paredão de 1.000 linhas.
 | [`docs/DECISOES.md`](docs/DECISOES.md) | Por que **o site** se comporta assim — decisões de produto, com o que foi **descartado** |
 | [`docs/DECISOES-FERRAMENTAL.md`](docs/DECISOES-FERRAMENTAL.md) | Por que **a esteira** é assim — CI, Vercel, Sentry, Dependabot, Edge Functions, email |
 | [`docs/DECISOES-DE-BANCO.md`](docs/DECISOES-DE-BANCO.md) | Por que **o banco** é assim — desenho de autorização, ciclo de vida, XP e live, com o que foi **recusado** em cada um |
+| [`docs/PLANO-FEED-BUSCA-NEWS.md`](docs/PLANO-FEED-BUSCA-NEWS.md) | **A Fase 0 do próximo grande bloco** — feed paginado, busca de verdade, formatação e o GamerHub News. Análise medida, nada implementado |
 | [`docs/VISAO-DE-FUTURO.md`](docs/VISAO-DE-FUTURO.md) | **Onde o site pode chegar.** Mapa de possibilidades, sem compromisso e sem data — não é fila |
 | [`BACKLOG.md`](BACKLOG.md) | **Dois trabalhos:** a fila do que falta, e a seção **EM EXECUÇÃO**, que guarda o plano da tarefa em curso |
 | [`CLAUDE.md`](CLAUDE.md) | Como o Claude deve trabalhar neste projeto |

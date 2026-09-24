@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**47 itens abertos** (+ 1 ideia sem compromisso)
+**52 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1178,11 +1178,12 @@ dependência técnica real** que decide o resto:
 
 ## 🔮 `[24/09]` O PRÓXIMO GRANDE BLOCO — Feed, Busca, Formatação e News
 
-> **Registrado, não iniciado.** Pedido dele em 24/09: *"quero que vc guarde ele
-> e anote tudo… depois dessas tarefas de organização do código, olhamos oq falta
-> fazer e depois vamos pra esse prompt"*. A ordem é: **terminar a reorganização
-> → revisar esta fila → só então começar**. E o prompt é explícito: **Fase 0 é
-> só análise, nada de implementar** — nem migration, nem RLS, nem código.
+> **`[24/09]` A FASE 0 ESTÁ FEITA** e mora em
+> [`docs/PLANO-FEED-BUSCA-NEWS.md`](docs/PLANO-FEED-BUSCA-NEWS.md) — os 14 itens
+> (A–N) que ele exigiu, com o que foi **medido** separado do que é proposta.
+> **Nada foi implementado:** nenhuma migration, nenhuma policy, nenhuma linha de
+> produto. O que falta agora é **decisão dele** (item N do documento), e os cinco
+> pontos estão na seção de decisões deste backlog.
 
 ### Os quatro eixos
 
@@ -1278,7 +1279,51 @@ M riscos · **N o que precisa da aprovação dele**.
 
 ---
 
+## 🐛 `[24/09]` Achados da Fase 0 — defeitos que existem HOJE
+
+> Saíram da análise do feed, nenhum foi relatado. São **bugs existentes**, não
+> tarefas da feature — por isso entram como itens próprios e vêm antes do bloco
+> (§0: bug na frente de feature).
+
+- ⬜ `[24/09]` 🟡 **O contador de "novos posts" promete o que o feed não
+  mostra.** *O handler de realtime conta **todo** INSERT em `posts`; a consulta
+  do feed exclui `live_kind IS NOT NULL`. Alguém abrir uma live incrementa
+  "1 novo post" para todo mundo com a aba aberta — e o clique não traz nada.
+  Mesma classe para post que a RLS esconde de quem está olhando. O conserto é
+  o handler aplicar o mesmo recorte da consulta.*
+
+- ⬜ `[24/09]` 🟡 **O contador conta EVENTOS, não posts.** *Quem fica com a aba
+  aberta duas horas acumula um número que não corresponde a nada no banco; quem
+  acabou de entrar vê zero com 200 posts novos desde a última visita. O pedido
+  do dono — "existem 500 novos posts" — presume um número que hoje **não é
+  medido**. Ele é contado na memória da aba. Decisão de produto envolvida: ver
+  o item N.2 do `PLANO-FEED-BUSCA-NEWS.md`.*
+
+- ⬜ `[24/09]` 🟢 **`posts` acumula lixo de CI sem retenção.** *Medido: 404
+  linhas, **403 criadas por robô** ([e2e …] e [painel …]), todas soft-deletadas
+  e nenhuma jamais removida. É a mesma classe de "tabela append-only sem
+  retenção" que o §6.1 lista para `admin_logs` e `login_attempts` — e ninguém
+  tinha olhado `posts` sob essa luz. Apagar de verdade é destrutivo (🔴) e
+  depende dele.*
+
+- ⬜ `[24/09]` 🟢 **O feed trunca em 30 sem dizer.** *`fetchFeedPosts(30)` é
+  consulta única, sem paginação: **o post nº 31 é inalcançável** a não ser por
+  link direto. Hoje é invisível porque há zero posts vivos; com acervo vira "o
+  site perdeu meus posts antigos". Resolvido pela fase 2 do plano.*
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
+
+- ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
+  *Detalhe e recomendação em cada uma no item N de
+  [`docs/PLANO-FEED-BUSCA-NEWS.md`](docs/PLANO-FEED-BUSCA-NEWS.md). Resumo:*
+
+  | # | A decisão | Minha recomendação |
+  | --- | --- | --- |
+  | 1 | **Ordem das fases** — proponho paginação ANTES de tirar categorias e trocar a busca | fazer a paginação primeiro: ela é o alicerce das outras duas, e mexer numa tela que vai ser reescrita é trabalho em dobro |
+  | 2 | **O que o contador de novos posts deve dizer** | número **com teto** (`"20+"`): entrega o útil sem prometer um número que o sistema não mede bem |
+  | 3 | **News público ou logado** | é a **primeira** área pública com conteúdo do site; se público, `anon` ganha leitura de artigos publicados — exceção à régua de 12/09, e é decisão sua |
+  | 4 | **SEO: decidir agora ou adiar** | adiar até existir artigo publicado; decidir no escuro custa mais |
+  | 5 | **Retenção de `posts`** — o que fazer com as 403 linhas de CI | apagar de verdade é 🔴 e não faço sem você dizer |
 
 - ⬜ `[24/09]` 🟠 **O painel do Fundador autoriza por LITERAL, e as duas saídas
   têm risco.** *Achado na parte 1 da auditoria (SEC-051). **Não é
