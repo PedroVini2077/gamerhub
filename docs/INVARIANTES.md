@@ -137,6 +137,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-PORTA-004** | Os cabeçalhos de segurança da borda existem **com o valor certo** — presença não basta, `SAMEORIGIN` no lugar de `DENY` é proteção enfraquecida | — | `e2e/portas-da-web.mjs` · `portasDaWebNaoEsvaziam.test.js` |
 | **INV-PORTA-005** | As três portas do contador de login ficam fechadas para `authenticated` | — | `src/lib/__tests__/contadorDeLoginFechado.test.js` |
 | **INV-PORTA-006** | Nenhuma função nasce alcançável por `anon` **fora da lista branca escrita** — e o auditor que verifica isso tem de ser **ouvível pelo CI** | SEC-042 · SEC-043 · SEC-050 | `e2e/portas-do-banco.mjs` · `src/lib/__tests__/auditorDoBancoEhOuvido.test.js` |
+| **INV-PORTA-007** | O navegador **não executa script de origem que não esteja na CSP** — e a política é verificada num navegador de verdade antes de ir ao ar, nunca só escrita | — | `e2e/politica-de-conteudo.mjs` |
 
 ---
 

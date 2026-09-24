@@ -167,6 +167,7 @@ Garantem que dois lugares do código continuem concordando.
 | Roteiro | O que cobre |
 | --- | --- |
 | `portas-do-banco.mjs` | REST API com a `anon key` real — as duas direções |
+| `politica-de-conteudo.mjs` | **`[24/09]`** a CSP quebrando o site: 6 rotas num Chromium de verdade, mais sonda de `frame-src` e `connect-src` — e um **controle** que prova que o roteiro distingue política de falha de rede |
 | `portas-da-web.mjs` | a borda HTTP: cabeçalho por VALOR, vazamento, source map |
 | `portas-fechadas.mjs` | as Edge Functions recusando quem não deve |
 | `fluxos.mjs` · `publicarPost.mjs` · `comentar.mjs` | publicar, comentar, o caminho autenticado |

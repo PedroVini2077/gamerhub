@@ -36,9 +36,12 @@
  *
  * Ele é caixa-preta e olha só a resposta HTTP da borda. Não testa lógica, não
  * testa permissão, não testa XSS — nada do que um humano ou uma auditoria (§6)
- * faz. E **não** verifica CSP, porque o site ainda não tem: isso é item aberto
- * no `BACKLOG.md`, com o motivo escrito. Portão não inventa cobertura que não
- * tem (§6.3).
+ * faz.
+ *
+ * `[24/09]` A **CSP** passou a existir, e o `e2e/politica-de-conteudo.mjs` a
+ * verifica num navegador de verdade. A exigência do cabeçalho AQUI entra no PR
+ * seguinte, e a ordem é obrigatória: este roteiro bate na **produção**, então
+ * exigir o cabeçalho antes do deploy reprovaria o próprio PR que o publica.
  *
  * Uso:  SITE_URL=https://exemplo.app node e2e/portas-da-web.mjs
  */

@@ -1692,3 +1692,61 @@ exceção **com o motivo escrito na migration**, e a trava
 
 **O que muda de verdade:** função **nova** que autorize por literal passa a ser
 vista. O ponto cego fecha para o futuro, que é onde ele doía.
+
+---
+
+## `[24/09]` A CSP entrou — e o que destravou foi medir, não coragem
+
+O item ficou aberto desde 19/09 com um motivo honesto: **CSP errada derruba o
+site**. React+Vite gera estilo inline, e Supabase, Sentry, Google Fonts e os
+embeds de live precisam estar liberados por nome; um `default-src` apertado
+demais apaga a tela inteira — a classe do erro do SEC-025.
+
+A resposta certa não era evitar. Era **medir num navegador de verdade antes de
+publicar**.
+
+### A política
+
+| Diretiva | Valor | Por quê |
+| --- | --- | --- |
+| `script-src` | `'self'` | **é a que importa.** Nenhum script externo, nenhum inline |
+| `frame-src` | youtube · youtube-nocookie · player.twitch · clips.twitch | as três origens que o `EmbedPlayer` realmente usa — lidas no código |
+| `connect-src` | `'self'` · `*.supabase.co` · `wss://*.supabase.co` · sentry · vitals | REST, realtime, erro e métrica |
+| `style-src` | `'self' 'unsafe-inline'` + fonts.googleapis | o `unsafe-inline` é obrigatório: React e Framer Motion escrevem estilo inline |
+| `img-src` / `media-src` | `'self' data: blob: https:` | o `avatar_url` do usuário é uma URL arbitrária; apertar aqui quebraria foto de perfil |
+| `base-uri` · `object-src` · `frame-ancestors` · `form-action` | `'self'` / `'none'` | fecham sequestro de base, plugin, clickjacking e post para fora |
+
+### Como foi verificada — e o controle sem o qual a medição mentiria
+
+`e2e/politica-de-conteudo.mjs` sobe o `dist` com a política **lida do
+`vercel.json`** e carrega 6 rotas públicas num Chromium. Resultado: **0
+violações, 0 erros de página**.
+
+Rota pública não exercita `frame-src` nem `connect-src`, então ele **sonda as
+duas**: cria um iframe para cada origem de embed e dispara `fetch` para as
+origens permitidas.
+
+> **A armadilha que quase me pegou.** Na primeira execução o `fetch` para o
+> Supabase falhou com `Failed to fetch` e **zero violações de CSP**. Concluir
+> *"a CSP bloqueou"* teria sido inferência vestida de fato (§1.1) — o ambiente
+> não tem saída de rede na página.
+>
+> Por isso existe o **controle**: uma origem que a política proíbe de verdade.
+> Ela falha **com** violação no console; as outras falharam **sem**. A diferença
+> é a prova de que o que barrou as outras foi a rede, não a política.
+
+### O que ela NÃO cobre
+
+**Rota autenticada.** O roteiro não faz login, então feed, lives, perfil e
+painel não passam por ele. O risco é baixo e nomeável: essas telas não
+introduzem origem nova — usam o mesmo Supabase e os mesmos embeds que a sonda já
+cobre. Domínio novo tem de ser somado ali.
+
+Provado reinjetando **quatro** políticas quebradas: youtube fora do `frame-src`,
+`script-src 'none'`, `style-src` sem `unsafe-inline`, e a CSP apagada do
+`vercel.json`.
+
+> **A primeira versão do roteiro passou VERDE com o youtube bloqueado.** Eu
+> checava `iframe.contentWindow`, que continua verdadeiro num frame barrado —
+> ele aponta para `about:blank`. Quem sabe a verdade é o console. Consertado e
+> reprovado de novo.
