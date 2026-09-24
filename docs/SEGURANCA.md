@@ -1746,7 +1746,16 @@ Provado reinjetando **quatro** políticas quebradas: youtube fora do `frame-src`
 `script-src 'none'`, `style-src` sem `unsafe-inline`, e a CSP apagada do
 `vercel.json`.
 
-> **A primeira versão do roteiro passou VERDE com o youtube bloqueado.** Eu
-> checava `iframe.contentWindow`, que continua verdadeiro num frame barrado —
-> ele aponta para `about:blank`. Quem sabe a verdade é o console. Consertado e
-> reprovado de novo.
+> **Este roteiro errou DUAS vezes antes de ficar de pé, e as duas foram o mesmo
+> engano meu: usar "carregou?" como evidência.**
+>
+> | Versão | O que eu media | Como quebrou |
+> | --- | --- | --- |
+> | 1ª | `iframe.contentWindow` | continua **verdadeiro** num frame barrado — ele aponta para `about:blank`. Reinjetar "youtube fora do `frame-src`" passou **verde** |
+> | 2ª | `contentWindow` **ou** violação no console | o CI reprovou com o Twitch "bloqueado" — lá a rede **não alcança** twitch.tv, e o iframe não carrega **por rede** |
+>
+> A única evidência que distingue política de rede é a **mensagem do
+> navegador**: bloqueio de CSP vira `Refused to frame ... because it violates`.
+> Hoje o roteiro olha só isso — e o **controle** é o que prova que ele consegue
+> ver essa mensagem. Sem o controle, *"nenhum frame bloqueado"* poderia
+> significar *"não escutei nada"*.

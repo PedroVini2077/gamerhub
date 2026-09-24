@@ -145,14 +145,23 @@ const frames = await sonda.evaluate(async (alvos) => {
   return r;
 }, EMBEDS);
 
-// `[24/09]` `f.contentWindow` continua verdadeiro num iframe BLOQUEADO — ele
-// aponta para `about:blank`. A primeira versao deste roteiro checava so isso, e
-// reinjetar "youtube fora do frame-src" passou VERDE. Quem sabe a verdade e o
-// console: bloqueio de frame vira `Refused to frame ...`.
-for (const [host, carregou] of frames) {
-  const barrado = violacoesDaSonda.some(v => v.includes(host));
-  if (barrado || !carregou) {
-    violacoes.push(`frame-src :: ${host} foi BLOQUEADO — o player de live nao abriria`);
+// `[24/09]` SO o console decide. Duas versoes erradas antes desta:
+//
+//   1. `f.contentWindow` continua verdadeiro num iframe BLOQUEADO — ele aponta
+//      para `about:blank`. Reinjetar "youtube fora do frame-src" passou VERDE.
+//   2. Entao somei `|| !carregou`, e o CI reprovou com o Twitch "bloqueado":
+//      la a rede nao alcanca a twitch.tv, e o iframe nao carrega **por rede**.
+//      Acusar a CSP por isso e mandar procurar no lugar errado (§1.5).
+//
+// A unica evidencia que distingue politica de rede e a mensagem do navegador:
+// bloqueio de CSP vira `Refused to frame ... because it violates`. O CONTROLE
+// la embaixo e o que prova que este roteiro CONSEGUE ver essa mensagem — sem
+// ele, "nenhum frame bloqueado" poderia significar "nao escutei nada".
+for (const [host] of frames) {
+  const recusadoPelaPolitica = violacoesDaSonda.some(
+    v => v.includes(host) && /Refused to frame|violates the following Content Security Policy/i.test(v));
+  if (recusadoPelaPolitica) {
+    violacoes.push(`frame-src :: ${host} foi BLOQUEADO PELA CSP — o player de live nao abriria`);
   }
 }
 
