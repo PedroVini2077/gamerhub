@@ -143,6 +143,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-PORTA-007** | O navegador **não executa script de origem que não esteja na CSP** — e a política é verificada num navegador de verdade antes de ir ao ar, nunca só escrita | — | `e2e/politica-de-conteudo.mjs` |
 | **INV-PORTA-008** | **`[24/09]`** A CSP continua **no ar** e as seis diretivas que não têm motivo legítimo de crescer (`default-src`, `script-src`, `object-src`, `base-uri`, `frame-ancestors`, `form-action`) continuam **com o valor exato** — presença não é proteção: `script-src 'self' 'unsafe-inline'` passa em qualquer checagem de "contém 'self'" | — | `e2e/portas-da-web.mjs` · `portasDaWebNaoEsvaziam.test.js` |
 | **INV-PORTA-009** | **`[24/09]`** O HTML servido ao visitante **não carrega prosa de implementação** — comentário de HTML, diferente do JSX, não é removido pelo build e vai inteiro para o `dist/`. A explicação mora no `ARQUITETURA.md`, e a trava confere as **duas** pontas: nenhum comentário no HTML **e** a seção de destino continuar de pé com o conteúdo dentro | — | `src/lib/__tests__/htmlNaoVazaProsa.test.js` |
+| **INV-PORTA-010** | **`[24/09]`** A **busca** não passa por cima da RLS: `buscar_posts` é `SECURITY INVOKER` — provado em ROLLBACK, usuário comum buscando o termo de um post **ocultado** recebe zero. E `buscar_pessoas`, que precisa ser `DEFINER` (as colunas pessoais de `profiles` são revogadas desde a SEC-025), devolve **só** `id`, `username`, `avatar_url` e `role` — o recorte é a defesa | SEC-025 | `src/lib/__tests__/buscaNaoVazaNemMente.test.js` |
 
 ---
 

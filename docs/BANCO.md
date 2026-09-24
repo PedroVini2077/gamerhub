@@ -122,6 +122,30 @@ transforma esta pegadinha em bug silencioso (§4).
 
 **Chamadas pelo front (RPC):**
 
+- **`[24/09]` Busca:** `buscar_posts(p_termo, p_limite)` e
+  `buscar_pessoas(p_termo, p_limite)` — as duas devolvem **só a ordem/recorte**,
+  e o cliente monta as linhas.
+
+  > **`buscar_posts` é `SECURITY INVOKER`**: a RLS de `posts` já esconde
+  > apagado e oculto, e sob `DEFINER` a busca viraria porta para conteúdo
+  > moderado. Provado em ROLLBACK: usuário comum buscando o termo de um post
+  > ocultado recebe **zero**; `postgres` recebe 1.
+  >
+  > **`buscar_pessoas` é `SECURITY DEFINER` por necessidade** — as colunas
+  > pessoais de `profiles` são revogadas de `authenticated` desde a SEC-025, e
+  > o cliente não lê a tabela direto. Quando a função passa por cima da RLS, a
+  > defesa deixa de ser a policy e passa a ser o **recorte**: ela devolve `id`,
+  > `username`, `avatar_url` e `role`, e mais nada. Banido não aparece.
+  >
+  > **O dicionário é `portugues_sem_acento`** (`unaccent` + radicalizador), numa
+  > configuração própria — `unaccent()` é `STABLE` e não caberia numa coluna
+  > gerada, mas `to_tsvector(regconfig, text)` é `IMMUTABLE` qualquer que seja o
+  > dicionário dentro da config.
+  >
+  > **Ela não pagina, e isso é decisão:** `ts_rank` é calculado, não indexado,
+  > então keyset por relevância não existe — paginar aqui seria `OFFSET`
+  > disfarçado. Corta em 50 e a tela **diz** que cortou.
+
 - **`[24/09]` Feed:** `feed_pagina(p_limite, p_cursor_created_at, p_cursor_id)`
   — uma página do feed por **keyset**. `SECURITY INVOKER` de propósito: a RLS
   de `posts` já esconde apagado e oculto, e `DEFINER` aqui desligaria isso.

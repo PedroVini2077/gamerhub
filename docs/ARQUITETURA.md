@@ -208,6 +208,9 @@ src/
 │   │                      # aparecer. Leitura logo após escrita pode cair numa
 │   │                      # conexão do pool que ainda não vê a linha — o feed
 │   │                      # engolia o post e nada estourava (§1.5)
+│   ├── areasDaBusca.js    # `[24/09]` As abas da busca (Tudo · Posts · Pessoas).
+│   │                      # Lista para a tela não saber quantas existem —
+│   │                      # somar notícias/lives/jogos é somar uma linha
 │   ├── novidadeDoFeed.js  # `[24/09]` O aviso de "novas publicações": o que CONTA
 │   │                      # (só o que apareceria no feed — live e post oculto
 │   │                      # ficam de fora) e o teto de 20, decidido pelo dono
@@ -325,6 +328,9 @@ src/
 │   │                      # recusava sempre. Hoje as coordenadas vão no
 │   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
+│   ├── buscaService.js    # `[24/09]` A busca: chama as RPCs `buscar_posts` e
+│   │                      # `buscar_pessoas`, que devolvem só IDS, e monta as
+│   │                      # linhas com o mesmo POST_SELECT do feed
 │   ├── postSelect.js      # `[24/09]` COMO um post do feed é montado: colunas,
 │   │                      # autor, mídia e engajamento em lote. Fonte ÚNICA do
 │   │                      # que uma tela recebe ao pedir um post
@@ -365,6 +371,8 @@ src/
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
 │   ├── Lives.jsx          # Lista de lives + sub-tabs + player + chat + moderação
+│   ├── Busca.jsx          # `[24/09]` `/busca?q=` — o termo mora na URL para o
+│   │                      # resultado ser recarregável e compartilhável
 │   ├── Ranks.jsx          # Explicação do sistema de XP/ranks
 │   ├── Profile.jsx        # Perfil próprio (edição, avatar, stats, XP)
 │   ├── UserProfile.jsx    # Perfil público de outro usuário

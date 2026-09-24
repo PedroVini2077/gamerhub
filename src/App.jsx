@@ -39,7 +39,7 @@ import NotFound from './pages/NotFound';
 
 // As páginas sob demanda moram em `paginasLazy.js` — ver o porquê lá.
 import {
-  Landing, Home, Sobre, Privacidade, Regras, Contato, Termos, PostPage, MuralPage, Community, Keys, Profile, Admin, Settings, UserProfile, Lives, Ranks, Owner,
+  Landing, Home, Sobre, Privacidade, Regras, Contato, Termos, PostPage, MuralPage, Community, Keys, Profile, Admin, Settings, UserProfile, Lives, Ranks, Owner, Busca
 } from './paginasLazy';
 
 function PageLoader() {
@@ -223,6 +223,7 @@ function AppRoutes() {
       <Route path="/lives" element={<RequireAuth><Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout></RequireAuth>} />
       <Route path="/lives/:id" element={<RequireAuth><Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout></RequireAuth>} />
       <Route path="/ranks" element={<RequireAuth><Layout><Ranks /></Layout></RequireAuth>} />
+      <Route path="/busca" element={<RequireAuth><Layout><Busca /></Layout></RequireAuth>} />
       <Route path="/owner" element={<RequireAuth><Layout><Owner /></Layout></RequireAuth>} />
       <Route path="*" element={<NotFound />} />
       </Routes>

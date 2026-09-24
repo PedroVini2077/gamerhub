@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
 import PostCard from '../components/feed/PostCard';
@@ -12,6 +13,7 @@ import { rotuloDeNovos } from '../lib/novidadeDoFeed';
 
 export default function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
 
   // `[24/09]` Buscar dado, assinar realtime e contar novidade saíram para o
@@ -23,15 +25,15 @@ export default function Home() {
     carregarMais, temMais, carregandoMais,
   } = useFeed(user?.id);
 
-  // `[24/09]` O filtro por CATEGORIA saiu: publicar não pede mais que a pessoa
-  // classifique o que escreveu. A busca continua aqui por enquanto, e ela é
-  // limitada de propósito — só enxerga o que já foi carregado. A busca de
-  // verdade (consulta ao banco, com /busca) é a fase seguinte do plano.
-  const filtered = useMemo(() => posts.filter(p => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return p.title?.toLowerCase().includes(q) || p.content?.toLowerCase().includes(q);
-  }), [posts, search]);
+  // `[24/09]` A busca DEIXOU de filtrar o que está carregado e virou porta para
+  // `/busca`, que consulta o banco. O filtro antigo dizia "Buscar posts" e
+  // procurava nos 20 da página — resposta errada apresentada como completa, e
+  // a paginação só piorou isso.
+  const irParaBusca = (e) => {
+    e.preventDefault();
+    const termo = search.trim();
+    if (termo) navigate(`/busca?q=${encodeURIComponent(termo)}`);
+  };
 
   return (
     <div className="flex gap-6">
@@ -52,23 +54,25 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Busca — limitada ao que já foi carregado, até a fase da busca real */}
-        <div className="card p-4">
+        {/* Porta para `/busca` — o Enter leva; aqui não se filtra mais nada. */}
+        <form className="card p-4" onSubmit={irParaBusca}>
           <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green transition-all">
             <span className="pl-3 text-gray-500 shrink-0"><Search size={14} /></span>
             <input
               className="flex-1 bg-transparent py-2.5 px-3 text-sm text-white placeholder-gray-600 outline-none font-body"
-              placeholder="Buscar posts..."
+              placeholder="Buscar no GamerHub..."
+              aria-label="Buscar no GamerHub"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
             {search && (
-              <button onClick={() => setSearch('')} className="pr-3 text-gray-500 hover:text-white">
+              <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca"
+                className="pr-3 text-gray-500 hover:text-white">
                 <X size={14} />
               </button>
             )}
           </div>
-        </div>
+        </form>
 
         {rotuloDeNovos(newPosts) && (
           <button
@@ -96,16 +100,16 @@ export default function Home() {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : posts.length === 0 ? (
           <div className="card p-8 text-center">
             <p className="font-mono text-gray-500 text-sm">
-              {search ? 'Nenhum post encontrado.' : 'Nenhum post ainda. Seja o primeiro!'}
+              Nenhum post ainda. Seja o primeiro!
             </p>
           </div>
         ) : (
           <motion.div className="space-y-4"
             variants={listContainer} initial="initial" animate="animate">
-            {filtered.map(p => (
+            {posts.map(p => (
               <motion.div key={p.id} variants={listItem}>
                 <PostCard post={p} onDelete={reloadPosts} />
               </motion.div>
@@ -116,7 +120,7 @@ export default function Home() {
         {/* `[24/09]` Carregar mais é ATO DA PESSOA, não rolagem infinita: o
             pedido do dono é "indicador discreto -> usuário decide -> atualiza".
             Só aparece quando o banco disse que existe próxima página. */}
-        {temMais && !search && (
+        {temMais && (
           <button
             onClick={() => carregarMais()}
             disabled={carregandoMais}

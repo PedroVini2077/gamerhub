@@ -76,6 +76,10 @@ export const ROTAS_LOGADO = [
   { path: '/settings',            nome: 'Configurações',  esperado: /Zona de Perigo/i },
   { path: '/lives',               nome: 'Lives',          esperado: /Lives/i },
   { path: '/ranks',               nome: 'Ranks',          esperado: /Todos os Ranks/i },
+  // `[24/09]` Sem `?q=`: o estado vazio é determinístico, não depende de haver
+  // post nenhum no banco. O caminho COM resultado é exercitado pelo
+  // `cicloDoPost`, que busca o post que ele mesmo acabou de publicar.
+  { path: '/busca',               nome: 'Busca',          esperado: /Escreva algo para buscar/i },
   { path: `/u/${PERFIL_PUBLICO}`, nome: 'Perfil público', esperado: /./ },
   // `[29/08]` A página de um post, com um id que NÃO existe de propósito.
   //
