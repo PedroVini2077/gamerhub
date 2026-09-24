@@ -166,6 +166,11 @@ export const TERRITORIO = {
   ],
   'docs/ARQUITETURA.md': [
     'src/App.jsx',
+    // `[24/09]` O `index.html` tem DOIS donos de propósito: a `identidade`
+    // responde pelos ícones e pelo cartão, e o `ARQUITETURA` pela seção que
+    // recebeu a prosa que saía no HTML servido ao visitante. Mudou o HTML, os
+    // dois precisam de conferência.
+    'index.html',
     'src/paginasLazy.js',
     'src/services',
     'src/hooks',

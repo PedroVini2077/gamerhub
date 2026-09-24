@@ -134,6 +134,7 @@ Garantem que dois lugares do código continuem concordando.
 | `tabelasSemUpdate.test.js` | `update` em tabela sem policy — 0 linhas, nenhum erro | `INV-CONTRATO-005` |
 | `apagarConfereLinhas.test.js` | escrita que pode ser negada sem conferir linhas | `INV-CONTRATO-006` |
 | `portasDaWebNaoEsvaziam.test.js` | as **duas** listas do portão da borda sendo esvaziadas — cabeçalhos e diretivas travadas da CSP | `INV-PORTA-004` · `INV-PORTA-008` |
+| `htmlNaoVazaProsa.test.js` | **`[24/09]`** comentário de implementação voltando ao HTML que o visitante baixa — e, do outro lado, a prosa sendo **apagada** em vez de mudada de lugar | `INV-PORTA-009` |
 | `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** — e, desde a SEC-051, também a lista de **isentas da checagem de literal de papel** | `INV-PORTA-006` |
 | `cofre.test.js` | código do cofre guardado em texto; reset em 2 cliques | `INV-CONTA-004` |
 | `documentosLegais.test.js` | texto legal mudando por baixo de quem aceitou | `INV-CONTA-005` |

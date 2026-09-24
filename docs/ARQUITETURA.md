@@ -728,6 +728,88 @@ exceto o owner, reagindo em tempo real à `site_config`.
 
 ---
 
+## `[24/09]` O `index.html` — o que cada linha faz, e por quê
+
+> **Por que esta seção existe, com número.** O `index.html` carregava **7
+> comentários** de explicação, e eles eram os únicos comentários do projeto que
+> **chegam ao navegador de quem usa**. Medido na Fase 0 da reorganização:
+> comentário JSX `{/* */}` tem **227 blocos** no fonte e **zero** no build — o
+> compilador os remove. Comentário de HTML não: os 7 sobreviviam intactos para
+> o `dist/index.html`, e qualquer pessoa os lia em "ver código-fonte".
+>
+> A prosa não foi apagada; ela mora **aqui** agora, e o `index.html` ficou só
+> com as linhas que fazem alguma coisa. Um teste reprova se um comentário
+> voltar — `src/lib/__tests__/htmlNaoVazaProsa.test.js`.
+
+### Ícones e manifesto
+
+`[11/09]` Todos os ícones da marca saem de `src/lib/marca.js` por
+`npm run icones` — **nenhum é editado à mão**, então o favicon não tem como
+divergir da marca que o site desenha.
+
+### Canonical base
+
+`[17/09]` O `MetaDaRota` reescreve o canonical por página assim que o
+JavaScript roda. O valor estático no `index.html` existe para dois casos:
+quem **não** executa JS não ficar sem canonical nenhum, e o endereço com
+`?utm_source=…` ou `?fbclid=…` não virar uma segunda versão da landing.
+
+### Dados estruturados — só `WebSite`, e a escolha é deliberada
+
+`[17/09]` Cada campo declarado existe no site: o nome, o endereço, a descrição
+(a mesma da `meta`) e o idioma.
+
+**`Organization` ficou de fora de propósito.** O GamerHub é um projeto, não uma
+organização com endereço, contato ou quadro de pessoas — declarar esse tipo
+seria inflar o que ele é. E `sameAs` apontando para o repositório no GitHub não
+é perfil de organização: é onde o código mora. *"Não invente dados
+estruturados"* foi pedido explícito.
+
+**`SearchAction` também ficou fora:** ele declara uma URL de busca, e o site não
+tem busca pública. Declará-la seria prometer uma página que devolve 404.
+
+Fica no HTML estático, e não no `MetaDaRota`, porque dado estruturado é lido por
+quem **não** executa JavaScript com mais frequência do que o título.
+
+### O cartão de compartilhamento (`og:image`)
+
+`[11/09]` Ele **não existia**: link do site colado no WhatsApp ou no Discord
+vinha sem imagem nenhuma. É gerado da mesma fonte da marca por `npm run icones`
+— não é editado à mão.
+
+A URL é **absoluta de propósito**: WhatsApp, Discord e Twitter buscam a imagem
+do servidor deles, sem página nenhuma aberta, e caminho relativo não resolve
+nesse contexto.
+
+**JPEG e não WebP:** o rastreador do Facebook ainda falha com WebP em parte dos
+casos, e a falha é **muda** — o link volta a aparecer sem imagem. O porquê
+inteiro está no comentário de `scripts/gerar-icones.mjs`.
+
+`[12/09]` O cartão deixou de ser a marca sozinha e passou a ser **a arte de
+abertura da landing**, com a marca assinando o canto. Decisão do dono: quem
+clica no link vê exatamente o que a prévia mostrou — que é a única coisa que um
+cartão de compartilhamento precisa fazer.
+
+`summary_large_image` e não `summary`: com imagem de 1200×630, o `summary` a
+recortaria num quadradinho ao lado do texto.
+
+### As fontes, e o que SUMIU junto com elas
+
+`[03/09]` As fontes saíram do Google e passaram a ser servidas do próprio
+domínio. O `@font-face` está no `src/index.css`, com o porquê inteiro.
+
+Sumiu com isso tudo que existia aqui: os dois `preconnect`, o `preload` da
+folha externa, o truque `media="print" + onload` e o `<noscript>` que existia
+porque o truque depende de JavaScript. **Nada disso é necessário quando o
+arquivo mora no mesmo domínio** — não há handshake com terceiro para adiantar,
+nem folha de estilo externa bloqueando a primeira pintura.
+
+O `preload` que ficou é de **outra natureza**: ele não busca um CSS que revela
+outra URL, busca o arquivo final. É a fonte do corpo do texto, a única que
+aparece em toda tela; as outras entram sob demanda.
+
+---
+
 ## ⚡ O caminho crítico de carregamento
 
 > Levantado por um Lighthouse em produção em 27/08/2026 e corrigido em 28/08.

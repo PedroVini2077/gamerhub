@@ -3,9 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- `[11/09]` Os ícones da marca nova. Todos saem de `src/lib/marca.js`
-         por `npm run icones` — nenhum é editado à mão, então o favicon não
-         tem como divergir da marca que o site desenha. -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -14,30 +11,8 @@
     <title>GamerHub — a comunidade gamer brasileira</title>
     <meta name="description" content="Rede social gamer brasileira: feed de dicas, curiosidades e news, mural da comunidade, lives com chat ao vivo, keys grátis e sistema de ranks por XP." />
 
-    <!-- Prévia ao compartilhar o link (WhatsApp, Discord, X). Sem isso o link
-         do site aparecia sem título nem descrição. -->
-    <!-- `[17/09]` Canonical BASE. O `MetaDaRota` o reescreve por página assim
-         que o JavaScript roda; este valor existe para quem NÃO executa JS não
-         ficar sem canonical nenhum — e para o endereço com `?utm_source=…` ou
-         `?fbclid=…` não virar uma segunda versão da landing. -->
     <link rel="canonical" href="https://gamerhub-nine.vercel.app/" />
 
-    <!-- `[17/09]` Dados estruturados — Etapa 3 do Prompt 1.
-         SÓ `WebSite`, e a escolha é deliberada. Cada campo aqui existe no site:
-         o nome, o endereço, a descrição (a mesma da meta acima) e o idioma.
-
-         `Organization` ficou de FORA de propósito. O GamerHub é um projeto, não
-         uma organização com endereço, contato ou quadro de pessoas — declarar
-         esse tipo seria inflar o que ele é. E `sameAs` apontando para o
-         repositório no GitHub não é perfil de organização: é onde o código
-         mora. "Não invente dados estruturados" foi pedido explícito.
-
-         `SearchAction` também ficou fora: ele declara uma URL de busca, e o
-         site não tem busca pública. Declará-la seria prometer uma página que
-         devolve 404.
-
-         Fica no HTML estático, e não no `MetaDaRota`: dado estruturado é lido
-         por quem NÃO executa JavaScript com mais frequência do que o título. -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -54,41 +29,14 @@
     <meta property="og:title" content="GamerHub — a comunidade gamer brasileira" />
     <meta property="og:description" content="Feed, mural, lives com chat ao vivo, keys grátis e ranks por XP. Entra no Hub." />
     <meta property="og:locale" content="pt_BR" />
-    <!-- `[11/09]` O cartão de compartilhamento. Ele NÃO existia: link do site
-         colado no WhatsApp ou no Discord vinha sem imagem nenhuma. Gerado da
-         mesma fonte da marca por `npm run icones` — não é editado à mão.
-         A URL é ABSOLUTA de propósito: WhatsApp, Discord e Twitter buscam a
-         imagem do servidor deles, sem página nenhuma aberta, e caminho
-         relativo não resolve nesse contexto.
-         JPEG e não WebP: o rastreador do Facebook ainda falha com WebP em
-         parte dos casos, e a falha é MUDA — o link volta a aparecer sem
-         imagem. Ver o comentário em `scripts/gerar-icones.mjs`.
-         `[12/09]` O cartão deixou de ser a marca sozinha e passou a ser A ARTE
-         de abertura da landing, com a marca assinando o canto. Decisão do dono.
-         Quem clica no link vê exatamente o que a prévia mostrou — que é a
-         única coisa que um cartão de compartilhamento precisa fazer. -->
     <meta property="og:image" content="https://gamerhub-nine.vercel.app/cartao-1200x630.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="A arte de abertura do GamerHub: telas de feed, lives, keys e ranks em volta da marca" />
-    <!-- `summary_large_image` e não `summary`: com imagem de 1200x630, o
-         `summary` a recortaria num quadradinho ao lado do texto. -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="GamerHub — a comunidade gamer brasileira" />
     <meta name="twitter:description" content="Feed, mural, lives com chat ao vivo, keys grátis e ranks por XP. Entra no Hub." />
 
-    <!-- `[03/09]` As fontes saíram do Google e passaram a ser servidas daqui.
-         O `@font-face` está no `src/index.css`, com o porquê inteiro.
-
-         Sumiu com tudo que existia aqui: os dois `preconnect`, o `preload`, o
-         truque `media="print" + onload` e o `<noscript>` que existia porque o
-         truque depende de JavaScript. Nada disso é necessário quando o arquivo
-         mora no mesmo domínio — não há handshake com terceiro para adiantar,
-         nem folha de estilo externa bloqueando a primeira pintura.
-
-         O `preload` abaixo é de OUTRA natureza: ele não busca um CSS que
-         revela outra URL, busca o arquivo final. É a fonte do corpo do texto,
-         a única que aparece em toda tela; as outras entram sob demanda. -->
     <link
       rel="preload"
       as="font"

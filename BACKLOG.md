@@ -115,7 +115,14 @@ duplicar fonte de verdade (§4):
    `INV-TELA-001/002/003`, `INV-LEGAL-001/002`, `INV-CONTRATO-007` e
    `INV-CONTA-006/007`. O `INVARIANTES.md` passou a **46 invariantes em 12
    famílias**, e nenhuma linha do `TRAVAS.md` diz mais "sem INV".
-4. Os 7 comentários do `index.html`.
+4. ✅ **FEITO** `[24/09]` — os **7 comentários do `index.html`**. Eles eram os
+   únicos comentários do projeto que **chegam ao navegador**: o JSX tem 227
+   blocos no fonte e zero no build, o de HTML vai inteiro para o `dist/`. A
+   prosa foi **copiada** para a seção "O `index.html` — o que cada linha faz, e
+   por quê" do `ARQUITETURA.md` (nada apagado), e a trava
+   `htmlNaoVazaProsa.test.js` confere as duas pontas — nenhum comentário no
+   HTML **e** a seção continuar de pé com o conteúdo dentro, senão ela premiaria
+   quem apaga a explicação. `INV-PORTA-009`.
 5. ADRs, um a um, **copiando** a prosa; o comentário original vira referência
    **só depois** de o ADR estar no ar e validado.
 
@@ -1852,8 +1859,8 @@ M riscos · **N o que precisa da aprovação dele**.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->137<!--/n--> arq ·
-  <!--n:src.lib.linhas-->16.276<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->138<!--/n--> arq ·
+  <!--n:src.lib.linhas-->16.379<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->19<!--/n--> arq ·
   <!--n:src.services.linhas-->1.942<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
