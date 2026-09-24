@@ -1504,41 +1504,47 @@ M riscos · **N o que precisa da aprovação dele**.
   **Minha recomendação é a do meio**, pelo precedente do `npm run edges`: fora
   do CI de propósito, mas existindo e rodável.
 
-- ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *Medido hoje;
-  é proposta de mudança de contrato do schema (§7 🟡), então espera decisão.*
+- ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *`[24/09]` O
+  dono autorizou fechar, e a MEDIÇÃO mostrou que a correção na raiz **não é
+  alcançável com a minha credencial**. Registrado aqui para ninguém tentar de
+  novo pelo mesmo caminho.*
 
-  `pg_default_acl` do schema `public`, para função criada pelo papel `postgres`
-  — que é o papel do `apply_migration`:
+  **O estado de hoje é bom:** das 100 funções em `public`, **3** são alcançadas
+  por `anon`, e as três se justificam — `username_disponivel` (a tela de
+  cadastro, que roda sem conta), `contagem_de_migrations` (o portão
+  `espelho-de-migrations` a chama **com a anon key**, conferido no script) e
+  `role_rank` (aparece em policy; revogar é a classe das 3 quedas do
+  `POSTURA.md`, então **não** foi tocada).
 
-  ```
-  {postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
-  ```
+  **O problema é a função NOVA**, e o mecanismo foi isolado em `ROLLBACK`:
 
-  **Para TABELA isso já foi fechado** (SEC-005, e é o que faz a régua de papéis
-  do `BANCO.md` funcionar: coluna nova nasce fechada). **Para FUNÇÃO não.** Cada
-  RPC nova nasce com `EXECUTE` para quem não tem conta, e só fecha porque
-  alguém lembra de revogar.
+  | Tentativa | Resultado medido |
+  | --- | --- |
+  | `ALTER DEFAULT PRIVILEGES FOR ROLE postgres … REVOKE … FROM anon` | pega — o `anon=X` sai do `pg_default_acl` |
+  | mas a função nova continua aberta | ela nasce com `=X/postgres`, ou seja **PUBLIC** tem `EXECUTE` |
+  | `… REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` | **não pega** — o `pg_default_acl` volta inalterado |
+  | `ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin …` | **`permission denied to change default privileges`** |
 
-  **Como isso apareceu:** as duas funções de trigger que eu criei hoje
-  (`registrar_live_realizada`, `invalidar_lives_do_post_moderado`) nasceram
-  abertas e o `get_advisors` acusou. Fechei as duas (SEC-042) e travei a classe
-  por teste — mas a trava lê migration, não banco: ela pega funções de
-  **trigger**, não a RPC que alguém criar sem `GRANT` explícito.
+  Existem **dois** `pg_default_acl` de função em `public` (dono `postgres` e
+  dono `supabase_admin`), e o segundo é intocável por mim.
 
-  **O estado de hoje está limpo** — conferido, e são só 3 funções alcançáveis
-  por `anon`, as três intencionais: `contagem_de_migrations` (o portão de
-  espelho do CI usa a anon key), `username_disponivel` (o cadastro precisa) e
-  `role_rank(text)`, que é função pura e não toca dado.
+  **O que fica como caminho, em ordem de força:**
 
-  | Saída | O que muda | Custo |
-  | --- | --- | --- |
-  | `ALTER DEFAULT PRIVILEGES ... REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated` | função nova nasce **fechada**; quem precisa dá `GRANT` explícito e escrito | toda RPC nova passa a exigir o `GRANT`. Esquecer dá **403 barulhento**, não falha silenciosa |
-  | deixar como está | nada quebra hoje | a próxima função nasce aberta, e a proteção volta a depender de alguém lembrar — a "proteção acidental" do §1.3 |
+  1. **Detecção no CI** — uma RPC `SECURITY DEFINER` que devolve **quantas**
+     funções o `anon` alcança fora de uma lista branca escrita, chamada pelo
+     `e2e/portas-do-banco.mjs` com a anon key (o mesmo padrão que o
+     `contagem_de_migrations` já usa, sem credencial nova). Devolve **número**,
+     não nomes — assim não vira mapa para quem chamar de fora. Isso **não
+     previne**, mas reprova o PR no dia em que nascer a primeira.
+  2. **Ação do dono / suporte Supabase** — mudar o default do `supabase_admin`
+     é fora do meu alcance. Só vale abrir se a detecção mostrar que o caso é
+     frequente.
+  3. **O que já segura hoje:** cada função nova sai com `REVOKE EXECUTE`
+     explícito na própria migration, e o `funcaoDeTriggerNaoEhRpc.test.js`
+     cobre a classe dos triggers.
 
-  **Minha recomendação é a primeira**, e o motivo é o modo de falhar: esquecer o
-  `GRANT` produz um erro que aparece na primeira chamada; esquecer o `REVOKE`
-  produz uma porta que ninguém vê. Mas é decisão dele porque muda o contrato de
-  **todo** trabalho futuro no schema, e o §7 marca isso como 🟡.
+  > **Não vou chamar isto de fechado.** Prevenção na raiz continua aberta, e
+  > dizer o contrário seria exatamente o que o §1.1 proíbe.
 
 - ⬜ `[18/09]` 🔵 **`lives_realizadas` é append-only e o E2E escreve nela a cada
   execução.** *Achado enquanto eu limpava as 3 órfãs do N16.*
