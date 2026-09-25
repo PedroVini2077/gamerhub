@@ -6,6 +6,7 @@ import { apenasData } from '../../services/result';
 import { ESTADOS_EM_ORDEM, rotuloDoEstado, corDoEstado } from '../../lib/news/estadosDoArtigo';
 import { rotuloDaEditoria } from '../../lib/news/editorias';
 import { timeAgo } from '../../lib/date';
+import MarcaDeIa from '../news/MarcaDeIa';
 
 /**
  * `[25/09]` A FILA EDITORIAL no painel do Fundador.
@@ -84,6 +85,7 @@ export default function FilaEditorialTab() {
                 <Clock size={10} /> parada há {timeAgo(a.updated_at)}
               </p>
             </div>
+            <MarcaDeIa ativo={a.redigido_com_ia} />
           </div>
         ))}
 

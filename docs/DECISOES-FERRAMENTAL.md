@@ -16,6 +16,55 @@
 
 ## Ferramental
 
+### `[25/09]` O provedor de IA que redige matéria — GROQ, e a razão NÃO é limite
+
+**Pedido do dono:** *"ela não vai postar nada sozinha, vai passar pela
+administração e por mim, o que dá pra fazer de melhor e grátis?"*
+
+**O que foi medido em 25/09.** O limite não decide nada: o volume do GamerHub é
+de algumas matérias por dia, contra ~1.000 requisições/dia no plano grátis dos
+dois candidatos. ~50x de folga em ambos — usar isso como critério seria escolher
+por um número que nenhum dos dois vai encostar.
+
+**O que decide é o DADO**, e a comparação é assimétrica de propósito: um lado
+tem texto oficial dizendo o que faz com ele; o outro não tem texto oficial
+dizendo que faz.
+
+| | Gemini (plano grátis) | Groq (plano grátis) |
+| --- | --- | --- |
+| o que o texto oficial diz | *"Google uses the content you submit to the Services and any generated responses to provide, improve, and develop Google products"* · *"human reviewers may read, annotate, and process your API input and output"* | *"Groq will Process Personal Data only: (a) to provide, maintain, and support the Cloud Services … (b) on Customer's behalf in compliance with Customer's documented instructions"* |
+| a frase que decidiu | *"**Do not submit sensitive, confidential, or personal information to the Unpaid Services.**"* | — |
+
+Rascunho de matéria é conteúdo **não publicado**. Se o GamerHub tiver um furo,
+mandá-lo para o plano grátis do Gemini é mandá-lo para fora **antes** de
+publicar — e os próprios termos do Google pedem para não fazer isso. O plano
+**pago** do Google não tem esse problema; plano pago não é este projeto (§0.2).
+
+> **O que eu NÃO consegui verificar, e fica escrito porque ausência de evidência
+> não é evidência (§1.1).** Não achei, no texto oficial da Groq, a frase "não
+> treinamos com os seus dados". Fontes de terceiros afirmam isso; terceiro não é
+> fonte. O que o DPA diz é **mais estreito** — processar só para prestar o
+> serviço — e a **ausência** da cláusula de "melhorar nossos produtos" é a
+> diferença real entre os dois. É menos do que uma promessa explícita, e é mais
+> do que o Gemini grátis oferece.
+>
+> Se um dia isso pesar mais: escrever para a Groq e guardar a resposta, ou pagar
+> o Gemini. Está no `BACKLOG.md`.
+
+**Modelo:** `llama-3.3-70b-versatile`, conferido hoje como modelo de **produção**
+na Groq. A API é compatível com a da OpenAI, então trocar de provedor é trocar
+a URL, a chave e essa string — não é reescrever a função.
+
+**Descartados junto, com o motivo:**
+
+| | Por que não |
+| --- | --- |
+| **Cloudflare Workers AI** | 10k neurons/dia cabe, mas os modelos disponíveis escrevem português pior, e medir isso direito custaria a sessão |
+| **Rodar modelo local** | não existe máquina neste projeto — tudo é serverless |
+| **Não usar IA nenhuma** | era a resposta certa enquanto a IA fosse **repórter**. Deixou de ser quando o desenho virou "redige a partir das notas do editor" (ver `INV-EDIT-004`) |
+
+---
+
 ### `[19/09]` Scanner de vulnerabilidade genérico (ZAP / Nuclei) — DESCARTADO por medição, e um portão PRÓPRIO no lugar
 
 **Pergunta do dono:** *"existe uma ferramenta à parte de pentest... algum bot ou

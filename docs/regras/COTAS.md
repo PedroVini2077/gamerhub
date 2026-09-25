@@ -33,7 +33,16 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Sentry** | eventos por mês | 5.000 | **descarta em silêncio** | Parcial, desde 27/08 |
 | **Gmail** (send-email) | envios por dia | ~500 | cadastro e recuperação de senha param | Sim, desde 23/08 (`admin_logs`) |
 | **Safe Browsing** | consultas por dia | 10.000 | link deixa de ser checado | Sim, desde 23/08 (`admin_logs`) |
+| **Groq** (redigir-materia) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
+
+> **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
+> `429` grita em `admin_logs` antes de a função responder, e a tela diz *"A cota
+> diária da IA acabou. Ela volta amanhã — escreva a mão por enquanto."* A
+> pergunta da segunda regra também foi feita antes de ligar: **quantas vezes por
+> dia?** Uma por clique de editor em "Redigir rascunho" — não multiplica por
+> usuário, por post nem por leitor, porque só `is_staff()` alcança. É o oposto
+> do realtime de curtidas, que foi recusado justamente por multiplicar.
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em

@@ -25,7 +25,8 @@ import { estadoNoAr } from '../lib/news/estadosDoArtigo';
 
 /** O que o painel lista. Sem `conteudo`: a lista não precisa do corpo. */
 const COLUNAS_DO_PAINEL =
-  'id, slug, titulo, editoria, status, publicado_em, agendado_para, updated_at, autor_id';
+  'id, slug, titulo, editoria, status, publicado_em, agendado_para, updated_at, autor_id, '
+  + 'redigido_com_ia';
 
 /**
  * Todos os artigos que a equipe enxerga — rascunho, revisão, no ar, arquivado.

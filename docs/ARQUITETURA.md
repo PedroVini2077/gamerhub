@@ -216,6 +216,12 @@ src/
 │   │   │                  #   do `CHECK` do banco por uma trava, nos DOIS
 │   │   │                  #   sentidos — editoria que o banco aceita e a tela
 │   │   │                  #   não conhece apareceria SEM RÓTULO, sem erro
+│   │   ├── rascunhoDeIa.js #  `[25/09]` O CONTRATO com a Edge Function que
+│   │   │                  #   rascunha matéria: o mínimo de notas que ela
+│   │   │                  #   exige e o marcador `[CONFERIR: …]` que ela
+│   │   │                  #   escreve no lugar do que as notas não tinham.
+│   │   │                  #   Puro de propósito — a trava precisa importá-lo
+│   │   │                  #   sem arrastar o cliente do Supabase junto
 │   │   ├── assistente.js  #   `[25/09]` SUGERE, nunca decide: editoria pelo
 │   │   │                  #   título (vocabulário FECHADO, sem chute), resumo
 │   │   │                  #   das primeiras frases do CORPO, e avisos de
@@ -361,6 +367,12 @@ src/
 │   │                      #   Postgres — mas só os que TÊM tradução: texto
 │   │                      #   genérico para erro desconhecido esconde o que
 │   │                      #   quem investiga precisa
+│   ├── newsIaService.js   # `[25/09]` Chama a Edge Function `redigir-materia`.
+│   │                      #   A chave do provedor NÃO pode existir no
+│   │                      #   navegador — o site usa a anon key e tudo que
+│   │                      #   chega ao cliente é público. Não escreve no
+│   │                      #   banco: devolve o rascunho para a tela, e só o
+│   │                      #   clique do editor aplica
 │   ├── newsService.js     # `[25/09]` Leitura do News. SEM RPC de propósito: a
 │   │                      #   policy já expressa "artigo visível", e uma RPC
 │   │                      #   seria uma segunda definição. A lista NÃO traz
@@ -488,6 +500,14 @@ src/
     │                      # entrar na corrente de props do Admin. "Publicar"
     │                      # SOME para quem não é super, em vez de ficar cinza —
     │                      # botão desabilitado anuncia poder que não se tem
+    │                      # RascunharComIa — o editor cola as NOTAS, a IA
+    │                      # redige a partir SÓ delas. Mostra o texto antes de
+    │                      # aplicar, conta as lacunas `[CONFERIR: …]` em cima,
+    │                      # e avisa quando vai por cima do que já estava
+    │                      # escrito. Nada é salvo nem publicado sozinho.
+    │                      # MarcaDeIa — o selo "IA" nas três telas que listam
+    │                      # matéria. Existe para o revisor saber ANTES de ler:
+    │                      # texto de modelo é plausível por construção
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal,

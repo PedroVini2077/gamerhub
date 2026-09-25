@@ -151,7 +151,7 @@ decidir; sem solução é só susto.
 > **`[11/09]` Os exemplos desta tabela são HISTÓRICOS, e um deles já nem existe
 > mais.** Conferido contra o sistema por causa da issue automática de
 > documentação (#166): `cleanup-expired-posts` **não está** entre as
-> <!--n:edge.funcoes-->8<!--/n--> Edge Functions de hoje. Ela continua aqui de
+> <!--n:edge.funcoes-->9<!--/n--> Edge Functions de hoje. Ela continua aqui de
 > propósito — a coluna se chama "exemplo real deste projeto", e o valor dela é
 > mostrar como era cada severidade quando doeu. Quem quiser o inventário do que
 > existe **agora** olha `supabase/functions/`.

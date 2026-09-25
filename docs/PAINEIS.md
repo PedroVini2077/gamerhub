@@ -79,6 +79,11 @@ evitar closures velhas nos callbacks).
   não é fila, é esquecimento — e numa lista ordenada por data o esquecimento
   simplesmente desce e some.
 
+  **`[25/09]` Cada linha da fila diz se foi rascunhada por IA.** O selo aparece
+  aqui, na lista do painel editorial e no cabeçalho do editor — porque quem
+  revisa precisa saber **antes** de ler. Texto de modelo é plausível por
+  construção, e plausível é justamente o que passa por leitura corrida.
+
 ### Banimento & desbanimento
 
 - **Banir** (`ban_user`): valida hierarquia, marca `banned`, registra motivo /

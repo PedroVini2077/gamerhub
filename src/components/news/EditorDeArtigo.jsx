@@ -11,6 +11,8 @@ import { RECURSOS_COMPLETOS } from '../../lib/formatacao/vocabulario';
 import EditorDeTexto from '../ui/EditorDeTexto';
 import ConfirmModal from '../ui/ConfirmModal';
 import SugestoesDaMateria from './SugestoesDaMateria';
+import RascunharComIa from './RascunharComIa';
+import MarcaDeIa from './MarcaDeIa';
 
 /**
  * `[25/09]` Escrever uma matéria.
@@ -51,6 +53,9 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
     resumo: artigo.resumo ?? '', conteudo: artigo.conteudo ?? '',
     capa_url: artigo.capa_url ?? '', fonte_url: artigo.fonte_url ?? '',
     editoria: artigo.editoria ?? EDITORIAS_EM_ORDEM[0],
+    // Viaja no formulário porque é SALVO junto: aplicar o rascunho da IA marca
+    // esta coluna, e ela só vira verdade no banco quando o editor salva.
+    redigido_com_ia: artigo.redigido_com_ia ?? false,
   };
   const campos = rascunho ?? doServidor;
 
@@ -63,6 +68,9 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
 
   const editavel = podeEditar(artigo.status, ehSuper);
   const set = (k) => (v) => setRascunho({ ...campos, [k]: v });
+  // A IA devolve quatro campos de uma vez. Aplicar um por um com `set`
+  // perderia três: cada chamada parte de `campos`, que ainda é o estado velho.
+  const aplicarVarios = (novos) => setRascunho({ ...campos, ...novos });
 
   async function comAviso(promessa, sucesso) {
     setEstado('');
@@ -87,6 +95,7 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
           {rotuloDoEstado(artigo.status)}
         </span>
         <span className="text-[11px] font-mono text-gray-600">/news/{artigo.slug}</span>
+        <MarcaDeIa ativo={campos.redigido_com_ia} />
       </div>
 
       {!editavel && (
@@ -139,6 +148,8 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
           recursos={RECURSOS_COMPLETOS} id={`corpo-${id}`}
         />
       </div>
+
+      {editavel && <RascunharComIa campos={campos} onAplicar={aplicarVarios} />}
 
       {editavel && (
         <SugestoesDaMateria campos={campos} onAplicar={(k, v) => set(k)(v)} />

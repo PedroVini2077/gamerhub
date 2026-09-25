@@ -437,6 +437,38 @@ O caso perigoso passou a gritar junto: link malicioso **detectado** e a RPC não
 ocultando devolve `status: "rpc_error"` e vai para `admin_logs`. Era a mesma
 forma de falha que manteve a moderação por IA quebrada em 26 de 26 chamadas.
 
+## `[25/09]` A porta da IA que rascunha matéria — `is_staff()`, não "estar logado"
+
+`redigir-materia` nasceu com a porta que a `moderate-links` levou meses para
+ganhar, e pelo mesmo motivo: **o que está em jogo é cota de terceiro**. O
+provedor de IA tem ~1.000 requisições/dia no plano grátis; estourado, a redação
+para para a equipe inteira.
+
+A checagem é **mais estrita** do que a das outras: não basta um token válido.
+Depois do `auth.getUser()`, ela pergunta ao banco `rpc("is_staff")` e só segue
+se a resposta for `true` — porque `is_staff()` já embute `operador_ativo()`, um
+admin **banido** também é recusado (SEC-053).
+
+**Medido na produção em 25/09**, com a função já no ar:
+
+| Tentativa | Resposta |
+| --- | --- |
+| `POST` sem `Authorization` | `401 {"error":"Nao autorizado"}` |
+| `POST` com `Bearer token-que-nao-existe` | `401 {"error":"Nao autorizado"}` |
+| `OPTIONS` (preflight do navegador) | `200` — é por isso que `verify_jwt` fica desligado |
+| `GET` (a impressão do código) | `{"impressao":"77a094ca7de7757a"}`, igual à do repositório |
+
+`e2e/portas-fechadas.mjs` passou a bater nela: **8/8 portas fechadas**.
+
+**O que esta função NÃO faz, e é a parte que protege o conteúdo:** ela não
+escreve no banco. Ela usa a `service_role` para gritar em `admin_logs` quando a
+cota estoura — e esse mesmo cliente, se um dia tocasse `news_articles`, passaria
+por cima de toda a RLS e de todo o corte editorial, publicando sem revisor, sem
+erro e sem log. A trava `rascunhoDeIaNaoDeriva.test.js` reprova o PR que
+acrescentar qualquer caminho de escrita ali (`INV-EDIT-005`).
+
+---
+
 ## `[23/08]` As outras duas Edge Functions abertas — resolvidas por remoção
 
 Achar duas com a porta aberta obrigou a olhar as oito que existiam então (§1.3, *varredura de
@@ -767,7 +799,7 @@ para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
 | Dado sensível | `portas-do-banco.mjs` | que `posts` e `admin_logs` respondam 401 ao anônimo, e que de `profiles` o anônimo leia **exatamente `id` e `username`** — nem uma coluna a mais, nem a menos | sim — não vê o que um **logado** alcança |
 | Privacidade | `conteudoDaPrivacidade.test.js` | que chave nova no navegador, terceiro novo e cookie **entrem na política** antes de existirem | não, para o que ele conhece |
 | Admin/staff | `painel-admin.mjs` | que o painel liste, pagine e negue — com dado que o próprio teste cria | sim — cobre a tela, não a permissão no banco |
-| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 6 portas recusem chamada sem credencial — e, na `verify-contact`, que o captcha esteja mesmo sendo conferido (403, não 400) | não, e é de propósito: as functions não estão no git |
+| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 7 portas recusem chamada sem credencial — e, na `verify-contact`, que o captcha esteja mesmo sendo conferido (403, não 400) | não, e é de propósito: as functions não estão no git |
 | Fluxos críticos | `fluxos.mjs` | publicar → conferir → apagar → sair, e nenhum lixo de teste sobrando | sim — cobre o caminho feliz de uma conta comum |
 | Testes | piso de testes, `rotasE2E.test.js`, **`varrerFontes`** | que rota nova tenha teste de navegador, e que trava que varre arquivo **prove que varreu** | não |
 | Segredo/config | `segredos-vazados.mjs` | que nenhum arquivo rastreado tenha chave privada, `service_role`, token ou senha | não, para os padrões que ele conhece |

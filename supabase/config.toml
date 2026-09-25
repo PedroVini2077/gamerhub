@@ -7,13 +7,13 @@
 #
 # ── O risco, dito com precisão ──────────────────────────────────────────────
 #
-# `supabase functions deploy` aplica `verify_jwt = true` por padrão. Sete das
-# oito funções deste projeto precisam dele **desligado**, e quem desligava era
+# `supabase functions deploy` aplica `verify_jwt = true` por padrão. Oito das
+# nove funções deste projeto precisam dele **desligado**, e quem desligava era
 # a flag `--no-verify-jwt` digitada à mão na linha de comando.
 #
 # Ou seja: a segurança de cada função dependia de alguém lembrar de um
 # parâmetro. Um `supabase functions deploy` sem a flag — que é exatamente o que
-# o exemplo oficial do GitHub Actions usa — **ligaria** o `verify_jwt` nas sete.
+# o exemplo oficial do GitHub Actions usa — **ligaria** o `verify_jwt` nas oito.
 #
 # O estrago mais grave seria na `send-email`: ela é chamada pelo **Auth Hook** do
 # Supabase, que manda um segredo de webhook e **não** um JWT. Com `verify_jwt`
@@ -59,7 +59,7 @@ project_id = "yuqbdcoljlvncxdnesxk"
 [functions.cleanup-orphans]
 verify_jwt = true
 
-# ── As sete que validam o token elas mesmas ─────────────────────────────────
+# ── As oito que validam o token elas mesmas ─────────────────────────────────
 
 # Chamada pelo Auth Hook do GoTrue, que manda segredo de webhook e NÃO JWT.
 # Ligar `verify_jwt` aqui derruba cadastro e recuperação de senha.
@@ -86,4 +86,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.responder-contato]
+verify_jwt = false
+
+# `[25/09]` Rascunha matéria com IA. Chamada do navegador (painel editorial),
+# então tem preflight `OPTIONS` — que vem sem `Authorization` e morreria no
+# gateway. A porta do código é MAIS estrita do que a do gateway: não basta um
+# JWT do projeto, o chamador precisa passar por `is_staff()`. O que está em jogo
+# é a cota do provedor de IA, e cota estourada para de redigir para todo mundo.
+[functions.redigir-materia]
 verify_jwt = false
