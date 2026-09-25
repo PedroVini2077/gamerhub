@@ -268,7 +268,7 @@ Duas partes da camada 3 são mecanizáveis, e viraram portão:
 | `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **que documento ESTA sessão tornou suspeito?** | não — é lista de leitura |
 
 **O número deixa de ser digitado.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->433<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->434<!--/n-->` —, invisível no markdown
 renderizado. O script mede e reescreve; o CI confere. **Chave desconhecida é
 erro, não silêncio**: um typo faria aquele número nunca mais ser atualizado, com
 o agravante de parecer vigiado.

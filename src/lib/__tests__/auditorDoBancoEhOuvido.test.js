@@ -1,6 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
 
 /**
  * `[24/09]` SEC-050 — o auditor do banco só vale se alguém o ouvir, e a lista
@@ -40,17 +38,7 @@ import { join } from 'node:path';
  *   . tirado `contagem_de_achados_de_seguranca`   -> falhou (o auditor se acusa)
  */
 
-const PASTA = 'supabase/migrations';
-
-/** Comentário de SQL é PROSA, e prosa cita comando. Já me pegou 10 vezes. */
-const semComentariosSQL = (sql) =>
-  sql.replace(/--[^\n]*/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
-
-const SQL = (() => {
-  const nomes = readdirSync(PASTA).filter(n => n.endsWith('.sql')).sort();
-  if (nomes.length === 0) throw new Error(`Nenhuma migration em "${PASTA}".`);
-  return nomes.map(n => semComentariosSQL(readFileSync(join(PASTA, n), 'utf8'))).join('\n');
-})();
+import { SQL, auditor } from './lerOAuditorDoBanco';
 
 /**
  * As ÚNICAS portas que o `anon` pode alcançar sem o auditor reclamar.
@@ -104,66 +92,6 @@ const PORTAS_PUBLICAS = {
   role_rank: 'função pura, sem leitura de dado, e usada dentro de policy',
   contagem_de_achados_de_seguranca: 'o mensageiro do próprio auditor — devolve número, não nome',
 };
-
-/**
- * `[25/09]` As definições do auditor, em ordem de migration.
- *
- * ── O defeito que esta função tinha, e ele já estava NO AR ────────────────
- *
- * A marcação era literal: `\$fn\$[\s\S]*?\$fn\$`. A SEC-052 passou a escrever
- * a função com `$function$` (é o que o `pg_get_functiondef` devolve, e é de lá
- * que o espelho da migration sai). A partir daquele PR esta trava **parou de
- * ler o auditor de verdade** e passou a conferir a versão da SEC-051 — verde,
- * confiante, e olhando para um retrato velho.
- *
- * É o §1.5 aplicado à própria esteira: nada estourou, nada logou, e a trava
- * simplesmente deixou de cobrir o que ela existe para cobrir. Mesma família do
- * portão de números que cegava o relatório de documentação.
- *
- * ── As duas mudanças ──────────────────────────────────────────────────────
- *
- * 1. A marcação passa a CAPTURAR o rótulo do dólar (`$fn$`, `$function$`, o
- *    que for) e exigir o mesmo na abertura e no fechamento. Trocar o rótulo
- *    deixa de cegar a trava.
- * 2. A contagem é conferida contra os ARQUIVOS que definem a função. Se uma
- *    definição voltar a ficar invisível por qualquer motivo de forma, o número
- *    não bate e a trava reprova — em vez de ler a penúltima em silêncio.
- */
-function definicoesDoAuditor() {
-  const re = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?auditoria_de_operadores[\s\S]*?\bAS\s+(\$[A-Za-z_]*\$)[\s\S]*?\1/gi;
-  return SQL.match(re) ?? [];
-}
-
-/** Quantos ARQUIVOS de migration definem o auditor. A referência da contagem. */
-function arquivosQueDefinemOAuditor() {
-  return readdirSync(PASTA).filter(n => n.endsWith('.sql')).filter(n => (
-    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?auditoria_de_operadores/i
-      .test(semComentariosSQL(readFileSync(join(PASTA, n), 'utf8')))
-  ));
-}
-
-/** O corpo da última definição do auditor. */
-function auditor() {
-  const achados = definicoesDoAuditor();
-  const arquivos = arquivosQueDefinemOAuditor();
-
-  if (achados.length === 0) {
-    throw new Error(
-      'A `auditoria_de_operadores` sumiu das migrations, ou a marcação mudou.\n'
-      + '  Sem ela esta trava não olha nada e fica verde para sempre.');
-  }
-  if (achados.length !== arquivos.length) {
-    throw new Error(
-      `Esta trava enxerga ${achados.length} definição(ões) do auditor, mas `
-      + `${arquivos.length} arquivo(s) o definem:\n`
-      + arquivos.map(a => `    ${a}`).join('\n')
-      + '\n\n  Alguma definição ficou INVISÍVEL para a marcação — e a trava passaria'
-      + '\n  a conferir uma versão velha, verde e errada. Foi exatamente isso que'
-      + '\n  aconteceu quando a SEC-052 trocou `$fn$` por `$function$`.'
-      + '\n  Conserte a marcação em `definicoesDoAuditor()`, não a migration.');
-  }
-  return achados[achados.length - 1];
-}
 
 describe('SEC-050 — o auditor do banco é ouvido, e a lista branca é deliberada', () => {
   it('o mensageiro existe e o CI consegue chamá-lo', () => {
