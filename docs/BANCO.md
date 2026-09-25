@@ -14,6 +14,10 @@ todas as tabelas públicas.**
 | Tabela                       | Descrição                                                        |
 | ---------------------------- | ---------------------------------------------------------------- |
 | `profiles`                   | Perfil do usuário (1:1 com `auth.users`): username, avatar, bio, role, banimento, redes, preferências. **`[12/09]` `role` e `banned` são `NOT NULL`** — o `CHECK` de `role` sozinho não bastava, porque `NULL = ANY(ARRAY[...])` é NULL e constraint só reprova em `false` explícito (SEC-017) |
+| `news_articles`              | **`[25/09]`** Artigos do GamerHub News. LOGADO: `anon` não alcança |
+| `news_sources`               | **`[25/09]`** Fontes editoriais. Só a equipe vê — fonte é bastidor |
+| `news_tags` · `news_article_tags` | **`[25/09]`** Tags do News e a ligação com o artigo |
+| `news_items_raw`             | **`[25/09]`** Caixa de entrada da ingestão. RLS ligada e **zero policies**: ninguém lê pela REST API, nem a equipe |
 | `posts`                      | Posts do feed e lives (texto, mídia legada, áudio, embed, flags de live, `live_kind`, `live_kind_label`) |
 | `post_media`                 | Mídias de um post (imagem/vídeo/áudio, posição)                  |
 | `post_likes`                 | Likes de posts (único por `post_id+user_id`)                     |

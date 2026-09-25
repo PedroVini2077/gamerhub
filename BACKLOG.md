@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**53 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1560,6 +1560,64 @@ tamanho, lista nem citação — conversa não é publicação.
 `style` montado a partir do nó, e o comentário ganhando poder que o post não
 tem. Provada reinjetando as três. `INV-TELA-009`.
 
+### ✅ `[25/09]` FASE 6 — a fundação do News (tabelas, RLS, grants, constraints)
+
+Cinco tabelas: `news_sources`, `news_articles`, `news_tags`,
+`news_article_tags` e `news_items_raw`. **Nenhuma linha de tela ainda** — esta
+fase é a fundação.
+
+**Quem pode o quê, e provado com papel real em ROLLBACK:**
+
+| | resultado |
+| --- | --- |
+| comum vê publicado | **1** ✓ |
+| comum vê rascunho | **0** ✓ |
+| comum vê publicado com data FUTURA | **0** ✓ |
+| comum escreve | **bloqueado** ✓ |
+| comum vê fontes / ingestão | **0 / 0** ✓ |
+| admin vê rascunho · escreve | **1 · consegue** ✓ |
+| admin APAGA | **não** (só super) ✓ |
+| `anon` vê artigo | **negado** ✓ |
+
+**`news_items_raw` não tem policy nenhuma, de propósito:** é conteúdo de
+terceiro, não verificado, possivelmente com direito autoral alheio. Ninguém lê
+pela REST API — nem a equipe. O acesso será por RPC, com recorte decidido na
+hora.
+
+**Toda escrita exige `operador_ativo()`** — a lição do SEC-043 (admin banido ou
+suspenso continuava mandando) nasce dentro de cada tabela nova.
+
+### ✅ `[25/09]` SEC-052 — toda tabela nova nasce ABERTA, e o `BANCO.md` dizia o contrário
+
+**Achado conferindo a fundação do News:** `news_items_raw`, criada **sem um
+único `GRANT` escrito**, apareceu com `DELETE,INSERT,SELECT,UPDATE` para
+`authenticated`.
+
+Medido em `pg_default_acl`: `postgres` dá `arwdm` a `authenticated`, e
+`supabase_admin` dá **tudo, inclusive a `anon`**.
+
+**E a regra escrita afirmava o oposto** — *"o `ALTER DEFAULT PRIVILEGES` fecha a
+tabela nova por padrão"*. É a pior espécie de documentação errada: ensina a
+**não conferir**. Corrigida.
+
+**Não vazou** — a RLS sem policy nega tudo. Mas é o SEC-005 na letra: *"o grant
+já estaria lá esperando"*. Proteger por ausência de policy é proteger por
+acidente.
+
+**Varredura de classe:** duas tabelas no banco com zero policies —
+`lives_realizadas` (já revogada, o desenho certo) e esta.
+
+**O auditor ganhou a 5ª checagem**, em vez de um portão novo (§9.8) — e o CI já
+o ouve pelo `contagem_de_achados_de_seguranca`. Contraprova em ROLLBACK: tabela
+criada do zero nasceu com os quatro privilégios, **o auditor acusou**, a
+contagem do CI foi a 1, e o `REVOKE` a zerou.
+
+- ⬜ `[25/09]` 🟠 **O corte de permissão editorial é decisão sua.** *Hoje:
+  equipe (admin+) cria e edita; **apagar** é só super admin e owner. O seu
+  prompt pede para "não assumir que todo admin possui todas essas capacidades".
+  Esta é a política que existe — se você quiser que **publicar** também exija
+  super admin, é uma migration de uma linha.*
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 - ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
@@ -2239,7 +2297,7 @@ tem. Provada reinjetando as três. `INV-TELA-009`.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->150<!--/n--> arq ·
-  <!--n:src.lib.linhas-->17.945<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->18.016<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->21<!--/n--> arq ·
   <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

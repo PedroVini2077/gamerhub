@@ -180,8 +180,33 @@ existir para quem NÃO tem conta?** Se a tela que consome está atrás de
 tela nenhuma.
 
 **Nunca dê `GRANT ... TO anon` sem escrever ao lado qual tela pública o exige.**
-O `ALTER DEFAULT PRIVILEGES` fecha a tabela nova por padrão, mas **não** impede
-um grant explícito — e esse é o buraco que sobrou.
+
+> ### ⚠️ `[25/09]` SEC-052 — esta linha AFIRMAVA O CONTRÁRIO, e estava errada
+>
+> Estava escrito aqui: *"o `ALTER DEFAULT PRIVILEGES` fecha a tabela nova por
+> padrão"*. **É o inverso da verdade.** Medido em `pg_default_acl`:
+>
+> | quem cria a tabela | o que ela ganha sozinha |
+> | --- | --- |
+> | `postgres` | `authenticated = arwdm` |
+> | `supabase_admin` | **`anon` E `authenticated` = `arwdDxtm`** (tudo) |
+>
+> Provado em `ROLLBACK`: uma tabela criada **sem um único `GRANT` escrito**
+> nasceu com `DELETE, INSERT, SELECT, UPDATE` para `authenticated`.
+>
+> **TODA TABELA NOVA NASCE ABERTA.** Criar a tabela e parar por aí deixa o
+> grant lá, esperando a primeira policy aparecer — que é o SEC-005 na letra.
+>
+> A regra que vale: **toda tabela nova leva um `REVOKE ALL ... FROM anon,
+> authenticated` explícito**, e só depois recebe de volta exatamente o que a
+> tela precisa. Foi assim que `news_items_raw` entrou.
+>
+> O auditor do banco passou a acusar a classe (5ª checagem de
+> `auditoria_de_operadores`), e o CI ouve isso pelo
+> `contagem_de_achados_de_seguranca`. Não depende mais de alguém lembrar.
+>
+> *Esta correção existe porque a frase errada não era inofensiva: ela ensinava
+> a NÃO conferir.*
 
 **A exceção que existe, e por que ela é por COLUNA:** `site_config` carrega o
 modo manutenção, então o deslogado precisa lê-la, ou o site fora do ar não

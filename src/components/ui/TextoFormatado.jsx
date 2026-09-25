@@ -54,7 +54,15 @@ function Trecho({ no }) {
   }
 
   const filhos = <Filhos nos={no.filhos} />;
-  if (no.tipo === 'negrito') return <strong className="text-gray-200">{filhos}</strong>;
+  // `[25/09]` O negrito NÃO fixa mais a cor.
+  //
+  // Ele era `text-gray-200`, e isso **matava a cor de dentro**:
+  // `[cor=verde]**x**[/cor]` virava `<span verde><strong cinza>` — o cinza,
+  // por ser do elemento mais interno, ganhava. O dono relatou como "fica só a
+  // cor e o texto fica normal", e estava vendo exatamente isto.
+  //
+  // Negrito é PESO, não cor. Herdar é o certo: quem decide a cor é a cor.
+  if (no.tipo === 'negrito') return <strong className="font-bold">{filhos}</strong>;
   if (no.tipo === 'italico') return <em>{filhos}</em>;
   if (no.tipo === 'tachado') return <s className="opacity-70">{filhos}</s>;
   if (no.tipo === 'sublinhado') return <u>{filhos}</u>;
