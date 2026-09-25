@@ -35,6 +35,58 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🟠 `[25/09]` A ARTE NÃO ESCALA — ideia dele, e ele está certo
+
+> *"já já nós vamos tirar todas essas artes e criar algo mais global, pq ficar
+> criando artes toda hora não vai dar. A gente não vai inventar cenas 3D, mas
+> pelo menos algo pra substituir essas imagens"*.
+
+**O número que dá razão a ele:** hoje são **8 cenas × 6 arquivos = 48 imagens**,
+**4.551 kB** no repositório, e **duas composições feitas à mão por cena** (larga
+e retrato). Toda seção nova custa isso de novo — e a de hoje custou uma ida e
+volta com ele no meio da sessão.
+
+**O que ele já descartou, e continua descartado:** 3D. Não é opção.
+
+**As saídas que eu enxergo, com o custo de cada uma** — nenhuma decidida:
+
+| Saída | O que é | Custo | O que se perde |
+| --- | --- | --- | --- |
+| **A. Cena composta em CSS/SVG** | o fundo (rocha, néon, fenda) vira gradiente + SVG do projeto, e só o "print" da tela é imagem | some a composição por cena; sobra **1** imagem por seção, ou nenhuma | o brilho das artes dele — elas são boas, e isso é perda real |
+| **B. Um FUNDO só, reaproveitado** | uma arte de ambiente, e cada cena muda só a sobreposição | 1 arte para sempre | as cenas ficam parecidas entre si, que é o defeito que a fatia 7 consertou |
+| **C. Print de tela gerado do PRÓPRIO site** | um roteiro Playwright abre `/news`, `/lives` etc. e fotografa | **zero arte nova para sempre**, e a imagem **nunca envelhece** — ela É o site | precisa do site bonito em tela cheia, e hoje o feed está vazio |
+
+**Minha recomendação: C, com B de fundo.** É a única que resolve o problema de
+verdade em vez de adiá-lo: seção nova não pede arte nenhuma, e a landing para
+de mostrar uma versão do site que não existe mais. O projeto já tem Playwright,
+já tem gerador de cenas, e já tem o hábito de derivar asset por script (ícones,
+cenas, artes da arena).
+
+**O que trava a C hoje:** o site precisa ter conteúdo para fotografar. É a
+mesma pendência do feed vazio.
+
+**Eu não começo nada disto sem ele escolher** — é decisão de identidade visual,
+e as duas vezes em que eu decidi arte sozinho foram descartadas.
+
+---
+
+### ⚠️ `[25/09]` A cena do News é a ÚNICA sem sobreposição viva
+
+As outras cinco cenas soltas têm um componente de "personalidade" por cima da
+arte — o feed recebe publicações, a curtida acende, o contador sobe. A do News
+não tem.
+
+**Não foi esquecimento.** A arte que ele mandou **já contém a interface** do
+News em fidelidade alta, nas duas composições — é a única das oito em que a
+imagem sozinha faz o trabalho que a sobreposição faria. E somar um sexto
+componente bespoke vai na direção contrária do item acima, que é justamente
+parar de criar peça sob medida por seção.
+
+Se a saída **C** for escolhida, esta pendência morre junto: a cena passa a ser
+um print vivo do `/news` de verdade.
+
+---
+
 ### 🔄 `[25/09]` GAMERHUB NEWS — o plano, com a ordem decidida hoje
 
 **Objetivo dele:** *"vamos tentar terminar esse GamerHub News ainda hj"*.
@@ -2449,7 +2501,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->157<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.708<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->18.725<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->23<!--/n--> arq ·
   <!--n:src.services.linhas-->2.377<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

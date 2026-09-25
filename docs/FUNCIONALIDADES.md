@@ -589,6 +589,12 @@ News **nasce invisível** para quem chega de fora, e por isso a landing o
 anuncia: sem o anúncio, a única forma de descobrir que ele existe seria criar
 uma conta primeiro.
 
+**`[25/09]` O anúncio virou uma CENA própria na landing** — a oitava, com arte
+dele nas duas composições (larga e retrato), entre o Feed e o Mural. É a única
+das seis cenas soltas **sem sobreposição animada**, e isso é deliberado: a arte
+do News já contém a interface em fidelidade alta, então a sobreposição não teria
+o que somar.
+
 | Tela | O que faz |
 | --- | --- |
 | `/news` | A lista, com filtro por **editoria** na URL (`?editoria=hardware`). Nove editorias, vocabulário fechado |

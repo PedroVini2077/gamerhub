@@ -81,7 +81,17 @@ describe('cada cena tem uma personalidade PRÓPRIA', () => {
       + '  "cinco mini-sites consecutivos".\n'
       + '  Se a mudança é deliberada, mude este número E escreva o porquê.',
     ).toBe(2);
-    expect(presas + soltas, 'A landing deixou de ter cinco cenas.').toBe(5);
+    // `[25/09]` Era 5, virou 6: entrou a cena do GamerHub News.
+    //
+    // A mudança é deliberada e o motivo é de PRODUTO, não de estética: o News
+    // é SÓ LOGADO (decisão dele em 24/09), então esta cena é a única forma de
+    // alguém de fora descobrir que ele existe. Sem ela a seção nasceria
+    // invisível para quem ainda não criou conta.
+    //
+    // O número continua travado para o resto: cada cena nova custa ~2 telas de
+    // rolagem, e "cinco mini-sites consecutivos" foi a reclamação dele que
+    // originou esta fatia inteira.
+    expect(presas + soltas, 'A landing deixou de ter SEIS cenas.').toBe(6);
   });
 
   it('toda cena solta declara a sobreposição dela', () => {

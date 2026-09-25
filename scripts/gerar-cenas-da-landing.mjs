@@ -48,6 +48,9 @@ const LARGURAS_ALTAS = [828, 620, 420];
 /** As sete cenas. Cada nome existe nas DUAS pastas de referência. */
 const CENAS = [
   '1-hero', '2-feed', '3-comunidade', '4-keys', '5-ranks', '6-lives', '7-cta',
+  // `[25/09]` A cena do GamerHub News. A arte veio dele, nas duas composições
+  // — larga e retrato —, como as outras sete.
+  '8-news',
 ];
 
 /** Qualidade. 0,80 num fundo escuro e detalhado é indistinguível de 0,92. */

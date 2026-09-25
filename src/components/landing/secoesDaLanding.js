@@ -1,4 +1,4 @@
-import { Newspaper, Users, Tv, Trophy, Key } from 'lucide-react';
+import { Newspaper, Radio, Users, Tv, Trophy, Key } from 'lucide-react';
 
 /**
  * As seções da landing, num lugar só.
@@ -17,6 +17,7 @@ import { Newspaper, Users, Tv, Trophy, Key } from 'lucide-react';
  */
 export const SECOES = [
   { id: 'feed',   rotulo: 'Feed',        icone: Newspaper, cor: 'text-neon-green'  },
+  { id: 'news',   rotulo: 'News',        icone: Radio,     cor: 'text-neon-cyan'   },
   { id: 'mural',  rotulo: 'Mural',       icone: Users,     cor: 'text-neon-purple' },
   { id: 'lives',  rotulo: 'Lives',       icone: Tv,        cor: 'text-neon-cyan'   },
   { id: 'keys',   rotulo: 'Keys & Promos', icone: Key,     cor: 'text-neon-purple' },
