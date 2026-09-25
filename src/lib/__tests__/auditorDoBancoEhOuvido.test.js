@@ -1,6 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
 
 /**
  * `[24/09]` SEC-050 — o auditor do banco só vale se alguém o ouvir, e a lista
@@ -40,17 +38,7 @@ import { join } from 'node:path';
  *   . tirado `contagem_de_achados_de_seguranca`   -> falhou (o auditor se acusa)
  */
 
-const PASTA = 'supabase/migrations';
-
-/** Comentário de SQL é PROSA, e prosa cita comando. Já me pegou 10 vezes. */
-const semComentariosSQL = (sql) =>
-  sql.replace(/--[^\n]*/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
-
-const SQL = (() => {
-  const nomes = readdirSync(PASTA).filter(n => n.endsWith('.sql')).sort();
-  if (nomes.length === 0) throw new Error(`Nenhuma migration em "${PASTA}".`);
-  return nomes.map(n => semComentariosSQL(readFileSync(join(PASTA, n), 'utf8'))).join('\n');
-})();
+import { SQL, auditor } from './lerOAuditorDoBanco';
 
 /**
  * As ÚNICAS portas que o `anon` pode alcançar sem o auditor reclamar.
@@ -78,24 +66,32 @@ const ISENTAS_DO_LITERAL = {
   owner_get_notifications: 'idem',
 };
 
+/**
+ * `[25/09]` SEC-053 — as POLICIES isentas da checagem de hierarquia à mão.
+ *
+ * A 6ª checagem acusa policy que escreve `role_rank(...)` ou um papel literal
+ * em vez de `is_staff()`/`is_super()`/`is_owner()`. Um admin BANIDO passava por
+ * 23 delas — lia a fila, a trilha inteira e escrevia na wordlist.
+ *
+ * Estas três ficam de fora pela MESMA razão das cinco funções acima, e a
+ * decisão é uma só: trocar `role = 'owner'` por `is_owner()` muda semântica
+ * (`rank >= 4` vs `= owner`), e isso é decisão do dono, não limpeza minha.
+ *
+ * Não são brecha: `operador_ativo()` é sempre true para o `owner`, então aqui
+ * não se perde estado de operador nenhum — ao contrário das 23.
+ */
+const POLICIES_ISENTAS = {
+  site_config_owner_delete: "painel do Fundador: `role = 'owner'` literal, troca é decisão de semântica",
+  site_config_owner_insert: 'idem',
+  site_config_owner_update: 'idem',
+};
+
 const PORTAS_PUBLICAS = {
   contagem_de_migrations: 'o portão `espelho-de-migrations` a chama COM A ANON KEY',
   username_disponivel: 'a tela de cadastro roda sem conta',
   role_rank: 'função pura, sem leitura de dado, e usada dentro de policy',
   contagem_de_achados_de_seguranca: 'o mensageiro do próprio auditor — devolve número, não nome',
 };
-
-/** O corpo da última definição do auditor. */
-function auditor() {
-  const achados = SQL.match(
-    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?auditoria_de_operadores[\s\S]*?\$fn\$[\s\S]*?\$fn\$/gi);
-  if (!achados) {
-    throw new Error(
-      'A `auditoria_de_operadores` sumiu das migrations, ou a marcação mudou.\n'
-      + '  Sem ela esta trava não olha nada e fica verde para sempre.');
-  }
-  return achados[achados.length - 1];
-}
 
 describe('SEC-050 — o auditor do banco é ouvido, e a lista branca é deliberada', () => {
   it('o mensageiro existe e o CI consegue chamá-lo', () => {
@@ -219,6 +215,36 @@ describe('SEC-050 — o auditor do banco é ouvido, e a lista branca é delibera
       'trocar o literal por `is_owner()` muda semântica, e pôr a guarda de',
       'operador arriscaria trancar o fundador FORA do próprio painel, sem',
       'inversa. As duas estão propostas no BACKLOG — não decididas.',
+    ].join('\n')).toEqual(esperado);
+  });
+
+  it('a lista de POLICIES isentas é exatamente a escrita aqui', () => {
+    const corpo = auditor();
+    const bloco = corpo.match(
+      /pg_policies\s+t[\s\S]*?policyname\s+NOT\s+IN\s*\(([\s\S]*?)\)/i);
+
+    expect(bloco, [
+      'O bloco de isenção da 6ª checagem (SEC-053) sumiu do auditor.',
+      '',
+      'Sem ele a checagem de POLICY com hierarquia à mão deixa de existir — e',
+      'foi ela que fechou o caminho por onde um admin BANIDO lia a fila de',
+      'moderação, a trilha inteira e escrevia na wordlist.',
+    ].join('\n')).toBeTruthy();
+
+    const naLista = [...bloco[1].matchAll(/'([a-z0-9_]+)'/gi)].map(m => m[1]).sort();
+    const esperado = Object.keys(POLICIES_ISENTAS).sort();
+
+    expect(naLista, [
+      `Na migration: ${naLista.join(', ') || '(vazia)'}`,
+      `Nesta trava:  ${esperado.join(', ')}`,
+      '',
+      'Isentar uma policy aqui **silencia** o auditor para ela. A lista existe',
+      'porque três policies do painel do Fundador usam papel LITERAL, e trocar',
+      "por `is_owner()` muda semântica — decisão do dono, proposta no BACKLOG.",
+      '',
+      'Qualquer nome novo aqui precisa entrar TAMBÉM no mapa `POLICIES_ISENTAS`',
+      'desta trava, com o motivo ao lado. Senão a lista vira o lugar onde os',
+      'achados se escondem — que é o que a SEC-050 existe para impedir.',
     ].join('\n')).toEqual(esperado);
   });
 });

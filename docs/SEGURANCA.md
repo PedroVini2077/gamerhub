@@ -1642,6 +1642,96 @@ lugar do histórico.
 
 ---
 
+## `[25/09]` SEC-053 — o BANIMENTO não alcançava as policies
+
+🟠 **Alto.** Explorável por quem tem conta, e o alvo é a própria ferramenta que
+existe para conter um moderador que se voltou contra o site.
+
+### O que um admin BANIDO ainda conseguia fazer
+
+Medido em `ROLLBACK`, com papel `authenticated` real e `banned = true`:
+
+| | admin banido, ANTES | usuário comum | admin banido, DEPOIS |
+| --- | --- | --- | --- |
+| lê a fila de moderação | **20 itens** | 0 | 0 |
+| lê a trilha de auditoria | **4.102 linhas** | 0 | 0 |
+| lê denúncias | **2** | 0 | 0 |
+| lê avisos da equipe | **207** | 0 | 0 |
+| **escreve na wordlist** | **conseguiu** | bloqueado | bloqueado |
+| mexe na fila | **20 linhas** | 0 linhas | 0 linhas |
+| vê post oculto/apagado | **16** | 0 | 0 |
+| vê comentário oculto | **14** | 0 | 0 |
+
+Depois da correção o banido é **idêntico a um usuário comum** — rebaixado, não
+trancado. O admin **ativo** e o **owner** continuam com tudo, e isso foi medido
+na mesma transação: é a regressão que já derrubou o site três vezes.
+
+### A causa
+
+`is_staff()` e `is_super()` **já embutem** `operador_ativo()`:
+
+```sql
+is_staff()  =  role_rank(...) >= 2  AND  operador_ativo()
+```
+
+23 policies reimplementavam só a **primeira metade** à mão — `role_rank(...) >=
+2`, ou `ARRAY['admin','super_admin','owner']` — e perdiam a segunda.
+
+O `POSTURA.md` já dizia *"hierarquia nunca se escreve à mão"*, e a razão
+registrada lá era outra: esquecer o `owner`, três vezes. **Esta é a terceira
+razão, e é pior** — não falta um cargo, falta a pergunta *"quem chama ainda
+está apto?"*.
+
+### Por que isso não era teórico
+
+`ban_user` **não revoga sessão**. Ele escreve `banned = true` em `profiles` e
+mais nada — conferido no corpo da função. O token que o moderador já tem
+continua válido e o refresh continua funcionando, porque o GoTrue não conhece
+`profiles`. Não há janela curta: há acesso contínuo, pela REST API, sem passar
+pela tela.
+
+### O padrão de fundo: a mesma regra, aplicada pela metade
+
+A SEC-043 (19/09) fez exatamente esta correção — nas **RPCs**. As policies
+ficaram para trás, e nada apontou isso por seis dias porque **o auditor do banco
+não olhava policy**: as cinco checagens dele liam função e tabela.
+
+Auditor que não olha uma superfície não fica só incompleto — ele **imprime zero
+sobre ela**, que é pior, porque ensina a confiar num sinal que não sustenta nada.
+
+### A trava
+
+6ª checagem em `auditoria_de_operadores()`, ouvida pelo CI via
+`contagem_de_achados_de_seguranca()`. Provada reinjetando: devolver **uma**
+policy ao padrão antigo leva a contagem de 0 a 1, nomeando
+`moderation_queue.modq_select`.
+
+### O que ficou de fora, e por quê
+
+- **As três policies de `site_config`** usam `role = 'owner'` literal. Eu cheguei
+  a trocá-las por `is_owner()` e **desfiz no mesmo dia**: a SEC-051 já registrou
+  essa troca como decisão de semântica do dono (`is_owner()` é `rank >= 4`; o
+  literal é `= 'owner'`), e fazer em silêncio o oposto do que este documento diz
+  seria envelhecê-lo por dentro. Estão isentas com o motivo, e a decisão está no
+  `BACKLOG.md` junto com as cinco funções.
+- **`blocked_words_select` continua `USING (true)`.** Fechá-la apagaria o aviso
+  que o compositor dá antes de enviar — quatro telas leem a lista pelo cliente.
+  É decisão de produto, no `BACKLOG.md` com as três saídas.
+
+### E a trava do próprio auditor estava CEGA há um PR
+
+Ao cobrir a 6ª checagem, descobri que `auditorDoBancoEhOuvido.test.js` procurava
+o corpo do auditor por `$fn$` literal. A SEC-052 passou a escrevê-lo com
+`$function$` — e desde aquele PR a trava vinha conferindo a versão da **SEC-051**,
+verde e confiante, olhando um retrato velho.
+
+Hoje ela captura o rótulo do dólar, qualquer que seja, **e confere o número de
+definições que enxerga contra o número de arquivos que definem a função**. Se
+uma voltar a ficar invisível, a contagem não bate e ela reprova em vez de ler a
+penúltima em silêncio.
+
+---
+
 ## `[24/09]` SEC-051 — o auditor não via autorização escrita por LITERAL
 
 Saiu da **parte 1 da auditoria profunda**: o pedido era transformar em regressão

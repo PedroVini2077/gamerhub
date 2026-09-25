@@ -35,6 +35,37 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🔵 `[25/09]` A wordlist inteira é legível por qualquer pessoa logada
+
+Achado enquanto eu fechava a SEC-053. `blocked_words_select` é `USING (true)`:
+qualquer conta lê as **322** palavras da lista de moderação pela REST API. Quem
+tem a lista tem o mapa para contorná-la.
+
+**Por que NÃO fechei junto, e não é preguiça.** O compositor, o mural, os
+comentários e o chat leem essa lista **pelo cliente** (`useBlockedWords`) para
+avisar a pessoa **antes** de ela enviar. Fechar a policy apagaria esse aviso —
+e é exatamente a classe de conserto que já derrubou o site três vezes aqui
+(revogar coluna de `profiles` parou post, comentário, mural e chat).
+
+**O que muda de verdade se fechar:** nada passa a escapar da moderação — o
+banco checa sozinho (`checar_palavras_bloqueadas`, e os triggers de post,
+comentário e chat). O que se perde é o aviso amigável: a pessoa publica e o
+conteúdo é ocultado/enfileirado depois, em vez de ela ser avisada na hora.
+
+Isso é **decisão de produto**, não de segurança:
+
+| Saída | Ganha | Perde |
+| --- | --- | --- |
+| **deixar como está** | aviso antes de enviar | a lista é pública para quem tem conta |
+| **fechar a policy** | a lista vira segredo da equipe | o aviso some; a pessoa descobre depois |
+| **RPC `SECURITY DEFINER` que responde só "este texto tem termo bloqueado?"** | os dois: aviso mantido, lista escondida | uma ida ao servidor por checagem — e é **exatamente** a conta do §0.2 regra 2 (quantas vezes por dia isso roda?) |
+
+**Minha recomendação:** a terceira, **se e quando** a lista virar algo que
+valha esconder. Hoje ela é lista de palavrão, não de estratégia — 🔵 de
+propósito.
+
+---
+
 ### 🟠 `[25/09]` DECISÃO DELE — o botão "+" no lugar do compositor do topo
 
 Proposta dele em 25/09: *"acho que tá na hora de mudar a forma de postar algo...
@@ -1713,6 +1744,17 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   Enquanto não decide, as cinco estão isentas **com o motivo escrito** na
   migration, e a trava reprova se a lista crescer.
 
+  > **`[25/09]` Agora são CINCO FUNÇÕES + TRÊS POLICIES, e é a mesma decisão.**
+  > A SEC-053 passou o auditor a olhar policy também, e ele achou
+  > `site_config_owner_delete`, `_insert` e `_update` usando o mesmo
+  > `role = 'owner'` literal. Eu cheguei a trocá-las por `is_owner()` e
+  > **desfiz** — o argumento acima (muda semântica) vale igual para elas, e
+  > fazer em silêncio o que este item classifica como decisão sua seria pior do
+  > que não fazer. As três entraram na lista de isenção com o motivo, e a trava
+  > `auditorDoBancoEhOuvido.test.js` cobre essa lista também.
+  >
+  > **Quando você decidir, a decisão vale para as oito de uma vez.**
+
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -2339,8 +2381,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->151<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.174<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->152<!--/n--> arq ·
+  <!--n:src.lib.linhas-->18.286<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->21<!--/n--> arq ·
   <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
