@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { lerFeed } from '../../../supabase/functions/radar-de-pautas/rss.ts';
+import { lerFeed, fatiaJusta } from '../../../supabase/functions/radar-de-pautas/rss.ts';
 
 /**
  * `[26/09]` O radar de pautas não pode inventar notícia nem fonte.
@@ -127,5 +127,38 @@ describe('o leitor de RSS', () => {
   it('respeita o teto de itens por feed', () => {
     const muitos = `<rss>${'<item><title>t</title><link>https://a.com/x</link></item>'.repeat(40)}</rss>`;
     expect(lerFeed(muitos, 15)).toHaveLength(15);
+  });
+});
+
+describe('a fatia que vai ao modelo e JUSTA entre as fontes', () => {
+  // O defeito era `slice(0, 60)` sobre uma lista preenchida na ordem em que o
+  // `Promise.all` termina: as fontes RAPIDAS comiam as vagas das boas. Nada
+  // estourava — a resposta saia plausivel, so mais pobre.
+  const criar = (fonte, n) => Array.from({ length: n }, (_, i) => ({ fonte, i }));
+
+  it('a fonte GRANDE nao engole a vaga da pequena', () => {
+    const itens = [...criar('gigante', 100), ...criar('pequena', 3)];
+    const fatia = fatiaJusta(itens, (x) => x.fonte, 10);
+
+    const daPequena = fatia.filter((x) => x.fonte === 'pequena').length;
+    expect(daPequena, 'a fonte pequena perdeu lugar para a grande. Era o bug: '
+      + 'Eurogamer e RPS devolvem 100 itens cada, e tres fontes rapidas podiam '
+      + 'ocupar as 60 vagas antes de as outras dez chegarem.').toBe(3);
+    expect(fatia).toHaveLength(10);
+  });
+
+  it('os PRIMEIROS de cada fonte vem primeiro — sao os mais recentes', () => {
+    const itens = [...criar('a', 5), ...criar('b', 5), ...criar('c', 5)];
+    const fatia = fatiaJusta(itens, (x) => x.fonte, 6);
+    // rodizio: a0 b0 c0 a1 b1 c1 — e nao a0 a1 a2 a3 a4 b0
+    expect(fatia.map((x) => `${x.fonte}${x.i}`)).toEqual(['a0', 'b0', 'c0', 'a1', 'b1', 'c1']);
+  });
+
+  it('nao gira para sempre quando ha menos itens que o teto', () => {
+    // Sem a saida do laco isto travaria a Edge Function — e travar e pior do
+    // que devolver pouco.
+    expect(fatiaJusta(criar('a', 2), (x) => x.fonte, 50)).toHaveLength(2);
+    expect(fatiaJusta([], (x) => x.fonte, 50)).toEqual([]);
+    expect(fatiaJusta(criar('a', 9), (x) => x.fonte, 0)).toEqual([]);
   });
 });

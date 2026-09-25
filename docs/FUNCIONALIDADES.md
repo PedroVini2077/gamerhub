@@ -712,10 +712,31 @@ do ar devolve as manchetes cruas com um aviso amarelo, não um erro vermelho: o
 editor ainda consegue trabalhar lendo a lista na mão. Jogar fora a metade que
 deu certo o deixaria sem nada.
 
-**As 12 fontes iniciais foram MEDIDAS**, não lembradas — `curl` em 22
-candidatas em 26/09, e as que responderam 403, 404 ou vazio ficaram de fora com
-o motivo escrito na migration. Gerenciar fontes pela tela está no `BACKLOG.md`;
-hoje ligar e desligar é ação de banco (`docs/OPERACAO.md`).
+**As fontes foram MEDIDAS**, não lembradas — `curl` em cada candidata, e as que
+responderam 403, 404 ou vazio ficaram de fora **com o motivo escrito** na
+migration. Gerenciar fontes pela tela está no `BACKLOG.md`; hoje ligar e
+desligar é ação de banco (`docs/OPERACAO.md`).
+
+**`[26/09]` A lista foi corrigida depois de uma pergunta dele**, e a correção
+saiu de ler o que os feeds devolviam de verdade:
+
+| | |
+| --- | --- |
+| **ele perguntou** | *"ela pega fontes atuais? Não vi nada de GTA aqui, iPhone 18 e tals... tem que ser coisas da atualidade, tipo vingadores"* |
+| **a atualidade estava lá** | vieram Halo Studios, demissões no Xbox, Resident Evil Requiem, Castlevania 40 anos, Diablo 4 — notícia do dia |
+| **mas o ruído também** | o Tecnoblog devolveu, nas quatro primeiras, "Melhor notebook Asus", dois cupons e "Como justificar o voto pelo e-Título". Site de tech de consumo vive de cupom, não de pauta |
+| **e faltava o exemplo dele** | *cultura geek* não tinha fonte nenhuma. A cobertura de Marvel/DC chegava por acidente, pelo feed mais ruidoso |
+
+Saíram **Tecnoblog** e **Olhar Digital**; entraram **IGN Brasil** (games em
+português), **Legião dos Heróis** (a primeira leitura trouxe literalmente
+*"Vingadores: Ultimato…"*) e **Ars Technica Games**. São **13** ativas.
+
+**E a medição achou um defeito que ninguém veria.** A função mandava ao modelo
+os 60 primeiros itens *na ordem em que os feeds respondiam* — ou seja, as
+fontes mais **rápidas** comiam as vagas, não as melhores. Com 13 fontes ×
+15 itens para 60 vagas, uma fonte inteira podia não chegar ao modelo. Nada
+estourava: a resposta saía plausível, só mais pobre. Hoje é rodízio — o 1º de
+cada fonte, depois o 2º de cada.
 
 #### `[25/09]` Rascunhar com IA — ela REDIGE, não apura
 

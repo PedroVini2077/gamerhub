@@ -48,11 +48,11 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { lerFeed, type ItemBruto } from "./rss.ts";
+import { lerFeed, fatiaJusta, type ItemBruto } from "./rss.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "2bafe30b1af9f699";
+const IMPRESSAO_DESTE_CODIGO = "5aab57cd5fe7b25d";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -213,7 +213,13 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 2. A LEITURA EDITORIAL ────────────────────────────────────────────────
-  const paraOModelo = coletados.slice(0, TETO_DO_PEDIDO);
+  //
+  // FATIA JUSTA POR FONTE, e nao os primeiros 60 que chegaram — o porque esta
+  // no cabecalho de `fatiaJusta` em `rss.ts`, junto com a medicao que o
+  // revelou. Resumo: `coletados` vem na ordem em que o `Promise.all` termina,
+  // entao as fontes RAPIDAS comiam as vagas das boas, em silencio.
+  const paraOModelo = fatiaJusta(coletados, (i) => i.fonte_id, TETO_DO_PEDIDO);
+
   const enderecosValidos = new Set(paraOModelo.map((i) => i.url));
 
   const lista = paraOModelo
