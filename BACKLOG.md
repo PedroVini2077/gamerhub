@@ -64,9 +64,20 @@ Isso é **decisão de produto**, não de segurança:
 valha esconder. Hoje ela é lista de palavrão, não de estratégia — 🔵 de
 propósito.
 
+> ### ✅ `[25/09]` ELE DECIDIU: fazer a RPC
+>
+> *"Pode fazer tbm a rpc que só responde tem termo bloqueado"*. Ou seja: o aviso
+> antes de enviar continua, e a lista deixa de ser legível por qualquer conta.
+>
+> **O que eu preciso resolver ao construir**, e é o §0.2 regra 2 (*quantas vezes
+> por dia isso roda?*): hoje a checagem é local e custa zero — uma ida ao
+> servidor por tecla digitada seria inaceitável. O desenho tem de ser
+> **sob demanda** (ao enviar, ou com espera depois de parar de digitar), nunca
+> a cada tecla.
+
 ---
 
-### 🟠 `[25/09]` DECISÃO DELE — o botão "+" no lugar do compositor do topo
+### ✅ `[25/09]` DECIDIDO — o botão "+" abre uma ROTA PRÓPRIA, não um modal
 
 Proposta dele em 25/09: *"acho que tá na hora de mudar a forma de postar algo...
 pensei em limpar essa parte de cima do feed, e adicionar um botão +, tipo
@@ -90,9 +101,22 @@ dedicado, em vez do compositor inteiro. O "+" na navegação vira a segunda port
 para quem não está no feed. Custa uma linha em vez de um card, a descoberta
 continua de graça, e o compositor ganha o espaço de que precisa.
 
-**O que fica pendente dele:** aprovar o desenho (uma linha + "+" na navegação ×
-só o "+"), e se a superfície é modal ou rota própria — rota própria é melhor
-para vídeo e para voltar sem perder o rascunho, e tem custo de navegação.
+> **`[25/09]` ELE DECIDIU: rota própria.** Palavras dele: *"o Instagram, quando
+> vc clica pra criar um post ou reels, ele te leva a um lugar pra escolher
+> alguma mídia... e depois vc pode editar as fotos e vídeos separadamente. Se
+> fosse só um modal, ia continuar pequeno na minha opinião, então fazer algo a
+> parte vai dar mais liberdade pra quem quer postar"*.
+>
+> Ele mesmo pôs o limite: *"eu sei que um site não dá pra colocar uma
+> ferramenta inteira de edição, mas pelo menos fazer algo separado pra dar mais
+> liberdade e criatividade"*. O alvo é **espaço para trabalhar**, não paridade
+> com o Instagram.
+>
+> E disse a ordem: **vídeo curto vem DEPOIS do GamerHub News** — a rota tem de
+> nascer com lugar para ele, sem construí-lo agora.
+>
+> **Ainda não decidido:** se o topo do feed guarda uma linha que abre a rota, ou
+> se some de vez e o "+" da navegação vira a única porta.
 
 **O que JÁ está decidido e não muda com isso:** o "+" não pode embarcar opção de
 equipe no DOM de quem não é equipe (3º prompt dele, sobre permissão na tela).
@@ -1754,6 +1778,17 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   > `auditorDoBancoEhOuvido.test.js` cobre essa lista também.
   >
   > **Quando você decidir, a decisão vale para as oito de uma vez.**
+
+  > ### ✅ `[25/09]` ELE DECIDIU: trocar por `is_owner()`, nas oito
+  >
+  > *"Pode fazer esse do is_owner"*. Vale para as **cinco funções** do painel e
+  > para as **três policies** de `site_config`. Consequência aceita: um cargo
+  > futuro de rank ≥ 4 herdaria o painel do Fundador — é o que a troca
+  > significa, e ele decidiu sabendo.
+  >
+  > **NÃO entra junto:** pôr `exige_operador_ativo()` nas cinco. A recomendação
+  > contra continua de pé (risco de trancar o fundador fora do próprio painel,
+  > sem inversa) e ele não pediu isso.
 
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
