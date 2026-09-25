@@ -35,6 +35,29 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🐛 `[25/09]` RESOLVIDO — criar rascunho estava quebrado, e ELE achou
+
+`null value in column "conteudo" ... violates not-null constraint`. Não dava
+para escrever matéria nenhuma pelo site.
+
+**A causa era de desenho:** `conteudo` nasceu `NOT NULL`, ou seja, a tabela
+exigia o corpo **no instante da criação** — e rascunho é justamente o artigo
+antes do texto. Hoje o corpo é exigido só quando o artigo **vai ao ar**.
+
+**Como eu deixei passar, sem desculpa:** testei leitura e corte editorial em
+ROLLBACK, os dois **com `conteudo` preenchido**, e nunca rodei o `INSERT` que o
+painel executa. Provei o caminho que eu tinha na cabeça (§1.2).
+
+**A trava é pelo NAVEGADOR** (`e2e/painel-admin.mjs`), porque é o único lugar
+onde o insert que roda é o de verdade. Ela cobre a outra metade de graça: a
+conta do roteiro é `admin`, então **Publicar não pode aparecer**.
+
+**Efeito colateral que precisou de solução:** admin não apaga matéria, então o
+roteiro não limpa a própria sujeira. A retenção diária passou a alcançar
+rascunho de teste com mais de 2h — **nunca** o que está publicado.
+
+---
+
 ### 🟠 `[25/09]` A ARTE NÃO ESCALA — ideia dele, e ele está certo
 
 > *"já já nós vamos tirar todas essas artes e criar algo mais global, pq ficar
@@ -2501,7 +2524,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->157<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.725<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->18.756<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->23<!--/n--> arq ·
   <!--n:src.services.linhas-->2.377<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

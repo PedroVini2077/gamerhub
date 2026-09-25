@@ -111,7 +111,7 @@ export default function Landing({ introDone = true }) {
             existe. Sem ela, a seção nasceria invisível para quem ainda não
             criou conta. A arte é dele, nas duas composições, como as outras. */}
         <CenaDaLanding
-          id="news" invasao="aproxima" arte={CENAS.news}
+          id="news" invasao="deriva" arte={CENAS.news}
           eyebrow="News"
           titulo="O que aconteceu, apurado"
           descricao="Games, tecnologia e cultura geek — a equipe do GamerHub garimpa, checa e escreve. Sem caça-clique e sem repost sem fonte."

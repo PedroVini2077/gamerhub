@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { getRankFromXP } from '../ranks';
+import { INVASOES } from '../costuraDeCena';
 
 /**
  * As travas das CENAS VIVAS — as sobreposições que a fatia 6 acrescentou.
@@ -67,6 +68,36 @@ describe('cada cena tem uma personalidade PRÓPRIA', () => {
       LANDING.includes('fadeUpReveal'),
       'A `Landing` voltou a usar `fadeUpReveal` diretamente.',
     ).toBe(false);
+  });
+
+  it('todo gesto declarado na Landing EXISTE em `INVASOES`', () => {
+    // `[25/09]` Esta trava nasceu de um erro meu, e o caminho dele importa.
+    //
+    // O JSDoc do `ArteQueInvade` listava `'sobe'|'afasta'|'aproxima'|'deriva'`.
+    // `aproxima` **nunca existiu** no mapa, e `mergulha` — que existe e está em
+    // uso — não estava listado. Eu li o comentário, escolhi `aproxima`, e
+    // tratei documentação como fonte (§1.1: inferência vestida de fato).
+    //
+    // O componente faz a coisa CERTA: ele levanta exceção em vez de cair num
+    // gesto padrão (§4, nada de fallback silencioso). Só que a exceção acontece
+    // no NAVEGADOR — e o preço foi a landing inteira quebrada num job de CI de
+    // cinco minutos, com seis rotas acusando "sem o conteúdo esperado".
+    //
+    // Aqui a mesma coisa falha em 200 ms, dizendo o nome do gesto e a lista.
+    const gestos = [...LANDING.matchAll(/invasao="([a-z]+)"/g)].map((m) => m[1]);
+    const conhecidos = Object.keys(INVASOES);
+    const inventados = [...new Set(gestos)].filter((g) => !conhecidos.includes(g));
+
+    expect(inventados, [
+      `Gesto que a Landing usa e o mapa não tem: ${inventados.join(', ')}`,
+      `Os que existem: ${conhecidos.join(', ')}`,
+      '',
+      'O `ArteQueInvade` levanta exceção nesse caso — e como ele fica no topo',
+      'da Landing, a página INTEIRA quebra, não só a cena. Seis rotas do',
+      '`e2e/rotas.mjs` acusam de uma vez, e a causa não aparece no nome delas.',
+      '',
+      'Gesto novo se cria em `lib/costuraDeCena.js`, não na Landing.',
+    ].join('\n')).toEqual([]);
   });
 
   it('as cenas presas são DUAS — nem zero, nem cinco', () => {

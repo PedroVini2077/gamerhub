@@ -654,6 +654,12 @@ vê na prévia é exatamente o que o leitor vai ver.
 desabilitado anuncia um poder que ela não tem e convida a tentar; o corte fica
 mais claro quando a ação simplesmente não está ali.
 
+**`[25/09]` O rascunho nasce SEM corpo, e isso é regra do banco.** Criar pede
+título e editoria; o texto vem depois. O corpo só é exigido quando a matéria
+**vai ao ar** — e a mesma regra impede que alguém **esvazie** uma matéria já
+publicada. Mandar para revisão com o texto pela metade é permitido de propósito:
+é pedido de ajuda legítimo, e quem decide se está pronto é quem publica.
+
 Matéria já publicada **não é editável** por admin — a tela diz isso numa tarja,
 em vez de deixar digitar e falhar ao salvar.
 

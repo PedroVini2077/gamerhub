@@ -46,7 +46,7 @@ const SENHA = process.env.E2E_STAFF_PASSWORD;
 // As abas que um `admin` (rank 1) enxerga. `Cargos` e `Super Admin` ficam de
 // fora de propósito: elas só existem para `super_admin` e `owner`, e esperá-las
 // aqui transformaria a hierarquia correta em falha de teste.
-const ABAS = ['Usuários', 'Posts', 'Moderação', 'Mod de Lives', 'Keys & Promos', 'Notificações', 'Logs'];
+const ABAS = ['Usuários', 'Posts', 'News', 'Moderação', 'Mod de Lives', 'Keys & Promos', 'Notificações', 'Logs'];
 
 /**
  * A aba do painel, e SÓ ela.
@@ -362,6 +362,57 @@ try {
   await page.getByRole('button', { name: /^Deletar$/ }).click();
   await meuPost.first().waitFor({ state: 'detached', timeout: 30000 });
   ok('post do teste apagado');
+
+  // ── `[25/09]` A aba NEWS: criar rascunho, e NÃO poder publicar ────────────
+  //
+  // Este passo nasceu de um bug que o DONO achou minutos depois de eu entregar
+  // o painel: `criarRascunho` não mandava `conteudo`, a coluna era `NOT NULL`,
+  // e criar matéria estava simplesmente QUEBRADO. Eu tinha provado o caminho de
+  // leitura e o corte editorial em ROLLBACK — com `conteudo` preenchido nos
+  // dois — e nunca rodei o INSERT que o painel executa. Provei o caminho que eu
+  // tinha na cabeça, não o que o código faz (§1.2).
+  //
+  // Por isso a prova agora é pelo NAVEGADOR: é o único lugar onde o INSERT que
+  // roda é o de verdade.
+  //
+  // E o mesmo passo cobre a outra metade, de graça: esta conta é `admin`, então
+  // "Publicar" NÃO pode aparecer. Se aparecer, o corte editorial virou enfeite.
+  await aba(page, 'News').click();
+  const tituloDaMateria = `${marcaDeTeste('[painel ')} materia automatica`;
+  await page.getByLabel('Título da matéria').fill(tituloDaMateria);
+  await page.getByRole('button', { name: /criar rascunho/i }).click();
+
+  // O editor abre com o título no campo — é como o painel confirma que criou.
+  const campoTitulo = page.getByLabel('Título', { exact: true });
+  try {
+    await campoTitulo.waitFor({ state: 'visible', timeout: 20000 });
+  } catch {
+    const naTela = await page.locator('main').innerText();
+    throw new Error(
+      'criar rascunho NAO abriu o editor.\n'
+      + `    O que a tela diz: ${naTela.replace(/\s+/g, ' ').slice(0, 300)}\n\n`
+      + '    Suspeito principal: uma coluna de `news_articles` que e NOT NULL e '
+      + 'que o `criarRascunho` nao manda. Foi exatamente isso com `conteudo` '
+      + 'em 25/09 — e a mensagem do Postgres aparece em vermelho no card.');
+  }
+  ok('rascunho de materia criado pelo painel');
+
+  if (await page.getByRole('button', { name: /^Publicar$/ }).count()) {
+    throw new Error(
+      'o botao PUBLICAR apareceu para uma conta `admin`.\n'
+      + '    O corte editorial (decisao do dono, 25/09) diz que publicar e de '
+      + 'super admin e owner. O banco ainda recusaria, mas a tela estaria '
+      + 'oferecendo o que o servidor vai negar — e isso e a tela mentindo.');
+  }
+  ok('PUBLICAR nao e oferecido a admin');
+
+  await page.getByRole('button', { name: /mandar para revisao|mandar para revisão/i }).click();
+  await page.getByText(/mandado para revis/i).waitFor({ timeout: 20000 });
+  ok('materia mandada para revisao');
+
+  // A matéria FICA: admin não apaga (só super). A retenção diária do
+  // `cleanup_old_data()` limpa rascunho de teste com mais de 2 h — mesma
+  // disciplina dos posts do CI.
 
   await page.goto(`${BASE}/owner`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(2500); // dá tempo do guard esvaziar a tela
