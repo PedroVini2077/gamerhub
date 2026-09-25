@@ -10,6 +10,7 @@ import { rotuloDoEstado, corDoEstado, estadoNoAr, podeEditar } from '../../lib/n
 import { RECURSOS_COMPLETOS } from '../../lib/formatacao/vocabulario';
 import EditorDeTexto from '../ui/EditorDeTexto';
 import ConfirmModal from '../ui/ConfirmModal';
+import AvisoDeErro, { AvisoDeSucesso } from '../ui/AvisoDeErro';
 import SugestoesDaMateria from './SugestoesDaMateria';
 import RascunharComIa from './RascunharComIa';
 import MarcaDeIa from './MarcaDeIa';
@@ -30,7 +31,7 @@ import MarcaDeIa from './MarcaDeIa';
  * anuncia um poder que a pessoa não tem e convida a tentar; o corte editorial
  * fica mais claro quando a ação simplesmente não está ali.
  */
-export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
+export default function EditorDeArtigo({ id, ehSuper, onFechar, notasIniciais }) {
   const { data: artigo, isLoading, refetch } = useQuery({
     queryKey: ['news-editar', id],
     queryFn: () => apenasData(fetchArtigoParaEditar(id)),
@@ -45,7 +46,10 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
   // ninguém editou, o que aparece é o servidor; depois de salvar, `null`
   // devolve o controle a ele.
   const [rascunho, setRascunho] = useState(null);
-  const [estado, setEstado] = useState('');
+  // `{ tipo, mensagem, detalhe }` em vez de uma string solta: o erro do banco
+  // tem DUAS partes (a frase em português e o texto original), e string única
+  // obrigava a escolher uma — foi assim que o Postgres cru foi parar na tela.
+  const [estado, setEstado] = useState(null);
   const [confirmarApagar, setConfirmarApagar] = useState(false);
 
   const doServidor = artigo && {
@@ -73,13 +77,20 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
   const aplicarVarios = (novos) => setRascunho({ ...campos, ...novos });
 
   async function comAviso(promessa, sucesso) {
-    setEstado('');
+    setEstado(null);
     const { error } = await promessa;
-    // O erro do servidor chega INTEIRO na tela. Trocar por "algo deu errado"
-    // apagaria a única informação útil (§1.5).
-    setEstado(error ? (error.message ?? 'Não deu.') : sucesso);
+    // O erro chega em DUAS camadas: a frase em português que `errosDoBanco`
+    // produziu, e o texto original do Postgres atrás de "detalhes". Trocar por
+    // "algo deu errado" apagaria a segunda (§1.5); despejar a segunda sozinha
+    // foi o que o dono viu na tela em 26/09.
+    if (error) {
+      setEstado({ tipo: 'erro', mensagem: error.message ?? 'Não deu.', detalhe: error.tecnico });
+      return;
+    }
+    setEstado({ tipo: 'ok', mensagem: sucesso });
     // Deu certo: solta o rascunho para o servidor voltar a ser a verdade.
-    if (!error) { setRascunho(null); refetch(); }
+    setRascunho(null);
+    refetch();
   }
 
   const salvar = () => comAviso(salvarArtigo(id, campos), 'Salvo.');
@@ -149,13 +160,18 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
         />
       </div>
 
-      {editavel && <RascunharComIa campos={campos} onAplicar={aplicarVarios} />}
+      {editavel && (
+        <RascunharComIa campos={campos} onAplicar={aplicarVarios} notasIniciais={notasIniciais} />
+      )}
 
       {editavel && (
         <SugestoesDaMateria campos={campos} onAplicar={(k, v) => set(k)(v)} />
       )}
 
-      {estado && <p className="text-xs font-mono text-gray-400">{estado}</p>}
+      {estado?.tipo === 'erro' && (
+        <AvisoDeErro mensagem={estado.mensagem} detalhe={estado.detalhe} />
+      )}
+      {estado?.tipo === 'ok' && <AvisoDeSucesso mensagem={estado.mensagem} />}
 
       <div className="flex gap-2 flex-wrap">
         {editavel && (
@@ -208,8 +224,9 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
           onConfirm={async () => {
             setConfirmarApagar(false);
             const { error } = await apagarArtigo(id);
-            if (error) setEstado(error.message ?? 'Não deu para apagar.');
-            else onFechar();
+            if (error) {
+              setEstado({ tipo: 'erro', mensagem: error.message ?? 'Não deu para apagar.', detalhe: error.tecnico });
+            } else onFechar();
           }}
           onClose={() => setConfirmarApagar(false)}
         />

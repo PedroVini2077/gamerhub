@@ -141,7 +141,7 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   >
   > **Nada vigia isso**, e é o buraco que vale registrar: o
   > `espelho-de-migrations.mjs` reprova o PR quando uma migration existe no banco
-  > e não no repositório, mas para as <!--n:edge.funcoes-->9<!--/n--> Edge
+  > e não no repositório, mas para as <!--n:edge.funcoes-->10<!--/n--> Edge
   > Functions não há equivalente. Enquanto isso, três lugares afirmavam o
   > comportamento novo — este documento, o comentário de 05/09 em
   > `e2e/portas-fechadas.mjs`, e o próprio código.
@@ -1284,8 +1284,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->455<!--/n--> arquivos e
-<!--n:src.linhas-->50.507<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->461<!--/n--> arquivos e
+<!--n:src.linhas-->51.307<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1309,7 +1309,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->455<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->461<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1334,7 +1334,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->27.741<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->27.953<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1745,3 +1745,52 @@ clique em **Redigir rascunho**.
 Apague a chave em `https://console.groq.com/keys` (ícone de lixeira da linha) e
 repita os passos 2 e 3. Enquanto a chave velha existir, quem a tiver consome a
 cota da conta — e o efeito no site é a IA parar de redigir para a equipe inteira.
+
+---
+
+## `[26/09]` AS FONTES DO RADAR DE PAUTAS — ligar, desligar, acrescentar
+
+> **Enquanto não existe tela para isto** (está no `BACKLOG.md`), mexer numa
+> fonte é ação de banco. As consultas abaixo são as três que cobrem tudo.
+
+**Onde ver o que existe e quando cada uma respondeu pela última vez:**
+
+```sql
+select nome, url, ativa, ultima_coleta
+  from news_sources order by ativa desc, nome;
+```
+
+**Desligar uma fonte** (ela para de ser lida, e o histórico dela fica):
+
+```sql
+update news_sources set ativa = false where nome = 'Kotaku';
+```
+
+**Acrescentar uma fonte — e a conferência que vem ANTES do insert.** Feed que
+não responde não dá erro nenhum: ele entra na lista de "não responderam" e some
+no meio do relatório. Então bata nele primeiro:
+
+```bash
+curl -sL -o /tmp/f.xml -w "%{http_code}\n" --max-time 12 "<url-do-feed>"
+grep -c "<item\|<entry" /tmp/f.xml     # precisa ser > 1
+```
+
+Só com `200` **e** contagem maior que 1:
+
+```sql
+insert into news_sources (nome, url, tipo)
+values ('<nome>', '<url>', 'rss')
+on conflict on constraint news_sources_url_unica do nothing;
+```
+
+> **Por que a contagem, e não só o `200`.** O feed padrão do Blogger responde
+> `200` com **um** item — foi o caso do Nintendo Blast em 26/09. Uma fonte
+> assim entra na lista, consome uma requisição por clique e contribui com quase
+> nada. E o TecMundo responde `204` com corpo vazio: `200` sozinho não prova
+> nada.
+
+**O que já ficou de fora, para ninguém reincluir sem querer:** Adrenaline
+(403), TecMundo (204 vazio), GameVicio (404), IGN (403 no site; o espelho do
+FeedBurner dá 1 item), The Enemy (não resolve), Flow Games (404), Jovem Nerd
+(404), Nintendo Blast (1 item). A lista com o motivo está na migration
+`news_fontes_rss_iniciais`.

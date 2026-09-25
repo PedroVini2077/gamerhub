@@ -1,3 +1,5 @@
+import { humanizarErroDoBanco } from '../lib/errosDoBanco';
+
 // Contrato único de retorno da camada de services.
 //
 // Antes cada função devolvia o que dava na telha — o levantamento achou QUATRO
@@ -24,8 +26,17 @@
 /** Sucesso. */
 export const ok = (data = null) => ({ data, error: null });
 
-/** Falha. `vazio` é o que `data` deve conter para a tela não quebrar. */
-export const fail = (error, vazio = null) => ({ data: vazio, error });
+/**
+ * Falha. `vazio` é o que `data` deve conter para a tela não quebrar.
+ *
+ * **`[26/09]` Todo erro passa pelo tradutor aqui**, e não em cada service.
+ * Era o único jeito de valer para os 64 gatilhos do banco de uma vez: o dono
+ * viu `violates check constraint "news_articles_corpo_exigido_no_ar"` na tela,
+ * e consertar só aquele deixaria 63 iguais esperando (§1.3, varredura de
+ * classe). O tradutor devolve o erro INTACTO quando não reconhece, e preserva
+ * o texto original em `tecnico` quando reconhece — ver `lib/errosDoBanco.js`.
+ */
+export const fail = (error, vazio = null) => ({ data: vazio, error: humanizarErroDoBanco(error) });
 
 /**
  * Normaliza a resposta crua do supabase-js para o contrato.

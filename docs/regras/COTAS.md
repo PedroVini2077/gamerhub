@@ -43,6 +43,12 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > dia?** Uma por clique de editor em "Redigir rascunho" — não multiplica por
 > usuário, por post nem por leitor, porque só `is_staff()` alcança. É o oposto
 > do realtime de curtidas, que foi recusado justamente por multiplicar.
+>
+> **`[26/09]` O radar de pautas entrou pela mesma porta, e a conta é maior:**
+> ~12 requisições de RSS + 1 ao modelo, por clique em "Buscar pautas". Feed não
+> tem cota e não custa nada — o que conta é o mesmo teto da Groq. E ele também
+> não multiplica: só `is_staff()` alcança, e é um clique de editor, não um por
+> visitante. A pergunta da regra 2 foi feita **antes** de ligar.
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em

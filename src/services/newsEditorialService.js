@@ -13,8 +13,15 @@ import { estadoNoAr } from '../lib/news/estadosDoArtigo';
  * admin tenta publicar, agendar, ou mexer no que já está no ar. O site usa a
  * `anon key` — qualquer pessoa chama a REST API e pula este arquivo inteiro.
  *
- * O que está aqui é a **conversa com o servidor** e a tradução do que ele
- * responde para português.
+ * O que está aqui é a **conversa com o servidor**.
+ *
+ * ── `[26/09]` A tradução do erro NÃO mora mais aqui ───────────────────────
+ *
+ * Este arquivo tinha um `traduzir()` próprio com três constraints escritas à
+ * mão. Ele cobria três de **64** — e a que o dono esbarrou (`corpo exigido no
+ * ar`) não era nenhuma das três: o Postgres cru apareceu na tela. Hoje quem
+ * traduz é `lib/errosDoBanco.js`, chamado pelo `fail()` de `result.js`, então
+ * vale para todo service de uma vez.
  *
  * ── `count: 'exact'` em toda escrita, e o motivo é velho ──────────────────
  *
@@ -60,7 +67,7 @@ export async function fetchArtigoParaEditar(id) {
  * emoji, só pontuação) é recusado com uma frase em português, em vez de virar
  * `violates check constraint` na cara de quem escreveu.
  */
-export async function criarRascunho({ titulo, editoria, autorId }) {
+export async function criarRascunho({ titulo, editoria, autorId, fonteUrl = null }) {
   const slug = slugificar(titulo);
   if (!slugValido(slug)) {
     return fail({ message: 'O título precisa ter letras ou números para virar um endereço.' });
@@ -68,7 +75,13 @@ export async function criarRascunho({ titulo, editoria, autorId }) {
 
   return from(
     await supabase.from('news_articles')
-      .insert({ titulo: titulo.trim(), slug, editoria, status: 'draft', autor_id: autorId })
+      .insert({
+        titulo: titulo.trim(), slug, editoria, status: 'draft', autor_id: autorId,
+        // `[26/09]` Vem preenchida quando o rascunho nasce de uma pauta do
+        // radar: a fonte é o endereço do feed que a sustentou, e perdê-la aqui
+        // obrigaria o editor a ir buscar de novo o link que ele acabou de ver.
+        fonte_url: fonteUrl,
+      })
       .select(COLUNAS_DO_PAINEL).single(),
     null,
   );
@@ -80,7 +93,7 @@ export async function salvarArtigo(id, campos) {
     .update({ ...campos, updated_at: new Date().toISOString() }, { count: 'exact' })
     .eq('id', id);
 
-  if (error) return fail(traduzir(error));
+  if (error) return fail(error);
   return fromCount({ count }, 'Nada foi salvo. Este artigo já está no ar? Só super admin edita o que está publicado.');
 }
 
@@ -99,7 +112,7 @@ export async function mudarEstado(id, destino) {
     .update(campos, { count: 'exact' })
     .eq('id', id);
 
-  if (error) return fail(traduzir(error));
+  if (error) return fail(error);
   return fromCount({ count }, 'Nada mudou. Você tem permissão para este estado?');
 }
 
@@ -108,30 +121,8 @@ export async function apagarArtigo(id) {
   const { count, error } = await supabase.from('news_articles')
     .delete({ count: 'exact' }).eq('id', id);
 
-  if (error) return fail(traduzir(error));
+  if (error) return fail(error);
   return fromCount({ count }, 'Nada foi apagado — apagar artigo é de super admin e owner.');
-}
-
-/**
- * O erro do Postgres em português.
- *
- * As mensagens do trigger já vêm escritas para gente ler; o que chega feio é a
- * violação de constraint. Traduzir as que TÊM tradução e **deixar passar o
- * resto** é deliberado: inventar um texto genérico para erro desconhecido
- * esconderia a informação de quem precisa investigar (§1.5).
- */
-function traduzir(error) {
-  const bruto = error?.message ?? '';
-  if (bruto.includes('news_articles_slug_unico')) {
-    return { message: 'Já existe um artigo com este endereço. Mude o título.' };
-  }
-  if (bruto.includes('news_articles_publicado_tem_data')) {
-    return { message: 'Artigo publicado precisa de data de publicação.' };
-  }
-  if (bruto.includes('news_articles_agendado_tem_data')) {
-    return { message: 'Artigo agendado precisa da data do agendamento.' };
-  }
-  return error;
 }
 
 /** Reexportado para a tela não precisar conhecer dois módulos. */

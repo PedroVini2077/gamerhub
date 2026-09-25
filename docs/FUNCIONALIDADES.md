@@ -668,6 +668,55 @@ três sugestões saem do texto que a pessoa já escreveu: custo zero, resposta
 instantânea, e **zero chance de inventar fato** — que numa seção de notícia é a
 propriedade que mais importa.
 
+#### `[26/09]` Radar de pautas — de onde vêm as ideias
+
+**O pedido dele:** *"eu imaginei ela me dando as ideias, as fontes confiáveis,
+às vezes o título... até eu achar uma notícia, estudar sobre e colocar lá, isso
+demoraria"*. Ele pediu para eu **verificar se dava** antes de implementar.
+
+**A verificação mudou o desenho, e essa é a parte que importa.** Perguntar a
+notícia ao modelo **não dá** — e não é limitação do plano grátis: um LLM não
+tem internet e tem data de corte. Ele responderia com o que estava no treino,
+ou inventaria. Notícia inventada com cara de fonte confiável é o pior
+resultado possível numa seção de jornalismo.
+
+O que dá, e é melhor:
+
+> os fatos entram por **RSS das fontes que a equipe cadastrou** · o modelo lê
+> aquelas manchetes e diz **o que vale virar matéria**
+
+No topo da aba News há o bloco **Radar de pautas** e um botão **Buscar pautas**.
+Ele lê os feeds na hora e devolve, para cada pauta:
+
+| | |
+| --- | --- |
+| **título sugerido** | ponto de partida — aceitar, editar ou ignorar |
+| **ângulo** | o recorte do GamerHub, que é o que separa matéria de repost |
+| **por que agora** | o que torna aquilo assunto hoje |
+| **as fontes** | endereços **reais**, de feeds cadastrados, que dá para abrir |
+
+**A guarda que faz "fonte confiável" ser verdade, e não promessa.** O modelo
+devolve os endereços que sustentam cada pauta; **todo endereço que não estava
+na lista coletada é descartado** antes de a resposta sair do servidor, e a
+contagem do descarte volta junto. Sem isso bastaria ele escrever uma URL
+plausível de um site conhecido — e, do lado de quem lê, isso é
+indistinguível de apuração.
+
+**"Criar rascunho com estas notas" fecha o ciclo.** A matéria nasce com título,
+editoria e fonte preenchidos **e** com as manchetes coladas no campo de notas —
+que é exatamente o que o *Rascunhar com IA* exige para escrever. Sem esse elo,
+o próximo clique responderia "escreva as notas primeiro".
+
+**Quando a IA falha, a coleta continua valendo.** Cota estourada ou modelo fora
+do ar devolve as manchetes cruas com um aviso amarelo, não um erro vermelho: o
+editor ainda consegue trabalhar lendo a lista na mão. Jogar fora a metade que
+deu certo o deixaria sem nada.
+
+**As 12 fontes iniciais foram MEDIDAS**, não lembradas — `curl` em 22
+candidatas em 26/09, e as que responderam 403, 404 ou vazio ficaram de fora com
+o motivo escrito na migration. Gerenciar fontes pela tela está no `BACKLOG.md`;
+hoje ligar e desligar é ação de banco (`docs/OPERACAO.md`).
+
 #### `[25/09]` Rascunhar com IA — ela REDIGE, não apura
 
 Decisão do dono: *"ela não vai postar nada sozinha, vai passar pela

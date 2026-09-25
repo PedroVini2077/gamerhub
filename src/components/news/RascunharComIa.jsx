@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, ChevronDown, ChevronUp, Check, X, AlertTriangle } from 'lucide-react';
 import { rascunharComIa, MINIMO_DE_NOTAS, lacunasDoRascunho } from '../../services/newsIaService';
+import AvisoDeErro from '../ui/AvisoDeErro';
 
 /**
  * `[25/09]` RASCUNHAR COM IA — e a palavra que manda é "rascunhar".
@@ -25,9 +26,13 @@ import { rascunharComIa, MINIMO_DE_NOTAS, lacunasDoRascunho } from '../../servic
  *    `[CONFERIR: o que falta]` no lugar do que as notas não têm — e a tela
  *    CONTA esses marcadores em cima, onde o revisor vê antes de ler.
  */
-export default function RascunharComIa({ campos, onAplicar }) {
-  const [aberto, setAberto] = useState(false);
-  const [notas, setNotas] = useState('');
+export default function RascunharComIa({ campos, onAplicar, notasIniciais }) {
+  // Quando o rascunho nasceu de uma pauta do radar, as manchetes que a
+  // sustentam já vêm coladas — e o bloco abre sozinho, porque fechado ele
+  // pareceria vazio e o editor leria "escreva as notas primeiro" sem saber
+  // que elas já estavam ali.
+  const [aberto, setAberto] = useState(Boolean(notasIniciais));
+  const [notas, setNotas] = useState(notasIniciais ?? '');
   const [pedindo, setPedindo] = useState(false);
   const [erro, setErro] = useState('');
   const [rascunho, setRascunho] = useState(null);
@@ -112,7 +117,7 @@ export default function RascunharComIa({ campos, onAplicar }) {
             </span>
           </div>
 
-          {erro && <p className="text-xs text-red-400 font-mono">{erro}</p>}
+          {erro && <AvisoDeErro mensagem={erro} />}
 
           {rascunho && (
             <div className="space-y-3 border-t border-dark-500 pt-3">

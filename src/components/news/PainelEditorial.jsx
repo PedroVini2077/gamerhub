@@ -9,6 +9,8 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import EditorDeArtigo from './EditorDeArtigo';
 import MarcaDeIa from './MarcaDeIa';
+import AvisoDeErro from '../ui/AvisoDeErro';
+import RadarDePautas from './RadarDePautas';
 
 /**
  * `[25/09]` O PAINEL EDITORIAL — a aba "News" do admin.
@@ -33,10 +35,13 @@ export default function PainelEditorial() {
   const ehSuper = isSuperAdmin || isOwner;
   const qc = useQueryClient();
 
-  const [editando, setEditando] = useState(null);   // id do artigo aberto
+  // `{ id, notasIniciais }` — as notas viajam junto porque o rascunho criado a
+  // partir de uma pauta do radar já nasce com as manchetes que a sustentam, e
+  // é delas que a `redigir-materia` precisa para escrever.
+  const [editando, setEditando] = useState(null);
   const [titulo, setTitulo] = useState('');
   const [editoria, setEditoria] = useState(EDITORIAS_EM_ORDEM[0]);
-  const [erro, setErro] = useState('');
+  const [erro, setErro] = useState(null);
   const [criando, setCriando] = useState(false);
 
   const { data: artigos = [], isLoading } = useQuery({
@@ -47,21 +52,39 @@ export default function PainelEditorial() {
   async function criar() {
     if (!titulo.trim() || criando) return;
     setCriando(true);
-    setErro('');
+    setErro(null);
     const { data, error } = await criarRascunho({ titulo, editoria, autorId: user?.id });
     setCriando(false);
 
     // O erro vai para a TELA. `console.error` não é tratamento (§1.5).
-    if (error) { setErro(error.message ?? 'Não deu para criar o rascunho.'); return; }
+    if (error) {
+      setErro({ mensagem: error.message ?? 'Não deu para criar o rascunho.', detalhe: error.tecnico });
+      return;
+    }
     setTitulo('');
     qc.invalidateQueries({ queryKey: ['news-equipe'] });
-    if (data?.id) setEditando(data.id);
+    if (data?.id) setEditando({ id: data.id });
+  }
+
+  /** Uma pauta do radar vira rascunho, já com título, editoria, fonte e notas. */
+  async function criarDaPauta({ titulo, editoria, fonteUrl, notas }) {
+    setErro(null);
+    const { data, error } = await criarRascunho({
+      titulo, editoria: editoria ?? EDITORIAS_EM_ORDEM[0], autorId: user?.id, fonteUrl,
+    });
+    if (error) {
+      setErro({ mensagem: error.message ?? 'Não deu para criar o rascunho.', detalhe: error.tecnico });
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ['news-equipe'] });
+    if (data?.id) setEditando({ id: data.id, notasIniciais: notas });
   }
 
   if (editando) {
     return (
       <EditorDeArtigo
-        id={editando}
+        id={editando.id}
+        notasIniciais={editando.notasIniciais}
         ehSuper={ehSuper}
         onFechar={() => {
           setEditando(null);
@@ -73,6 +96,8 @@ export default function PainelEditorial() {
 
   return (
     <div className="space-y-4">
+      <RadarDePautas onCriar={criarDaPauta} />
+
       <div className="card p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Newspaper size={15} className="text-neon-green shrink-0" />
@@ -103,7 +128,7 @@ export default function PainelEditorial() {
           </button>
         </div>
 
-        {erro && <p className="text-xs text-red-400 font-mono">{erro}</p>}
+        {erro && <AvisoDeErro mensagem={erro.mensagem} detalhe={erro.detalhe} />}
 
         <p className="text-[11px] text-gray-600">
           O endereço da matéria sai do título. Publicar é de super admin — você
@@ -125,7 +150,7 @@ export default function PainelEditorial() {
         <div className="card divide-y divide-dark-500">
           {artigos.map((a) => (
             <button
-              key={a.id} onClick={() => setEditando(a.id)}
+              key={a.id} onClick={() => setEditando({ id: a.id })}
               className="w-full flex items-center gap-3 p-3 text-left hover:bg-dark-700/50 transition-colors"
             >
               <div className="flex-1 min-w-0">

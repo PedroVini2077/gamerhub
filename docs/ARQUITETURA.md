@@ -149,6 +149,13 @@ src/
 │   │                      # explícito. O desconhecido aparece inteiro, em
 │   │                      # vez de virar um genérico que esconde o caso novo
 │   ├── url.js             # safeExternalUrl() — só http(s) vira href (anti-XSS)
+│   ├── errosDoBanco.js    # `[26/09]` O erro do Postgres vira PORTUGUÊS, num
+│   │                      # lugar só: o `fail()` de services/result.js passa
+│   │                      # TODO erro por aqui, então vale para os 64 gatilhos
+│   │                      # de constraint de uma vez. `RAISE EXCEPTION` das
+│   │                      # nossas RPCs (`P0001`) passa INTACTO — aquela frase
+│   │                      # já foi escrita para o toast. Nada é perdido: o
+│   │                      # texto original fica em `tecnico`
 │   ├── logMeta.js         # Fonte única de categorias/ícones/retenção dos logs
 │   ├── metaDaPagina.js    # `[17/09]` O catálogo de title/description das 6
 │   │                      # páginas públicas, e aplicarMeta(). Mora aqui e não
@@ -367,6 +374,11 @@ src/
 │   │                      #   Postgres — mas só os que TÊM tradução: texto
 │   │                      #   genérico para erro desconhecido esconde o que
 │   │                      #   quem investiga precisa
+│   ├── newsRadarService.js # `[26/09]` Chama a Edge Function `radar-de-pautas`.
+│   │                      #   Erro do MODELO não é falha total: a coleta já
+│   │                      #   aconteceu, então volta `itens` com as manchetes
+│   │                      #   cruas e um AVISO — jogar fora o que deu certo
+│   │                      #   deixaria o editor sem nada
 │   ├── newsIaService.js   # `[25/09]` Chama a Edge Function `redigir-materia`.
 │   │                      #   A chave do provedor NÃO pode existir no
 │   │                      #   navegador — o site usa a anon key e tudo que
@@ -508,6 +520,11 @@ src/
     │                      # MarcaDeIa — o selo "IA" nas três telas que listam
     │                      # matéria. Existe para o revisor saber ANTES de ler:
     │                      # texto de modelo é plausível por construção
+    │                      # RadarDePautas — `[26/09]` de onde vêm as ideias.
+    │                      # Os fatos entram por RSS das fontes cadastradas; o
+    │                      # modelo só ORDENA e sugere ângulo. "Criar rascunho"
+    │                      # já leva as manchetes para o campo de notas, que é
+    │                      # o que a `redigir-materia` exige para escrever
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal,
@@ -532,6 +549,12 @@ src/
     │                      # TrialCard, DemotionCard, CandidateHeader,
     │                      # EligibilityChecklist, DecisionButton
     ├── ui/                # ConfirmModal, ReasonModal, BannedScreen, …
+    │   ├── AvisoDeErro.jsx # `[26/09]` O erro na tela: a frase em português em
+    │   │                  # cima, o texto original do Postgres atrás de um
+    │   │                  # "detalhes". Recusa as DUAS falhas — despejar o
+    │   │                  # erro cru (o dono leu `violates check constraint`
+    │   │                  # embaixo dos botões) e trocá-lo por "algo deu
+    │   │                  # errado", que apaga quem for investigar
     │   ├── ConfirmarComSenha.jsx # `[12/09]` A confirmação de ação
     │   │                  # IRREVERSÍVEL, com a senha da conta. O `ConfirmModal`
     │   │                  # confirma INTENÇÃO ("tem certeza?"); este confirma

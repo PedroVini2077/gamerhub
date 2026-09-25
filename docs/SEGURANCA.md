@@ -437,6 +437,33 @@ O caso perigoso passou a gritar junto: link malicioso **detectado** e a RPC não
 ocultando devolve `status: "rpc_error"` e vai para `admin_logs`. Era a mesma
 forma de falha que manteve a moderação por IA quebrada em 26 de 26 chamadas.
 
+## `[26/09]` O radar de pautas — a porta, e a guarda que NÃO é de acesso
+
+A porta é a mesma da `redigir-materia`: `auth.getUser()` e depois
+`rpc("is_staff")`. O que está em jogo por clique são **12 requisições de rede
+para sites de terceiros** mais uma chamada ao modelo — abrir isso a qualquer
+logado seria dar um aríete de graça.
+
+**A guarda interessante desta função não é de acesso, é de integridade.** O
+modelo devolve os endereços que sustentam cada pauta, e nada num LLM o impede
+de escrever `https://www.<site-conhecido>.com/<caminho-plausivel>`. Do lado de
+quem lê, isso é indistinguível de apuração.
+
+Por isso o conjunto de endereços válidos é **fechado por construção**: é o que
+foi coletado dos feeds nesta execução. Endereço fora dele é descartado antes de
+a resposta sair, a pauta que perde todas as fontes não chega na tela, e o
+descarte **grita** em `admin_logs` — modelo inventando URL é sinal de que o
+prompt parou de segurar, e isso precisa aparecer antes de virar hábito.
+
+Trava: `radarDePautasNaoInventa.test.js` (`INV-EDIT-007`).
+
+> **`[26/09]` Pendência assumida:** `e2e/portas-fechadas.mjs` ainda **não** bate
+> nesta função. Ela só existe em produção depois que a `main` a implanta, e o
+> teste roda contra produção durante o PR — o caso entra no PR seguinte, e está
+> escrito no `BACKLOG.md` para não depender de eu lembrar.
+
+---
+
 ## `[25/09]` A porta da IA que rascunha matéria — `is_staff()`, não "estar logado"
 
 `redigir-materia` nasceu com a porta que a `moderate-links` levou meses para
