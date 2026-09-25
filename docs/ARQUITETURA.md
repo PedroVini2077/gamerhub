@@ -216,6 +216,12 @@ src/
 │   │   │                  #   do `CHECK` do banco por uma trava, nos DOIS
 │   │   │                  #   sentidos — editoria que o banco aceita e a tela
 │   │   │                  #   não conhece apareceria SEM RÓTULO, sem erro
+│   │   ├── assistente.js  #   `[25/09]` SUGERE, nunca decide: editoria pelo
+│   │   │                  #   título (vocabulário FECHADO, sem chute), resumo
+│   │   │                  #   das primeiras frases do CORPO, e avisos de
+│   │   │                  #   conferência. Nada chama modelo — tudo é derivado
+│   │   │                  #   do que a pessoa já escreveu, então custo zero e
+│   │   │                  #   ZERO chance de alucinar
 │   │   ├── slug.js        #   Título -> endereço. A regex daqui é a MESMA do
 │   │   │                  #   `CHECK` do banco, travada: slug montado errado
 │   │   │                  #   viraria `violates check constraint` na cara de
@@ -474,6 +480,9 @@ src/
     │                      # GamerHub News. Encolhe quando o artigo não tem
     │                      # capa, em vez de mostrar buraco: layout que exige
     │                      # imagem obriga a equipe a inventar uma.
+    │                      # SugestoesDaMateria — o conselho do assistente, e
+    │                      # toda sugestão é BOTÃO: nada se aplica sozinho, nem
+    │                      # em campo vazio. Quem assina é quem clicou.
     │                      # PainelEditorial + EditorDeArtigo — a aba "News" do
     │                      # admin. Ilha: buscam os próprios dados em vez de
     │                      # entrar na corrente de props do Admin. "Publicar"
@@ -542,6 +551,11 @@ src/
     │                      # do card de stats
     ├── owner/             # PainelTab, UsuariosTab, LogsTab, SiteTab,
     │                      # NotificacoesTab, MetricasTab, SiteModerationCards
+    │   ├── FilaEditorialTab.jsx # `[25/09]` o ESTADO do jornal: quantas em
+    │   │                  # cada estado, o que espera revisão e HÁ QUANTO
+    │   │                  # TEMPO. NÃO é um segundo editor — a pergunta dele
+    │   │                  # era essa, e dois editores divergem (§4). Para agir,
+    │   │                  # ele manda para o painel que já existe
     │   ├── CofreDoFundador.jsx # `[05/09]` a tranca de tela na frente do
     │   │                  # painel. CENOGRÁFICA, e o aviso disso está impresso
     │   │                  # embaixo do campo — a autorização real é do banco

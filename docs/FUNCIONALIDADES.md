@@ -654,6 +654,20 @@ vê na prévia é exatamente o que o leitor vai ver.
 desabilitado anuncia um poder que ela não tem e convida a tentar; o corte fica
 mais claro quando a ação simplesmente não está ali.
 
+**`[25/09]` O painel SUGERE, e nada se aplica sozinho.** Ao escrever, aparece um
+bloco de sugestões: a **editoria** que o título indica, um **resumo** feito das
+primeiras frases do corpo, e **avisos de conferência** (falta link de fonte,
+falta resumo, corpo curto, título longo demais para o cartão).
+
+Cada sugestão é um **botão** — nada é preenchido automaticamente, nem em campo
+vazio. Campo que se preenche sozinho é campo que ninguém relê, e quem assina a
+matéria é quem clicou.
+
+**Nada disso é gerado por um modelo**, e a tela diz isso com todas as letras. As
+três sugestões saem do texto que a pessoa já escreveu: custo zero, resposta
+instantânea, e **zero chance de inventar fato** — que numa seção de notícia é a
+propriedade que mais importa.
+
 **`[25/09]` O rascunho nasce SEM corpo, e isso é regra do banco.** Criar pede
 título e editoria; o texto vem depois. O corpo só é exigido quando a matéria
 **vai ao ar** — e a mesma regra impede que alguém **esvazie** uma matéria já

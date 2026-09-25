@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeTab } from '../lib/motion';
-import { Gem, Activity, Users, FileText, Settings, Bell, TrendingUp, Lock } from 'lucide-react';
+import { Gem, Activity, Users, FileText, Settings, Bell, TrendingUp, Lock, Newspaper } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -11,6 +11,7 @@ import LogsTab from '../components/owner/LogsTab';
 import SiteTab from '../components/owner/SiteTab';
 import NotificacoesTab from '../components/owner/NotificacoesTab';
 import MetricasTab from '../components/owner/MetricasTab';
+import FilaEditorialTab from '../components/owner/FilaEditorialTab';
 import CofreDoFundador from '../components/owner/CofreDoFundador';
 import { cofreAberto, fecharCofre } from '../lib/cofre';
 
@@ -24,6 +25,7 @@ const TABS = [
   { id: 'site',         label: 'Site',         Icon: Settings   },
   { id: 'notificacoes', label: 'Notificações', Icon: Bell       },
   { id: 'metricas',     label: 'Métricas',     Icon: TrendingUp },
+  { id: 'news',         label: 'News',         Icon: Newspaper  },
 ];
 
 export default function Owner() {
@@ -98,6 +100,7 @@ export default function Owner() {
           {tab === 'site'         && <SiteTab />}
           {tab === 'notificacoes' && <NotificacoesTab />}
           {tab === 'metricas'     && <MetricasTab />}
+          {tab === 'news'         && <FilaEditorialTab />}
         </motion.div>
       </AnimatePresence>
     </div>
