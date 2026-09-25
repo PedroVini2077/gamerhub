@@ -212,7 +212,9 @@ src/
 │   │                      # Lista para a tela não saber quantas existem —
 │   │                      # somar notícias/lives/jogos é somar uma linha
 │   ├── formatacao/        # `[25/09]` A formatação de texto do usuário.
-│   │   ├── analisar.js    #   O analisador: texto -> ÁRVORE de nós. Nunca HTML
+│   │   ├── analisar.js    #   O analisador: texto -> ÁRVORE de nós. Nunca HTML.
+│   │                      #   `temFormatacao()` decide se a prévia aparece, e é
+│   │                      #   DERIVADA da árvore — recurso novo conta sozinho
 │   │   └── vocabulario.js #   A lista FECHADA de cores e tamanhos, e o que a
 │   │                      #   barra oferece em cada lugar. O usuário escolhe um
 │   │                      #   NOME; nenhuma string dele encosta em CSS
@@ -468,9 +470,11 @@ src/
     │   │                  # confere a senha é a RPC, no servidor (SEC-012)
     │   ├── EditorDeTexto.jsx # `[25/09]` A barra de ferramentas (B/I/U/S, cor,
     │   │                  # tamanho, lista, citação, link) sobre um `textarea`,
-    │   │                  # com PRÉVIA. NÃO é WYSIWYG de propósito:
-    │   │                  # `contenteditable` produz HTML do usuário, que é o
-    │   │                  # que a fase anterior tirou do caminho. A prop
+    │   │                  # com PRÉVIA AO VIVO — ela aparece embaixo assim que
+    │   │                  # o texto tem formatação, e some quando não tem. NÃO
+    │   │                  # é WYSIWYG de propósito: `contenteditable` produz
+    │   │                  # HTML do usuário, e custaria 331 kB brutos MEDIDOS
+    │   │                  # contra os 7 kB de hoje (ver DESEMPENHO.md). A prop
     │   │                  # `recursos` é o que dá menos poder ao comentário
     │   ├── TextoFormatado.jsx # `[25/09]` Desenha o conteúdo do post a partir
     │   │                  # da ÁRVORE do `lib/formatacao`. NUNCA produz HTML:

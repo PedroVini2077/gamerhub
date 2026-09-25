@@ -35,6 +35,49 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🟠 `[25/09]` DECISÃO DELE — o botão "+" no lugar do compositor do topo
+
+Proposta dele em 25/09: *"acho que tá na hora de mudar a forma de postar algo...
+pensei em limpar essa parte de cima do feed, e adicionar um botão +, tipo
+Instagram e TikTok? Que abre uma parte específica pra edição, posts, vídeos, oq
+vc acha?"*.
+
+**Meu parecer: fazer, mas NÃO tirar tudo do topo.** O argumento a favor é
+sólido e vai ficar mais forte: o compositor do topo é um custo que **todo mundo
+que rola paga** por uma ação que **poucos fazem** — e ele só cresce. A barra de
+ferramentas já o engordou; a prévia ao vivo engorda mais; vídeo, News e live não
+cabem numa caixa só. Uma superfície dedicada tem espaço; o topo do feed não.
+
+**O risco, e é real para ESTE site.** Compositor que precisa ser procurado é
+usado menos. O Instagram aguenta isso porque postar lá é aspiracional; uma
+comunidade nova, com o feed ainda magro, precisa do contrário — atrito baixo
+para publicar importa mais do que primeira tela limpa.
+
+**Por isso o meio-termo, que é o que Facebook e Reddit fazem:** o topo do feed
+guarda **uma linha** ("No que você está pensando?") que **abre** o compositor
+dedicado, em vez do compositor inteiro. O "+" na navegação vira a segunda porta,
+para quem não está no feed. Custa uma linha em vez de um card, a descoberta
+continua de graça, e o compositor ganha o espaço de que precisa.
+
+**O que fica pendente dele:** aprovar o desenho (uma linha + "+" na navegação ×
+só o "+"), e se a superfície é modal ou rota própria — rota própria é melhor
+para vídeo e para voltar sem perder o rascunho, e tem custo de navegação.
+
+**O que JÁ está decidido e não muda com isso:** o "+" não pode embarcar opção de
+equipe no DOM de quem não é equipe (3º prompt dele, sobre permissão na tela).
+
+---
+
+### 🔵 `[25/09]` Revisitar WYSIWYG se o editor sair do caminho crítico
+
+Hoje **não**: 331,4 kB brutos contra 7,1 kB ([DESEMPENHO.md](docs/DESEMPENHO.md),
+[DECISOES.md](docs/DECISOES.md)). O gatilho para reabrir é o item acima: se o
+compositor virar **rota própria**, ele sai do carregamento inicial, e aí o peso
+deixa de ser pago por quem só passa no feed. A objeção de colagem de HTML
+continua de pé e teria de ser resolvida à parte.
+
+---
+
 ### ⬜ `[19/09]` REORGANIZAÇÃO DOCUMENTAL — Fase 0 FEITA, esperando aprovação
 
 **Pedido dele:** auditoria estrutural de documentação, prosas e travas, com
@@ -2296,8 +2339,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->150<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.016<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->151<!--/n--> arq ·
+  <!--n:src.lib.linhas-->18.174<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->21<!--/n--> arq ·
   <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
