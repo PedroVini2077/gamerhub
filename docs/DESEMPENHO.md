@@ -19,6 +19,33 @@
 
 ---
 
+### `[26/09]` O compositor saiu do feed: o pedaço do feed cai 68%
+
+**Medido** comparando `dist/assets/` antes e depois, na mesma máquina e no
+mesmo build:
+
+| | antes | depois |
+| --- | --- | --- |
+| pedaço do feed (`Home-*.js`) | 19.333 B | **6.088 B** (−68%) |
+| pedaço de publicar (`Publicar-*.js`) | — | 15.551 B, **sob demanda** |
+
+**O que isso quer dizer, e o que NÃO quer.** Quem abre o feed e só rola deixa de
+baixar ~13,2 kB de compositor — barra de ferramentas, prévia, gravador de áudio,
+compositor de embed. Era o custo que *todo mundo* pagava por uma ação que
+*poucos* fazem, e foi o argumento que abriu o item no backlog em 25/09.
+
+**O orçamento do carregamento inicial NÃO melhorou**, e é honesto dizer: ele
+mede o que o `index.html` puxa, que é a landing do visitante deslogado — o feed
+sempre foi `lazy`. O total foi de 748,7 kB para 749,8 kB, e a diferença é a
+fonte nova (+2,2 kB), não o compositor.
+
+**O gatilho do WYSIWYG disparou.** O item de 25/09 dizia: *"se o compositor
+virar rota própria, ele sai do carregamento inicial, e aí o peso deixa de ser
+pago por quem só passa no feed"*. Saiu. A decisão de reabrir ou não é dele — a
+objeção de colagem de HTML continua de pé e é independente do peso.
+
+---
+
 ### `[26/09]` As artes da landing: 48 arquivos → 30, e seção nova passa a custar ZERO
 
 **Medido** com `du` e `ls`, antes e depois:

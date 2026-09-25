@@ -1,6 +1,6 @@
 import { Tv, Trophy, Gem, Newspaper } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
-import { Home, Users, Key, User, X, Shield, Settings } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Home, Users, Key, User, X, Shield, Settings, Plus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import Avatar from '../ui/Avatar';
@@ -13,6 +13,7 @@ import { apenasData } from '../../services/result';
 import MarcaGH from '../ui/MarcaGH';
 
 export default function Sidebar({ open, onClose }) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const { isAdmin, isOwner, role } = useRole();
   const xp = useUserXP(profile?.id);
@@ -62,6 +63,40 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav className="flex-1 py-6 px-2 space-y-1">
+          {/* `[26/09]` PUBLICAR é AÇÃO, e por isso não é item de navegação.
+
+              Ele fica acima da lista, com peso visual próprio — o pedido dele foi
+
+              "um botão + visível em algum lugar", tipo Instagram e TikTok. Item de
+
+              menu se perde no meio dos outros nove; ação não.
+
+          
+
+              Ele existe AQUI além da linha do topo do feed porque a linha só
+
+              aparece no feed: de dentro de `/news`, `/lives` ou do perfil não
+
+              haveria caminho nenhum para publicar. */}
+
+          <button
+
+            onClick={() => { onClose?.(); navigate('/publicar'); }}
+
+            className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg
+
+                       border border-neon-green/40 bg-neon-green/10 px-3 py-2.5
+
+                       font-display text-xs uppercase tracking-wider text-neon-green
+
+                       transition-colors hover:bg-neon-green/20"
+
+          >
+
+            <Plus size={16} /> Publicar
+
+          </button>
+
           {nav.map(({ to, icon: Icon, label, highlight, ownerLink }) => (
             <NavLink
               key={to}

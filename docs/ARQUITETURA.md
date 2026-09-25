@@ -440,6 +440,12 @@ src/
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
 │   ├── Lives.jsx          # Lista de lives + sub-tabs + player + chat + moderação
+│   ├── Publicar.jsx       # `[26/09]` `/publicar` — publicar deixou de ser uma
+│   │                      #   caixa no topo do feed. Decisão dele: "se fosse
+│   │                      #   só um modal, ia continuar pequeno" — e ele tem
+│   │                      #   razão mecânica: modal herda a largura do que
+│   │                      #   está atrás. Volta ao feed ao publicar, porque é
+│   │                      #   lá que o post aparece
 │   ├── News.jsx           # `[25/09]` `/news` — a lista, com filtro por editoria
 │   │                      #   na URL. Editoria inventada cai para "Tudo" em vez
 │   │                      #   de virar lista vazia, que pareceria verdade
@@ -507,6 +513,15 @@ src/
     │                      # com links em aba nova. Três caixinhas separadas
     │                      # treinam a pessoa a clicar sem ler
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
+    │                      # `[26/09]` LinhaDePublicar — o que sobrou do
+    │                      # compositor no topo do feed: uma linha clicável, os
+    │                      # três ícones que dizem o que existe do outro lado, e
+    │                      # o "+". Os dois levam a `/publicar` — ele pediu os
+    │                      # dois. Some para quem não pode publicar (sem conta,
+    │                      # suspenso), em vez de oferecer o que o banco recusa.
+    │                      # Carrega `data-publicar` — o gancho que os roteiros
+    │                      # de navegador usam como sinal de "sessão válida"
+
     │   └── (cenas/)       # `[26/09]` SobreposicaoDoNews — a camada viva da
     │                      # cena do News, que era a ÚNICA sem uma. Encena a
     │                      # promessa do texto, nessa ordem: três fontes ->
@@ -747,7 +762,16 @@ src/
     │                      # única parte difícil dela: trocar a arte de um
     │                      # lutador sem abrir buraco na tela (`[11/09]`, §4)
     ├── layout/            # Header e RightPanel do site logado
-    ├── feed/              # PostCard, PostForm, CommentSection, CommentCard,
+    ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
+    │                      # `[26/09]` LinhaDePublicar — o que sobrou do
+    │                      # compositor no topo do feed: uma linha clicável, os
+    │                      # três ícones que dizem o que existe do outro lado, e
+    │                      # o "+". Os dois levam a `/publicar` — ele pediu os
+    │                      # dois. Some para quem não pode publicar (sem conta,
+    │                      # suspenso), em vez de oferecer o que o banco recusa.
+    │                      # Carrega `data-publicar` — o gancho que os roteiros
+    │                      # de navegador usam como sinal de "sessão válida"
+,
     │                      # CommentComposer, EditCountdown (janela de edição)
     │   └── composer/      # ComposerToolbar, MediaPreviewGrid, AudioAttachment,
     │                      # EmbedComposer

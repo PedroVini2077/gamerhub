@@ -309,61 +309,25 @@ propósito.
 
 ---
 
-### ✅ `[25/09]` DECIDIDO — o botão "+" abre uma ROTA PRÓPRIA, não um modal
-
-Proposta dele em 25/09: *"acho que tá na hora de mudar a forma de postar algo...
-pensei em limpar essa parte de cima do feed, e adicionar um botão +, tipo
-Instagram e TikTok? Que abre uma parte específica pra edição, posts, vídeos, oq
-vc acha?"*.
-
-**Meu parecer: fazer, mas NÃO tirar tudo do topo.** O argumento a favor é
-sólido e vai ficar mais forte: o compositor do topo é um custo que **todo mundo
-que rola paga** por uma ação que **poucos fazem** — e ele só cresce. A barra de
-ferramentas já o engordou; a prévia ao vivo engorda mais; vídeo, News e live não
-cabem numa caixa só. Uma superfície dedicada tem espaço; o topo do feed não.
-
-**O risco, e é real para ESTE site.** Compositor que precisa ser procurado é
-usado menos. O Instagram aguenta isso porque postar lá é aspiracional; uma
-comunidade nova, com o feed ainda magro, precisa do contrário — atrito baixo
-para publicar importa mais do que primeira tela limpa.
-
-**Por isso o meio-termo, que é o que Facebook e Reddit fazem:** o topo do feed
-guarda **uma linha** ("No que você está pensando?") que **abre** o compositor
-dedicado, em vez do compositor inteiro. O "+" na navegação vira a segunda porta,
-para quem não está no feed. Custa uma linha em vez de um card, a descoberta
-continua de graça, e o compositor ganha o espaço de que precisa.
-
-> **`[25/09]` ELE DECIDIU: rota própria.** Palavras dele: *"o Instagram, quando
-> vc clica pra criar um post ou reels, ele te leva a um lugar pra escolher
-> alguma mídia... e depois vc pode editar as fotos e vídeos separadamente. Se
-> fosse só um modal, ia continuar pequeno na minha opinião, então fazer algo a
-> parte vai dar mais liberdade pra quem quer postar"*.
->
-> Ele mesmo pôs o limite: *"eu sei que um site não dá pra colocar uma
-> ferramenta inteira de edição, mas pelo menos fazer algo separado pra dar mais
-> liberdade e criatividade"*. O alvo é **espaço para trabalhar**, não paridade
-> com o Instagram.
->
-> E disse a ordem: **vídeo curto vem DEPOIS do GamerHub News** — a rota tem de
-> nascer com lugar para ele, sem construí-lo agora.
->
-> **`[25/09]` E ele fechou a segunda parte: OS DOIS.** *"eu colocaria essa linha
-> e acrescentaria o botão + visível em algum lugar tbm"*. O topo do feed guarda
-> **uma linha** que abre a rota, e o **"+" fica visível** na navegação — duas
-> portas para a mesma superfície, não duas superfícies.
-
-**O que JÁ está decidido e não muda com isso:** o "+" não pode embarcar opção de
-equipe no DOM de quem não é equipe (3º prompt dele, sobre permissão na tela).
-
----
-
 ### 🔵 `[25/09]` Revisitar WYSIWYG se o editor sair do caminho crítico
 
 Hoje **não**: 331,4 kB brutos contra 7,1 kB ([DESEMPENHO.md](docs/DESEMPENHO.md),
-[DECISOES.md](docs/DECISOES.md)). O gatilho para reabrir é o item acima: se o
-compositor virar **rota própria**, ele sai do carregamento inicial, e aí o peso
-deixa de ser pago por quem só passa no feed. A objeção de colagem de HTML
-continua de pé e teria de ser resolvida à parte.
+[DECISOES.md](docs/DECISOES.md)).
+
+> **`[26/09]` O GATILHO DISPAROU, e é decisão dele.** O item dizia: *"se o
+> compositor virar rota própria, ele sai do carregamento inicial"*. Virou. O
+> pedaço do feed caiu de **19.333 para 6.088 bytes (−68%)**, e o compositor
+> agora é um pedaço de 15.551 B que só chega quando alguém clica em publicar.
+>
+> **O que mudou:** o peso do editor deixou de ser pago por quem só rola o feed.
+> **O que NÃO mudou:** a objeção de colagem de HTML, que é independente do peso
+> — e 331,4 kB continuam sendo 331,4 kB para quem abre `/publicar`.
+>
+> **Minha recomendação: continuar não.** O editor de hoje resolve o que o site
+> precisa, e o ganho de um WYSIWYG é conforto de escrita para a equipe e alguns
+> usuários — contra 46× de peso numa rota que existe justamente para ser
+> confortável. Reabrir vale se ele achar o editor atual ruim de usar na prática,
+> não pelo peso ter saído do caminho crítico.
 
 ---
 
@@ -2610,8 +2574,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->166<!--/n--> arq ·
-  <!--n:src.lib.linhas-->19.929<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->167<!--/n--> arq ·
+  <!--n:src.lib.linhas-->20.038<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

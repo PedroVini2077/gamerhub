@@ -785,6 +785,48 @@ publicada. Mandar para revisão com o texto pela metade é permitido de propósi
 Matéria já publicada **não é editável** por admin — a tela diz isso numa tarja,
 em vez de deixar digitar e falhar ao salvar.
 
+### `[26/09]` Publicar — uma rota, e duas portas para ela
+
+**Antes:** o compositor inteiro morava no topo do feed. **Agora:** ali ficou uma
+linha, e publicar é `/publicar`.
+
+**A decisão é dele**, e o motivo é mecânico: *"se fosse só um modal, ia
+continuar pequeno na minha opinião"*. Um modal herda a largura do que está
+atrás — o compositor ficaria espremido na coluna do feed para sempre, e tudo
+que crescesse nele (mídia, áudio, embed, formatação) disputaria os mesmos
+centímetros.
+
+**As duas portas, porque ele pediu as duas** (*"eu colocaria essa linha e
+acrescentaria o botão + visível em algum lugar também"*):
+
+| Onde | O que é |
+| --- | --- |
+| topo do feed | uma linha clicável — *"No que você está pensando?"* —, três ícones dizendo o que existe do outro lado (imagem, vídeo, áudio) e o **+** |
+| barra lateral | o botão **Publicar**, acima da navegação, com peso próprio |
+
+**Por que o botão existe na barra além da linha:** a linha só aparece no feed.
+De dentro de `/news`, `/lives` ou do perfil não haveria caminho nenhum.
+
+**A linha some para quem não pode publicar** — sem conta, ou suspenso. Oferecer
+um caminho que o banco vai recusar é a mesma falha do botão "Publicar"
+aparecendo para admin no painel editorial: a tela promete um poder que não
+existe.
+
+**O ganho medido:** o pedaço que o navegador baixa ao abrir o feed caiu de
+**19.333 para 6.088 bytes (−68%)**. O compositor virou um pedaço próprio de
+15.551 bytes que só chega quando alguém clica — era exatamente o custo que
+*todo mundo que rola* pagava por uma ação que *poucos* fazem.
+
+### `[26/09]` Editar um post usa o mesmo editor de escrever
+
+Era um campo de texto cru. Quem escrevia `**negrito**` ao publicar e depois
+clicava em editar via os asteriscos — sem barra de ferramentas e sem prévia,
+como se a formatação tivesse sumido.
+
+Agora é o mesmo `EditorDeTexto` dos dois lados. Duas caixas para o mesmo texto
+divergem na primeira feature nova, e a prévia é justamente o que diz que o
+marcador vai virar algo.
+
 ### Comentários, likes e notificações
 
 - **Comentários** (`CommentSection` / `CommentCard`): abrir/fechar, criar,

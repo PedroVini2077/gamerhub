@@ -46,6 +46,13 @@ export async function publicarEEsperarNoFeed(page, {
     }
   };
 
+  // `[26/09]` Publicar virou ROTA. O compositor não mora mais no topo do feed
+  // — lá ficou só uma linha que leva para cá. Ir direto a `/publicar` é o que
+  // o botao "+" e a linha fazem, e tira um clique do caminho do teste.
+  if (!page.url().includes('/publicar')) {
+    await page.goto(new URL('/publicar', page.url()).href,
+      { waitUntil: 'domcontentloaded', timeout: 30000 });
+  }
   await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
   await page.locator('#post-title').fill(titulo);
   await page.locator('#post-content').fill(corpo);

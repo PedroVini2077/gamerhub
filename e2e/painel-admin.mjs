@@ -107,7 +107,10 @@ try {
   // cobre tudo e o timeout diria 'o composer nao apareceu' em vez da causa.
   await page.waitForTimeout(2500);
   await recusarSeBanido(page);
-  await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
+  // `[26/09]` Era o `#post-title` do compositor. Ele saiu do feed (publicar
+  // virou rota), e a linha que ficou prova as MESMAS tres coisas: ela devolve
+  // `null` sem usuario e `null` para quem esta suspenso.
+  await page.locator('[data-publicar="linha"]').waitFor({ state: 'visible', timeout: 30000 });
 
   // ── `[02/09]` O TESTE PASSA A CRIAR O PRÓPRIO DADO ───────────────────────
   //
