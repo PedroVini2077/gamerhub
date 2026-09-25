@@ -80,9 +80,51 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
 
   const campo = card.getByLabel(/Escreva um comentário/i);
   await campo.fill(texto);
-  await card.getByRole('button', { name: 'Enviar comentário' }).click();
 
-  const alvo = card.getByText(texto, { exact: false }).first();
+  // `[25/09]` Espera a RESPOSTA do servidor, e não só o clique.
+  //
+  // Sem isto, o passo seguinte corre contra uma requisição em voo — e, pior,
+  // um `INSERT` recusado passa despercebido: o `supabase-js` devolve o erro
+  // para o componente, que mostra um toast e some. Olhar o status HTTP é o
+  // jeito mais direto de separar "ainda não chegou" de "o banco recusou".
+  const [resposta] = await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes('/rest/v1/comments') && r.request().method() === 'POST',
+      { timeout: 20000 },
+    ).catch(() => null),
+    card.getByRole('button', { name: 'Enviar comentário' }).click(),
+  ]);
+
+  if (resposta && !resposta.ok()) {
+    const corpo = await resposta.text().catch(() => '(sem corpo)');
+    throw new Error(
+      `o INSERT do comentario foi RECUSADO: HTTP ${resposta.status()}\n`
+      + `    ${corpo.slice(0, 300)}\n`
+      + '    Suspeitos, nesta ordem: a policy `comments_insert` (exige\n'
+      + '    auth.uid() = user_id E pode_publicar()), o trigger da wordlist, ou\n'
+      + '    a conta de teste suspensa.');
+  }
+  if (!resposta) {
+    throw new Error(
+      'o clique em "Enviar comentario" nao produziu requisicao nenhuma em 20s.\n'
+      + '    O botao estava desabilitado (texto vazio no estado do React?), ou o\n'
+      + '    `handleSubmit` saiu cedo. Repare que `fill()` mexe no DOM e o React\n'
+      + '    precisa ter processado o evento para o botao habilitar.');
+  }
+
+  // `[25/09]` Espera o texto DENTRO de um bloco de comentário, e não em
+  // qualquer lugar do card.
+  //
+  // A versão anterior procurava `card.getByText(texto)` solto — e isso deu
+  // FALSO VERDE: numa execução do CI o passo declarou "comentário publicado e
+  // visível na lista" com o comentário **inexistente no banco** (conferido).
+  // O texto estava na tela porque continuava no campo de escrita: quando o
+  // `INSERT` falha, o compositor NÃO limpa o que a pessoa escreveu.
+  //
+  // O estrago não foi aqui: foi dois passos adiante, onde o roteiro de
+  // responder não achou o comentário pai e acusou o lugar errado. Assertiva
+  // fraca não falha no lugar fraco — ela empurra a falha para longe da causa.
+  const alvo = card.locator('[data-comentario]').getByText(texto, { exact: false }).first();
   const limite = Date.now() + timeout;
 
   // Laço de 500 ms em vez de `waitFor`: o `waitFor` bloqueia até estourar e não
@@ -99,9 +141,15 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
     ? [...avisos].map(t => JSON.stringify(t)).join(' | ')
     : '(a tela nao disse NADA)';
 
+  // Ainda no campo de escrita? Então o `INSERT` falhou e o compositor não
+  // limpou — é a pista mais útil que existe aqui.
+  const aindaNoCampo = await card.getByLabel(/Escreva um coment/i)
+    .inputValue().catch(() => '');
+
   throw new Error(
-    `o comentario "${texto}" nao apareceu em ${timeout / 1000}s.\n`
+    `o comentario "${texto}" nao apareceu na LISTA em ${timeout / 1000}s.\n`
     + `  O que a tela disse enquanto isso: ${ditos}\n`
+    + `  Ainda no campo de escrita: ${aindaNoCampo.includes(texto) ? 'SIM — o INSERT falhou e o compositor nao limpou' : 'nao'}\n`
     + '\n'
     + '  Como ler isso:\n'
     + '    "Conteudo nao permitido"  -> a wordlist casou algo no texto. Troque o\n'
