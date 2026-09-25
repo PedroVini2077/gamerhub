@@ -141,3 +141,65 @@ describe('o comentário recebe MENOS poder que o post', () => {
     expect(RECURSOS_DE_COMENTARIO.length).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe('as formatações se COMBINAM — bug relatado em 25/09', () => {
+  /**
+   * O dono relatou: *"combinações de formatações não funcionam, tipo cor +
+   * tamanho, fica só a cor e o texto fica normal"*.
+   *
+   * O analisador estava certo — a árvore aninhava direito. Eram DUAS coisas na
+   * renderização, e as duas parecem a mesma de fora:
+   *
+   *   1. o negrito era `text-gray-200`, e por ser o elemento MAIS INTERNO ele
+   *      ganhava do `<span>` de cor. Negrito é PESO, não cor.
+   *   2. "Grande" era `text-base` (16px) contra um corpo de `text-sm` (14px).
+   *      Dois pixels é indistinguível de "não funcionou".
+   */
+  it('o negrito NÃO fixa cor — ele herda de quem está por fora', () => {
+    const c = desenhar('[cor=verde]**forte**[/cor]');
+    const strong = c.querySelector('strong');
+
+    expect(strong?.className, [
+      'O negrito voltou a definir uma cor própria.',
+      '',
+      'Como ele é o elemento mais interno, a cor dele GANHA da cor escolhida',
+      'pela pessoa: `[cor=verde]**x**[/cor]` aparece cinza. Foi exatamente o',
+      'que o dono relatou como "fica só a cor e o texto fica normal".',
+      '',
+      'Negrito é peso. Quem decide cor é a cor.',
+    ].join('\n')).not.toMatch(/\btext-(gray|white|neon|red|green|blue)/);
+
+    expect(c.querySelector('span')?.className).toBe(CORES.verde.classe);
+  });
+
+  it('cor e tamanho convivem, nas duas ordens', () => {
+    for (const texto of [
+      '[cor=verde][tamanho=grande]x[/tamanho][/cor]',
+      '[tamanho=grande][cor=verde]x[/cor][/tamanho]',
+    ]) {
+      const c = desenhar(texto);
+      const classes = [...c.querySelectorAll('span')].map((s) => s.className);
+      expect(classes, `"${texto}" perdeu a cor`).toContain(CORES.verde.classe);
+      expect(classes, `"${texto}" perdeu o tamanho`).toContain(TAMANHOS.grande.classe);
+    }
+  });
+
+  it('o degrau "grande" é MAIOR que o corpo do post', () => {
+    // O corpo é `text-sm`. Um "grande" que não se vê é o mesmo que nada — e
+    // indistinguível de bug, do lado de quem clicou.
+    const ordem = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl'];
+    const corpo = ordem.indexOf('text-sm');
+
+    expect(ordem.indexOf(TAMANHOS.grande.classe), [
+      `"Grande" é ${TAMANHOS.grande.classe}, e o corpo do post é text-sm.`,
+      '',
+      'Se o degrau não passa do tamanho normal, clicar nele parece não fazer',
+      'nada — que foi metade do relato de 25/09.',
+    ].join('\n')).toBeGreaterThan(corpo);
+
+    expect(ordem.indexOf(TAMANHOS.enorme.classe))
+      .toBeGreaterThan(ordem.indexOf(TAMANHOS.grande.classe));
+    expect(ordem.indexOf(TAMANHOS.pequeno.classe)).toBeLessThan(corpo);
+  });
+});
+

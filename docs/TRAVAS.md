@@ -146,7 +146,7 @@ Garantem que dois lugares do código continuem concordando.
 | `comentarioNaoSomeDepoisDeAparecer.test.jsx` | **`[24/09]`** o bug real numa tela: a busca disparada ao abrir a seção respondendo depois da disparada ao enviar, e apagando o comentário recém-criado | `INV-TELA-005` |
 | `buscaConcorrenteTemGuarda.test.js` | **`[24/09]`** a guarda sendo removida de uma das buscas conhecidas — e a marca `novoPedido()` migrando para DEPOIS do `await`, que a deixaria verde sem proteger nada | `INV-TELA-005` |
 | `htmlNaoVazaProsa.test.js` | **`[24/09]`** comentário de implementação voltando ao HTML que o visitante baixa — e, do outro lado, a prosa sendo **apagada** em vez de mudada de lugar | `INV-PORTA-009` |
-| `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** — e, desde a SEC-051, também a lista de **isentas da checagem de literal de papel** | `INV-PORTA-006` |
+| `auditorDoBancoEhOuvido.test.js` | o mensageiro do auditor perdendo o `GRANT` (CI fica mudo), o auditor sendo aberto ao `anon` (vaza nomes), e a lista branca **engordando em silêncio** — e, desde a SEC-051, também a lista de **isentas da checagem de literal de papel** | `INV-PORTA-006` **`[25/09]`** O auditor passou a ter **cinco** checagens: a nova (SEC-052) acusa tabela com grant e zero policies |
 | `cofre.test.js` | código do cofre guardado em texto; reset em 2 cliques | `INV-CONTA-004` |
 | `documentosLegais.test.js` | texto legal mudando por baixo de quem aceitou | `INV-CONTA-005` |
 | `logoutEhLocal.test.js` | `signOut()` com escopo global derrubando outro aparelho | `INV-CONTA-002` |

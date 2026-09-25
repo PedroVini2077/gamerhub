@@ -48,10 +48,19 @@ export const CORES = {
  * todos. `enorme` é o maior que ainda convive com o card.
  */
 export const TAMANHOS = {
-  pequeno: { classe: 'text-xs',   rotulo: 'Pequeno' },
-  grande:  { classe: 'text-base', rotulo: 'Grande'  },
-  enorme:  { classe: 'text-xl',   rotulo: 'Enorme'  },
+  pequeno: { classe: 'text-xs',  rotulo: 'Pequeno' },
+  grande:  { classe: 'text-lg',  rotulo: 'Grande'  },
+  enorme:  { classe: 'text-2xl', rotulo: 'Enorme'  },
 };
+
+/*
+ * `[25/09]` Os degraus eram `text-xs`/`text-base`/`text-xl`, e o do meio quase
+ * não se via: o corpo do post é `text-sm` (14px) e `text-base` é 16px. Aplicar
+ * "Grande" e ver dois pixels de diferença é indistinguível de não ter
+ * funcionado — foi parte do que o dono relatou.
+ *
+ * Agora 12 / 18 / 24 contra os 14 do corpo: cada degrau se vê.
+ */
 
 /** O nome é conhecido? Usado pelo analisador e pela trava. */
 export const corValida = (nome) => Object.hasOwn(CORES, nome);
