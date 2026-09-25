@@ -49,7 +49,7 @@ gerada com `portugues_sem_acento`. **Zero tela.**
 | 3 | Service de leitura do News | ✅ `newsService.js`, sem RPC e sem `conteudo` na lista |
 | 4 | `/news` (lista) e `/news/:slug` (artigo) — **só logado** | ✅ |
 | 5 | O anúncio do News na LANDING | ⚠️ **PARCIAL** — ver abaixo |
-| 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ⬜ **é o que falta para o News existir de verdade** |
+| 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ✅ aba **News** do admin |
 | 7 | Travas: vocabulário × banco, rota coberta por e2e | ✅ |
 
 > **A etapa 5 ficou PELA METADE, e é honesto dizer por quê.** O News foi
@@ -65,9 +65,17 @@ gerada com `portugues_sem_acento`. **Zero tela.**
 > **O que eu preciso dele:** a arte da cena do News, no mesmo formato das
 > outras 7. Aí a cena entra em `SECOES` e ganha `#news` na navegação e no rodapé.
 
-> **A etapa 6 é o que falta para o News não ser uma sala vazia.** Hoje existe a
-> tela de ler e ZERO forma de escrever pelo site — um artigo só nasce por SQL.
-> É o próximo bloco.
+> **`[25/09]` A etapa 6 ENTROU.** O News deixou de ser sala vazia: a equipe cria,
+> escreve com o mesmo editor do post, manda para revisão, e super admin publica.
+>
+> **O que o News AINDA não tem**, e nenhuma destas é bloqueio para usá-lo:
+>
+> | Falta | Por que não entrou agora |
+> | --- | --- |
+> | **capa por upload** | hoje é URL colada. Upload exige bucket, policy e compressão (`lib/image.js`) — é um bloco próprio |
+> | **agendamento pela tela** | o banco aceita `scheduled`, a tela não oferece. Sem um job que vire `scheduled` em `published`, agendar seria uma promessa que ninguém cumpre |
+> | **ingestão automática** (`news_items_raw`) | a tabela existe e está fechada. É o bloco de coletar de fontes |
+> | **paginação da lista** | teto de 30, dito na tela |
 
 **Fora deste bloco, decididos hoje e enfileirados depois:** a RPC da wordlist,
 o `pg_trgm`, a rota de publicar (botão "+"), e a fonte da landing.
@@ -2440,10 +2448,10 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->155<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.597<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->22<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.240<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->157<!--/n--> arq ·
+  <!--n:src.lib.linhas-->18.708<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->23<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.377<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

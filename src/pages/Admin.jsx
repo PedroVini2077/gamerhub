@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, FileText, Key, Crown, Bell, Activity, ShieldAlert, UserPlus, Siren, Mail } from 'lucide-react';
+import { Shield, Users, FileText, Key, Crown, Bell, Activity, ShieldAlert, UserPlus, Siren, Mail, Newspaper } from 'lucide-react';
 import { fadeTab, gridContainer } from '../lib/motion';
 import { useRole } from '../hooks/useRole';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -139,6 +139,7 @@ export default function Admin() {
   const tabs = [
     { id: 'users',      label: 'Usuários',      icon: Users       },
     { id: 'posts',      label: 'Posts',         icon: FileText    },
+    { id: 'news',       label: 'News',          icon: Newspaper   },
     { id: 'moderation', label: 'Moderação',     icon: ShieldAlert },
     { id: 'lives',      label: 'Mod de Lives',  icon: Shield      },
     { id: 'keys',       label: 'Keys & Promos', icon: Key         },

@@ -627,6 +627,30 @@ erro editorial publicado não desfaz. Quem impede de verdade é o banco (um
 trigger que levanta exceção) — a tela apenas não oferece o botão que o servidor
 vai recusar.
 
+#### O painel editorial — aba **News** do admin
+
+Onde a matéria nasce. Criar pede só **título e editoria**; o endereço
+(`/news/meu-titulo`) sai do título automaticamente, sem acento nem espaço.
+
+O corpo usa **o mesmo editor do post** — negrito, cor, tamanho, lista, citação,
+link e a prévia ao vivo. Não há um editor separado "para a equipe": seria uma
+segunda implementação da mesma coisa, e é onde as duas divergem. O que o editor
+vê na prévia é exatamente o que o leitor vai ver.
+
+| Botão | Aparece para |
+| --- | --- |
+| Salvar | quem pode editar aquele estado |
+| Mandar para revisão | qualquer um da equipe, num rascunho |
+| Voltar para rascunho | qualquer um da equipe, em revisão |
+| **Publicar** · **Tirar do ar** · **Apagar** | **só** super admin e owner |
+
+**Os botões que a pessoa não pode usar somem, não ficam cinzas.** Botão
+desabilitado anuncia um poder que ela não tem e convida a tentar; o corte fica
+mais claro quando a ação simplesmente não está ali.
+
+Matéria já publicada **não é editável** por admin — a tela diz isso numa tarja,
+em vez de deixar digitar e falhar ao salvar.
+
 ### Comentários, likes e notificações
 
 - **Comentários** (`CommentSection` / `CommentCard`): abrir/fechar, criar,
