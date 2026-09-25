@@ -11,6 +11,46 @@
 
 ---
 
+## `[26/09]` A fonte de display: OXANIUM no lugar da Orbitron — e o motivo é DEFEITO, não gosto
+
+**O item estava aberto desde 25/09 como decisão de estilo**, com o argumento de
+que a Orbitron é "a fonte mais usada do mundo em coisa gamer". Ele foi fechado
+por outra razão, e a distinção importa: **a Orbitron não escreve português**.
+
+**O que foi medido, em 26/09, nessa ordem:**
+
+| pergunta | resposta |
+| --- | --- |
+| o glifo existe? | sim — `U+00E3` mapeia para `atilde` = `a` + `tildecomb` |
+| o til é um glifo próprio? | sim: 15 pontos, contra 5 da crase |
+| nosso arquivo está corrompido? | **não** — md5 idêntico ao que a Google serve (`5d281085…`) |
+| então por quê? | o `tildecomb` é uma onda **achatada e deslocada**. A 190 px é um til; a 28–64 px, o tamanho real dos títulos, rasteriza como **crase** |
+
+Ela escrevia *"nào"*, *"opçòes"*, *"CORAÇÀO"*. Num site brasileiro isso aparece
+em quase todo título — o dono viu num print antes de eu ver.
+
+**Como a substituta foi escolhida:** 11 candidatas baixadas e renderizadas lado
+a lado com *"não opções CORAÇÃO"* nos tamanhos reais. A Oxanium ganhou por três
+motivos, nessa ordem: o til é um til em qualquer tamanho; mantém a família
+visual (angular, chanfrada, feita para interface de jogo); e é variável num
+arquivo só — **14,0 kB contra 11,8 kB, +2,2 kB**.
+
+**O que se perde, dito com todas as letras:** a Oxanium vai ao peso 800 e a
+Orbitron ia a 900. O site usa 900 em **um** lugar, o "GAMER HUB" do hero. O
+navegador limita a 800 e o título continua pesado — conferido no print antes de
+trocar.
+
+**Descartadas, medidas:** Exo 2 (til certo, mas 40,9 kB — 3,5× o de hoje);
+Saira e Tourney (variáveis e leves, mas perdem a pegada angular); Chakra Petch,
+Michroma, Audiowide, Russo One, Bai Jamjuree (estáticas — exigiriam um arquivo
+por peso, saindo mais caro que a variável).
+
+A lista do que foi conferido, com data e método, vive em
+`src/lib/fontesConferidas.js`, e a trava
+`fonteEscrevePortugues.test.js` impede fonte não conferida de entrar.
+
+---
+
 ## `[26/09]` As artes da landing: CINCO PLACAS DE AMBIENTE, e não uma arte por feature
 
 **A decisão é dele:** *"já já nós vamos tirar todas essas artes e criar algo

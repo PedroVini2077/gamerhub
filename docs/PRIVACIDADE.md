@@ -308,7 +308,7 @@ falta é a decisão de prazo.
 > Registrado na época como **boa prática, não obrigação legal**, e essa
 > distinção continua correta. O que mudou é que o custo de resolver era pequeno.
 
-As fontes passaram a ser servidas do próprio site: **96 KB** em
+As fontes passaram a ser servidas do próprio site: **97 KB** em
 `public/fonts/`, com o `@font-face` em `src/estilos/fontes.css`. *(`[04/09]`
 Estava no `src/index.css` até o CSS ser dividido; o arquivo mudou, o fato não.)*
 
@@ -323,10 +323,13 @@ Estava no `src/index.css` até o CSS ser dividido; o arquivo mudou, o fato não.
 - **Só o subconjunto `latin`.** O Google servia também cirílico, grego e
   vietnamita — um site em português não usa nenhum. O `unicode-range` continua
   declarado, que é o que faz o navegador nem buscar a fonte fora da faixa.
-- **O Orbitron é uma fonte variável.** Os quatro pesos que o site usa
-  (400/600/700/900) vinham do **mesmo arquivo** — conferido por md5, os quatro
-  downloads eram byte a byte iguais. Servir um arquivo com `font-weight: 400
-  900` no lugar de quatro cópias economiza 35 KB.
+- **A fonte de display é variável.** Os pesos que o site usa (400/600/700/900)
+  saem do **mesmo arquivo** — conferido por md5 quando ainda era a Orbitron: os
+  quatro downloads eram byte a byte iguais. Servir um arquivo com faixa de peso
+  no lugar de quatro cópias economiza 35 KB. **`[26/09]` A Orbitron foi
+  substituída pela Oxanium** por um defeito de glifo (ela escrevia "nào" no
+  lugar de "não"); a propriedade de ser variável e local não mudou — ver
+  `src/estilos/fontes.css`.
 
 **O que sumiu do `index.html`:** os dois `preconnect`, o `preload` do CSS, o
 truque `media="print" + onload` e o `<noscript>` que existia porque o truque

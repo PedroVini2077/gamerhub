@@ -1055,7 +1055,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**53 itens abertos** (+ 1 ideia sem compromisso)
+**52 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1454,25 +1454,6 @@ dependência técnica real** que decide o resto:
 > fonte única). O raio 2D da Landing tem que ser o **mesmo** SVG mestre, dividido.
 
 ---
-
-- ⬜ `[25/09]` 🟢 **A FONTE DE DISPLAY — a única das três que ele quis mudar.**
-
-  **`[25/09]` Ele fechou as outras duas:** *"já está bom como está, só a fonte
-  que eu concordo em mudar; a tese da fenda e as artes já foi decidido há muito
-  tempo atrás"*. **Ele está certo nas duas, conferido:** a fenda tem decisão
-  escrita em `DECISOES.md` desde 04/09 (ele reprovou a fenda visível desde o
-  primeiro quadro, e a versão de hoje nasceu daquilo), e a arte sempre foi
-  **dele**, com composição minha — nunca foi pergunta aberta, era observação
-  minha ocupando linha de decisão. O item estava **inchado**, e isso é meu erro.
-
-  **O que sobra, e não é pequeno:** `Orbitron` é a fonte mais usada do mundo em
-  "coisa gamer". Se o objetivo é não parecer mais um site gamer, é a alavanca
-  mais forte — e a mais cara, porque `font-display` atinge o site **inteiro**.
-
-  **Antes de trocar, eu preciso trazer:** 3 a 4 candidatas com amostra da marca
-  "GamerHub" em cada, o custo em bytes de cada uma (§0.3 regra 1), e o que muda
-  em tela pequena. Trocar fonte é fácil; escolher errado se paga em todas as
-  telas. **Não começo sem ele ver as amostras.**
 
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
@@ -2629,8 +2610,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->164<!--/n--> arq ·
-  <!--n:src.lib.linhas-->19.744<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->166<!--/n--> arq ·
+  <!--n:src.lib.linhas-->19.896<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

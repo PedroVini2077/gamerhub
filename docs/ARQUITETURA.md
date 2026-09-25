@@ -149,6 +149,13 @@ src/
 │   │                      # explícito. O desconhecido aparece inteiro, em
 │   │                      # vez de virar um genérico que esconde o caso novo
 │   ├── url.js             # safeExternalUrl() — só http(s) vira href (anti-XSS)
+│   ├── fontesConferidas.js # `[26/09]` As fontes que foram CONFERIDAS para
+│   │                      # escrever português, com data e MÉTODO — e as
+│   │                      # reprovadas, com o motivo. A Orbitron ficou no ar
+│   │                      # escrevendo "nào" em todo título: o glifo existia,
+│   │                      # o arquivo era o da Google, e nada acusava. O
+│   │                      # cabeçalho explica por que a trava é uma lista
+│   │                      # escrita e não um teste automático
 │   ├── errosDoBanco.js    # `[26/09]` O erro do Postgres vira PORTUGUÊS, num
 │   │                      # lugar só: o `fail()` de services/result.js passa
 │   │                      # TODO erro por aqui, então vale para os 64 gatilhos

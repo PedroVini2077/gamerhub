@@ -20,7 +20,7 @@ export default {
         },
       },
       fontFamily: {
-        display: ["'Orbitron'", "monospace"],
+        display: ["'Oxanium'", "monospace"],
         body: ["'Rajdhani'", "sans-serif"],
         mono: ["'Share Tech Mono'", "monospace"],
       },
