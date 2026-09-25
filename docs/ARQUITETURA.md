@@ -216,6 +216,10 @@ src/
 │   │   │                  #   do `CHECK` do banco por uma trava, nos DOIS
 │   │   │                  #   sentidos — editoria que o banco aceita e a tela
 │   │   │                  #   não conhece apareceria SEM RÓTULO, sem erro
+│   │   ├── slug.js        #   Título -> endereço. A regex daqui é a MESMA do
+│   │   │                  #   `CHECK` do banco, travada: slug montado errado
+│   │   │                  #   viraria `violates check constraint` na cara de
+│   │   │                  #   quem acabou de escrever a matéria
 │   │   └── estadosDoArtigo.js # Os 5 estados e QUEM pode levar a cada um.
 │   │                      #   Não é a segurança (quem impede é o trigger no
 │   │                      #   banco) — é o que evita oferecer o botão que o
@@ -344,6 +348,13 @@ src/
 │   │                      # recusava sempre. Hoje as coordenadas vão no
 │   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
+│   ├── newsEditorialService.js # `[25/09]` O News pelo lado de QUEM ESCREVE:
+│   │                      #   criar, salvar, mudar de estado, apagar. Toda
+│   │                      #   escrita usa `count: 'exact'` (RLS nega com 0
+│   │                      #   linhas e nenhum erro) e traduz o erro do
+│   │                      #   Postgres — mas só os que TÊM tradução: texto
+│   │                      #   genérico para erro desconhecido esconde o que
+│   │                      #   quem investiga precisa
 │   ├── newsService.js     # `[25/09]` Leitura do News. SEM RPC de propósito: a
 │   │                      #   policy já expressa "artigo visível", e uma RPC
 │   │                      #   seria uma segunda definição. A lista NÃO traz
@@ -462,7 +473,12 @@ src/
     ├── news/              # `[25/09]` CartaoDeNoticia — o cartão da lista do
     │                      # GamerHub News. Encolhe quando o artigo não tem
     │                      # capa, em vez de mostrar buraco: layout que exige
-    │                      # imagem obriga a equipe a inventar uma
+    │                      # imagem obriga a equipe a inventar uma.
+    │                      # PainelEditorial + EditorDeArtigo — a aba "News" do
+    │                      # admin. Ilha: buscam os próprios dados em vez de
+    │                      # entrar na corrente de props do Admin. "Publicar"
+    │                      # SOME para quem não é super, em vez de ficar cinza —
+    │                      # botão desabilitado anuncia poder que não se tem
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal,

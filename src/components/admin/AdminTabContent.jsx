@@ -8,6 +8,7 @@ import SuperAdminPanel from './SuperAdminPanel';
 import CargosTab from './CargosTab';
 import ModerationPanel from '../moderation/ModerationPanel';
 import ContatoPanel from './ContatoPanel';
+import PainelEditorial from '../news/PainelEditorial';
 
 /** Despacha a aba ativa do painel admin para o painel correspondente. */
 export default function AdminTabContent({ tab, isSuperAdmin, data, filters, actions, modals }) {
@@ -25,6 +26,11 @@ export default function AdminTabContent({ tab, isSuperAdmin, data, filters, acti
           pendingUnbanIds={data.pendingUnbanIds}
         />
       );
+
+    // `[25/09]` O News é uma ILHA: ele busca os próprios dados em vez de
+    // entrar na corrente de props do Admin, que já é longa.
+    case 'news':
+      return <PainelEditorial />;
 
     case 'posts':
       return (
