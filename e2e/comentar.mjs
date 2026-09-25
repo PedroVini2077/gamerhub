@@ -80,9 +80,51 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
 
   const campo = card.getByLabel(/Escreva um comentário/i);
   await campo.fill(texto);
-  await card.getByRole('button', { name: 'Enviar comentário' }).click();
 
-  const alvo = card.getByText(texto, { exact: false }).first();
+  // `[25/09]` Espera a RESPOSTA do servidor, e não só o clique.
+  //
+  // Sem isto, o passo seguinte corre contra uma requisição em voo — e, pior,
+  // um `INSERT` recusado passa despercebido: o `supabase-js` devolve o erro
+  // para o componente, que mostra um toast e some. Olhar o status HTTP é o
+  // jeito mais direto de separar "ainda não chegou" de "o banco recusou".
+  const [resposta] = await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes('/rest/v1/comments') && r.request().method() === 'POST',
+      { timeout: 20000 },
+    ).catch(() => null),
+    card.getByRole('button', { name: 'Enviar comentário' }).click(),
+  ]);
+
+  if (resposta && !resposta.ok()) {
+    const corpo = await resposta.text().catch(() => '(sem corpo)');
+    throw new Error(
+      `o INSERT do comentario foi RECUSADO: HTTP ${resposta.status()}\n`
+      + `    ${corpo.slice(0, 300)}\n`
+      + '    Suspeitos, nesta ordem: a policy `comments_insert` (exige\n'
+      + '    auth.uid() = user_id E pode_publicar()), o trigger da wordlist, ou\n'
+      + '    a conta de teste suspensa.');
+  }
+  if (!resposta) {
+    throw new Error(
+      'o clique em "Enviar comentario" nao produziu requisicao nenhuma em 20s.\n'
+      + '    O botao estava desabilitado (texto vazio no estado do React?), ou o\n'
+      + '    `handleSubmit` saiu cedo. Repare que `fill()` mexe no DOM e o React\n'
+      + '    precisa ter processado o evento para o botao habilitar.');
+  }
+
+  // `[25/09]` Espera o texto DENTRO de um bloco de comentário, e não em
+  // qualquer lugar do card.
+  //
+  // A versão anterior procurava `card.getByText(texto)` solto — e isso deu
+  // FALSO VERDE: numa execução do CI o passo declarou "comentário publicado e
+  // visível na lista" com o comentário **inexistente no banco** (conferido).
+  // O texto estava na tela porque continuava no campo de escrita: quando o
+  // `INSERT` falha, o compositor NÃO limpa o que a pessoa escreveu.
+  //
+  // O estrago não foi aqui: foi dois passos adiante, onde o roteiro de
+  // responder não achou o comentário pai e acusou o lugar errado. Assertiva
+  // fraca não falha no lugar fraco — ela empurra a falha para longe da causa.
+  const alvo = card.locator('[data-comentario]').getByText(texto, { exact: false }).first();
   const limite = Date.now() + timeout;
 
   // Laço de 500 ms em vez de `waitFor`: o `waitFor` bloqueia até estourar e não
@@ -99,9 +141,15 @@ export async function comentarEEsperarNaLista(page, { card, texto, timeout = 300
     ? [...avisos].map(t => JSON.stringify(t)).join(' | ')
     : '(a tela nao disse NADA)';
 
+  // Ainda no campo de escrita? Então o `INSERT` falhou e o compositor não
+  // limpou — é a pista mais útil que existe aqui.
+  const aindaNoCampo = await card.getByLabel(/Escreva um coment/i)
+    .inputValue().catch(() => '');
+
   throw new Error(
-    `o comentario "${texto}" nao apareceu em ${timeout / 1000}s.\n`
+    `o comentario "${texto}" nao apareceu na LISTA em ${timeout / 1000}s.\n`
     + `  O que a tela disse enquanto isso: ${ditos}\n`
+    + `  Ainda no campo de escrita: ${aindaNoCampo.includes(texto) ? 'SIM — o INSERT falhou e o compositor nao limpou' : 'nao'}\n`
     + '\n'
     + '  Como ler isso:\n'
     + '    "Conteudo nao permitido"  -> a wordlist casou algo no texto. Troque o\n'
@@ -222,62 +270,47 @@ export async function responderEEsperarAninhada(page, { card, aoComentario, text
 
   // ── A prova de que é RESPOSTA, e não comentário solto ────────────────────
   //
-  // `[24/09]` A primeira versão comparava a posição X dos DOIS textos e exigia
-  // que a resposta estivesse mais à direita. O CI reprovou com `x=321` contra
-  // `x=335` — e a resposta estava CERTA: conferido no banco, ela tinha
-  // `parent_id`. O recuo do bloco (`pl-6`) convive com um avatar MENOR na
-  // resposta (24px contra 28), e a soma dos dois pode dar para qualquer lado.
-  // Eu tinha transformado um detalhe de layout em veredito.
+  // `[25/09]` Esta conferência já errou DUAS vezes, e as duas por olhar a
+  // coisa errada:
   //
-  // A pergunta certa não é "está mais à direita?", é **"está DENTRO do bloco
-  // do comentário pai?"** — que é literalmente o que o aninhamento é: o
-  // `CommentCard` da resposta é renderizado dentro do `CommentCard` do pai.
+  //   1a  comparava a POSIÇÃO X dos dois textos. Reprovou uma resposta certa:
+  //       o recuo do bloco convive com um avatar menor, e a soma pode dar para
+  //       qualquer lado.
+  //   2a  subia um número FIXO de níveis a partir do texto. Reprovou outra
+  //       resposta certa quando o conteúdo passou a ser desenhado pelo
+  //       `TextoFormatado`, que acrescenta um nível.
   //
-  // A subida é de 3 níveis, e a estrutura está em `CommentCard.jsx`:
-  //
-  //     <div ... pl-6 se for resposta>   <- raiz do CommentCard   (3 acima)
-  //       <div class="flex items-start"> <- a linha               (2 acima)
-  //         <AvatarPopup/>
-  //         <div class="flex-1 min-w-0"> <- a coluna              (1 acima)
-  //           <p>conteúdo</p>            <- o texto
-  //
-  // Se essa estrutura mudar, isto estoura — e estourar é o certo: quem mexeu
-  // precisa reconferir o que significa "aninhada" depois da mudança.
-  // Re-resolve o `pai` a cada tentativa: a lista se remonta sozinha (ver
-  // `garantirSecaoAberta`), e um elemento capturado antes da remontagem
-  // responde pela árvore VELHA, onde a resposta ainda não existe.
-  const medirAninhamento = () => pai.evaluate((elPai, textoDaResposta) => {
-    const raiz = elPai.parentElement?.parentElement?.parentElement;
-    if (!raiz) return { erro: 'nao achei a raiz do CommentCard 3 niveis acima do <p>' };
-    return {
-      contem: raiz.innerText.includes(textoDaResposta),
-      noDocumento: elPai.isConnected,
-      recuoDaRaiz: raiz.getBoundingClientRect().x,
-      recuoDaLinha: raiz.querySelector('div')?.getBoundingClientRect().x ?? null,
-      textoDaRaiz: raiz.innerText.replace(/\s+/g, ' ').slice(0, 300),
-    };
-  }, texto);
+  // As duas tinham o mesmo defeito de fundo: contrato IMPLÍCITO com o layout.
+  // Agora o bloco de um comentário se identifica com `data-comentario`, que é
+  // contrato explícito e sobrevive a mudança de aparência.
+  const textoDaResposta = texto;
+  const blocoDoPai = card.locator('[data-comentario]').filter({ hasText: aoComentario });
 
-  let aninhada = await medirAninhamento();
+  let aninhada = null;
   const prazo = Date.now() + 15000;
-  while (!aninhada.contem && !aninhada.erro && Date.now() < prazo) {
+  do {
+    // O bloco do PAI é o que contém o texto do pai e NÃO é o da resposta —
+    // o filtro por texto pega os dois quando a resposta já está dentro dele.
+    const quantos = await blocoDoPai.count();
+    if (quantos > 0) {
+      const noBloco = await blocoDoPai.first().innerText().catch(() => '');
+      if (noBloco.includes(textoDaResposta)) { aninhada = { ok: true }; break; }
+      aninhada = { ok: false, texto: noBloco.replace(/\s+/g, ' ').slice(0, 220), quantos };
+    }
     await page.waitForTimeout(500);
-    aninhada = await medirAninhamento();
-  }
+  } while (Date.now() < prazo);
 
-  if (aninhada.erro) throw new Error(`${aninhada.erro} — a estrutura do CommentCard mudou.`);
-
-  if (!aninhada.contem) {
+  if (!aninhada?.ok) {
     throw new Error(
       `a resposta "${texto}" NAO esta dentro do bloco do comentario pai (15s).\n`
-      + `    pai ainda no documento: ${aninhada.noDocumento}\n`
-      + `    raiz em x=${aninhada.recuoDaRaiz}, linha em x=${aninhada.recuoDaLinha}\n`
-      + `    texto da raiz do pai: ${JSON.stringify(aninhada.textoDaRaiz)}\n`
+      + `    blocos [data-comentario] com o texto do pai: ${aninhada?.quantos ?? 0}\n`
+      + `    texto do bloco do pai: ${JSON.stringify(aninhada?.texto ?? '(nao achei)')}\n`
       + '    Ela entrou na lista como comentario de primeiro nivel. O texto na\n'
       + '    tela nao prova que o `parent_id` chegou — e resposta que vira\n'
       + '    comentario solto nao estoura, nao loga e nao quebra nada (§1.5).\n'
       + '    Confira o `submitReply` do CommentCard, o `repliesByRoot` do\n'
-      + '    CommentSection, e a FK composta da SEC-033.');
+      + '    CommentSection, e a FK composta da SEC-033.\n'
+      + '    Se `data-comentario` sumiu do CommentCard, o problema e aqui, nao la.');
   }
 
   return alvo;

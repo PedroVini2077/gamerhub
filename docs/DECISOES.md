@@ -137,6 +137,56 @@ analisador e sai igual — foi por isso que a fase não precisou de migration ne
 de conversão de dado. E uma trava varre `src/` inteiro exigindo que o zero
 `dangerouslySetInnerHTML` continue zero.
 
+### `[25/09]` O editor rico: barra + prévia, e o vocabulário é FECHADO
+
+**Problema.** O dono pediu um Rich Text Editor: *"o site é pra gamers, o
+usuário pode ter a liberdade de ser criativo, mexer em tamanho, cor, forma"* —
+*"não precisa ser algo super mega elaborado, porém algo mais profissional e
+sofisticado"*. E, junto: *"nem tudo que tem na hora de postar precisa ter nos
+comentários, você pode limitar"*.
+
+**Decisão 1 — barra de ferramentas + prévia, não WYSIWYG.**
+
+| Alternativa | Por que não |
+| --- | --- |
+| **`contenteditable`** (Slate, TipTap, CKEditor) | produz **HTML do usuário** — exatamente o que a decisão anterior tirou do caminho, com trava. E pesa centenas de KB num projeto que mede bundle por byte (§0.3) e acabou de remover 708 kB de uma cena 3D |
+| **só a dica escrita** (o que existia) | formatação que ninguém descobre é formatação que não existe |
+
+A barra **escreve marcação** no texto e a prévia mostra o resultado. É o desenho
+do GitHub e do Reddit: dá o mesmo resultado prático, e o que vai para o banco
+continua sendo **texto**.
+
+**Decisão 2 — cor e tamanho saem de lista fechada.**
+
+Esta é a que muda a natureza do problema. Até aqui a formatação escolhia entre
+**elementos**; cor e tamanho fazem o usuário escolher um **valor**.
+
+O caminho curto seria guardar `[cor=#ff0000]` e aplicar `style={{ color: … }}`.
+O React até recusa CSS malformado — e é justamente por isso que seria
+**proteção acidental** (§1.3): vale por efeito colateral de outra regra, e some
+no dia em que esse texto for parar num e-mail, num PDF ou num componente que
+concatene string.
+
+No desenho escolhido o usuário escolhe um **nome** (`verde`), o analisador
+confere contra o mapa, e quem desenha traduz nome → classe do Tailwind que já
+existe. **Nenhuma string dele encosta em CSS.** Nome fora da lista não é
+sanitizado: ele não existe, e o texto aparece cru.
+
+**Trade-off aceito.** Seis cores e três tamanhos, não um seletor livre. Não é
+limitação por preguiça: paleta fechada é o que impede o feed de virar arco-íris
+ilegível e mantém o texto legível no fundo escuro — coisa que um seletor de cor
+livre não garante. O teto de tamanho existe pelo mesmo motivo: sem ele, um post
+em corpo gigante empurra o resto do feed para fora da tela de quem só passava.
+
+**Decisão 3 — o comentário recebe menos.** `negrito`, `itálico`, `riscado` e
+`link`; **sem** cor, tamanho, lista e citação. Comentário é conversa: cor e
+tamanho ali viram disputa de quem grita mais alto, e a resposta deixaria de se
+distinguir do post que ela responde.
+
+**Consequências.** Continua sem mudança de banco. O `EditorDeTexto` é um
+componente só, e a diferença entre post e comentário é uma **lista de
+recursos** — não duas telas que vão divergir.
+
 ---
 
 ## Moderação

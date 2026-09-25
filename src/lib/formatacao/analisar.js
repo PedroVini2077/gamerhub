@@ -32,6 +32,11 @@
  * lista. Não é Markdown: é um subconjunto com a mesma cara. Texto que use
  * marcação fora da lista fica **como está** — o que o autor escreveu aparece.
  *
+ * `[25/09]` Cor e tamanho entraram como `[cor=nome]…[/cor]`, e o NOME vem de
+ * um vocabulário fechado (`vocabulario.js`). O analisador nunca vê um valor de
+ * CSS — vê um nome, confere se existe, e devolve o nome. Quem traduz para
+ * classe é quem desenha.
+ *
  * ── O texto guardado continua sendo TEXTO ─────────────────────────────────
  *
  * Nada muda no banco. `posts.content` guarda exatamente o que a pessoa
@@ -39,6 +44,8 @@
  * analisador e sai igual — por isso a mudança não precisou de migration nem
  * de conversão de dado.
  */
+
+import { corValida, tamanhoValido } from './vocabulario';
 
 /** Um parágrafo em branco separa blocos. Linha isolada continua no mesmo. */
 const LINHA_DE_LISTA = /^[-*]\s+(.*)$/;
@@ -53,7 +60,13 @@ const LINHA_DE_CITACAO = /^>\s?(.*)$/;
 const TRECHOS = [
   { tipo: 'negrito', re: /\*\*([^*\n]+)\*\*/ },
   { tipo: 'italico', re: /(?<![*\w])\*([^*\n]+)\*(?!\w)/ },
+  { tipo: 'sublinhado', re: /__([^_\n]+)__/ },
   { tipo: 'tachado', re: /~~([^~\n]+)~~/ },
+  // `[25/09]` Cor e tamanho. O NOME é capturado, nunca um valor de CSS — e a
+  // validade dele é conferida abaixo, contra o vocabulário fechado. Nome
+  // desconhecido não vira palpite nem some: volta a ser texto.
+  { tipo: 'cor',      re: /\[cor=([a-z]+)\]([\s\S]*?)\[\/cor\]/ },
+  { tipo: 'tamanho',  re: /\[tamanho=([a-z]+)\]([\s\S]*?)\[\/tamanho\]/ },
   // Link: só a forma explícita `[texto](url)`. URL solta no meio do texto NÃO
   // vira link — decidir por conta própria o que é endereço em entrada de
   // usuário é como brecha nasce (ver `lib/url.js`).
@@ -78,11 +91,23 @@ function analisarTrechos(texto) {
   const antes = texto.slice(0, m.index);
   const depois = texto.slice(m.index + m[0].length);
 
-  const no = tipo === 'link'
-    ? { tipo: 'link', texto: m[1], url: m[2] }
+  let no;
+  if (tipo === 'link') {
+    no = { tipo: 'link', texto: m[1], url: m[2] };
+  } else if (tipo === 'cor' || tipo === 'tamanho') {
+    const nome = m[1];
+    const conhecido = tipo === 'cor' ? corValida(nome) : tamanhoValido(nome);
+    // Nome fora do vocabulário NÃO vira estilo e NÃO some: o trecho inteiro
+    // volta a ser texto, com a marcação à mostra. Escolher um valor por conta
+    // própria aqui seria o fallback silencioso que o §4 proíbe.
+    no = conhecido
+      ? { tipo, nome, filhos: analisarTrechos(m[2]) }
+      : { tipo: 'texto', valor: m[0] };
+  } else {
     // Recursão só no CONTEÚDO da marca: `**a *b* c**` funciona, e a recursão
     // termina porque o conteúdo é sempre menor que a entrada.
-    : { tipo, filhos: analisarTrechos(m[1]) };
+    no = { tipo, filhos: analisarTrechos(m[1]) };
+  }
 
   return [
     ...(antes ? analisarTrechos(antes) : []),

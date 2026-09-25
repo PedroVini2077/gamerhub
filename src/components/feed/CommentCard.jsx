@@ -9,6 +9,7 @@ import { canDeleteContent } from '../../lib/roles';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
 import CommentComposer from './CommentComposer';
+import TextoFormatado from '../ui/TextoFormatado';
 import ConfirmModal from '../ui/ConfirmModal';
 import ReportModal from '../ui/ReportModal';
 
@@ -44,7 +45,15 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
   }
 
   return (
-    <div className={`py-2.5 border-b border-dark-600 last:border-0 ${isReply ? 'pl-6' : ''}`}>
+    /* `data-comentario` é ÂNCORA DE TESTE, e existe por um motivo medido: o
+       roteiro de resposta conferia o aninhamento subindo um número fixo de
+       níveis a partir do texto. Em 25/09 o conteúdo passou a ser desenhado
+       pelo `TextoFormatado`, que acrescenta um nível — e a conferência passou
+       a olhar o elemento errado, acusando uma resposta que estava certa.
+       Contar níveis de DOM é contrato implícito com o layout; um atributo é
+       contrato explícito, e sobrevive a mudança de aparência. */
+    <div data-comentario={comment.id}
+      className={`py-2.5 border-b border-dark-600 last:border-0 ${isReply ? 'pl-6' : ''}`}>
       <div className="flex items-start gap-2.5">
         <AvatarPopup profile={comment.profiles} size={isReply ? 24 : 28} />
         <div className="flex-1 min-w-0">
@@ -59,7 +68,10 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
               })}
             </span>
           </div>
-          <p className="text-xs text-gray-300 leading-relaxed break-words">{comment.content}</p>
+          {/* `[25/09]` O comentário também é desenhado formatado — com o mesmo
+              componente do post, que nunca produz HTML. */}
+          <TextoFormatado texto={comment.content}
+            className="text-xs text-gray-300 leading-relaxed break-words" />
           <div className="flex items-center gap-4 mt-1.5">
             <button
               onClick={toggle}
