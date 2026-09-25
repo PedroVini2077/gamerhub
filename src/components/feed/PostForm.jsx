@@ -48,9 +48,20 @@ const PostForm = memo(function PostForm({ onPost }) {
             value={content} onChange={e => setContent(e.target.value)} maxLength={300} />
         </>
       ) : (
-        <textarea id="post-content" aria-label="Conteúdo do post" className="input-gamer mb-3 resize-none" rows={3}
-          placeholder="Escreva algo... (opcional se tiver áudio ou link)"
-          value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
+        <>
+          <textarea id="post-content" aria-label="Conteúdo do post" className="input-gamer resize-none" rows={3}
+            placeholder="Escreva algo... (opcional se tiver áudio ou link)"
+            value={content} onChange={e => setContent(e.target.value)} maxLength={1000} />
+          {/* `[25/09]` A dica existe porque formatação que ninguém descobre é
+              formatação que não existe — e ela só aparece quando há texto, para
+              não poluir o compositor vazio. */}
+          {content && (
+            <p className="text-[10px] font-mono text-gray-600 mb-3 mt-1">
+              **negrito** · *itálico* · ~~riscado~~ · - lista · &gt; citação · [texto](link)
+            </p>
+          )}
+          {!content && <div className="mb-3" />}
+        </>
       )}
 
       {showEmbed && (

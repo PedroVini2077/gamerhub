@@ -19,6 +19,7 @@ import EmbedPlayer from '../ui/EmbedPlayer';
 import ConfirmModal from '../ui/ConfirmModal';
 import PedirReativacaoDaLive from '../lives/PedirReativacaoDaLive';
 import ReportModal from '../ui/ReportModal';
+import TextoFormatado from '../ui/TextoFormatado';
 
 const EDIT_LIMIT_MINUTES = 30;
 // Janela pra cancelar antes do post sumir de fato.
@@ -208,7 +209,13 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
           <EditCountdown createdAt={post.created_at} limitMinutes={EDIT_LIMIT_MINUTES} />
         </div>
       ) : (
-        post.content && <p className="text-sm text-gray-400 leading-relaxed mb-2">{post.content}</p>
+        post.content && (
+          /* `[25/09]` O conteúdo passa pelo `TextoFormatado`. Ele NÃO produz
+             HTML: a árvore vira elemento React, então `<script>` digitado no
+             post aparece como texto. Ver `lib/formatacao/analisar.js`. */
+          <TextoFormatado texto={post.content}
+            className="text-sm text-gray-400 leading-relaxed" />
+        )
       )}
 
       {post.embed_url && (

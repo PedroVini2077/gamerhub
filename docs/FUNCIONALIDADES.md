@@ -589,6 +589,10 @@ que é paginada, e uma mensagem antiga podia nem estar na primeira página.
   irmãs sob o comentário raiz), com composer inline ao clicar "Responder".
 - **Likes em comentários** (`comment_likes`): toggle por usuário, exibido com
   coração em `CommentCard`.
+- **`[25/09]` Formatação no post**: `**negrito**`, `*itálico*`, `~~riscado~~`,
+  `- lista`, `> citação` e `[texto](link)`. O texto é guardado **como foi
+  digitado** — a formatação acontece só na hora de desenhar, e post antigo
+  aparece igual. HTML digitado vira texto; link `javascript:` não vira link.
 - **Likes em posts**: toggle por usuário (constraint única `post_id+user_id`).
   **`[24/09]`** O coração fica **na mesma linha** do "Comentar" — antes eram
   duas faixas empilhadas, cada uma com a própria borda. Pedido do dono.

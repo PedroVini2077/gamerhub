@@ -94,6 +94,49 @@ chegou à `main` sem que a decisão fosse revista. Agora ela protege o oposto:
 nenhuma função de trigger pode voltar a ler a coluna (viraria erro em tempo de
 execução no caminho mais importante do site), e o seletor não volta à tela.
 
+### `[25/09]` Formatação de post: ÁRVORE, não HTML sanitizado
+
+**Problema.** O pedido é negrito, itálico, tachado, listas, citação e link. O
+prompt é explícito: *"nunca confiar em HTML enviado pelo usuário"*, *"não
+utilizar `dangerouslySetInnerHTML` com conteúdo não sanitizado"*, e **a solução
+escolhida deve ser justificada**.
+
+**Contexto.** Antes desta fase o conteúdo era um nó de texto do React
+(`{post.content}`) — **seguro por construção** —, e o projeto tinha **zero**
+ocorrências de `dangerouslySetInnerHTML` em 429 arquivos. Dar formatação ao
+usuário é exatamente a mudança que costuma acabar com esse zero.
+
+**Decisão.** Um analisador próprio devolve uma **árvore de nós**
+(`{tipo, filhos}`), e o componente transforma cada nó num elemento React.
+**Nenhuma string de HTML existe em ponto nenhum do caminho.**
+
+| Alternativa | Por que não |
+| --- | --- |
+| **Markdown → HTML + sanitizador** (`marked` + `DOMPurify`) | produz-se o perigo e tenta-se tirá-lo depois. Funciona enquanto o sanitizador conhecer todos os truques — e a história de `mXSS` é a história de sanitizadores bons sendo contornados. Também traria duas dependências e o CommonMark inteiro: HTML embutido, imagens por URL, referências, entidades — superfície que ninguém pediu |
+| **editor rich-text** (Slate, TipTap) | dependência grande num projeto que mede bundle por byte (§0.3), e o pedido é explícito: *"não criar um editor estilo Word/Notion"* |
+| **nenhuma formatação** | era o estado anterior; o pedido é justamente sair dele |
+
+**O que se aceita é lista fechada:** o que não está escrito no analisador **não
+existe**. Não há título, imagem, tabela, HTML, código em bloco nem aninhamento.
+Não é Markdown — é um subconjunto com a mesma cara.
+
+**Trade-off aceito.** Um analisador escrito à mão pode ter cantos que uma
+biblioteca madura já resolveu (aninhamentos exóticos, sequências ambíguas). O
+preço disso é **cosmético**: no pior caso a marcação não é reconhecida e o texto
+aparece cru. Nenhum canto vira execução de script, porque o resultado nunca é
+HTML.
+
+**O único ponto perigoso tem dono.** Marcação não injeta script; `href` injeta.
+Todo link passa por `safeExternalUrl` — a mesma função que fechou um XSS
+armazenado real em agosto. URL recusada **vira texto**, não some: sumir seria o
+site comendo o que a pessoa escreveu (§1.5).
+
+**Consequências.** Zero mudança de banco: `posts.content` continua guardando o
+texto exatamente como foi digitado, com os asteriscos. Post antigo atravessa o
+analisador e sai igual — foi por isso que a fase não precisou de migration nem
+de conversão de dado. E uma trava varre `src/` inteiro exigindo que o zero
+`dangerouslySetInnerHTML` continue zero.
+
 ---
 
 ## Moderação

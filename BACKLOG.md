@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**52 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1488,6 +1488,46 @@ CI — que a retenção diária limpa —, e o feed em zero.
   "config" não acha "configuração" — só a palavra inteira (com flexão e sem
   depender de acento). Entra quando houver acervo que justifique.*
 
+### ✅ `[25/09]` FASE 5 — formatação de post, em ÁRVORE e não em HTML
+
+Entraram `**negrito**`, `*itálico*`, `~~riscado~~`, `- lista`, `> citação` e
+`[texto](link)`.
+
+**A decisão de segurança é o coração da fase, e está justificada em
+`DECISOES.md`** — o prompt exige justificativa. O caminho "óbvio" seria
+Markdown → HTML + sanitizador; não foi esse. O analisador devolve uma **árvore**
+e o componente vira cada nó num elemento React: **nenhuma string de HTML existe
+no caminho**, então `dangerouslySetInnerHTML` não é "evitado com disciplina" —
+não há o que passar para ele.
+
+Sanitizar é o desenho oposto: produz-se o perigo e tenta-se tirá-lo depois.
+Funciona enquanto o sanitizador conhecer todos os truques.
+
+**O único ponto perigoso tem dono:** marcação não injeta script, `href` injeta.
+Todo link passa por `safeExternalUrl` — a mesma função que fechou um XSS
+armazenado real em agosto. URL recusada **vira texto**, não some.
+
+**Zero mudança de banco.** `posts.content` continua guardando o texto como foi
+digitado; a formatação acontece só ao desenhar. Post antigo atravessa e sai
+igual — por isso não houve migration nem conversão de dado, e há um teste
+exatamente para esse caso.
+
+**Trava:** `formatacaoNaoVirarHtml.test.jsx` renderiza de verdade (jsdom) e
+exige que `javascript:`/`data:`/`vbscript:`/`file:` não virem `href`, que
+`<script>`, `<img onerror>`, `<iframe>` e `<svg onload>` apareçam como texto, e
+que o `src/` inteiro siga em **zero** `dangerouslySetInnerHTML`. Provada
+reinjetando as duas pontas. `INV-TELA-008`.
+
+- ⬜ `[25/09]` 🔵 **A formatação não chegou a comentário nem ao mural.** *Só o
+  post usa o `TextoFormatado`. Levá-la aos outros dois é trocar uma linha em
+  cada — mas é decisão de produto (comentário formatado muda o tom da conversa),
+  e não tomei sozinho.*
+
+- ⬜ `[25/09]` 🔵 **O compositor não tem botões de formatação, só a dica.** *Uma
+  barra com B / I / S seria a evolução natural, e exige mexer em seleção de
+  texto no `textarea`. A dica embaixo do campo resolve a descoberta por
+  enquanto.*
+
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
 - ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
@@ -2166,8 +2206,8 @@ CI — que a retenção diária limpa —, e o feed em zero.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->146<!--/n--> arq ·
-  <!--n:src.lib.linhas-->17.373<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->148<!--/n--> arq ·
+  <!--n:src.lib.linhas-->17.683<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->21<!--/n--> arq ·
   <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
