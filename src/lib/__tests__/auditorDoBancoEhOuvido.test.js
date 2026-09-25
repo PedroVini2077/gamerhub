@@ -59,31 +59,38 @@ import { SQL, auditor } from './lerOAuditorDoBanco';
  */
 const ISENTAS_DO_LITERAL = {
   operador_ativo: 'é a própria maquinaria da guarda — compara papel por desenho',
-  owner_get_stats: 'painel do Fundador: a troca por `is_owner()` muda semântica (rank >= 4 vs = owner)',
+};
+
+/**
+ * `[25/09]` SEC-054 — as cinco do painel SAÍRAM da lista acima, e o motivo
+ * importa: elas não foram perdoadas, elas **deixaram de ter o problema**.
+ *
+ * O dono decidiu trocar `role = 'owner'` por `is_owner()` nas oito (5 funções +
+ * 3 policies), ciente de que um cargo futuro de rank >= 4 herdaria o painel.
+ *
+ * Com a troca elas mudaram de checagem — passaram a casar com a heurística do
+ * SEC-043 ("é administrativa") e a não chamar `exige_operador_ativo()`. Então
+ * migraram para o mapa abaixo, com o MESMO motivo de sempre.
+ */
+const ISENTAS_DA_GUARDA_DE_OPERADOR = {
+  is_staff: 'é a própria guarda',
+  is_super: 'idem',
+  is_owner: 'idem',
+  role_rank: 'função pura de ranqueamento',
+  can_moderate_content: 'é a própria guarda, no piso de moderação',
+  operador_ativo: 'é a própria guarda',
+  exige_operador_ativo: 'é a própria guarda, na forma que levanta exceção',
+  exige_alvo_apto: 'guarda do ALVO, não de quem chama',
+  check_staff_eligibility: 'consulta de elegibilidade, não ação',
+  log_audit_event: 'a trilha precisa aceitar registro de quem já foi barrado',
+  confere_a_propria_senha: 'é sobre a PRÓPRIA senha — não tem alvo nem cargo',
+  pode_publicar: 'guarda do usuário comum, não do operador',
+  post_aceita_interacao: 'estado do POST, não de quem chama',
+  owner_get_stats: 'painel do Fundador: a guarda arriscaria lockout SEM INVERSA, e ninguém consegue banir o owner pelo produto',
   owner_get_users: 'idem',
   owner_get_metrics: 'idem',
   owner_get_audit_logs: 'idem',
   owner_get_notifications: 'idem',
-};
-
-/**
- * `[25/09]` SEC-053 — as POLICIES isentas da checagem de hierarquia à mão.
- *
- * A 6ª checagem acusa policy que escreve `role_rank(...)` ou um papel literal
- * em vez de `is_staff()`/`is_super()`/`is_owner()`. Um admin BANIDO passava por
- * 23 delas — lia a fila, a trilha inteira e escrevia na wordlist.
- *
- * Estas três ficam de fora pela MESMA razão das cinco funções acima, e a
- * decisão é uma só: trocar `role = 'owner'` por `is_owner()` muda semântica
- * (`rank >= 4` vs `= owner`), e isso é decisão do dono, não limpeza minha.
- *
- * Não são brecha: `operador_ativo()` é sempre true para o `owner`, então aqui
- * não se perde estado de operador nenhum — ao contrário das 23.
- */
-const POLICIES_ISENTAS = {
-  site_config_owner_delete: "painel do Fundador: `role = 'owner'` literal, troca é decisão de semântica",
-  site_config_owner_insert: 'idem',
-  site_config_owner_update: 'idem',
 };
 
 const PORTAS_PUBLICAS = {
@@ -218,33 +225,67 @@ describe('SEC-050 — o auditor do banco é ouvido, e a lista branca é delibera
     ].join('\n')).toEqual(esperado);
   });
 
-  it('a lista de POLICIES isentas é exatamente a escrita aqui', () => {
+  it('a checagem de POLICY existe e NÃO tem lista de exceção', () => {
     const corpo = auditor();
-    const bloco = corpo.match(
-      /pg_policies\s+t[\s\S]*?policyname\s+NOT\s+IN\s*\(([\s\S]*?)\)/i);
+    const bloco = corpo.match(/pg_policies\s+t[\s\S]*?ORDER\s+BY/i);
 
     expect(bloco, [
-      'O bloco de isenção da 6ª checagem (SEC-053) sumiu do auditor.',
+      'A 6ª checagem (SEC-053) sumiu do auditor.',
       '',
-      'Sem ele a checagem de POLICY com hierarquia à mão deixa de existir — e',
-      'foi ela que fechou o caminho por onde um admin BANIDO lia a fila de',
-      'moderação, a trilha inteira e escrevia na wordlist.',
+      'Foi ela que fechou o caminho por onde um admin BANIDO lia a fila de',
+      'moderação, a trilha de 4.102 linhas e escrevia na wordlist.',
+    ].join('\n')).toBeTruthy();
+
+    // `[25/09]` SEC-054: a lista de isenção desta checagem foi a ZERO, porque
+    // as três policies de `site_config` passaram a usar `is_owner()`. Lista
+    // vazia é melhor do que lista com nome — ela não tem onde esconder achado.
+    //
+    // Se um nome voltar a aparecer aqui, ele precisa vir com motivo escrito na
+    // migration E um mapa nesta trava, como as outras duas listas têm.
+    const isencao = bloco[0].match(/policyname\s+NOT\s+IN\s*\(([\s\S]*?)\)/i);
+    const nomes = isencao ? [...isencao[1].matchAll(/'([a-z0-9_]+)'/gi)].map(m => m[1]) : [];
+
+    expect(nomes, [
+      `A checagem de POLICY ganhou isenção para: ${nomes.join(', ')}`,
+      '',
+      'Hoje ela não tem nenhuma, e isso é deliberado: NENHUMA policy precisa',
+      'escrever papel à mão. Isentar uma aqui a silencia — se for legítimo,',
+      'escreva o motivo na migration e crie o mapa nesta trava, como',
+      '`ISENTAS_DO_LITERAL` e `ISENTAS_DA_GUARDA_DE_OPERADOR` fazem.',
+    ].join('\n')).toEqual([]);
+  });
+
+  it('a lista de isentas da GUARDA DE OPERADOR é exatamente a escrita aqui', () => {
+    // `[25/09]` Esta é a MAIOR das listas de exceção do auditor e era a única
+    // sem vigia — ela cresceu de 13 para 18 nomes na SEC-054 e nada teria dito.
+    // A trava existe justamente para lista de exceção não engordar em silêncio;
+    // deixar a maior de fora era o buraco no meio dela.
+    const corpo = auditor();
+    const bloco = corpo.match(
+      /exige_operador_ativo\(\) \(SEC-043\)[\s\S]*?nome\s+NOT\s+IN\s*\(([\s\S]*?)\)/i);
+
+    expect(bloco, [
+      'O bloco de isenção da checagem do SEC-043 sumiu do auditor.',
+      '',
+      'Sem ele, a própria maquinaria da guarda (`is_staff`, `operador_ativo`…)',
+      'se acusa sozinha e o portão nasce vermelho para sempre.',
     ].join('\n')).toBeTruthy();
 
     const naLista = [...bloco[1].matchAll(/'([a-z0-9_]+)'/gi)].map(m => m[1]).sort();
-    const esperado = Object.keys(POLICIES_ISENTAS).sort();
+    const esperado = Object.keys(ISENTAS_DA_GUARDA_DE_OPERADOR).sort();
 
     expect(naLista, [
       `Na migration: ${naLista.join(', ') || '(vazia)'}`,
       `Nesta trava:  ${esperado.join(', ')}`,
       '',
-      'Isentar uma policy aqui **silencia** o auditor para ela. A lista existe',
-      'porque três policies do painel do Fundador usam papel LITERAL, e trocar',
-      "por `is_owner()` muda semântica — decisão do dono, proposta no BACKLOG.",
+      'Isentar uma função aqui diz "esta é administrativa e MESMO ASSIM não',
+      'precisa perguntar se quem chama está apto". É a exceção mais forte que',
+      'o auditor aceita — o nome entra TAMBÉM no mapa',
+      '`ISENTAS_DA_GUARDA_DE_OPERADOR`, com o motivo ao lado.',
       '',
-      'Qualquer nome novo aqui precisa entrar TAMBÉM no mapa `POLICIES_ISENTAS`',
-      'desta trava, com o motivo ao lado. Senão a lista vira o lugar onde os',
-      'achados se escondem — que é o que a SEC-050 existe para impedir.',
+      'As cinco do painel do Fundador estão isentas porque guardá-las',
+      'arriscaria trancá-lo fora do próprio painel SEM INVERSA — e ninguém',
+      'consegue banir o owner pelo produto de qualquer forma.',
     ].join('\n')).toEqual(esperado);
   });
 });

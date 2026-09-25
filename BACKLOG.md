@@ -849,7 +849,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
