@@ -349,20 +349,6 @@ try {
   // O `fluxos.mjs` prova que `user` não entra no /admin. Falta a outra metade:
   // `admin` também não pode subir até o /owner. Sem isto, uma regressão que
   // desse poder de owner a qualquer staff passaria despercebida.
-  // ── Limpeza: o post do teste não pode ficar no ar ────────────────────────
-  //
-  // Vem ANTES do /owner de propósito: se o painel do dono falhar, o post já
-  // saiu. Lixo de teste em produção já confundiu o dono duas vezes, e é um
-  // padrão de falha catalogado meu.
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  const meuPost = page.locator('h2', { hasText: MARCA_PAINEL });
-  await meuPost.first().waitFor({ state: 'visible', timeout: 30000 });
-  await page.locator('.card').filter({ has: meuPost })
-    .getByRole('button', { name: 'Deletar post' }).click();
-  await page.getByRole('button', { name: /^Deletar$/ }).click();
-  await meuPost.first().waitFor({ state: 'detached', timeout: 30000 });
-  ok('post do teste apagado');
-
   // ── `[25/09]` A aba NEWS: criar rascunho, e NÃO poder publicar ────────────
   //
   // Este passo nasceu de um bug que o DONO achou minutos depois de eu entregar
@@ -377,6 +363,17 @@ try {
   //
   // E o mesmo passo cobre a outra metade, de graça: esta conta é `admin`, então
   // "Publicar" NÃO pode aparecer. Se aparecer, o corte editorial virou enfeite.
+  // A guarda existe porque a PRIMEIRA versão deste passo ficou depois da
+  // limpeza, que navega para `/` — e o clique na aba virou um timeout de 30 s
+  // dizendo `waiting for locator`, sem nunca mencionar que a página era outra.
+  // Estado suposto é o que o §1.5 chama de falha muda: a informação existe na
+  // URL e não chega em forma utilizável.
+  if (!page.url().includes('/admin')) {
+    throw new Error(
+      `o passo do News esperava estar em /admin, e esta em ${page.url()}.\n`
+      + '    Algum passo anterior navegou para fora e nao voltou. O bloco do '
+      + 'News precisa ficar ANTES da limpeza, que vai para o feed.');
+  }
   await aba(page, 'News').click();
   const tituloDaMateria = `${marcaDeTeste('[painel ')} materia automatica`;
   await page.getByLabel('Título da matéria').fill(tituloDaMateria);
@@ -413,6 +410,20 @@ try {
   // A matéria FICA: admin não apaga (só super). A retenção diária do
   // `cleanup_old_data()` limpa rascunho de teste com mais de 2 h — mesma
   // disciplina dos posts do CI.
+
+  // ── Limpeza: o post do teste não pode ficar no ar ────────────────────────
+  //
+  // Vem ANTES do /owner de propósito: se o painel do dono falhar, o post já
+  // saiu. Lixo de teste em produção já confundiu o dono duas vezes, e é um
+  // padrão de falha catalogado meu.
+  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const meuPost = page.locator('h2', { hasText: MARCA_PAINEL });
+  await meuPost.first().waitFor({ state: 'visible', timeout: 30000 });
+  await page.locator('.card').filter({ has: meuPost })
+    .getByRole('button', { name: 'Deletar post' }).click();
+  await page.getByRole('button', { name: /^Deletar$/ }).click();
+  await meuPost.first().waitFor({ state: 'detached', timeout: 30000 });
+  ok('post do teste apagado');
 
   await page.goto(`${BASE}/owner`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(2500); // dá tempo do guard esvaziar a tela
