@@ -39,10 +39,12 @@ import { readFileSync } from 'node:fs';
  */
 
 const CARD = 'src/components/feed/PostCard.jsx';
+const CARD_DE_COMENTARIO = 'src/components/feed/CommentCard.jsx';
 const SECAO = 'src/components/feed/CommentSection.jsx';
 
 const card = readFileSync(CARD, 'utf8');
 const secao = readFileSync(SECAO, 'utf8');
+const cardDeComentario = readFileSync(CARD_DE_COMENTARIO, 'utf8');
 
 /** Sem comentário: a prosa dos dois arquivos explica a ponte e a citaria. */
 const semProsa = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
@@ -93,5 +95,24 @@ describe('o curtir fica na linha do comentar, e não some', () => {
       'chat da live), então ninguém mais renderiza o botão — e o post ao vivo,',
       'que é o mais visível do feed, fica sem curtir.',
     ].join('\n')).toMatch(/\{botaoDeCurtir\}/);
+  });
+});
+
+describe('o bloco de um comentário se identifica para o roteiro', () => {
+  it('o CommentCard marca sua raiz com `data-comentario`', () => {
+    expect(semProsa(cardDeComentario), [
+      `${CARD_DE_COMENTARIO} perdeu o atributo \`data-comentario\`.`,
+      '',
+      'Ele é a âncora que o `e2e/comentar.mjs` usa para provar que uma resposta',
+      'está DENTRO do bloco do comentário pai — e não virou comentário solto,',
+      'que é uma falha muda (o texto aparece, só a estrutura está errada).',
+      '',
+      'Sem ele o roteiro volta a depender de contar níveis de DOM, e isso já',
+      'reprovou DUAS respostas corretas: uma por medir posição X, outra quando',
+      'o `TextoFormatado` acrescentou um nível à árvore.',
+      '',
+      'Contrato explícito sobrevive a mudança de aparência; contagem de níveis',
+      'não. Se o atributo precisar mudar de nome, mude nos DOIS lugares.',
+    ].join('\n')).toMatch(/data-comentario=\{comment\.id\}/);
   });
 });
