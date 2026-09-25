@@ -16,6 +16,9 @@ import ranks828 from '../assets/landing/cenas/5-ranks-larga-828.webp';
 import lives1600 from '../assets/landing/cenas/6-lives-larga-1600.webp';
 import lives1200 from '../assets/landing/cenas/6-lives-larga-1200.webp';
 import lives828 from '../assets/landing/cenas/6-lives-larga-828.webp';
+import news1600 from '../assets/landing/cenas/8-news-larga-1600.webp';
+import news1200 from '../assets/landing/cenas/8-news-larga-1200.webp';
+import news828 from '../assets/landing/cenas/8-news-larga-828.webp';
 import cta1600 from '../assets/landing/cenas/7-cta-larga-1600.webp';
 import cta1200 from '../assets/landing/cenas/7-cta-larga-1200.webp';
 import cta828 from '../assets/landing/cenas/7-cta-larga-828.webp';
@@ -38,6 +41,9 @@ import ranksA420 from '../assets/landing/cenas/5-ranks-alta-420.webp';
 import livesA828 from '../assets/landing/cenas/6-lives-alta-828.webp';
 import livesA620 from '../assets/landing/cenas/6-lives-alta-620.webp';
 import livesA420 from '../assets/landing/cenas/6-lives-alta-420.webp';
+import newsA828 from '../assets/landing/cenas/8-news-alta-828.webp';
+import newsA620 from '../assets/landing/cenas/8-news-alta-620.webp';
+import newsA420 from '../assets/landing/cenas/8-news-alta-420.webp';
 import ctaA828 from '../assets/landing/cenas/7-cta-alta-828.webp';
 import ctaA620 from '../assets/landing/cenas/7-cta-alta-620.webp';
 import ctaA420 from '../assets/landing/cenas/7-cta-alta-420.webp';
@@ -106,5 +112,6 @@ export const CENAS = {
   keys: par(keys1600, keys1200, keys828, keysA828, keysA620, keysA420),
   ranks: par(ranks1600, ranks1200, ranks828, ranksA828, ranksA620, ranksA420),
   lives: par(lives1600, lives1200, lives828, livesA828, livesA620, livesA420),
+  news: par(news1600, news1200, news828, newsA828, newsA620, newsA420),
   cta: par(cta1600, cta1200, cta828, ctaA828, ctaA620, ctaA420),
 };

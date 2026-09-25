@@ -30,7 +30,8 @@ import { INVASOES, JANELA_DA_INVASAO } from '../../lib/costuraDeCena';
  * laço por quadro, sem filtro. `x`, `y` e `scale` são compostos pelo navegador.
  *
  * @param {object} props
- * @param {'sobe'|'afasta'|'aproxima'|'deriva'} [props.invasao] O gesto. Sem
+ * @param {'sobe'|'afasta'|'mergulha'|'deriva'} [props.invasao] O gesto — as
+ *   chaves de `INVASOES` em `lib/costuraDeCena.js`, que é a fonte. Sem
  *   ele a arte entra parada — que é o certo para a primeira cena da página,
  *   que não invade nada.
  */

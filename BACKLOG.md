@@ -35,6 +35,149 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🟠 `[25/09]` DUAS PERGUNTAS DELE — minha resposta, decisão dele
+
+**1. "Eu como owner posso ter um painel próprio de publicar notícias?"**
+
+**Minha recomendação: NÃO um segundo editor — mas SIM uma visão editorial no
+`/owner`.** Dois editores são duas implementações que divergem (§4), e a
+diferença entre owner e admin já está expressa no lugar certo: os botões que
+aparecem. O que falta no `/owner` não é a ferramenta de escrever, é o **estado
+do jornal**: quantos rascunhos esperando revisão, o que está agendado, o que
+saiu na semana. Isso é informação de fundador, não cópia de painel.
+
+**2. "As recomendações por IA, acha bom implementar?"**
+
+**Sim, mas só como ASSISTENTE de quem escreve — nunca como autor.** O corte:
+
+| Cabe | Não cabe |
+| --- | --- |
+| sugerir resumo/subtítulo **a partir do corpo que ele já escreveu** | escrever a matéria a partir do título |
+| sugerir editoria pelo título | inventar fato, data, número ou citação |
+| avisar "este texto não tem link de fonte" | publicar sem gente ler |
+
+**O motivo não é técnico, é o que está escrito na landing:** *"apurado pela
+equipe, sem caça-clique e sem repost sem fonte"*. IA que redige a partir de um
+título produz exatamente o contrário, com a marca do GamerHub assinando.
+
+**O custo, que é a parte que ninguém pergunta (§0.2 regra 2):** a chamada seria
+**uma por matéria** — algumas por dia, não por tecla. Essa é a forma certa. Mas
+**não existe orçamento de IA decidido**, e toda cota grátis deste projeto já
+estourou pelo menos uma vez.
+
+**Onde a IA paga de verdade:** na ingestão (`news_items_raw`), resumindo o item
+coletado num rascunho que o editor reescreve. Mas isso exige a ingestão primeiro.
+
+---
+
+### 🐛 `[25/09]` RESOLVIDO — criar rascunho estava quebrado, e ELE achou
+
+`null value in column "conteudo" ... violates not-null constraint`. Não dava
+para escrever matéria nenhuma pelo site.
+
+**A causa era de desenho:** `conteudo` nasceu `NOT NULL`, ou seja, a tabela
+exigia o corpo **no instante da criação** — e rascunho é justamente o artigo
+antes do texto. Hoje o corpo é exigido só quando o artigo **vai ao ar**.
+
+**Como eu deixei passar, sem desculpa:** testei leitura e corte editorial em
+ROLLBACK, os dois **com `conteudo` preenchido**, e nunca rodei o `INSERT` que o
+painel executa. Provei o caminho que eu tinha na cabeça (§1.2).
+
+**A trava é pelo NAVEGADOR** (`e2e/painel-admin.mjs`), porque é o único lugar
+onde o insert que roda é o de verdade. Ela cobre a outra metade de graça: a
+conta do roteiro é `admin`, então **Publicar não pode aparecer**.
+
+**Efeito colateral que precisou de solução:** admin não apaga matéria, então o
+roteiro não limpa a própria sujeira. A retenção diária passou a alcançar
+rascunho de teste com mais de 2h — **nunca** o que está publicado.
+
+---
+
+### 🟠 `[25/09]` A ESTRATÉGIA DE ASSETS DA LANDING — análise entregue, decisão dele
+
+> Prompt dele em 25/09: *"não quero voltar ao modelo antigo de gerar uma imagem
+> específica para cada feature... me diga quais imagens realmente valeria a pena
+> eu gerar agora como assets visuais de longa duração"*. Ele pediu **só a
+> análise**, sem implementar. Entregue no chat; o resumo fica aqui.
+
+**O número que decide:** das 8 cenas de hoje, **6 desenham a interface** — cada
+uma tem a barra lateral com um item aceso e o conteúdo daquela feature
+(`2-feed`, `3-comunidade`, `4-keys`, `5-ranks`, `6-lives`, `8-news`). Essas são
+exatamente as que morrem no próximo redesenho. As duas que sobrevivem
+(`1-hero`, `7-cta`) não desenham feature nenhuma.
+
+**O que eu pedi que ele gere — 3 conceitos, ~8 arquivos de referência:**
+
+| # | O quê | Para quê | Formato |
+| --- | --- | --- | --- |
+| 1 | **Placa de ambiente**, 3 ângulos — rocha, fenda, neon, SEM tela/interface | o fundo de TODA cena de feature; o conteúdo vem da UI real por cima | larga + retrato |
+| 2 | **A fenda** — o encontro do verde com o roxo, isolado | peça estrutural da identidade, não do produto | larga + retrato |
+| 3 | **Placa de vidro VAZIA** (1–2 variações, fundo transparente) | é o que mata a arte por feature: eu preencho com o produto real em CSS | uma só, elemento |
+
+**O que eu pedi que ele NÃO gere:** cena por feature, capa de jogo (envelhece e
+tem licença), post/contador/avatar falso, ícone por feature (o `lucide` cobre),
+e 3D (já descartado).
+
+**O ganho medido:** de **48 arquivos / 4.551 kB** para ~8 referências, e feature
+nova passa a custar **zero arte**.
+
+**Depende dele:** gerar as imagens. Só depois eu implemento — e a implementação
+usa o briefing de 11/09 como base, sem reescrever direção visual.
+
+---
+
+### 🟠 `[25/09]` A ARTE NÃO ESCALA — ideia dele, e ele está certo
+
+> *"já já nós vamos tirar todas essas artes e criar algo mais global, pq ficar
+> criando artes toda hora não vai dar. A gente não vai inventar cenas 3D, mas
+> pelo menos algo pra substituir essas imagens"*.
+
+**O número que dá razão a ele:** hoje são **8 cenas × 6 arquivos = 48 imagens**,
+**4.551 kB** no repositório, e **duas composições feitas à mão por cena** (larga
+e retrato). Toda seção nova custa isso de novo — e a de hoje custou uma ida e
+volta com ele no meio da sessão.
+
+**O que ele já descartou, e continua descartado:** 3D. Não é opção.
+
+**As saídas que eu enxergo, com o custo de cada uma** — nenhuma decidida:
+
+| Saída | O que é | Custo | O que se perde |
+| --- | --- | --- | --- |
+| **A. Cena composta em CSS/SVG** | o fundo (rocha, néon, fenda) vira gradiente + SVG do projeto, e só o "print" da tela é imagem | some a composição por cena; sobra **1** imagem por seção, ou nenhuma | o brilho das artes dele — elas são boas, e isso é perda real |
+| **B. Um FUNDO só, reaproveitado** | uma arte de ambiente, e cada cena muda só a sobreposição | 1 arte para sempre | as cenas ficam parecidas entre si, que é o defeito que a fatia 7 consertou |
+| **C. Print de tela gerado do PRÓPRIO site** | um roteiro Playwright abre `/news`, `/lives` etc. e fotografa | **zero arte nova para sempre**, e a imagem **nunca envelhece** — ela É o site | precisa do site bonito em tela cheia, e hoje o feed está vazio |
+
+**Minha recomendação: C, com B de fundo.** É a única que resolve o problema de
+verdade em vez de adiá-lo: seção nova não pede arte nenhuma, e a landing para
+de mostrar uma versão do site que não existe mais. O projeto já tem Playwright,
+já tem gerador de cenas, e já tem o hábito de derivar asset por script (ícones,
+cenas, artes da arena).
+
+**O que trava a C hoje:** o site precisa ter conteúdo para fotografar. É a
+mesma pendência do feed vazio.
+
+**Eu não começo nada disto sem ele escolher** — é decisão de identidade visual,
+e as duas vezes em que eu decidi arte sozinho foram descartadas.
+
+---
+
+### ⚠️ `[25/09]` A cena do News é a ÚNICA sem sobreposição viva
+
+As outras cinco cenas soltas têm um componente de "personalidade" por cima da
+arte — o feed recebe publicações, a curtida acende, o contador sobe. A do News
+não tem.
+
+**Não foi esquecimento.** A arte que ele mandou **já contém a interface** do
+News em fidelidade alta, nas duas composições — é a única das oito em que a
+imagem sozinha faz o trabalho que a sobreposição faria. E somar um sexto
+componente bespoke vai na direção contrária do item acima, que é justamente
+parar de criar peça sob medida por seção.
+
+Se a saída **C** for escolhida, esta pendência morre junto: a cena passa a ser
+um print vivo do `/news` de verdade.
+
+---
+
 ### 🔄 `[25/09]` GAMERHUB NEWS — o plano, com a ordem decidida hoje
 
 **Objetivo dele:** *"vamos tentar terminar esse GamerHub News ainda hj"*.
@@ -2449,7 +2592,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->157<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.708<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->18.756<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->23<!--/n--> arq ·
   <!--n:src.services.linhas-->2.377<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

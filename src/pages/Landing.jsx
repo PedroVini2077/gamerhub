@@ -106,6 +106,18 @@ export default function Landing({ introDone = true }) {
           sobreposicao={() => <SobreposicaoDoFeed lado="esquerda" />}
         />
 
+        {/* `[25/09]` O News. Ele é SÓ LOGADO — decisão dele em 24/09 —, então
+            esta cena é a ÚNICA forma de alguém de fora descobrir que ele
+            existe. Sem ela, a seção nasceria invisível para quem ainda não
+            criou conta. A arte é dele, nas duas composições, como as outras. */}
+        <CenaDaLanding
+          id="news" invasao="deriva" arte={CENAS.news}
+          eyebrow="News"
+          titulo="O que aconteceu, apurado"
+          descricao="Games, tecnologia e cultura geek — a equipe do GamerHub garimpa, checa e escreve. Sem caça-clique e sem repost sem fonte."
+          lado="direita"
+        />
+
         <CenaPresa
           id="mural" invasao="afasta" arte={CENAS.comunidade} altura={260}
           eyebrow="Comunidade"
