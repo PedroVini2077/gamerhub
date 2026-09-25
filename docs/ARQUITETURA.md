@@ -461,6 +461,11 @@ src/
     │   │                  # diferentes, e juntá-las faria a versão fraca virar
     │   │                  # o padrão por descuido. A tela só COLETA — quem
     │   │                  # confere a senha é a RPC, no servidor (SEC-012)
+    │   ├── TextoFormatado.jsx # `[25/09]` Desenha o conteúdo do post a partir
+    │   │                  # da ÁRVORE do `lib/formatacao`. NUNCA produz HTML:
+    │   │                  # cada nó vira elemento React, e o `href` de link
+    │   │                  # passa por `safeExternalUrl`. É o que mantém o
+    │   │                  # projeto em ZERO `dangerouslySetInnerHTML`
     │   ├── CampoDeSenha.jsx # `[05/09]` O ÚNICO campo de senha do site, com o
     │   ├── MarcaGH.jsx     # `[11/09]` A MARCA — o monograma GH, em SVG
     │   │                  # derivado da arte por medição (1,80% de diferença,

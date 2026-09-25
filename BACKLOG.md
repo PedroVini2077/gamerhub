@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**53 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1467,65 +1467,66 @@ ROLLBACK). A Fase 0 tinha dito que ninguém lia — errado, a varredura afogou o
 sinal em `admin_logs.category`, que é homônima. Consertado primeiro, apagado
 depois. A trava mudou de lado e agora impede o retorno da leitura.
 
-- ⬜ `[24/09]` 🟠 **45 posts de prova estão NO AR, esperando você conferir a
-  paginação — e eu preciso apagá-los depois.** *Semeados a pedido dele em
-  24/09, autor `claudetester` (nunca a conta dele), títulos `[prova 01]` a
-  `[prova 45]`. O `[prova 01]` é o **mais novo** e abre o feed.*
+### ✅ `[24/09]` Os 45 posts de prova — a paginação passou no teste dele, e eles saíram
 
-  **O que conferir no site, logado:** a primeira tela mostra `[prova 01]` até
-  `[prova 20]` · o botão **"Carregar mais"** aparece no fim · clicar traz
-  `[prova 21]` a `[prova 40]` **sem repetir e sem pular** · clicar de novo traz
-  `[prova 41]` a `[prova 45]` e o botão **some** · e, o que mais importa: a
-  página **não pula** para o topo ao carregar, o card que você estava lendo
-  fica onde estava.
+Ele conferiu no navegador e o veredito foi *"a paginação funciona!"*. Os três
+lotes, o botão sumindo no fim e a posição de rolagem: tudo conforme.
 
-  **O prefixo `[prova ` NÃO está em `PREFIXOS_DE_TESTE` de propósito:** se
-  estivesse, o detector de sobras reprovaria o próximo CI achando que uma
-  rodada morreu no meio. Por isso eles **não** são apagados pela retenção
-  automática — saem na mão, e isso é dívida minha até sair.
+**Apagados de verdade** (não soft: era dado de teste meu, e o soft só os
+esconderia deixando a tabela suja de novo). Dimensionado antes: 45 posts, autor
+`claudetester`, **zero** comentários e **zero** curtidas presos neles.
+Conferido depois: `posts` com 11 linhas, todas já soft-deletadas de rodadas do
+CI — que a retenção diária limpa —, e o feed em zero.
 
-### ✅ `[24/09]` FASE 4 — a busca de verdade
-
-**O que ela era:** `posts.filter(...)` sobre o que estava carregado. Com a
-paginação ficou pior: o campo dizia "Buscar posts" e procurava nos 20 que a
-pessoa tinha rolado. Resposta errada apresentada como completa.
-
-**O dicionário foi escolhido por medição.** `to_tsvector('portuguese', …)` puro
-**não casa** `configuracao` com `configuração` — num site brasileiro isso é
-inaceitável, ninguém digita acento na busca. Entrou uma configuração própria,
-`portugues_sem_acento` (`unaccent` antes do radicalizador): casa nos dois
-sentidos e a flexão continua (`jogo` acha `jogos`).
-
-> **Por que configuração e não `unaccent()` na expressão:** `unaccent(text)` é
-> `STABLE`, e coluna gerada exige `IMMUTABLE`. Já `to_tsvector(regconfig, text)`
-> é `IMMUTABLE` (conferido em `pg_proc.provolatile`) qualquer que seja o
-> dicionário dentro. Embrulhar resolve sem o `IMMUTABLE` mentiroso, que é o
-> atalho comum e errado.
-
-**Duas RPCs, com regras de acesso opostas e cada uma justificada:**
-`buscar_posts` é `INVOKER` (a RLS recorta — provado em ROLLBACK: usuário comum
-buscando o termo de um post **ocultado** recebe zero, `postgres` recebe 1), e
-`buscar_pessoas` é `DEFINER` **por necessidade** (colunas de `profiles`
-revogadas na SEC-025) — então a defesa é o **recorte**: id, username,
-avatar_url, role, e mais nada. Banido não aparece.
-
-**Ela não pagina, e isso é decisão:** `ts_rank` é calculado, não indexado, então
-keyset por relevância não existe e paginar seria `OFFSET` disfarçado — o que a
-fase 2 acabou de tirar do feed. Corta em 50 e **a tela diz que cortou**.
-
-**Trava:** `buscaNaoVazaNemMente.test.js`, as três falhas mudas — `DEFINER` na
-busca de posts, coluna nova no `RETURNS` de pessoas, e aba oferecida sem área
-que a atenda. Provadas reinjetando. `INV-PORTA-010`.
-
-**Prova de navegador:** o `cicloDoPost` passou a buscar o post que ele mesmo
-acabou de publicar, pelo número da marca — exercita FTS → RPC → RLS →
-`POST_SELECT` → tela. E `/busca` entrou em `ROTAS_LOGADO` (foi a trava
-`rotasE2E` que exigiu, sozinha, assim que a rota nasceu).
+> **Detalhe que me enganou por um segundo:** a consulta que apagava e contava no
+> MESMO comando devolveu "56 restantes". Não era erro — num só comando, o CTE
+> que apaga e o `SELECT` que conta veem a **mesma versão** da tabela, a de
+> antes. A conferência de verdade exige uma segunda consulta.
 
 - ⬜ `[24/09]` 🔵 **A busca acha palavra, não pedaço de palavra.** *`pg_trgm`
   ficou de fora: é outra extensão, outro índice e outra conta de custo. Hoje
   "config" não acha "configuração" — só a palavra inteira (com flexão e sem
   depender de acento). Entra quando houver acervo que justifique.*
+
+### ✅ `[25/09]` FASE 5 — formatação de post, em ÁRVORE e não em HTML
+
+Entraram `**negrito**`, `*itálico*`, `~~riscado~~`, `- lista`, `> citação` e
+`[texto](link)`.
+
+**A decisão de segurança é o coração da fase, e está justificada em
+`DECISOES.md`** — o prompt exige justificativa. O caminho "óbvio" seria
+Markdown → HTML + sanitizador; não foi esse. O analisador devolve uma **árvore**
+e o componente vira cada nó num elemento React: **nenhuma string de HTML existe
+no caminho**, então `dangerouslySetInnerHTML` não é "evitado com disciplina" —
+não há o que passar para ele.
+
+Sanitizar é o desenho oposto: produz-se o perigo e tenta-se tirá-lo depois.
+Funciona enquanto o sanitizador conhecer todos os truques.
+
+**O único ponto perigoso tem dono:** marcação não injeta script, `href` injeta.
+Todo link passa por `safeExternalUrl` — a mesma função que fechou um XSS
+armazenado real em agosto. URL recusada **vira texto**, não some.
+
+**Zero mudança de banco.** `posts.content` continua guardando o texto como foi
+digitado; a formatação acontece só ao desenhar. Post antigo atravessa e sai
+igual — por isso não houve migration nem conversão de dado, e há um teste
+exatamente para esse caso.
+
+**Trava:** `formatacaoNaoVirarHtml.test.jsx` renderiza de verdade (jsdom) e
+exige que `javascript:`/`data:`/`vbscript:`/`file:` não virem `href`, que
+`<script>`, `<img onerror>`, `<iframe>` e `<svg onload>` apareçam como texto, e
+que o `src/` inteiro siga em **zero** `dangerouslySetInnerHTML`. Provada
+reinjetando as duas pontas. `INV-TELA-008`.
+
+- ⬜ `[25/09]` 🔵 **A formatação não chegou a comentário nem ao mural.** *Só o
+  post usa o `TextoFormatado`. Levá-la aos outros dois é trocar uma linha em
+  cada — mas é decisão de produto (comentário formatado muda o tom da conversa),
+  e não tomei sozinho.*
+
+- ⬜ `[25/09]` 🔵 **O compositor não tem botões de formatação, só a dica.** *Uma
+  barra com B / I / S seria a evolução natural, e exige mexer em seleção de
+  texto no `textarea`. A dica embaixo do campo resolve a descoberta por
+  enquanto.*
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
@@ -2205,8 +2206,8 @@ acabou de publicar, pelo número da marca — exercita FTS → RPC → RLS →
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->146<!--/n--> arq ·
-  <!--n:src.lib.linhas-->17.373<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->148<!--/n--> arq ·
+  <!--n:src.lib.linhas-->17.683<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->21<!--/n--> arq ·
   <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
