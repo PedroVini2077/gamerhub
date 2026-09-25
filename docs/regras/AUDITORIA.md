@@ -48,8 +48,8 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->461<!--/n--> arquivos · <!--n:src.linhas-->51.307<!--/n--> linhas |
-| dividido em | `lib` <!--n:src.lib.arquivos-->164<!--/n--> · `components` <!--n:src.components.arquivos-->197<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->47<!--/n--> · `pages` <!--n:src.pages.arquivos-->25<!--/n--> · `services` <!--n:src.services.arquivos-->25<!--/n--> |
+| código em `src/` | <!--n:src.arquivos-->462<!--/n--> arquivos · <!--n:src.linhas-->51.517<!--/n--> linhas |
+| dividido em | `lib` <!--n:src.lib.arquivos-->164<!--/n--> · `components` <!--n:src.components.arquivos-->198<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->47<!--/n--> · `pages` <!--n:src.pages.arquivos-->25<!--/n--> · `services` <!--n:src.services.arquivos-->25<!--/n--> |
 | rede de testes | <!--n:testes.arquivos-->120<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->23<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->10<!--/n--> |
 | banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
@@ -64,8 +64,8 @@ digitado à mão:
 > `[03/09]` **Esta seção mudou, e a mudança foi aprovada pelo dono.** Ela dizia
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
-> **dobrou** — <!--n:src.arquivos-->461<!--/n--> arquivos,
-> <!--n:src.linhas-->51.307<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> **dobrou** — <!--n:src.arquivos-->462<!--/n--> arquivos,
+> <!--n:src.linhas-->51.517<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
 > *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
@@ -102,7 +102,7 @@ digitado à mão:
 
 Componente de apresentação, página, animação, enfeite. A regra é uma só:
 **dizer o número e o critério**, sempre. *"Li 40 de
-<!--n:src.components.arquivos-->197<!--/n--> de `components/`, escolhidos pelos
+<!--n:src.components.arquivos-->198<!--/n--> de `components/`, escolhidos pelos
 que mudaram nos últimos 30 dias"* é aceitável; *"revisei os componentes"* não é.
 
 A seção "Honestidade sobre o método", logo abaixo, deixa de ser nota de rodapé
@@ -122,8 +122,8 @@ com leitura parcial.
 ### Honestidade sobre o método
 
 **Ao relatar, dizer qual método foi usado e o número real de cobertura** —
-"li <!--n:src.arquivos-->461<!--/n--> de <!--n:src.arquivos-->461<!--/n-->
-arquivos" ou "li 40 de <!--n:src.arquivos-->461<!--/n-->, parei em X". Nunca deixar parecer
+"li <!--n:src.arquivos-->462<!--/n--> de <!--n:src.arquivos-->462<!--/n-->
+arquivos" ou "li 40 de <!--n:src.arquivos-->462<!--/n-->, parei em X". Nunca deixar parecer
 que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
 não concluída.
 

@@ -36,11 +36,18 @@ describe('as artes das cenas', () => {
     const largas = nomesDe(REF_LARGA);
     const altas = nomesDe(REF_ALTA);
 
+    // O piso é guarda contra pasta vazia, não contagem de cenas: sem ele, a
+    // pasta renomeada faria as duas listas virem vazias e o `toEqual` abaixo
+    // aprovaria nada contra nada.
+    //
+    // `[26/09]` Era 7 e virou 5: as oito cenas por FEATURE deram lugar a cinco
+    // placas de AMBIENTE (ver `lib/cenasDaLanding.js`). O número acompanha a
+    // realidade, e o motivo fica escrito para não parecer afrouxamento.
     expect(
       largas.length,
       `Nenhuma referência em ${REF_LARGA}. Se a pasta mudou de lugar, ajuste `
       + 'esta trava — senão ela aprova tudo sem olhar nada.',
-    ).toBeGreaterThanOrEqual(7);
+    ).toBeGreaterThanOrEqual(5);
 
     expect(
       altas,

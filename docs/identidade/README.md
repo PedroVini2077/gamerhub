@@ -174,7 +174,7 @@ leves apesar de um corpo mais elaborado.
 > é baixado **uma vez pelo servidor da rede social**, sem página aberta. O
 > argumento de byte que decidiu WebP nos ícones simplesmente não se aplica a
 > ele. Ele continua saindo de `npm run icones`, e a arte fonte é a referência
-> em `referencias/cenas/1-hero.webp` — não a versão já comprimida do site, para
+> em `referencias/cenas/1-convergencia.webp` — não a versão já comprimida do site, para
 > não empilhar artefato sobre artefato.
 
 #### `[11/09]` Onde a marca aparece ANIMADA

@@ -11,6 +11,32 @@
 
 ---
 
+## `[26/09]` As artes da landing: CINCO PLACAS DE AMBIENTE, e não uma arte por feature
+
+**A decisão é dele:** *"já já nós vamos tirar todas essas artes e criar algo
+mais global, pq ficar criando artes toda hora não vai dar"*.
+
+**Das três saídas levantadas em 25/09** — (A) cena composta em CSS/SVG, (B) um
+fundo só reaproveitado, (C) print gerado do próprio site por Playwright — a
+escolhida foi uma **B melhorada**: cinco placas em vez de uma, o que evita o
+defeito que eu mesmo tinha anotado na B ("as cenas ficam parecidas entre si").
+
+**A C continua a mais forte no papel, e continua descartada por DEPENDÊNCIA, não
+por mérito:** fotografar o próprio site exige o site com conteúdo, e o feed
+ainda está vazio. Ela não foi recusada — ela não cabe ainda.
+
+**O que fecha o argumento é a frase dele:** *"essas imagens são apenas uma
+ambientação... vc vai trabalhar bastante com animações e SVG daqui pra frente"*.
+A diferenciação entre seções deixou de ser trabalho do fundo e passou a ser da
+camada por cima — que não pesa em KB de imagem e não envelhece junto com o
+produto, porque ela **é** o produto.
+
+Medição em [DESEMPENHO.md](DESEMPENHO.md); o mapa de placa por seção, com o
+motivo de cada escolha, em `src/lib/cenasDaLanding.js`; o briefing de 11/09
+continua inteiro, com uma nota datada em cima.
+
+---
+
 ## `[26/09]` Perguntar a notícia ao MODELO — DESCARTADO, e não por causa de plano
 
 **O que se cogitou:** o pedido natural, e o que ele imaginou — perguntar à IA o

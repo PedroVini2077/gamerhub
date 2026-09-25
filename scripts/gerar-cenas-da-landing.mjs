@@ -45,12 +45,38 @@ const DESTINO = 'src/assets/landing/cenas';
 const LARGURAS_LARGAS = [1600, 1200, 828];
 const LARGURAS_ALTAS = [828, 620, 420];
 
-/** As sete cenas. Cada nome existe nas DUAS pastas de referência. */
+/**
+ * `[26/09]` AS CINCO PLACAS DE AMBIENTE. Cada nome existe nas DUAS pastas.
+ *
+ * ── O que mudou, e é a ideia DELE ─────────────────────────────────────────
+ *
+ * Eram **oito cenas, uma por seção**, e seis delas desenhavam a interface do
+ * produto por dentro — com a barra lateral e o conteúdo daquela feature. Ele
+ * viu o problema antes de eu resistir: *"já já nós vamos tirar todas essas
+ * artes e criar algo mais global, pq ficar criando artes toda hora não vai
+ * dar"*.
+ *
+ * Ele tinha razão por dois motivos que se somam:
+ *
+ *   ESCALA     seção nova custava DUAS composições novas (larga e retrato).
+ *              O News, em 25/09, custou exatamente isso no meio da sessão.
+ *   VALIDADE   arte que desenha a interface envelhece no próximo redesenho —
+ *              a landing passaria a mostrar um site que não existe mais.
+ *
+ * ── O que entrou no lugar, e o que ele disse junto ────────────────────────
+ *
+ * Cinco placas de **ambientação pura**: rocha, cristal, neon, fenda. Nenhuma
+ * desenha tela, botão, post ou número. Oito seções mapeiam nelas
+ * (`lib/cenasDaLanding.js`), e seção nova passa a custar **zero arte**.
+ *
+ * A palavra dele: *"essas imagens são apenas uma ambientação... vc vai
+ * trabalhar bastante com animações e SVG daqui pra frente"*. É por isso que a
+ * repetição de placa entre seções não é defeito aqui: o que diferencia uma
+ * seção da outra deixou de ser o fundo e passou a ser a camada que eu
+ * construo por cima — e essa não pesa em KB de imagem.
+ */
 const CENAS = [
-  '1-hero', '2-feed', '3-comunidade', '4-keys', '5-ranks', '6-lives', '7-cta',
-  // `[25/09]` A cena do GamerHub News. A arte veio dele, nas duas composições
-  // — larga e retrato —, como as outras sete.
-  '8-news',
+  '1-convergencia', '2-campo', '3-fluxo', '4-fratura', '5-marca',
 ];
 
 /** Qualidade. 0,80 num fundo escuro e detalhado é indistinguível de 0,92. */
@@ -108,6 +134,6 @@ if (faltando.length) {
   process.exit(1);
 }
 
-console.log(`\n  ${CENAS.length} cenas x 6 arquivos = ${Math.round(total / 1024)} kB no total.`);
+console.log(`\n  ${CENAS.length} placas x 6 arquivos = ${Math.round(total / 1024)} kB no total.`);
 console.log('  O visitante NÃO baixa tudo: o `srcset` escolhe um por cena, e as');
 console.log('  cenas de baixo só chegam quando ele rola até elas.\n');

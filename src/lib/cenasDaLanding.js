@@ -1,87 +1,92 @@
-import hero1600 from '../assets/landing/cenas/1-hero-larga-1600.webp';
-import hero1200 from '../assets/landing/cenas/1-hero-larga-1200.webp';
-import hero828 from '../assets/landing/cenas/1-hero-larga-828.webp';
-import feed1600 from '../assets/landing/cenas/2-feed-larga-1600.webp';
-import feed1200 from '../assets/landing/cenas/2-feed-larga-1200.webp';
-import feed828 from '../assets/landing/cenas/2-feed-larga-828.webp';
-import comunidade1600 from '../assets/landing/cenas/3-comunidade-larga-1600.webp';
-import comunidade1200 from '../assets/landing/cenas/3-comunidade-larga-1200.webp';
-import comunidade828 from '../assets/landing/cenas/3-comunidade-larga-828.webp';
-import keys1600 from '../assets/landing/cenas/4-keys-larga-1600.webp';
-import keys1200 from '../assets/landing/cenas/4-keys-larga-1200.webp';
-import keys828 from '../assets/landing/cenas/4-keys-larga-828.webp';
-import ranks1600 from '../assets/landing/cenas/5-ranks-larga-1600.webp';
-import ranks1200 from '../assets/landing/cenas/5-ranks-larga-1200.webp';
-import ranks828 from '../assets/landing/cenas/5-ranks-larga-828.webp';
-import lives1600 from '../assets/landing/cenas/6-lives-larga-1600.webp';
-import lives1200 from '../assets/landing/cenas/6-lives-larga-1200.webp';
-import lives828 from '../assets/landing/cenas/6-lives-larga-828.webp';
-import news1600 from '../assets/landing/cenas/8-news-larga-1600.webp';
-import news1200 from '../assets/landing/cenas/8-news-larga-1200.webp';
-import news828 from '../assets/landing/cenas/8-news-larga-828.webp';
-import cta1600 from '../assets/landing/cenas/7-cta-larga-1600.webp';
-import cta1200 from '../assets/landing/cenas/7-cta-larga-1200.webp';
-import cta828 from '../assets/landing/cenas/7-cta-larga-828.webp';
+import conv1600 from '../assets/landing/cenas/1-convergencia-larga-1600.webp';
+import conv1200 from '../assets/landing/cenas/1-convergencia-larga-1200.webp';
+import conv828 from '../assets/landing/cenas/1-convergencia-larga-828.webp';
+import campo1600 from '../assets/landing/cenas/2-campo-larga-1600.webp';
+import campo1200 from '../assets/landing/cenas/2-campo-larga-1200.webp';
+import campo828 from '../assets/landing/cenas/2-campo-larga-828.webp';
+import fluxo1600 from '../assets/landing/cenas/3-fluxo-larga-1600.webp';
+import fluxo1200 from '../assets/landing/cenas/3-fluxo-larga-1200.webp';
+import fluxo828 from '../assets/landing/cenas/3-fluxo-larga-828.webp';
+import fratura1600 from '../assets/landing/cenas/4-fratura-larga-1600.webp';
+import fratura1200 from '../assets/landing/cenas/4-fratura-larga-1200.webp';
+import fratura828 from '../assets/landing/cenas/4-fratura-larga-828.webp';
+import marca1600 from '../assets/landing/cenas/5-marca-larga-1600.webp';
+import marca1200 from '../assets/landing/cenas/5-marca-larga-1200.webp';
+import marca828 from '../assets/landing/cenas/5-marca-larga-828.webp';
 
-import heroA828 from '../assets/landing/cenas/1-hero-alta-828.webp';
-import heroA620 from '../assets/landing/cenas/1-hero-alta-620.webp';
-import heroA420 from '../assets/landing/cenas/1-hero-alta-420.webp';
-import feedA828 from '../assets/landing/cenas/2-feed-alta-828.webp';
-import feedA620 from '../assets/landing/cenas/2-feed-alta-620.webp';
-import feedA420 from '../assets/landing/cenas/2-feed-alta-420.webp';
-import comunidadeA828 from '../assets/landing/cenas/3-comunidade-alta-828.webp';
-import comunidadeA620 from '../assets/landing/cenas/3-comunidade-alta-620.webp';
-import comunidadeA420 from '../assets/landing/cenas/3-comunidade-alta-420.webp';
-import keysA828 from '../assets/landing/cenas/4-keys-alta-828.webp';
-import keysA620 from '../assets/landing/cenas/4-keys-alta-620.webp';
-import keysA420 from '../assets/landing/cenas/4-keys-alta-420.webp';
-import ranksA828 from '../assets/landing/cenas/5-ranks-alta-828.webp';
-import ranksA620 from '../assets/landing/cenas/5-ranks-alta-620.webp';
-import ranksA420 from '../assets/landing/cenas/5-ranks-alta-420.webp';
-import livesA828 from '../assets/landing/cenas/6-lives-alta-828.webp';
-import livesA620 from '../assets/landing/cenas/6-lives-alta-620.webp';
-import livesA420 from '../assets/landing/cenas/6-lives-alta-420.webp';
-import newsA828 from '../assets/landing/cenas/8-news-alta-828.webp';
-import newsA620 from '../assets/landing/cenas/8-news-alta-620.webp';
-import newsA420 from '../assets/landing/cenas/8-news-alta-420.webp';
-import ctaA828 from '../assets/landing/cenas/7-cta-alta-828.webp';
-import ctaA620 from '../assets/landing/cenas/7-cta-alta-620.webp';
-import ctaA420 from '../assets/landing/cenas/7-cta-alta-420.webp';
+import convA828 from '../assets/landing/cenas/1-convergencia-alta-828.webp';
+import convA620 from '../assets/landing/cenas/1-convergencia-alta-620.webp';
+import convA420 from '../assets/landing/cenas/1-convergencia-alta-420.webp';
+import campoA828 from '../assets/landing/cenas/2-campo-alta-828.webp';
+import campoA620 from '../assets/landing/cenas/2-campo-alta-620.webp';
+import campoA420 from '../assets/landing/cenas/2-campo-alta-420.webp';
+import fluxoA828 from '../assets/landing/cenas/3-fluxo-alta-828.webp';
+import fluxoA620 from '../assets/landing/cenas/3-fluxo-alta-620.webp';
+import fluxoA420 from '../assets/landing/cenas/3-fluxo-alta-420.webp';
+import fraturaA828 from '../assets/landing/cenas/4-fratura-alta-828.webp';
+import fraturaA620 from '../assets/landing/cenas/4-fratura-alta-620.webp';
+import fraturaA420 from '../assets/landing/cenas/4-fratura-alta-420.webp';
+import marcaA828 from '../assets/landing/cenas/5-marca-alta-828.webp';
+import marcaA620 from '../assets/landing/cenas/5-marca-alta-620.webp';
+import marcaA420 from '../assets/landing/cenas/5-marca-alta-420.webp';
 
 /**
- * As artes das cenas da landing, numa fonte só.
+ * As artes da landing, numa fonte só.
  *
- * ── Por que este arquivo existe ─────────────────────────────────────────────
+ * ── `[26/09]` DE OITO CENAS PARA CINCO PLACAS — a ideia foi dele ───────────
  *
- * `[12/09]` Cada cena tem **três** arquivos (1600, 1200 e 828 px) e um `srcset`
- * que os amarra. Escrito à mão dentro de cada seção, isso seria a mesma string
- * repetida sete vezes — e a sétima ia divergir. Aqui a `Landing` pede a cena
- * pelo nome e recebe o `src` e o `srcSet` prontos.
+ * Eram oito artes, uma por seção, e **seis delas desenhavam a interface do
+ * produto**: barra lateral, card, contador, o conteúdo daquela feature. Ele
+ * viu o problema antes de eu resistir a ele: *"ficar criando artes toda hora
+ * não vai dar"*.
  *
- * ── De onde os arquivos vêm ─────────────────────────────────────────────────
+ * Os dois custos, medidos:
+ *
+ * | | antes | agora |
+ * | --- | --- | --- |
+ * | arquivos | 48 | **30** |
+ * | peso no repositório | 4.551 kB | **2.508 kB** (−45%) |
+ * | custo de uma seção nova | 2 composições feitas à mão | **zero** |
+ *
+ * E o custo que não se mede em byte: arte que desenha a interface **envelhece
+ * no próximo redesenho**, e a landing passa a mostrar um site que não existe
+ * mais. As placas de hoje não desenham tela nenhuma — rocha, cristal, neon,
+ * fenda —, então não há o que envelhecer nelas.
+ *
+ * ── Por que REPETIR placa entre seções não é defeito aqui ──────────────────
+ *
+ * Quando essa saída foi levantada, eu mesmo anotei o risco: *"as cenas ficam
+ * parecidas entre si"*. A resposta é dele, e é de desenho, não de arte:
+ * *"essas imagens são apenas uma ambientação... vc vai trabalhar bastante com
+ * animações e SVG daqui pra frente"*.
+ *
+ * O que separa uma seção da outra deixou de ser o fundo e passou a ser a
+ * camada por cima — sobreposição, movimento, SVG. Essa camada não pesa em KB
+ * de imagem e não envelhece junto com o produto, porque ela **é** o produto.
+ *
+ * A única regra que o mapa abaixo respeita: **nenhuma placa se repete em
+ * seções vizinhas**. Na ordem da página — hero · feed · news · mural · lives ·
+ * keys · ranks · cta — sai 1·3·2·4·3·2·4·5. Placa repetida na rolagem seguida
+ * é o que faz a página parecer travada.
+ *
+ * ── De onde os arquivos vêm ────────────────────────────────────────────────
  *
  * De `npm run cenas`, que os deriva das referências em
- * `docs/identidade/referencias/cenas/`. **Nada aqui é editado à mão** — trocar
- * uma arte é trocar a referência e rodar o gerador, exatamente como nos ícones.
- *
- * ── As medidas ──────────────────────────────────────────────────────────────
- *
- * As artes originais são 1672×940. `LARGURA`/`ALTURA` abaixo existem para o
- * `<img>` reservar o espaço antes de a imagem chegar — sem elas a página
- * empurra o conteúdo para baixo quando cada cena carrega, que é o pior tipo de
- * salto porque acontece enquanto a pessoa está lendo.
+ * `docs/identidade/referencias/cenas/` e `…/cenas-retrato/`. **Nada aqui é
+ * editado à mão** — trocar uma placa é trocar a referência e rodar o gerador.
  */
 
-/** A arte LARGA (16:9), do computador. */
+/** A placa LARGA (16:9), do computador. */
 export const LARGURA = 1672;
 export const ALTURA = 940;
 
 /**
- * A arte de RETRATO, do celular — `[12/09]`.
+ * A placa de RETRATO, do celular — `[12/09]`.
  *
- * Ela não é um recorte da larga: é uma **composição própria**, que o dono
- * gerou depois de a medição mostrar que espremer 16:9 numa tela em pé deixa o
- * texto da interface com 2–3 px. Corte não escolhe enquadramento; ele só
+ * Ela não é um recorte da larga: é uma **composição própria**. A medição que
+ * decidiu isso mostrou que espremer 16:9 numa tela em pé deixava o texto da
+ * interface desenhada com 2–3 px. Hoje não há interface desenhada, mas a razão
+ * continua valendo para a composição: corte não escolhe enquadramento, só
  * descarta o que sobra.
  */
 export const LARGURA_ALTA = 940;
@@ -100,18 +105,34 @@ const par = (g, m, p, a828, a620, a420) => ({
   },
 });
 
+/** As cinco placas, pelo que cada uma É — não pela seção onde ela aparece. */
+export const PLACAS = {
+  convergencia: par(conv1600, conv1200, conv828, convA828, convA620, convA420),
+  campo:        par(campo1600, campo1200, campo828, campoA828, campoA620, campoA420),
+  fluxo:        par(fluxo1600, fluxo1200, fluxo828, fluxoA828, fluxoA620, fluxoA420),
+  fratura:      par(fratura1600, fratura1200, fratura828, fraturaA828, fraturaA620, fraturaA420),
+  marca:        par(marca1600, marca1200, marca828, marcaA828, marcaA620, marcaA420),
+};
+
 /**
- * Mapa EXPLÍCITO, e não montagem por string: cena que ninguém mapeou devolve
- * `undefined` e estoura na hora, em vez de virar um `<img>` sem `src` — que o
- * navegador desenha como um retângulo vazio, sem erro nenhum (§4).
+ * Mapa EXPLÍCITO de seção para placa.
+ *
+ * Cena que ninguém mapeou devolve `undefined` e estoura na hora, em vez de
+ * virar um `<img>` sem `src` — que o navegador desenha como um retângulo
+ * vazio, sem erro nenhum (§4). A trava `cenasDaLanding.test.js` confere que
+ * toda seção da página tem entrada aqui.
+ *
+ * O motivo de cada escolha está escrito porque "qual placa vai em qual seção"
+ * é a única decisão de gosto deste arquivo — e decisão de gosto sem motivo
+ * escrito é a que alguém reverte por engano.
  */
 export const CENAS = {
-  hero: par(hero1600, hero1200, hero828, heroA828, heroA620, heroA420),
-  feed: par(feed1600, feed1200, feed828, feedA828, feedA620, feedA420),
-  comunidade: par(comunidade1600, comunidade1200, comunidade828, comunidadeA828, comunidadeA620, comunidadeA420),
-  keys: par(keys1600, keys1200, keys828, keysA828, keysA620, keysA420),
-  ranks: par(ranks1600, ranks1200, ranks828, ranksA828, ranksA620, ranksA420),
-  lives: par(lives1600, lives1200, lives828, livesA828, livesA620, livesA420),
-  news: par(news1600, news1200, news828, newsA828, newsA620, newsA420),
-  cta: par(cta1600, cta1200, cta828, ctaA828, ctaA620, ctaA420),
+  hero:       PLACAS.convergencia, // tudo converge para um ponto: é o hub
+  feed:       PLACAS.fluxo,        // fitas correndo — o que passa
+  news:       PLACAS.campo,        // campo denso de fragmentos: muitas fontes
+  comunidade: PLACAS.fratura,      // estilhaços grandes e próximos: gente perto
+  lives:      PLACAS.fluxo,        // o fluxo, agora ao vivo
+  keys:       PLACAS.campo,        // achar a peça no meio do campo
+  ranks:      PLACAS.fratura,      // a escalada, em arestas
+  cta:        PLACAS.marca,        // a marca fecha
 };

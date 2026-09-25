@@ -1,5 +1,41 @@
 # A landing como EXPERIÊNCIA — o briefing do dono, `[11/09]`
 
+> ## `[26/09]` AS OITO CENAS DESTE BRIEFING FORAM SUBSTITUÍDAS — e o briefing FICA
+>
+> **Nada abaixo foi reescrito, de propósito.** Este documento é o pedido de
+> 11/09 e o que ele produziu; apagá-lo apagaria o porquê de as coisas terem
+> sido daquele jeito. O que mudou está aqui em cima.
+>
+> **O que mudou.** As oito cenas — uma por feature, com a interface do produto
+> desenhada dentro — deram lugar a **cinco placas de ambiente**, sem tela,
+> botão, post nem número. A ideia foi dele: *"ficar criando artes toda hora não
+> vai dar"*.
+>
+> | | antes | agora |
+> | --- | --- | --- |
+> | arquivos | 48 | **30** |
+> | peso | 4.551 kB | **2.508 kB** (−45%) |
+> | seção nova | 2 composições à mão | **zero arte** |
+>
+> **Os dois motivos, e o segundo é o que pesa.** Escala: cada seção nova custava
+> duas composições (o News, em 25/09, custou exatamente isso). E validade: arte
+> que desenha a interface **envelhece no próximo redesenho**, e a landing passa
+> a mostrar um site que não existe mais.
+>
+> **O mapa de hoje** (`src/lib/cenasDaLanding.js`): `1-convergencia` → hero ·
+> `3-fluxo` → feed e lives · `2-campo` → news e keys · `4-fratura` → mural e
+> ranks · `5-marca` → CTA. Nenhuma placa se repete em seções vizinhas.
+>
+> **Por que repetir placa não é defeito.** Quando levantei essa saída, anotei o
+> risco de *"as cenas ficarem parecidas entre si"*. A resposta é dele:
+> *"essas imagens são apenas uma ambientação... vc vai trabalhar bastante com
+> animações e SVG daqui pra frente"*. O que separa uma seção da outra deixou de
+> ser o fundo.
+>
+> **A direção visual abaixo continua valendo** — paleta, fenda, rocha, neon. O
+> que saiu foi desenhar o produto dentro da arte.
+
+
 > **Por que este arquivo existe, e por que é separado.** Ordem dele: *"vou te
 > mandar um prompt... grava tudo e vamos implementar com o que temos por agora...
 > vamos só estruturar antes de fazer"*. Conversa morre com a sessão.

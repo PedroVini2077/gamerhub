@@ -19,6 +19,38 @@
 
 ---
 
+### `[26/09]` As artes da landing: 48 arquivos → 30, e seção nova passa a custar ZERO
+
+**Medido** com `du` e `ls`, antes e depois:
+
+| | antes | depois |
+| --- | --- | --- |
+| arquivos em `src/assets/landing/cenas/` | 48 | **30** |
+| peso no repositório | 4.551 kB | **2.508 kB** (−45%) |
+| composições por seção nova | 2 (larga + retrato), feitas à mão | **0** |
+
+**O que mudou.** Eram oito cenas, uma por feature, e **seis delas desenhavam a
+interface do produto**. Viraram **cinco placas de ambiente** — rocha, cristal,
+neon, fenda —, e as oito seções mapeiam nelas (`src/lib/cenasDaLanding.js`).
+
+**O que este número NÃO diz, e é a parte honesta.** O visitante nunca baixou os
+4.551 kB: o `srcset` escolhe **um** arquivo por cena e as de baixo são `lazy`. A
+economia para quem visita é bem menor que 45% — o ganho grande é de
+repositório, de manutenção e de validade. O orçamento do carregamento inicial
+não se moveu de forma relevante (seguiu em 644,2 kB de 760), porque o hero
+sempre baixou uma arte só.
+
+**O custo que não se mede em byte, e foi o que decidiu.** Arte que desenha a
+interface envelhece no próximo redesenho, e a landing passa a anunciar um site
+que não existe mais. As placas de hoje não desenham tela nenhuma — não há o que
+envelhecer nelas.
+
+**Conferido num navegador de verdade**, nas duas larguras: 8/8 artes carregam, e
+o `<picture>` serve `larga-1600` em 1440 px e `alta-420` em 390 px — a troca de
+composição por aparelho continua de pé.
+
+---
+
 ### `[25/09]` O WYSIWYG que ele pediu custa **46×** o editor de hoje — medido
 
 Pedido dele, depois de usar o editor rico: *"quando clico no negrito, aparece os

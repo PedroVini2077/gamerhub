@@ -500,6 +500,12 @@ src/
     │                      # com links em aba nova. Três caixinhas separadas
     │                      # treinam a pessoa a clicar sem ler
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
+    │   └── (cenas/)       # `[26/09]` SobreposicaoDoNews — a camada viva da
+    │                      # cena do News, que era a ÚNICA sem uma. Encena a
+    │                      # promessa do texto, nessa ordem: três fontes ->
+    │                      # a matéria com elas presas -> "3 fontes conferidas"
+    │                      # -> rascunho · revisão · NO AR. Por tempo, não por
+    │                      # rolagem: quem rola para trás não "desapura"
     ├── news/              # `[25/09]` CartaoDeNoticia — o cartão da lista do
     │                      # GamerHub News. Encolhe quando o artigo não tem
     │                      # capa, em vez de mostrar buraco: layout que exige

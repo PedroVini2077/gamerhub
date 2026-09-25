@@ -16,9 +16,12 @@ const PASTA = 'src/components/landing/cenas';
 const FONTE = (c) => readFileSync(c, 'utf8');
 const LANDING = FONTE('src/pages/Landing.jsx');
 
-/** As cinco cenas e o arquivo de cada uma. */
+/** As cenas com sobreposição e o arquivo de cada uma. */
 const CENAS = {
   feed: `${PASTA}/SobreposicaoDoFeed.jsx`,
+  // `[26/09]` O News era a ÚNICA cena sem camada viva — meia tela de ambiente
+  // vazia ao lado do título, lendo como anúncio de algo que não existe.
+  news: `${PASTA}/SobreposicaoDoNews.jsx`,
   comunidade: `${PASTA}/SobreposicaoDaComunidade.jsx`,
   lives: `${PASTA}/SobreposicaoDasLives.jsx`,
   keys: `${PASTA}/SobreposicaoDasKeys.jsx`,
@@ -30,13 +33,24 @@ describe('a varredura não pode ficar vazia', () => {
     // Sem isto, renomear a pasta deixaria TODOS os testes abaixo verdes para
     // sempre, lendo arquivo nenhum. É a mesma vacuidade que `varrerFontes.js`
     // fecha nas outras travas do projeto.
+    // O número vem de `CENAS`, e não escrito à mão: assim a trava continua
+    // sendo "toda sobreposição da pasta está registrada aqui" — que é o que
+    // ela quer dizer — em vez de uma contagem que alguém sobe junto com o
+    // arquivo novo sem registrar nada. `[26/09]` Era `toBe(5)` literal, e o
+    // News quebrou a conta.
     const arquivos = readdirSync(PASTA).filter((n) => n.startsWith('Sobreposicao'));
+    const registradas = Object.keys(CENAS).length;
     expect(
       arquivos.length,
-      `Esperava 5 sobreposições em ${PASTA}, achei ${arquivos.length}.\n`
+      `Ha ${arquivos.length} sobreposicoes em ${PASTA} e ${registradas} registradas `
+      + 'no mapa `CENAS` deste arquivo.\n'
+      + '  Sobreposicao fora do mapa nao e testada por nenhuma das travas abaixo:\n'
+      + '  ela pode animar filtro caro, ignorar `prefers-reduced-motion` e ficar\n'
+      + '  orfa sem nada acusar.\n'
       + '  Se a pasta mudou de lugar, ajuste esta trava — senão ela aprova tudo\n'
       + '  sem olhar nada.',
-    ).toBe(5);
+    ).toBe(registradas);
+    expect(registradas, 'o mapa `CENAS` ficou vazio').toBeGreaterThanOrEqual(5);
   });
 });
 
@@ -210,7 +224,10 @@ describe('o custo e a acessibilidade', () => {
     // As sobreposições por TEMPO precisam checar `useReducedMotion` elas
     // mesmas; as conduzidas por rolagem recebem um progresso congelado em 1 do
     // `CenaPresa`, e por isso não precisam checar nada.
-    for (const nome of ['feed', 'lives']) {
+    // `[26/09]` O News entra nesta lista: ele é conduzido por TEMPO, como o
+    // feed. Quem é conduzido por rolagem recebe o progresso congelado da
+    // `CenaPresa` e não precisa checar nada.
+    for (const nome of ['feed', 'lives', 'news']) {
       expect(
         FONTE(CENAS[nome]).includes('useReducedMotion'),
         `A sobreposição de "${nome}" deixou de olhar \`prefers-reduced-motion\`.\n`

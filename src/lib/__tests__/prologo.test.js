@@ -183,8 +183,12 @@ describe('o mecanismo', () => {
     // não era renderizada em lugar nenhum. Nada acusa uma arte órfã.
     //
     // `[18/09]` O experimento do portal em SVG tirou a arte do hero de cena — e
-    // isso deixa as SEIS variantes de `1-hero-*` órfãs no repositório, que é
+    // isso deixa as SEIS variantes da placa do hero órfãs no repositório, que é
     // exatamente o que esta trava existe para impedir.
+    //
+    // `[26/09]` Os arquivos passaram a se chamar `1-convergencia-*`: as oito
+    // cenas por feature viraram cinco placas de ambiente. A trava não muda — o
+    // que ela vigia é `CENAS.hero` ter destino, não o nome do arquivo.
     //
     // A saída NÃO é afrouxar: é exigir que a cena exista de alguma forma E que
     // a arte sem uso esteja registrada como pendência. Enquanto o experimento
@@ -206,7 +210,7 @@ describe('o mecanismo', () => {
       expect(
         /1-hero|arte do hero|CENAS\.hero/.test(backlog),
         'A arte do hero saiu de cena e NÃO está registrada no `BACKLOG.md`.\n\n'
-        + '  As seis variantes de `1-hero-*` continuam no repositório sem\n'
+        + '  As seis variantes da placa do hero continuam no repositório sem\n'
         + '  ninguém mostrá-las — e arte órfã foi o defeito que originou esta\n'
         + '  trava. Enquanto o experimento do portal durar, isso precisa estar\n'
         + '  escrito; quando ele decidir, ou a arte volta, ou os arquivos saem.',
