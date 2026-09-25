@@ -11,6 +11,27 @@
 
 ---
 
+## `[26/09]` Perguntar a notícia ao MODELO — DESCARTADO, e não por causa de plano
+
+**O que se cogitou:** o pedido natural, e o que ele imaginou — perguntar à IA o
+que está acontecendo em games hoje e receber as pautas.
+
+**Por que não dá:** um LLM não tem internet e tem data de corte. A resposta
+seria treino velho apresentado como novidade, ou invenção. E invenção aqui não
+degrada de forma visível: sai um texto plausível, com nome de estúdio e data,
+que só é desmentido depois de publicado.
+
+**Não é limitação do plano grátis.** O modelo pago tem exatamente o mesmo
+problema; ferramenta de busca embutida resolveria em parte, e aí a fonte
+passaria a ser "o que o buscador achou", que é justamente a apuração que
+ninguém conferiu.
+
+**O que entrou no lugar:** RSS das fontes que a equipe cadastra, e o modelo
+limitado a ordenar e sugerir ângulo em cima do que foi coletado. O fato tem
+endereço; o modelo tem opinião editorial. Ver `docs/FUNCIONALIDADES.md`.
+
+---
+
 ## Ferramental e infraestrutura — mudou de arquivo
 
 As decisões sobre **ferramenta** — CI, Vercel e os deploys, Sentry,

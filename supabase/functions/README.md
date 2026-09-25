@@ -26,6 +26,7 @@ tempo. Um PR teria mostrado as duas linhas.
 | `responder-contato/` | não* | `[03/09]` A equipe responde uma mensagem do formulário de contato, e o e-mail sai com a cara do site. A checagem de equipe é do BANCO (`is_staff()` nas duas RPCs), chamadas com a credencial de quem pediu |
 | `verify-contact/` | não* | `[03/09]` A única porta do formulário público de contato: confere o token do Cloudflare Turnstile e só então chama a RPC com `service_role` |
 | `redigir-materia/` | não* | **`[25/09]`** Rascunha matéria do GamerHub News a partir das NOTAS do editor, pela Groq. Exige `is_staff()`, **não escreve no banco** — devolve o rascunho e quem aplica é o clique de quem assina. Sem o segredo `GROQ_API_KEY` responde `503` dizendo isso |
+| `radar-de-pautas/` | não* | **`[26/09]`** Lê o RSS das fontes cadastradas, guarda em `news_items_raw` e pede ao modelo para ordenar o que vale virar matéria. Exige `is_staff()`. **Endereço que o modelo cita e que não veio dos feeds é descartado** — e o descarte grita |
 | `delete-user/` | não* | **`[25/09]` corrigido:** esta linha dizia **sim**. O `supabase/config.toml` e a função no ar dizem `false`, medidos hoje — ela é chamada do navegador e o preflight `OPTIONS` morreria no gateway. Quem valida é o `auth.getUser()` dela. Exclusão da própria conta |
 | `cleanup-orphans/` | sim | Aposentada — limpeza de órfãos do storage, já executada em 06/2026 |
 

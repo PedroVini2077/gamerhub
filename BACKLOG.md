@@ -285,6 +285,36 @@ produção na Groq, conferido em 25/09.
 
 ---
 
+### 🟠 `[26/09]` `portas-fechadas.mjs` ainda não bate na `radar-de-pautas`
+
+**Por que ficou de fora, e não é esquecimento.** O roteiro bate na **produção**,
+e a função só existe lá depois que a `main` a implanta — o CI do próprio PR que
+a cria receberia `404`. Aceitar `[401, 404]` para resolver isso enfraqueceria o
+portão para sempre.
+
+**O que fazer:** no PRÓXIMO PR desta sessão, acrescentar o caso
+`radar-de-pautas com token inventado -> 401`, igual ao da `redigir-materia`.
+Registrado aqui porque a única alternativa era confiar na minha memória.
+
+---
+
+### 🔵 `[26/09]` Gerenciar as fontes do radar pela TELA
+
+Hoje ligar, desligar e acrescentar fonte é `UPDATE`/`INSERT` no banco — o passo
+a passo, **com a conferência de `curl` que vem antes**, está no
+`docs/OPERACAO.md`.
+
+**Por que não entrou agora:** é um CRUD inteiro (listar, criar, validar a URL,
+ativar/desativar) e o radar já funciona sem ele com 12 fontes. Trocar uma fonte
+é coisa de mês, não de dia.
+
+**O que a tela precisaria fazer e o banco não faz sozinho:** bater no feed antes
+de salvar. Fonte que responde 403 entra na lista, consome uma requisição por
+clique e contribui com zero — e isso não gera erro nenhum, só uma linha no
+"não responderam".
+
+---
+
 ### 🔵 `[25/09]` A procedência da IA é AUTODECLARADA, não registrada
 
 `news_articles.redigido_com_ia` é marcado pelo painel quando o editor aplica o
@@ -2684,10 +2714,10 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->161<!--/n--> arq ·
-  <!--n:src.lib.linhas-->19.243<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->24<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.434<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->164<!--/n--> arq ·
+  <!--n:src.lib.linhas-->19.695<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->25<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.
