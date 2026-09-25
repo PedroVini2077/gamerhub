@@ -39,7 +39,7 @@ import NotFound from './pages/NotFound';
 
 // As páginas sob demanda moram em `paginasLazy.js` — ver o porquê lá.
 import {
-  Landing, Home, Sobre, Privacidade, Regras, Contato, Termos, PostPage, MuralPage, Community, Keys, Profile, Admin, Settings, UserProfile, Lives, Ranks, Owner, Busca
+  Landing, Home, Sobre, Privacidade, Regras, Contato, Termos, PostPage, MuralPage, Community, Keys, Profile, Admin, Settings, UserProfile, Lives, Ranks, Owner, Busca, News, NewsArtigo
 } from './paginasLazy';
 
 function PageLoader() {
@@ -224,6 +224,11 @@ function AppRoutes() {
       <Route path="/lives/:id" element={<RequireAuth><Layout><FeatureGate flag="feature_lives"><Lives /></FeatureGate></Layout></RequireAuth>} />
       <Route path="/ranks" element={<RequireAuth><Layout><Ranks /></Layout></RequireAuth>} />
       <Route path="/busca" element={<RequireAuth><Layout><Busca /></Layout></RequireAuth>} />
+      {/* `[25/09]` O News é SÓ LOGADO — decisão dele em 24/09. Por isso ele
+          precisa ser anunciado na landing: sem isso nasce invisível para
+          quem ainda não tem conta. */}
+      <Route path="/news" element={<RequireAuth><Layout><News /></Layout></RequireAuth>} />
+      <Route path="/news/:slug" element={<RequireAuth><Layout><NewsArtigo /></Layout></RequireAuth>} />
       <Route path="/owner" element={<RequireAuth><Layout><Owner /></Layout></RequireAuth>} />
       <Route path="*" element={<NotFound />} />
       </Routes>

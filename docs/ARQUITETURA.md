@@ -211,6 +211,15 @@ src/
 │   ├── areasDaBusca.js    # `[24/09]` As abas da busca (Tudo · Posts · Pessoas).
 │   │                      # Lista para a tela não saber quantas existem —
 │   │                      # somar notícias/lives/jogos é somar uma linha
+│   ├── news/              # `[25/09]` O vocabulário FECHADO do GamerHub News.
+│   │   ├── editorias.js   #   As 9 editorias: slug -> rótulo e cor. Espelhada
+│   │   │                  #   do `CHECK` do banco por uma trava, nos DOIS
+│   │   │                  #   sentidos — editoria que o banco aceita e a tela
+│   │   │                  #   não conhece apareceria SEM RÓTULO, sem erro
+│   │   └── estadosDoArtigo.js # Os 5 estados e QUEM pode levar a cada um.
+│   │                      #   Não é a segurança (quem impede é o trigger no
+│   │                      #   banco) — é o que evita oferecer o botão que o
+│   │                      #   servidor vai recusar
 │   ├── formatacao/        # `[25/09]` A formatação de texto do usuário.
 │   │   ├── analisar.js    #   O analisador: texto -> ÁRVORE de nós. Nunca HTML.
 │   │                      #   `temFormatacao()` decide se a prévia aparece, e é
@@ -335,6 +344,11 @@ src/
 │   │                      # recusava sempre. Hoje as coordenadas vão no
 │   │                      # metadata e quem grava é o `handle_new_user`
 │   ├── roleNominationService.js # Indicação, estágio e rebaixamento de cargo
+│   ├── newsService.js     # `[25/09]` Leitura do News. SEM RPC de propósito: a
+│   │                      #   policy já expressa "artigo visível", e uma RPC
+│   │                      #   seria uma segunda definição. A lista NÃO traz
+│   │                      #   `conteudo` — 30 corpos para desenhar 30 cartões
+│   │                      #   é egress puro. Teto de 30, e a tela DIZ o teto
 │   ├── buscaService.js    # `[24/09]` A busca: chama as RPCs `buscar_posts` e
 │   │                      # `buscar_pessoas`, que devolvem só IDS, e monta as
 │   │                      # linhas com o mesmo POST_SELECT do feed
@@ -378,6 +392,14 @@ src/
 │   ├── Community.jsx      # Mural da comunidade
 │   ├── Keys.jsx           # Keys grátis & promoções
 │   ├── Lives.jsx          # Lista de lives + sub-tabs + player + chat + moderação
+│   ├── News.jsx           # `[25/09]` `/news` — a lista, com filtro por editoria
+│   │                      #   na URL. Editoria inventada cai para "Tudo" em vez
+│   │                      #   de virar lista vazia, que pareceria verdade
+│   ├── NewsArtigo.jsx     # `[25/09]` `/news/:slug` — o artigo. O corpo passa
+│   │                      #   pelo MESMO `TextoFormatado` do post (nunca HTML,
+│   │                      #   nem para texto da equipe) e a fonte externa por
+│   │                      #   `safeExternalUrl`. Rascunho abre para a equipe
+│   │                      #   COM tarja dizendo que não está no ar
 │   ├── Busca.jsx          # `[24/09]` `/busca?q=` — o termo mora na URL para o
 │   │                      # resultado ser recarregável e compartilhável
 │   ├── Ranks.jsx          # Explicação do sistema de XP/ranks
@@ -437,6 +459,10 @@ src/
     │                      # com links em aba nova. Três caixinhas separadas
     │                      # treinam a pessoa a clicar sem ler
     ├── feed/              # PostCard, PostForm, CommentSection, CommentCard
+    ├── news/              # `[25/09]` CartaoDeNoticia — o cartão da lista do
+    │                      # GamerHub News. Encolhe quando o artigo não tem
+    │                      # capa, em vez de mostrar buraco: layout que exige
+    │                      # imagem obriga a equipe a inventar uma
     ├── community/         # MuralCard, MuralForm
     ├── keys/              # KeyEditor
     ├── lives/             # LivesList, ChatPanel, ModPanel, LiveGoModal,

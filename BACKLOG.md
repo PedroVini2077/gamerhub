@@ -44,13 +44,30 @@ gerada com `portugues_sem_acento`. **Zero tela.**
 
 | # | Etapa | Estado |
 | --- | --- | --- |
-| 1 | O corte editorial B no banco: `in_review` + publicar só `is_super()` | ⬜ |
-| 2 | `is_owner()` nas oito (5 funções + 3 policies) — decisão dele de hoje | ⬜ |
-| 3 | Service + hook de leitura do News | ⬜ |
-| 4 | `/news` (lista) e `/news/:slug` (artigo) — **só logado** | ⬜ |
-| 5 | O anúncio do News na LANDING — ele decidiu "só logado" em 24/09, e por isso o News **nasce invisível** para quem não tem conta se a landing não o apresentar | ⬜ |
-| 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ⬜ |
-| 7 | Travas: o corte editorial, a rota logada, e o slug | ⬜ |
+| 1 | O corte editorial B no banco: `in_review` + publicar só `is_super()` | ✅ trigger, provado em ROLLBACK 8/8 |
+| 2 | `is_owner()` nas oito (5 funções + 3 policies) | ✅ SEC-054 + SEC-054b |
+| 3 | Service de leitura do News | ✅ `newsService.js`, sem RPC e sem `conteudo` na lista |
+| 4 | `/news` (lista) e `/news/:slug` (artigo) — **só logado** | ✅ |
+| 5 | O anúncio do News na LANDING | ⚠️ **PARCIAL** — ver abaixo |
+| 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ⬜ **é o que falta para o News existir de verdade** |
+| 7 | Travas: vocabulário × banco, rota coberta por e2e | ✅ |
+
+> **A etapa 5 ficou PELA METADE, e é honesto dizer por quê.** O News foi
+> anunciado dentro da cena do feed na landing — uma frase, sem arte nova. O que
+> ele merece é **cena própria**, como Feed, Mural, Lives, Keys e Ranks têm: cada
+> uma tem arte dele e sobreposição própria.
+>
+> Eu **não** produzi essa arte de propósito. A decisão de 25/09 é clara: a arte
+> é dele, a composição é minha — e as duas vezes em que eu tentei produzir arte
+> (3D e ícones) foram descartadas. Fazer de novo seria gastar sessão para jogar
+> fora.
+>
+> **O que eu preciso dele:** a arte da cena do News, no mesmo formato das
+> outras 7. Aí a cena entra em `SECOES` e ganha `#news` na navegação e no rodapé.
+
+> **A etapa 6 é o que falta para o News não ser uma sala vazia.** Hoje existe a
+> tela de ler e ZERO forma de escrever pelo site — um artigo só nasce por SQL.
+> É o próximo bloco.
 
 **Fora deste bloco, decididos hoje e enfileirados depois:** a RPC da wordlist,
 o `pg_trgm`, a rota de publicar (botão "+"), e a fonte da landing.
@@ -2423,10 +2440,10 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->152<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.286<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->21<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->155<!--/n--> arq ·
+  <!--n:src.lib.linhas-->18.597<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->22<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.240<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

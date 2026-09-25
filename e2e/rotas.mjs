@@ -81,6 +81,15 @@ export const ROTAS_LOGADO = [
   // `cicloDoPost`, que busca o post que ele mesmo acabou de publicar.
   { path: '/busca',               nome: 'Busca',          esperado: /Escreva algo para buscar/i },
   { path: `/u/${PERFIL_PUBLICO}`, nome: 'Perfil público', esperado: /./ },
+  // `[25/09]` O News. A lista tem estado vazio determinístico — enquanto a
+  // equipe não publicar nada, é o que TODO mundo vê, então é o caminho que
+  // mais precisa estar de pé.
+  { path: '/news', nome: 'News', esperado: /GamerHub News/i },
+  // O artigo, com um slug que NÃO existe de propósito — mesmo motivo do post
+  // por id inexistente logo abaixo: "não achei" e "ainda carregando" já foram
+  // o mesmo estado neste projeto, e a tela ficou girando para sempre.
+  { path: '/news/slug-que-nao-existe', nome: 'News: artigo inexistente',
+    esperado: /Não achamos esta matéria/i },
   // `[29/08]` A página de um post, com um id que NÃO existe de propósito.
   //
   // O caminho do post encontrado já é exercitado pelo feed (é o mesmo
