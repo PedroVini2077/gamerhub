@@ -293,9 +293,22 @@ Quase todas as funções de mutação sensível são `SECURITY DEFINER` com
   banindo e ocultando conteúdo. Medido, com o valor relido do banco.
 
   `is_staff()`, `is_super()` e `can_moderate_content()` passaram a exigi-la, e
-  com isso **24 policies herdam a regra de uma vez**. Ela tem duas formas, da
-  mesma fonte: a booleana (para RLS, que não levanta exceção) e a
+  com isso **toda policy que as CHAMA herda a regra de uma vez**. Ela tem duas
+  formas, da mesma fonte: a booleana (para RLS, que não levanta exceção) e a
   `exige_operador_ativo()` (para RPC, porque o usuário precisa saber por quê).
+
+  > **⚠️ `[25/09]` Esta linha dizia "24 policies herdam a regra de uma vez", e
+  > a palavra que faltava era CHAMA.** Herda quem chama; 23 policies escreviam
+  > `role_rank(...) >= 2` à mão e **não chamavam nada** — então não herdaram
+  > coisa nenhuma e ficaram seis dias com um admin **banido** passando por elas
+  > (SEC-053).
+  >
+  > A frase não era inofensiva: ela afirmava cobertura que não existia, e é
+  > exatamente o tipo de texto que faz alguém **não ir conferir**. Medido hoje,
+  > depois da correção: **46 de 88** policies chamam `is_staff()`/`is_super()`/
+  > `is_owner()` e herdam a guarda; 6 chamam `operador_ativo()` direto; as
+  > demais não tratam de cargo. **Zero** escrevem hierarquia à mão, e a 6ª
+  > checagem do auditor reprova a primeira que voltar a escrever.
 
   > **O owner é isento, e a razão foi medida:** `role_rank('owner') = 4`, o
   > maior rank não-owner é 2, e `ban_user` exige rank estritamente maior. Logo

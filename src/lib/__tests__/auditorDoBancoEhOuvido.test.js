@@ -78,6 +78,26 @@ const ISENTAS_DO_LITERAL = {
   owner_get_notifications: 'idem',
 };
 
+/**
+ * `[25/09]` SEC-053 — as POLICIES isentas da checagem de hierarquia à mão.
+ *
+ * A 6ª checagem acusa policy que escreve `role_rank(...)` ou um papel literal
+ * em vez de `is_staff()`/`is_super()`/`is_owner()`. Um admin BANIDO passava por
+ * 23 delas — lia a fila, a trilha inteira e escrevia na wordlist.
+ *
+ * Estas três ficam de fora pela MESMA razão das cinco funções acima, e a
+ * decisão é uma só: trocar `role = 'owner'` por `is_owner()` muda semântica
+ * (`rank >= 4` vs `= owner`), e isso é decisão do dono, não limpeza minha.
+ *
+ * Não são brecha: `operador_ativo()` é sempre true para o `owner`, então aqui
+ * não se perde estado de operador nenhum — ao contrário das 23.
+ */
+const POLICIES_ISENTAS = {
+  site_config_owner_delete: "painel do Fundador: `role = 'owner'` literal, troca é decisão de semântica",
+  site_config_owner_insert: 'idem',
+  site_config_owner_update: 'idem',
+};
+
 const PORTAS_PUBLICAS = {
   contagem_de_migrations: 'o portão `espelho-de-migrations` a chama COM A ANON KEY',
   username_disponivel: 'a tela de cadastro roda sem conta',
@@ -85,14 +105,62 @@ const PORTAS_PUBLICAS = {
   contagem_de_achados_de_seguranca: 'o mensageiro do próprio auditor — devolve número, não nome',
 };
 
+/**
+ * `[25/09]` As definições do auditor, em ordem de migration.
+ *
+ * ── O defeito que esta função tinha, e ele já estava NO AR ────────────────
+ *
+ * A marcação era literal: `\$fn\$[\s\S]*?\$fn\$`. A SEC-052 passou a escrever
+ * a função com `$function$` (é o que o `pg_get_functiondef` devolve, e é de lá
+ * que o espelho da migration sai). A partir daquele PR esta trava **parou de
+ * ler o auditor de verdade** e passou a conferir a versão da SEC-051 — verde,
+ * confiante, e olhando para um retrato velho.
+ *
+ * É o §1.5 aplicado à própria esteira: nada estourou, nada logou, e a trava
+ * simplesmente deixou de cobrir o que ela existe para cobrir. Mesma família do
+ * portão de números que cegava o relatório de documentação.
+ *
+ * ── As duas mudanças ──────────────────────────────────────────────────────
+ *
+ * 1. A marcação passa a CAPTURAR o rótulo do dólar (`$fn$`, `$function$`, o
+ *    que for) e exigir o mesmo na abertura e no fechamento. Trocar o rótulo
+ *    deixa de cegar a trava.
+ * 2. A contagem é conferida contra os ARQUIVOS que definem a função. Se uma
+ *    definição voltar a ficar invisível por qualquer motivo de forma, o número
+ *    não bate e a trava reprova — em vez de ler a penúltima em silêncio.
+ */
+function definicoesDoAuditor() {
+  const re = /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?auditoria_de_operadores[\s\S]*?\bAS\s+(\$[A-Za-z_]*\$)[\s\S]*?\1/gi;
+  return SQL.match(re) ?? [];
+}
+
+/** Quantos ARQUIVOS de migration definem o auditor. A referência da contagem. */
+function arquivosQueDefinemOAuditor() {
+  return readdirSync(PASTA).filter(n => n.endsWith('.sql')).filter(n => (
+    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?auditoria_de_operadores/i
+      .test(semComentariosSQL(readFileSync(join(PASTA, n), 'utf8')))
+  ));
+}
+
 /** O corpo da última definição do auditor. */
 function auditor() {
-  const achados = SQL.match(
-    /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+(?:public\.)?auditoria_de_operadores[\s\S]*?\$fn\$[\s\S]*?\$fn\$/gi);
-  if (!achados) {
+  const achados = definicoesDoAuditor();
+  const arquivos = arquivosQueDefinemOAuditor();
+
+  if (achados.length === 0) {
     throw new Error(
       'A `auditoria_de_operadores` sumiu das migrations, ou a marcação mudou.\n'
       + '  Sem ela esta trava não olha nada e fica verde para sempre.');
+  }
+  if (achados.length !== arquivos.length) {
+    throw new Error(
+      `Esta trava enxerga ${achados.length} definição(ões) do auditor, mas `
+      + `${arquivos.length} arquivo(s) o definem:\n`
+      + arquivos.map(a => `    ${a}`).join('\n')
+      + '\n\n  Alguma definição ficou INVISÍVEL para a marcação — e a trava passaria'
+      + '\n  a conferir uma versão velha, verde e errada. Foi exatamente isso que'
+      + '\n  aconteceu quando a SEC-052 trocou `$fn$` por `$function$`.'
+      + '\n  Conserte a marcação em `definicoesDoAuditor()`, não a migration.');
   }
   return achados[achados.length - 1];
 }
@@ -219,6 +287,36 @@ describe('SEC-050 — o auditor do banco é ouvido, e a lista branca é delibera
       'trocar o literal por `is_owner()` muda semântica, e pôr a guarda de',
       'operador arriscaria trancar o fundador FORA do próprio painel, sem',
       'inversa. As duas estão propostas no BACKLOG — não decididas.',
+    ].join('\n')).toEqual(esperado);
+  });
+
+  it('a lista de POLICIES isentas é exatamente a escrita aqui', () => {
+    const corpo = auditor();
+    const bloco = corpo.match(
+      /pg_policies\s+t[\s\S]*?policyname\s+NOT\s+IN\s*\(([\s\S]*?)\)/i);
+
+    expect(bloco, [
+      'O bloco de isenção da 6ª checagem (SEC-053) sumiu do auditor.',
+      '',
+      'Sem ele a checagem de POLICY com hierarquia à mão deixa de existir — e',
+      'foi ela que fechou o caminho por onde um admin BANIDO lia a fila de',
+      'moderação, a trilha inteira e escrevia na wordlist.',
+    ].join('\n')).toBeTruthy();
+
+    const naLista = [...bloco[1].matchAll(/'([a-z0-9_]+)'/gi)].map(m => m[1]).sort();
+    const esperado = Object.keys(POLICIES_ISENTAS).sort();
+
+    expect(naLista, [
+      `Na migration: ${naLista.join(', ') || '(vazia)'}`,
+      `Nesta trava:  ${esperado.join(', ')}`,
+      '',
+      'Isentar uma policy aqui **silencia** o auditor para ela. A lista existe',
+      'porque três policies do painel do Fundador usam papel LITERAL, e trocar',
+      "por `is_owner()` muda semântica — decisão do dono, proposta no BACKLOG.",
+      '',
+      'Qualquer nome novo aqui precisa entrar TAMBÉM no mapa `POLICIES_ISENTAS`',
+      'desta trava, com o motivo ao lado. Senão a lista vira o lugar onde os',
+      'achados se escondem — que é o que a SEC-050 existe para impedir.',
     ].join('\n')).toEqual(esperado);
   });
 });

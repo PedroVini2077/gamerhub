@@ -248,6 +248,27 @@ o motivo escrito ao lado**.
   > "consertar" uma função correta.)*
 - Funções admin/owner: `REVOKE ... FROM PUBLIC, anon` + `GRANT ... TO
   authenticated`, **além** da checagem interna por `auth.uid()`.
+- **`[25/09]` `is_staff()` e `is_super()` JÁ CONTÊM `operador_ativo()`.** Vale
+  saber de cor, porque decide como se lê uma policy:
+
+  ```sql
+  is_staff()  =  role_rank(...) >= 2  AND  operador_ativo()
+  is_super()  =  role_rank(...) >= 3  AND  operador_ativo()
+  is_owner()  =  role_rank(...) >= 4              -- sem a guarda, e de propósito
+  ```
+
+  Duas consequências práticas, e eu errei nas duas no mesmo dia:
+
+  1. `is_staff() AND operador_ativo()` é **redundante**, não reforço. Eu li isso
+     numa policy e deduzi o contrário — que `is_staff()` sozinho não bastava —,
+     fui procurar brecha onde não havia, e só o teste em ROLLBACK me corrigiu.
+     **Inferência vestida de fato** (§1.1): o certo era abrir `pg_proc.prosrc`.
+  2. `role_rank(...) >= 2` escrito à mão **não** é equivalente a `is_staff()` —
+     falta a guarda inteira. Foi a SEC-053, e o auditor reprova desde então.
+
+  O `owner` fica de fora da guarda porque `operador_ativo()` começa com
+  `role = 'owner' OR ...`: ninguém consegue banir o fundador pelo produto
+  (hierarquia estrita), então guardá-lo só criaria travamento sem volta.
 - **Curtida se conta de `post_likes`, nunca de contador em `posts`.**
   `[05/09]` A coluna `posts.likes` **foi apagada** — ela existia sem trigger
   nenhum que a mantivesse, ficou zerada desde sempre, e **três lugares

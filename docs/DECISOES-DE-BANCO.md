@@ -64,6 +64,44 @@ por revoke de **tabela**.
 
 → `supabase/migrations/20260912164012_anon_nao_le_nada_exceto_site_config.sql`
 
+### `SEC-053` · Policy nunca escreve hierarquia à mão
+
+**Decidido:** toda policy pergunta cargo por `is_staff()`/`is_super()`/
+`is_owner()`. 23 policies escreviam `role_rank(...) >= 2` ou a lista literal, e
+por isso **não herdavam `operador_ativo()`** — um admin BANIDO lia a fila de
+moderação, a trilha de 4.102 linhas e escrevia na wordlist. Medido em ROLLBACK,
+com papel real.
+
+**Recusado 1 — deixar como estava porque "só afeta quem já foi banido".** É
+justamente o contrário: quem foi banido é, por definição, o adversário, e o
+banimento é o remédio. Além disso `ban_user` **não revoga sessão** — ele escreve
+`banned = true` em `profiles` e nada mais, então o token continua válido e o
+refresh continua funcionando. Não é janela curta; é acesso contínuo.
+
+**Recusado 2 — somar `AND operador_ativo()` ao lado do `role_rank`.** Resolveria
+as 23 e deixaria a FORMA errada de pé, para a 24ª repetir. A troca por
+`is_staff()` remove a duplicação em vez de corrigir cada cópia — §4, fonte
+única.
+
+**Recusado 3 — trocar também o literal `role = 'owner'` das três policies de
+`site_config`.** Cheguei a fazer e **desfiz no mesmo dia**: a SEC-051 já
+registrou essa troca como decisão de semântica do dono (`is_owner()` é
+`rank >= 4`, o literal é `= 'owner'`). Elas ficaram isentas com o motivo escrito,
+e a decisão está no `BACKLOG.md` junto com as cinco funções do painel.
+
+**Como se soube que não quebrou:** a mesma transação mediu **quatro** personas —
+admin ativo, usuário comum, admin banido e owner. O banido ficou idêntico ao
+usuário comum (rebaixado, não trancado) e o ativo e o owner não perderam nada.
+Essa medição existe porque três correções de segurança anteriores derrubaram o
+site exatamente aqui.
+
+**A trava:** 6ª checagem de `auditoria_de_operadores()`. As cinco anteriores
+olhavam função e tabela — **nenhuma olhava policy**, que é o motivo de a SEC-043
+ter ficado meia-feita por seis dias sem ninguém ver.
+
+→ `supabase/migrations/20260925040147_sec_053_policies_perguntam_o_estado_do_operador.sql`
+→ `supabase/migrations/20260925041200_sec_053b_site_config_volta_ao_literal.sql`
+
 ### `SEC-031` · `SEC-032` · Autorização vem antes de tudo, inclusive de existir
 
 **Decidido:** quem não pode chamar descobre isso **antes** de qualquer validação

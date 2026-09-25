@@ -581,10 +581,13 @@ for (const [tabela, { pode, naoPode, estrago }] of Object.entries(SUPERFICIE_ANO
       + '    com o motivo escrito — senao o portao vira alarme falso.');
   } else if (Number(corpo) !== 0) {
     falhou(`o auditor do banco achou ${corpo} problema(s)`,
-      'Um destes tres nasceu desde o ultimo PR:\n'
+      'Um destes SEIS nasceu desde o ultimo PR:\n'
       + '      . RPC administrativa que NAO chama `exige_operador_ativo()` (SEC-043)\n'
+      + '      . RPC que autoriza por LITERAL de papel (SEC-051)\n'
       + '      . funcao de TRIGGER chamavel como RPC (SEC-042)\n'
-      + '      . funcao alcancavel por ANON fora da lista branca\n\n'
+      + '      . funcao alcancavel por ANON fora da lista branca\n'
+      + '      . tabela com GRANT e ZERO policies (SEC-052)\n'
+      + '      . POLICY com hierarquia escrita a mao (SEC-053)\n\n'
       + '    O numero nao diz QUAIS de proposito — nomes viram mapa para quem\n'
       + '    chamar de fora. Para ver, rode pelo MCP como `postgres`:\n'
       + '      select * from auditoria_de_operadores();\n\n'
@@ -592,7 +595,7 @@ for (const [tabela, { pode, naoPode, estrago }] of Object.entries(SUPERFICIE_ANO
       + '    o lugar de registrar isso e a lista branca DENTRO do auditor, com\n'
       + '    o motivo ao lado — nao aqui.');
   } else {
-    ok('auditor do banco: 0 achados (guarda do operador, trigger-RPC e anon)');
+    ok('auditor do banco: 0 achados (6 checagens: funcao, tabela e policy)');
   }
 }
 

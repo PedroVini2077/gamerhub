@@ -210,6 +210,17 @@ select tablename, policyname from pg_policies
 `is_super()`. Lista literal `ARRAY['admin','super_admin']` é bug esperando
 acontecer — foi assim três vezes.
 
+> **`[25/09]` E existe uma QUARTA razão, pior que as três.** As três eram
+> *esquecer um cargo*. Esta é perder uma **condição inteira**: `is_staff()` é
+> `role_rank(...) >= 2 AND operador_ativo()`, e quem escreve só o `role_rank`
+> reimplementa metade da regra. As 23 policies que faziam isso deixavam um
+> admin **banido** ler a fila de moderação, a trilha inteira e escrever na
+> wordlist — medido, SEC-053.
+>
+> Vale para **policy** tanto quanto para função: a SEC-043 aplicou a regra nas
+> RPCs e as policies ficaram para trás por seis dias, porque o auditor do banco
+> não olhava policy nenhuma. Hoje olha (6ª checagem).
+
 **Erro que a RLS engole.** `UPDATE`/`DELETE` negado pela RLS devolve **0 linhas
 e nenhum erro**. Toda escrita que pode ser negada usa `count: 'exact'` e trata
 0 como falha — no service E no chamador. Sem isso a tela mente ("Live
