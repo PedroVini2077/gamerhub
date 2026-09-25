@@ -35,6 +35,32 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🔄 `[25/09]` GAMERHUB NEWS — o plano, com a ordem decidida hoje
+
+**Objetivo dele:** *"vamos tentar terminar esse GamerHub News ainda hj"*.
+
+**O que já existe** (PR #246): 5 tabelas, RLS provada em ROLLBACK, `busca`
+gerada com `portugues_sem_acento`. **Zero tela.**
+
+| # | Etapa | Estado |
+| --- | --- | --- |
+| 1 | O corte editorial B no banco: `in_review` + publicar só `is_super()` | ⬜ |
+| 2 | `is_owner()` nas oito (5 funções + 3 policies) — decisão dele de hoje | ⬜ |
+| 3 | Service + hook de leitura do News | ⬜ |
+| 4 | `/news` (lista) e `/news/:slug` (artigo) — **só logado** | ⬜ |
+| 5 | O anúncio do News na LANDING — ele decidiu "só logado" em 24/09, e por isso o News **nasce invisível** para quem não tem conta se a landing não o apresentar | ⬜ |
+| 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ⬜ |
+| 7 | Travas: o corte editorial, a rota logada, e o slug | ⬜ |
+
+**Fora deste bloco, decididos hoje e enfileirados depois:** a RPC da wordlist,
+o `pg_trgm`, a rota de publicar (botão "+"), e a fonte da landing.
+
+**Risco que eu já enxergo:** a etapa 5 é de camada 1 (landing) e as outras são
+camada 3. Pela §0.4 a landing vem antes — mas anunciar uma tela que ainda não
+existe é pior do que não anunciar. Por isso ela vai **junto** com a 4, não antes.
+
+---
+
 ### 🔵 `[25/09]` A wordlist inteira é legível por qualquer pessoa logada
 
 Achado enquanto eu fechava a SEC-053. `blocked_words_select` é `USING (true)`:
@@ -115,8 +141,10 @@ continua de graça, e o compositor ganha o espaço de que precisa.
 > E disse a ordem: **vídeo curto vem DEPOIS do GamerHub News** — a rota tem de
 > nascer com lugar para ele, sem construí-lo agora.
 >
-> **Ainda não decidido:** se o topo do feed guarda uma linha que abre a rota, ou
-> se some de vez e o "+" da navegação vira a única porta.
+> **`[25/09]` E ele fechou a segunda parte: OS DOIS.** *"eu colocaria essa linha
+> e acrescentaria o botão + visível em algum lugar tbm"*. O topo do feed guarda
+> **uma linha** que abre a rota, e o **"+" fica visível** na navegação — duas
+> portas para a mesma superfície, não duas superfícies.
 
 **O que JÁ está decidido e não muda com isso:** o "+" não pode embarcar opção de
 equipe no DOM de quem não é equipe (3º prompt dele, sobre permissão na tela).
@@ -1221,36 +1249,24 @@ dependência técnica real** que decide o resto:
 
 ---
 
-- ⬜ `[11/09]` 🟠 **A LANDING — só faltam TRÊS DECISÕES dele.** *`[24/09]`
-  **Item renomeado e corrigido contra o sistema.** Ele dizia "A MARCA E A
-  LANDING" e afirmava que *"a landing continua a estrutura antiga"*. As duas
-  coisas envelheceram.*
+- ⬜ `[25/09]` 🟢 **A FONTE DE DISPLAY — a única das três que ele quis mudar.**
 
-  **O que foi conferido hoje, arquivo a arquivo:**
+  **`[25/09]` Ele fechou as outras duas:** *"já está bom como está, só a fonte
+  que eu concordo em mudar; a tese da fenda e as artes já foi decidido há muito
+  tempo atrás"*. **Ele está certo nas duas, conferido:** a fenda tem decisão
+  escrita em `DECISOES.md` desde 04/09 (ele reprovou a fenda visível desde o
+  primeiro quadro, e a versão de hoje nasceu daquilo), e a arte sempre foi
+  **dele**, com composição minha — nunca foi pergunta aberta, era observação
+  minha ocupando linha de decisão. O item estava **inchado**, e isso é meu erro.
 
-  | O que o backlog dizia | O que o sistema diz |
-  | --- | --- |
-  | "a marca espera decisão" | **implantada** desde 11/09 — proposta 03, favicon, PWA, cabeçalho, 11 telas |
-  | "a landing continua a estrutura antiga" | **falso.** `FeatureSection` **não existe mais** no código |
-  | "os três atos não foram implementados" | `PrologoDaLanding`, `PortalDoAtoZero`, `ConvergenciaDoHub` e 4 `CenaPresa` estão de pé |
-  | — | **42 arquivos** de arte das 7 cenas em `src/assets/landing/cenas/`, em 6 variantes cada |
+  **O que sobra, e não é pequeno:** `Orbitron` é a fonte mais usada do mundo em
+  "coisa gamer". Se o objetivo é não parecer mais um site gamer, é a alavanca
+  mais forte — e a mais cara, porque `font-display` atinge o site **inteiro**.
 
-  **O que sobra é decisão, não código.** Os três pontos que o briefing levantou
-  e que ele nunca respondeu:
-
-  1. **A tese da fenda.** Hoje o verde e o roxo são dois lutadores de costas,
-     separados por um corte vertical — imagem de **duelo**. O nome promete
-     **encontro**. A proposta é a fenda deixar de ser onde eles brigam e passar
-     a ser onde eles se tocam. **Custo: zero linha de código — é narrativa.**
-  2. **A fonte de display.** `Orbitron` é a fonte mais usada do mundo em "coisa
-     gamer". Se o objetivo é não parecer mais um site gamer, é a alavanca mais
-     forte — e a mudança mais cara, porque atinge o site **inteiro**.
-  3. **De onde vem a arte daqui pra frente.** O que deu certo neste projeto (a
-     arena, as 7 cenas) foi **arte dele + composição minha**. O que falhou duas
-     vezes (3D, ícones) fui eu tentando produzir a arte.
-
-  **Nenhuma das três me impede de trabalhar** — elas mudam o rumo, não
-  destravam tarefa. Por isso o item é 🟠 e não 🔴.
+  **Antes de trocar, eu preciso trazer:** 3 a 4 candidatas com amostra da marca
+  "GamerHub" em cada, o custo em bytes de cada uma (§0.3 regra 1), e o que muda
+  em tela pequena. Trocar fonte é fácil; escolher errado se paga em todas as
+  telas. **Não começo sem ele ver as amostras.**
 
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
@@ -1581,7 +1597,7 @@ CI — que a retenção diária limpa —, e o feed em zero.
 > que apaga e o `SELECT` que conta veem a **mesma versão** da tabela, a de
 > antes. A conferência de verdade exige uma segunda consulta.
 
-- ⬜ `[24/09]` 🔵 **A busca acha palavra, não pedaço de palavra.** *`pg_trgm`
+- ⬜ `[25/09]` 🟢 **✅ APROVADO por ele — a busca acha palavra, não pedaço de palavra.** *`pg_trgm`
   ficou de fora: é outra extensão, outro índice e outra conta de custo. Hoje
   "config" não acha "configuração" — só a palavra inteira (com flexão e sem
   depender de acento). Entra quando houver acervo que justifique.*
@@ -1710,37 +1726,28 @@ o ouve pelo `contagem_de_achados_de_seguranca`. Contraprova em ROLLBACK: tabela
 criada do zero nasceu com os quatro privilégios, **o auditor acusou**, a
 contagem do CI foi a 1, e o `REVOKE` a zerou.
 
-- ⬜ `[25/09]` 🟠 **O corte de permissão editorial é decisão sua.** *Hoje:
-  equipe (admin+) cria e edita; **apagar** é só super admin e owner. O seu
-  prompt pede para "não assumir que todo admin possui todas essas capacidades".
-  Esta é a política que existe — se você quiser que **publicar** também exija
-  super admin, é uma migration de uma linha.*
+- ⬜ `[25/09]` 🟠 **✅ DECIDIDO (saída B): admin ESCREVE, super admin PUBLICA.**
+  *"Gostei da opção b, pode ser ela mesma".*
+
+  | Ação | Quem pode, a partir da decisão |
+  | --- | --- |
+  | criar rascunho · editar | admin · super admin · owner |
+  | **publicar** | **só** super admin · owner |
+  | apagar | só super admin · owner |
+
+  **Por que B e não "como está":** rascunho é reversível; publicado é a voz do
+  GamerHub falando com todo mundo, e erro editorial publicado não desfaz. Quem
+  escreve deixa de ser quem aprova.
+
+  **Por que NÃO o papel `editor` (saída C):** mexer em `role_rank` encosta em
+  todo o sistema de hierarquia, e isso já derrubou o site três vezes. O ganho só
+  aparece quando existir gente que escreve e não modera — hoje não existe.
+
+  **O que entra junto, e é o que faz B funcionar:** um estado `in_review` e o
+  botão "enviar para revisão". Sem isso o admin escreve e fica preso, sem
+  caminho — seria a regra da INVERSA (§5) quebrada na estreia.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
-  *Detalhe e recomendação em cada uma no item N de
-  [`docs/PLANO-FEED-BUSCA-NEWS.md`](docs/PLANO-FEED-BUSCA-NEWS.md). Resumo:*
-
-  | # | A decisão | Resposta dele em `[24/09]` |
-  | --- | --- | --- |
-  | 1 | ordem das fases (paginação primeiro) | ✅ aprovada |
-  | 2 | o que o contador deve dizer | ✅ **teto `"20+"`** |
-  | 3 | News público ou logado | ✅ **só logado** — e por isso ele **tem de ser anunciado na landing**, senão nasce invisível para quem não tem conta |
-  | 4 | SEO agora ou depois | ✅ **agora**, com a ressalva do item H: artigo logado não é indexável, então "agora" é a superfície pública que já existe |
-  | 5 | as 403 linhas de CI em `posts` | ⏳ **pendente** — ele pediu explicação, está abaixo |
-
-  **`[24/09]` A decisão 5, explicada, porque ele pediu:** cada execução do E2E
-  no CI **publica um post de verdade** na produção (as contas de teste são
-  reais — é isso que torna o teste honesto) e o apaga no fim. O apagar do site
-  é **soft**: a linha fica no banco com `deleted_at` preenchido, invisível no
-  feed e visível para a equipe no painel. São **403 linhas** assim, de agosto
-  para cá, e elas nunca saem. Não quebram nada e não são segredo — é
-  desperdício e ruído: a tabela `posts` tem 404 linhas e **403 são cadáver de
-  robô**, o que atrapalha qualquer medição futura do feed. **Minha
-  recomendação:** apagar de verdade só as que têm prefixo de teste
-  (`[e2e `/`[painel `) e criar uma retenção automática para as próximas —
-  mas `DELETE` é irreversível (🔴), então não faço sem você dizer.
 
 - ⬜ `[24/09]` 🟠 **O painel do Fundador autoriza por LITERAL, e as duas saídas
   têm risco.** *Achado na parte 1 da auditoria (SEC-051). **Não é
