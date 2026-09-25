@@ -211,6 +211,11 @@ src/
 │   ├── areasDaBusca.js    # `[24/09]` As abas da busca (Tudo · Posts · Pessoas).
 │   │                      # Lista para a tela não saber quantas existem —
 │   │                      # somar notícias/lives/jogos é somar uma linha
+│   ├── formatacao/        # `[25/09]` A formatação de texto do usuário.
+│   │   ├── analisar.js    #   O analisador: texto -> ÁRVORE de nós. Nunca HTML
+│   │   └── vocabulario.js #   A lista FECHADA de cores e tamanhos, e o que a
+│   │                      #   barra oferece em cada lugar. O usuário escolhe um
+│   │                      #   NOME; nenhuma string dele encosta em CSS
 │   ├── novidadeDoFeed.js  # `[24/09]` O aviso de "novas publicações": o que CONTA
 │   │                      # (só o que apareceria no feed — live e post oculto
 │   │                      # ficam de fora) e o teto de 20, decidido pelo dono
@@ -461,6 +466,12 @@ src/
     │   │                  # diferentes, e juntá-las faria a versão fraca virar
     │   │                  # o padrão por descuido. A tela só COLETA — quem
     │   │                  # confere a senha é a RPC, no servidor (SEC-012)
+    │   ├── EditorDeTexto.jsx # `[25/09]` A barra de ferramentas (B/I/U/S, cor,
+    │   │                  # tamanho, lista, citação, link) sobre um `textarea`,
+    │   │                  # com PRÉVIA. NÃO é WYSIWYG de propósito:
+    │   │                  # `contenteditable` produz HTML do usuário, que é o
+    │   │                  # que a fase anterior tirou do caminho. A prop
+    │   │                  # `recursos` é o que dá menos poder ao comentário
     │   ├── TextoFormatado.jsx # `[25/09]` Desenha o conteúdo do post a partir
     │   │                  # da ÁRVORE do `lib/formatacao`. NUNCA produz HTML:
     │   │                  # cada nó vira elemento React, e o `href` de link

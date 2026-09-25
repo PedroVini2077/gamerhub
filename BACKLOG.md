@@ -723,7 +723,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1518,15 +1518,47 @@ exige que `javascript:`/`data:`/`vbscript:`/`file:` não virem `href`, que
 que o `src/` inteiro siga em **zero** `dangerouslySetInnerHTML`. Provada
 reinjetando as duas pontas. `INV-TELA-008`.
 
-- ⬜ `[25/09]` 🔵 **A formatação não chegou a comentário nem ao mural.** *Só o
-  post usa o `TextoFormatado`. Levá-la aos outros dois é trocar uma linha em
-  cada — mas é decisão de produto (comentário formatado muda o tom da conversa),
-  e não tomei sozinho.*
+**`[25/09]` Os dois itens abaixo foram resolvidos no mesmo dia, por pedido
+dele** — a formatação chegou ao comentário (com MENOS recursos, decisão dele) e
+o compositor ganhou barra de ferramentas com prévia. Ver a seção do editor
+rico, logo abaixo.
 
-- ⬜ `[25/09]` 🔵 **O compositor não tem botões de formatação, só a dica.** *Uma
-  barra com B / I / S seria a evolução natural, e exige mexer em seleção de
-  texto no `textarea`. A dica embaixo do campo resolve a descoberta por
-  enquanto.*
+- ⬜ `[25/09]` 🔵 **A formatação não chegou ao MURAL.** *`MuralCard` continua
+  desenhando texto puro. É trocar uma linha — mas o mural tem tom próprio
+  (recado curto), e levar cor e tamanho para lá é decisão sua, não minha.*
+
+### ✅ `[25/09]` O EDITOR RICO — barra, prévia, cor e tamanho
+
+Pedido dele, com exemplos de outros editores: *"o site é pra gamers, o usuário
+pode ter a liberdade de ser criativo, mexer em tamanho, cor, forma"* — e
+*"nem tudo que tem na hora de postar precisa ter nos comentários"*.
+
+**Não é WYSIWYG, e isso é decisão.** `contenteditable` (Slate, TipTap,
+CKEditor) produz **HTML do usuário** — exatamente o que a fase 5 tirou do
+caminho, com trava — e pesa centenas de KB num projeto que mede bundle por
+byte. A barra **escreve marcação** e a prévia mostra o resultado: desenho do
+GitHub e do Reddit, mesmo resultado prático, e o banco continua guardando
+texto.
+
+**Cor e tamanho vêm de lista FECHADA**, e essa é a parte que muda a natureza do
+problema: até aqui a formatação escolhia entre elementos, agora o usuário
+escolhe um **valor**. Guardar `#ff0000` e aplicar em `style` pareceria seguro
+(o React recusa CSS malformado) — e seria **proteção acidental** (§1.3), que
+some no dia em que o texto for para um e-mail ou um componente que concatene.
+
+Ele escolhe um **nome**; o analisador confere; quem desenha traduz nome →
+classe. Nome inventado **volta a ser texto**.
+
+**Seis cores da marca e três tamanhos.** Paleta fechada é o que impede o feed
+de virar arco-íris ilegível; o teto de tamanho é o que impede um post em corpo
+gigante de empurrar o resto para fora da tela de quem só passava.
+
+**O comentário recebe menos:** negrito, itálico, riscado e link. Sem cor,
+tamanho, lista nem citação — conversa não é publicação.
+
+**Trava:** `corETamanhoSaoFechados.test.jsx` — valor fora do vocabulário,
+`style` montado a partir do nó, e o comentário ganhando poder que o post não
+tem. Provada reinjetando as três. `INV-TELA-009`.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
@@ -2206,8 +2238,8 @@ reinjetando as duas pontas. `INV-TELA-008`.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->148<!--/n--> arq ·
-  <!--n:src.lib.linhas-->17.683<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->150<!--/n--> arq ·
+  <!--n:src.lib.linhas-->17.945<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->21<!--/n--> arq ·
   <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

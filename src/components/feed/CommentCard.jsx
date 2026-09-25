@@ -9,6 +9,7 @@ import { canDeleteContent } from '../../lib/roles';
 import toast from 'react-hot-toast';
 import AvatarPopup from '../ui/AvatarPopup';
 import CommentComposer from './CommentComposer';
+import TextoFormatado from '../ui/TextoFormatado';
 import ConfirmModal from '../ui/ConfirmModal';
 import ReportModal from '../ui/ReportModal';
 
@@ -59,7 +60,10 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
               })}
             </span>
           </div>
-          <p className="text-xs text-gray-300 leading-relaxed break-words">{comment.content}</p>
+          {/* `[25/09]` O comentário também é desenhado formatado — com o mesmo
+              componente do post, que nunca produz HTML. */}
+          <TextoFormatado texto={comment.content}
+            className="text-xs text-gray-300 leading-relaxed break-words" />
           <div className="flex items-center gap-4 mt-1.5">
             <button
               onClick={toggle}

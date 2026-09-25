@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { analisarFormatacao } from '../../lib/formatacao/analisar';
 import { safeExternalUrl } from '../../lib/url';
+import { CORES, TAMANHOS } from '../../lib/formatacao/vocabulario';
 
 /**
  * `[25/09]` Desenha o texto de um post com a formatação que ele pede.
@@ -26,6 +27,14 @@ import { safeExternalUrl } from '../../lib/url';
  * URL recusada **não some**: vira texto. Sumir seria o site comendo o que a
  * pessoa escreveu sem dizer nada (§1.5); virar texto mostra exatamente o que
  * ela digitou e não clica em lugar nenhum.
+ *
+ * ── Cor e tamanho: CLASSE de mapa, nunca `style` ──────────────────────────
+ *
+ * `[25/09]` O nó de cor traz um NOME (`verde`), não um valor (`#39ff14`), e a
+ * classe sai de um mapa fechado. `style={{ color: algoDoUsuario }}` seria o
+ * caminho curto e a proteção passaria a ser "o React trata CSS malformado" —
+ * proteção acidental, que some no dia em que esse texto for parar num e-mail
+ * ou num componente que concatene.
  */
 
 /** Um nó de trecho (negrito, itálico, tachado, link, texto). */
@@ -48,6 +57,17 @@ function Trecho({ no }) {
   if (no.tipo === 'negrito') return <strong className="text-gray-200">{filhos}</strong>;
   if (no.tipo === 'italico') return <em>{filhos}</em>;
   if (no.tipo === 'tachado') return <s className="opacity-70">{filhos}</s>;
+  if (no.tipo === 'sublinhado') return <u>{filhos}</u>;
+
+  // `[25/09]` Cor e tamanho: o nó traz um NOME, e a classe sai de um mapa
+  // fechado. Nenhuma string do usuário vira CSS — ele escolhe de uma lista, e
+  // o analisador já recusou o que não está nela.
+  if (no.tipo === 'cor') {
+    return <span className={CORES[no.nome]?.classe}>{filhos}</span>;
+  }
+  if (no.tipo === 'tamanho') {
+    return <span className={TAMANHOS[no.nome]?.classe}>{filhos}</span>;
+  }
 
   // Tipo desconhecido não vira palpite: mostra o que dá para mostrar. Um
   // `else` que escolhesse uma tag por conta própria seria fallback silencioso.

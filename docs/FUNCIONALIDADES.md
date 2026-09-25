@@ -589,10 +589,16 @@ que é paginada, e uma mensagem antiga podia nem estar na primeira página.
   irmãs sob o comentário raiz), com composer inline ao clicar "Responder".
 - **Likes em comentários** (`comment_likes`): toggle por usuário, exibido com
   coração em `CommentCard`.
-- **`[25/09]` Formatação no post**: `**negrito**`, `*itálico*`, `~~riscado~~`,
-  `- lista`, `> citação` e `[texto](link)`. O texto é guardado **como foi
-  digitado** — a formatação acontece só na hora de desenhar, e post antigo
-  aparece igual. HTML digitado vira texto; link `javascript:` não vira link.
+- **`[25/09]` Editor com barra de ferramentas**, no post e no comentário:
+  negrito, itálico, sublinhado, riscado, **cor**, **tamanho**, lista, citação e
+  link, mais um botão de **prévia** ("ver como vai ficar"). Não é WYSIWYG de
+  propósito — a barra escreve marcação e o que vai para o banco continua sendo
+  **texto**, então post antigo aparece igual.
+  - **Cor e tamanho saem de lista fechada** (6 cores da marca, 3 tamanhos): o
+    usuário escolhe um nome, nunca um valor de CSS. Nome inventado vira texto.
+  - **O comentário recebe menos:** negrito, itálico, riscado e link. Sem cor
+    nem tamanho — conversa não é publicação.
+  - HTML digitado vira texto; link `javascript:` não vira link.
 - **Likes em posts**: toggle por usuário (constraint única `post_id+user_id`).
   **`[24/09]`** O coração fica **na mesma linha** do "Comentar" — antes eram
   duas faixas empilhadas, cada uma com a própria borda. Pedido do dono.
