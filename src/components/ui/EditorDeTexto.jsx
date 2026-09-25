@@ -1,28 +1,49 @@
-import { useRef, useState, useId } from 'react';
-import { Bold, Italic, Underline, Strikethrough, List, Quote, Link2, Palette, Type, Eye, PenLine } from 'lucide-react';
+import { useRef, useState, useId, useMemo } from 'react';
+import { Bold, Italic, Underline, Strikethrough, List, Quote, Link2, Palette, Type } from 'lucide-react';
 import {
   MARCACOES, CORES, TAMANHOS, envolverCor, envolverTamanho, RECURSOS_COMPLETOS,
 } from '../../lib/formatacao/vocabulario';
+import { analisarFormatacao, temFormatacao } from '../../lib/formatacao/analisar';
 import TextoFormatado from './TextoFormatado';
 
 /**
  * `[25/09]` O EDITOR — barra de ferramentas sobre um `textarea`, com prévia.
  *
- * ── Por que NÃO é um editor WYSIWYG ───────────────────────────────────────
+ * ── Por que NÃO é WYSIWYG, agora COM O NÚMERO ─────────────────────────────
  *
- * O pedido foi "algo mais profissional e sofisticado", com liberdade de cor,
- * tamanho e forma. O caminho clássico seria um `contenteditable` (Slate,
- * TipTap, CKEditor) — e ele traz dois problemas que este projeto não aceita:
+ * O dono pediu que a formatação acontecesse "na hora", sem marcador nenhum no
+ * campo: *"fica um comando em html no campo, pra mim isso deixa poluído"*.
+ * Formatar DENTRO do campo exige `contenteditable` — não há meio-termo, e o
+ * motivo é mecânico: a alternativa barata (uma camada desenhada por cima de um
+ * `textarea` transparente, o truque do CodeMirror) só funciona enquanto cada
+ * caractere ocupar o MESMO espaço nas duas camadas. Cor e sublinhado passam;
+ * **negrito e tamanho não** — e o cursor começa a cair no lugar errado.
  *
- *   dependência   os três pesam centenas de KB num projeto que mede bundle
- *                 por byte (§0.3) e acabou de tirar 708 kB de uma cena 3D
- *   superfície    `contenteditable` produz HTML, e o conteúdo volta a ser
- *                 HTML do usuário — exatamente o que a fase anterior tirou
- *                 do caminho, com trava
+ * Então a conta é `contenteditable`, e ela foi MEDIDA (§0.3) em vez de
+ * estimada. Lexical com o mínimo (rich-text, histórico, onChange), React já
+ * descontado:
  *
- * Aqui a barra **escreve marcação** no texto e a prévia mostra o resultado.
- * É o desenho do GitHub e do Reddit, e ele dá o mesmo resultado prático sem
- * nunca guardar HTML: o que vai para o banco continua sendo texto.
+ *   editor de hoje ....  7 kB brutos  ·   3 kB gzip
+ *   Lexical .......... 331 kB brutos · 110 kB gzip     -> 46x
+ *
+ * O número bruto é o que importa para travamento (§0.3), e 331 kB é metade de
+ * uma cena 3D que este projeto acabou de remover por pesar demais.
+ *
+ * Há ainda a superfície: `contenteditable` aceita COLAGEM de HTML arbitrário.
+ * Daria para contê-la — o estado do Lexical é uma árvore, e dava para
+ * serializar de volta para a marcação antes de salvar —, mas aí a defesa
+ * passaria a ser "o normalizador da biblioteca é completo", que é a postura de
+ * sanitizador que a fase 5 recusou de propósito.
+ *
+ * ── O que entrou no lugar: a prévia AO VIVO ───────────────────────────────
+ *
+ * A prévia era um botão que TROCAVA o campo pelo resultado — ou se escrevia,
+ * ou se via. Agora ela fica embaixo, atualizando a cada tecla, e **só aparece
+ * quando o texto tem formatação**: em texto puro seria o mesmo texto duas
+ * vezes, que é a mesma poluição pelo outro lado.
+ *
+ * Não é o que ele pediu, é o que cabe: o marcador continua no campo, mas ele
+ * vê o resultado acontecer enquanto digita, sem clicar em nada.
  *
  * ── O que "a barra escreve" significa, e o cuidado que exige ──────────────
  *
@@ -59,11 +80,14 @@ export default function EditorDeTexto({
   recursos = RECURSOS_COMPLETOS, id, onKeyDown, autoFocus = false,
 }) {
   const areaRef = useRef(null);
-  const [previa, setPrevia] = useState(false);
   const [paleta, setPaleta] = useState(null); // 'cor' | 'tamanho' | null
   const idGerado = useId();
   const idDoCampo = id ?? `editor-${idGerado}`;
   const tem = (r) => recursos.includes(r);
+
+  // A decisão de mostrar a prévia sai da ÁRVORE, não de procurar asterisco no
+  // texto: recurso novo passa a contar sozinho (§4, fonte única).
+  const mostrarPrevia = useMemo(() => temFormatacao(analisarFormatacao(value)), [value]);
 
   /**
    * Embrulha a seleção — e devolve o cursor para dentro dela.
@@ -127,11 +151,6 @@ export default function EditorDeTexto({
           <Botao icone={Link2} titulo="Link"
             onClick={() => envolver({ abre: '[', fecha: '](https://)' })} />
         )}
-
-        <div className="ml-auto">
-          <Botao icone={previa ? PenLine : Eye} titulo={previa ? 'Voltar a escrever' : 'Ver como vai ficar'}
-            ativo={previa} onClick={() => setPrevia((p) => !p)} />
-        </div>
       </div>
 
       {/* A paleta só existe quando pedida: barra sempre aberta com 6 bolinhas
@@ -155,23 +174,28 @@ export default function EditorDeTexto({
         </div>
       )}
 
-      {previa ? (
-        <div className="input-gamer min-h-[76px] overflow-x-hidden" aria-label="Prévia do texto">
-          {value.trim()
-            ? <TextoFormatado texto={value} className="text-sm text-gray-400 leading-relaxed" />
-            : <p className="text-sm text-gray-600 font-mono">Nada para mostrar ainda.</p>}
+      <textarea
+        ref={areaRef} id={idDoCampo} aria-label={placeholder}
+        className="input-gamer resize-none w-full" rows={rows}
+        placeholder={placeholder} value={value} maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+        // O comentário envia com Enter. Perder isso seria regressão de uso —
+        // e o roteiro de responder depende do caminho de teclado.
+        onKeyDown={onKeyDown}
+        autoFocus={autoFocus}
+      />
+
+      {/* Sem `aria-live`: isto muda a cada tecla, e anunciar cada tecla a quem
+          usa leitor de tela seria tortura. É região nomeada, visitável. */}
+      {mostrarPrevia && (
+        <div className="mt-1.5" aria-label="Como vai ficar">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-600 mb-1">
+            Como vai ficar
+          </p>
+          <div className="rounded-lg border border-dark-500 bg-dark-800/60 px-3 py-2 overflow-x-hidden">
+            <TextoFormatado texto={value} className="text-sm text-gray-400 leading-relaxed" />
+          </div>
         </div>
-      ) : (
-        <textarea
-          ref={areaRef} id={idDoCampo} aria-label={placeholder}
-          className="input-gamer resize-none w-full" rows={rows}
-          placeholder={placeholder} value={value} maxLength={maxLength}
-          onChange={(e) => onChange(e.target.value)}
-          // O comentário envia com Enter. Perder isso seria regressão de uso —
-          // e o roteiro de responder depende do caminho de teclado.
-          onKeyDown={onKeyDown}
-          autoFocus={autoFocus}
-        />
       )}
     </div>
   );

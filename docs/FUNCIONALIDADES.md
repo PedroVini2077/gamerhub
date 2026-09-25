@@ -591,13 +591,22 @@ que é paginada, e uma mensagem antiga podia nem estar na primeira página.
   coração em `CommentCard`.
 - **`[25/09]` Editor com barra de ferramentas**, no post e no comentário:
   negrito, itálico, sublinhado, riscado, **cor**, **tamanho**, lista, citação e
-  link, mais um botão de **prévia** ("ver como vai ficar"). Não é WYSIWYG de
-  propósito — a barra escreve marcação e o que vai para o banco continua sendo
-  **texto**, então post antigo aparece igual.
+  link. Não é WYSIWYG de propósito — a barra escreve marcação e o que vai para o
+  banco continua sendo **texto**, então post antigo aparece igual.
+  - **A prévia é AO VIVO.** Ela fica embaixo do campo e acompanha cada tecla.
+    Aparece **só quando o texto tem formatação**: em texto puro seria o mesmo
+    texto duas vezes na tela. Era um botão que trocava o campo pelo resultado —
+    ou se escrevia, ou se via —, e virou isto a pedido do dono, que queria a
+    formatação acontecendo "na hora". Por que não dentro do próprio campo:
+    [DECISOES.md](DECISOES.md), com o custo medido em
+    [DESEMPENHO.md](DESEMPENHO.md).
   - **Cor e tamanho saem de lista fechada** (6 cores da marca, 3 tamanhos): o
     usuário escolhe um nome, nunca um valor de CSS. Nome inventado vira texto.
   - **O comentário recebe menos:** negrito, itálico, riscado e link. Sem cor
     nem tamanho — conversa não é publicação.
+  - **Marcador precisa encostar no texto.** `**forte**` formata; `2 * 3 * 4`
+    fica como a pessoa escreveu. Sem essa regra o site comia os asteriscos de
+    quem escreve multiplicação — "5 * 2 de dano" saía com o 2 inclinado.
   - HTML digitado vira texto; link `javascript:` não vira link.
 - **Likes em posts**: toggle por usuário (constraint única `post_id+user_id`).
   **`[24/09]`** O coração fica **na mesma linha** do "Comentar" — antes eram

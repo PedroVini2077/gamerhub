@@ -189,6 +189,45 @@ recursos** — não duas telas que vão divergir.
 
 ---
 
+### `[25/09]` WYSIWYG no campo: **não** — e a prévia passou a ser ao vivo
+
+**O pedido.** Ele usou o editor e reclamou do que sobra na tela: *"quando clico
+no negrito, aparece os asteriscos, até mesmo pra cor e tamanho, fica um comando
+em html no campo, pra mim isso deixa poluído o campo, imagina se a pessoa quiser
+escrever muita coisa... seria maneiro se tivesse alguma forma de fazer com que
+essas formatações acontecessem na hora"*.
+
+A reclamação é legítima e o pedido é o certo do ponto de vista de quem escreve.
+
+**O que foi descartado, e por dois motivos independentes.** Formatar dentro do
+próprio campo exige `contenteditable` — a alternativa barata (camada desenhada
+por cima de um `textarea` transparente) quebra em negrito e em tamanho, porque o
+cursor depende de cada caractere ocupar o mesmo espaço nas duas camadas. Medido
+e detalhado em [DESEMPENHO.md](DESEMPENHO.md):
+
+| | bruto | gzip |
+| --- | --- | --- |
+| editor de hoje | 7,1 kB | 3,0 kB |
+| Lexical, o mínimo | **331,4 kB** | 109,7 kB |
+
+O segundo motivo não é peso: `contenteditable` aceita **colagem de HTML**. Dava
+para contê-la serializando a árvore do editor de volta para marcação antes de
+gravar — mas a defesa passaria a ser "o normalizador da biblioteca é completo",
+que é a postura de sanitizador recusada na decisão de 25/09 logo acima.
+
+**O que entrou no lugar.** A prévia deixou de ser um botão que **trocava** o
+campo pelo resultado e passou a ficar embaixo, atualizando a cada tecla. Ela
+aparece **só quando o texto tem formatação** — em texto puro seria o mesmo texto
+duas vezes, que é a mesma poluição pelo outro lado.
+
+**Dito com todas as letras: não é o que ele pediu.** O marcador continua visível
+no campo. O que mudou é que ele vê o resultado acontecer enquanto digita, sem
+clicar em nada. Se um dia o custo de 331 kB deixar de importar — ou se o editor
+sair do caminho crítico e virar rota própria —, a decisão merece ser revista, e
+o número para comparar está guardado.
+
+---
+
 ## Moderação
 
 ### `[27/08]` O ritual de publicar conteúdo: trava sim, refatoração não

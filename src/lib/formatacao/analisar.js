@@ -58,10 +58,15 @@ const LINHA_DE_CITACAO = /^>\s?(.*)$/;
  * `*x*` com asteriscos sobrando se a ordem se invertesse.
  */
 const TRECHOS = [
-  { tipo: 'negrito', re: /\*\*([^*\n]+)\*\*/ },
-  { tipo: 'italico', re: /(?<![*\w])\*([^*\n]+)\*(?!\w)/ },
-  { tipo: 'sublinhado', re: /__([^_\n]+)__/ },
-  { tipo: 'tachado', re: /~~([^~\n]+)~~/ },
+  // `[25/09]` O `(?!\s)` depois de abrir e o `(?<!\s)` antes de fechar não são
+  // preciosismo: sem eles, `2 * 3 * 4` vira "2 _3_ 4" e a conta que a pessoa
+  // escreveu some da tela. Um `*` colado num espaço não está marcando nada —
+  // é a mesma regra do CommonMark (o delimitador tem de "encostar" no texto),
+  // e vale para os QUATRO pares, não só para o que apareceu.
+  { tipo: 'negrito', re: /\*\*(?!\s)([^*\n]+)(?<!\s)\*\*/ },
+  { tipo: 'italico', re: /(?<![*\w])\*(?!\s)([^*\n]+)(?<!\s)\*(?!\w)/ },
+  { tipo: 'sublinhado', re: /__(?!\s)([^_\n]+)(?<!\s)__/ },
+  { tipo: 'tachado', re: /~~(?!\s)([^~\n]+)(?<!\s)~~/ },
   // `[25/09]` Cor e tamanho. O NOME é capturado, nunca um valor de CSS — e a
   // validade dele é conferida abaixo, contra o vocabulário fechado. Nome
   // desconhecido não vira palpite nem some: volta a ser texto.
@@ -164,4 +169,27 @@ export function analisarFormatacao(texto) {
   fecharParagrafo();
 
   return blocos;
+}
+
+/**
+ * `[25/09]` Este texto pede alguma formatação?
+ *
+ * Existe para a prévia AO VIVO do editor aparecer só quando há o que mostrar.
+ * Num texto sem marcação a prévia seria o mesmo texto duas vezes na tela —
+ * exatamente a poluição que o dono reclamou, só que do outro lado.
+ *
+ * É **derivada da árvore**, de propósito, e não uma segunda lista de
+ * marcadores: marcação nova passa a contar sozinha aqui. Uma lista à parte
+ * divergiria do analisador no primeiro recurso novo (§4, fonte única) — e a
+ * falha seria muda: o botão funcionaria e a prévia simplesmente não apareceria.
+ *
+ * Não precisa descer na árvore: qualquer aninhamento tem um nó não-texto no
+ * topo do próprio galho (`**a *b* c**` começa em `negrito`).
+ *
+ * @param {Array<{tipo: string}>} blocos a saída de `analisarFormatacao`
+ */
+export function temFormatacao(blocos) {
+  return blocos.some((bloco) => (
+    bloco.tipo !== 'paragrafo' || bloco.filhos.some((no) => no.tipo !== 'texto')
+  ));
 }

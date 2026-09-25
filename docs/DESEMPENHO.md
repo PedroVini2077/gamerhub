@@ -19,6 +19,67 @@
 
 ---
 
+### `[25/09]` O WYSIWYG que ele pediu custa **46×** o editor de hoje — medido
+
+Pedido dele, depois de usar o editor rico: *"quando clico no negrito, aparece os
+asteriscos... fica um comando em html no campo, pra mim isso deixa poluído...
+seria maneiro se tivesse alguma forma de fazer com que essas formatações
+acontecessem na hora"*.
+
+Formatar **dentro** do campo não tem meio-termo, e o motivo é mecânico antes de
+ser de custo.
+
+#### Por que a saída barata não existe
+
+O truque conhecido é desenhar uma camada formatada por baixo de um `textarea`
+de texto transparente — é como o CodeMirror 5 e o `react-simple-code-editor`
+funcionam. Ele só se sustenta enquanto **cada caractere ocupar o mesmo espaço
+nas duas camadas**, senão o cursor passa a cair longe de onde a pessoa clicou.
+
+| O que o editor oferece | Sobrevive à camada por cima? |
+| --- | --- |
+| cor, sublinhado, riscado | **sim** — não mudam a métrica do texto |
+| negrito | não — a fonte em peso maior é mais larga |
+| tamanho (`pequeno`/`grande`/`enorme`) | **não, e por muito** |
+
+Metade dos botões funcionando ao vivo e metade não é pior do que nenhum: ensina
+que às vezes funciona. Então a conta real é `contenteditable`.
+
+#### A medição
+
+Lexical com o mínimo para o que o editor faz hoje (rich-text, histórico,
+`onChange`), empacotado com `esbuild --minify`, **React descontado** — ele já
+está no bundle:
+
+| | bruto | gzip |
+| --- | --- | --- |
+| o editor de hoje (barra + analisador + desenho) | **7,1 kB** | 3,0 kB |
+| Lexical, o mínimo | **331,4 kB** | 109,7 kB |
+| | **46×** | 37× |
+
+O número que decide é o **bruto** (§0.3): o custo de CPU é proporcional ao
+JavaScript descompactado, não ao que trafega. 331 kB é quase metade da cena 3D
+que este projeto removeu em 11/09 justamente por pesar demais — e o orçamento
+inteiro do carregamento inicial hoje é 643,6 kB de 760 kB.
+
+#### O que a medição NÃO decidiu sozinha
+
+Há também a superfície: `contenteditable` aceita **colagem de HTML arbitrário**.
+Isso seria contornável — o estado do Lexical é uma árvore, dava para serializar
+de volta para a marcação antes de gravar, e então nada de HTML chegaria ao banco
+nem à tela de terceiros. Mas a defesa passaria a ser *"o normalizador da
+biblioteca é completo"*, que é exatamente a postura de sanitizador que a fase 5
+recusou.
+
+A decisão está em [DECISOES.md](DECISOES.md). O que foi feito no lugar — prévia
+ao vivo embaixo do campo — está em [FUNCIONALIDADES.md](FUNCIONALIDADES.md).
+
+**Como reproduzir:** `npx esbuild` sobre um componente que monte
+`LexicalComposer` + `RichTextPlugin` + `HistoryPlugin` + `OnChangePlugin`, com
+`--external:react --external:react-dom`.
+
+---
+
 ### `[17/09]` A travada que ele sentiu no início: reproduzida, e NÃO é a animação
 
 Observação dele: *"sabe a transição do hero pro título? Dá uma travada lá no
