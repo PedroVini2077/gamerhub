@@ -67,6 +67,17 @@ evitar closures velhas nos callbacks).
 - **Notificações**: últimas 50 (`owner_get_notifications`), em tempo real.
 - **Métricas**: ativos 7d, inativos 30d, XP total; ranking de top usuários por
   XP e top posts por likes — `owner_get_metrics`.
+- **`[25/09]` News**: o **estado do jornal** — quantas matérias em cada estado,
+  quais esperam revisão, e **há quanto tempo cada uma está parada**.
+
+  **Não é um segundo editor, e a pergunta dele era exatamente essa.** Dois
+  editores são duas implementações da mesma coisa, e é onde as duas divergem
+  (§4) — a diferença entre owner e admin já está expressa no lugar certo: quais
+  botões aparecem no editor que existe. O botão desta aba leva para lá.
+
+  **"Há quanto tempo" não é enfeite:** matéria parada em revisão há duas semanas
+  não é fila, é esquecimento — e numa lista ordenada por data o esquecimento
+  simplesmente desce e some.
 
 ### Banimento & desbanimento
 

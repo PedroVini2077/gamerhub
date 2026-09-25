@@ -10,6 +10,7 @@ import { rotuloDoEstado, corDoEstado, estadoNoAr, podeEditar } from '../../lib/n
 import { RECURSOS_COMPLETOS } from '../../lib/formatacao/vocabulario';
 import EditorDeTexto from '../ui/EditorDeTexto';
 import ConfirmModal from '../ui/ConfirmModal';
+import SugestoesDaMateria from './SugestoesDaMateria';
 
 /**
  * `[25/09]` Escrever uma matéria.
@@ -138,6 +139,10 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar }) {
           recursos={RECURSOS_COMPLETOS} id={`corpo-${id}`}
         />
       </div>
+
+      {editavel && (
+        <SugestoesDaMateria campos={campos} onAplicar={(k, v) => set(k)(v)} />
+      )}
 
       {estado && <p className="text-xs font-mono text-gray-400">{estado}</p>}
 

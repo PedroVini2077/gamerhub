@@ -35,7 +35,42 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### 🟠 `[25/09]` DUAS PERGUNTAS DELE — minha resposta, decisão dele
+### ✅ `[25/09]` AS DUAS PERGUNTAS DELE — respondidas E implementadas
+
+Ele aprovou as duas recomendações e mandou fazer. O que entrou:
+
+**1. Painel do Fundador** → aba **News** com o ESTADO do jornal (contagem por
+estado, o que espera revisão, e há quanto tempo). **Não** um segundo editor —
+a razão está no `PAINEIS.md`.
+
+**2. Assistente do News** → `src/lib/news/assistente.js`: editoria pelo título,
+resumo das primeiras frases do corpo, e avisos de conferência. Toda sugestão é
+BOTÃO.
+
+> ### ⚠️ O QUE FICOU DE FORA, E É DECISÃO DE CUSTO DELE
+>
+> **Nada do que entrou chama modelo nenhum.** As três sugestões são derivadas do
+> texto que a pessoa já escreveu — custo zero, instantâneo, zero alucinação.
+>
+> **A `OPENAI_API_KEY` existe em produção**, mas é usada no
+> `omni-moderation-latest`, que é **grátis**. Geração de texto é **paga**, e
+> ligar isso começa a gastar numa conta que hoje só usa o endpoint gratuito.
+>
+> **O que um modelo acrescentaria:** reescrever o resumo com outra voz, propor
+> título alternativo, e — na ingestão — resumir o item coletado num rascunho.
+> São melhorias de REDAÇÃO, não de correção.
+>
+> **A conta (§0.2 regra 2):** uma chamada por matéria, não por tecla. Com
+> `gpt-4o-mini`, uma matéria de ~4 mil caracteres custa fração de centavo. O
+> problema não é o valor — é **não existir orçamento de IA decidido**, e toda
+> cota grátis deste projeto já ter estourado pelo menos uma vez.
+>
+> **O seam está pronto:** `sugestoesPara()` devolve o mesmo formato venha de
+> onde vier. Ligar um modelo é trocar a implementação, não a tela.
+
+---
+
+### 🟠 `[25/09]` O QUE CONTINUA SENDO DECISÃO DELE — o resto das duas perguntas
 
 **1. "Eu como owner posso ter um painel próprio de publicar notícias?"**
 
@@ -2591,8 +2626,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->157<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.756<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->159<!--/n--> arq ·
+  <!--n:src.lib.linhas-->19.038<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->23<!--/n--> arq ·
   <!--n:src.services.linhas-->2.377<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
