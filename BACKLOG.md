@@ -35,6 +35,41 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🟠 `[25/09]` DUAS PERGUNTAS DELE — minha resposta, decisão dele
+
+**1. "Eu como owner posso ter um painel próprio de publicar notícias?"**
+
+**Minha recomendação: NÃO um segundo editor — mas SIM uma visão editorial no
+`/owner`.** Dois editores são duas implementações que divergem (§4), e a
+diferença entre owner e admin já está expressa no lugar certo: os botões que
+aparecem. O que falta no `/owner` não é a ferramenta de escrever, é o **estado
+do jornal**: quantos rascunhos esperando revisão, o que está agendado, o que
+saiu na semana. Isso é informação de fundador, não cópia de painel.
+
+**2. "As recomendações por IA, acha bom implementar?"**
+
+**Sim, mas só como ASSISTENTE de quem escreve — nunca como autor.** O corte:
+
+| Cabe | Não cabe |
+| --- | --- |
+| sugerir resumo/subtítulo **a partir do corpo que ele já escreveu** | escrever a matéria a partir do título |
+| sugerir editoria pelo título | inventar fato, data, número ou citação |
+| avisar "este texto não tem link de fonte" | publicar sem gente ler |
+
+**O motivo não é técnico, é o que está escrito na landing:** *"apurado pela
+equipe, sem caça-clique e sem repost sem fonte"*. IA que redige a partir de um
+título produz exatamente o contrário, com a marca do GamerHub assinando.
+
+**O custo, que é a parte que ninguém pergunta (§0.2 regra 2):** a chamada seria
+**uma por matéria** — algumas por dia, não por tecla. Essa é a forma certa. Mas
+**não existe orçamento de IA decidido**, e toda cota grátis deste projeto já
+estourou pelo menos uma vez.
+
+**Onde a IA paga de verdade:** na ingestão (`news_items_raw`), resumindo o item
+coletado num rascunho que o editor reescreve. Mas isso exige a ingestão primeiro.
+
+---
+
 ### 🐛 `[25/09]` RESOLVIDO — criar rascunho estava quebrado, e ELE achou
 
 `null value in column "conteudo" ... violates not-null constraint`. Não dava
@@ -55,6 +90,39 @@ conta do roteiro é `admin`, então **Publicar não pode aparecer**.
 **Efeito colateral que precisou de solução:** admin não apaga matéria, então o
 roteiro não limpa a própria sujeira. A retenção diária passou a alcançar
 rascunho de teste com mais de 2h — **nunca** o que está publicado.
+
+---
+
+### 🟠 `[25/09]` A ESTRATÉGIA DE ASSETS DA LANDING — análise entregue, decisão dele
+
+> Prompt dele em 25/09: *"não quero voltar ao modelo antigo de gerar uma imagem
+> específica para cada feature... me diga quais imagens realmente valeria a pena
+> eu gerar agora como assets visuais de longa duração"*. Ele pediu **só a
+> análise**, sem implementar. Entregue no chat; o resumo fica aqui.
+
+**O número que decide:** das 8 cenas de hoje, **6 desenham a interface** — cada
+uma tem a barra lateral com um item aceso e o conteúdo daquela feature
+(`2-feed`, `3-comunidade`, `4-keys`, `5-ranks`, `6-lives`, `8-news`). Essas são
+exatamente as que morrem no próximo redesenho. As duas que sobrevivem
+(`1-hero`, `7-cta`) não desenham feature nenhuma.
+
+**O que eu pedi que ele gere — 3 conceitos, ~8 arquivos de referência:**
+
+| # | O quê | Para quê | Formato |
+| --- | --- | --- | --- |
+| 1 | **Placa de ambiente**, 3 ângulos — rocha, fenda, neon, SEM tela/interface | o fundo de TODA cena de feature; o conteúdo vem da UI real por cima | larga + retrato |
+| 2 | **A fenda** — o encontro do verde com o roxo, isolado | peça estrutural da identidade, não do produto | larga + retrato |
+| 3 | **Placa de vidro VAZIA** (1–2 variações, fundo transparente) | é o que mata a arte por feature: eu preencho com o produto real em CSS | uma só, elemento |
+
+**O que eu pedi que ele NÃO gere:** cena por feature, capa de jogo (envelhece e
+tem licença), post/contador/avatar falso, ícone por feature (o `lucide` cobre),
+e 3D (já descartado).
+
+**O ganho medido:** de **48 arquivos / 4.551 kB** para ~8 referências, e feature
+nova passa a custar **zero arte**.
+
+**Depende dele:** gerar as imagens. Só depois eu implemento — e a implementação
+usa o briefing de 11/09 como base, sem reescrever direção visual.
 
 ---
 
