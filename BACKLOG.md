@@ -35,6 +35,49 @@
 
 ## 🔄 EM EXECUÇÃO
 
+### 🔄 `[25/09]` GAMERHUB NEWS — o plano, com a ordem decidida hoje
+
+**Objetivo dele:** *"vamos tentar terminar esse GamerHub News ainda hj"*.
+
+**O que já existe** (PR #246): 5 tabelas, RLS provada em ROLLBACK, `busca`
+gerada com `portugues_sem_acento`. **Zero tela.**
+
+| # | Etapa | Estado |
+| --- | --- | --- |
+| 1 | O corte editorial B no banco: `in_review` + publicar só `is_super()` | ✅ trigger, provado em ROLLBACK 8/8 |
+| 2 | `is_owner()` nas oito (5 funções + 3 policies) | ✅ SEC-054 + SEC-054b |
+| 3 | Service de leitura do News | ✅ `newsService.js`, sem RPC e sem `conteudo` na lista |
+| 4 | `/news` (lista) e `/news/:slug` (artigo) — **só logado** | ✅ |
+| 5 | O anúncio do News na LANDING | ⚠️ **PARCIAL** — ver abaixo |
+| 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ⬜ **é o que falta para o News existir de verdade** |
+| 7 | Travas: vocabulário × banco, rota coberta por e2e | ✅ |
+
+> **A etapa 5 ficou PELA METADE, e é honesto dizer por quê.** O News foi
+> anunciado dentro da cena do feed na landing — uma frase, sem arte nova. O que
+> ele merece é **cena própria**, como Feed, Mural, Lives, Keys e Ranks têm: cada
+> uma tem arte dele e sobreposição própria.
+>
+> Eu **não** produzi essa arte de propósito. A decisão de 25/09 é clara: a arte
+> é dele, a composição é minha — e as duas vezes em que eu tentei produzir arte
+> (3D e ícones) foram descartadas. Fazer de novo seria gastar sessão para jogar
+> fora.
+>
+> **O que eu preciso dele:** a arte da cena do News, no mesmo formato das
+> outras 7. Aí a cena entra em `SECOES` e ganha `#news` na navegação e no rodapé.
+
+> **A etapa 6 é o que falta para o News não ser uma sala vazia.** Hoje existe a
+> tela de ler e ZERO forma de escrever pelo site — um artigo só nasce por SQL.
+> É o próximo bloco.
+
+**Fora deste bloco, decididos hoje e enfileirados depois:** a RPC da wordlist,
+o `pg_trgm`, a rota de publicar (botão "+"), e a fonte da landing.
+
+**Risco que eu já enxergo:** a etapa 5 é de camada 1 (landing) e as outras são
+camada 3. Pela §0.4 a landing vem antes — mas anunciar uma tela que ainda não
+existe é pior do que não anunciar. Por isso ela vai **junto** com a 4, não antes.
+
+---
+
 ### 🔵 `[25/09]` A wordlist inteira é legível por qualquer pessoa logada
 
 Achado enquanto eu fechava a SEC-053. `blocked_words_select` é `USING (true)`:
@@ -64,9 +107,20 @@ Isso é **decisão de produto**, não de segurança:
 valha esconder. Hoje ela é lista de palavrão, não de estratégia — 🔵 de
 propósito.
 
+> ### ✅ `[25/09]` ELE DECIDIU: fazer a RPC
+>
+> *"Pode fazer tbm a rpc que só responde tem termo bloqueado"*. Ou seja: o aviso
+> antes de enviar continua, e a lista deixa de ser legível por qualquer conta.
+>
+> **O que eu preciso resolver ao construir**, e é o §0.2 regra 2 (*quantas vezes
+> por dia isso roda?*): hoje a checagem é local e custa zero — uma ida ao
+> servidor por tecla digitada seria inaceitável. O desenho tem de ser
+> **sob demanda** (ao enviar, ou com espera depois de parar de digitar), nunca
+> a cada tecla.
+
 ---
 
-### 🟠 `[25/09]` DECISÃO DELE — o botão "+" no lugar do compositor do topo
+### ✅ `[25/09]` DECIDIDO — o botão "+" abre uma ROTA PRÓPRIA, não um modal
 
 Proposta dele em 25/09: *"acho que tá na hora de mudar a forma de postar algo...
 pensei em limpar essa parte de cima do feed, e adicionar um botão +, tipo
@@ -90,9 +144,24 @@ dedicado, em vez do compositor inteiro. O "+" na navegação vira a segunda port
 para quem não está no feed. Custa uma linha em vez de um card, a descoberta
 continua de graça, e o compositor ganha o espaço de que precisa.
 
-**O que fica pendente dele:** aprovar o desenho (uma linha + "+" na navegação ×
-só o "+"), e se a superfície é modal ou rota própria — rota própria é melhor
-para vídeo e para voltar sem perder o rascunho, e tem custo de navegação.
+> **`[25/09]` ELE DECIDIU: rota própria.** Palavras dele: *"o Instagram, quando
+> vc clica pra criar um post ou reels, ele te leva a um lugar pra escolher
+> alguma mídia... e depois vc pode editar as fotos e vídeos separadamente. Se
+> fosse só um modal, ia continuar pequeno na minha opinião, então fazer algo a
+> parte vai dar mais liberdade pra quem quer postar"*.
+>
+> Ele mesmo pôs o limite: *"eu sei que um site não dá pra colocar uma
+> ferramenta inteira de edição, mas pelo menos fazer algo separado pra dar mais
+> liberdade e criatividade"*. O alvo é **espaço para trabalhar**, não paridade
+> com o Instagram.
+>
+> E disse a ordem: **vídeo curto vem DEPOIS do GamerHub News** — a rota tem de
+> nascer com lugar para ele, sem construí-lo agora.
+>
+> **`[25/09]` E ele fechou a segunda parte: OS DOIS.** *"eu colocaria essa linha
+> e acrescentaria o botão + visível em algum lugar tbm"*. O topo do feed guarda
+> **uma linha** que abre a rota, e o **"+" fica visível** na navegação — duas
+> portas para a mesma superfície, não duas superfícies.
 
 **O que JÁ está decidido e não muda com isso:** o "+" não pode embarcar opção de
 equipe no DOM de quem não é equipe (3º prompt dele, sobre permissão na tela).
@@ -797,7 +866,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1197,36 +1266,24 @@ dependência técnica real** que decide o resto:
 
 ---
 
-- ⬜ `[11/09]` 🟠 **A LANDING — só faltam TRÊS DECISÕES dele.** *`[24/09]`
-  **Item renomeado e corrigido contra o sistema.** Ele dizia "A MARCA E A
-  LANDING" e afirmava que *"a landing continua a estrutura antiga"*. As duas
-  coisas envelheceram.*
+- ⬜ `[25/09]` 🟢 **A FONTE DE DISPLAY — a única das três que ele quis mudar.**
 
-  **O que foi conferido hoje, arquivo a arquivo:**
+  **`[25/09]` Ele fechou as outras duas:** *"já está bom como está, só a fonte
+  que eu concordo em mudar; a tese da fenda e as artes já foi decidido há muito
+  tempo atrás"*. **Ele está certo nas duas, conferido:** a fenda tem decisão
+  escrita em `DECISOES.md` desde 04/09 (ele reprovou a fenda visível desde o
+  primeiro quadro, e a versão de hoje nasceu daquilo), e a arte sempre foi
+  **dele**, com composição minha — nunca foi pergunta aberta, era observação
+  minha ocupando linha de decisão. O item estava **inchado**, e isso é meu erro.
 
-  | O que o backlog dizia | O que o sistema diz |
-  | --- | --- |
-  | "a marca espera decisão" | **implantada** desde 11/09 — proposta 03, favicon, PWA, cabeçalho, 11 telas |
-  | "a landing continua a estrutura antiga" | **falso.** `FeatureSection` **não existe mais** no código |
-  | "os três atos não foram implementados" | `PrologoDaLanding`, `PortalDoAtoZero`, `ConvergenciaDoHub` e 4 `CenaPresa` estão de pé |
-  | — | **42 arquivos** de arte das 7 cenas em `src/assets/landing/cenas/`, em 6 variantes cada |
+  **O que sobra, e não é pequeno:** `Orbitron` é a fonte mais usada do mundo em
+  "coisa gamer". Se o objetivo é não parecer mais um site gamer, é a alavanca
+  mais forte — e a mais cara, porque `font-display` atinge o site **inteiro**.
 
-  **O que sobra é decisão, não código.** Os três pontos que o briefing levantou
-  e que ele nunca respondeu:
-
-  1. **A tese da fenda.** Hoje o verde e o roxo são dois lutadores de costas,
-     separados por um corte vertical — imagem de **duelo**. O nome promete
-     **encontro**. A proposta é a fenda deixar de ser onde eles brigam e passar
-     a ser onde eles se tocam. **Custo: zero linha de código — é narrativa.**
-  2. **A fonte de display.** `Orbitron` é a fonte mais usada do mundo em "coisa
-     gamer". Se o objetivo é não parecer mais um site gamer, é a alavanca mais
-     forte — e a mudança mais cara, porque atinge o site **inteiro**.
-  3. **De onde vem a arte daqui pra frente.** O que deu certo neste projeto (a
-     arena, as 7 cenas) foi **arte dele + composição minha**. O que falhou duas
-     vezes (3D, ícones) fui eu tentando produzir a arte.
-
-  **Nenhuma das três me impede de trabalhar** — elas mudam o rumo, não
-  destravam tarefa. Por isso o item é 🟠 e não 🔴.
+  **Antes de trocar, eu preciso trazer:** 3 a 4 candidatas com amostra da marca
+  "GamerHub" em cada, o custo em bytes de cada uma (§0.3 regra 1), e o que muda
+  em tela pequena. Trocar fonte é fácil; escolher errado se paga em todas as
+  telas. **Não começo sem ele ver as amostras.**
 
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
@@ -1557,7 +1614,7 @@ CI — que a retenção diária limpa —, e o feed em zero.
 > que apaga e o `SELECT` que conta veem a **mesma versão** da tabela, a de
 > antes. A conferência de verdade exige uma segunda consulta.
 
-- ⬜ `[24/09]` 🔵 **A busca acha palavra, não pedaço de palavra.** *`pg_trgm`
+- ⬜ `[25/09]` 🟢 **✅ APROVADO por ele — a busca acha palavra, não pedaço de palavra.** *`pg_trgm`
   ficou de fora: é outra extensão, outro índice e outra conta de custo. Hoje
   "config" não acha "configuração" — só a palavra inteira (com flexão e sem
   depender de acento). Entra quando houver acervo que justifique.*
@@ -1686,37 +1743,28 @@ o ouve pelo `contagem_de_achados_de_seguranca`. Contraprova em ROLLBACK: tabela
 criada do zero nasceu com os quatro privilégios, **o auditor acusou**, a
 contagem do CI foi a 1, e o `REVOKE` a zerou.
 
-- ⬜ `[25/09]` 🟠 **O corte de permissão editorial é decisão sua.** *Hoje:
-  equipe (admin+) cria e edita; **apagar** é só super admin e owner. O seu
-  prompt pede para "não assumir que todo admin possui todas essas capacidades".
-  Esta é a política que existe — se você quiser que **publicar** também exija
-  super admin, é uma migration de uma linha.*
+- ⬜ `[25/09]` 🟠 **✅ DECIDIDO (saída B): admin ESCREVE, super admin PUBLICA.**
+  *"Gostei da opção b, pode ser ela mesma".*
+
+  | Ação | Quem pode, a partir da decisão |
+  | --- | --- |
+  | criar rascunho · editar | admin · super admin · owner |
+  | **publicar** | **só** super admin · owner |
+  | apagar | só super admin · owner |
+
+  **Por que B e não "como está":** rascunho é reversível; publicado é a voz do
+  GamerHub falando com todo mundo, e erro editorial publicado não desfaz. Quem
+  escreve deixa de ser quem aprova.
+
+  **Por que NÃO o papel `editor` (saída C):** mexer em `role_rank` encosta em
+  todo o sistema de hierarquia, e isso já derrubou o site três vezes. O ganho só
+  aparece quando existir gente que escreve e não modera — hoje não existe.
+
+  **O que entra junto, e é o que faz B funcionar:** um estado `in_review` e o
+  botão "enviar para revisão". Sem isso o admin escreve e fica preso, sem
+  caminho — seria a regra da INVERSA (§5) quebrada na estreia.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[24/09]` 🟠 **As CINCO decisões da Fase 0 do bloco Feed/Busca/News.**
-  *Detalhe e recomendação em cada uma no item N de
-  [`docs/PLANO-FEED-BUSCA-NEWS.md`](docs/PLANO-FEED-BUSCA-NEWS.md). Resumo:*
-
-  | # | A decisão | Resposta dele em `[24/09]` |
-  | --- | --- | --- |
-  | 1 | ordem das fases (paginação primeiro) | ✅ aprovada |
-  | 2 | o que o contador deve dizer | ✅ **teto `"20+"`** |
-  | 3 | News público ou logado | ✅ **só logado** — e por isso ele **tem de ser anunciado na landing**, senão nasce invisível para quem não tem conta |
-  | 4 | SEO agora ou depois | ✅ **agora**, com a ressalva do item H: artigo logado não é indexável, então "agora" é a superfície pública que já existe |
-  | 5 | as 403 linhas de CI em `posts` | ⏳ **pendente** — ele pediu explicação, está abaixo |
-
-  **`[24/09]` A decisão 5, explicada, porque ele pediu:** cada execução do E2E
-  no CI **publica um post de verdade** na produção (as contas de teste são
-  reais — é isso que torna o teste honesto) e o apaga no fim. O apagar do site
-  é **soft**: a linha fica no banco com `deleted_at` preenchido, invisível no
-  feed e visível para a equipe no painel. São **403 linhas** assim, de agosto
-  para cá, e elas nunca saem. Não quebram nada e não são segredo — é
-  desperdício e ruído: a tabela `posts` tem 404 linhas e **403 são cadáver de
-  robô**, o que atrapalha qualquer medição futura do feed. **Minha
-  recomendação:** apagar de verdade só as que têm prefixo de teste
-  (`[e2e `/`[painel `) e criar uma retenção automática para as próximas —
-  mas `DELETE` é irreversível (🔴), então não faço sem você dizer.
 
 - ⬜ `[24/09]` 🟠 **O painel do Fundador autoriza por LITERAL, e as duas saídas
   têm risco.** *Achado na parte 1 da auditoria (SEC-051). **Não é
@@ -1754,6 +1802,17 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   > `auditorDoBancoEhOuvido.test.js` cobre essa lista também.
   >
   > **Quando você decidir, a decisão vale para as oito de uma vez.**
+
+  > ### ✅ `[25/09]` ELE DECIDIU: trocar por `is_owner()`, nas oito
+  >
+  > *"Pode fazer esse do is_owner"*. Vale para as **cinco funções** do painel e
+  > para as **três policies** de `site_config`. Consequência aceita: um cargo
+  > futuro de rank ≥ 4 herdaria o painel do Fundador — é o que a troca
+  > significa, e ele decidiu sabendo.
+  >
+  > **NÃO entra junto:** pôr `exige_operador_ativo()` nas cinco. A recomendação
+  > contra continua de pé (risco de trancar o fundador fora do próprio painel,
+  > sem inversa) e ele não pediu isso.
 
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
@@ -2381,10 +2440,10 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->152<!--/n--> arq ·
-  <!--n:src.lib.linhas-->18.286<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->21<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.128<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->155<!--/n--> arq ·
+  <!--n:src.lib.linhas-->18.597<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->22<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.240<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

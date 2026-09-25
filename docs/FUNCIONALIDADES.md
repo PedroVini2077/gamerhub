@@ -578,6 +578,55 @@ Mesma ideia e mesmas regras da página de post, para o mural. Existe porque ele
 era o único tipo da fila de moderação sem destino exato — o link caía na lista,
 que é paginada, e uma mensagem antiga podia nem estar na primeira página.
 
+### `[25/09]` GamerHub News — `/news` e `/news/:slug`
+
+A seção editorial: o que aconteceu em games, tecnologia e cultura geek,
+**apurado pela equipe**. É a contraparte do feed, que é da comunidade — os dois
+convivem e não se misturam.
+
+**Só para quem tem conta.** Decisão dele em 24/09. A consequência disso é que o
+News **nasce invisível** para quem chega de fora, e por isso a landing o
+anuncia: sem o anúncio, a única forma de descobrir que ele existe seria criar
+uma conta primeiro.
+
+| Tela | O que faz |
+| --- | --- |
+| `/news` | A lista, com filtro por **editoria** na URL (`?editoria=hardware`). Nove editorias, vocabulário fechado |
+| `/news/:slug` | O artigo: título, subtítulo, capa, autor, corpo, tags e a fonte externa |
+
+**Três detalhes que decidem se a tela mente ou não:**
+
+- **Editoria inventada na URL cai para "Tudo".** `?editoria=qualquercoisa`
+  poderia consultar, não achar nada e desenhar "nenhuma notícia" — resposta que
+  parece verdade e não é.
+- **A lista corta em 30 e DIZ que cortou.** Ela não pagina (o porquê está no
+  `newsService.js`), então o teto aparece na tela. Lista que corta em silêncio
+  mente sobre o tamanho do que existe — é a mesma regra da busca.
+- **Rascunho abre para a equipe COM tarja.** A RLS deixa `is_staff()` ler
+  qualquer status; sem a tarja, um editor abriria o próprio rascunho pelo link e
+  teria todo motivo para achar que já está no ar.
+
+**O corpo passa pelo mesmo `TextoFormatado` do post** — árvore, nunca HTML. Não
+há exceção "porque é texto da equipe": seria criar o único lugar do site onde
+`dangerouslySetInnerHTML` faria sentido, e é assim que o zero vira um. A fonte
+externa passa por `safeExternalUrl`, e URL recusada aparece como texto.
+
+#### Quem publica não é quem escreve — o corte editorial
+
+Decisão dele em 25/09, saída "B":
+
+| Ação | Quem pode |
+| --- | --- |
+| criar rascunho · editar · mandar para revisão | admin · super admin · owner |
+| **publicar** e **agendar** | **só** super admin · owner |
+| editar o que **já está no ar** | **só** super admin · owner |
+| apagar | só super admin · owner |
+
+Rascunho é reversível; publicado é a voz do GamerHub falando com todo mundo, e
+erro editorial publicado não desfaz. Quem impede de verdade é o banco (um
+trigger que levanta exceção) — a tela apenas não oferece o botão que o servidor
+vai recusar.
+
 ### Comentários, likes e notificações
 
 - **Comentários** (`CommentSection` / `CommentCard`): abrir/fechar, criar,

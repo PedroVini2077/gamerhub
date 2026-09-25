@@ -24,7 +24,7 @@
 
 ### 9.1 Por que ele existe, com o número que decidiu o formato
 
-O projeto tem <!--n:docs.linhas-->26.905<!--/n--> linhas de documentação, e
+O projeto tem <!--n:docs.linhas-->27.125<!--/n--> linhas de documentação, e
 `CLAUDE.md` + `docs/regras/` são **injetados em toda sessão**. Isso é uma
 vantagem — o conhecimento não se perde entre sessões. Mas tentar manter tudo
 **ativo** enquanto executo uma tarefa foi o que produziu as três falhas de
@@ -189,6 +189,37 @@ Depois: o que mudou · como foi validado · **o que NÃO foi validado** ·
 pendências · impacto documental.
 
 **Profundidade proporcional ao risco.** Ajuste de texto não pede relatório.
+
+#### `[25/09]` O que eu registro no BACKLOG vai TAMBÉM para o chat
+
+> Cobrança dele: *"percebo que quando vc acha alguma coisa ou coloca algumas
+> recomendações, vc registra tudo no backlog, isso me deixa perdido. Daqui pra
+> frente, ao invés de só colocar no backlog, quero que vc coloque as decisões e
+> o que vc registrou no backlog aqui no chat, tudo — pq eu consigo ler e
+> entender e decidir na hora sem precisar abrir nenhum `.md`"*.
+
+**Por que ele está certo, e é mecânico.** O backlog existe porque coisa que vive
+só na conversa se perde (§6.2, 01/09). O que eu não tinha visto é que o inverso
+falha igual: coisa que vive **só no `.md`** não chega nele — e ele é quem decide.
+É o §1.5 aplicado ao dono: a informação existe, está correta, e **não chega em
+forma utilizável**. Item que espera decisão dentro de um arquivo que ele não abre
+é indistinguível de item que eu esqueci.
+
+**A regra:** tudo que eu escrever no `BACKLOG.md` aparece na **mesma resposta**,
+em chat. Não é resumo do backlog inteiro — é o que ESTA sessão registrou.
+
+**Em três níveis, porque "tudo" sem forma vira parede de texto** — e aí ele para
+de ler de novo, só que pelo outro motivo:
+
+| O que registrei | Como chega no chat |
+| --- | --- |
+| **decisão que depende dele** | por extenso: o problema, as saídas, o que cada uma custa, e **minha recomendação** |
+| **achado que eu já tratei** | uma linha: o que era e o que fiz |
+| **ação de painel** (ele clicar) | o passo a passo pesquisado, como o §9.12 já manda |
+
+**O que isto NÃO muda:** o registro no `BACKLOG.md` continua obrigatório. O chat
+é a **segunda** entrega, não a substituta — chat some junto com a sessão, e é
+exatamente por isso que o arquivo existe.
 
 ### 9.12 `[11/09]` Tarefa manual do dono SEMPRE vem com passo a passo PESQUISADO
 

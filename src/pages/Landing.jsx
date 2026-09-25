@@ -101,7 +101,7 @@ export default function Landing({ introDone = true }) {
           id="feed" invasao="sobe" arte={CENAS.feed}
           eyebrow="Feed"
           titulo="Um feed que não para"
-          descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa."
+          descricao="Dicas, descobertas e novidades postadas pela galera — curta, comente e entre na conversa. Ao lado dele fica o GamerHub News: o que aconteceu em games, tecnologia e cultura geek, apurado pela equipe."
           lado="esquerda"
           sobreposicao={() => <SobreposicaoDoFeed lado="esquerda" />}
         />

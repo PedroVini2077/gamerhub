@@ -14,7 +14,7 @@ todas as tabelas públicas.**
 | Tabela                       | Descrição                                                        |
 | ---------------------------- | ---------------------------------------------------------------- |
 | `profiles`                   | Perfil do usuário (1:1 com `auth.users`): username, avatar, bio, role, banimento, redes, preferências. **`[12/09]` `role` e `banned` são `NOT NULL`** — o `CHECK` de `role` sozinho não bastava, porque `NULL = ANY(ARRAY[...])` é NULL e constraint só reprova em `false` explícito (SEC-017) |
-| `news_articles`              | **`[25/09]`** Artigos do GamerHub News. LOGADO: `anon` não alcança |
+| `news_articles`              | **`[25/09]`** Artigos do GamerHub News. LOGADO: `anon` não alcança. **Cinco estados** (`draft` · `in_review` · `scheduled` · `published` · `archived`) e o trigger `news_guarda_a_publicacao`, que é o corte editorial: pôr no ar (`published` **ou** `scheduled`) e mexer no que já está no ar é só de `is_super()`. Ele levanta **exceção** em vez de negar por policy, porque policy nega com 0 linhas e nenhum erro — o editor clicaria em publicar e nada aconteceria |
 | `news_sources`               | **`[25/09]`** Fontes editoriais. Só a equipe vê — fonte é bastidor |
 | `news_tags` · `news_article_tags` | **`[25/09]`** Tags do News e a ligação com o artigo |
 | `news_items_raw`             | **`[25/09]`** Caixa de entrada da ingestão. RLS ligada e **zero policies**: ninguém lê pela REST API, nem a equipe |

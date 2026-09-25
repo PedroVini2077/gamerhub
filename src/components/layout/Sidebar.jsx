@@ -1,4 +1,4 @@
-import { Tv, Trophy, Gem } from 'lucide-react';
+import { Tv, Trophy, Gem, Newspaper } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Home, Users, Key, User, X, Shield, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.jsx';
@@ -26,6 +26,10 @@ export default function Sidebar({ open, onClose }) {
 
   const nav = [
     { to: '/', icon: Home, label: 'Feed' },
+    // `[25/09]` O News fica logo abaixo do feed: é a segunda coisa que alguém
+    // abre ao chegar, e a decisão do dono de deixá-lo SÓ LOGADO faz desta
+    // barra a única porta para ele dentro do site.
+    { to: '/news', icon: Newspaper, label: 'News' },
     { to: '/community', icon: Users, label: 'Comunidade' },
     { to: '/keys', icon: Key, label: 'Keys & Promos' },
     { to: '/profile', icon: User, label: 'Perfil' },

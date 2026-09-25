@@ -67,6 +67,7 @@ export const TERRITORIO = {
   ],
   'docs/BANCO.md': [
     'supabase/migrations',
+    'src/lib/news',
     'src/services',
     'src/lib/realtimeTables.js',
     'src/lib/tabelasSemUpdate.js',
@@ -195,6 +196,11 @@ export const TERRITORIO = {
     'src/pages',
     'src/components/landing',
     'src/components/feed',
+    // `[25/09]` O GamerHub News é tela que alguém USA, então quem manda nele é
+    // o FUNCIONALIDADES. O vocabulário fechado (`src/lib/news/`) fica com o
+    // BANCO logo abaixo, porque ele espelha um `CHECK` — quem mexe num tem de
+    // abrir o outro.
+    'src/components/news',
     'src/components/community',
     'src/components/lives',
     'src/components/keys',

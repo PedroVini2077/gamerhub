@@ -64,6 +64,57 @@ por revoke de **tabela**.
 
 → `supabase/migrations/20260912164012_anon_nao_le_nada_exceto_site_config.sql`
 
+### `[25/09]` NEWS · Quem escreve não é quem publica, e o guarda é TRIGGER
+
+**Decidido (dele, saída B):** publicar e agendar é de super admin e owner;
+admin cria, edita e manda para revisão. Editar o que **já está no ar** também é
+do super.
+
+**Recusado 1 — deixar `is_staff()` publicar (como nasceu).** Erro editorial
+publicado é público e não desfaz. O prompt dele pedia explicitamente para "não
+assumir que todo admin possui todas essas capacidades".
+
+**Recusado 2 — papel `editor` novo.** Mexer em `role_rank` encosta em todo o
+sistema de hierarquia, e isso já derrubou o site três vezes. O ganho só aparece
+quando existir gente que escreve e não modera; hoje não existe.
+
+**Recusado 3 — guardar por POLICY.** Foi a primeira ideia e não serve por dois
+motivos independentes: `WITH CHECK` só enxerga a linha **nova**, e guardar
+"editar o que já está no ar" exige ver a **velha**; e policy nega com **0 linhas
+e nenhum erro** — o admin clicaria em publicar e nada aconteceria (§1.5). O
+trigger levanta exceção, e a mensagem chega no toast dizendo o que fazer.
+
+**`scheduled` conta como publicar**, e isso não é detalhe: agendar é publicar
+com atraso. Se só `published` fosse guardado, o admin agendaria para daqui a um
+minuto e o corte viraria enfeite.
+
+**A inversa existe (§5):** `in_review` é estado novo, e o admin puxa de volta
+para `draft` sozinho. Sem ele, o admin escreveria e ficaria preso sem caminho.
+
+→ `supabase/migrations/20260925120000_news_corte_editorial_b.sql`
+
+### `SEC-054` · O literal `role = 'owner'` sai das oito
+
+**Decidido (dele):** `is_owner()` nas cinco funções do painel do Fundador e nas
+três policies de `site_config`. Consequência aceita e dita antes: `is_owner()` é
+`role_rank >= 4`, então um cargo futuro acima de owner herdaria o painel.
+
+**Recusado — pôr `exige_operador_ativo()` nas cinco.** Ninguém consegue banir o
+fundador pelo produto (hierarquia estrita), então guardá-las só criaria o risco
+de trancá-lo fora do próprio painel **sem inversa**.
+
+**Recusado — reescrever os cinco corpos à mão.** São longos, e um deslize
+silencioso em qualquer um é uma RPC de painel quebrada. A migration lê a
+definição real, troca só a guarda, e **estoura se o padrão não casar**.
+
+**O que se aprendeu, e vale mais do que a troca:** assim que ela entrou, o
+auditor foi de 0 para 5 achados — as cinco mudaram de **checagem**, não de
+risco. Isso é o mecanismo funcionando, e foi ele que obrigou as três listas de
+isenção a serem revistas no mesmo PR em vez de ficarem mentindo.
+
+→ `supabase/migrations/20260925121000_sec_054_is_owner_nas_oito.sql`
+→ `supabase/migrations/20260925122000_sec_054b_listas_de_isencao_acompanham.sql`
+
 ### `SEC-053` · Policy nunca escreve hierarquia à mão
 
 **Decidido:** toda policy pergunta cargo por `is_staff()`/`is_super()`/

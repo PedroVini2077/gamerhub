@@ -36,4 +36,6 @@ export const UserProfile = lazy(() => import('./pages/UserProfile'));
 export const Lives       = lazy(() => import('./pages/Lives'));
 export const Ranks       = lazy(() => import('./pages/Ranks'));
 export const Busca       = lazy(() => import('./pages/Busca'));
+export const News = lazy(() => import('./pages/News'));
+export const NewsArtigo = lazy(() => import('./pages/NewsArtigo'));
 export const Owner       = lazy(() => import('./pages/Owner'));
