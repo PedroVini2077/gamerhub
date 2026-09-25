@@ -6,7 +6,7 @@
 // produção enquanto a documentação, um comentário no `e2e/portas-fechadas.mjs`
 // e o próprio código as descreviam como vivas. Ninguém mentiu: é o §9.9 puro —
 // *commit não é deploy*. `scripts/espelho-de-migrations.mjs` já fazia esta
-// pergunta para migrations; para as 8 Edge Functions não existia equivalente.
+// pergunta para migrations; para as Edge Functions não existia equivalente.
 //
 // ── Por que IMPRESSÃO, e não um número de versão escrito à mão ──────────────
 //

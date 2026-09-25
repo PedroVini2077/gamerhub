@@ -97,6 +97,26 @@ const CASOS = [
     estrago: 'queimar a cota de 10 mil consultas/dia do Safe Browsing',
   },
   {
+    // `[25/09]` A IA que rascunha matéria. O que está em jogo aqui é a cota de
+    // um provedor de IA — e a lição da `moderate-links` é exatamente esta: a
+    // porta dela era decorativa, e qualquer um da internet queimava a cota do
+    // projeto.
+    //
+    // Esta porta é MAIS estrita do que as outras: não basta ter token válido,
+    // o chamador precisa passar por `is_staff()`. O 401 aqui é a primeira
+    // camada; o 403 do `is_staff()` só é alcançável com sessão real, que este
+    // roteiro não tem de propósito (ele roda sem credencial nenhuma).
+    nome: 'redigir-materia com token inventado',
+    caminho: '/redigir-materia',
+    cabecalhos: { Authorization: 'Bearer token-que-nao-existe' },
+    corpo: {
+      titulo: 'trava do e2e',
+      notas: 'notas com mais de quarenta caracteres so para passar da faixa minima',
+    },
+    esperado: [401],
+    estrago: 'queimar a cota diaria da IA e deixar a equipe sem redigir',
+  },
+  {
     // `[03/09]` Esta porta é PÚBLICA de propósito — o formulário de contato
     // existe para quem não tem conta. Então o que se confere aqui não é "tem
     // token de usuário?", e sim **o captcha está mesmo sendo conferido?**

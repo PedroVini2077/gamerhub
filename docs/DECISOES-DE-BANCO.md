@@ -344,6 +344,37 @@ bater.
 
 ---
 
+## `[25/09]` A procedência da IA é uma COLUNA autodeclarada, não uma trilha
+
+**Decidido:** `news_articles.redigido_com_ia boolean NOT NULL DEFAULT false`,
+marcado **pelo painel** quando o editor aplica o rascunho gerado.
+
+**Por que existe:** o corte editorial já garante que nada vai ao ar sem revisão
+humana. Ele não garante **memória** — daqui a três meses, olhando uma matéria,
+ninguém teria como saber se o texto nasceu de um modelo. Isso importa em dois
+momentos concretos: na revisão (matéria de IA merece leitura mais desconfiada, e
+o revisor precisa saber **antes** de ler) e no histórico (se um erro aparecer
+publicado, a primeira pergunta vai ser *"isso veio de IA?"*).
+
+**`DEFAULT false` e `NOT NULL`**: matéria antiga e matéria escrita à mão nascem
+corretamente marcadas, sem nulo ambíguo no meio querendo dizer "não sei".
+
+**Recusado: trigger que marcasse sozinho.** O banco não tem como saber de onde
+veio o texto — quem sabe é o painel, no clique. Um trigger teria de adivinhar, e
+adivinhar é o fallback silencioso do §4 com outro nome.
+
+**O limite, escrito de propósito:** sendo autodeclarada, ela serve à
+**procedência honesta**, não a fiscalizar quem queira esconder — salvando de
+novo, desmarca. O que fecharia de verdade é registrar cada geração em
+`admin_logs`, e isso está no `BACKLOG.md` como item próprio.
+
+Provado em ROLLBACK 3/3: admin cria marcado, a marca persiste, e as linhas
+existentes ficam em `false`.
+
+→ `supabase/migrations/20260925170000_news_marca_o_que_foi_redigido_com_ia.sql`
+
+---
+
 ## O que este índice ainda NÃO cobre
 
 São **53** migrations com ID `SEC-*`/`LIVE-*` e 214 no total; as entradas acima

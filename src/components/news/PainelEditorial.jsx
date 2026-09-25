@@ -8,6 +8,7 @@ import { rotuloDoEstado, corDoEstado } from '../../lib/news/estadosDoArtigo';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
 import EditorDeArtigo from './EditorDeArtigo';
+import MarcaDeIa from './MarcaDeIa';
 
 /**
  * `[25/09]` O PAINEL EDITORIAL — a aba "News" do admin.
@@ -133,6 +134,7 @@ export default function PainelEditorial() {
                   {rotuloDaEditoria(a.editoria)} · {a.slug}
                 </p>
               </div>
+              <MarcaDeIa ativo={a.redigido_com_ia} />
               <span className={`text-[10px] font-mono uppercase tracking-wider shrink-0 ${corDoEstado(a.status)}`}>
                 {rotuloDoEstado(a.status)}
               </span>

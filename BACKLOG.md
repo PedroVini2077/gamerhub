@@ -229,6 +229,7 @@ gerada com `portugues_sem_acento`. **Zero tela.**
 | 5 | O anúncio do News na LANDING | ⚠️ **PARCIAL** — ver abaixo |
 | 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ✅ aba **News** do admin |
 | 7 | Travas: vocabulário × banco, rota coberta por e2e | ✅ |
+| 8 | **Rascunhar com IA** a partir das NOTAS do editor | ✅ Edge Function + painel + 4 invariantes |
 
 > **A etapa 5 ficou PELA METADE, e é honesto dizer por quê.** O News foi
 > anunciado dentro da cena do feed na landing — uma frase, sem arte nova. O que
@@ -261,6 +262,63 @@ o `pg_trgm`, a rota de publicar (botão "+"), e a fonte da landing.
 **Risco que eu já enxergo:** a etapa 5 é de camada 1 (landing) e as outras são
 camada 3. Pela §0.4 a landing vem antes — mas anunciar uma tela que ainda não
 existe é pior do que não anunciar. Por isso ela vai **junto** com a 4, não antes.
+
+---
+
+### 🔴 `[25/09]` AÇÃO DELE — criar a `GROQ_API_KEY` (sem ela a IA não redige)
+
+O botão **Rascunhar com IA** está no painel e funciona; falta o segredo. Sem
+ele a função responde *"A IA não está configurada"* e nada mais acontece — o
+site **não quebra**, é o primeiro `if` depois da porta.
+
+**Passo a passo pesquisado, com os links diretos:** `docs/OPERACAO.md`, seção
+*"A CHAVE DA IA QUE RASCUNHA MATÉRIA"*. São 3 cliques: criar conta em
+`console.groq.com`, gerar a chave em `console.groq.com/keys`, e colar em
+`supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/functions/secrets` com o
+nome exato `GROQ_API_KEY`.
+
+**O que eu conferi antes de mandar ele clicar** (§9.12): a chave nunca chega ao
+navegador (quem fala com a Groq é a Edge Function); esquecer o segredo não
+derruba nada; a ordem dos passos não importa (segredo vale na hora, sem
+reimplantar); e `llama-3.3-70b-versatile` continua listado como modelo de
+produção na Groq, conferido em 25/09.
+
+---
+
+### 🔵 `[25/09]` A procedência da IA é AUTODECLARADA, não registrada
+
+`news_articles.redigido_com_ia` é marcado pelo painel quando o editor aplica o
+rascunho. Serve à **procedência honesta**, não a fiscalizar: quem quiser
+esconder, desmarca salvando de novo.
+
+**O que fecharia de verdade:** registrar cada geração em `admin_logs` — quem
+pediu, quando, e o tamanho das notas. Aí a trilha responde *"esse texto veio de
+IA?"* sem depender de ninguém marcar.
+
+**Por que não entrou agora:** é action nova em `lib/logMeta.js` (com ícone, que
+tem trava), e a Edge Function teria de gravar por conta — mais superfície num
+bloco que já está grande. E o volume é de algumas matérias por dia, então o
+risco de alguém "esconder" hoje é teórico.
+
+---
+
+### 🔵 `[25/09]` A política de dados da Groq é INFERIDA, não lida
+
+O provedor foi escolhido pelo que **deu para verificar** (ver
+`docs/DECISOES-FERRAMENTAL.md`, 25/09): os termos do Gemini grátis dizem, com
+todas as letras, que usam o conteúdo para melhorar produtos do Google e que
+*"human reviewers may read, annotate, and process your API input and output"* —
+e pedem para não submeter informação confidencial. Rascunho de matéria é
+conteúdo não publicado, então o Gemini grátis está fora.
+
+**O que eu NÃO consegui verificar:** a frase "não treinamos com os seus dados"
+no texto oficial da Groq. Terceiros afirmam; terceiro não é fonte (§1.1). O DPA
+deles diz algo mais estreito — processar só para prestar o serviço — e a
+**ausência** da cláusula de "melhorar nossos produtos" é a diferença real.
+
+**O que resolveria:** escrever para a Groq e guardar a resposta, ou pagar o
+Gemini. Decisão dele, e só vale a pena quando o News tiver conteúdo que doa
+vazar.
 
 ---
 
@@ -2626,10 +2684,10 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->159<!--/n--> arq ·
-  <!--n:src.lib.linhas-->19.038<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->23<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.377<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->161<!--/n--> arq ·
+  <!--n:src.lib.linhas-->19.243<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->24<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.434<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

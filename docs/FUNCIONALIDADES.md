@@ -668,6 +668,44 @@ três sugestões saem do texto que a pessoa já escreveu: custo zero, resposta
 instantânea, e **zero chance de inventar fato** — que numa seção de notícia é a
 propriedade que mais importa.
 
+#### `[25/09]` Rascunhar com IA — ela REDIGE, não apura
+
+Decisão do dono: *"ela não vai postar nada sozinha, vai passar pela
+administração e por mim"*. Isso resolve o risco de **publicar** errado. Não
+resolve o de **inventar**, que é outro — revisor cansado aprova texto plausível,
+e plausível é exatamente o que um modelo produz quando não sabe.
+
+A saída não foi um modelo melhor. Foi mudar **de onde vêm os fatos**:
+
+> o editor traz as **notas** (o que apurou, colou, leu) · o modelo traz a
+> **redação**
+
+No editor de matéria há um bloco **Rascunhar com IA**. Dentro dele, um campo de
+notas. Com pelo menos 40 caracteres colados ali, o botão **Redigir rascunho**
+devolve título, subtítulo, resumo e corpo — escritos **só** a partir daquelas
+notas.
+
+| O que a tela faz | Por quê |
+| --- | --- |
+| não deixa pedir sem notas | sem fato de entrada, o modelo teria de inventar o resto — é a regra inteira virando código |
+| **mostra antes de aplicar** | o texto fica na tela; só o clique em *"Usar este texto"* mexe no formulário |
+| **conta as lacunas** em cima | o modelo é instruído a escrever `[CONFERIR: o que falta]` no lugar do que as notas não tinham, e a tela soma esses marcadores antes do texto |
+| avisa quando vai por cima | se já havia corpo escrito, a tela diz isso antes de substituir |
+| marca a matéria | quem revisa vê um selo **IA** na lista, na fila do Fundador e no cabeçalho do editor |
+
+**Nada é salvo nem publicado sozinho.** A função no servidor não tem caminho
+para escrever no banco: ela devolve o rascunho na resposta, e quem grava é a
+tela depois do clique de quem assina. Publicar continua sendo de super admin e
+owner — a IA entra antes de tudo isso, no lugar da página em branco.
+
+**Rascunhar é da equipe** (`is_staff()`), não de quem está logado: o que está em
+jogo é a cota do provedor, e cota estourada para de redigir para todo mundo.
+
+O selo **IA** existe por um motivo prático: daqui a três meses, olhando uma
+matéria, ninguém teria como saber se o texto nasceu de um modelo. Ele é
+**autodeclarado** — marcado pelo painel quando o editor aplica o rascunho —, e
+serve à procedência honesta, não a fiscalizar quem queira esconder.
+
 **`[25/09]` O rascunho nasce SEM corpo, e isso é regra do banco.** Criar pede
 título e editoria; o texto vem depois. O corpo só é exigido quando a matéria
 **vai ao ar** — e a mesma regra impede que alguém **esvazie** uma matéria já

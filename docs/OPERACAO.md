@@ -141,7 +141,7 @@ O porquê inteiro, o escopo e o que ele **não** faz estão em
   >
   > **Nada vigia isso**, e é o buraco que vale registrar: o
   > `espelho-de-migrations.mjs` reprova o PR quando uma migration existe no banco
-  > e não no repositório, mas para as <!--n:edge.funcoes-->8<!--/n--> Edge
+  > e não no repositório, mas para as <!--n:edge.funcoes-->9<!--/n--> Edge
   > Functions não há equivalente. Enquanto isso, três lugares afirmavam o
   > comportamento novo — este documento, o comentário de 05/09 em
   > `e2e/portas-fechadas.mjs`, e o próprio código.
@@ -1284,8 +1284,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->450<!--/n--> arquivos e
-<!--n:src.linhas-->50.035<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->455<!--/n--> arquivos e
+<!--n:src.linhas-->50.507<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1309,7 +1309,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->450<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->455<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1334,7 +1334,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->27.407<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->27.741<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1422,7 +1422,7 @@ qualquer e-mail.
 
 ### 2. O TOKEN QUE ME DEIXA IMPLANTAR AS EDGE FUNCTIONS
 
-**O que isto destrava:** 7 das 8 Edge Functions esperam o marcador de impressão
+**O que isto destrava:** as Edge Functions esperam o marcador de impressão
 (o vigia — ver `supabase/functions/README.md`). Sem token, o único caminho que
 eu alcanço é **retranscrever ~2.100 linhas de código de produção** por uma
 chamada de ferramenta, e na `send-email` um caractere perdido derruba o
@@ -1576,7 +1576,7 @@ select 'admin_unban', '@' || username || ' recuperou o proprio acesso pelo banco
 
 | O risco | O que foi feito |
 | --- | --- |
-| o deploy automático **ligar** o `verify_jwt` e derrubar o cadastro | `supabase functions deploy` liga por padrão, e 7 das 8 precisam dele **desligado**. Criei o `supabase/config.toml` declarando cada uma — os valores foram **medidos** batendo em cada função sem credencial, não copiados |
+| o deploy automático **ligar** o `verify_jwt` e derrubar o cadastro | `supabase functions deploy` liga por padrão, e 8 das 9 precisam dele **desligado**. Criei o `supabase/config.toml` declarando cada uma — os valores foram **medidos** batendo em cada função sem credencial, não copiados |
 | o workflow implantar código de branch em produção | ele só roda em `main`, e só quando `supabase/functions/**` ou a configuração mudam |
 | o job dizer "implantado" sem ter implantado | o último passo pergunta a impressão a cada função **no ar** e reprova se divergir — `Deployed Functions.` é o que a CLI diz ao terminar o upload, não prova de que a função viva é essa |
 
@@ -1647,7 +1647,7 @@ botão **Run workflow** do lado direito. Clique, escolha a branch **main**, e
 
 | Resultado | O que quer dizer |
 | --- | --- |
-| ✅ verde | as 8 subiram **e** foram conferidas uma a uma contra o que está no repositório |
+| ✅ verde | as 9 subiram **e** foram conferidas uma a uma contra o que está no repositório |
 | ❌ *"Falta o segredo SUPABASE_ACCESS_TOKEN"* | o nome saiu diferente, ou foi criado como *variable*. Volte ao passo 2 |
 | ❌ no passo **implantar todas** | o token existe e foi recusado — provavelmente revogado. Gere outro |
 | ❌ no passo **provar que o que esta no ar veio deste codigo** | subiu e **não bateu**. Não ignore: é exatamente o defeito que este workflow existe para pegar |
@@ -1659,3 +1659,89 @@ botão **Run workflow** do lado direito. Clique, escolha a branch **main**, e
 - Revogar é no mesmo link do passo 1, no ícone de lixeira da linha.
 - Depois de revogar, o workflow falha no passo **implantar todas** até você
   colocar o novo. Ele não quebra o site — só para de implantar.
+
+---
+
+## `[25/09]` A CHAVE DA IA QUE RASCUNHA MATÉRIA — passo a passo
+
+> **Para que serve.** Sem este segredo, o botão *"Rascunhar com IA"* no painel
+> editorial responde **"A IA não está configurada"** e nada mais acontece. Com
+> ele, o editor cola as notas e recebe o texto redigido para revisar.
+>
+> Caminhos conferidos em 25/09 na
+> [documentação do Groq](https://console.groq.com/docs/quickstart) e na
+> [do Supabase](https://supabase.com/docs/guides/functions/secrets), não
+> escritos de memória — painel de fornecedor muda de lugar sem avisar (§9.12).
+
+### Antes de você clicar, o que eu conferi
+
+| O risco | O que foi medido |
+| --- | --- |
+| a chave vazar pelo navegador | ela **nunca** chega ao cliente. Quem fala com a Groq é a Edge Function `redigir-materia`; o site só manda as notas. O site usa a `anon key`, então tudo que chegasse ao cliente seria público |
+| esquecer a chave quebrar o site | não quebra. Sem o segredo a função devolve `503` com a frase acima e o painel continua funcionando para escrever à mão — medido no código, é o primeiro `if` depois da porta |
+| qualquer um da internet queimar a cota | a função exige `is_staff()`, não só estar logado. Foi a lição da `moderate-links`, que tinha porta decorativa |
+| o modelo não existir mais | `llama-3.3-70b-versatile` **continua listado como modelo de produção** na Groq, conferido hoje. Se um dia sair, a função passa a devolver erro do provedor e grita em `admin_logs` |
+| a ordem dos passos importar | não importa. Segredo vale **na hora**, sem reimplantar a função (documentação do Supabase) |
+
+### 1. Crie a conta na Groq
+
+Link direto: `https://console.groq.com/`
+
+**O que você vai ver:** a tela de entrada do **GroqCloud**, com opções de
+entrar por Google, GitHub ou email. O plano grátis é o padrão — não é preciso
+escolher plano nenhum.
+
+### 2. Gere a chave
+
+Link direto: `https://console.groq.com/keys`
+
+**O que você vai ver:** a página **API Keys**, com uma lista vazia e o botão
+**Create API Key**.
+
+Clique, dê um nome que diga de onde ela é — sugestão: **`gamerhub-news`** — e
+confirme.
+
+> **O valor aparece UMA vez**, e começa com `gsk_`. Copie na hora. Se perder,
+> não dá para recuperar: apague essa e crie outra.
+
+### 3. Guarde no cofre do Supabase
+
+Link direto, já no projeto certo:
+
+`https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/functions/secrets`
+
+**O que você vai ver:** a página **Edge Function Secrets**, com a lista dos
+segredos que o projeto já tem e os campos **Key** e **Value** para acrescentar
+mais um. (Não conferi a lista de dentro do painel — eu não alcanço essa tela.)
+
+Preencha:
+
+| Campo | O que digitar |
+| --- | --- |
+| **Key** | `GROQ_API_KEY` |
+| **Value** | a chave que você copiou, colada inteira (começa com `gsk_`) |
+
+Clique em **Save**.
+
+> **O nome tem que ser exatamente esse.** A função lê
+> `Deno.env.get("GROQ_API_KEY")`. Um nome diferente faz a IA responder "não está
+> configurada" para sempre, sem dizer que o problema é o nome.
+
+### 4. Confira que funcionou
+
+No site: **Painel admin → aba News → abra qualquer matéria → Rascunhar com IA**.
+Cole um parágrafo qualquer de notas (precisa de pelo menos 40 caracteres) e
+clique em **Redigir rascunho**.
+
+| O que aparece | O que quer dizer |
+| --- | --- |
+| o texto redigido, com Título/Subtítulo/Resumo/Corpo | está funcionando |
+| *"A IA não está configurada"* | o segredo não chegou, ou o nome saiu diferente. Volte ao passo 3 |
+| *"A cota diária da IA acabou"* | a chave está certa e o limite do dia foi atingido. Volta amanhã, e a ocorrência fica gravada na trilha (`admin_logs`) |
+| *"A IA não respondeu (HTTP 401)"* | a chave foi recusada — colada pela metade, ou revogada. Gere outra no passo 2 |
+
+### O que fazer se ela vazar
+
+Apague a chave em `https://console.groq.com/keys` (ícone de lixeira da linha) e
+repita os passos 2 e 3. Enquanto a chave velha existir, quem a tiver consome a
+cota da conta — e o efeito no site é a IA parar de redigir para a equipe inteira.
