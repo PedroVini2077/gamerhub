@@ -94,7 +94,36 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar, notasIniciais })
   }
 
   const salvar = () => comAviso(salvarArtigo(id, campos), 'Salvo.');
-  const paraEstado = (destino, msg) => comAviso(mudarEstado(id, destino), msg);
+
+  /**
+   * `[26/09]` Mudar de estado SALVA o que está na tela primeiro.
+   *
+   * Sem isto, o dono digitava o corpo, clicava em **Publicar** e levava
+   * `violates check constraint "news_articles_corpo_exigido_no_ar"` — porque
+   * `mudarEstado` manda só `{status, publicado_em}`, e o corpo que ele acabou
+   * de escrever nunca tinha ido ao banco.
+   *
+   * A regra do banco estava certa; a tela é que estava mentindo. Ela mostrava
+   * o texto e o botão de publicar lado a lado, sem dizer que um não enxergava
+   * o outro. Exigir "salve antes" seria transferir para a pessoa a memória de
+   * uma separação que só existe por dentro.
+   *
+   * `rascunho !== null` é a condição exata de "há coisa digitada que o servidor
+   * ainda não viu" — o mesmo estado que já governa o formulário.
+   */
+  async function paraEstado(destino, msg) {
+    if (rascunho !== null) {
+      setEstado(null);
+      const { error } = await salvarArtigo(id, campos);
+      // Se o salvamento falhar, PARA aqui: seguir para a mudança de estado
+      // publicaria a versão velha e diria que deu certo.
+      if (error) {
+        setEstado({ tipo: 'erro', mensagem: error.message ?? 'Não deu para salvar.', detalhe: error.tecnico });
+        return;
+      }
+    }
+    await comAviso(mudarEstado(id, destino), msg);
+  }
 
   return (
     <div className="space-y-3">

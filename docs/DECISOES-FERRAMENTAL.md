@@ -51,8 +51,16 @@ publicar — e os próprios termos do Google pedem para não fazer isso. O plano
 > Se um dia isso pesar mais: escrever para a Groq e guardar a resposta, ou pagar
 > o Gemini. Está no `BACKLOG.md`.
 
-**Modelo:** `llama-3.3-70b-versatile`, conferido hoje como modelo de **produção**
-na Groq. A API é compatível com a da OpenAI, então trocar de provedor é trocar
+**Modelo:** `openai/gpt-oss-120b`, 1.000 requisições/dia.
+
+> **`[26/09]` Esta linha dizia `llama-3.3-70b-versatile`, "conferido como modelo
+> de produção", e estava ERRADA no que importava.** Ele é de produção *e* é
+> Enterprise: o plano grátis não o alcança, e o Groq responde **`404`** — não
+> `403` — nesse caso. O dono levou esse 404 no primeiro clique.
+>
+> A conferência certa não é "o modelo existe / é de produção". É **se ele
+> aparece na tabela de limites do plano que nós usamos**. Registrado em
+> `src/lib/modelosConferidos.js`, com trava. A API é compatível com a da OpenAI, então trocar de provedor é trocar
 a URL, a chave e essa string — não é reescrever a função.
 
 **Descartados junto, com o motivo:**

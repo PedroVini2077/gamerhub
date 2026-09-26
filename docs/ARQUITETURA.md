@@ -149,6 +149,13 @@ src/
 │   │                      # explícito. O desconhecido aparece inteiro, em
 │   │                      # vez de virar um genérico que esconde o caso novo
 │   ├── url.js             # safeExternalUrl() — só http(s) vira href (anti-XSS)
+│   ├── modelosConferidos.js # `[26/09]` Os modelos de IA conferidos NO NOSSO
+│   │                      # PLANO — e os reprovados, com o motivo. O
+│   │                      # `llama-3.3-70b` era modelo de PRODUÇÃO e mesmo
+│   │                      # assim dava 404: é Enterprise, e o Groq responde
+│   │                      # 404 (não 403) quando a conta não alcança. A
+│   │                      # pergunta certa não é "existe?", é "aparece na
+│   │                      # tabela de limites do plano que pagamos?"
 │   ├── fontesConferidas.js # `[26/09]` As fontes que foram CONFERIDAS para
 │   │                      # escrever português, com data e MÉTODO — e as
 │   │                      # reprovadas, com o motivo. A Orbitron ficou no ar

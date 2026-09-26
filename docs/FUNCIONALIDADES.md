@@ -782,6 +782,15 @@ título e editoria; o texto vem depois. O corpo só é exigido quando a matéria
 publicada. Mandar para revisão com o texto pela metade é permitido de propósito:
 é pedido de ajuda legítimo, e quem decide se está pronto é quem publica.
 
+**`[26/09]` Mudar de estado SALVA o que está na tela primeiro.** Sem isso, quem
+digitava o corpo e clicava direto em *Publicar* levava
+`violates check constraint "news_articles_corpo_exigido_no_ar"` — porque a
+mudança de estado mandava só o `status`, e o texto recém-escrito nunca tinha ido
+ao banco. A regra do banco estava certa; a tela é que mostrava os dois botões
+lado a lado sem dizer que um não enxergava o outro. Se o salvamento falhar, a
+mudança de estado **não acontece** — publicar a versão velha e dizer que deu
+certo seria pior do que o erro original.
+
 Matéria já publicada **não é editável** por admin — a tela diz isso numa tarja,
 em vez de deixar digitar e falhar ao salvar.
 

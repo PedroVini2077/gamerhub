@@ -26,6 +26,7 @@ const APP = readFileSync('src/App.jsx', 'utf8');
 const FORM = readFileSync('src/components/feed/PostForm.jsx', 'utf8');
 const CARD = readFileSync('src/components/feed/PostCard.jsx', 'utf8');
 const BARRA = readFileSync('src/components/feed/composer/ComposerToolbar.jsx', 'utf8');
+const EDITOR_ARTIGO = readFileSync('src/components/news/EditorDeArtigo.jsx', 'utf8');
 
 describe('a rota de publicar tem porta', () => {
   it('a rota existe e está atrás de login', () => {
@@ -156,5 +157,45 @@ describe('o botao que NAVEGA nao se chama igual ao que ENVIA', () => {
       + '  checagem do corte editorial do News, que procura exatamente por esse\n'
       + '  nome. Use um verbo de NAVEGACAO ("Criar post").')
       .toEqual([]);
+  });
+});
+
+describe('mudar de estado SALVA o que esta na tela antes', () => {
+  /**
+   * O dono digitou o corpo da materia, clicou em Publicar, e levou
+   * `violates check constraint "news_articles_corpo_exigido_no_ar"`.
+   *
+   * A regra do banco estava certa. A TELA e que mentia: `mudarEstado` manda
+   * so `{status, publicado_em}`, e o texto que ele acabara de escrever nunca
+   * tinha ido ao banco. Os dois botoes ficavam lado a lado sem dizer que um
+   * nao enxergava o outro.
+   */
+  it('`paraEstado` chama `salvarArtigo` quando ha rascunho pendente', () => {
+    const fn = EDITOR_ARTIGO.slice(
+      EDITOR_ARTIGO.indexOf('async function paraEstado'),
+      EDITOR_ARTIGO.indexOf('return (', EDITOR_ARTIGO.indexOf('async function paraEstado')),
+    );
+    expect(fn.length, 'nao achei o `async function paraEstado` no EditorDeArtigo.\n'
+      + '  Ou ele voltou a ser o arrow de uma linha — que e exatamente a\n'
+      + '  regressao que esta trava existe para pegar: publicar mandaria so o\n'
+      + '  `status` e o corpo recem-digitado ficaria de fora —, ou o formato\n'
+      + '  mudou e a trava precisa acompanhar. Nos dois casos, olhe.')
+      .toBeGreaterThan(150);
+
+    expect(fn, 'mudar de estado voltou a NAO salvar o que esta na tela.\n'
+      + '  Publicar mandaria so o `status`, e o corpo recem-digitado ficaria de\n'
+      + '  fora: o CHECK do banco recusa, e a pessoa le um erro de constraint\n'
+      + '  sobre um campo que ela VE preenchido na frente dela.')
+      .toMatch(/rascunho !== null[\s\S]*salvarArtigo\(/);
+  });
+
+  it('se o salvamento falhar, ele NAO segue para a mudanca de estado', () => {
+    // Seguir publicaria a versao velha e diria que deu certo — pior do que o
+    // erro original, porque some em silencio (§1.5).
+    const fn = EDITOR_ARTIGO.slice(
+      EDITOR_ARTIGO.indexOf('async function paraEstado'),
+      EDITOR_ARTIGO.indexOf('await comAviso(mudarEstado'),
+    );
+    expect(fn, 'o caminho de erro do salvamento deixou de interromper').toMatch(/if \(error\)[\s\S]*return;/);
   });
 });
