@@ -1284,8 +1284,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->467<!--/n--> arquivos e
-<!--n:src.linhas-->52.073<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->469<!--/n--> arquivos e
+<!--n:src.linhas-->52.206<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1309,7 +1309,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->467<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->469<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1334,7 +1334,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->28.085<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->28.104<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1739,6 +1739,7 @@ clique em **Redigir rascunho**.
 | *"A IA não está configurada"* | o segredo não chegou, ou o nome saiu diferente. Volte ao passo 3 |
 | *"A cota diária da IA acabou"* | a chave está certa e o limite do dia foi atingido. Volta amanhã, e a ocorrência fica gravada na trilha (`admin_logs`) |
 | *"A IA não respondeu (HTTP 401)"* | a chave foi recusada — colada pela metade, ou revogada. Gere outra no passo 2 |
+| *"A IA não respondeu (HTTP 404)"* | **não é a chave.** O Groq responde `404` quando o modelo existe mas a conta não o alcança. Aconteceu em 26/09: o modelo era de produção e Enterprise. O conserto é trocar a string de `MODELO` por uma da tabela do **plano grátis** e registrar em `src/lib/modelosConferidos.js` |
 
 ### O que fazer se ela vazar
 

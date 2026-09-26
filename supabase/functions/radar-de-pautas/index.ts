@@ -52,7 +52,7 @@ import { lerFeed, fatiaJusta, type ItemBruto } from "./rss.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "5aab57cd5fe7b25d";
+const IMPRESSAO_DESTE_CODIGO = "2f51e0234d5bfc87";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -60,7 +60,11 @@ const SERVICE_ROLE  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const GROQ_API_KEY  = Deno.env.get("GROQ_API_KEY") ?? "";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODELO = "llama-3.3-70b-versatile";
+// `[26/09]` Era `llama-3.3-70b-versatile` e dava `HTTP 404`: o Groq responde
+// 404 quando o modelo existe mas a conta nao o alcanca, e aquele e Enterprise.
+// O porque completo esta no cabecalho da `redigir-materia`; a lista do que foi
+// conferido no plano gratis, em `src/lib/modelosConferidos.js`.
+const MODELO = "openai/gpt-oss-120b";
 
 const TETO_POR_FEED   = 15;   // itens lidos de cada fonte
 const TETO_DO_PEDIDO  = 60;   // manchetes mandadas ao modelo
@@ -72,6 +76,17 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 const JSON_CORS = { ...CORS, "Content-Type": "application/json" };
+/**
+ * Tira a cerca de markdown que alguns modelos poem em volta do JSON.
+ *
+ * O `response_format: json_object` pede JSON puro e a maioria obedece — mas
+ * "a maioria" nao e "todos", e trocar de modelo troca esse comportamento. Sem
+ * isto, um ```json em volta derruba o `JSON.parse` e a tela diz "a IA
+ * respondeu algo que eu nao entendi" sobre uma resposta que estava correta.
+ */
+const semCerca = (t: string) =>
+  t.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/,"").trim();
+
 const responder = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: JSON_CORS });
 
@@ -256,7 +271,7 @@ Deno.serve(async (req: Request) => {
       });
     }
     const json = await res.json();
-    pautas = JSON.parse(json?.choices?.[0]?.message?.content ?? "{}")?.pautas ?? [];
+    pautas = JSON.parse(semCerca(json?.choices?.[0]?.message?.content ?? "{}"))?.pautas ?? [];
   } catch (e) {
     await gritar(admin, "falha ao chamar ou interpretar a Groq", { erro: String(e).slice(0, 300) });
     return responder({
