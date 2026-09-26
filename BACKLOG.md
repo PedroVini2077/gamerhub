@@ -128,91 +128,6 @@ rascunho de teste com mais de 2h — **nunca** o que está publicado.
 
 ---
 
-### 🟠 `[25/09]` A ESTRATÉGIA DE ASSETS DA LANDING — análise entregue, decisão dele
-
-> Prompt dele em 25/09: *"não quero voltar ao modelo antigo de gerar uma imagem
-> específica para cada feature... me diga quais imagens realmente valeria a pena
-> eu gerar agora como assets visuais de longa duração"*. Ele pediu **só a
-> análise**, sem implementar. Entregue no chat; o resumo fica aqui.
-
-**O número que decide:** das 8 cenas de hoje, **6 desenham a interface** — cada
-uma tem a barra lateral com um item aceso e o conteúdo daquela feature
-(`2-feed`, `3-comunidade`, `4-keys`, `5-ranks`, `6-lives`, `8-news`). Essas são
-exatamente as que morrem no próximo redesenho. As duas que sobrevivem
-(`1-hero`, `7-cta`) não desenham feature nenhuma.
-
-**O que eu pedi que ele gere — 3 conceitos, ~8 arquivos de referência:**
-
-| # | O quê | Para quê | Formato |
-| --- | --- | --- | --- |
-| 1 | **Placa de ambiente**, 3 ângulos — rocha, fenda, neon, SEM tela/interface | o fundo de TODA cena de feature; o conteúdo vem da UI real por cima | larga + retrato |
-| 2 | **A fenda** — o encontro do verde com o roxo, isolado | peça estrutural da identidade, não do produto | larga + retrato |
-| 3 | **Placa de vidro VAZIA** (1–2 variações, fundo transparente) | é o que mata a arte por feature: eu preencho com o produto real em CSS | uma só, elemento |
-
-**O que eu pedi que ele NÃO gere:** cena por feature, capa de jogo (envelhece e
-tem licença), post/contador/avatar falso, ícone por feature (o `lucide` cobre),
-e 3D (já descartado).
-
-**O ganho medido:** de **48 arquivos / 4.551 kB** para ~8 referências, e feature
-nova passa a custar **zero arte**.
-
-**Depende dele:** gerar as imagens. Só depois eu implemento — e a implementação
-usa o briefing de 11/09 como base, sem reescrever direção visual.
-
----
-
-### 🟠 `[25/09]` A ARTE NÃO ESCALA — ideia dele, e ele está certo
-
-> *"já já nós vamos tirar todas essas artes e criar algo mais global, pq ficar
-> criando artes toda hora não vai dar. A gente não vai inventar cenas 3D, mas
-> pelo menos algo pra substituir essas imagens"*.
-
-**O número que dá razão a ele:** hoje são **8 cenas × 6 arquivos = 48 imagens**,
-**4.551 kB** no repositório, e **duas composições feitas à mão por cena** (larga
-e retrato). Toda seção nova custa isso de novo — e a de hoje custou uma ida e
-volta com ele no meio da sessão.
-
-**O que ele já descartou, e continua descartado:** 3D. Não é opção.
-
-**As saídas que eu enxergo, com o custo de cada uma** — nenhuma decidida:
-
-| Saída | O que é | Custo | O que se perde |
-| --- | --- | --- | --- |
-| **A. Cena composta em CSS/SVG** | o fundo (rocha, néon, fenda) vira gradiente + SVG do projeto, e só o "print" da tela é imagem | some a composição por cena; sobra **1** imagem por seção, ou nenhuma | o brilho das artes dele — elas são boas, e isso é perda real |
-| **B. Um FUNDO só, reaproveitado** | uma arte de ambiente, e cada cena muda só a sobreposição | 1 arte para sempre | as cenas ficam parecidas entre si, que é o defeito que a fatia 7 consertou |
-| **C. Print de tela gerado do PRÓPRIO site** | um roteiro Playwright abre `/news`, `/lives` etc. e fotografa | **zero arte nova para sempre**, e a imagem **nunca envelhece** — ela É o site | precisa do site bonito em tela cheia, e hoje o feed está vazio |
-
-**Minha recomendação: C, com B de fundo.** É a única que resolve o problema de
-verdade em vez de adiá-lo: seção nova não pede arte nenhuma, e a landing para
-de mostrar uma versão do site que não existe mais. O projeto já tem Playwright,
-já tem gerador de cenas, e já tem o hábito de derivar asset por script (ícones,
-cenas, artes da arena).
-
-**O que trava a C hoje:** o site precisa ter conteúdo para fotografar. É a
-mesma pendência do feed vazio.
-
-**Eu não começo nada disto sem ele escolher** — é decisão de identidade visual,
-e as duas vezes em que eu decidi arte sozinho foram descartadas.
-
----
-
-### ⚠️ `[25/09]` A cena do News é a ÚNICA sem sobreposição viva
-
-As outras cinco cenas soltas têm um componente de "personalidade" por cima da
-arte — o feed recebe publicações, a curtida acende, o contador sobe. A do News
-não tem.
-
-**Não foi esquecimento.** A arte que ele mandou **já contém a interface** do
-News em fidelidade alta, nas duas composições — é a única das oito em que a
-imagem sozinha faz o trabalho que a sobreposição faria. E somar um sexto
-componente bespoke vai na direção contrária do item acima, que é justamente
-parar de criar peça sob medida por seção.
-
-Se a saída **C** for escolhida, esta pendência morre junto: a cena passa a ser
-um print vivo do `/news` de verdade.
-
----
-
 ### 🔄 `[25/09]` GAMERHUB NEWS — o plano, com a ordem decidida hoje
 
 **Objetivo dele:** *"vamos tentar terminar esse GamerHub News ainda hj"*.
@@ -394,61 +309,25 @@ propósito.
 
 ---
 
-### ✅ `[25/09]` DECIDIDO — o botão "+" abre uma ROTA PRÓPRIA, não um modal
-
-Proposta dele em 25/09: *"acho que tá na hora de mudar a forma de postar algo...
-pensei em limpar essa parte de cima do feed, e adicionar um botão +, tipo
-Instagram e TikTok? Que abre uma parte específica pra edição, posts, vídeos, oq
-vc acha?"*.
-
-**Meu parecer: fazer, mas NÃO tirar tudo do topo.** O argumento a favor é
-sólido e vai ficar mais forte: o compositor do topo é um custo que **todo mundo
-que rola paga** por uma ação que **poucos fazem** — e ele só cresce. A barra de
-ferramentas já o engordou; a prévia ao vivo engorda mais; vídeo, News e live não
-cabem numa caixa só. Uma superfície dedicada tem espaço; o topo do feed não.
-
-**O risco, e é real para ESTE site.** Compositor que precisa ser procurado é
-usado menos. O Instagram aguenta isso porque postar lá é aspiracional; uma
-comunidade nova, com o feed ainda magro, precisa do contrário — atrito baixo
-para publicar importa mais do que primeira tela limpa.
-
-**Por isso o meio-termo, que é o que Facebook e Reddit fazem:** o topo do feed
-guarda **uma linha** ("No que você está pensando?") que **abre** o compositor
-dedicado, em vez do compositor inteiro. O "+" na navegação vira a segunda porta,
-para quem não está no feed. Custa uma linha em vez de um card, a descoberta
-continua de graça, e o compositor ganha o espaço de que precisa.
-
-> **`[25/09]` ELE DECIDIU: rota própria.** Palavras dele: *"o Instagram, quando
-> vc clica pra criar um post ou reels, ele te leva a um lugar pra escolher
-> alguma mídia... e depois vc pode editar as fotos e vídeos separadamente. Se
-> fosse só um modal, ia continuar pequeno na minha opinião, então fazer algo a
-> parte vai dar mais liberdade pra quem quer postar"*.
->
-> Ele mesmo pôs o limite: *"eu sei que um site não dá pra colocar uma
-> ferramenta inteira de edição, mas pelo menos fazer algo separado pra dar mais
-> liberdade e criatividade"*. O alvo é **espaço para trabalhar**, não paridade
-> com o Instagram.
->
-> E disse a ordem: **vídeo curto vem DEPOIS do GamerHub News** — a rota tem de
-> nascer com lugar para ele, sem construí-lo agora.
->
-> **`[25/09]` E ele fechou a segunda parte: OS DOIS.** *"eu colocaria essa linha
-> e acrescentaria o botão + visível em algum lugar tbm"*. O topo do feed guarda
-> **uma linha** que abre a rota, e o **"+" fica visível** na navegação — duas
-> portas para a mesma superfície, não duas superfícies.
-
-**O que JÁ está decidido e não muda com isso:** o "+" não pode embarcar opção de
-equipe no DOM de quem não é equipe (3º prompt dele, sobre permissão na tela).
-
----
-
 ### 🔵 `[25/09]` Revisitar WYSIWYG se o editor sair do caminho crítico
 
 Hoje **não**: 331,4 kB brutos contra 7,1 kB ([DESEMPENHO.md](docs/DESEMPENHO.md),
-[DECISOES.md](docs/DECISOES.md)). O gatilho para reabrir é o item acima: se o
-compositor virar **rota própria**, ele sai do carregamento inicial, e aí o peso
-deixa de ser pago por quem só passa no feed. A objeção de colagem de HTML
-continua de pé e teria de ser resolvida à parte.
+[DECISOES.md](docs/DECISOES.md)).
+
+> **`[26/09]` O GATILHO DISPAROU, e é decisão dele.** O item dizia: *"se o
+> compositor virar rota própria, ele sai do carregamento inicial"*. Virou. O
+> pedaço do feed caiu de **19.333 para 6.088 bytes (−68%)**, e o compositor
+> agora é um pedaço de 15.551 B que só chega quando alguém clica em publicar.
+>
+> **O que mudou:** o peso do editor deixou de ser pago por quem só rola o feed.
+> **O que NÃO mudou:** a objeção de colagem de HTML, que é independente do peso
+> — e 331,4 kB continuam sendo 331,4 kB para quem abre `/publicar`.
+>
+> **Minha recomendação: continuar não.** O editor de hoje resolve o que o site
+> precisa, e o ganho de um WYSIWYG é conforto de escrita para a equipe e alguns
+> usuários — contra 46× de peso numa rota que existe justamente para ser
+> confortável. Reabrir vale se ele achar o editor atual ruim de usar na prática,
+> não pelo peso ter saído do caminho crítico.
 
 ---
 
@@ -1140,7 +1019,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**53 itens abertos** (+ 1 ideia sem compromisso)
+**52 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1539,25 +1418,6 @@ dependência técnica real** que decide o resto:
 > fonte única). O raio 2D da Landing tem que ser o **mesmo** SVG mestre, dividido.
 
 ---
-
-- ⬜ `[25/09]` 🟢 **A FONTE DE DISPLAY — a única das três que ele quis mudar.**
-
-  **`[25/09]` Ele fechou as outras duas:** *"já está bom como está, só a fonte
-  que eu concordo em mudar; a tese da fenda e as artes já foi decidido há muito
-  tempo atrás"*. **Ele está certo nas duas, conferido:** a fenda tem decisão
-  escrita em `DECISOES.md` desde 04/09 (ele reprovou a fenda visível desde o
-  primeiro quadro, e a versão de hoje nasceu daquilo), e a arte sempre foi
-  **dele**, com composição minha — nunca foi pergunta aberta, era observação
-  minha ocupando linha de decisão. O item estava **inchado**, e isso é meu erro.
-
-  **O que sobra, e não é pequeno:** `Orbitron` é a fonte mais usada do mundo em
-  "coisa gamer". Se o objetivo é não parecer mais um site gamer, é a alavanca
-  mais forte — e a mais cara, porque `font-display` atinge o site **inteiro**.
-
-  **Antes de trocar, eu preciso trazer:** 3 a 4 candidatas com amostra da marca
-  "GamerHub" em cada, o custo em bytes de cada uma (§0.3 regra 1), e o que muda
-  em tela pequena. Trocar fonte é fácil; escolher errado se paga em todas as
-  telas. **Não começo sem ele ver as amostras.**
 
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
@@ -2714,8 +2574,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->164<!--/n--> arq ·
-  <!--n:src.lib.linhas-->19.695<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->167<!--/n--> arq ·
+  <!--n:src.lib.linhas-->20.089<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

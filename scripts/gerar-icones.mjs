@@ -38,7 +38,11 @@ const CHROMIUM = process.env.CHROMIUM_BIN ?? '/opt/pw-browsers/chromium';
  * passaram por uma compressão a 0,80 para a web, e recomprimir imagem
  * comprimida empilha artefato. Aqui parte-se do original, uma vez só.
  */
-const ARTE_DO_CARTAO = 'docs/identidade/referencias/cenas/1-hero.webp';
+// `[26/09]` Era `1-hero.webp`, que deixou de existir quando as oito cenas por
+// feature viraram cinco placas de ambiente. A placa da entrada agora é a
+// convergência — mesmo papel, nome novo. Sem esta linha atualizada,
+// `npm run icones` falharia só na próxima vez que alguém o rodasse.
+const ARTE_DO_CARTAO = 'docs/identidade/referencias/cenas/1-convergencia.webp';
 
 /** O fundo dos ícones de app. Igual ao `theme-color` do site. */
 const FUNDO = '#060608';

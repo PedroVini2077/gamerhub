@@ -9,7 +9,19 @@ import MediaPreviewGrid from './composer/MediaPreviewGrid';
 import ComposerToolbar from './composer/ComposerToolbar';
 import EditorDeTexto from '../ui/EditorDeTexto';
 
-function Shell({ children }) {
+/**
+ * `[26/09]` O compositor vive em DOIS lugares, e o `amplo` é a diferença.
+ *
+ * No feed ele não vive mais: lá ficou só uma linha que leva para `/publicar`
+ * (`LinhaDePublicar`). Aqui o `amplo` é o modo da **rota própria** — sem o
+ * título "Novo Post" repetindo o cabeçalho da página, e com o editor maior.
+ *
+ * A decisão é dele, de 25/09: *"se fosse só um modal, ia continuar pequeno na
+ * minha opinião"*. Um modal herda a largura do que está atrás; uma rota manda
+ * na tela inteira.
+ */
+function Shell({ amplo, children }) {
+  if (amplo) return <div className="card p-5 md:p-6">{children}</div>;
   return (
     <div className="card p-5">
       <h3 className="font-display text-xs text-neon-green tracking-widest uppercase mb-4">Novo Post</h3>
@@ -18,7 +30,7 @@ function Shell({ children }) {
   );
 }
 
-const PostForm = memo(function PostForm({ onPost }) {
+const PostForm = memo(function PostForm({ onPost, amplo = false }) {
   const {
     user, profile, title, setTitle, content, setContent,
     medias, audio, audioName, setAudioName,
@@ -32,10 +44,10 @@ const PostForm = memo(function PostForm({ onPost }) {
   if (!user) return null;
 
   const suspended = suspendedUntil(profile);
-  if (suspended) return <Shell><SuspendedNotice until={suspended} /></Shell>;
+  if (suspended) return <Shell amplo={amplo}><SuspendedNotice until={suspended} /></Shell>;
 
   return (
-    <Shell>
+    <Shell amplo={amplo}>
       <input id="post-title" aria-label="Título do post" className="input-gamer mb-3"
         placeholder="Título do post..."
         value={title} onChange={e => setTitle(e.target.value)} maxLength={100} />
@@ -53,7 +65,7 @@ const PostForm = memo(function PostForm({ onPost }) {
            escrita saiu junto: botão que faz é melhor do que texto que ensina. */
         <EditorDeTexto id="post-content" value={content} onChange={setContent}
           placeholder="Escreva algo... (opcional se tiver áudio ou link)"
-          maxLength={1000} rows={3} />
+          maxLength={1000} rows={amplo ? 10 : 3} />
       )}
 
       {showEmbed && (

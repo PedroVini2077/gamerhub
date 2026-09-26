@@ -10,7 +10,7 @@
  * abre a página e vai embora — entregava o IP ao Google sem ter escolhido nada.
  *
  * Era boa prática, não obrigação legal, e a distinção continua valendo. O que
- * mudou é que o custo de resolver ficou pequeno: são 96 KB de fonte,
+ * mudou é que o custo de resolver ficou pequeno: são 97 KB de fonte,
  * servidos do mesmo domínio.
  *
  * ── O que se ganha além da privacidade ─────────────────────────────────────
@@ -37,15 +37,50 @@
  */
 
 
+/* ── `[26/09]` A Orbitron SAIU, e o motivo é que ela não escreve português ──
+ *
+ * O dono viu no print: o título dizia "Um feed que **nào** para". Não era o
+ * texto — o código sempre teve "não". Era a fonte.
+ *
+ * **O que foi medido**, e nessa ordem:
+ *
+ * | pergunta | resposta |
+ * | --- | --- |
+ * | o glifo existe? | sim — `U+00E3` mapeia para `atilde` = `a` + `tildecomb` |
+ * | o til é um til? | sim, no contorno: 15 pontos, 340 unidades de largura |
+ * | nosso arquivo está corrompido? | **não** — md5 idêntico ao da Google (`5d281085…`) |
+ * | então por quê? | o `tildecomb` da Orbitron é uma onda **achatada e deslocada**: a 190 px é um til; a 28–64 px, que é o tamanho real dos títulos, rasteriza como uma CRASE |
+ *
+ * Ou seja: não é bug nosso e não tem conserto do nosso lado. É a Orbitron
+ * publicada, e ela escreve "nào", "opçòes", "CORAÇÀO". Num site brasileiro
+ * isso aparece em quase todo título.
+ *
+ * ── Por que Oxanium ────────────────────────────────────────────────────────
+ *
+ * Onze candidatas foram baixadas e renderizadas lado a lado com
+ * "não opções CORAÇÃO", no tamanho real dos títulos. A Oxanium ganhou por
+ * três motivos, nessa ordem:
+ *
+ *   1. o til é um TIL em qualquer tamanho — que era o problema
+ *   2. mesma família visual: angular, cantos chanfrados, feita para interface
+ *      de jogo. Trocar para uma grotesca neutra resolveria o til e perderia a
+ *      identidade
+ *   3. variável num arquivo só, como a Orbitron era: 14,0 kB contra 11,8 kB.
+ *      **+2,2 kB**, e nenhum arquivo a mais na rede
+ *
+ * **O que se perde, dito com todas as letras:** a Oxanium vai até o peso 800 e
+ * a Orbitron ia a 900. O site usa 900 em UM lugar — o "GAMER HUB" do hero
+ * (`ElectricTitle`). O navegador limita a 800 e o título continua pesado;
+ * conferido no print antes de trocar.
+ */
 @font-face {
-  font-family: 'Orbitron';
+  font-family: 'Oxanium';
   font-style: normal;
-  /* Arquivo VARIAVEL: os quatro pesos que o site usa (400/600/700/900) vinham
-   * do MESMO woff2 — conferido por md5, os quatro downloads eram byte a byte
-   * iguais. Declarar a faixa evita servir quatro copias do mesmo arquivo. */
-  font-weight: 400 900;
+  /* Arquivo VARIAVEL: os pesos que o site usa (400/600/700/900) saem do mesmo
+   * woff2. Declarar a faixa evita servir uma copia por peso. */
+  font-weight: 200 800;
   font-display: swap;
-  src: url('/fonts/orbitron-variavel.woff2') format('woff2');
+  src: url('/fonts/oxanium-variavel.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 

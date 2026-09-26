@@ -20,6 +20,7 @@ import ConfirmModal from '../ui/ConfirmModal';
 import PedirReativacaoDaLive from '../lives/PedirReativacaoDaLive';
 import ReportModal from '../ui/ReportModal';
 import TextoFormatado from '../ui/TextoFormatado';
+import EditorDeTexto from '../ui/EditorDeTexto';
 
 const EDIT_LIMIT_MINUTES = 30;
 // Janela pra cancelar antes do post sumir de fato.
@@ -183,9 +184,17 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
       {/* Conteúdo texto — editável */}
       {editing ? (
         <div className="space-y-2 mb-2">
-          <textarea className="input-gamer resize-none w-full" rows={3}
-            placeholder="Legenda (opcional)..."
-            value={editContent} onChange={e => setEditContent(e.target.value)} maxLength={1000} />
+          {/* `[26/09]` A edição usa o MESMO editor do compositor.
+              Era um `<textarea>` cru: quem escrevia **negrito** ao publicar e
+              depois clicava em editar via os asteriscos, sem barra de
+              ferramentas e sem prévia — como se a formatação tivesse sumido.
+              Duas caixas para o mesmo texto divergem na primeira feature nova
+              (§4, fonte única), e a prévia é justamente o que diz que o
+              marcador vai virar algo. */}
+          <EditorDeTexto
+            id={`editar-${post.id}`}
+            value={editContent} onChange={setEditContent}
+            placeholder="Legenda (opcional)..." maxLength={1000} rows={4} />
           {post.embed_type === 'twitch' && (
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={editIsLive} onChange={e => setEditIsLive(e.target.checked)}

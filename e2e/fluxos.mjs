@@ -84,7 +84,10 @@ try {
   // cobre tudo e o timeout diria 'o composer nao apareceu' em vez da causa.
   await page.waitForTimeout(2500);
   await recusarSeBanido(page);
-  await page.locator('#post-title').waitFor({ state: 'visible', timeout: 30000 });
+  // `[26/09]` Era o `#post-title` do compositor. Ele saiu do feed (publicar
+  // virou rota), e a linha que ficou prova as MESMAS tres coisas: ela devolve
+  // `null` sem usuario e `null` para quem esta suspenso.
+  await page.locator('[data-publicar="linha"]').waitFor({ state: 'visible', timeout: 30000 });
   ok('entrou e o composer apareceu (sessão + perfil + conta liberada)');
 
   // ── 2. Todas as rotas internas, com conteúdo de verdade ─────────────────
@@ -169,8 +172,9 @@ try {
 
   // ── 5. Sair ─────────────────────────────────────────────────────────────
   await page.getByRole('button', { name: /^Sair$/i }).click();
-  // Sem sessão, a rota `/` volta a ser a Landing — que não tem `#post-title`.
-  await page.locator('#post-title').waitFor({ state: 'detached', timeout: 20000 });
+  // Sem sessão, a rota `/` volta a ser a Landing — que não tem a linha de
+  // publicar. `[26/09]` Era o `#post-title`; o compositor saiu do feed.
+  await page.locator('[data-publicar="linha"]').waitFor({ state: 'detached', timeout: 20000 });
   ok('logout derrubou a sessão');
 } catch (e) {
   await morrer(`passo ${passo + 1}`, e);

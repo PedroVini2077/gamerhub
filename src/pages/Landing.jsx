@@ -4,6 +4,7 @@ import PrologoDaLanding from '../components/landing/PrologoDaLanding';
 import CenaDaLanding from '../components/landing/CenaDaLanding';
 import CenaPresa from '../components/landing/CenaPresa';
 import SobreposicaoDoFeed from '../components/landing/cenas/SobreposicaoDoFeed';
+import SobreposicaoDoNews from '../components/landing/cenas/SobreposicaoDoNews';
 import SobreposicaoDaComunidade from '../components/landing/cenas/SobreposicaoDaComunidade';
 import SobreposicaoDasLives from '../components/landing/cenas/SobreposicaoDasLives';
 import SobreposicaoDasKeys from '../components/landing/cenas/SobreposicaoDasKeys';
@@ -116,6 +117,7 @@ export default function Landing({ introDone = true }) {
           titulo="O que aconteceu, apurado"
           descricao="Games, tecnologia e cultura geek — a equipe do GamerHub garimpa, checa e escreve. Sem caça-clique e sem repost sem fonte."
           lado="direita"
+          sobreposicao={() => <SobreposicaoDoNews lado="direita" />}
         />
 
         <CenaPresa

@@ -88,3 +88,57 @@ export function lerFeed(xml: string, teto = 15): ItemBruto[] {
     }];
   });
 }
+
+/**
+ * `[26/09]` A FATIA JUSTA: escolhe `teto` itens dando vez a cada fonte.
+ *
+ * ── O defeito que ela conserta, e ele era MEDIDO ───────────────────────────
+ *
+ * A primeira versão fazia `coletados.slice(0, 60)`. Como `coletados` é
+ * preenchido na ordem em que o `Promise.all` termina, quem ganhava vaga eram
+ * as fontes mais **rápidas**, não as melhores.
+ *
+ * O caso real: 13 fontes × 15 itens = até 195 candidatos para 60 vagas.
+ * Eurogamer e Rock Paper Shotgun devolvem 100 itens cada; Canaltech, 50. Três
+ * fontes rápidas podiam ocupar quase tudo e uma fonte inteira não chegar ao
+ * modelo — sem erro, sem log, e com a resposta saindo plausível, só mais
+ * pobre. É a "cobertura que não cobre" do §1.5.
+ *
+ * ── Como ela escolhe ───────────────────────────────────────────────────────
+ *
+ * Rodízio: o 1º de cada fonte, depois o 2º de cada, e assim por diante. Fonte
+ * com poucos itens simplesmente sai do rodízio quando esgota — ela não segura
+ * as outras nem perde a vez.
+ *
+ * A ordem de saída é intencional: os **primeiros de cada fonte** vêm juntos, e
+ * num feed o primeiro item é o mais recente. Então o começo da lista que vai
+ * ao modelo é o que há de mais novo em toda a rede de fontes.
+ *
+ * @param itens itens já coletados, em qualquer ordem
+ * @param chave como agrupar (a fonte de cada item)
+ * @param teto quantos itens no máximo
+ */
+export function fatiaJusta<T>(itens: T[], chave: (i: T) => string, teto: number): T[] {
+  if (teto <= 0) return [];
+
+  const porFonte = new Map<string, T[]>();
+  for (const i of itens) {
+    const lista = porFonte.get(chave(i));
+    if (lista) lista.push(i);
+    else porFonte.set(chave(i), [i]);
+  }
+
+  const filas = [...porFonte.values()];
+  const escolhidos: T[] = [];
+  for (let n = 0; escolhidos.length < teto; n++) {
+    const antes = escolhidos.length;
+    for (const fila of filas) {
+      if (escolhidos.length >= teto) break;
+      if (n < fila.length) escolhidos.push(fila[n]);
+    }
+    // Nenhuma fila tinha item na posição `n`: todas esgotaram. Sem esta saída
+    // o laço giraria para sempre quando houvesse menos itens do que o teto.
+    if (escolhidos.length === antes) break;
+  }
+  return escolhidos;
+}

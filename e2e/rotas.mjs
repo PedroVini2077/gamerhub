@@ -69,7 +69,10 @@ export const ROTAS_VISITANTE = [
  * mesmo com a página vazia.
  */
 export const ROTAS_LOGADO = [
-  { path: '/',                    nome: 'Feed',           esperado: /Novo Post/i },
+  // `[26/09]` Era `/Novo Post/`. O compositor saiu do topo do feed — publicar
+  // virou rota própria, e o que ficou aqui é a linha que leva até ela.
+  { path: '/',                    nome: 'Feed',           esperado: /No que você está pensando/i },
+  { path: '/publicar',            nome: 'Publicar',       esperado: /Voltar ao feed/i },
   { path: '/community',           nome: 'Comunidade',     esperado: /Mural da Comunidade/i },
   { path: '/keys',                nome: 'Keys',           esperado: /Promoções/i },
   { path: '/profile',             nome: 'Perfil',         esperado: /Salvar Perfil/i },

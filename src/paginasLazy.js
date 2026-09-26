@@ -26,6 +26,9 @@ export const Regras      = lazy(() => import('./pages/Regras'));
 export const Contato     = lazy(() => import('./pages/Contato'));
 export const Termos      = lazy(() => import('./pages/Termos'));
 export const PostPage    = lazy(() => import('./pages/PostPage'));
+
+/** `[26/09]` Publicar é rota própria, não modal — ver `pages/Publicar.jsx`. */
+export const Publicar = lazy(() => import('./pages/Publicar'));
 export const MuralPage   = lazy(() => import('./pages/MuralPage'));
 export const Community   = lazy(() => import('./pages/Community'));
 export const Keys        = lazy(() => import('./pages/Keys'));

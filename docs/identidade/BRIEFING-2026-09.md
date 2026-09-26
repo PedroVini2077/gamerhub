@@ -86,7 +86,9 @@ Está no estudo de direção. Os pontos que continuam abertos:
    separados por um corte vertical — imagem de **duelo**. O nome promete
    **encontro**. A proposta é que a fenda deixe de ser onde eles brigam e passe
    a ser onde eles se tocam. Custo: zero linha de código; é narrativa.
-2. **A fonte de display.** `Orbitron` é competente e é a fonte mais usada do
+2. **A fonte de display.** *(`[26/09]` Resolvido, e por outro motivo: a
+   Orbitron saiu por **defeito**, não por ser comum — ela escrevia "nào" no
+   lugar de "não". Entrou a `Oxanium`.)* `Orbitron` é competente e é a fonte mais usada do
    mundo em "coisa gamer". Se o objetivo é não parecer mais um site gamer, ela
    é a alavanca mais forte — e a mudança mais cara, porque atinge o site todo.
 3. **De onde vem a arte.** O que deu certo neste projeto (a arena) foi arte
@@ -111,7 +113,7 @@ tipografia cabem em **unidades de kB**.
 > | Afirmação | Onde conferi | Resultado |
 > | --- | --- | --- |
 > | teto de `760 kB` / `228 kB` | `scripts/orcamento-de-bytes.mjs` | bate: `TETO_BRUTO_KB = 760`, `TETO_GZIP_KB = 228` |
-> | `Orbitron` é a fonte de display | `tailwind.config.js` | continua: `display: ["'Orbitron'", "monospace"]` |
+> | `Orbitron` é a fonte de display | `tailwind.config.js` | **`[26/09]` NÃO continua: virou `Oxanium`.** A Orbitron desenha o til achatado e escrevia "nào" em todo título — defeito medido, não gosto. Ver `src/lib/fontesConferidas.js` |
 > | a cena 3D pesava 708 kB e saiu | `DESEMPENHO.md` + `package.json` | saiu em 11/09; `three` e `@react-three/fiber` não existem mais |
 >
 > **Por que o aviso apareceu mesmo assim, e vale registrar:** até hoje o

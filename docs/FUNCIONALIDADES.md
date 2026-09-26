@@ -712,10 +712,31 @@ do ar devolve as manchetes cruas com um aviso amarelo, não um erro vermelho: o
 editor ainda consegue trabalhar lendo a lista na mão. Jogar fora a metade que
 deu certo o deixaria sem nada.
 
-**As 12 fontes iniciais foram MEDIDAS**, não lembradas — `curl` em 22
-candidatas em 26/09, e as que responderam 403, 404 ou vazio ficaram de fora com
-o motivo escrito na migration. Gerenciar fontes pela tela está no `BACKLOG.md`;
-hoje ligar e desligar é ação de banco (`docs/OPERACAO.md`).
+**As fontes foram MEDIDAS**, não lembradas — `curl` em cada candidata, e as que
+responderam 403, 404 ou vazio ficaram de fora **com o motivo escrito** na
+migration. Gerenciar fontes pela tela está no `BACKLOG.md`; hoje ligar e
+desligar é ação de banco (`docs/OPERACAO.md`).
+
+**`[26/09]` A lista foi corrigida depois de uma pergunta dele**, e a correção
+saiu de ler o que os feeds devolviam de verdade:
+
+| | |
+| --- | --- |
+| **ele perguntou** | *"ela pega fontes atuais? Não vi nada de GTA aqui, iPhone 18 e tals... tem que ser coisas da atualidade, tipo vingadores"* |
+| **a atualidade estava lá** | vieram Halo Studios, demissões no Xbox, Resident Evil Requiem, Castlevania 40 anos, Diablo 4 — notícia do dia |
+| **mas o ruído também** | o Tecnoblog devolveu, nas quatro primeiras, "Melhor notebook Asus", dois cupons e "Como justificar o voto pelo e-Título". Site de tech de consumo vive de cupom, não de pauta |
+| **e faltava o exemplo dele** | *cultura geek* não tinha fonte nenhuma. A cobertura de Marvel/DC chegava por acidente, pelo feed mais ruidoso |
+
+Saíram **Tecnoblog** e **Olhar Digital**; entraram **IGN Brasil** (games em
+português), **Legião dos Heróis** (a primeira leitura trouxe literalmente
+*"Vingadores: Ultimato…"*) e **Ars Technica Games**. São **13** ativas.
+
+**E a medição achou um defeito que ninguém veria.** A função mandava ao modelo
+os 60 primeiros itens *na ordem em que os feeds respondiam* — ou seja, as
+fontes mais **rápidas** comiam as vagas, não as melhores. Com 13 fontes ×
+15 itens para 60 vagas, uma fonte inteira podia não chegar ao modelo. Nada
+estourava: a resposta saía plausível, só mais pobre. Hoje é rodízio — o 1º de
+cada fonte, depois o 2º de cada.
 
 #### `[25/09]` Rascunhar com IA — ela REDIGE, não apura
 
@@ -763,6 +784,59 @@ publicada. Mandar para revisão com o texto pela metade é permitido de propósi
 
 Matéria já publicada **não é editável** por admin — a tela diz isso numa tarja,
 em vez de deixar digitar e falhar ao salvar.
+
+### `[26/09]` Publicar — uma rota, e duas portas para ela
+
+**Antes:** o compositor inteiro morava no topo do feed. **Agora:** ali ficou uma
+linha, e publicar é `/publicar`.
+
+**A decisão é dele**, e o motivo é mecânico: *"se fosse só um modal, ia
+continuar pequeno na minha opinião"*. Um modal herda a largura do que está
+atrás — o compositor ficaria espremido na coluna do feed para sempre, e tudo
+que crescesse nele (mídia, áudio, embed, formatação) disputaria os mesmos
+centímetros.
+
+**As duas portas, porque ele pediu as duas** (*"eu colocaria essa linha e
+acrescentaria o botão + visível em algum lugar também"*):
+
+| Onde | O que é |
+| --- | --- |
+| topo do feed | uma linha clicável — *"No que você está pensando?"* —, três ícones dizendo o que existe do outro lado (imagem, vídeo, áudio) e o **+** |
+| barra lateral | o botão **Criar post**, acima da navegação, com peso próprio |
+
+**Por que o botão existe na barra além da linha:** a linha só aparece no feed.
+De dentro de `/news`, `/lives` ou do perfil não haveria caminho nenhum.
+
+**Por que ele se chama "Criar post" e não "Publicar".** Ele se chamava
+"Publicar" e o CI reprovou — com razão. Em `/publicar` havia **dois botões com
+o mesmo nome acessível** e significados opostos: o da barra **navega**, o do
+compositor **envia**. Quem usa leitor de tela ouviria "Publicar" duas vezes sem
+saber qual faz o quê.
+
+E havia um estrago pior: `e2e/painel-admin.mjs` confere que um `admin` **nunca**
+vê um botão "Publicar" — é assim que o corte editorial do News é verificado. Um
+botão fixo com esse nome na barra tornaria aquela checagem de segurança inútil.
+O verbo *Publicar* pertence a quem envia; navegar é *Criar post*.
+
+**A linha some para quem não pode publicar** — sem conta, ou suspenso. Oferecer
+um caminho que o banco vai recusar é a mesma falha do botão "Publicar"
+aparecendo para admin no painel editorial: a tela promete um poder que não
+existe.
+
+**O ganho medido:** o pedaço que o navegador baixa ao abrir o feed caiu de
+**19.333 para 6.088 bytes (−68%)**. O compositor virou um pedaço próprio de
+15.551 bytes que só chega quando alguém clica — era exatamente o custo que
+*todo mundo que rola* pagava por uma ação que *poucos* fazem.
+
+### `[26/09]` Editar um post usa o mesmo editor de escrever
+
+Era um campo de texto cru. Quem escrevia `**negrito**` ao publicar e depois
+clicava em editar via os asteriscos — sem barra de ferramentas e sem prévia,
+como se a formatação tivesse sumido.
+
+Agora é o mesmo `EditorDeTexto` dos dois lados. Duas caixas para o mesmo texto
+divergem na primeira feature nova, e a prévia é justamente o que diz que o
+marcador vai virar algo.
 
 ### Comentários, likes e notificações
 

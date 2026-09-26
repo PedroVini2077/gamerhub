@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { listContainer, listItem } from '../lib/motion';
 import PostCard from '../components/feed/PostCard';
-import PostForm from '../components/feed/PostForm';
+import LinhaDePublicar from '../components/feed/LinhaDePublicar';
 import RightPanel from '../components/layout/RightPanel';
 import { useFeed } from '../hooks/useFeed';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -88,7 +88,7 @@ export default function Home() {
           </button>
         )}
 
-        <PostForm onPost={reloadPosts} />
+        <LinhaDePublicar />
 
         {loading ? (
           <div className="space-y-4">

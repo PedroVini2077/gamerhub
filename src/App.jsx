@@ -39,7 +39,7 @@ import NotFound from './pages/NotFound';
 
 // As páginas sob demanda moram em `paginasLazy.js` — ver o porquê lá.
 import {
-  Landing, Home, Sobre, Privacidade, Regras, Contato, Termos, PostPage, MuralPage, Community, Keys, Profile, Admin, Settings, UserProfile, Lives, Ranks, Owner, Busca, News, NewsArtigo
+  Landing, Home, Sobre, Privacidade, Regras, Contato, Termos, PostPage, Publicar, MuralPage, Community, Keys, Profile, Admin, Settings, UserProfile, Lives, Ranks, Owner, Busca, News, NewsArtigo
 } from './paginasLazy';
 
 function PageLoader() {
@@ -212,6 +212,9 @@ function AppRoutes() {
       {/* Endereço próprio de um post. Existe para o link direto da fila de
           moderação — antes não havia para onde apontar, o feed é `/` e um post
           antigo podia nem estar na primeira página. Ver `PostPage.jsx`. */}
+      {/* `[26/09]` Publicar é ROTA, não modal — decisão dele: "se fosse só um
+          modal, ia continuar pequeno". Ver `pages/Publicar.jsx`. */}
+      <Route path="/publicar" element={<RequireAuth><Layout><Publicar /></Layout></RequireAuth>} />
       <Route path="/post/:id" element={<RequireAuth><Layout><PostPage /></Layout></RequireAuth>} />
       <Route path="/mural/:id" element={<RequireAuth><Layout><FeatureGate flag="feature_community"><MuralPage /></FeatureGate></Layout></RequireAuth>} />
       <Route path="/community" element={<RequireAuth><Layout><FeatureGate flag="feature_community"><Community /></FeatureGate></Layout></RequireAuth>} />

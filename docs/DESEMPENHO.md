@@ -19,6 +19,65 @@
 
 ---
 
+### `[26/09]` O compositor saiu do feed: o pedaço do feed cai 68%
+
+**Medido** comparando `dist/assets/` antes e depois, na mesma máquina e no
+mesmo build:
+
+| | antes | depois |
+| --- | --- | --- |
+| pedaço do feed (`Home-*.js`) | 19.333 B | **6.088 B** (−68%) |
+| pedaço de publicar (`Publicar-*.js`) | — | 15.551 B, **sob demanda** |
+
+**O que isso quer dizer, e o que NÃO quer.** Quem abre o feed e só rola deixa de
+baixar ~13,2 kB de compositor — barra de ferramentas, prévia, gravador de áudio,
+compositor de embed. Era o custo que *todo mundo* pagava por uma ação que
+*poucos* fazem, e foi o argumento que abriu o item no backlog em 25/09.
+
+**O orçamento do carregamento inicial NÃO melhorou**, e é honesto dizer: ele
+mede o que o `index.html` puxa, que é a landing do visitante deslogado — o feed
+sempre foi `lazy`. O total foi de 748,7 kB para 749,8 kB, e a diferença é a
+fonte nova (+2,2 kB), não o compositor.
+
+**O gatilho do WYSIWYG disparou.** O item de 25/09 dizia: *"se o compositor
+virar rota própria, ele sai do carregamento inicial, e aí o peso deixa de ser
+pago por quem só passa no feed"*. Saiu. A decisão de reabrir ou não é dele — a
+objeção de colagem de HTML continua de pé e é independente do peso.
+
+---
+
+### `[26/09]` As artes da landing: 48 arquivos → 30, e seção nova passa a custar ZERO
+
+**Medido** com `du` e `ls`, antes e depois:
+
+| | antes | depois |
+| --- | --- | --- |
+| arquivos em `src/assets/landing/cenas/` | 48 | **30** |
+| peso no repositório | 4.551 kB | **2.508 kB** (−45%) |
+| composições por seção nova | 2 (larga + retrato), feitas à mão | **0** |
+
+**O que mudou.** Eram oito cenas, uma por feature, e **seis delas desenhavam a
+interface do produto**. Viraram **cinco placas de ambiente** — rocha, cristal,
+neon, fenda —, e as oito seções mapeiam nelas (`src/lib/cenasDaLanding.js`).
+
+**O que este número NÃO diz, e é a parte honesta.** O visitante nunca baixou os
+4.551 kB: o `srcset` escolhe **um** arquivo por cena e as de baixo são `lazy`. A
+economia para quem visita é bem menor que 45% — o ganho grande é de
+repositório, de manutenção e de validade. O orçamento do carregamento inicial
+não se moveu de forma relevante (seguiu em 644,2 kB de 760), porque o hero
+sempre baixou uma arte só.
+
+**O custo que não se mede em byte, e foi o que decidiu.** Arte que desenha a
+interface envelhece no próximo redesenho, e a landing passa a anunciar um site
+que não existe mais. As placas de hoje não desenham tela nenhuma — não há o que
+envelhecer nelas.
+
+**Conferido num navegador de verdade**, nas duas larguras: 8/8 artes carregam, e
+o `<picture>` serve `larga-1600` em 1440 px e `alta-420` em 390 px — a troca de
+composição por aparelho continua de pé.
+
+---
+
 ### `[25/09]` O WYSIWYG que ele pediu custa **46×** o editor de hoje — medido
 
 Pedido dele, depois de usar o editor rico: *"quando clico no negrito, aparece os
