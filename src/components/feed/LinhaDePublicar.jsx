@@ -24,6 +24,12 @@ import Avatar from '../ui/Avatar';
  * linha, e o `+` é **irmão** dele — os dois vão para o mesmo lugar, e o leitor
  * de tela anuncia dois destinos claros em vez de um aninhamento confuso.
  *
+ * ── O nome da ação é "Criar post", em todo lugar ──────────────────────────
+ *
+ * Aqui e na barra lateral. O verbo **Publicar** pertence ao botão que ENVIA, no
+ * compositor — dois botões com o mesmo nome acessível na mesma tela é defeito
+ * de acessibilidade, e foi o que reprovou o CI em 26/09.
+ *
  * ── Os três ícones não são enfeite ────────────────────────────────────────
  *
  * Eles dizem, sem texto, o que existe do outro lado: imagem, vídeo e áudio. A
@@ -70,7 +76,7 @@ export default function LinhaDePublicar() {
 
       <button
         onClick={ir}
-        aria-label="Publicar"
+        aria-label="Criar post"
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
                    bg-neon-green/10 text-neon-green transition-colors
                    hover:bg-neon-green/20"

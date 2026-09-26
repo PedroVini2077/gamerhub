@@ -802,10 +802,21 @@ acrescentaria o botão + visível em algum lugar também"*):
 | Onde | O que é |
 | --- | --- |
 | topo do feed | uma linha clicável — *"No que você está pensando?"* —, três ícones dizendo o que existe do outro lado (imagem, vídeo, áudio) e o **+** |
-| barra lateral | o botão **Publicar**, acima da navegação, com peso próprio |
+| barra lateral | o botão **Criar post**, acima da navegação, com peso próprio |
 
 **Por que o botão existe na barra além da linha:** a linha só aparece no feed.
 De dentro de `/news`, `/lives` ou do perfil não haveria caminho nenhum.
+
+**Por que ele se chama "Criar post" e não "Publicar".** Ele se chamava
+"Publicar" e o CI reprovou — com razão. Em `/publicar` havia **dois botões com
+o mesmo nome acessível** e significados opostos: o da barra **navega**, o do
+compositor **envia**. Quem usa leitor de tela ouviria "Publicar" duas vezes sem
+saber qual faz o quê.
+
+E havia um estrago pior: `e2e/painel-admin.mjs` confere que um `admin` **nunca**
+vê um botão "Publicar" — é assim que o corte editorial do News é verificado. Um
+botão fixo com esse nome na barra tornaria aquela checagem de segurança inútil.
+O verbo *Publicar* pertence a quem envia; navegar é *Criar post*.
 
 **A linha some para quem não pode publicar** — sem conta, ou suspenso. Oferecer
 um caminho que o banco vai recusar é a mesma falha do botão "Publicar"

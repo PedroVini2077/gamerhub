@@ -48,7 +48,7 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->467<!--/n--> arquivos · <!--n:src.linhas-->52.016<!--/n--> linhas |
+| código em `src/` | <!--n:src.arquivos-->467<!--/n--> arquivos · <!--n:src.linhas-->52.073<!--/n--> linhas |
 | dividido em | `lib` <!--n:src.lib.arquivos-->167<!--/n--> · `components` <!--n:src.components.arquivos-->199<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->47<!--/n--> · `pages` <!--n:src.pages.arquivos-->26<!--/n--> · `services` <!--n:src.services.arquivos-->25<!--/n--> |
 | rede de testes | <!--n:testes.arquivos-->122<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->23<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->10<!--/n--> |
@@ -65,7 +65,7 @@ digitado à mão:
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
 > **dobrou** — <!--n:src.arquivos-->467<!--/n--> arquivos,
-> <!--n:src.linhas-->52.016<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> <!--n:src.linhas-->52.073<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
 > *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).

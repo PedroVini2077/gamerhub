@@ -63,7 +63,7 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav className="flex-1 py-6 px-2 space-y-1">
-          {/* `[26/09]` PUBLICAR é AÇÃO, e por isso não é item de navegação.
+          {/* `[26/09]` CRIAR POST é AÇÃO, e por isso não é item de navegação.
 
               Ele fica acima da lista, com peso visual próprio — o pedido dele foi
 
@@ -93,7 +93,7 @@ export default function Sidebar({ open, onClose }) {
 
           >
 
-            <Plus size={16} /> Publicar
+            <Plus size={16} /> Criar post
 
           </button>
 

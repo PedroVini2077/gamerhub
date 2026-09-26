@@ -157,6 +157,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-TELA-013** | **`[26/09]`** **A fonte do site escreve português.** Nenhuma família entra no `tailwind.config.js` sem estar na lista de conferidas, com data e método — e fonte reprovada não volta ao CSS. A Orbitron ficou no ar escrevendo "nào" em todo título: o glifo existia, o arquivo estava íntegro, e nada acusava | o dono viu num print, em 26/09 | `fonteEscrevePortugues.test.js` |
 | **INV-TELA-014** | **`[26/09]`** **Publicar tem porta.** A rota `/publicar` é alcançável por pelo menos duas — a linha no topo do feed e o botão na barra —, e a linha **some** para quem não pode publicar. Rota sem porta continua respondendo, o build passa, nenhum teste de rota quebra, e ninguém consegue publicar | a rota nasceu em 26/09 e criou o risco | `publicarTemCaminho.test.js` |
 | **INV-TELA-015** | **`[26/09]`** **Escrever e editar usam o MESMO editor.** Editar era um campo cru: quem escrevia `**negrito**` via os asteriscos ao editar, sem barra e sem prévia — como se a formatação tivesse sumido | — | `publicarTemCaminho.test.js` |
+| **INV-TELA-016** | **`[26/09]`** **Botão que NAVEGA não se chama como botão que ENVIA.** "Publicar" é do compositor; navegar até ele é "Criar post". Dois nomes acessíveis iguais na mesma tela confundem leitor de tela — e, aqui, tornariam inútil a checagem do corte editorial do News, que procura exatamente por um botão "Publicar" | o CI reprovou em 26/09 | `publicarTemCaminho.test.js` · `e2e/painel-admin.mjs` |
 
 ---
 

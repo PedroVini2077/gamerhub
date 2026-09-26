@@ -25,6 +25,7 @@ const SIDEBAR = readFileSync('src/components/layout/Sidebar.jsx', 'utf8');
 const APP = readFileSync('src/App.jsx', 'utf8');
 const FORM = readFileSync('src/components/feed/PostForm.jsx', 'utf8');
 const CARD = readFileSync('src/components/feed/PostCard.jsx', 'utf8');
+const BARRA = readFileSync('src/components/feed/composer/ComposerToolbar.jsx', 'utf8');
 
 describe('a rota de publicar tem porta', () => {
   it('a rota existe e está atrás de login', () => {
@@ -105,5 +106,55 @@ describe('escrever e editar usam o MESMO editor', () => {
       .toMatch(/<EditorDeTexto/);
     expect(blocoDeEdicao, 'sobrou um <textarea> no bloco de edicao do post')
       .not.toMatch(/<textarea/);
+  });
+});
+
+describe('o botao que NAVEGA nao se chama igual ao que ENVIA', () => {
+  /**
+   * O CI reprovou por isto em 26/09, e o problema NAO era o teste.
+   *
+   * O botao da barra lateral se chamava "Publicar", igual ao que envia o post
+   * no compositor. Em `/publicar` os dois ficavam na mesma tela:
+   *
+   *   strict mode violation: getByRole('button', { name: /^Publicar$/ })
+   *     resolved to 2 elements
+   *
+   * Sao DOIS estragos, e o segundo e o grave:
+   *
+   *   ACESSIBILIDADE  quem usa leitor de tela ouve "Publicar" duas vezes, com
+   *                   significados diferentes — um navega, o outro envia
+   *   SEGURANCA       o `painel-admin.mjs` confere que um `admin` NUNCA ve um
+   *                   botao "Publicar" — e assim que o corte editorial do News
+   *                   e verificado. Um botao fixo com esse nome na barra
+   *                   tornaria aquela checagem inutil, e ela imprimiria verde
+   *                   sobre nada
+   */
+  const ENVIAR = 'Publicar';
+
+  it('o compositor continua usando o verbo ENVIAR', () => {
+    // Se o rotulo do compositor mudar, a colisao volta pelo outro lado: alguem
+    // renomeia este para "Criar post" e a barra passa a ser a ambigua.
+    expect(BARRA, `o botao de enviar do compositor deixou de se chamar "${ENVIAR}". `
+      + 'Se mudou de proposito, ajuste o `painel-admin.mjs` junto: e por esse '
+      + 'nome que ele confere o corte editorial do News.')
+      .toMatch(new RegExp(`'${ENVIAR}'`));
+  });
+
+  it('nenhum botao de NAVEGAR usa esse mesmo nome', () => {
+    const navegadores = [
+      ['a barra lateral', SIDEBAR],
+      ['a linha do topo do feed', LINHA],
+    ];
+    const colidem = navegadores
+      .filter(([, fonte]) => new RegExp(`(>|aria-label=")\\s*${ENVIAR}\\s*(<|")`).test(fonte))
+      .map(([nome]) => nome);
+
+    expect(colidem, `estes botoes NAVEGAM e se chamam "${ENVIAR}", igual ao que ENVIA:\n`
+      + `  ${colidem.join(', ')}\n\n`
+      + '  Em /publicar os dois ficam na mesma tela: o leitor de tela anuncia o\n'
+      + '  mesmo nome para acoes diferentes, e o `painel-admin.mjs` perde a\n'
+      + '  checagem do corte editorial do News, que procura exatamente por esse\n'
+      + '  nome. Use um verbo de NAVEGACAO ("Criar post").')
+      .toEqual([]);
   });
 });
