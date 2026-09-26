@@ -457,10 +457,10 @@ prompt parou de segurar, e isso precisa aparecer antes de virar hábito.
 
 Trava: `radarDePautasNaoInventa.test.js` (`INV-EDIT-007`).
 
-> **`[26/09]` Pendência assumida:** `e2e/portas-fechadas.mjs` ainda **não** bate
-> nesta função. Ela só existe em produção depois que a `main` a implanta, e o
-> teste roda contra produção durante o PR — o caso entra no PR seguinte, e está
-> escrito no `BACKLOG.md` para não depender de eu lembrar.
+> **`[26/09]` Pendência FECHADA no PR seguinte, como estava escrito.** A
+> `main` implantou a função e o caso entrou em `e2e/portas-fechadas.mjs`.
+> Medido na produção: `POST` sem `Authorization` → `401`; com
+> `Bearer token-que-nao-existe` → `401`; `OPTIONS` → `200`.
 
 ---
 
@@ -826,7 +826,7 @@ para alterar esta área sem acionar nenhum?"**. As outras só descrevem.
 | Dado sensível | `portas-do-banco.mjs` | que `posts` e `admin_logs` respondam 401 ao anônimo, e que de `profiles` o anônimo leia **exatamente `id` e `username`** — nem uma coluna a mais, nem a menos | sim — não vê o que um **logado** alcança |
 | Privacidade | `conteudoDaPrivacidade.test.js` | que chave nova no navegador, terceiro novo e cookie **entrem na política** antes de existirem | não, para o que ele conhece |
 | Admin/staff | `painel-admin.mjs` | que o painel liste, pagine e negue — com dado que o próprio teste cria | sim — cobre a tela, não a permissão no banco |
-| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 7 portas recusem chamada sem credencial — e, na `verify-contact`, que o captcha esteja mesmo sendo conferido (403, não 400) | não, e é de propósito: as functions não estão no git |
+| Edge Functions | `portas-fechadas.mjs`, na **produção** | que as 8 portas recusem chamada sem credencial — e, na `verify-contact`, que o captcha esteja mesmo sendo conferido (403, não 400) | não, e é de propósito: as functions não estão no git |
 | Fluxos críticos | `fluxos.mjs` | publicar → conferir → apagar → sair, e nenhum lixo de teste sobrando | sim — cobre o caminho feliz de uma conta comum |
 | Testes | piso de testes, `rotasE2E.test.js`, **`varrerFontes`** | que rota nova tenha teste de navegador, e que trava que varre arquivo **prove que varreu** | não |
 | Segredo/config | `segredos-vazados.mjs` | que nenhum arquivo rastreado tenha chave privada, `service_role`, token ou senha | não, para os padrões que ele conhece |
