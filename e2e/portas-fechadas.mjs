@@ -97,6 +97,24 @@ const CASOS = [
     estrago: 'queimar a cota de 10 mil consultas/dia do Safe Browsing',
   },
   {
+    // `[26/09]` O radar de pautas. Entrou um PR depois da `redigir-materia`, e
+    // o motivo do atraso vale ficar escrito: este roteiro bate na PRODUÇÃO, e
+    // a função só existe lá depois que a `main` a implanta — o CI do PR que a
+    // criou receberia 404. Aceitar `[401, 404]` para resolver isso
+    // enfraqueceria o portão para sempre.
+    //
+    // O que está em jogo aqui não é só cota de IA: cada chamada dispara ~13
+    // requisições de rede para sites de terceiros. Porta aberta seria um
+    // aríete de graça, apontado para fora.
+    nome: 'radar-de-pautas com token inventado',
+    caminho: '/radar-de-pautas',
+    cabecalhos: { Authorization: 'Bearer token-que-nao-existe' },
+    corpo: {},
+    esperado: [401],
+    estrago: 'disparar ~13 requisicoes a sites de terceiros por chamada, '
+           + 'e queimar a cota diaria da IA junto',
+  },
+  {
     // `[25/09]` A IA que rascunha matéria. O que está em jogo aqui é a cota de
     // um provedor de IA — e a lição da `moderate-links` é exatamente esta: a
     // porta dela era decorativa, e qualquer um da internet queimava a cota do

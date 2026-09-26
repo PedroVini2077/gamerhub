@@ -200,19 +200,6 @@ produção na Groq, conferido em 25/09.
 
 ---
 
-### 🟠 `[26/09]` `portas-fechadas.mjs` ainda não bate na `radar-de-pautas`
-
-**Por que ficou de fora, e não é esquecimento.** O roteiro bate na **produção**,
-e a função só existe lá depois que a `main` a implanta — o CI do próprio PR que
-a cria receberia `404`. Aceitar `[401, 404]` para resolver isso enfraqueceria o
-portão para sempre.
-
-**O que fazer:** no PRÓXIMO PR desta sessão, acrescentar o caso
-`radar-de-pautas com token inventado -> 401`, igual ao da `redigir-materia`.
-Registrado aqui porque a única alternativa era confiar na minha memória.
-
----
-
 ### 🔵 `[26/09]` Gerenciar as fontes do radar pela TELA
 
 Hoje ligar, desligar e acrescentar fonte é `UPDATE`/`INSERT` no banco — o passo
