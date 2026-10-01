@@ -113,6 +113,40 @@ enfraquecida que a checagem de presença aprovaria); e cobre as duas direções,
 porque cabeçalho que **some** não quebra tela nenhuma. Zero falso positivo por
 construção, porque a lista é escrita para este site.
 
+> ### `[01/10]` O "toda URL responde 200" ganhou UMA exceção — e não é a mesma coisa
+>
+> O rewrite passou a excluir `/.well-known/`, que agora dá **404**. O
+> raciocínio acima continua valendo inteiro para `/.env` e `/.git/config`:
+> aquilo é caminho que uma **pessoa** ou um scanner genérico chuta, e devolver
+> o app é a resposta certa.
+>
+> O `/.well-known/` é outra coisa: é namespace reservado pela RFC 8615, onde
+> **só máquina pede** — e a máquina vai *interpretar* o que voltar. O
+> Lighthouse 13.5 buscava o catálogo de agentes em
+> `/.well-known/ai-catalog.json`, recebia `200` com `<!doctype html>` e
+> reprovava a auditoria `ard-schema` com *"Malformed JSON"*. Medido nos dois
+> estados sobre o nosso `dist`: com `404` a mesma auditoria vira
+> `notApplicable`.
+>
+> **A distinção que decide:** responder o app a quem navega é o SPA
+> funcionando; responder o app a quem sonda um namespace de máquina é o site
+> afirmando que um arquivo existe. E a correção não foi publicar o arquivo —
+> foi parar de afirmar.
+>
+> **A ordem da entrega, e ela expõe um limite real do portão.** O
+> `e2e/portas-da-web.mjs` mede a **produção**. Qualquer mudança na borda HTTP
+> cai então num ovo e galinha: a afirmação nova reprova o PR que a cria,
+> porque só vira verdade depois do deploy que o merge dispara. Aconteceu aqui,
+> e o portão estava **certo** — ele acusou os cinco caminhos.
+>
+> Em vez de enfraquecer o portão ou forçar o merge, a entrega foi partida em
+> duas: primeiro o `vercel.json` (que o `rewriteNaoMenteSobreCaminho.test.js`
+> já prova, lendo a expressão), depois a lista `NAO_PODEM_RECEBER_O_APP` no
+> portão de produção, quando a afirmação já é verdadeira.
+>
+> *Registrado porque isto volta a acontecer na próxima mudança de borda, e a
+> resposta certa nunca é afrouxar o portão.*
+
 **O que se perde, com todas as letras:** o Nuclei traz templates de CVE nova
 sem ninguém escrever nada, e o nosso portão não. A troca foi aceita porque a
 nossa superfície de servidor é Vercel estático + Supabase gerenciado — os dois

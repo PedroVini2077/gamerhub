@@ -812,9 +812,39 @@ acrescentaria o botão + visível em algum lugar também"*):
 | --- | --- |
 | topo do feed | uma linha clicável — *"No que você está pensando?"* —, três ícones dizendo o que existe do outro lado (imagem, vídeo, áudio) e o **+** |
 | barra lateral | o botão **Criar post**, acima da navegação, com peso próprio |
+| **`[01/10]` só no celular** | um **+** flutuante no canto, que aparece quando a linha sai da tela e some quando ela volta |
 
 **Por que o botão existe na barra além da linha:** a linha só aparece no feed.
 De dentro de `/news`, `/lives` ou do perfil não haveria caminho nenhum.
+
+### `[01/10]` A terceira porta — e ela existe só no celular
+
+Lacuna que ele apontou: *"no celular, a sidebar fica fechada e, quando o
+usuário rola o Feed, a `LinhaDePublicar` sai do viewport — então o acesso
+rápido para criar post desaparece"*.
+
+Ele está certo, e o recorte é exato: **no desktop isso não acontece**, porque a
+barra lateral está sempre aberta e o botão dela sempre à mão. O ponto em que o
+atalho some é `md:`, que é **o mesmo ponto em que a barra deixa de ser gaveta**.
+Não é um valor escolhido — é a condição literal do problema.
+
+| | |
+| --- | --- |
+| quando aparece | quando a linha do topo sai da viewport |
+| quando some | quando ela volta, e em qualquer largura `md:` para cima |
+| com o menu aberto | escurece junto com o resto e para de receber clique (fica **abaixo** do véu da barra) |
+| sem conta, ou suspenso | não existe — as mesmas duas regras que apagam a linha |
+
+**Ele não duplica nada.** É o mesmo componente da linha que o desenha: as
+regras de quem pode publicar já moram ali, e o alvo que decide a aparição é a
+própria linha, logo acima. Em qualquer outro lugar as regras teriam de ser
+reescritas, e duas cópias divergem.
+
+**Ele não aparece antes da hora.** A visibilidade começa em *"assume que a
+linha está na tela"*; se começasse no contrário, o atalho piscaria em toda
+carga da página — e um piscar não é algo que alguém reporta.
+
+Trava: `atalhoDePublicarNoCelular.test.jsx`.
 
 **Por que ele se chama "Criar post" e não "Publicar".** Ele se chamava
 "Publicar" e o CI reprovou — com razão. Em `/publicar` havia **dois botões com

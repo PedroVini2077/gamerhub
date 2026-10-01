@@ -99,6 +99,7 @@ const CSP_TRAVADAS = [
 /** Caminhos que, por causa do rewrite, DEVEM devolver o app — nunca conteúdo. */
 const NAO_PODEM_VAZAR = ['/.env', '/.env.local', '/.git/config', '/package.json'];
 
+
 const falhas = [];
 const ok = [];
 
