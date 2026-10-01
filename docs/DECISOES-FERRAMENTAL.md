@@ -133,8 +133,19 @@ construção, porque a lista é escrita para este site.
 > afirmando que um arquivo existe. E a correção não foi publicar o arquivo —
 > foi parar de afirmar.
 >
-> `e2e/portas-da-web.mjs` passou a cobrir as duas direções opostas: a lista
-> `NAO_PODEM_VAZAR` exige o app, a `NAO_PODEM_RECEBER_O_APP` o proíbe.
+> **A ordem da entrega, e ela expõe um limite real do portão.** O
+> `e2e/portas-da-web.mjs` mede a **produção**. Qualquer mudança na borda HTTP
+> cai então num ovo e galinha: a afirmação nova reprova o PR que a cria,
+> porque só vira verdade depois do deploy que o merge dispara. Aconteceu aqui,
+> e o portão estava **certo** — ele acusou os cinco caminhos.
+>
+> Em vez de enfraquecer o portão ou forçar o merge, a entrega foi partida em
+> duas: primeiro o `vercel.json` (que o `rewriteNaoMenteSobreCaminho.test.js`
+> já prova, lendo a expressão), depois a lista `NAO_PODEM_RECEBER_O_APP` no
+> portão de produção, quando a afirmação já é verdadeira.
+>
+> *Registrado porque isto volta a acontecer na próxima mudança de borda, e a
+> resposta certa nunca é afrouxar o portão.*
 
 **O que se perde, com todas as letras:** o Nuclei traz templates de CVE nova
 sem ninguém escrever nada, e o nosso portão não. A troca foi aceita porque a

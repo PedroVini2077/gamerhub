@@ -114,26 +114,6 @@ describe('o portão da borda HTTP não pode ser esvaziado', () => {
       'arquivo de verdade ali". Vazia, o portão deixa de fazer essa pergunta.',
     ].join('\n')).toBeGreaterThanOrEqual(3);
   });
-  it('`[01/10]` a lista de caminhos de MÁQUINA tem conteúdo, e cita o `/.well-known/`', () => {
-    const corpo = lista('NAO_PODEM_RECEBER_O_APP');
-    const itens = (corpo.match(/'/g) || []).length / 2;
-    expect(itens, [
-      `A lista NAO_PODEM_RECEBER_O_APP de ${PORTAO} ficou com ${itens} caminho(s).`,
-      '',
-      'Ela é a ÚNICA coisa que prova, na produção, que a Vercel realmente honra',
-      'o `(?!\\.well-known/)` do rewrite. A trava de unidade lê o `vercel.json` e',
-      'prova a intenção; regex certa que o fornecedor interpreta de outro jeito',
-      'continua sendo um site que diz existir o que não existe.',
-    ].join('\n')).toBeGreaterThanOrEqual(3);
-
-    expect(corpo, [
-      'A lista perdeu o `/.well-known/`, que é o namespace inteiro que ela',
-      'existe para cobrir (RFC 8615). Sem ele, o Lighthouse volta a reprovar',
-      '`ard-schema` com "Malformed JSON: Unexpected token \'<\'" — e nada aqui',
-      'acusaria, porque a lista continuaria cheia de outra coisa.',
-    ].join('\n')).toContain('/.well-known/');
-  });
-
   it('as diretivas travadas da CSP continuam sendo julgadas por valor', () => {
     const corpo = lista('CSP_TRAVADAS');
     const itens = (corpo.match(/^\s*\[/gm) || []).length;

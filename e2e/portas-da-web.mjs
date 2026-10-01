@@ -99,36 +99,6 @@ const CSP_TRAVADAS = [
 /** Caminhos que, por causa do rewrite, DEVEM devolver o app — nunca conteúdo. */
 const NAO_PODEM_VAZAR = ['/.env', '/.env.local', '/.git/config', '/package.json'];
 
-/**
- * `[01/10]` Caminhos de MÁQUINA que NÃO podem receber o app.
- *
- * É o oposto exato da lista de cima, e a diferença é quem pergunta. Rota de
- * app recebe o `index.html` porque uma PESSOA pode digitá-la e o router
- * desenha a tela certa (inclusive o 404). O `/.well-known/` é namespace
- * reservado pela RFC 8615: ninguém navega até lá, e quem pede é uma
- * ferramenta que vai TENTAR INTERPRETAR o que voltar.
- *
- * O que isso custou, medido com o Lighthouse 13.5.0 de verdade sobre o nosso
- * `dist`, trocando só o que este caminho responde:
- *
- *     200 com HTML  ->  ard-schema score=0  "Malformed JSON: Unexpected '<'"
- *     404           ->  ard-schema notApplicable
- *
- * Catálogo ausente não reprova; catálogo que não carrega, sim. A auditoria
- * estava vermelha porque o site DIZIA que o arquivo existia.
- *
- * A trava de unidade (`rewriteNaoMenteSobreCaminho.test.js`) lê a expressão do
- * `vercel.json` e prova a intenção. Só este arquivo prova que **a Vercel a
- * honra** — regex certa que o fornecedor interpreta de outro jeito continua
- * sendo um site que mente.
- */
-const NAO_PODEM_RECEBER_O_APP = [
-  '/.well-known/ai-catalog.json',
-  '/.well-known/ard.json',
-  '/.well-known/security.txt',
-  '/.well-known/change-password',
-  '/.well-known/assetlinks.json',
-];
 
 const falhas = [];
 const ok = [];
@@ -236,32 +206,6 @@ async function main() {
         + '    devolveu OUTRA coisa — ou seja, existe um arquivo de verdade ali.');
     } else {
       ok.push(`${caminho}: rewrite do SPA (nao vaza)`);
-    }
-  }
-
-  // ── Direção 3: caminho de MÁQUINA não recebe o app ───────────────────────
-  //
-  // Reprova nos dois sentidos, como o resto deste arquivo: o `404` tem de
-  // estar lá, e um arquivo que a gente DECIDIR publicar em
-  // `public/.well-known/` também é resposta válida — o que não pode é a casca
-  // do SPA. Por isso a checagem é sobre `text/html`, e não sobre o status.
-  for (const caminho of NAO_PODEM_RECEBER_O_APP) {
-    let r;
-    try { r = await pegar(caminho); } catch { continue; }
-
-    const ehOApp = r.status === 200
-      && (r.corpo === raiz.corpo || (r.headers.get('content-type') || '').includes('text/html'));
-
-    if (ehOApp) {
-      reprova(`${caminho} recebeu o APP em vez de 404`,
-        `status ${r.status}, content-type ${r.headers.get('content-type')}\n`
-        + '    O `/.well-known/` voltou a cair no rewrite do SPA. Ferramenta que\n'
-        + '    sonda esse caminho conclui que o arquivo EXISTE e tenta ler o\n'
-        + '    `<!doctype html>` — foi assim que o Lighthouse passou a reprovar\n'
-        + '    `ard-schema` com "Malformed JSON".\n'
-        + '    Conserto: o `(?!\\.well-known/)` no `source` do vercel.json.');
-    } else {
-      ok.push(`${caminho}: ${r.status} (nao recebe o app)`);
     }
   }
 
