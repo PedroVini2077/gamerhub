@@ -35,7 +35,7 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Safe Browsing** | consultas por dia | 10.000 | link deixa de ser checado | Sim, desde 23/08 (`admin_logs`) |
 | **Groq** (requisições) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
 | **Groq** (**tokens por minuto**) | tokens de UMA requisição, entrada + `max_tokens` | **8.000** (`on_demand`) | `HTTP 413`: a requisição é recusada inteira | Sim, desde 25/09 — mas ver o quadro abaixo |
-| **GDELT** (radar, Fase 1) | requisições **por IP** | **1 a cada 5 s** — não documentado, veio de um `429` medido | a consulta é recusada; **o RSS continua** | Sim, desde 01/10 (`comFalha` na tela) |
+| **GDELT** (radar, Fase 1) | requisições **por IP** · e **tempo de resposta** | **1 a cada 5 s** · leva **10–12 s só para recusar** | a consulta é recusada **ou estoura o tempo**; o RSS continua | Sim, desde 01/10 (`comFalha` diz o motivo **e o relógio**) |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
@@ -137,6 +137,42 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > vira linha em `comFalha`, e a coleta do RSS segue intacta. Se a GDELT nunca
 > responder em produção, o radar continua exatamente como era — e nós vamos
 > **saber**, em vez de supor.
+>
+> ### ⚠️ `[01/10]` O primeiro clique real desmentiu a previsão — e o número já era meu
+>
+> Eu projetei isto esperando `429` da Edge Function. Veio outra coisa:
+>
+> ```
+> Sem resposta: Busca ampla · games (Signal timed out.)
+>             · Busca ampla · tecnologia e geek (Signal timed out.)
+> ```
+>
+> **Não é recusa: é lentidão.** E o número que teria mostrado isso já estava
+> medido, por mim, **antes** do clique:
+>
+> ```
+> HTTP 429 · 444 bytes · 10,79 s
+> HTTP 429 · 444 bytes · 12,34 s
+> ```
+>
+> **Doze segundos para devolver um `429`** — a resposta mais barata que existe,
+> que nem chega a consultar o índice. Eu olhei para o código de status e não
+> olhei para o relógio. O `TIMEOUT_DO_FEED` de 10 s, dimensionado para RSS,
+> nunca ia caber nem para o erro.
+>
+> **É o mesmo erro do `max_tokens`, na mesma sessão, com horas de diferença:**
+> a resposta do fornecedor trazia o número que me corrigiria, e eu li só o
+> pedaço que confirmava o que eu já pensava.
+>
+> **A terceira pergunta, e ela entra para valer:** depois de *"quantas vezes
+> por dia?"* e *"quanto cabe de uma vez?"*, perguntar **"quanto TEMPO ela
+> leva?"**. Serviço gratuito de terceiro costuma ser lento por projeto, não
+> por acidente — e timeout herdado de outro serviço é um teto que ninguém
+> escolheu.
+>
+> **O que mudou:** a GDELT ganhou timeout próprio de 20 s, e o teto por clique
+> caiu de 2 para **1** — com 20 s cada, duas em série custariam 45 s de espera
+> para quem clicou. A fonte que fica de fora é **dita** em `comFalha`.
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em

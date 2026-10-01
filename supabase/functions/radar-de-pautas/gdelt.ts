@@ -62,14 +62,48 @@ export const TETO_POR_CONSULTA = 12;
 export const ESPACO_ENTRE_CONSULTAS_MS = 5_200;
 
 /**
- * Quantas consultas `api` por clique.
+ * `[01/10]` O TEMPO QUE A GDELT PRECISA — e ele não é o do RSS.
  *
- * Duas, e o motivo é o relógio de quem está esperando: a serialização obriga
- * uma espera de 5,2 s entre elas, então 2 custam ~5 s e 4 custariam ~16 s. O
- * editor clica e olha a tela. Aumentar isto exige mover a coleta para fora do
- * clique, que é outra arquitetura (e outra fase).
+ * ── O primeiro clique real desmentiu a minha previsão ─────────────────────
+ *
+ * Eu projetei isto esperando `429`. Da Edge Function veio outra coisa:
+ *
+ *     Sem resposta: Busca ampla · games (Signal timed out.)
+ *                 · Busca ampla · tecnologia e geek (Signal timed out.)
+ *
+ * **Não é recusa: é lentidão.** O `TIMEOUT_DO_FEED` de 10 s foi dimensionado
+ * para RSS, onde um site demora 1 a 3 s.
+ *
+ * ── O número estava na minha mão e eu não o li ────────────────────────────
+ *
+ * Medido duas vezes hoje, antes de o clique acontecer:
+ *
+ *     HTTP 429 · 444 bytes · 10,79 s
+ *     HTTP 429 · 444 bytes · 12,34 s
+ *
+ * **12 segundos para devolver um `429`** — a resposta mais barata que existe,
+ * que nem chega a consultar o índice. Eu olhei para o código de status e não
+ * olhei para o relógio; os 10 s nunca iam caber nem para o erro, quanto mais
+ * para uma busca de verdade.
+ *
+ * É o mesmo erro do `max_tokens` de hoje de manhã, na mesma sessão: a resposta
+ * do fornecedor trazia o número que me corrigiria, e eu li só o pedaço que
+ * confirmava o que eu já pensava.
  */
-export const TETO_DE_CONSULTAS = 2;
+export const TIMEOUT_DA_CONSULTA_MS = 20_000;
+
+/**
+ * Quantas consultas `api` por clique. **Uma**, e isto MUDOU de 2 para 1.
+ *
+ * Com timeout de 20 s, duas consultas em série custariam até 45 s de espera —
+ * e o editor está olhando a tela. Uma consulta com chance real de responder
+ * vale mais do que duas que estouram.
+ *
+ * A fonte que fica de fora **é dita** em `comFalha`, não cortada em silêncio:
+ * ela está cadastrada e ativa, e some sem aviso seria a "cobertura que não
+ * cobre" (§1.5).
+ */
+export const TETO_DE_CONSULTAS = 1;
 
 /**
  * `20260926T134500Z` -> ISO. Formato só da GDELT, e sem separador nenhum.
@@ -153,15 +187,20 @@ export async function coletarDasApis(
     if (n > 0) await esperar(ESPACO_ENTRE_CONSULTAS_MS);
 
     try {
+      const comecou = Date.now();
       const r = await buscar(f.url);
+      const levou = Date.now() - comecou;
       if (!r.ok) {
         // O 429 é o caso ESPERADO, e a mensagem diz isso em português para
         // quem lê a tela — "HTTP 429" sozinho mandaria procurar defeito nosso.
         comFalha.push({
           nome: f.nome,
+          // O TEMPO entra no recado de proposito. Sem ele, "HTTP 429" e
+          // "demorou 19 s e falhou" sao indistinguiveis na tela — e so o
+          // segundo diz que o problema e o relogio, nao a cota.
           motivo: r.status === 429
-            ? "a GDELT recusou por excesso de consultas (limite dela, nao nosso)"
-            : `HTTP ${r.status}`,
+            ? `a GDELT recusou por excesso de consultas em ${Math.round(levou / 1000)}s (limite dela, nao nosso)`
+            : `HTTP ${r.status} em ${Math.round(levou / 1000)}s`,
         });
         continue;
       }
@@ -169,7 +208,16 @@ export async function coletarDasApis(
       if (!lidos.length) { comFalha.push({ nome: f.nome, motivo: "sem artigos na janela" }); continue; }
       for (const i of lidos) itens.push({ ...i, fonte_id: f.id, fonte_nome: f.nome });
     } catch (e) {
-      comFalha.push({ nome: f.nome, motivo: e instanceof Error ? e.message : String(e) });
+      const bruto = e instanceof Error ? e.message : String(e);
+      // `Signal timed out.` sozinho nao diz NADA para quem le a tela. Dizer o
+      // teto transforma o recado em diagnostico: foi isso que apareceu no
+      // primeiro clique real, e eu precisei ir ao codigo para saber o numero.
+      comFalha.push({
+        nome: f.nome,
+        motivo: /timed out|aborted/i.test(bruto)
+          ? `a GDELT nao respondeu em ${Math.round(TIMEOUT_DA_CONSULTA_MS / 1000)}s`
+          : bruto,
+      });
     }
   }
 

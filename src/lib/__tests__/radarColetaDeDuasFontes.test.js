@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   lerGdelt, dataDaGdelt, coletarDasApis,
-  ESPACO_ENTRE_CONSULTAS_MS, TETO_DE_CONSULTAS,
+  ESPACO_ENTRE_CONSULTAS_MS, TETO_DE_CONSULTAS, TIMEOUT_DA_CONSULTA_MS,
 } from '../../../supabase/functions/radar-de-pautas/gdelt.ts';
 import { coletarTudo } from '../../../supabase/functions/radar-de-pautas/coleta.ts';
 
@@ -95,11 +95,17 @@ describe('as consultas de API vao EM SERIE, com o espaco que a GDELT exige', () 
   it('espera entre uma consulta e a seguinte, e NAO antes da primeira', async () => {
     // Paralelizar aqui garantiria 429 em tudo menos na primeira. E cobrar 5 s
     // do editor para a PRIMEIRA seria pagar pedagio sem estrada.
+    //
+    // O teto vai EXPLICITO (2) e nao vem da constante de producao, que hoje e
+    // 1. O comportamento tem de continuar provado para o dia em que o teto
+    // subir — senao a regra do espacamento ficaria sem teste justamente
+    // enquanto ela nao e exercitada, e voltaria quebrada.
     const esperas = [];
     const { itens } = await coletarDasApis(
       [fonte(1), fonte(2)],
       async (u) => ({ ok: true, status: 200, texto: corpoCom(u.slice(-1)) }),
       async (ms) => { esperas.push(ms); },
+      2,
     );
     expect(esperas, 'o espacamento sumiu — a GDELT vai recusar da 2a em diante')
       .toEqual([ESPACO_ENTRE_CONSULTAS_MS]);
@@ -114,6 +120,7 @@ describe('as consultas de API vao EM SERIE, com o espaco que a GDELT exige', () 
         ? { ok: false, status: 429, texto: 'Please limit requests' }
         : { ok: true, status: 200, texto: corpoCom('b') }),
       async () => {},
+      2,
     );
     expect(itens, 'a segunda consulta morreu junto com o 429 da primeira').toHaveLength(1);
     expect(comFalha[0].motivo, '"HTTP 429" sozinho manda procurar defeito nosso, e o '
@@ -126,6 +133,39 @@ describe('as consultas de API vao EM SERIE, com o espaco que a GDELT exige', () 
     );
     expect(itens).toEqual([]);
     expect(comFalha[0].motivo).toBe('rede caiu');
+  });
+
+  it('`[01/10]` o teto de PRODUCAO e 1, e o timeout dela e maior que o do RSS', async () => {
+    // ── O primeiro clique real desmentiu a previsao ──────────────────────
+    //
+    // Eu projetei esperando `429`. Da Edge Function veio `Signal timed out.`
+    // nas duas consultas: nao e recusa, e LENTIDAO. E o numero que provava
+    // isso ja estava medido antes do clique — a GDELT levou 10,8 s e depois
+    // 12,3 s so para devolver um `429`, que nem consulta o indice.
+    //
+    // Com 20 s de teto, duas consultas em serie custariam ate 45 s de espera
+    // para quem clicou. Uma com chance real de responder vale mais.
+    expect(TETO_DE_CONSULTAS, 'o teto de consultas por clique subiu. Com '
+      + `${TIMEOUT_DA_CONSULTA_MS / 1000}s de timeout cada, 2 consultas em serie `
+      + 'passam de 45 s de espera para o editor. Subir isto exige tirar a '
+      + 'coleta de dentro do clique.').toBe(1);
+
+    expect(TIMEOUT_DA_CONSULTA_MS, 'o timeout da GDELT voltou a ser pequeno. '
+      + 'Medido duas vezes: ela leva 10-12 s so para devolver um 429. Com o '
+      + 'teto do RSS (10 s) ela estoura SEMPRE — foi o que o primeiro clique '
+      + 'real mostrou, com `Signal timed out.` nas duas consultas.')
+      .toBeGreaterThanOrEqual(15_000);
+  });
+
+  it('timeout vira recado que DIZ o teto, nao `Signal timed out.`', async () => {
+    // `Signal timed out.` sozinho nao diz nada para quem le a tela — eu
+    // mesmo precisei abrir o codigo para saber qual era o numero.
+    const { comFalha } = await coletarDasApis(
+      [fonte(1)],
+      async () => { throw new Error('Signal timed out.'); },
+      async () => {},
+    );
+    expect(comFalha[0].motivo).toMatch(/nao respondeu em \d+s/);
   });
 
   it('consulta que ficou FORA do teto e dita, nao cortada em silencio', async () => {
@@ -171,6 +211,33 @@ describe('os dois coletores convivem — e um nao derruba o outro', () => {
         : { ok: false, status: 503, texto: '' }),
       async () => {});
     expect(soApi.itens.map((i) => i.fonte_nome)).toEqual(['GDELT']);
+  });
+
+  it('`[01/10]` a API recebe o timeout MAIOR, e o RSS continua com o dele', async () => {
+    // ── Este teste existe porque a reinjecao C NAO falhou ────────────────
+    //
+    // Eu tinha dois testes sobre o timeout: que a constante existe e que ela
+    // e >= 15 s. Os dois passavam com a chamada em `coleta.ts` tirando o
+    // argumento — ou seja, a GDELT voltava ao teto do RSS e NADA acusava.
+    // Era exatamente o defeito do primeiro clique real, de volta em
+    // silencio. Descoberto reinjetando, que e o unico jeito de achar isto.
+    //
+    // A forma forte: olhar o teto que cada coletor REALMENTE pede.
+    const tetos = {};
+    await coletarTudo(fontes, async (url, tetoMs) => {
+      tetos[url.includes('gdelt') ? 'api' : 'rss'] = tetoMs;
+      return { ok: true, status: 200, texto: url.includes('gdelt') ? GDELT : RSS };
+    }, async () => {});
+
+    expect(tetos.api, 'a consulta de API deixou de receber o timeout proprio e '
+      + 'caiu no teto do RSS. A GDELT leva 10-12 s so para devolver um 429: com '
+      + '10 s ela estoura SEMPRE, e a tela diz "Signal timed out." sem que nada '
+      + 'quebre. Conserto: `buscar(u, TIMEOUT_DA_CONSULTA_MS)` em `coleta.ts`.')
+      .toBe(TIMEOUT_DA_CONSULTA_MS);
+
+    expect(tetos.rss, 'o RSS herdou o timeout longo da GDELT. Sao treze feeds, '
+      + 'e um site morto passaria a prender o editor pelo dobro do tempo.')
+      .not.toBe(TIMEOUT_DA_CONSULTA_MS);
   });
 
   it('tipo DESCONHECIDO grita, em vez de cair num `else`', async () => {

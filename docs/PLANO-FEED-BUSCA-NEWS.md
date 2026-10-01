@@ -688,8 +688,34 @@ mostra. Registrado porque a Fase 3 depende da GDELT de novo.
 **O que ficou provado, e o que não.** Provado em `npm test`: os dois coletores
 convivem, um caindo não derruba o outro, `429` em texto puro não estoura o
 `JSON.parse`, a série respeita o espaçamento, tipo desconhecido grita, e o
-código não cita assunto nenhum. **Não provado:** que a GDELT responde da Edge
-Function. O IP de lá é outro, e só o primeiro clique de verdade diz.
+código não cita assunto nenhum.
+
+> #### ✅ `[01/10]` O PRIMEIRO CLIQUE REAL ACONTECEU — e o resultado é misto
+>
+> **O radar funcionou inteiro.** 170 manchetes de 15 fontes, a Groq aceitou, as
+> pautas saíram agrupadas (uma delas com 4 veículos sobre o mesmo
+> acontecimento) e os endereços foram resolvidos por número. Zero erro em
+> `admin_logs`. As três confirmações que faltavam fecharam.
+>
+> **E a GDELT não entrou — mas não pelo motivo que eu previ.** Eu esperava
+> `429`; veio `Signal timed out.` nas duas consultas. **Não é recusa, é
+> lentidão** — e o número que mostraria isso já estava medido por mim antes do
+> clique: ela leva **10 a 12 segundos só para devolver um `429`**, que é a
+> resposta mais barata que existe. O `TIMEOUT_DO_FEED` de 10 s, dimensionado
+> para RSS, nunca ia caber.
+>
+> **Corrigido:** timeout próprio de 20 s para `tipo='api'`, e o teto por clique
+> caiu de 2 para 1 (com 20 s cada, duas em série custariam 45 s de espera).
+>
+> **Ainda não provado:** que a GDELT responde **com sucesso**. Não existe uma
+> única medição de sucesso — nem daqui (429 sempre), nem de lá (timeout). O
+> próximo clique diz, e agora a tela informa o relógio junto do motivo.
+>
+> **Se ela estourar de novo com 20 s, a conclusão muda de "ajustar o teto" para
+> "ela não cabe dentro do clique"** — e a saída é `EdgeRuntime.waitUntil()`:
+> coletar em segundo plano e os itens aparecerem no clique seguinte, já que
+> `news_items_raw` é persistente e existe exatamente para isso. Registrado no
+> `BACKLOG.md` com esse gatilho.
 
 **A arquitetura que a Fase 2 herda:** `coleta.ts` despacha por `tipo` e devolve
 `{itens, comFalha}`. Coletor novo é um `tipo` novo e um adaptador — não mexe
