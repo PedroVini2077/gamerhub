@@ -144,6 +144,15 @@ construção, porque a lista é escrita para este site.
 > já prova, lendo a expressão), depois a lista `NAO_PODEM_RECEBER_O_APP` no
 > portão de produção, quando a afirmação já é verdadeira.
 >
+> Medido na produção depois do deploy, nas duas direções:
+>
+> ```
+> /.well-known/ai-catalog.json  -> 404 text/plain     (e os outros 4 iguais)
+> /publicar · /profile · /news  -> 200 text/html      (rota de app, intacta)
+> /caminho-que-nao-existe-123   -> 200 text/html      (o router desenha o 404)
+> /robots.txt · /llms.txt       -> 200 text/plain     (o disco vence o rewrite)
+> ```
+>
 > *Registrado porque isto volta a acontecer na próxima mudança de borda, e a
 > resposta certa nunca é afrouxar o portão.*
 
