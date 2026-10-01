@@ -457,6 +457,27 @@ prompt parou de segurar, e isso precisa aparecer antes de virar hábito.
 
 Trava: `radarDePautasNaoInventa.test.js` (`INV-EDIT-007`).
 
+### `[01/10]` A mesma garantia deixou de ser um FILTRO e virou o FORMATO
+
+O parágrafo acima descreve o desenho de 26/09, e ele funcionou: a guarda pegou
+um endereço inventado em produção, em 28/09, e gritou. O que mudou não foi a
+regra — foi onde ela mora.
+
+Hoje a lista que vai ao modelo é **numerada e sem endereços**, e a pauta cita
+`"itens": [3, 17]`. O endereço é resolvido no servidor, a partir do item que
+nós mesmos mandamos. **Não existe campo onde escrever uma URL**, então citar
+fonte que não existe deixou de ser algo que se filtra e passou a ser algo que
+não cabe no formato.
+
+A diferença importa para quem for mexer: a garantia antiga dependia de alguém
+lembrar de consultar o conjunto; esta não depende de nada. O que sobrou da
+mesma classe é o **número fora da faixa** — contado, descartado e gritado
+igual.
+
+*A mudança veio por outro motivo (o `413` por tamanho de pedido — ver
+`docs/regras/COTAS.md`), e a guarda mais forte foi efeito colateral de tirar
+6.027 caracteres de URL de dentro do prompt.*
+
 > **`[26/09]` Pendência FECHADA no PR seguinte, como estava escrito.** A
 > `main` implantou a função e o caso entrou em `e2e/portas-fechadas.mjs`.
 > Medido na produção: `POST` sem `Authorization` → `401`; com

@@ -5,37 +5,28 @@
 // ============================================================================
 //
 // O pedido do dono foi: *"eu imaginei ela me dando as ideias, as fontes
-// confiáveis, às vezes o título... até eu achar uma notícia, estudar sobre e
-// colocar lá, isso demoraria"*. Ele pediu para eu verificar se dá antes.
+// confiáveis, às vezes o título"*, e ele pediu para eu verificar se dá antes.
 //
 // **Perguntar a notícia ao modelo NÃO DÁ, e não é limitação de plano.** Um LLM
-// não tem internet e tem data de corte: ele responderia com o que estava no
-// treino, ou inventaria — e inventar notícia com cara de fonte confiável é o
-// pior resultado possível para uma seção de jornalismo. Seria trocar o
-// trabalho de apurar por um gerador de plausibilidade.
+// não tem internet e tem data de corte: responderia com treino velho, ou
+// inventaria — e notícia inventada com cara de fonte confiável é o pior
+// resultado possível numa seção de jornalismo.
 //
 // O que dá, e é melhor: **os fatos vêm de RSS de fontes que ELE escolheu**, e
-// o modelo faz o que modelo faz bem — ler 60 manchetes, juntar as repetidas,
-// dizer quais importam para um público gamer brasileiro, e propor um ângulo e
-// um título. Mesma regra da `redigir-materia`: o modelo REDIGE, não apura.
+// o modelo faz o que modelo faz bem — ler as manchetes, juntar as repetidas,
+// dizer quais importam a um público gamer brasileiro, propor ângulo e título.
+// Mesma regra da `redigir-materia`: o modelo REDIGE, não apura.
 //
 //     RSS das fontes  ->  news_items_raw  ->  o modelo ORDENA e SUGERE
 //     (o fato)            (o registro)        (a leitura editorial)
 //
-// A fonte de cada pauta é um endereço real, de um feed real, que ele pode
-// abrir. Não é o modelo dizendo "segundo a IGN".
-//
 // ============================================================================
-// A GUARDA QUE IMPEDE FONTE INVENTADA
+// A GUARDA QUE IMPEDE FONTE INVENTADA, e o orcamento do pedido
 // ============================================================================
 //
-// O modelo devolve, para cada pauta, os endereços que a sustentam. **Todo
-// endereço que não estava no que eu mandei é DESCARTADO** antes de a resposta
-// sair daqui — e a contagem do descarte volta no corpo.
-//
-// Sem isso, "fonte confiável" seria promessa: bastaria o modelo escrever uma
-// URL plausível de um site conhecido e ela chegaria na tela com cara de
-// apuração. Aqui a lista de endereços válidos é fechada por construção.
+// As duas vivem em `pedido.ts`, com a medicao que produziu cada uma. Em uma
+// linha: o modelo cita NUMERO, nunca endereco, e a lista para de crescer
+// antes do teto por minuto da Groq.
 //
 // ============================================================================
 // COTA — a pergunta do §0.2 feita ANTES de ligar
@@ -49,10 +40,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { lerFeed, fatiaJusta, type ItemBruto } from "./rss.ts";
+import {
+  INSTRUCAO, ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
+  RESERVA_DE_SAIDA, TPM_DO_PLANO,
+} from "./pedido.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "2f51e0234d5bfc87";
+const IMPRESSAO_DESTE_CODIGO = "19e7ae1411f300c3";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -102,34 +97,6 @@ async function gritar(admin: ReturnType<typeof createClient> | null, detalhe: st
   } catch (e) { console.error("[radar-de-pautas] nao consegui registrar:", e); }
 }
 
-const INSTRUCAO = `Voce e o editor de pauta do GamerHub News, um site brasileiro sobre
-games, tecnologia e cultura geek.
-
-Voce recebe uma lista de manchetes coletadas HOJE dos feeds que a equipe assina.
-Seu trabalho e LER essa lista e dizer o que vale virar materia.
-
-REGRA NUMERO UM:
-Trabalhe SOMENTE com as manchetes da lista. Nao acrescente assunto que nao
-esteja nela, nao complete com o que voce sabe de outro lugar, e nao invente
-endereco: cada pauta so pode citar URLs que apareceram na lista que eu mandei.
-Voce nao tem internet e nao sabe o que aconteceu hoje — quem sabe e a lista.
-
-O QUE FAZER:
-- Junte manchetes que falam do MESMO assunto numa pauta so, citando todas as
-  URLs delas. Assunto coberto por varias fontes e mais forte, nao mais fraco.
-- Descarte o que nao interessa a um publico gamer brasileiro.
-- Ordene da mais relevante para a menos.
-- Para cada pauta escreva um angulo: o que o GamerHub tem a dizer sobre aquilo
-  que nao e so repetir a manchete.
-
-RESPONDA SOMENTE COM UM JSON, sem texto antes nem depois:
-{"pautas":[{"titulo":"...","angulo":"...","editoria":"...","por_que_agora":"...","urls":["..."]}]}
-
-titulo        um titulo em portugues, ate 90 caracteres, factual, sem caca-clique
-angulo        1 a 2 frases: o recorte que o GamerHub daria
-editoria      uma de: gaming, esports, hardware, mobile, playstation, xbox, nintendo, pc, cultura
-por_que_agora 1 frase curta dizendo por que isso e assunto hoje
-urls          os enderecos DA LISTA que sustentam a pauta, do mais direto ao menos`;
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -233,21 +200,29 @@ Deno.serve(async (req: Request) => {
   // no cabecalho de `fatiaJusta` em `rss.ts`, junto com a medicao que o
   // revelou. Resumo: `coletados` vem na ordem em que o `Promise.all` termina,
   // entao as fontes RAPIDAS comiam as vagas das boas, em silencio.
-  const paraOModelo = fatiaJusta(coletados, (i) => i.fonte_id, TETO_DO_PEDIDO);
+  //
+  // E entao o ORCAMENTO corta o que nao couber no teto por minuto da Groq.
+  // Era isto que faltava, e custou 7 chamadas em 7 — ver `pedido.ts`.
+  const justos = fatiaJusta(coletados, (i) => i.fonte_id, TETO_DO_PEDIDO);
+  const { lista, usados, chars } = montarPedido(justos, ORCAMENTO_DA_LISTA);
 
-  const enderecosValidos = new Set(paraOModelo.map((i) => i.url));
+  if (!usados.length) {
+    await gritar(admin, "nenhum item coube no orcamento do pedido",
+      { orcamento: ORCAMENTO_DA_LISTA, candidatos: justos.length });
+    return responder({
+      status: "erro_provedor", coletados: coletados.length, comFalha,
+      pautas: [], itens: justos.slice(0, 30),
+      error: "Nao consegui montar o pedido para a IA — segue a lista crua.",
+    });
+  }
 
-  const lista = paraOModelo
-    .map((i, n) => `${n + 1}. [${i.fonte_nome}] ${i.titulo}\n   ${i.url}\n   ${i.resumo}`)
-    .join("\n");
-
-  let pautas: Record<string, unknown>[] = [];
+  let resposta: unknown = {};
   try {
     const res = await fetch(GROQ_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: MODELO, temperature: 0.4, max_tokens: 2500,
+        model: MODELO, temperature: 0.4, max_tokens: RESERVA_DE_SAIDA,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: INSTRUCAO },
@@ -258,66 +233,68 @@ Deno.serve(async (req: Request) => {
     });
     if (!res.ok) {
       const corpo = (await res.text()).slice(0, 300);
-      await gritar(admin, res.status === 429
-        ? "cota da Groq estourada — o radar parou de ordenar"
-        : `Groq respondeu HTTP ${res.status}`, { status: res.status, corpo });
+
+      // A MENSAGEM TEM QUE SER VERDADEIRA (§1.5). O 413 da Groq nao e "corpo
+      // grande demais" nem "cota diaria": e o teto por MINUTO batido por uma
+      // requisicao so. Chamar isso de cota diaria mandaria o dono esperar ate
+      // amanha por um defeito que e nosso e que o orcamento deveria impedir.
+      const porDia = /per day|\bRPD\b/i.test(corpo);
+      const motivo = res.status === 413
+        ? `o pedido passou do teto por minuto da Groq (TPM ${TPM_DO_PLANO}) — o orcamento falhou`
+        : res.status === 429
+          ? (porDia ? "cota DIARIA da Groq estourada" : "teto por minuto da Groq — pedidos rapidos demais")
+          : `Groq respondeu HTTP ${res.status}`;
+
+      await gritar(admin, motivo,
+        { status: res.status, corpo, charsDaLista: chars, itensNoPedido: usados.length });
+
       // A coleta valeu. Devolve as manchetes cruas em vez de perder tudo.
+      const aviso = res.status === 413
+        ? "A IA recusou o pedido por tamanho — e defeito nosso, ja registrado. Segue a lista crua."
+        : res.status === 429
+          ? (porDia
+            ? "A cota diaria da IA acabou. Ela volta amanha — segue a lista crua."
+            : "Muitos pedidos seguidos. Espere um minuto e tente de novo — segue a lista crua.")
+          : `A IA nao respondeu (HTTP ${res.status}) — segue a lista crua.`;
+
       return responder({
-        status: res.status === 429 ? "cota" : "erro_provedor",
-        coletados: coletados.length, comFalha, pautas: [], itens: paraOModelo.slice(0, 30),
-        error: res.status === 429
-          ? "A cota diaria da IA acabou — segue a lista crua das manchetes."
-          : `A IA nao respondeu (HTTP ${res.status}) — segue a lista crua.`,
+        status: res.status === 429 && porDia ? "cota" : "erro_provedor",
+        coletados: coletados.length, comFalha, pautas: [], itens: usados.slice(0, 30),
+        error: aviso,
       });
     }
     const json = await res.json();
-    pautas = JSON.parse(semCerca(json?.choices?.[0]?.message?.content ?? "{}"))?.pautas ?? [];
+    resposta = JSON.parse(semCerca(json?.choices?.[0]?.message?.content ?? "{}"));
   } catch (e) {
     await gritar(admin, "falha ao chamar ou interpretar a Groq", { erro: String(e).slice(0, 300) });
     return responder({
       status: "erro_provedor", coletados: coletados.length, comFalha,
-      pautas: [], itens: paraOModelo.slice(0, 30),
+      pautas: [], itens: usados.slice(0, 30),
       error: "A IA respondeu algo que eu nao entendi — segue a lista crua.",
     });
   }
 
-  // ── 3. A GUARDA CONTRA FONTE INVENTADA ────────────────────────────────────
+  // ── 3. RESOLVER OS NUMEROS EM FONTES REAIS ────────────────────────────────
   //
-  // Endereco que o modelo escreveu e que NAO estava na lista e descartado.
-  // Sem isto, "fontes confiaveis" seria so uma promessa do prompt.
-  let inventados = 0;
-  const limpas = (Array.isArray(pautas) ? pautas : []).slice(0, TETO_DE_PAUTAS).flatMap((p) => {
-    const urls = (Array.isArray(p?.urls) ? p.urls : []).filter((u: unknown) => {
-      const vale = typeof u === "string" && enderecosValidos.has(u);
-      if (!vale) inventados++;
-      return vale;
-    });
-    // Pauta que perdeu TODAS as fontes nao e pauta: e afirmacao sem lastro.
-    if (!urls.length) return [];
-    return [{
-      titulo:        String(p.titulo ?? "").slice(0, 200),
-      angulo:        String(p.angulo ?? "").slice(0, 500),
-      editoria:      String(p.editoria ?? "").slice(0, 40),
-      por_que_agora: String(p.por_que_agora ?? "").slice(0, 300),
-      urls: urls.slice(0, 5),
-      // O resumo da fonte principal vira as NOTAS do rascunho: e o elo entre
-      // este radar e a `redigir-materia`, que exige nota para escrever.
-      notas: paraOModelo.filter((i) => urls.includes(i.url))
-        .map((i) => `[${i.fonte_nome}] ${i.titulo}\n${i.resumo}\n${i.url}`).join("\n\n"),
-    }];
-  });
+  // O modelo cita numero; o endereco sai de `usados`, que e a lista que NOS
+  // mandamos. Nao ha campo onde ele possa escrever uma URL — citar fonte que
+  // nao existe deixou de ser algo que se filtra e passou a ser algo que nao
+  // cabe no formato. `foraDaLista` conta o numero fora da faixa, que e o que
+  // sobrou da mesma classe.
+  const { pautas: limpas, foraDaLista } = resolverPautas(resposta, usados, TETO_DE_PAUTAS);
 
-  if (inventados > 0) {
-    await gritar(admin, `o modelo citou ${inventados} endereco(s) que nao estavam na lista`,
-      { inventados, pautas: limpas.length });
+  if (foraDaLista > 0) {
+    await gritar(admin, `o modelo citou ${foraDaLista} item(ns) que nao estavam na lista`,
+      { foraDaLista, pautas: limpas.length, itensNoPedido: usados.length });
   }
 
   return responder({
     status: "ok",
     coletados: coletados.length,
     fontes: fontes.length,
+    noPedido: usados.length,
     comFalha,
-    enderecosDescartados: inventados,
+    enderecosDescartados: foraDaLista,
     pautas: limpas,
   });
 });

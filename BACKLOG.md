@@ -62,7 +62,28 @@ dos sinais: confirmado · relato · rumor · vazamento · tendência · discuss�
 Sem "score mágico" — se houver ordenação, ela é explicável por sinal.
 
 **Estado:** auditoria começada (banco e arquivos medidos, acima). A entrega das
-6 partes **ainda não foi feita** — é o próximo bloco depois do `can()`.
+6 partes **ainda não foi feita**.
+
+> ### 🔴 `[01/10]` ANTES DA FASE 1: o radar nunca funcionou em produção
+>
+> Ele mandou olhar os logs antes de implementar, e tinha razão. Medido em
+> `admin_logs`: **7 de 7 chamadas** entre 26 e 28/09 recusadas com `HTTP 413`.
+> Não é "a IA às vezes falha" — é **nunca ter ordenado uma pauta no ar**.
+>
+> Causa raiz, no corpo do erro que a própria função gravou: `tokens per minute
+> (TPM): Limit 8000, Requested 9231`. Teto por minuto aplicado a **uma
+> requisição só**, e a Groq soma o `max_tokens` ao pedido.
+>
+> **Corrigido neste bloco** (ver `docs/regras/COTAS.md` e `SEGURANCA.md`):
+> lista numerada sem URLs (−6.027 chars medidos), resumo cortado em 160 para o
+> modelo (o inteiro continua nas notas), `max_tokens` de 2.500 → 1.300, e
+> orçamento de caracteres **derivado** do teto, não digitado. Pedido máximo
+> estimado: **exatamente 6.000** tokens — 75% do teto, por construção, contra os
+> 9.302 estimados do formato antigo (a Groq mediu 9.231 naquele: o estimador
+> erra 0,8% para cima, que é o lado seguro).
+>
+> **Trava:** `radarDePautasNaoInventa.test.js` passou a executar a lógica em
+> vez de varrer o texto-fonte. Provada reinjetando quatro vezes.
 
 ---
 ### ✅ `[25/09]` AS DUAS PERGUNTAS DELE — respondidas E implementadas
@@ -2592,7 +2613,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->171<!--/n--> arq ·
-  <!--n:src.lib.linhas-->20.579<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->20.730<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
