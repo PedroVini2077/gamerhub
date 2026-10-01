@@ -6,6 +6,40 @@
 // propósito — eles descrevem a mesma resposta por dois meios, e separá-los
 // seria convidar os dois a divergirem.
 
+/**
+ * `[01/10]` FASE 2 — a CONFIABILIDADE, e o que ela NÃO promete.
+ *
+ * ── O que o modelo pode honestamente dizer ────────────────────────────────
+ *
+ * Ele vê título e 160 caracteres de resumo. **Classificar "confirmado" a
+ * partir disso é afirmar sobre o mundo com base numa manchete** — a mesma
+ * família do endereço inventado que o formato por número fechou.
+ *
+ * Então a classificação descreve **o que a MANCHETE AFIRMA**, não o que é
+ * verdade. "Rumor: estúdio X adiaria Y" é `rumor` porque a manchete se
+ * apresenta como rumor, e não porque o modelo apurou. Isso está dito na
+ * instrução, está no nome do campo na tela, e é o motivo de a tela escrever
+ * *"como a manchete se apresenta"* ao lado do selo.
+ *
+ * ── Por que QUATRO e não os seis do plano ─────────────────────────────────
+ *
+ * O plano define seis, incluindo `tendencia` ("aumento de atenção") e
+ * `discussao` ("comunidade falando"). **Nenhuma fonte de hoje produz esses
+ * dois:** as quinze são veículo jornalístico. Pôr os seis no vocabulário
+ * criaria dois valores que nada alcança — código morto por construção, e a
+ * tela desenharia selo para caso que nunca chega.
+ *
+ * Eles entram na **Fase 3**, junto com Trends e comunidade, que é de onde
+ * vêm. A regra do plano — *"`tendencia` e `discussao` nunca viram `relato`
+ * por acumulação"* — fica para quando houver o que acumular.
+ */
+export const CONFIABILIDADE = [
+  "confirmado",  // a manchete relata anúncio oficial, lançamento, dado divulgado
+  "relato",      // o veículo relata como fato apurado, sem citar oficialidade
+  "rumor",       // a manchete se apresenta como rumor, boato ou "segundo fontes"
+  "vazamento",   // a manchete relata material vazado, leak, arquivo encontrado
+] as const;
+
 export const INSTRUCAO = `Voce e o editor de pauta do GamerHub News, um site brasileiro sobre
 games, tecnologia e cultura geek.
 
@@ -25,14 +59,22 @@ O QUE FAZER:
 - Ordene da mais relevante para a menos.
 - Para cada pauta escreva um angulo: o que o GamerHub tem a dizer sobre aquilo
   que nao e so repetir a manchete.
+- Classifique a CONFIABILIDADE pelo que a MANCHETE AFIRMA, nunca pelo que voce
+  sabe de outro lugar. Voce esta lendo manchete, nao apurando: se o texto se
+  apresenta como rumor, e rumor, mesmo que voce ache que e verdade.
 
 RESPONDA SOMENTE COM UM JSON, sem texto antes nem depois:
-{"pautas":[{"titulo":"...","angulo":"...","editoria":"...","por_que_agora":"...","itens":[1,2]}]}
+{"pautas":[{"titulo":"...","angulo":"...","editoria":"...","por_que_agora":"...","confiabilidade":"relato","itens":[1,2]}]}
 
 titulo        um titulo em portugues, ate 90 caracteres, factual, sem caca-clique
 angulo        1 a 2 frases: o recorte que o GamerHub daria
 editoria      uma de: gaming, esports, hardware, mobile, playstation, xbox, nintendo, pc, cultura
 por_que_agora 1 frase curta dizendo por que isso e assunto hoje
+confiabilidade uma de:
+              confirmado  a manchete relata anuncio oficial, lancamento ou dado divulgado
+              relato      o veiculo relata como fato apurado, sem citar oficialidade
+              rumor       a manchete se apresenta como rumor, boato ou "segundo fontes"
+              vazamento   a manchete relata material vazado, leak ou arquivo encontrado
 itens         os NUMEROS da lista que sustentam a pauta, do mais direto ao menos`;
 
 // Derivado da instrucao acima — ver `pedido.ts` para o porque de cada parcela.
@@ -92,13 +134,19 @@ export const ESQUEMA_DA_RESPOSTA = {
             angulo:        { type: "string" },
             editoria:      { type: "string" },
             por_que_agora: { type: "string" },
+            // `[01/10]` AQUI o `enum` é certo, e a diferença para a `editoria`
+            // é só uma: a confiabilidade **não existe no banco**. São duas
+            // cópias (este arquivo e a tela), não três, e
+            // `vocabularioDoRadarNaoDeriva` confere as duas. Sem o enum, o
+            // modelo inventaria rótulo e a tela mostraria selo desconhecido.
+            confiabilidade: { type: "string", enum: [...CONFIABILIDADE] },
             // O coracao do contrato: INTEIROS, nunca texto. E o que impede o
             // modelo de voltar a escrever endereco por outro caminho.
             itens:         { type: "array", items: { type: "integer" } },
           },
           // `strict: true` exige os dois: todo campo em `required`, e
           // `additionalProperties: false`. Documentado pela Groq.
-          required: ["titulo", "angulo", "editoria", "por_que_agora", "itens"],
+          required: ["titulo", "angulo", "editoria", "por_que_agora", "confiabilidade", "itens"],
           additionalProperties: false,
         },
       },

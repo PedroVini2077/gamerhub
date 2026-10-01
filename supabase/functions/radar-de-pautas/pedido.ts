@@ -51,7 +51,7 @@
 // errar para cima manda o radar inteiro para o `413`.
 
 import type { ItemBruto } from "./rss.ts";
-import { INSTRUCAO } from "./contrato.ts";
+import { INSTRUCAO, CONFIABILIDADE } from "./contrato.ts";
 
 /** Teto de tokens por minuto do plano gratuito, medido no corpo do erro 413. */
 export const TPM_DO_PLANO = 8_000;
@@ -121,11 +121,12 @@ export const TETO_DE_PAUTAS = 8;
 
 /**
  * O custo medido de UMA pauta no JSON: título, ângulo, editoria, "por que
- * agora", os índices e a estrutura em volta. A trava multiplica isto pelo teto
+ * agora", **a confiabilidade** (`[01/10]`, Fase 2 — ~6 tokens), os índices e
+ * a estrutura em volta. A trava multiplica isto pelo teto
  * e exige que `RESERVA_DA_RESPOSTA` cubra — é o que transforma "eu acho que
  * cabe" em conta conferida a cada `npm test`.
  */
-export const TOKENS_POR_PAUTA = 160;
+export const TOKENS_POR_PAUTA = 170;
 
 /**
  * `max_tokens`: a resposta **mais** o raciocínio, que dividem o mesmo teto.
@@ -223,6 +224,7 @@ export type Pauta = {
   angulo: string;
   editoria: string;
   por_que_agora: string;
+  confiabilidade: string;
   urls: string[];
   notas: string;
 };
@@ -269,6 +271,13 @@ export function resolverPautas(
       angulo:        String(p.angulo ?? "").slice(0, 500),
       editoria:      String(p.editoria ?? "").slice(0, 40),
       por_que_agora: String(p.por_que_agora ?? "").slice(0, 300),
+      // `[01/10]` O `enum` do esquema é promessa do FORNECEDOR, e promessa de
+      // fornecedor não substitui guarda — a mesma razão de `foraDaLista`
+      // continuar contando índice inválido mesmo com `itens` tipado como
+      // inteiro. Valor desconhecido vira `""`, e a tela não desenha selo
+      // nenhum: melhor sem rótulo do que com rótulo que ninguém sabe ler.
+      confiabilidade: CONFIABILIDADE.includes(p.confiabilidade as never)
+        ? String(p.confiabilidade) : "",
       // As URLs são NOSSAS, do item que nós mandamos — o modelo não as escreve.
       urls: unicos.map((i) => i.url),
       // Aqui vai o resumo INTEIRO, não o cortado: as notas são o que a

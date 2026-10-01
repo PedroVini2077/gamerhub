@@ -145,7 +145,44 @@ entrou como 2º coletor, ao lado do RSS.
 > intermitente — e `news_items_raw` tinha a resposta o tempo todo, porque
 > **item coletado é prova de sucesso que sobrevive ao clique**.
 
-> **Falta a Fase 2:** agrupamento em evento + classificação de confiabilidade.
+> ### ✅ `[01/10]` FASE 2 FEITA — agrupamento verificável + confiabilidade
+>
+> **Duas descobertas que mudaram o plano, antes de escrever código:**
+>
+> **1. O agrupamento JÁ EXISTE.** A instrução ao modelo já manda *"junte
+> manchetes que falam do MESMO assunto numa pauta só"*, e funciona — medido
+> no clique de 15:38, a pauta do QSSR agrupou 4 veículos. Então a Fase 2 não
+> **cria** o agrupamento: ela o torna **verificável** (a tela diz quantos
+> veículos sustentam o evento) e acrescenta a classificação.
+>
+> **2. Classificar a partir de manchete é LEITURA DE MANCHETE.** O modelo vê
+> título + 160 chars de resumo. Dizer "confirmado" com base nisso é afirmar
+> sobre o mundo a partir de um título — a mesma família do "fonte inventada"
+> que já está travada. **A classificação descreve o que a MANCHETE AFIRMA, e
+> isso vai escrito na instrução, no nome e na tela.**
+>
+> **3. `tendencia` e `discussao` NÃO entram agora.** O plano define seis
+> valores, mas as fontes de hoje são todas veículo jornalístico: nenhuma
+> produz "aumento de atenção" ou "comunidade falando". Entrar com os seis
+> criaria dois valores que nenhuma fonte alcança — código morto por
+> construção (§6.1). Eles entram na **Fase 3**, junto com Trends/Reddit, que
+> é de onde eles vêm.
+>
+> **Entram quatro:** `confirmado` · `relato` · `rumor` · `vazamento`.
+>
+> **Custo medido:** +1 campo de uma palavra por pauta ≈ 6 tokens × 8 = 48. O
+> `TOKENS_POR_PAUTA` subiu de 160 para 170 e a trava reconferiu a conta — foi
+> exatamente esse descuido que quebrou o radar três vezes hoje.
+>
+> **Entregue:** vocabulário de 4 valores com `enum` no esquema (aqui o `enum`
+> é certo — são 2 cópias, não 3, e a trava cobre as duas), selo na tela com
+> dica, contagem de veículos quando o evento tem mais de um, e a ressalva
+> *"como a MANCHETE se apresenta"* acima da lista. Quatro reinjeções provaram
+> a trava.
+>
+> **Falta a Fase 3:** `TimelineVol` e Trends como SINAL ANEXADO a evento que
+> já existe — e é ela que traz `tendencia` e `discussao`. Depende de fonte de
+> descoberta estável, e o Google News ainda é intermitente.
 
 > ### 🔴 `[01/10]` ANTES DA FASE 1: o radar nunca funcionou em produção
 >
@@ -2772,8 +2809,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->173<!--/n--> arq ·
-  <!--n:src.lib.linhas-->21.574<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->175<!--/n--> arq ·
+  <!--n:src.lib.linhas-->21.773<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

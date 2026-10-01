@@ -364,13 +364,31 @@ describe('a porta e o pedido', () => {
       + 'pelo modo estrito da Groq; sem eles a chamada e recusada')
       .toMatch(/additionalProperties:\s*false/);
 
-    // E o que o esquema NAO faz, de proposito: nenhum `enum` de editoria.
-    // Uma 3a copia do vocabulario divergiria no dia da 10a editoria, e o
-    // modelo ficaria impedido de produzi-la em silencio.
-    expect(CONTRATO, 'apareceu um `enum` no esquema. Se for de editoria, ele '
-      + 'vira a 3a copia do vocabulario (banco + tela + aqui) e diverge — o '
-      + '`vocabularioDoNewsNaoDeriva` so trava as duas primeiras.')
-      .not.toMatch(/enum:/);
+    // ── `enum` NAO e proibido; `enum` de EDITORIA e ───────────────────
+    //
+    // `[01/10]` Esta checagem MUDOU, e a mudanca e deliberada. Ela dizia
+    // "nenhum `enum`", e a Fase 2 trouxe um legitimo. A regra real nunca foi
+    // sobre `enum` — e sobre QUANTAS COPIAS do vocabulario existem:
+    //
+    //   editoria        banco (CHECK) + tela + aqui = TRES. Um `enum` aqui
+    //                   divergiria no dia da 10a editoria, impedindo o modelo
+    //                   de produzi-la EM SILENCIO.
+    //   confiabilidade  aqui + tela = DUAS, e nenhuma no banco. O `enum` e o
+    //                   que impede o modelo de inventar rotulo que a tela nao
+    //                   sabe desenhar.
+    //
+    // Afrouxar para "nenhum enum" OU para "enum liberado" erraria metade dos
+    // casos. A checagem agora e sobre o par certo.
+    const campoEditoria = CONTRATO.match(/editoria:\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(campoEditoria, 'a `editoria` ganhou um `enum`. Ela ja vive no CHECK '
+      + 'do banco e no vocabulario da tela: uma 3a copia diverge no dia da 10a '
+      + 'editoria, e o esquema passa a IMPEDIR o modelo de produzi-la sem que '
+      + 'nada acuse.').not.toMatch(/enum/);
+
+    expect(CONTRATO, 'o `enum` da confiabilidade virou lista literal. Ele tem '
+      + 'de vir de `CONFIABILIDADE`, senao o esquema e a tela passam a ter '
+      + 'listas proprias e divergem na primeira classificacao nova.')
+      .toMatch(/confiabilidade:\s*\{[^}]*enum:\s*\[\.\.\.CONFIABILIDADE\]/);
   });
 });
 
