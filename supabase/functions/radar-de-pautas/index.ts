@@ -42,7 +42,7 @@ import { INSTRUCAO, ESQUEMA_DA_RESPOSTA } from "./contrato.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "73182d7737826abd";
+const IMPRESSAO_DESTE_CODIGO = "97c6cd1a51071545";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;

@@ -846,6 +846,28 @@ carga da página — e um piscar não é algo que alguém reporta.
 
 Trava: `atalhoDePublicarNoCelular.test.jsx`.
 
+### `[01/10]` O radar de pautas ganhou SELO e CONTAGEM DE VEÍCULOS
+
+Cada pauta passou a mostrar duas coisas novas:
+
+| | O que diz |
+| --- | --- |
+| **selo** | `Confirmado` · `Relato` · `Rumor` · `Vazamento` — como a **manchete se apresenta** |
+| **"N veículos"** | quantos sites diferentes cobriram o mesmo acontecimento, quando é mais de um |
+
+**O selo não é verificação, e a tela diz isso.** O modelo lê título e 160
+caracteres de resumo — `Confirmado` quer dizer *"a manchete se apresenta como
+anúncio oficial"*, não que o GamerHub apurou. Acima da lista há uma linha
+dizendo exatamente isso, e há trava que reprova se ela sumir.
+
+**Só `Rumor` e `Vazamento` têm cor forte.** Pintar os quatro faria o alerta
+deixar de alertar; `Confirmado` e `Relato` são o caso comum.
+
+**A contagem de veículos é o agrupamento ficando visível.** O modelo já juntava
+manchetes do mesmo assunto numa pauta só — o que ninguém conseguia ver é que
+ele tinha juntado. Quatro veículos sobre o mesmo fato é notícia; um pode ser
+nota, e essa leitura é de quem edita.
+
 **Por que ele se chama "Criar post" e não "Publicar".** Ele se chamava
 "Publicar" e o CI reprovou — com razão. Em `/publicar` havia **dois botões com
 o mesmo nome acessível** e significados opostos: o da barra **navega**, o do

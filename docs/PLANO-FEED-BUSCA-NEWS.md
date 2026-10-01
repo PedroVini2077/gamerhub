@@ -650,12 +650,43 @@ de futebol e loteria.
 falando não é fato — e é por isso que a classificação é um campo próprio, e
 não um número somado aos outros.
 
+### ✅ `[01/10]` A Fase 2 foi feita — e ela entregou MENOS do que esta tabela
+
+Duas coisas mudaram entre o plano e a execução, e as duas por medição.
+
+**1. O agrupamento já existia.** A instrução ao modelo manda juntar manchetes
+do mesmo assunto desde a Fase 1, e funciona — medido: a pauta do QSSR agrupou
+**4 veículos**. O que faltava não era o agrupamento: era **vê-lo**. A tela
+passou a dizer *"N veículos"* quando o evento tem mais de um. Um evento com
+quatro veículos é notícia; com um, pode ser nota — e essa leitura é do editor,
+não minha.
+
+**2. Entraram QUATRO dos seis valores.** `tendencia` e `discussao` ficaram de
+fora **de propósito**: as quinze fontes de hoje são todas veículo jornalístico,
+e nenhuma produz "aumento de atenção" nem "comunidade falando". Pôr os seis
+criaria dois valores que nada alcança — a tela desenharia selo para caso que
+nunca chega, que é código morto parecendo feature.
+
+Eles entram na **Fase 3**, junto com Trends e comunidade, que é de onde vêm. A
+regra *"nunca viram relato por acumulação"* fica para quando houver o que
+acumular, e a trava reprova se eles entrarem antes da fonte.
+
+### O limite que a classificação TEM, e ele está na tela
+
+O modelo vê título e 160 caracteres de resumo. **`confirmado` quer dizer "a
+manchete se apresenta como anúncio oficial"** — não que o GamerHub conferiu.
+
+Isso é a mesma família do endereço inventado que a Fase 1 fechou: rótulo que
+parece verificação e não é seria promessa de apuração sem apuração. Por isso a
+tela escreve, uma vez acima da lista, *"os selos dizem como a MANCHETE se
+apresenta, não se o fato foi conferido"* — e a trava reprova se a frase sumir.
+
 ### 6. Rollout incremental
 
 | Fase | O que entra | Por que nesta ordem |
 | --- | --- | --- |
 | **1** ✅ **`[01/10]`** | GDELT como 2ª fonte de coleta, ao lado do RSS | grátis, sem chave, sem ação do dono, e já responde "o que saiu fora das minhas fontes" |
-| **2** | agrupamento em evento + classificação | é o que impede 20 sites virarem 20 pautas |
+| **2** ✅ **`[01/10]`** | agrupamento em evento + classificação | é o que impede 20 sites virarem 20 pautas |
 | **3** | `TimelineVol` do GDELT e Trends como **sinal anexado** | só faz sentido quando já existe evento a que anexar |
 | **4** | YouTube / comunidade | exigem segredo novo e ação dele |
 

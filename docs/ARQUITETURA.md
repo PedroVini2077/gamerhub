@@ -257,6 +257,14 @@ src/
 │   │   │                  #   do `CHECK` do banco por uma trava, nos DOIS
 │   │   │                  #   sentidos — editoria que o banco aceita e a tela
 │   │   │                  #   não conhece apareceria SEM RÓTULO, sem erro
+│   │   ├── confiabilidade.js # `[01/10]` FASE 2 do radar: como a MANCHETE se
+│   │   │                  #   apresenta — confirmado · relato · rumor ·
+│   │   │                  #   vazamento. NÃO afirma que o fato é verdade: o
+│   │   │                  #   modelo lê título e 160 chars, não apura, e a
+│   │   │                  #   tela escreve isso ao lado dos selos. Espelhada
+│   │   │                  #   do `contrato.ts` do radar por uma trava, nos
+│   │   │                  #   dois sentidos. `tendencia` e `discussao` ficam
+│   │   │                  #   para a Fase 3, com as fontes que os produzem
 │   │   ├── rascunhoDeIa.js #  `[25/09]` O CONTRATO com a Edge Function que
 │   │   │                  #   rascunha matéria: o mínimo de notas que ela
 │   │   │                  #   exige e o marcador `[CONFERIR: …]` que ela

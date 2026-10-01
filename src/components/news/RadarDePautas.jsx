@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Radar, ExternalLink, Plus, AlertTriangle } from 'lucide-react';
 import { buscarPautas } from '../../services/newsRadarService';
 import { editoriaValida, rotuloDaEditoria } from '../../lib/news/editorias';
+import { CONFIABILIDADE, confiabilidadeValida } from '../../lib/news/confiabilidade';
 import AvisoDeErro from '../ui/AvisoDeErro';
 
 /**
@@ -100,6 +101,15 @@ function Resultado({ dados, onCriar }) {
         </p>
       )}
 
+      {pautas.length > 0 && (
+        // A ressalva aparece UMA vez, acima da lista. Repetir por pauta viraria
+        // ruído; omitir deixaria o editor concluir que o site conferiu o fato —
+        // e o modelo só leu a manchete.
+        <p className="text-[10px] font-mono text-gray-600">
+          Os selos dizem como a MANCHETE se apresenta, não se o fato foi conferido.
+        </p>
+      )}
+
       {pautas.map((p, i) => <Pauta key={`${p.titulo}-${i}`} pauta={p} onCriar={onCriar} />)}
 
       {/* A lista crua só aparece quando NÃO houve pauta — senão seria a mesma
@@ -146,9 +156,23 @@ function Pauta({ pauta, onCriar }) {
   // formulário quando não é.
   const editoria = editoriaValida(pauta.editoria) ? pauta.editoria : null;
 
+  // `[01/10]` Mesma regra da editoria: rótulo que a tela não conhece não vira
+  // selo. Melhor sem selo do que com um que ninguém sabe ler.
+  const selo = confiabilidadeValida(pauta.confiabilidade)
+    ? CONFIABILIDADE[pauta.confiabilidade] : null;
+
   return (
     <div className="rounded-lg border border-dark-500 p-3 space-y-2">
-      <p className="text-sm text-white font-medium">{pauta.titulo}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm text-white font-medium">{pauta.titulo}</p>
+        {selo && (
+          <span title={selo.dica}
+            className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-[9px]
+                        uppercase tracking-wider ${selo.classe}`}>
+            {selo.rotulo}
+          </span>
+        )}
+      </div>
 
       {pauta.angulo && <p className="text-xs text-gray-400">{pauta.angulo}</p>}
       {pauta.por_que_agora && (
@@ -159,6 +183,15 @@ function Pauta({ pauta, onCriar }) {
         {editoria && (
           <span className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
             {rotuloDaEditoria(editoria)}
+          </span>
+        )}
+        {/* `[01/10]` Quantos VEÍCULOS sustentam o mesmo acontecimento. O
+            agrupamento já existia — o modelo junta manchetes do mesmo assunto
+            desde o início —, mas ninguém conseguia VER que ele tinha juntado.
+            Um evento com quatro veículos é notícia; com um, pode ser nota. */}
+        {pauta.urls.length > 1 && (
+          <span className="text-[10px] font-mono text-neon-green/70">
+            {pauta.urls.length} veículos
           </span>
         )}
         {pauta.urls.map((u) => (
