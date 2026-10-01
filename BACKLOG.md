@@ -1175,7 +1175,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**53 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1494,6 +1494,19 @@ AGORA** escrito nele.
 > `db/2026-09-10-auditoria-seguranca.md`.
 
 ## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
+
+- ⬜ `[01/10]` 🔵 **Cachear o Chromium do Playwright, SE travar de novo.**
+  *Achado de hoje, e o gatilho é objetivo.* O job `painel de admin` ficou
+  **115 minutos** parado em "Instalar o Chromium do Playwright" — download de
+  dependência, antes de qualquer teste. Não era o site (respondia em 0,2 s),
+  não era o código, não era fila (só havia aquela execução). Os outros dois
+  jobs de navegador levaram 3 e 6 min no mesmo run.
+  **Já tratado:** todos os 6 jobs ganharam `timeout-minutes` (eram **zero**,
+  e o padrão do GitHub é SEIS HORAS). Agora ele falha em 25 min dizendo o que
+  é, em vez de travar.
+  **Não fiz o cache** porque foi a 1ª vez em meses e `actions/cache` é
+  manutenção permanente para um problema que pode ter sido instabilidade da
+  CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
 
 - ⬜ `[01/10]` 🟠 **RETENÇÃO HÍBRIDA: tempo + quantidade, em lote.** *Pedido
   dele em 01/10, mandado GRAVAR e começar "quando fizer sentido".* Teto de
