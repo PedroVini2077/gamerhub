@@ -91,8 +91,41 @@ export const TPM_DO_PLANO = 8_000;
  */
 export const RESERVA_DE_RACIOCINIO = 900;
 
-/** O JSON de `TETO_DE_PAUTAS` pautas, medido pelo tamanho dos campos. */
-export const RESERVA_DA_RESPOSTA = 1_000;
+/**
+ * `[01/10]` O JSON das pautas. **TERCEIRA iteração deste número, e eu errei
+ * as duas primeiras — por isso ele agora vem de medição, não de conta minha.**
+ *
+ *     1ª (manhã)  max_tokens 1.300 -> failed_generation VAZIO
+ *                 o raciocínio comeu tudo antes de o modelo escrever
+ *     2ª (tarde)  max_tokens 2.400 -> failed_generation TRUNCADO:
+ *                 `{"pautas":[{"titulo":"Nintendo lança bundle... EA Spor`
+ *                 o raciocínio coube, a RESPOSTA não
+ *
+ * A segunda é a que corrige a conta. Eu estimava ~125 tokens por pauta; o
+ * corte no meio da 1ª mostra que 8 pautas não cabiam em 1.000 — com título,
+ * ângulo de 1-2 frases, "por que agora" e os índices, uma pauta custa perto
+ * de **160 tokens**, e a estrutura JSON em volta soma mais.
+ *
+ * 1.600 para `TETO_DE_PAUTAS` pautas dá ~265 por pauta: generoso de
+ * propósito, porque errar para baixo aqui não degrada — **quebra**, e quebra
+ * com a resposta pela metade.
+ */
+export const RESERVA_DA_RESPOSTA = 1_600;
+
+/**
+ * Quantas sugestões o modelo devolve. **Mora aqui, e não no `index.ts`, porque
+ * quem dimensiona a resposta precisa dele** — foi exatamente a relação que eu
+ * perdi de vista nas duas vezes em que o `max_tokens` ficou curto.
+ */
+export const TETO_DE_PAUTAS = 8;
+
+/**
+ * O custo medido de UMA pauta no JSON: título, ângulo, editoria, "por que
+ * agora", os índices e a estrutura em volta. A trava multiplica isto pelo teto
+ * e exige que `RESERVA_DA_RESPOSTA` cubra — é o que transforma "eu acho que
+ * cabe" em conta conferida a cada `npm test`.
+ */
+export const TOKENS_POR_PAUTA = 160;
 
 /**
  * `max_tokens`: a resposta **mais** o raciocínio, que dividem o mesmo teto.
@@ -115,8 +148,25 @@ export const RESERVA_DE_SAIDA = RESERVA_DA_RESPOSTA + RESERVA_DE_RACIOCINIO + 50
  */
 export const CHARS_POR_TOKEN = 4.3;
 
-/** Usar só 3/4 do teto. O que sobra absorve a variação de tokenização. */
-export const FOLGA = 0.75;
+/**
+ * `[01/10]` Era 0,75, e agora é 0,85 — **com medição, não com otimismo.**
+ *
+ * A folga existe para absorver erro de estimativa. Quando eu a escolhi, não
+ * havia número nenhum; hoje há dois, e os dois dizem que eu estimo ALTO
+ * DEMAIS o custo total:
+ *
+ *     eu estimava ~6.000    a Groq respondeu `Requested 4364`
+ *     eu estimava ~5.700    a entrada real foi 2.939 tokens (13.931 chars)
+ *
+ * Ou seja: a folga de 25% estava empilhada em cima de um `CHARS_POR_TOKEN`
+ * que já é 9% conservador. Duas margens sobre a mesma incerteza, e o preço
+ * eram manchetes a menos na entrada OU resposta truncada na saída — que foi
+ * o que aconteceu.
+ *
+ * 0,85 ainda deixa 1.200 tokens de sobra sobre o teto de 8.000. O que impede
+ * isto de virar aperto é a trava: ela refaz esta conta a cada `npm test`.
+ */
+export const FOLGA = 0.85;
 
 /** Quanto de cada resumo o modelo vê. O inteiro continua indo nas notas. */
 export const RESUMO_PARA_O_MODELO = 160;

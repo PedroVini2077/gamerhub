@@ -121,10 +121,29 @@ entrou como 2º coletor, ao lado do RSS.
 > `429`/`4xx` explicitamente de fora. Se as duas falharem, a tela diz *"503
 > nas duas tentativas"*.
 >
-> **O gatilho:** se o próximo clique der `503 nas duas` de novo, a conclusão
-> vira **bloqueio**, e aí as saídas são (a) desligar as buscas e fechar a Fase
-> 1 só com os 13 feeds, ou (b) uma fonte de descoberta que identifique por
-> CHAVE e não por IP — que é a lição de hoje aplicada à escolha seguinte.
+> ### `[01/10]` O 4º clique: TRÊS achados, e o gatilho que eu escrevi era RUIM
+>
+> **1. `HTTP 400` de novo — mas por outro motivo.** O `failed_generation` veio
+> **truncado** (`"Nintendo lança bundle... EA Spor`), não vazio: o raciocínio
+> coube, a RESPOSTA não. Eu estimava ~125 tokens por pauta; são ~160, e 8
+> pautas não cabiam em 1.000. **Terceira vez que erro esse número, sempre com
+> a conta na cabeça e nenhuma no teste** — agora a relação é trava.
+>
+> **2. "170 manchetes de 0 fontes".** Só o retorno de SUCESSO carregava
+> `fontes`; os cinco caminhos de falha não, e o cliente faz `?? 0`. A tela
+> mentia justamente quando já havia outro problema. Virou montador único.
+>
+> **3. O `503` é INTERMITENTE, e eu quase concluí errado.** O gatilho que eu
+> tinha escrito aqui dizia *"se der 503 nas duas de novo, é bloqueio"* — e eu
+> **desliguei as duas fontes**. Antes de escrever a decisão, conferi o banco:
+> elas trouxeram **15 itens cada às 19:21**. Funcionaram. `503` às 20:58 e
+> `200` às 19:21, mesmo IP. **Religadas.**
+>
+> **A lição é sobre o gatilho, não sobre o Google.** Eu escrevi um que olhava
+> só o SINTOMA ("deu 503 duas vezes?") e não o HISTÓRICO ("alguma vez
+> funcionou?"). Gatilho de uma amostra decide errado quando o fenômeno é
+> intermitente — e `news_items_raw` tinha a resposta o tempo todo, porque
+> **item coletado é prova de sucesso que sobrevive ao clique**.
 
 > **Falta a Fase 2:** agrupamento em evento + classificação de confiabilidade.
 
@@ -2754,7 +2773,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->173<!--/n--> arq ·
-  <!--n:src.lib.linhas-->21.516<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->21.574<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
