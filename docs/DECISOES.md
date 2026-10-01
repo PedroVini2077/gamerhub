@@ -2797,3 +2797,79 @@ pontos."*
 Não é decisão fechada nem item de fila — é direção de produto. Registrada em
 [`VISAO-DE-FUTURO.md`](VISAO-DE-FUTURO.md) com a menor versão que entrega o
 valor, como manda o formato daquele documento.
+
+---
+
+## `[01/10]` A GDELT foi DESLIGADA — "sem chave" era o sintoma, não a vantagem
+
+**O que foi decidido:** as duas fontes de busca ampla da GDELT (`tipo = 'api'`)
+estão com `ativa = false`. A coleta do radar volta a ser só os 13 feeds RSS.
+
+**Por quê, com o número.** Sete tentativas, dois IPs diferentes, **zero
+sucessos**:
+
+| de onde | resultado |
+| --- | --- |
+| este ambiente, 5 tentativas (uma após 70 s de silêncio) | `429` em todas |
+| Edge Function, 1º clique real (timeout de 10 s) | `Signal timed out.` |
+| Edge Function, 2º clique (timeout de 20 s) | **`429` em 10 s** |
+
+O segundo clique é o que fecha a questão: com tempo suficiente, ela **responde**
+— e o que responde é recusa. Na **primeira** requisição, sem espaçamento
+envolvido. O orçamento de 1 req/5 s daquele IP já estava gasto por terceiros
+antes de nós chegarmos.
+
+**A alternativa que eu tinha registrado estava errada.** Eu havia escrito no
+`BACKLOG.md` que o próximo passo seria `EdgeRuntime.waitUntil()` — coletar em
+segundo plano. **Isso não resolveria nada:** o problema nunca foi tempo, é cota
+por IP, e segundo plano dá mais relógio e zero cota. Registrado porque a ideia
+vai voltar a parecer boa.
+
+**Por que desligar em vez de deixar falhando.** Uma fonte que falha em 100% dos
+cliques aparecia como *"2 fontes não responderam"* em toda busca, e a tela dizia
+*"15 fontes"* quando 13 funcionam. É a 4ª regra do §0.2 na veia: alarme que
+sempre grita errado é pior do que alarme nenhum.
+
+### A lição sobre ESCOLHA de fornecedor, que é o que fica
+
+A auditoria escolheu a GDELT por ser **"grátis, sem chave, sem ação do dono"** —
+e os três eram verdade. O que ninguém perguntou foi **de que IP nós saímos**.
+
+> **"Sem chave" não é só conveniência: é o sintoma de que o fornecedor
+> identifica você pelo IP.** E aí o IP *é* a cota. Serviço com teto por IP é
+> inutilizável atrás de infraestrutura compartilhada — e tanto o ambiente de
+> desenvolvimento quanto a Edge Function da Supabase são compartilhados por
+> construção.
+
+A pergunta entra na régua de avaliar fonte nova, ao lado das três do §0.2:
+**"ele me identifica por chave ou por IP?"**
+
+### A alternativa medida, e o trade-off que é decisão do dono
+
+**Google News RSS de busca** — `news.google.com/rss/search?q=…&hl=pt-BR&gl=BR`.
+Medido em 01/10:
+
+| | GDELT | Google News RSS |
+| --- | --- | --- |
+| responde | **não** (7 de 7) | sim, **1 s**, 100 itens |
+| chave / cota | sem chave, teto por IP | sem chave, sem teto observado |
+| relevância | não medida | **alta** com consulta fechada |
+| código novo | um coletor inteiro | **nenhum** — é `tipo='rss'` |
+| URL do artigo | direta | **redirecionador opaco do Google** |
+
+Com a consulta `"video game" OR games OR playstation OR xbox OR nintendo
+when:1d`, ela trouxe PlayStation.Blog BR, TudoCelular, Adrenaline, Nintendo
+Blast, Tecnoblog, Omelete e Estadão — **veículos que não estão nos nossos 13
+feeds**, que é exatamente o que a Fase 1 queria.
+
+**E ela cabe no coletor que já existe**, sem uma linha de código: a arquitetura
+da Fase 1 despacha por `tipo`, e `rss` já é lido.
+
+**O que decide, e é escolha editorial dele:** o `<link>` de cada item é
+`news.google.com/rss/articles/CBMi…`, não o endereço do veículo. No navegador
+ele redireciona e o editor chega no artigo; fora do navegador, não. O feed traz
+o veículo em `<source url="https://blog.br.playstation.com">PlayStation.Blog
+BR</source>`, então **o nome e o domínio aparecem** — mas a URL que vai para as
+notas do rascunho é a do Google.
+
+*Pendente de decisão dele. Registrado no `BACKLOG.md`.*
