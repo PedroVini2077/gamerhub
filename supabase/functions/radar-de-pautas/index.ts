@@ -4,61 +4,45 @@
 // A VERIFICAÇÃO QUE MUDOU O DESENHO — e ela é a parte importante
 // ============================================================================
 //
-// O pedido do dono foi: *"eu imaginei ela me dando as ideias, as fontes
-// confiáveis, às vezes o título"*, e ele pediu para eu verificar se dá antes.
+// O pedido dele foi *"ela me dando as ideias, as fontes confiáveis, às vezes
+// o título"*, e ele mandou verificar se dá antes.
 //
 // **Perguntar a notícia ao modelo NÃO DÁ, e não é limitação de plano.** Um LLM
-// não tem internet e tem data de corte: responderia com treino velho, ou
+// não tem internet e tem data de corte: responderia com treino velho ou
 // inventaria — e notícia inventada com cara de fonte confiável é o pior
 // resultado possível numa seção de jornalismo.
 //
-// O que dá, e é melhor: **os fatos vêm de RSS de fontes que ELE escolheu**, e
-// o modelo faz o que modelo faz bem — ler as manchetes, juntar as repetidas,
-// dizer quais importam a um público gamer brasileiro, propor ângulo e título.
-// Mesma regra da `redigir-materia`: o modelo REDIGE, não apura.
+// O que dá: **o fato vem das fontes que ELE escolheu**, e o modelo faz o que
+// modelo faz bem — ler as manchetes, juntar as repetidas, dizer quais importam
+// e propor ângulo. Mesma regra da `redigir-materia`: REDIGE, não apura.
 //
-//     RSS das fontes  ->  news_items_raw  ->  o modelo ORDENA e SUGERE
-//     (o fato)            (o registro)        (a leitura editorial)
 //
-// ============================================================================
-// A GUARDA QUE IMPEDE FONTE INVENTADA, e o orcamento do pedido
-// ============================================================================
-//
-// As duas vivem em `pedido.ts`, com a medicao que produziu cada uma. Em uma
-// linha: o modelo cita NUMERO, nunca endereco, e a lista para de crescer
-// antes do teto por minuto da Groq.
+// ONDE MORA O QUE NÃO ESTÁ AQUI: `coleta.ts` despacha RSS e API · `gdelt.ts`
+// o 2º coletor e o teto dele · `pedido.ts` o orçamento de tokens · `contrato.ts`
+// a instrução e o esquema estrito da resposta. Em uma linha: o modelo cita
+// NÚMERO e nunca endereço, e a lista para de crescer antes do teto da Groq.
 //
 // ============================================================================
-// COTA — a pergunta do §0.2 feita ANTES de ligar
+// COTA — as duas perguntas do §0.2, respondidas em `docs/regras/COTAS.md`
 // ============================================================================
 //
-// Quantas vezes por dia? Uma por clique de editor em "Buscar pautas": ~13
-// requisições de RSS (uma por fonte ativa), **`[01/10]` até 2 consultas à
-// GDELT** e 1 ao modelo. Não multiplica por usuário, post nem leitor, porque
-// só `is_staff()` alcança.
-//
-// Feed não tem cota. A GDELT tem, e é a mais apertada que já ligamos: **1
-// requisição a cada 5 s, por IP** — por isso as consultas dela vão em série e
-// o teto por clique é 2. O `429` dela é caso esperado, não falha nossa; ele
-// vira linha em `comFalha` e a coleta do RSS segue (`gdelt.ts` tem a medição).
-//
-// A segunda metade da pergunta do §0.2 — *"e quanto cabe de uma vez?"* — é o
-// teto por minuto da Groq, e quem responde por ele é o orçamento do
-// `pedido.ts`. Mais itens coletados não aumentam o pedido: aumentam o que o
-// orçamento corta.
+// Uma execucao por clique de editor; so `is_staff()` alcanca. Os tetos que
+// contam sao o da GDELT (frequencia, ver `gdelt.ts`) e o de tokens por minuto
+// da Groq (volume, ver `pedido.ts`). Nenhum multiplica por visitante.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { fatiaJusta } from "./rss.ts";
 import { coletarTudo } from "./coleta.ts";
 import {
-  INSTRUCAO, ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
+  ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
   RESERVA_DE_SAIDA, TPM_DO_PLANO,
 } from "./pedido.ts";
+import { INSTRUCAO, ESQUEMA_DA_RESPOSTA } from "./contrato.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "fffe675885070bb0";
+const IMPRESSAO_DESTE_CODIGO = "a2e122830dda50f3";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -217,7 +201,13 @@ Deno.serve(async (req: Request) => {
       headers: { Authorization: `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: MODELO, temperature: 0.4, max_tokens: RESERVA_DE_SAIDA,
-        response_format: { type: "json_object" },
+        // Raciocinio BAIXO: o gpt-oss-120b gasta a cadeia de pensamento do
+        // MESMO `max_tokens`, e foi isso que esvaziou a resposta (`pedido.ts`,
+        // RESERVA_DE_RACIOCINIO). Ordenar manchete nao pede raciocinio fundo.
+        reasoning_effort: "low",
+        // Esquema estrito no lugar de `json_object` — garante a FORMA, nao so
+        // a sintaxe. Ver `contrato.ts`: nao e isto que conserta o 400.
+        response_format: { type: "json_schema", json_schema: ESQUEMA_DA_RESPOSTA },
         messages: [
           { role: "system", content: INSTRUCAO },
           { role: "user", content: `MANCHETES COLETADAS HOJE:\n\n${lista}\n\n`
@@ -233,7 +223,21 @@ Deno.serve(async (req: Request) => {
       // requisicao so. Chamar isso de cota diaria mandaria o dono esperar ate
       // amanha por um defeito que e nosso e que o orcamento deveria impedir.
       const porDia = /per day|\bRPD\b/i.test(corpo);
-      const motivo = res.status === 413
+
+      // `[01/10]` O 400 tem DOIS significados, e confundi-los custa horas:
+      // `failed_generation` VAZIO e falta de espaco para o raciocinio (o
+      // modelo nao escreveu nada); 400 citando `response_format` ou
+      // `reasoning_effort` e a Groq recusando o PEDIDO.
+      const ficouSemEspaco = /json_validate_failed/i.test(corpo)
+        && /"failed_generation"\s*:\s*""/.test(corpo);
+      const recusouOParametro = res.status === 400
+        && /response_format|json_schema|reasoning_effort/i.test(corpo);
+
+      const motivo = res.status === 400 && ficouSemEspaco
+        ? "o modelo nao escreveu nada — o raciocinio comeu o max_tokens (ver RESERVA_DE_RACIOCINIO)"
+        : recusouOParametro
+          ? "a Groq RECUSOU o pedido: json_schema estrito ou reasoning_effort deixaram de valer para este modelo"
+        : res.status === 413
         ? `o pedido passou do teto por minuto da Groq (TPM ${TPM_DO_PLANO}) — o orcamento falhou`
         : res.status === 429
           ? (porDia ? "cota DIARIA da Groq estourada" : "teto por minuto da Groq — pedidos rapidos demais")
@@ -243,7 +247,9 @@ Deno.serve(async (req: Request) => {
         { status: res.status, corpo, charsDaLista: chars, itensNoPedido: usados.length });
 
       // A coleta valeu. Devolve as manchetes cruas em vez de perder tudo.
-      const aviso = res.status === 413
+      const aviso = ficouSemEspaco || recusouOParametro
+        ? "A IA recusou o pedido — e defeito nosso, ja registrado com o motivo. Segue a lista crua."
+        : res.status === 413
         ? "A IA recusou o pedido por tamanho — e defeito nosso, ja registrado. Segue a lista crua."
         : res.status === 429
           ? (porDia

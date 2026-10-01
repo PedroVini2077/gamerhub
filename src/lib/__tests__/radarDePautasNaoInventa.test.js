@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { lerFeed, fatiaJusta } from '../../../supabase/functions/radar-de-pautas/rss.ts';
 import {
-  INSTRUCAO, ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
+  ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
   orcamentoDaLista, TPM_DO_PLANO, RESERVA_DE_SAIDA, CHARS_POR_TOKEN,
-  RESUMO_PARA_O_MODELO,
+  RESUMO_PARA_O_MODELO, RESERVA_DE_RACIOCINIO, RESERVA_DA_RESPOSTA,
 } from '../../../supabase/functions/radar-de-pautas/pedido.ts';
+import { INSTRUCAO } from '../../../supabase/functions/radar-de-pautas/contrato.ts';
 
 /**
  * `[26/09]` O radar de pautas não pode inventar notícia nem fonte.
@@ -157,14 +158,54 @@ describe('o ORCAMENTO do pedido — a trava do HTTP 413', () => {
     expect(usados.length).toBeGreaterThan(0);
   });
 
-  it('com o conteudo REAL medido no banco, os 60 itens ainda cabem', () => {
-    // Medido em 01/10 sobre `news_items_raw`: titulo medio 77 chars, resumo
-    // medio 238. Se um dia nao couberem mais, isto falha e me obriga a olhar
-    // em vez de o radar degradar calado.
-    const reais = Array.from({ length: 60 }, (_, n) =>
-      item(n, { titulo: 'T'.repeat(77), resumo: 'R'.repeat(238) }));
-    const { usados } = montarPedido(reais, ORCAMENTO_DA_LISTA);
-    expect(usados, 'os 60 itens medidos deixaram de caber no orcamento').toHaveLength(60);
+  it('`[01/10]` o PISO de itens que ainda cabe — e a troca que ele representa', () => {
+    // ── Este numero MUDOU, e a mudanca e o custo de um conserto ───────────
+    //
+    // Era 60. Hoje sao ~54 no pior caso, porque a reserva de saida subiu de
+    // 1.300 para 2.400 tokens: o `gpt-oss-120b` gasta a cadeia de pensamento
+    // do MESMO teto, e com 1.300 ele as vezes nao sobrava espaco para
+    // escrever a resposta — `json_validate_failed` com `failed_generation`
+    // VAZIO. Ver `RESERVA_DE_RACIOCINIO`.
+    //
+    // A troca e deliberada: 54 manchetes com a IA funcionando valem mais do
+    // que 60 com ela falhando de forma intermitente. Parte do custo foi
+    // recuperada corrigindo `CHARS_POR_TOKEN` de 3,6 para o medido (4,3).
+    //
+    // ── Por que 50 e o piso, e nao um numero redondo qualquer ─────────────
+    //
+    // Sao 15 fontes ativas e a `fatiaJusta` faz rodizio entre elas. Abaixo de
+    // 50 cada fonte contribui com menos de 4 manchetes, e a leitura editorial
+    // passa a decidir sobre uma amostra fina demais para agrupar assunto
+    // repetido — que e a razao de o modelo estar nessa etapa.
+    const PISO = 50;
+
+    // Pior caso de propósito: TODO resumo no limite de 160 que o modelo ve.
+    // O conteudo real e mais curto (242 chars por linha, medidos), entao o
+    // numero de verdade fica acima deste.
+    const pessimistas = Array.from({ length: 80 }, (_, n) =>
+      item(n, { titulo: 'T'.repeat(77), resumo: 'R'.repeat(400) }));
+    const { usados } = montarPedido(pessimistas, ORCAMENTO_DA_LISTA);
+
+    expect(usados.length, `o orcamento passou a caber so ${usados.length} manchetes, `
+      + `abaixo do piso de ${PISO}. Alguem subiu RESERVA_DE_SAIDA ou a INSTRUCAO `
+      + 'cresceu. Com 15 fontes em rodizio, menos de 50 itens da menos de 4 por '
+      + 'fonte — fino demais para o modelo agrupar assunto repetido, que e a '
+      + 'razao de ele estar nessa etapa.').toBeGreaterThanOrEqual(PISO);
+  });
+
+  it('`[01/10]` a reserva de saida cobre RESPOSTA + RACIOCINIO', () => {
+    // A regressao de 01/10, virada trava. `max_tokens` na Groq cobre os dois,
+    // e o `gpt-oss-120b` gasta 300-900 tokens pensando ANTES de escrever.
+    // Quem baixar isto de novo quebra o radar de um jeito INTERMITENTE, que e
+    // o mais caro de diagnosticar.
+    expect(RESERVA_DE_SAIDA, `a reserva de saida (${RESERVA_DE_SAIDA}) nao cobre mais `
+      + `a resposta (${RESERVA_DA_RESPOSTA}) mais o raciocinio (${RESERVA_DE_RACIOCINIO}).\n\n`
+      + '  O `gpt-oss-120b` e modelo de RACIOCINIO: a cadeia de pensamento sai\n'
+      + '  do MESMO `max_tokens` da resposta. Sem espaco para os dois, o\n'
+      + '  `content` volta VAZIO e a Groq recusa com HTTP 400\n'
+      + '  `json_validate_failed` / `failed_generation: ""`.\n\n'
+      + '  Foi exatamente isso em 01/10, depois de eu baixar para 1.300.')
+      .toBeGreaterThanOrEqual(RESERVA_DA_RESPOSTA + RESERVA_DE_RACIOCINIO);
   });
 
   it('a numeracao e contigua a partir de 1 — e e ela que resolve o endereco', () => {
@@ -238,6 +279,40 @@ describe('a porta e o pedido', () => {
     expect(FONTE, 'o index.ts voltou a montar `comFalha` por conta propria — '
       + 'agora ha duas listas de falha e elas vao divergir')
       .not.toMatch(/comFalha\.push\(/);
+  });
+
+  it('`[01/10]` o pedido usa json_schema ESTRITO, e pede raciocinio BAIXO', () => {
+    // As duas linhas que o 400 de 01/10 produziu. `strict: false` nao serve:
+    // a doc da Groq diz que ele "pode produzir JSON valido que nao casa com o
+    // esquema" e "as vezes disparar erro 400" — seria trocar o problema por
+    // ele mesmo.
+    expect(FONTE, 'o `response_format` voltou para `json_object`, que garante '
+      + 'SINTAXE e nao FORMA').toMatch(/type:\s*"json_schema"/);
+    expect(FONTE, 'o `reasoning_effort` sumiu. Sem ele a cadeia de pensamento '
+      + 'do gpt-oss-120b volta a comer o `max_tokens` da resposta, e o HTTP 400 '
+      + '`json_validate_failed` com `failed_generation` vazio volta junto.')
+      .toMatch(/reasoning_effort:\s*"low"/);
+  });
+
+  it('`[01/10]` o esquema exige INTEIRO em `itens`, e e estrito', () => {
+    const CONTRATO = readFileSync('supabase/functions/radar-de-pautas/contrato.ts', 'utf8');
+    // Se `itens` virar `string`, o modelo pode voltar a mandar endereco por
+    // dentro de um campo que era para ser so indice.
+    expect(CONTRATO).toMatch(/itens:\s*\{\s*type:\s*"array",\s*items:\s*\{\s*type:\s*"integer"/);
+    expect(CONTRATO, '`strict: true` sumiu — sem ele a Groq usa melhor-esforco, '
+      + 'que a propria doc diz que pode nao casar com o esquema')
+      .toMatch(/strict:\s*true/);
+    expect(CONTRATO, '`additionalProperties: false` e `required` sao EXIGIDOS '
+      + 'pelo modo estrito da Groq; sem eles a chamada e recusada')
+      .toMatch(/additionalProperties:\s*false/);
+
+    // E o que o esquema NAO faz, de proposito: nenhum `enum` de editoria.
+    // Uma 3a copia do vocabulario divergiria no dia da 10a editoria, e o
+    // modelo ficaria impedido de produzi-la em silencio.
+    expect(CONTRATO, 'apareceu um `enum` no esquema. Se for de editoria, ele '
+      + 'vira a 3a copia do vocabulario (banco + tela + aqui) e diverge — o '
+      + '`vocabularioDoNewsNaoDeriva` so trava as duas primeiras.')
+      .not.toMatch(/enum:/);
   });
 });
 

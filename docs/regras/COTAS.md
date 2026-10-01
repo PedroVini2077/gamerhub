@@ -84,6 +84,37 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > apresenta como o inventário do que cada serviço conta deixa de ser verdade
 > para quem a lê — inclusive para mim, que a reli em 26/09 montando o radar e
 > conferi que a conta de requisições fechava.*
+>
+> ### ⚠️ `[01/10]` E a correção produziu a REGRESSÃO SEGUINTE, no mesmo dia
+>
+> Para caber nos 8.000 eu baixei o `max_tokens` de 2.500 para 1.300. O `413`
+> morreu. Horas depois apareceu, **intermitente**:
+>
+> ```
+> HTTP 400 · code: json_validate_failed
+> "Failed to validate JSON. Please adjust your prompt."
+> failed_generation: ""        <- VAZIO
+> ```
+>
+> **`failed_generation` vazio não é JSON ruim: é NENHUMA saída.** O
+> `gpt-oss-120b` é modelo de **raciocínio** — ele gasta 300 a 900 tokens de
+> cadeia de pensamento **do mesmo `max_tokens`** antes de escrever. O JSON de 8
+> pautas custa ~900. 1.300 fica em cima da fronteira, e por isso falhava "às
+> vezes" em vez de sempre.
+>
+> **Eu apertei o lado errado, e o número estava no próprio log.** No `429`
+> seguinte a Groq disse `Requested 4364` contra teto de 8.000 — a entrada
+> custava 3.064 tokens e sobravam ~3.600 sem uso.
+>
+> **A lição, e ela vale para qualquer serviço medido:** quando um teto aperta,
+> **medir qual parcela o ocupa antes de cortar**. Eu cortei a saída porque era
+> a parcela que eu controlava por uma constante, não porque ela fosse a maior.
+> E a mesma resposta da Groq que me deu o `413` já trazia o número que teria
+> mostrado o erro.
+>
+> **A segunda metade:** num modelo de raciocínio, `max_tokens` **não** é o
+> tamanho da resposta — é resposta **mais** pensamento. Tratar os dois como um
+> só é um medidor interno que não estava em tabela nenhuma.
 
 > **`[01/10]` A GDELT entrou com as DUAS perguntas respondidas — a antiga e a
 > que esta sessão acrescentou.**
