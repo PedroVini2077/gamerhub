@@ -469,6 +469,35 @@ O CI reprova o PR com essa instrução se esquecerem.
 | `expire-lives-every-minute` | a cada minuto | só o `is_live = false` do prazo vencido |
 | `gamerhub-cleanup` | 04:00 | `cleanup_old_data()`: `admin_logs` 365d, notificação lida 30d, `login_attempts` não-permanente 30d, `live_chat` de live encerrada 7d, `contact_messages` 730d, e **`[24/09]` post de TESTE do CI já soft-deletado há +2h** |
 | `gamerhub-cleanup-unconfirmed` | 04:30 | `cleanup_unconfirmed_signups()` |
+| **`gamerhub-limpa-news-de-teste`** | **a cada 10 min** | **`[01/10]`** `limpar_rascunhos_de_teste_do_news()`: rascunho/em-revisão do News com marca de robô e mais de 15 min |
+
+> ### `[01/10]` Por que o News tem job PRÓPRIO, e de 10 em 10 minutos
+>
+> A regra já existia dentro do `cleanup_old_data()` desde 25/09, e estava
+> certa. O que ninguém conferiu foi o **relógio**: aquele lote roda uma vez por
+> dia, e o `painel-admin.mjs` cria uma matéria **a cada rodada de CI**.
+>
+> Medido em 01/10, quando o dono mostrou a tela: três rascunhos no painel com
+> 12 min, 20 min e 1 h — todos esperando até 17 horas para sumir, e todos
+> `EM REVISÃO`, ou seja, **dentro da fila editorial** que uma pessoa usa para
+> decidir o que vai ao ar.
+>
+> É o §1.5 numa roupa diferente: o mecanismo existe, funciona, e não chega em
+> forma utilizável.
+>
+> **Função separada e não só um cron mais rápido** porque o `cleanup_old_data()`
+> carrega retenção de 365 e 730 dias — rodar aquele lote de 10 em 10 minutos
+> seria varrer anos de tabela para apagar uma linha de robô.
+>
+> **15 minutos aqui contra 2 horas no post** porque as janelas protegem coisas
+> diferentes. A dos posts existe para o **detector de sobras** ver o lixo de uma
+> rodada que morreu e acusar. No News não há detector e não pode haver: a
+> matéria **sempre** fica, porque a conta do CI é `admin` e
+> `news_articles_delete` exige `is_super()`. Sobra aqui nunca foi sinal de
+> falha. A janela só protege a rodada em curso, e ela dura segundos.
+>
+> Trava: `retencaoDePostDeTeste.test.js` cobre as **duas** cópias do padrão e
+> reprova se divergirem (§4) — foi o que aconteceu com o `[e2e-live `.
 
 **Onde ver se um job falhou:** `select * from cron.job_run_details order by
 start_time desc limit 20;`. Não há alerta automático — o sintoma na tela vem
@@ -1284,8 +1313,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->472<!--/n--> arquivos e
-<!--n:src.linhas-->52.802<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->475<!--/n--> arquivos e
+<!--n:src.linhas-->53.278<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1309,7 +1338,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->472<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->475<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1334,7 +1363,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->28.444<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->28.479<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 

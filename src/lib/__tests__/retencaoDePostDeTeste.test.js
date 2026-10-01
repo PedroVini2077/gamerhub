@@ -36,20 +36,21 @@ import { PREFIXOS_DE_TESTE, marcaDeTeste } from '../../../e2e/publicarPost.mjs';
 
 const MIGRATIONS = 'supabase/migrations';
 
-/** A migration da retenção — achada pelo nome, não por índice. */
-function fonteDaRetencao() {
+/** A migration mais recente cujo nome contém o pedaço dado. */
+function migrationChamada(pedaco, paraQue) {
   const arquivo = readdirSync(MIGRATIONS)
-    .filter((n) => n.includes('retencao_de_post_de_teste'))
-    .sort()
-    .pop();
+    .filter((n) => n.includes(pedaco)).sort().pop();
   if (!arquivo) {
     throw new Error(
-      `Não achei a migration de retenção em ${MIGRATIONS}.\n`
-      + '  Ela é o que impede `posts` de voltar a acumular post de robô. Se foi\n'
-      + '  renomeada, atualize a busca aqui; se foi removida, o acúmulo voltou.');
+      `Não achei a migration \`${pedaco}\` em ${MIGRATIONS}.\n`
+      + `  Ela é o que ${paraQue}. Se foi renomeada, atualize a busca aqui;\n`
+      + '  se foi removida, o acúmulo voltou.');
   }
   return readFileSync(join(MIGRATIONS, arquivo), 'utf8');
 }
+
+const fonteDaRetencao = () => migrationChamada(
+  'retencao_de_post_de_teste', 'impede `posts` de acumular post de robô');
 
 /** O padrão de título dentro do SQL, extraído do `DELETE FROM posts`. */
 function padraoDoSql(fonte) {
@@ -126,5 +127,107 @@ describe('a retenção de post de teste conhece todos os prefixos', () => {
       'e o detector de sobras deixa de conseguir acusar a rodada que morreu,',
       'porque o lixo some antes de alguém ver.',
     ].join('\n')).toMatch(/deleted_at\s*<\s*now\(\)\s*-\s*interval/i);
+  });
+});
+
+
+/**
+ * `[01/10]` A MESMA trava, do lado do News — e a divergência entre as DUAS cópias.
+ *
+ * ── Por que o News precisou de um segundo mecanismo ───────────────────────
+ *
+ * O `painel-admin.mjs` cria uma matéria de verdade a cada rodada de CI, e a
+ * conta dele é `admin`: `news_articles_delete` exige `is_super()`, então **ele
+ * não consegue limpar a própria sujeira**. Diferente do post, que o roteiro
+ * apaga pela tela, a sobra do News é por construção.
+ *
+ * A regra existia desde 25/09 dentro do `cleanup_old_data()` e estava certa.
+ * O que ninguém conferiu foi o relógio: aquele lote roda **uma vez por dia**.
+ * Em 01/10 o dono mostrou a tela com três rascunhos `EM REVISÃO` de 12 min,
+ * 20 min e 1 h — todos esperando 17 horas para sumir, dentro da fila editorial
+ * que uma pessoa usa para decidir o que vai ao ar.
+ *
+ * ── O que esta parte vigia, e é o §4 na veia ──────────────────────────────
+ *
+ * Agora o padrão de título do News vive em DOIS arquivos: o `cleanup_old_data`
+ * (rede diária) e a `limpar_rascunhos_de_teste_do_news` (de 10 em 10 min).
+ * Duas cópias da mesma regra divergem — foi exatamente o que aconteceu com o
+ * `[e2e-live `, que nasceu depois dos outros dois e fez o detector de sobras
+ * errar. Então aqui se exige que as duas sejam **idênticas**.
+ */
+
+/** O padrão de título do News, extraído de um `DELETE FROM news_articles`. */
+function padraoDoNews(fonte, ondeEsta) {
+  const m = fonte.match(/titulo\s*~\s*'(\^[^']+)'/);
+  if (!m) {
+    throw new Error(
+      `Não achei o padrão \`titulo ~ '…'\` em ${ondeEsta}.\n`
+      + '  Sem ele esta trava não olha nada e fica verde para sempre — que é\n'
+      + '  exatamente o que ela existe para impedir.');
+  }
+  return m[1];
+}
+
+describe('a retenção de RASCUNHO de teste do News', () => {
+  const rapida = migrationChamada('limpeza_rapida_de_rascunho_de_teste_do_news',
+    'tira o rascunho de robô do painel em minutos, e não em um dia');
+  const diaria = migrationChamada('retencao_de_rascunho_de_teste_do_news',
+    'é a rede diária do mesmo lixo');
+
+  const padraoRapido = padraoDoNews(rapida, 'a limpeza rápida do News');
+  const padraoDiario = padraoDoNews(diaria, 'a retenção diária do News');
+
+  it('as DUAS cópias usam exatamente o mesmo padrão', () => {
+    expect(padraoRapido, [
+      'As duas limpezas de rascunho de teste do News divergiram.',
+      '',
+      `  rápida (10 em 10 min): ${padraoRapido}`,
+      `  diária (cleanup_old_data): ${padraoDiario}`,
+      '',
+      'Prefixo que entra em uma e não na outra vira lixo que volta a se',
+      'acumular — em silêncio, porque nada quebra quando sobra linha num banco.',
+      'Foi assim com o `[e2e-live `.',
+    ].join('\n')).toBe(padraoDiario);
+  });
+
+  it.each(PREFIXOS_DE_TESTE)('a limpeza rápida conhece o prefixo %s', (prefixo) => {
+    expect(padraoRapido, `O prefixo \`${prefixo}\` não aparece no padrão da `
+      + `limpeza rápida do News.\n\n  Padrão: ${padraoRapido}\n\n`
+      + '  Rascunho criado pelo CI com esse prefixo vai ficar no painel do dono\n'
+      + '  até alguém apagar à mão — e ele entra na FILA EDITORIAL.')
+      .toContain(prefixo.replace(/^\[/, '').trim());
+  });
+
+  it('casa a marca real e NÃO casa título de gente', () => {
+    const re = new RegExp(padraoRapido);
+    for (const prefixo of PREFIXOS_DE_TESTE) {
+      expect(re.test(`${marcaDeTeste(prefixo)} materia automatica`)).toBe(true);
+    }
+    expect(re.test('[e2e coisas da vida] materia de gente'), [
+      'Um título de GENTE casou com a limpeza do News.',
+      '',
+      'Isso apagaria de verdade uma matéria escrita por uma pessoa. O relógio',
+      'da marca é o que torna a colisão acidental impossível.',
+    ].join('\n')).toBe(false);
+  });
+
+  it('nunca alcança o que está NO AR', () => {
+    // Tirar materia publicada do ar e decisao de gente, nunca de faxina. E
+    // `scheduled` conta como no ar: agendar para daqui a um minuto nao pode
+    // virar porta para a limpeza apagar.
+    for (const [nome, fonte] of [['rápida', rapida], ['diária', diaria]]) {
+      const filtro = fonte.match(/status\s+IN\s*\(([^)]*)\)/i)?.[1] ?? '';
+      expect(filtro, `a limpeza ${nome} do News deixou de restringir o status. `
+        + 'Sem isso ela alcanca materia PUBLICADA — faxina automatica tirando '
+        + 'do ar o que uma pessoa colocou.').toMatch(/draft/);
+      expect(filtro, `a limpeza ${nome} passou a alcancar materia no ar`)
+        .not.toMatch(/published|scheduled/);
+    }
+  });
+
+  it('tem janela de tolerância para a rodada EM CURSO', () => {
+    expect(rapida, 'a limpeza rápida perdeu a janela de tempo. Sem ela, o '
+      + 'rascunho de uma rodada em andamento pode sumir no meio do roteiro.')
+      .toMatch(/created_at\s*<\s*now\(\)\s*-\s*interval/i);
   });
 });

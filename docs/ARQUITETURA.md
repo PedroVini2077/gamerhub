@@ -83,6 +83,12 @@ src/
 │   ├── useVigiaDeBanimento.js # Realtime + poll de 60 s que detectam ban durante
 │   │                      # o uso. Saiu do useAuth em 29/08 — testável isolado
 │   ├── usePresenca.js     # Canal de presence: quantos estão online agora
+│   ├── useNaTela.js       # `[01/10]` `IntersectionObserver` empacotado: diz
+│   │                      # se o elemento está na viewport. Começa `true` de
+│   │                      # propósito — com `false` o atalho flutuante do
+│   │                      # feed piscaria em toda carga. Sem o observador no
+│   │                      # navegador, fica `true` para sempre (degrada para
+│   │                      # "o atalho não existe", nunca para um atalho preso)
 │   ├── useRole.js         # Deriva flags isOwner/isAdmin/isSuperAdmin/isBanned
 │   │                      # — IDENTIDADE. Continua existindo de propósito:
 │   │                      # badge, cor, rótulo, rank e gate de rota
