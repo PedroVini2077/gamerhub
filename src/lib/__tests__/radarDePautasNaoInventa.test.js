@@ -215,12 +215,29 @@ describe('a porta e o pedido', () => {
     expect(INSTRUCAO).toMatch(/Nao escreva enderecos/);
   });
 
-  it('uma fonte que falha nao derruba as outras', () => {
-    // Doze feeds de terceiros: um estar fora do ar e o caso NORMAL, nao a
-    // exceção. Se a falha de um abortasse a coleta, o radar so funcionaria
-    // nos dias em que os doze estivessem de pe.
-    expect(FONTE).toMatch(/comFalha\.push\(/);
-    expect(FONTE).toMatch(/Promise\.all\(/);
+  it('`[01/10]` a coleta esta no modulo proprio, e nao de volta aqui', () => {
+    // Esta checagem MUDOU, e a razao e que a trava antiga acusou certo.
+    //
+    // Ela exigia `comFalha.push(` dentro do `index.ts`, e reprovou quando a
+    // Fase 1 moveu a coleta para `coleta.ts`. A garantia nao sumiu — mudou de
+    // casa —, mas um grep nao sabe a diferenca entre "mudou de casa" e
+    // "sumiu", e esse e exatamente o limite da forma mais fraca da tabela do
+    // §2.
+    //
+    // A garantia de verdade ("fonte que falha nao derruba as outras") passou
+    // a ser provada por EXECUCAO, em `radarColetaDeDuasFontes.test.js`, que
+    // chama `coletarTudo` com um coletor quebrado e confere que o outro
+    // entregou. Repetir o grep aqui criaria duas fontes de verdade para a
+    // mesma regra (§4) — e a mais fraca venceria, porque falha primeiro.
+    //
+    // O que sobra para esta linha e o que so o `index.ts` pode responder:
+    // que ele DELEGA, em vez de ter trazido a coleta de volta para dentro.
+    expect(FONTE, 'a coleta voltou para dentro do index.ts. Ela saiu de la na '
+      + 'Fase 1 por dois motivos: o limite de 300 linhas do §4, e porque dentro '
+      + 'do `Deno.serve` nenhum teste a alcancava.').toMatch(/coletarTudo\(/);
+    expect(FONTE, 'o index.ts voltou a montar `comFalha` por conta propria — '
+      + 'agora ha duas listas de falha e elas vao divergir')
+      .not.toMatch(/comFalha\.push\(/);
   });
 });
 

@@ -32,14 +32,25 @@
 // COTA — a pergunta do §0.2 feita ANTES de ligar
 // ============================================================================
 //
-// Quantas vezes por dia? Uma por clique de editor em "Buscar pautas": ~12
-// requisições de RSS (uma por fonte ativa) + 1 ao modelo. Não multiplica por
-// usuário, post nem leitor, porque só `is_staff()` alcança. Feed é de graça e
-// não tem cota; o teto que conta é o mesmo da `redigir-materia`.
+// Quantas vezes por dia? Uma por clique de editor em "Buscar pautas": ~13
+// requisições de RSS (uma por fonte ativa), **`[01/10]` até 2 consultas à
+// GDELT** e 1 ao modelo. Não multiplica por usuário, post nem leitor, porque
+// só `is_staff()` alcança.
+//
+// Feed não tem cota. A GDELT tem, e é a mais apertada que já ligamos: **1
+// requisição a cada 5 s, por IP** — por isso as consultas dela vão em série e
+// o teto por clique é 2. O `429` dela é caso esperado, não falha nossa; ele
+// vira linha em `comFalha` e a coleta do RSS segue (`gdelt.ts` tem a medição).
+//
+// A segunda metade da pergunta do §0.2 — *"e quanto cabe de uma vez?"* — é o
+// teto por minuto da Groq, e quem responde por ele é o orçamento do
+// `pedido.ts`. Mais itens coletados não aumentam o pedido: aumentam o que o
+// orçamento corta.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { lerFeed, fatiaJusta, type ItemBruto } from "./rss.ts";
+import { fatiaJusta } from "./rss.ts";
+import { coletarTudo } from "./coleta.ts";
 import {
   INSTRUCAO, ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
   RESERVA_DE_SAIDA, TPM_DO_PLANO,
@@ -47,7 +58,7 @@ import {
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "19e7ae1411f300c3";
+const IMPRESSAO_DESTE_CODIGO = "fffe675885070bb0";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -61,10 +72,8 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 // conferido no plano gratis, em `src/lib/modelosConferidos.js`.
 const MODELO = "openai/gpt-oss-120b";
 
-const TETO_POR_FEED   = 15;   // itens lidos de cada fonte
 const TETO_DO_PEDIDO  = 60;   // manchetes mandadas ao modelo
 const TETO_DE_PAUTAS  = 8;    // sugestoes devolvidas
-const TIMEOUT_DO_FEED = 10_000;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -128,9 +137,12 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 1. COLETAR ────────────────────────────────────────────────────────────
+  // `[01/10]` `tipo` entra no SELECT e `api` entra no filtro: a Fase 1 trouxe
+  // a GDELT como segundo coletor, e a consulta dela e uma LINHA desta tabela
+  // (nada de assunto escrito no codigo — ver `gdelt.ts`).
   const { data: fontes, error: erroFontes } = await admin
-    .from("news_sources").select("id, nome, url")
-    .eq("ativa", true).eq("tipo", "rss");
+    .from("news_sources").select("id, nome, url, tipo")
+    .eq("ativa", true).in("tipo", ["rss", "api"]);
 
   if (erroFontes) {
     await gritar(admin, `nao consegui ler as fontes: ${erroFontes.message}`);
@@ -139,29 +151,11 @@ Deno.serve(async (req: Request) => {
   if (!fontes?.length) {
     return responder({
       status: "sem_fontes",
-      error: "Nenhuma fonte RSS ativa cadastrada. Ver docs/OPERACAO.md.",
+      error: "Nenhuma fonte ativa cadastrada. Ver docs/OPERACAO.md.",
     }, 200);
   }
 
-  const comFalha: { nome: string; motivo: string }[] = [];
-  const coletados: (ItemBruto & { fonte_id: string; fonte_nome: string })[] = [];
-
-  // Em paralelo: 12 feeds em serie seriam ~12x o tempo de um, e o editor
-  // esperando. Feed que falha nao derruba os outros — ele entra em `comFalha`.
-  await Promise.all(fontes.map(async (f) => {
-    try {
-      const res = await fetch(f.url, {
-        signal: AbortSignal.timeout(TIMEOUT_DO_FEED),
-        headers: { "User-Agent": "GamerHubNews/1.0 (+https://gamerhub.com.br)" },
-      });
-      if (!res.ok) { comFalha.push({ nome: f.nome, motivo: `HTTP ${res.status}` }); return; }
-      const itens = lerFeed(await res.text(), TETO_POR_FEED);
-      if (!itens.length) { comFalha.push({ nome: f.nome, motivo: "feed sem itens" }); return; }
-      for (const i of itens) coletados.push({ ...i, fonte_id: f.id, fonte_nome: f.nome });
-    } catch (e) {
-      comFalha.push({ nome: f.nome, motivo: e instanceof Error ? e.message : String(e) });
-    }
-  }));
+  const { itens: coletados, comFalha } = await coletarTudo(fontes);
 
   if (!coletados.length) {
     await gritar(admin, "nenhuma fonte respondeu", { comFalha });

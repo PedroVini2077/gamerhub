@@ -654,7 +654,7 @@ não um número somado aos outros.
 
 | Fase | O que entra | Por que nesta ordem |
 | --- | --- | --- |
-| **1** | GDELT como 2ª fonte de coleta, ao lado do RSS | grátis, sem chave, sem ação do dono, e já responde "o que saiu fora das minhas fontes" |
+| **1** ✅ **`[01/10]`** | GDELT como 2ª fonte de coleta, ao lado do RSS | grátis, sem chave, sem ação do dono, e já responde "o que saiu fora das minhas fontes" |
 | **2** | agrupamento em evento + classificação | é o que impede 20 sites virarem 20 pautas |
 | **3** | `TimelineVol` do GDELT e Trends como **sinal anexado** | só faz sentido quando já existe evento a que anexar |
 | **4** | YouTube / comunidade | exigem segredo novo e ação dele |
@@ -672,6 +672,28 @@ não um número somado aos outros.
 
 **Não muda:** RLS, policies, triggers, a porta `is_staff()`, a guarda de
 endereço inventado, o comportamento de falha parcial, nem as 9 editorias.
+
+### ✅ `[01/10]` A Fase 1 FOI FEITA — e o que a entrega desmentiu do plano
+
+O plano acima acertou em quase tudo, e errou numa coisa que só a medição
+mostra. Registrado porque a Fase 3 depende da GDELT de novo.
+
+| O plano dizia | O que se mediu |
+| --- | --- |
+| "nenhuma migration" | **certo, e por um motivo melhor do que eu sabia**: o `CHECK` de `news_sources.tipo` já aceitava `'api'` desde a fundação do News. A consulta virou LINHA de tabela, não constante |
+| "limite real 1 req / 5 s" | **certo, e insuficiente**: o teto é por **IP**, e com 8 s de espaço — e depois com **70 s** — a resposta foi `429` nas cinco tentativas |
+| GDELT devolve artigos | `ArtList` traz `url`, `title`, `seendate`, `domain` — **e nenhum resumo**. O `resumo` fica vazio de propósito: preencher com domínio ou data seria fabricar conteúdo editorial a partir de metadado |
+| "a trava que já existe cobre" | **errado**: ela exigia `comFalha.push(` dentro do `index.ts` e reprovou quando a coleta mudou de arquivo. Grep não distingue "mudou de casa" de "sumiu" — a garantia virou teste executável |
+
+**O que ficou provado, e o que não.** Provado em `npm test`: os dois coletores
+convivem, um caindo não derruba o outro, `429` em texto puro não estoura o
+`JSON.parse`, a série respeita o espaçamento, tipo desconhecido grita, e o
+código não cita assunto nenhum. **Não provado:** que a GDELT responde da Edge
+Function. O IP de lá é outro, e só o primeiro clique de verdade diz.
+
+**A arquitetura que a Fase 2 herda:** `coleta.ts` despacha por `tipo` e devolve
+`{itens, comFalha}`. Coletor novo é um `tipo` novo e um adaptador — não mexe
+no `index.ts` nem no pedido ao modelo.
 
 ### 8. Critérios de sucesso, verificáveis
 

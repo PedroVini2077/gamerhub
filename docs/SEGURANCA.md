@@ -440,7 +440,10 @@ forma de falha que manteve a moderação por IA quebrada em 26 de 26 chamadas.
 ## `[26/09]` O radar de pautas — a porta, e a guarda que NÃO é de acesso
 
 A porta é a mesma da `redigir-materia`: `auth.getUser()` e depois
-`rpc("is_staff")`. O que está em jogo por clique são **12 requisições de rede
+`rpc("is_staff")`. **`[01/10]` O recurso em jogo cresceu com a Fase 1:** além
+dos feeds, até 2 consultas à GDELT, que tem teto de **1 requisição a cada 5 s
+por IP** — abrir isso a qualquer logado entregaria a cota de um terceiro a
+quem criasse conta. O que está em jogo por clique são **~15 requisições de rede
 para sites de terceiros** mais uma chamada ao modelo — abrir isso a qualquer
 logado seria dar um aríete de graça.
 

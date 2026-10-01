@@ -61,8 +61,23 @@ editorial. A IA agrupa e sugere; ela **não** é fonte. Classificação obrigat�
 dos sinais: confirmado · relato · rumor · vazamento · tendência · discussão.
 Sem "score mágico" — se houver ordenação, ela é explicável por sinal.
 
-**Estado:** auditoria começada (banco e arquivos medidos, acima). A entrega das
-6 partes **ainda não foi feita**.
+**Estado:** auditoria entregue, e **a FASE 1 está feita** (`[01/10]`): a GDELT
+entrou como 2º coletor, ao lado do RSS.
+
+> **O que a Fase 1 entregou, e o que ela NÃO prova ainda.** As consultas são
+> **linhas de `news_sources`** com `tipo = 'api'` — nenhum assunto no código, e
+> uma trava varre a Edge Function para garantir isso. Nenhuma migration de
+> schema foi precisa: o `CHECK` já aceitava `'api'` desde a fundação do News
+> (medido, não suposto).
+>
+> **O que eu NÃO consegui verificar:** a GDELT respondeu `429` em **todas** as
+> tentativas daqui — inclusive uma sozinha depois de 70 s de silêncio. O teto
+> dela é 1 req/5 s **por IP**, e o IP deste ambiente é compartilhado. Hipótese,
+> não fato (§1.1): o IP da Edge Function é outro, e só o primeiro clique de
+> verdade responde. Por isso o `429` é tratado como caso ESPERADO — vira linha
+> em `comFalha`, a tela diz, e o RSS segue intacto.
+>
+> **Falta a Fase 2:** agrupamento em evento + classificação de confiabilidade.
 
 > ### 🔴 `[01/10]` ANTES DA FASE 1: o radar nunca funcionou em produção
 >
@@ -251,6 +266,60 @@ produção na Groq, conferido em 25/09.
 
 ---
 
+### 🟠 `[01/10]` RETENÇÃO HÍBRIDA: tempo + quantidade, em lote — GRAVADO, não iniciado
+
+**Pedido dele em 01/10, com a instrução explícita de guardar e só começar
+quando fizer sentido.** Está escrito aqui inteiro para não depender da
+conversa (§6.2, 01/09).
+
+**O que ele pediu, na letra do prompt:**
+
+| Tabela | O que muda |
+| --- | --- |
+| `admin_logs` | manter 365 dias **e** somar um teto de QUANTIDADE (eu proponho o valor); excedeu → apaga os mais antigos **em lote**, nunca `DELETE` por log novo |
+| `admin_notifications` | hoje **não participa** do `cleanup_old_data()`; avaliar a estrutura e dar retenção temporal + limite quantitativo |
+| `notifications` | manter a regra de lida/30d; avaliar **limite por usuário**, preservando as mais recentes |
+
+**As restrições dele, e elas desenham a solução:**
+
+- **Não criar sistema paralelo de limpeza.** O `cleanup_old_data()` já
+  centraliza e o cron `gamerhub-cleanup` já roda diário — preservar essa
+  arquitetura, não criar outro cron.
+- **Margem de limpeza:** deixar passar do teto e só então voltar a ele, em
+  vez de limpar a cada pequeno excesso.
+- **Segurança:** a função continua só para o cron. Nada de `EXECUTE` para
+  `anon`/`authenticated`. Não mexer em RLS nem em permissão sem necessidade.
+- **Desempenho:** conferir os índices que já existem **antes** e criar só o
+  necessário; `DELETE` grande vai em lote; **nada de particionamento** com o
+  volume de hoje.
+- **Escopo:** só ciclo de vida de log/notificação. Não tocar em conteúdo,
+  post, perfil nem dado de negócio.
+- **Provar com teste de banco:** dentro do prazo fica · fora do prazo sai ·
+  excesso remove só os mais antigos · o lote é idempotente · recente não é
+  afetado · `admin_notifications` passa a ter retenção · a função continua
+  inacessível ao cliente.
+
+**O que eu já sei e muda o plano, sem ter começado:**
+
+1. **Há um precedente a respeitar e eu acabei de criá-lo.** Em 01/10 nasceu
+   `limpar_rascunhos_de_teste_do_news()`, que é uma função de limpeza
+   **fora** do `cleanup_old_data()`. Ela tem justificativa escrita (o lote
+   diário varre 365 e 730 dias; aquilo precisa rodar de 10 em 10 min), mas
+   quando eu for fazer este item preciso dizer por que ela é exceção e não
+   abre precedente para a retenção híbrida — senão vira o "sistema paralelo"
+   que ele proibiu.
+2. **O teto por quantidade precisa de índice, e isso se mede antes.** Apagar
+   "os mais antigos além de N" é `ORDER BY created_at` + `OFFSET N`, e sem
+   índice em `created_at` isso é varredura completa a cada noite.
+3. **A margem é o que evita o churn.** Teto 50 mil com margem até 60 mil
+   apaga 10 mil de uma vez a cada vários dias, em vez de algumas linhas toda
+   noite — é a diferença entre um `DELETE` planejado e ruído diário.
+
+**Por que não comecei agora:** ele mandou guardar e começar *"quando fizer
+sentido"*. Faz sentido depois da Fase 2 do radar, ou a qualquer momento em
+que ele pedir — é trabalho de banco, independente do bloco do News.
+
+---
 ### 🔵 `[26/09]` Gerenciar as fontes do radar pela TELA
 
 Hoje ligar, desligar e acrescentar fonte é `UPDATE`/`INSERT` no banco — o passo
@@ -1057,7 +1126,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**52 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1376,6 +1445,16 @@ AGORA** escrito nele.
 > `db/2026-09-10-auditoria-seguranca.md`.
 
 ## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
+
+- ⬜ `[01/10]` 🟠 **RETENÇÃO HÍBRIDA: tempo + quantidade, em lote.** *Pedido
+  dele em 01/10, mandado GRAVAR e começar "quando fizer sentido".* Teto de
+  quantidade em `admin_logs` (hoje só 365 dias), retenção para
+  `admin_notifications` (hoje **fora** do `cleanup_old_data()`) e limite por
+  usuário em `notifications`. Tudo dentro do `cleanup_old_data()` e do cron
+  diário que já existem — **sem criar sistema paralelo**, ordem dele. Com
+  margem de limpeza, lote, índice medido antes, e sem particionamento.
+  **O prompt inteiro e as três coisas que eu já sei estão na seção própria**,
+  logo acima da "Gerenciar as fontes do radar pela TELA".
 
 - ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
   diferentes: `liveService.unsilenceUser({postId, userId})` e
@@ -2612,8 +2691,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->172<!--/n--> arq ·
-  <!--n:src.lib.linhas-->20.954<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->173<!--/n--> arq ·
+  <!--n:src.lib.linhas-->21.212<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
