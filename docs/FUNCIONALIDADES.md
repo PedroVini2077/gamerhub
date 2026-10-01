@@ -868,6 +868,35 @@ manchetes do mesmo assunto numa pauta só — o que ninguém conseguia ver é qu
 ele tinha juntado. Quatro veículos sobre o mesmo fato é notícia; um pode ser
 nota, e essa leitura é de quem edita.
 
+### `[01/10]` E ganhou o SINAL DE ACELERAÇÃO — "isto está crescendo?"
+
+Ao lado da contagem de veículos aparece, quando há o que dizer:
+
+| Sinal | O que significa |
+| --- | --- |
+| `novo` · `novo e forte` | nenhum veículo tinha mencionado isto antes de hoje |
+| `5x o normal` | cinco vezes mais menções hoje do que nos dias anteriores |
+| `crescendo` | subindo, mas sem chegar ao triplo |
+| `esfriando` | falavam mais disto antes — **pauta em queda** |
+
+**Ele mede os veículos que acompanhamos publicando, não o público buscando.**
+Essa é a frase inteira, e a diferença importa: um sinal de busca diria "o
+Brasil está procurando isso"; este diz "a imprensa de games está falando mais
+disso hoje do que ontem". A dica de cada selo escreve "veículos" por isso.
+
+**Nenhum número mágico.** `5x o normal` quem lê consegue refazer na mão; "87 de
+relevância" ninguém consegue. Assunto estável não ganha rótulo nenhum — medido
+na produção, `Xbox` com 22 menções hoje contra 20 antes aparece **sem selo**,
+porque Xbox é sempre mencionado.
+
+**`esfriando` é dito tanto quanto `crescendo`**, e de propósito: pauta velha
+disfarçada de novidade é o erro que um radar de atualidade não pode cometer.
+
+**O limite, com todas as letras:** a base é o nosso próprio histórico de
+coleta. Assunto que nasceu hoje não tem com que comparar e aparece como `novo`
+— que inclui, enquanto a base é curta, "existia antes e nós não estávamos
+olhando". Ela engorda sozinha a cada busca.
+
 **Por que ele se chama "Criar post" e não "Publicar".** Ele se chamava
 "Publicar" e o CI reprovou — com razão. Em `/publicar` havia **dois botões com
 o mesmo nome acessível** e significados opostos: o da barra **navega**, o do

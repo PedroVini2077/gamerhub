@@ -460,6 +460,29 @@ prompt parou de segurar, e isso precisa aparecer antes de virar hábito.
 
 Trava: `radarDePautasNaoInventa.test.js` (`INV-EDIT-007`).
 
+### `[01/10]` FASE 3 — a RPC do sinal, e o `%` que não é injeção mas mente igual
+
+`news_aceleracao_de_termos` é `SECURITY DEFINER` e **nenhuma tela a alcança**:
+`REVOKE ALL ... FROM PUBLIC, anon, authenticated`, provado **assumindo os dois
+papéis** e não lendo o grant — `permission denied for function` nos dois. Só a
+Edge Function chega nela, com a service role.
+
+**Os termos vêm do MODELO**, e é daí que sai a parte interessante. Eles entram
+num `ILIKE`, e um `%` ou `_` solto casaria com tudo. **Não é injeção de SQL** —
+são parâmetros, e o Postgres nunca os interpreta como código. É outra coisa, e
+igualmente ruim: **resultado absurdo apresentado como medição**. A tela diria
+"12x o normal" sobre uma contagem de todas as 772 linhas, e nada estouraria.
+
+Por isso os dois são escapados, e há faixa: 1–30 dias, 20 termos, 3 chars no
+mínimo. Provado: `50%_teste` devolve 0, não 772.
+
+> **A classe, para a próxima vez:** valor que vem de um modelo e vira **padrão
+> de busca** (`ILIKE`, `~`, `to_tsquery`, glob) precisa de escape mesmo sendo
+> parâmetro. A parametrização protege o banco; ela não protege o *significado*
+> da consulta.
+
+Trava: `radarSinalDeAceleracao.test.js` (`INV-EDIT-011`, `INV-EDIT-012`).
+
 ### `[01/10]` A mesma garantia deixou de ser um FILTRO e virou o FORMATO
 
 O parágrafo acima descreve o desenho de 26/09, e ele funcionou: a guarda pegou

@@ -798,3 +798,79 @@ agrupar assunto repetido, que é justamente o que a Fase 2 existe para fazer.
 6. GDELT fora do ar **não** derruba o RSS;
 7. IA fora do ar **não** perde a coleta;
 8. nenhuma linha do código cita assunto específico — o motor é genérico.
+
+---
+
+## ✅ `[01/10]` A FASE 3 FOI FEITA — e ela TROCOU DE FONTE antes de existir
+
+O plano reservava para a Fase 3 *"`TimelineVol` do GDELT e Trends como sinal
+anexado"*. **As duas morreram no mesmo dia, por motivos diferentes:**
+
+| A fonte prevista | O que aconteceu |
+| --- | --- |
+| `TimelineVol` do GDELT | a GDELT foi **desligada** em 01/10 — sete tentativas, dois IPs, zero sucessos. O teto dela é por **IP**, e tanto este ambiente quanto a Edge Function saem de IP compartilhado por construção |
+| Google Trends RSS | **recusado na auditoria** da própria Fase 0, que já media *"0 de 10 eram do nosso escopo hoje"*. O dono viu a lista e foi direto: *"não tem nenhuma cara de GamerHub"* |
+
+Dizer "a Fase 3 não dá" seria verdade e inútil. **O valor dela nunca foi a
+fonte: é um SINAL ANEXADO AO EVENTO** — e `news_items_raw` já tinha com que
+produzi-lo. Medido antes de escrever uma linha de código:
+
+```
+772 itens · 5 dias distintos · 17 fontes
+
+Gears of War / E-Day     25/09:  1     28/09:  2     01/10: 16
+```
+
+### O que o sinal É, e a diferença muda o que ele significa
+
+**Não é Trends.** Trends mede **o mundo procurando**; isto mede **os veículos
+que nós escolhemos publicando**. É um sinal mais estreito e mais honesto — *"a
+imprensa de games está falando mais disso hoje do que ontem"*, não *"o Brasil
+está buscando isso"*.
+
+A diferença importa para quem lê a tela, e é por isso que **a dica de cada selo
+diz "veículos"**, nunca "buscas" nem "interesse". Rótulo que parece medição do
+público e não é seria a mesma família do endereço inventado que a Fase 1
+fechou: promessa de apuração sem apuração.
+
+**E ele não sabe o que é novidade de verdade.** Assunto que nasceu hoje não tem
+com que comparar: o sinal diz `novo`, que é a verdade disponível. Com 5 dias de
+base, "novo" ainda inclui *"existia antes de 25/09 e nós não estávamos
+olhando"* — e isso melhora sozinho, um dia por dia.
+
+### Os rótulos, e por que nenhum é um número solto
+
+O plano pedia *"sem score mágico — se houver ordenação, ela é explicável por
+sinal"*. Um "87 de relevância" não se explica; `5x o normal` se explica, porque
+quem lê consegue **refazer a conta**.
+
+| Rótulo | Quando |
+| --- | --- |
+| `novo` · `novo e forte` | nenhuma menção antes de hoje (1–2 · 3+ hoje) |
+| `Nx o normal` | 3× ou mais do que os dias anteriores |
+| `crescendo` | 1,5× ou mais |
+| `esfriando` | menos de 0,6× — **pauta velha disfarçada de novidade é o erro que um radar de atualidade não pode cometer** |
+| *(nenhum)* | entre 0,6× e 1,5×, ou não medido |
+
+Medido na produção com termos reais, e é o melhor argumento de que a régua está
+calibrada: `Xbox` 22 hoje × 20 antes → **nenhum rótulo** (Xbox é sempre
+mencionado), `Gears of War` 15 × 3 → **5x o normal**.
+
+### As faixas e os escapes, porque tipo não é faixa
+
+`p_janela_dias` é cortado em 1–30 e `p_termos` em 20 — sem isso, dez mil
+`ILIKE`. E **o `%` e o `_` são escapados**: os termos vêm do modelo, e um `%`
+solto casaria com tudo, inflando a contagem em silêncio. Não é injeção (é
+parâmetro), é **resultado absurdo apresentado como medição**. Provado: o termo
+`50%_teste` devolve 0, não 772.
+
+A RPC é `SECURITY DEFINER` com `REVOKE ALL FROM PUBLIC, anon, authenticated` —
+e isso foi **provado assumindo os dois papéis**, não lendo o grant:
+`permission denied for function news_aceleracao_de_termos` nos dois.
+
+### O sinal é a ÚLTIMA coisa do fluxo, e isso é desenho
+
+Enfeite informativo não pode custar o conteúdo. `medirAceleracao` roda **depois**
+de `resolverPautas`, numa chamada só com os termos de todas as pautas (oito
+pautas × três termos é **uma** consulta, não vinte e quatro), e qualquer falha
+dela devolve mapa vazio — as pautas chegam sem o selo. Há trava para a ordem.

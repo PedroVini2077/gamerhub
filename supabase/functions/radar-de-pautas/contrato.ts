@@ -64,7 +64,7 @@ O QUE FAZER:
   apresenta como rumor, e rumor, mesmo que voce ache que e verdade.
 
 RESPONDA SOMENTE COM UM JSON, sem texto antes nem depois:
-{"pautas":[{"titulo":"...","angulo":"...","editoria":"...","por_que_agora":"...","confiabilidade":"relato","itens":[1,2]}]}
+{"pautas":[{"titulo":"...","angulo":"...","editoria":"...","por_que_agora":"...","confiabilidade":"relato","termos":["..."],"itens":[1,2]}]}
 
 titulo        um titulo em portugues, ate 90 caracteres, factual, sem caca-clique
 angulo        1 a 2 frases: o recorte que o GamerHub daria
@@ -75,6 +75,11 @@ confiabilidade uma de:
               relato      o veiculo relata como fato apurado, sem citar oficialidade
               rumor       a manchete se apresenta como rumor, boato ou "segundo fontes"
               vazamento   a manchete relata material vazado, leak ou arquivo encontrado
+termos        1 a 3 termos CURTOS que identificam este assunto, para eu medir
+              se ele esta crescendo no nosso historico. Use o NOME PROPRIO que
+              aparece na manchete — do jogo, do console, do estudio, do
+              produto. NAO use palavra generica como "jogo", "lancamento" ou
+              "noticia": ela casa com tudo e o sinal perde o sentido.
 itens         os NUMEROS da lista que sustentam a pauta, do mais direto ao menos`;
 
 // Derivado da instrucao acima — ver `pedido.ts` para o porque de cada parcela.
@@ -140,13 +145,18 @@ export const ESQUEMA_DA_RESPOSTA = {
             // `vocabularioDoRadarNaoDeriva` confere as duas. Sem o enum, o
             // modelo inventaria rótulo e a tela mostraria selo desconhecido.
             confiabilidade: { type: "string", enum: [...CONFIABILIDADE] },
+            // `[01/10]` FASE 3: as palavras com que eu procuro este assunto no
+            // nosso historico. Vem do MODELO porque ele entende o texto;
+            // extrator de termo em portugues escrito por mim seria fragil
+            // ("de", "do", "para") e o sinal sairia errado em silencio.
+            termos: { type: "array", items: { type: "string" } },
             // O coracao do contrato: INTEIROS, nunca texto. E o que impede o
             // modelo de voltar a escrever endereco por outro caminho.
             itens:         { type: "array", items: { type: "integer" } },
           },
           // `strict: true` exige os dois: todo campo em `required`, e
           // `additionalProperties: false`. Documentado pela Groq.
-          required: ["titulo", "angulo", "editoria", "por_que_agora", "confiabilidade", "itens"],
+          required: ["titulo", "angulo", "editoria", "por_que_agora", "confiabilidade", "termos", "itens"],
           additionalProperties: false,
         },
       },

@@ -36,13 +36,15 @@ import { fatiaJusta } from "./rss.ts";
 import { coletarTudo } from "./coleta.ts";
 import {
   ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
-  RESERVA_DE_SAIDA, TPM_DO_PLANO, TETO_DE_PAUTAS,
+  RESERVA_DE_SAIDA, TETO_DE_PAUTAS,
 } from "./pedido.ts";
 import { INSTRUCAO, ESQUEMA_DA_RESPOSTA } from "./contrato.ts";
+import { medirAceleracao, sinalDaPauta, JANELA_DE_DIAS } from "./aceleracao.ts";
+import { lerFalhaDaGroq } from "./falhaDaGroq.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "97c6cd1a51071545";
+const IMPRESSAO_DESTE_CODIGO = "4f8792f961c4aea6";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -77,8 +79,21 @@ const semCerca = (t: string) =>
 const responder = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: JSON_CORS });
 
+/**
+ * O mínimo que `gritar` e `medirAceleracao` precisam do cliente: só `.rpc`.
+ *
+ * `[01/10]` Era `ReturnType<typeof createClient>`, que parece preciso e **não
+ * é**: o genérico que o `createClient` infere não é o mesmo que o tipo nomeado
+ * do pacote, e o `deno check` acusava oito vezes a mesma incompatibilidade.
+ * Pedir a superfície que se usa é mais honesto do que pedir o objeto inteiro —
+ * e é o que deixa a função testável sem um Supabase de verdade.
+ */
+type ChamaRpc = {
+  rpc: (nome: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
+};
+
 /** Registra a falha em `admin_logs`, o painel que o dono abre (§1.5). */
-async function gritar(admin: ReturnType<typeof createClient> | null, detalhe: string, metadata = {}) {
+async function gritar(admin: ChamaRpc | null, detalhe: string, metadata = {}) {
   console.error("[radar-de-pautas]", detalhe, JSON.stringify(metadata));
   if (!admin) return;
   try {
@@ -226,50 +241,18 @@ Deno.serve(async (req: Request) => {
       }),
     });
     if (!res.ok) {
-      const corpo = (await res.text()).slice(0, 300);
+      const bruto = (await res.text()).slice(0, 300);
+      // A MENSAGEM TEM QUE SER VERDADEIRA (§1.5) — e o mesmo HTTP 400 teve
+      // tres significados diferentes no mesmo dia. A traducao mora em
+      // `falhaDaGroq.ts`, que e pura e por isso tem trava.
+      const falha = lerFalhaDaGroq(res.status, bruto);
 
-      // A MENSAGEM TEM QUE SER VERDADEIRA (§1.5). O 413 da Groq nao e "corpo
-      // grande demais" nem "cota diaria": e o teto por MINUTO batido por uma
-      // requisicao so. Chamar isso de cota diaria mandaria o dono esperar ate
-      // amanha por um defeito que e nosso e que o orcamento deveria impedir.
-      const porDia = /per day|\bRPD\b/i.test(corpo);
-
-      // `[01/10]` O 400 tem DOIS significados, e confundi-los custa horas:
-      // `failed_generation` VAZIO e falta de espaco para o raciocinio (o
-      // modelo nao escreveu nada); 400 citando `response_format` ou
-      // `reasoning_effort` e a Groq recusando o PEDIDO.
-      const ficouSemEspaco = /json_validate_failed/i.test(corpo)
-        && /"failed_generation"\s*:\s*""/.test(corpo);
-      const recusouOParametro = res.status === 400
-        && /response_format|json_schema|reasoning_effort/i.test(corpo);
-
-      const motivo = res.status === 400 && ficouSemEspaco
-        ? "o modelo nao escreveu nada — o raciocinio comeu o max_tokens (ver RESERVA_DE_RACIOCINIO)"
-        : recusouOParametro
-          ? "a Groq RECUSOU o pedido: json_schema estrito ou reasoning_effort deixaram de valer para este modelo"
-        : res.status === 413
-        ? `o pedido passou do teto por minuto da Groq (TPM ${TPM_DO_PLANO}) — o orcamento falhou`
-        : res.status === 429
-          ? (porDia ? "cota DIARIA da Groq estourada" : "teto por minuto da Groq — pedidos rapidos demais")
-          : `Groq respondeu HTTP ${res.status}`;
-
-      await gritar(admin, motivo,
-        { status: res.status, corpo, charsDaLista: chars, itensNoPedido: usados.length });
+      await gritar(admin, falha.motivo,
+        { status: res.status, corpo: bruto, charsDaLista: chars, itensNoPedido: usados.length });
 
       // A coleta valeu. Devolve as manchetes cruas em vez de perder tudo.
-      const aviso = ficouSemEspaco || recusouOParametro
-        ? "A IA recusou o pedido — e defeito nosso, ja registrado com o motivo. Segue a lista crua."
-        : res.status === 413
-        ? "A IA recusou o pedido por tamanho — e defeito nosso, ja registrado. Segue a lista crua."
-        : res.status === 429
-          ? (porDia
-            ? "A cota diaria da IA acabou. Ela volta amanha — segue a lista crua."
-            : "Muitos pedidos seguidos. Espere um minuto e tente de novo — segue a lista crua.")
-          : `A IA nao respondeu (HTTP ${res.status}) — segue a lista crua.`;
-
       return responder(corpo({
-        status: res.status === 429 && porDia ? "cota" : "erro_provedor",
-        itens: usados.slice(0, 30), error: aviso,
+        status: falha.status, itens: usados.slice(0, 30), error: falha.aviso,
       }));
     }
     const json = await res.json();
@@ -296,10 +279,24 @@ Deno.serve(async (req: Request) => {
       { foraDaLista, pautas: limpas.length, itensNoPedido: usados.length });
   }
 
+  // ── 4. O SINAL DE ACELERAÇÃO ──────────────────────────────────────────────
+  //
+  // `[01/10]` FASE 3. Uma consulta só, com os termos de TODAS as pautas — e
+  // ela é a ÚLTIMA coisa que acontece, de propósito: se falhar, as pautas já
+  // estão prontas e o sinal simplesmente não aparece. Enfeite informativo não
+  // pode custar o conteúdo (ver o cabeçalho de `aceleracao.ts`).
+  const medidas = await medirAceleracao(
+    limpas.flatMap((p) => p.termos),
+    (termos, dias) => admin.rpc("news_aceleracao_de_termos",
+      { p_termos: termos, p_janela_dias: dias }),
+  );
+  const comSinal = limpas.map((p) => ({ ...p, sinal: sinalDaPauta(p.termos, medidas) }));
+
   return responder(corpo({
     status: "ok",
     noPedido: usados.length,
     enderecosDescartados: foraDaLista,
-    pautas: limpas,
+    janelaDoSinal: JANELA_DE_DIAS,
+    pautas: comSinal,
   }));
 });

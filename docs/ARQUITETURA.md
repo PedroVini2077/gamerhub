@@ -265,6 +265,13 @@ src/
 │   │   │                  #   do `contrato.ts` do radar por uma trava, nos
 │   │   │                  #   dois sentidos. `tendencia` e `discussao` ficam
 │   │   │                  #   para a Fase 3, com as fontes que os produzem
+│   │   ├── aceleracao.js # `[01/10]` FASE 3 do radar: o sinal "isto está
+│   │   │                  #   crescendo?" — novo · novo e forte · crescendo ·
+│   │   │                  #   esfriando · `Nx o normal`. Mede OS VEÍCULOS QUE
+│   │   │                  #   NÓS ASSINAMOS PUBLICANDO, não o mundo buscando
+│   │   │                  #   (o Trends que o plano previa foi recusado). O
+│   │   │                  #   `Nx` é a única forma variável dos três selos,
+│   │   │                  #   então a tela valida antes de pôr na `className`
 │   │   ├── rascunhoDeIa.js #  `[25/09]` O CONTRATO com a Edge Function que
 │   │   │                  #   rascunha matéria: o mínimo de notas que ela
 │   │   │                  #   exige e o marcador `[CONFERIR: …]` que ela
