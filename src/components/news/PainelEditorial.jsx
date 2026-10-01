@@ -6,7 +6,7 @@ import { apenasData } from '../../services/result';
 import { EDITORIAS_EM_ORDEM, rotuloDaEditoria } from '../../lib/news/editorias';
 import { rotuloDoEstado, corDoEstado } from '../../lib/news/estadosDoArtigo';
 import { useAuth } from '../../hooks/useAuth.jsx';
-import { useRole } from '../../hooks/useRole';
+import { usePermissions } from '../../hooks/usePermissions';
 import EditorDeArtigo from './EditorDeArtigo';
 import MarcaDeIa from './MarcaDeIa';
 import AvisoDeErro from '../ui/AvisoDeErro';
@@ -31,8 +31,12 @@ import RadarDePautas from './RadarDePautas';
  */
 export default function PainelEditorial() {
   const { user } = useAuth();
-  const { isSuperAdmin, isOwner } = useRole();
-  const ehSuper = isSuperAdmin || isOwner;
+  // `[01/10]` Era `isSuperAdmin || isOwner`. A pergunta que esta tela faz não
+  // é "qual é o cargo dele" — é "ele pode pôr matéria no ar". O cargo mínimo
+  // vive num lugar só (`lib/capacidades.js`), e quem impede de verdade é o
+  // trigger `news_guarda_a_publicacao`.
+  const { can } = usePermissions();
+  const podePublicar = can('publish_news');
   const qc = useQueryClient();
 
   // `{ id, notasIniciais }` — as notas viajam junto porque o rascunho criado a
@@ -85,7 +89,7 @@ export default function PainelEditorial() {
       <EditorDeArtigo
         id={editando.id}
         notasIniciais={editando.notasIniciais}
-        ehSuper={ehSuper}
+        podePublicar={podePublicar}
         onFechar={() => {
           setEditando(null);
           qc.invalidateQueries({ queryKey: ['news-equipe'] });

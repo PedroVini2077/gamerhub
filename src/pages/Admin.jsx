@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, Users, FileText, Key, Crown, Bell, Activity, ShieldAlert, UserPlus, Siren, Mail, Newspaper } from 'lucide-react';
 import { fadeTab, gridContainer } from '../lib/motion';
 import { useRole } from '../hooks/useRole';
+import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useAdminLogs } from '../hooks/useAdminLogs';
 import { useLiveModeration } from '../hooks/useLiveModeration';
@@ -27,6 +28,10 @@ const LOGS_POLL_MS = 30000;
 
 export default function Admin() {
   const { isAdmin, isSuperAdmin, isOwner, role } = useRole();
+  // `[01/10]` `can()` entra ao lado do `useRole`, não no lugar dele: o gate da
+  // ROTA continua sendo posição ("é da equipe"), e o que vira capacidade são
+  // os CONTROLES — ver `lib/capacidades.js`.
+  const { can } = usePermissions();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
 
@@ -146,8 +151,8 @@ export default function Admin() {
     { id: 'notifs',     label: 'Notificações',  icon: Bell, badge: unreadCount },
     { id: 'contato',    label: 'Contato',       icon: Mail        },
     { id: 'logs',       label: 'Logs',          icon: Activity    },
-    ...(isSuperAdmin ? [{ id: 'cargos', label: 'Cargos',      icon: UserPlus }] : []),
-    ...(isSuperAdmin ? [{ id: 'super',  label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
+    ...(can('manage_roles') ? [{ id: 'cargos', label: 'Cargos',      icon: UserPlus }] : []),
+    ...(can('manage_roles') ? [{ id: 'super',  label: 'Super Admin', icon: Crown, badge: pendingCount }] : []),
   ];
 
   const modals = {

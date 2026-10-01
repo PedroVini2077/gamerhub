@@ -42,13 +42,15 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
 
   const timeAgo = new Date(post.created_at).toLocaleDateString('pt-BR');
   const canDelete = canDeleteContent(user?.id, role, post.user_id, post.profiles?.role);
-  const isOwner = user && user.id === post.user_id;
+  // `[01/10]` Chamava-se `isOwner` e colidia com o `isOwner` do `useRole`,
+  // que quer dizer "é o fundador". Aqui é "sou o autor DESTE post".
+  const souOAutor = user && user.id === post.user_id;
   // Calculado uma vez na montagem: `Date.now()` no corpo do render é impuro, e
   // a janela de edição é de 30min — não faz diferença recalcular a cada render.
   // Quando ela expira com o card aberto, o contador do EditCountdown zera e o
   // salvar é barrado no banco de qualquer forma.
   const [canEdit] = useState(
-    () => !!isOwner && (Date.now() - new Date(post.created_at).getTime()) / 60000 <= EDIT_LIMIT_MINUTES,
+    () => !!souOAutor && (Date.now() - new Date(post.created_at).getTime()) / 60000 <= EDIT_LIMIT_MINUTES,
   );
 
   // A exclusão só acontece quando a contagem zera — dá janela pra cancelar.
@@ -234,7 +236,7 @@ export default function PostCard({ post, onDelete, disablePopup = false }) {
               <Tv size={32} className="text-gray-600 mx-auto mb-3" />
               <p className="text-neon-green font-mono text-sm font-bold">Live encerrada</p>
               <p className="text-gray-500 font-mono text-xs mt-1">O streamer ficou offline</p>
-              {isOwner && <PedirReativacaoDaLive postId={post.id} titulo={post.title} />}
+              {souOAutor && <PedirReativacaoDaLive postId={post.id} titulo={post.title} />}
             </div>
           )
           : <EmbedPlayer url={post.embed_url} isLive={post.is_live} expiresAt={post.expires_at} />

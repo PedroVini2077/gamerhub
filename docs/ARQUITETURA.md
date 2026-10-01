@@ -84,6 +84,13 @@ src/
 │   │                      # o uso. Saiu do useAuth em 29/08 — testável isolado
 │   ├── usePresenca.js     # Canal de presence: quantos estão online agora
 │   ├── useRole.js         # Deriva flags isOwner/isAdmin/isSuperAdmin/isBanned
+│   │                      # — IDENTIDADE. Continua existindo de propósito:
+│   │                      # badge, cor, rótulo, rank e gate de rota
+│   ├── usePermissions.js  # `[01/10]` `can('publish_news')` — CAPACIDADE.
+│   │                      # Não chama o servidor: deriva do papel que o
+│   │                      # `useAuth` já tem. Conta BANIDA não tem capacidade
+│   │                      # nenhuma, espelhando o `operador_ativo()` que o
+│   │                      # `is_staff()` do banco embute desde a SEC-053
 │   ├── useRealtime.js     # Helper genérico de subscription Postgres changes
 │   ├── useFeed.js         # `[24/09]` O estado do Feed: a consulta (limit 30, sem
 │   │                      # paginação AINDA), a recarga que confere se o post já
@@ -149,6 +156,13 @@ src/
 │   │                      # explícito. O desconhecido aparece inteiro, em
 │   │                      # vez de virar um genérico que esconde o caso novo
 │   ├── url.js             # safeExternalUrl() — só http(s) vira href (anti-XSS)
+│   ├── capacidades.js     # `[01/10]` O que a pessoa PODE FAZER, separado de
+│   │                      # QUEM ELA É. Mapa capacidade -> rank mínimo,
+│   │                      # DERIVADO do `roleRank` (lista de cargos à mão é o
+│   │                      # bug que o banco já teve 3x). Cada entrada diz
+│   │                      # ONDE o banco a protege — coluna vazia = decoração,
+│   │                      # e um teste reprova. `can()` é EXPERIÊNCIA, não
+│   │                      # segurança: o site usa a anon key
 │   ├── modelosConferidos.js # `[26/09]` Os modelos de IA conferidos NO NOSSO
 │   │                      # PLANO — e os reprovados, com o motivo. O
 │   │                      # `llama-3.3-70b` era modelo de PRODUÇÃO e mesmo

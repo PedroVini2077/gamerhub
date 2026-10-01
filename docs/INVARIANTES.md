@@ -114,6 +114,8 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-AUTZ-003** | **Operador punido não manda.** Banido ou suspenso não exerce ação administrativa — o cargo não basta, o estado dele faz parte da autorização | N43, N44, N46, N47 · SEC-043 | `src/lib/__tests__/estadoDoOperador.test.js` |
 | **INV-AUTZ-004** | Hierarquia sempre por **função** (`role_rank`, `is_staff`, `is_super`, `can_moderate_content`), **nunca lista literal** de papéis | SEC-025 · (3 falhas repetidas) | `punicaoRespeitaHierarquia.test.js` · `src/lib/roles.js` |
 | **INV-AUTZ-005** | Guard de papel **não compara com NULL** — em SQL `NULL < 1` é `NULL` e o `IF` não dispara | N1 · SEC-030 | `src/lib/__tests__/guardDePapelNaoAceitaNull.test.js` |
+| **INV-AUTZ-010** | **`[01/10]`** **A UI não decide CAPACIDADE por cargo.** Mostrar um controle com `{isAdmin && <X/>}` espalha a regra: para saber quem publica matéria era preciso abrir o painel editorial. Capacidade vive em `lib/capacidades.js`, derivada do `roleRank` — **rank mínimo, nunca lista de cargos**, que é o bug que o banco já teve 3×. Identidade (`badge`, cor, rótulo) e hierarquia entre duas pessoas (`canModerate`) **continuam em `role`**, de propósito | 114 usos em 31 arquivos, medidos em 01/10 | `capacidadeNaoVoltaAoCargo.test.js` |
+| **INV-AUTZ-011** | **`[01/10]`** **Toda capacidade diz onde o banco a protege.** `can()` é experiência, não segurança — o site usa a `anon key` e qualquer um pula o frontend. Capacidade cuja coluna de proteção está vazia é decoração, e esconder o botão só disfarça um buraco que continua aberto | — | `capacidadeNaoVoltaAoCargo.test.js` |
 
 ---
 
