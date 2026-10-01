@@ -114,7 +114,19 @@ function Resultado({ dados, onCriar }) {
             <a key={i.url} href={i.url} target="_blank" rel="noopener noreferrer"
               className="flex items-start gap-2 text-xs text-gray-400 hover:text-neon-green py-1">
               <ExternalLink size={11} className="shrink-0 mt-0.5" />
-              <span>{i.titulo}</span>
+              <span>
+                {/* `[01/10]` De ONDE veio. Com duas origens de coleta (os feeds
+                    que a equipe escolheu e a busca ampla), "manchete do feed" e
+                    "manchete que apareceu fora das nossas fontes" passaram a ser
+                    coisas diferentes para quem decide a pauta — e a tela não
+                    pode apresentar as duas como se fossem a mesma. */}
+                {i.fonte_nome && (
+                  <span className="font-mono text-[10px] text-gray-600 mr-1.5">
+                    [{i.fonte_nome}]
+                  </span>
+                )}
+                {i.titulo}
+              </span>
             </a>
           ))}
         </div>

@@ -35,6 +35,7 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Safe Browsing** | consultas por dia | 10.000 | link deixa de ser checado | Sim, desde 23/08 (`admin_logs`) |
 | **Groq** (requisições) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
 | **Groq** (**tokens por minuto**) | tokens de UMA requisição, entrada + `max_tokens` | **8.000** (`on_demand`) | `HTTP 413`: a requisição é recusada inteira | Sim, desde 25/09 — mas ver o quadro abaixo |
+| **GDELT** (radar, Fase 1) | requisições **por IP** | **1 a cada 5 s** — não documentado, veio de um `429` medido | a consulta é recusada; **o RSS continua** | Sim, desde 01/10 (`comFalha` na tela) |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
@@ -83,6 +84,28 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > apresenta como o inventário do que cada serviço conta deixa de ser verdade
 > para quem a lê — inclusive para mim, que a reli em 26/09 montando o radar e
 > conferi que a conta de requisições fechava.*
+
+> **`[01/10]` A GDELT entrou com as DUAS perguntas respondidas — a antiga e a
+> que esta sessão acrescentou.**
+>
+> *Quantas vezes por dia?* Até **2 por clique** de editor em "Buscar pautas".
+> Não multiplica por usuário, post nem leitor: só `is_staff()` alcança.
+>
+> *E quanto cabe de uma vez?* Uma. É teto de **frequência**, não de volume —
+> por isso as consultas vão em **série**, com 5,2 s entre elas, e o teto por
+> clique é 2 (4 fariam o editor esperar ~16 s olhando a tela).
+>
+> **E uma terceira coisa, que é o motivo de esta linha ser diferente das
+> outras:** o teto é por **IP de saída**, e nós não controlamos com quem
+> dividimos o nosso. Medido em 01/10: quatro tentativas espaçadas de 8 s e uma
+> sozinha após **70 s de silêncio** — `429` em todas. A causa provável é IP
+> compartilhado consumido por terceiros; **isso é hipótese, não fato** (§1.1),
+> porque o IP da Edge Function é outro e eu não alcanço aquele ambiente.
+>
+> Por isso o desenho não aposta que ela responda: o `429` é **caso esperado**,
+> vira linha em `comFalha`, e a coleta do RSS segue intacta. Se a GDELT nunca
+> responder em produção, o radar continua exatamente como era — e nós vamos
+> **saber**, em vez de supor.
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em
