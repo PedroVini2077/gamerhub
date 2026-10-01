@@ -251,6 +251,63 @@ produção na Groq, conferido em 25/09.
 
 ---
 
+### 🟠 `[01/10]` O Lighthouse reprova a auditoria de IA, e a culpa é do REWRITE
+
+**Pedido dele em 01/10:** investigar sem mexer em nada, com evidência antes da
+conclusão, e **sem** criar um `ai-catalog.json` só para ficar verde.
+
+**Medido, não deduzido.** O Lighthouse 13.5 trouxe a categoria *Agentic
+Browsing* com a auditoria `ard-schema`. Ela procura o catálogo em quatro
+lugares, e o quarto é `/.well-known/ai-catalog.json`. Na produção:
+
+```
+/.well-known/ai-catalog.json  ->  HTTP 200 · text/html   (o index.html do SPA)
+```
+
+Reproduzido com o Lighthouse 13.5.0 de verdade, servindo o nosso `dist`:
+
+```
+ard-schema: score 0 — "`ai-catalog.json` schema is invalid"
+  Malformed JSON in manifest: SyntaxError: Unexpected token '<', "<!doctype "...
+```
+
+**E provado por controle:** mesma página, mesmo build, trocando só o que o
+`/.well-known/` responde → `404` faz a auditoria virar **notApplicable**.
+Catálogo ausente **não reprova**; catálogo que não carrega, sim.
+
+**Então não falta recurso — nós estamos mentindo.** É a mesma classe do
+`robots.txt` de 17/09, documentada na trava dele com estas palavras: *"é pior
+do que 404: o 404 diz 'não existe'; o 200 com HTML diz 'existe' e entrega
+lixo"*. Hoje **todo** caminho sob `/.well-known/` responde 200 com HTML —
+medidos `security.txt`, `change-password`, `apple-app-site-association`,
+`assetlinks.json`, `openid-configuration`, `host-meta`.
+
+**🟡 PROPOSTA, aguardando ele (§7) — ele proibiu mexer sem autorização:**
+excluir `/.well-known/` do `rewrites` do `vercel.json`, para que caminho
+inexistente ali devolva 404. Arquivo que a gente **pôr** em
+`public/.well-known/` continua servindo, porque o disco vence o rewrite (já
+medido em 17/09 com o `manifest.webmanifest`).
+
+**O que a proposta NÃO faz, de propósito:** não 404 o resto do site. Rota de
+app (`/profile`, `/post/123`, caminho errado) **tem** de devolver 200 com HTML
+para o router do SPA desenhar a própria tela de 404. O recorte é o
+`/.well-known/`, que é namespace de máquina (RFC 8615) — nenhuma pessoa navega
+até lá.
+
+**Recomendação sobre o ARD em si: NÃO publicar catálogo agora.** O spec está
+em rascunho (v0.91, ago/2026) e já está trocando de caminho
+(`ai-catalog.json` → `/.well-known/ard.json`); ele descreve **ferramentas e
+APIs que um agente pode chamar**, e o GamerHub não tem nenhuma pública; e o
+`llms.txt`, que já existe, é o que de fato descreve a nossa superfície. Com o
+404 no lugar, a auditoria fica **Not Applicable** — que é a verdade.
+
+**Honestidade sobre o tamanho do estrago:** fora do Lighthouse, o dano é
+pequeno. O `/.well-known/change-password` seria o pior caso, mas a própria
+especificação manda o navegador sondar um caminho-controle antes de confiar —
+e o nosso devolve 200, então o gerenciador de senhas conclui corretamente que
+não suportamos o recurso. Não inflar isto: é higiene de borda, não brecha.
+
+---
 ### 🔵 `[26/09]` Gerenciar as fontes do radar pela TELA
 
 Hoje ligar, desligar e acrescentar fonte é `UPDATE`/`INSERT` no banco — o passo
