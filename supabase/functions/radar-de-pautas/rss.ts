@@ -65,6 +65,36 @@ function pegarLink(bloco: string): string {
   return limpar(pegar(bloco, ["link", "guid"]), 500);
 }
 
+/**
+ * `[01/10]` Resumo que só REPETE o título não é resumo — é orçamento jogado fora.
+ *
+ * Alguns feeds preenchem `description` com o próprio título (o de busca do
+ * Google News faz isso: `<description>` é um link cujo texto é o título mais
+ * o nome do veículo). Mandar isso ao modelo custa duas vezes o mesmo fato
+ * dentro de um pedido que tem teto de tokens medido — e o teto é o que
+ * decidiu quantas manchetes cabem.
+ *
+ * A comparação é por **palavra**, não por igualdade: o resumo redundante quase
+ * nunca é idêntico (vem sem o hífen, com o veículo colado, com espaço a mais).
+ * Se 80% das palavras do resumo já estão no título, ele não acrescenta nada.
+ *
+ * Genérico de propósito: é regra de qualidade de feed, não tratamento especial
+ * para um fornecedor. Qualquer feed que repita o título cai aqui.
+ */
+function soRepeteOTitulo(titulo: string, resumo: string): boolean {
+  if (!resumo) return false;
+  const palavras = (t: string) =>
+    new Set(t.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/).filter((w) => w.length > 2));
+
+  const doResumo = palavras(resumo);
+  if (doResumo.size === 0) return true;
+
+  const doTitulo = palavras(titulo);
+  let repetidas = 0;
+  for (const w of doResumo) if (doTitulo.has(w)) repetidas++;
+  return repetidas / doResumo.size >= 0.8;
+}
+
 export function lerFeed(xml: string, teto = 15): ItemBruto[] {
   const blocos = [...xml.matchAll(/<(item|entry)[\s>][\s\S]*?<\/\1>/gi)]
     .map((m) => m[0])
@@ -80,10 +110,14 @@ export function lerFeed(xml: string, teto = 15): ItemBruto[] {
     const data = limpar(pegar(bloco, ["pubDate", "published", "updated", "dc:date"]), 60);
     const quando = data ? new Date(data) : null;
 
+    const resumo = limpar(pegar(bloco, ["description", "summary", "content"]), 400);
+
     return [{
       titulo,
       url,
-      resumo: limpar(pegar(bloco, ["description", "summary", "content"]), 400),
+      // Resumo que repete o título vira vazio: melhor campo vazio do que o
+      // mesmo fato duas vezes dentro do orçamento de tokens (ver acima).
+      resumo: soRepeteOTitulo(titulo, resumo) ? "" : resumo,
       publicado_em: quando && !Number.isNaN(quando.getTime()) ? quando.toISOString() : null,
     }];
   });

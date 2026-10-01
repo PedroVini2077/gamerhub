@@ -711,11 +711,29 @@ código não cita assunto nenhum.
 > única medição de sucesso — nem daqui (429 sempre), nem de lá (timeout). O
 > próximo clique diz, e agora a tela informa o relógio junto do motivo.
 >
-> **Se ela estourar de novo com 20 s, a conclusão muda de "ajustar o teto" para
-> "ela não cabe dentro do clique"** — e a saída é `EdgeRuntime.waitUntil()`:
-> coletar em segundo plano e os itens aparecerem no clique seguinte, já que
-> `news_items_raw` é persistente e existe exatamente para isso. Registrado no
-> `BACKLOG.md` com esse gatilho.
+> #### ⛔ O 2º clique fechou a questão: a GDELT SAIU, o Google News ENTROU
+>
+> Com o timeout de 20 s ela respondeu — e o que respondeu foi `429`, na
+> **primeira** requisição. Sete tentativas, dois IPs, **zero sucessos**. O
+> teto é por IP e saímos de IP compartilhado.
+>
+> **O gatilho que eu tinha escrito aqui estava errado:** eu disse que a saída
+> seria `EdgeRuntime.waitUntil()`. Não resolveria — o problema nunca foi
+> tempo, é cota, e segundo plano dá relógio e zero cota.
+>
+> **Substituída pelo Google News RSS de busca, e sem uma linha de código.**
+> Ele é RSS: as duas consultas entraram como `tipo = 'rss'` e caem no
+> coletor que já existia. **A arquitetura desta fase se pagou aqui** — trocar
+> de fornecedor virou um `INSERT`, porque `coleta.ts` despacha por `tipo` e a
+> consulta sempre foi dado.
+>
+> Medido: 100 itens, 15 lidos, 1 segundo. Traz PlayStation.Blog BR,
+> TudoCelular, Adrenaline, Nintendo Blast, Tecnoblog e Omelete — veículos
+> fora dos 13 feeds, que era o objetivo da fase.
+>
+> **O custo, aceito por ele:** o link é um redirecionador do Google, não o
+> endereço do veículo. O título carrega `- <Veículo>`, então a origem aparece
+> antes do clique. A história inteira está em `DECISOES.md`.
 
 **A arquitetura que a Fase 2 herda:** `coleta.ts` despacha por `tipo` e devolve
 `{itens, comFalha}`. Coletor novo é um `tipo` novo e um adaptador — não mexe
