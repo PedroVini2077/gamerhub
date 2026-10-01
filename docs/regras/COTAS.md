@@ -35,7 +35,8 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Safe Browsing** | consultas por dia | 10.000 | link deixa de ser checado | Sim, desde 23/08 (`admin_logs`) |
 | **Groq** (requisições) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
 | **Groq** (**tokens por minuto**) | tokens de UMA requisição, entrada + `max_tokens` | **8.000** (`on_demand`) | `HTTP 413`: a requisição é recusada inteira | Sim, desde 25/09 — mas ver o quadro abaixo |
-| ~~**GDELT**~~ (radar, Fase 1) | requisições **por IP** | **1 a cada 5 s** | **`[01/10]` DESLIGADA no mesmo dia** — ver o quadro abaixo | — |
+| ~~**GDELT**~~ | requisições **por IP** | 1 a cada 5 s | **`[01/10]` DESLIGADA no mesmo dia** — ver o quadro abaixo | — |
+| **Google News RSS** (busca ampla) | nada observado | — | — | a falha vira `comFalha`, como qualquer feed |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
@@ -209,6 +210,34 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > tanto este ambiente quanto a Edge Function da Supabase são compartilhados
 > por construção. **"Sem chave" não é só conveniência: é o sintoma de que o
 > fornecedor identifica você pelo IP, e aí o IP é a cota.**
+>
+> ### ✅ `[01/10]` O substituto entrou no MESMO dia, e sem uma linha de código
+>
+> Decisão dele depois do diagnóstico: **Google News RSS de busca**. Medido
+> antes de ligar, com o NOSSO `lerFeed` rodando sobre o XML real — 100 itens
+> no feed, 15 lidos, título/link/data corretos, **resposta em 1 segundo**.
+>
+> **Ele não entrou na tabela acima com um teto porque não observamos nenhum.**
+> Isso não é o mesmo que "não tem": é o que foi medido. Se um dia ele recusar,
+> cai em `comFalha` como qualquer feed, e a tela diz.
+>
+> **Zero código novo.** Ele é RSS, e o coletor de RSS existe desde a fundação
+> do radar — as duas consultas entraram como `tipo = 'rss'` e caem no
+> `Promise.all` dos feeds. A arquitetura da Fase 1, que despacha por `tipo`,
+> se pagou aqui: trocar de fornecedor virou um `INSERT`.
+>
+> **O que ele cobra em troca**, e está aceito: o `<link>` de cada item é um
+> redirecionador do Google, não o endereço do veículo. No navegador resolve;
+> a URL que vai para as notas do rascunho, não. O título termina com
+> `- <Veículo>`, então nenhuma fonte fica anônima.
+>
+> **E um defeito que ele revelou no NOSSO lado:** o `<description>` do Google
+> News repete o título. Mandar os dois ao modelo custaria **duas vezes o mesmo
+> fato** dentro do pedido cujo teto eu passei o dia apertando. O `lerFeed`
+> passou a descartar resumo que só repete o título — regra **genérica** de
+> qualidade de feed, não tratamento para um fornecedor, e os 13 feeds reais
+> mantêm os resumos deles (medido: 15 de 15 em Canaltech, PC Gamer e
+> GameSpot).
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em

@@ -92,6 +92,17 @@ entrou como 2º coletor, ao lado do RSS.
 > que o próximo passo seria `EdgeRuntime.waitUntil()`. **Não resolveria** — o
 > problema nunca foi tempo, é cota por IP, e segundo plano dá mais relógio e
 > zero cota. A história completa está em `DECISOES.md`.
+>
+> **✅ Ele decidiu, e o Google News RSS entrou no lugar — sem uma linha de
+> código.** Ele é RSS, então as duas consultas são `tipo='rss'` e caem no
+> coletor que já existia. 100 itens, 15 lidos, 1 segundo, e traz veículos
+> fora dos nossos 13 feeds. O trade-off aceito: o link é um redirecionador do
+> Google, e o título carrega o nome do veículo.
+>
+> **Um defeito nosso que ele revelou:** o `description` do Google News repete
+> o título, e mandar os dois ao modelo custaria duas vezes o mesmo fato no
+> pedido com teto medido. O `lerFeed` passou a descartar resumo redundante —
+> regra genérica, com trava nos dois sentidos.
 
 > **Falta a Fase 2:** agrupamento em evento + classificação de confiabilidade.
 
@@ -1142,7 +1153,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1461,22 +1472,6 @@ AGORA** escrito nele.
 > `db/2026-09-10-auditoria-seguranca.md`.
 
 ## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
-
-- ⬜ `[01/10]` 🟠 **DECISÃO DELE: trocar a GDELT pelo Google News RSS no radar?**
-  *A GDELT foi desligada hoje — 7 tentativas, 2 IPs, zero sucessos. A conta
-  inteira está em `DECISOES.md`.* A alternativa foi **medida**: Google News RSS
-  de busca responde em **1 s com 100 itens**, sem chave e sem teto observado, e
-  **cabe no coletor que já existe** (`tipo='rss'`, zero código novo). Com uma
-  consulta fechada ela trouxe PlayStation.Blog BR, TudoCelular, Adrenaline,
-  Nintendo Blast, Tecnoblog e Omelete — veículos fora dos nossos 13 feeds, que
-  é o que a Fase 1 queria. **O que decide é editorial:** o link de cada item é
-  um redirecionador do Google (`news.google.com/rss/articles/CBMi…`), não o
-  endereço do veículo. No navegador ele resolve e o editor chega no artigo; a
-  URL que vai para as NOTAS do rascunho, não. O nome e o domínio do veículo
-  aparecem (`<source url=…>`). **Minha recomendação: ligar**, porque hoje a
-  alternativa é não ter descoberta nenhuma, e o editor vê o veículo antes de
-  clicar. Se ele recusar o link opaco, a Fase 1 fica só com os 13 feeds e a
-  descoberta volta para a mesa na Fase 3.
 
 - ⬜ `[01/10]` 🟠 **RETENÇÃO HÍBRIDA: tempo + quantidade, em lote.** *Pedido
   dele em 01/10, mandado GRAVAR e começar "quando fizer sentido".* Teto de
@@ -2724,7 +2719,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->173<!--/n--> arq ·
-  <!--n:src.lib.linhas-->21.354<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->21.435<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

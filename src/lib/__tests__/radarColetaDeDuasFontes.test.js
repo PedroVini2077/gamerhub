@@ -6,6 +6,7 @@ import {
   ESPACO_ENTRE_CONSULTAS_MS, TETO_DE_CONSULTAS, TIMEOUT_DA_CONSULTA_MS,
 } from '../../../supabase/functions/radar-de-pautas/gdelt.ts';
 import { coletarTudo } from '../../../supabase/functions/radar-de-pautas/coleta.ts';
+import { lerFeed } from '../../../supabase/functions/radar-de-pautas/rss.ts';
 
 /**
  * `[01/10]` FASE 1 do radar: a segunda fonte de coleta.
@@ -85,6 +86,86 @@ describe('o leitor da GDELT nao estoura com o que ela realmente devolve', () => 
     // partir de metadado, e o modelo leria aquilo como apuracao.
     const [i] = lerGdelt(JSON.stringify({ articles: [{ url: 'https://a.com/x', title: 'T', domain: 'a.com' }] }));
     expect(i.resumo).toBe('');
+  });
+});
+
+describe('`[01/10]` resumo que so REPETE o titulo e descartado', () => {
+  // ── Por que isto existe, e o numero ─────────────────────────────────────
+  //
+  // O feed de BUSCA do Google News preenche `<description>` com um link cujo
+  // texto e o proprio titulo mais o nome do veiculo:
+  //
+  //   titulo : Upscaling com IA chega em breve para PS5 - PlayStation.Blog BR
+  //   resumo : Upscaling com IA chega em breve para PS5 PlayStation.Blog BR
+  //
+  // Mandar os dois ao modelo custa DUAS VEZES o mesmo fato dentro de um
+  // pedido com teto de tokens medido — e foi esse teto que decidiu quantas
+  // manchetes cabem (`RESERVA_DE_RACIOCINIO`). Resumo de 160 chars repetindo
+  // o titulo e 160 chars a menos para manchete de verdade.
+  //
+  // ── E por que a regra e GENERICA ────────────────────────────────────────
+  //
+  // Nao e tratamento especial para o Google News: e qualidade de feed. Feed
+  // nenhum ganha excecao, e o leitor continua sem saber de que fornecedor
+  // veio o XML.
+
+  const feed = (titulo, descricao) => `<rss><channel><item>
+    <title>${titulo}</title><link>https://x.com/a</link>
+    <description>${descricao}</description></item></channel></rss>`;
+
+  it('descarta o resumo que e o titulo de novo', () => {
+    const [i] = lerFeed(feed(
+      'Upscaling com IA chega em breve para PS5 - PlayStation.Blog BR',
+      'Upscaling com IA chega em breve para PS5  PlayStation.Blog BR'));
+    expect(i.resumo, 'o resumo repetido voltou a ocupar orcamento de token com '
+      + 'o mesmo fato que o titulo ja diz').toBe('');
+  });
+
+  it('PRESERVA resumo de verdade — e esta e a metade que nao pode quebrar', () => {
+    // Os 13 feeds reais trazem resumo legitimo. Medido em 01/10 contra
+    // Canaltech, PC Gamer e GameSpot: 15 de 15 itens mantiveram o resumo.
+    const [i] = lerFeed(feed(
+      'Diablo 4 ganha temporada nova',
+      'A Blizzard detalhou as mudancas de balanceamento e o novo chefe que '
+      + 'aparece no fim do ato tres, alem da data de inicio.'));
+    expect(i.resumo, 'resumo LEGITIMO foi descartado. Isso empobrece as 13 '
+      + 'fontes reais para resolver um defeito de uma.').toContain('Blizzard');
+  });
+
+  it('o limiar nao e igualdade exata — o repetido quase nunca e identico', () => {
+    // Vem sem o hifen, com o veiculo colado, com espaco a mais. Comparar por
+    // igualdade deixaria todos passarem.
+    const [i] = lerFeed(feed(
+      'Nintendo reduz preco do Controle Switch Pro na Amazon',
+      'Nintendo reduz o preco do Controle Switch Pro na Amazon hoje'));
+    expect(i.resumo).toBe('');
+  });
+
+  it('resumo que REPETE PARTE do titulo mas acrescenta fato NAO e descartado', () => {
+    // ── Este caso nasceu de uma reinjecao que NAO falhou ────────────────
+    //
+    // Eu tinha um teste de "preserva resumo legitimo", mas o resumo dele nao
+    // compartilhava palavra NENHUMA com o titulo — entao nenhum limiar, por
+    // mais agressivo, o mataria. Baixei o limiar de 0,8 para 0,1 e os 55
+    // testes passaram.
+    //
+    // O caso realista perigoso e este: resumo que repete o nome do produto
+    // (porque e do que ele fala) e acrescenta o preco, o prazo, a loja. Com
+    // limiar apertado demais, ele some — e some em SILENCIO, levando junto o
+    // unico fato que o titulo nao tinha.
+    const [i] = lerFeed(feed(
+      'Nintendo Switch OLED tem oferta no Dia das Criancas',
+      'O Nintendo Switch OLED esta com desconto de R$ 400 na Amazon ate domingo.'));
+    expect(i.resumo, 'resumo que repete o nome do produto e acrescenta preco e '
+      + 'prazo foi descartado. O limiar de `soRepeteOTitulo` ficou agressivo '
+      + 'demais, e o fato novo some em silencio junto com a repeticao.')
+      .toContain('400');
+  });
+
+  it('resumo CURTO que acrescenta fato novo fica', () => {
+    const [i] = lerFeed(feed('Xbox anuncia Mythic Achievements',
+      'Chega em novembro para assinantes do Game Pass Ultimate.'));
+    expect(i.resumo).toContain('novembro');
   });
 });
 
