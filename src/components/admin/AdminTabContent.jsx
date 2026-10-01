@@ -1,4 +1,5 @@
 import UsersPanel from './UsersPanel';
+import { usePermissions } from '../../hooks/usePermissions';
 import PostsPanel from './PostsPanel';
 import LivesPanel from './LivesPanel';
 import KeysPanel from './KeysPanel';
@@ -12,6 +13,10 @@ import PainelEditorial from '../news/PainelEditorial';
 
 /** Despacha a aba ativa do painel admin para o painel correspondente. */
 export default function AdminTabContent({ tab, isSuperAdmin, data, filters, actions, modals }) {
+  // `[01/10]` A aba de cargos é CAPACIDADE (`manage_roles`), não cargo. O
+  // `isSuperAdmin` continua descendo como prop porque o `UsersPanel` o usa
+  // para HIERARQUIA — quem pode mexer em quem —, que é outra pergunta.
+  const { can } = usePermissions();
   switch (tab) {
     case 'users':
       return (
@@ -88,10 +93,10 @@ export default function AdminTabContent({ tab, isSuperAdmin, data, filters, acti
       );
 
     case 'cargos':
-      return isSuperAdmin ? <CargosTab /> : null;
+      return can('manage_roles') ? <CargosTab /> : null;
 
     case 'super':
-      return isSuperAdmin ? (
+      return can('manage_roles') ? (
         <SuperAdminPanel
           blockedLogins={data.blockedLogins} blockedLoading={data.blockedLoading}
           fetchBlockedLogins={data.fetchBlockedLogins} setUnlockModal={modals.setUnlockModal}

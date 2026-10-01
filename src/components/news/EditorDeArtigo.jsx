@@ -31,7 +31,7 @@ import MarcaDeIa from './MarcaDeIa';
  * anuncia um poder que a pessoa não tem e convida a tentar; o corte editorial
  * fica mais claro quando a ação simplesmente não está ali.
  */
-export default function EditorDeArtigo({ id, ehSuper, onFechar, notasIniciais }) {
+export default function EditorDeArtigo({ id, podePublicar, onFechar, notasIniciais }) {
   const { data: artigo, isLoading, refetch } = useQuery({
     queryKey: ['news-editar', id],
     queryFn: () => apenasData(fetchArtigoParaEditar(id)),
@@ -70,7 +70,7 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar, notasIniciais })
     return <p className="card p-6 text-center font-mono text-gray-500 text-sm">Matéria não encontrada.</p>;
   }
 
-  const editavel = podeEditar(artigo.status, ehSuper);
+  const editavel = podeEditar(artigo.status, podePublicar);
   const set = (k) => (v) => setRascunho({ ...campos, [k]: v });
   // A IA devolve quatro campos de uma vez. Aplicar um por um com `set`
   // perderia três: cada chamada parte de `campos`, que ainda é o estado velho.
@@ -225,19 +225,19 @@ export default function EditorDeArtigo({ id, ehSuper, onFechar, notasIniciais })
 
         {/* Some para quem não é super: botão desabilitado anuncia um poder que
             a pessoa não tem e convida a tentar. */}
-        {ehSuper && !estadoNoAr(artigo.status) && (
+        {podePublicar && !estadoNoAr(artigo.status) && (
           <button onClick={() => paraEstado('published', 'No ar.')}
             className="btn-neon flex items-center gap-2">
             <Globe size={14} /> Publicar
           </button>
         )}
-        {ehSuper && estadoNoAr(artigo.status) && (
+        {podePublicar && estadoNoAr(artigo.status) && (
           <button onClick={() => paraEstado('draft', 'Tirado do ar.')}
             className="btn-ghost flex items-center gap-2">
             <Undo2 size={14} /> Tirar do ar
           </button>
         )}
-        {ehSuper && (
+        {podePublicar && (
           <button onClick={() => setConfirmarApagar(true)}
             className="btn-ghost flex items-center gap-2 text-red-400" aria-label="Apagar matéria">
             <Trash2 size={14} /> Apagar

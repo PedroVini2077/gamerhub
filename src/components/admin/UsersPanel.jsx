@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { usePermissions } from '../../hooks/usePermissions';
 import { Users, Ban, Shield, ShieldCheck, RotateCcw, Clock, Trash2, ChevronUp, ChevronDown, Search, UserPlus, ShieldAlert, MailWarning } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
@@ -89,7 +90,7 @@ function PendingSignups() {
   );
 }
 
-function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, onLiftSuspension, pendingUnbanIds }) {
+function UserRow({ user, currentUserId, isSuperAdmin, podeGerirCargo, podeDesbanir, onNominate, onDemote, onBanClick, onUnbanDirect, onRequestUnban, onDeletePosts, onLiftSuspension, pendingUnbanIds }) {
   const [expanded, setExpanded] = useState(false);
   const isMe = user.id === currentUserId;
   // `admin_list_users` devolve SETOF profiles, então o dado da suspensão já
@@ -166,7 +167,7 @@ function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBa
                     <UserPlus size={12} />Indicar para Admin
                   </button>
                 )}
-                {user.role === 'admin' && isSuperAdmin && (
+                {user.role === 'admin' && podeGerirCargo && (
                   <button onClick={() => { onNominate(user, 'super_admin'); setExpanded(false); }}
                     className="flex items-center gap-1.5 text-xs font-mono text-neon-green/80 hover:text-neon-green border border-neon-green/30 hover:border-neon-green/60 px-3 py-1.5 rounded transition-all">
                     <UserPlus size={12} />Indicar p/ Super Admin
@@ -190,13 +191,13 @@ function UserRow({ user, currentUserId, isSuperAdmin, onNominate, onDemote, onBa
                   <Ban size={12} />Banir usuário
                 </button>
               )}
-              {user.banned && isSuperAdmin && (
+              {user.banned && podeDesbanir && (
                 <button onClick={() => { onUnbanDirect(user); setExpanded(false); }}
                   className="flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
                   <Shield size={12} />Desbanir
                 </button>
               )}
-              {user.banned && !isSuperAdmin && (
+              {user.banned && !podeDesbanir && (
                 hasUnbanPending ? (
                   <span className="flex items-center gap-1.5 text-xs font-mono text-gray-500 border border-dark-400 px-3 py-1.5 rounded cursor-default">
                     <Clock size={12} />Em análise...
@@ -228,6 +229,11 @@ export default function UsersPanel({
   onNominate, onDemote, setBanModal, setUnbanDirectModal, setUnbanReqModal,
   handleDeletePosts, onLiftSuspension, pendingUnbanIds,
 }) {
+  // `[01/10]` `isSuperAdmin` continua descendo porque o `canEdit`/`canBan`
+  // abaixo é HIERARQUIA (quem pode mexer em quem). O que virou capacidade são
+  // os CONTROLES: gerir cargo e desbanir direto — este último é rank 3 porque
+  // o `unban_user` do banco exige `is_super()`, medido.
+  const { can } = usePermissions();
   const searchLower = userSearch.toLowerCase();
   const filteredUsers = users.filter(u => {
     const matchSearch = !searchLower || u.username.toLowerCase().includes(searchLower);
@@ -275,7 +281,9 @@ export default function UsersPanel({
         </div>
       ) : filteredUsers.map(u => (
         <UserRow key={u.id} user={u} currentUserId={currentUserId}
-          isSuperAdmin={isSuperAdmin} onNominate={onNominate} onDemote={onDemote}
+          isSuperAdmin={isSuperAdmin}
+          podeGerirCargo={can('manage_roles')} podeDesbanir={can('unban_users')}
+          onNominate={onNominate} onDemote={onDemote}
           onBanClick={u => setBanModal(u)}
           onUnbanDirect={u => setUnbanDirectModal(u)}
           onRequestUnban={u => setUnbanReqModal(u)}

@@ -35,6 +35,36 @@
 
 ## 🔄 EM EXECUÇÃO
 
+
+### ⬜ `[01/10]` RADAR DE PAUTAS — EVOLUÇÃO PARA DESCOBERTA (auditoria iniciada)
+
+**Pedido dele em 01/10.** O radar hoje responde *"o que as fontes que escolhemos
+publicaram?"*. Ele quer que responda também *"o que está começando a pegar fogo
+agora e interessa ao GamerHub?"*.
+
+**Ele deixou explícito** (2º prompt): GTA 6, Marvel e afins são **só exemplos de
+teste**. Nada de palavra-chave, fonte, peso ou tratamento especial para assunto
+nenhum — o motor tem de ser **genérico** para as 9 editorias.
+
+**Medido no banco em 01/10:** 15 fontes (13 ativas) · 212 `news_items_raw`,
+todos das últimas 24h · `processado` = 0 em todos (a coluna existe e **ninguém
+a usa**) · 4 artigos · `news_tags` e `news_article_tags` **vazias**.
+
+**O que ele pediu ANTES de qualquer código:** auditoria da arquitetura atual
+(12 pontos), avaliação técnica comparada de fontes de descoberta (Brave News,
+NewsAPI, GDELT, Google Trends, YouTube Data, Reddit), e uma primeira entrega
+com 6 partes — diagnóstico, arquitetura, tabela de fontes, mudanças
+necessárias, rollout incremental e critérios de sucesso.
+
+**Princípio que não pode cair:** descoberta ≠ evidência ≠ análise ≠ decisão
+editorial. A IA agrupa e sugere; ela **não** é fonte. Classificação obrigatória
+dos sinais: confirmado · relato · rumor · vazamento · tendência · discussão.
+Sem "score mágico" — se houver ordenação, ela é explicável por sinal.
+
+**Estado:** auditoria começada (banco e arquivos medidos, acima). A entrega das
+6 partes **ainda não foi feita** — é o próximo bloco depois do `can()`.
+
+---
 ### ✅ `[25/09]` AS DUAS PERGUNTAS DELE — respondidas E implementadas
 
 Ele aprovou as duas recomendações e mandou fazer. O que entrou:
@@ -2561,8 +2591,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->169<!--/n--> arq ·
-  <!--n:src.lib.linhas-->20.263<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->171<!--/n--> arq ·
+  <!--n:src.lib.linhas-->20.579<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
