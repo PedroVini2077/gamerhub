@@ -784,6 +784,37 @@ o que já está lá.
 
 `.github/workflows/ci.yml`, a cada PR e push na `main`:
 
+> ### `[01/10]` Todo job tem TETO DE TEMPO — e o padrão do GitHub não serve
+>
+> Os seis jobs estavam **sem `timeout-minutes`**, e o padrão do GitHub nesse
+> caso é **seis horas**. Em 01/10 o job do painel ficou **26 minutos parado em
+> "Instalar o Chromium do Playwright"** — download de dependência, antes de
+> qualquer teste rodar. Não era o site (que respondia em 0,2–0,5 s), não era o
+> código, e não era fila: só havia aquela execução no repositório.
+>
+> Sem teto, aquilo seguraria o PR a tarde inteira, e o sintoma seria
+> indistinguível de "o CI está lento hoje".
+>
+> | job | teto | normal |
+> | --- | --- | --- |
+> | `qualidade` · `fumaca` · `fluxos` | 20 min | ~5 min |
+> | `painel` | 25 min | ~5–8 min |
+> | `documentacao` | 10 min | < 1 min |
+> | `deploys` | 5 min | < 1 min |
+>
+> **Os tetos são 3–4× o tempo normal, de propósito.** Teto que dispara no uso
+> normal vira ruído, e ruído ensina a ignorar o canal (§0.2, 4ª regra). O que
+> ele corta é travamento, não lentidão.
+>
+> **Como diagnosticar um job demorado**, porque o log só aparece quando ele
+> termina e isso é o que me enganou por 20 minutos:
+>
+> ```bash
+> # em QUAL passo ele está — a API de jobs mostra, o log não
+> curl -sS "https://api.github.com/repos/PedroVini2077/gamerhub/actions/runs/<ID>/jobs" \
+>   | python3 -c "import sys,json;[print(s['status'], s['name']) for j in json.load(sys.stdin)['jobs'] for s in j['steps']]"
+> ```
+
 - `lint` (0 erros) · `npm test` · `build` · `npm audit --audit-level=high`
 - **piso de <!--n:testes.piso-->480<!--/n--> testes** — o CI quebrando é o caso
   fácil, fica vermelho e alguém olha; o perigoso é ele **passar sem testar
@@ -1314,7 +1345,7 @@ Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
 linhas"* num projeto de <!--n:src.arquivos-->476<!--/n--> arquivos e
-<!--n:src.linhas-->53.771<!--/n--> linhas.
+<!--n:src.linhas-->53.852<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1363,7 +1394,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->28.927<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->29.020<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 

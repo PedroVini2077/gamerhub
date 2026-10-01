@@ -103,6 +103,28 @@ entrou como 2º coletor, ao lado do RSS.
 > o título, e mandar os dois ao modelo custaria duas vezes o mesmo fato no
 > pedido com teto medido. O `lerFeed` passou a descartar resumo redundante —
 > regra genérica, com trava nos dois sentidos.
+>
+> ### 🟠 `[01/10]` 3º clique: o Google News deu `HTTP 503` — causa DESCONHECIDA
+>
+> O radar entregou de novo (170 manchetes de 13 feeds, pautas boas: QSSR do
+> PS5 com 4 veículos, Steam Autumn Sale, Gears of War). Mas as duas buscas
+> amplas voltaram `503`.
+>
+> **Descartado medindo:** não é o `User-Agent` — daqui o Google News responde
+> `200` em 1 s com três UAs, inclusive o nosso exato.
+>
+> **Em aberto:** instabilidade do serviço × bloqueio do IP de datacenter da
+> Edge Function. A segunda é a mesma classe da GDELT. **Um clique não
+> decide**, e eu não alcanço os logs da Edge Function daqui.
+>
+> **O que entrou:** retentativa única para `5xx` (semântica do HTTP), com
+> `429`/`4xx` explicitamente de fora. Se as duas falharem, a tela diz *"503
+> nas duas tentativas"*.
+>
+> **O gatilho:** se o próximo clique der `503 nas duas` de novo, a conclusão
+> vira **bloqueio**, e aí as saídas são (a) desligar as buscas e fechar a Fase
+> 1 só com os 13 feeds, ou (b) uma fonte de descoberta que identifique por
+> CHAVE e não por IP — que é a lição de hoje aplicada à escolha seguinte.
 
 > **Falta a Fase 2:** agrupamento em evento + classificação de confiabilidade.
 
@@ -1153,7 +1175,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**53 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1472,6 +1494,19 @@ AGORA** escrito nele.
 > `db/2026-09-10-auditoria-seguranca.md`.
 
 ## 🟡 ACHADOS OPERACIONAIS — `[10/09]`
+
+- ⬜ `[01/10]` 🔵 **Cachear o Chromium do Playwright, SE travar de novo.**
+  *Achado de hoje, e o gatilho é objetivo.* O job `painel de admin` ficou
+  **115 minutos** parado em "Instalar o Chromium do Playwright" — download de
+  dependência, antes de qualquer teste. Não era o site (respondia em 0,2 s),
+  não era o código, não era fila (só havia aquela execução). Os outros dois
+  jobs de navegador levaram 3 e 6 min no mesmo run.
+  **Já tratado:** todos os 6 jobs ganharam `timeout-minutes` (eram **zero**,
+  e o padrão do GitHub é SEIS HORAS). Agora ele falha em 25 min dizendo o que
+  é, em vez de travar.
+  **Não fiz o cache** porque foi a 1ª vez em meses e `actions/cache` é
+  manutenção permanente para um problema que pode ter sido instabilidade da
+  CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
 
 - ⬜ `[01/10]` 🟠 **RETENÇÃO HÍBRIDA: tempo + quantidade, em lote.** *Pedido
   dele em 01/10, mandado GRAVAR e começar "quando fizer sentido".* Teto de
@@ -2719,7 +2754,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->173<!--/n--> arq ·
-  <!--n:src.lib.linhas-->21.435<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->21.516<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

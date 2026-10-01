@@ -36,7 +36,7 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Groq** (requisições) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
 | **Groq** (**tokens por minuto**) | tokens de UMA requisição, entrada + `max_tokens` | **8.000** (`on_demand`) | `HTTP 413`: a requisição é recusada inteira | Sim, desde 25/09 — mas ver o quadro abaixo |
 | ~~**GDELT**~~ | requisições **por IP** | 1 a cada 5 s | **`[01/10]` DESLIGADA no mesmo dia** — ver o quadro abaixo | — |
-| **Google News RSS** (busca ampla) | nada observado | — | — | a falha vira `comFalha`, como qualquer feed |
+| **Google News RSS** (busca ampla) | não documentado | — | **`[01/10]` `HTTP 503` da Edge Function** no 1º clique; daqui responde 200 em 1 s | Sim — `comFalha` diz o motivo e **que já tentou duas vezes** |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
@@ -238,6 +238,33 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > qualidade de feed, não tratamento para um fornecedor, e os 13 feeds reais
 > mantêm os resumos deles (medido: 15 de 15 em Canaltech, PC Gamer e
 > GameSpot).
+>
+> ### ⚠️ `[01/10]` E o 1º clique com ele deu `HTTP 503` — causa ainda DESCONHECIDA
+>
+> ```
+> Sem resposta: Busca ampla · tecnologia e geek (HTTP 503)
+>             · Busca ampla · games (HTTP 503)
+> ```
+>
+> **O que eu descartei, medindo:** não é o `User-Agent`. Daqui o Google News
+> responde `200` em 1 s com **três** UAs diferentes — o nosso exato, nenhum, e
+> um de navegador. Bom ter medido antes de "consertar" o que não estava
+> quebrado.
+>
+> **O que eu NÃO sei, e um clique não decide:** se é instabilidade do serviço
+> ou bloqueio do IP de datacenter da Edge Function. A segunda hipótese é a
+> mesma classe da GDELT, e seria irônica — mas é hipótese (§1.1).
+>
+> **O que entrou, e vale independente da causa:** uma **retentativa** para
+> `5xx`. Pela definição do HTTP, `5xx` é *"o servidor falhou, tente de novo"*,
+> e nós desistíamos na primeira. **Só `5xx`:** repetir um `429` gasta mais da
+> cota que o servidor acabou de dizer que esgotou — foi assim que a GDELT
+> morreu —, e `403`/`404` são decisão deliberada que insistir não muda.
+>
+> **É UMA tentativa extra, não um laço.** Se as duas falharem, a fonte entra em
+> `comFalha` dizendo *"HTTP 503 nas duas tentativas"* — e isso também é
+> diagnóstico: duas falhas seguidas são evidência melhor do que uma. O próximo
+> clique diz se era soluço ou se é bloqueio.
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em

@@ -5,7 +5,8 @@ import {
   lerGdelt, dataDaGdelt, coletarDasApis,
   ESPACO_ENTRE_CONSULTAS_MS, TETO_DE_CONSULTAS, TIMEOUT_DA_CONSULTA_MS,
 } from '../../../supabase/functions/radar-de-pautas/gdelt.ts';
-import { coletarTudo } from '../../../supabase/functions/radar-de-pautas/coleta.ts';
+import { coletarTudo, ehTransitorio, ESPERA_DA_RETENTATIVA_MS }
+  from '../../../supabase/functions/radar-de-pautas/coleta.ts';
 import { lerFeed } from '../../../supabase/functions/radar-de-pautas/rss.ts';
 
 /**
@@ -328,6 +329,86 @@ describe('os dois coletores convivem — e um nao derruba o outro', () => {
       [{ id: 'x', nome: 'Fonte torta', url: 'https://x.com', tipo: 'scraping' }],
       async () => ({ ok: true, status: 200, texto: RSS }), async () => {});
     expect(comFalha[0].motivo).toMatch(/tipo "scraping" nao tem coletor/);
+  });
+});
+
+describe('`[01/10]` retentativa SO para erro transitorio', () => {
+  // ── O caso que produziu isto ─────────────────────────────────────────────
+  //
+  // 1o clique com o Google News: as duas consultas voltaram `HTTP 503` da
+  // Edge Function. Daqui elas respondem 200 em 1 s — medido com TRES
+  // User-Agents, inclusive o nosso exato, entao nao e o UA.
+  //
+  // Causa desconhecida (instabilidade? bloqueio de IP de datacenter?), e um
+  // clique nao decide. Mas `5xx` significa, pela definicao do HTTP, "o
+  // servidor falhou, tente de novo" — e nos desistiamos na primeira.
+
+  const fonteRss = [{ id: 'f1', nome: 'Feed', url: 'https://feed.com/rss', tipo: 'rss' }];
+  const RSS = '<rss><item><title>Veio</title><link>https://x.com/a</link></item></rss>';
+
+  it('`5xx` repete UMA vez; `4xx` nao repete nenhuma', () => {
+    // A linha que impede a retentativa de virar abuso: 429 e cota, e repetir
+    // gasta mais do recurso que ja acabou — foi o que derrubou a GDELT. 403 e
+    // 404 sao decisao deliberada: insistir nao muda a resposta.
+    expect(ehTransitorio(503)).toBe(true);
+    expect(ehTransitorio(500)).toBe(true);
+    expect(ehTransitorio(502)).toBe(true);
+    for (const naoRepete of [429, 403, 404, 400, 401, 200]) {
+      expect(ehTransitorio(naoRepete), `${naoRepete} NAO pode ser repetido`).toBe(false);
+    }
+  });
+
+  it('o 503 que PASSA na segunda entrega os itens', () => {
+    expect(ESPERA_DA_RETENTATIVA_MS).toBeGreaterThan(0);
+  });
+
+  it('503 na 1a e 200 na 2a: a fonte entrega', async () => {
+    let n = 0;
+    const esperas = [];
+    const { itens, comFalha } = await coletarTudo(fonteRss,
+      async () => (++n === 1
+        ? { ok: false, status: 503, texto: '' }
+        : { ok: true, status: 200, texto: RSS }),
+      async (ms) => { esperas.push(ms); });
+
+    expect(n, 'nao houve segunda tentativa — 5xx e "tente de novo" por definicao')
+      .toBe(2);
+    expect(esperas).toEqual([ESPERA_DA_RETENTATIVA_MS]);
+    expect(itens, 'a fonte voltou na 2a tentativa e mesmo assim nao entregou')
+      .toHaveLength(1);
+    expect(comFalha).toEqual([]);
+  });
+
+  it('429 NAO repete — repetir cota e gastar o que ja acabou', async () => {
+    let n = 0;
+    await coletarTudo(fonteRss,
+      async () => { n++; return { ok: false, status: 429, texto: '' }; },
+      async () => {});
+    expect(n, 'o 429 foi repetido. Isso gasta mais da cota que o servidor '
+      + 'acabou de dizer que esgotou — foi assim que a GDELT morreu.').toBe(1);
+  });
+
+  it('503 NAS DUAS: a mensagem diz que ja tentou duas vezes', async () => {
+    // "HTTP 503" parece solucao; "503 nas duas" e sintoma. A diferenca muda o
+    // que quem le a tela conclui.
+    const { comFalha } = await coletarTudo(fonteRss,
+      async () => ({ ok: false, status: 503, texto: '' }), async () => {});
+    expect(comFalha[0].motivo).toMatch(/nas duas tentativas/);
+  });
+
+  it('a retentativa de um feed NAO segura os outros doze', async () => {
+    // Os feeds vao em `Promise.all`: no pior caso a coleta custa UMA volta de
+    // rede a mais, nao treze.
+    const muitos = Array.from({ length: 13 }, (_, i) =>
+      ({ id: `f${i}`, nome: `Feed ${i}`, url: `https://f${i}.com/rss`, tipo: 'rss' }));
+    let emVoo = 0, pico = 0;
+    await coletarTudo(muitos, async () => {
+      emVoo++; pico = Math.max(pico, emVoo);
+      await Promise.resolve();
+      emVoo--;
+      return { ok: true, status: 200, texto: RSS };
+    }, async () => {});
+    expect(pico, 'os feeds deixaram de ir em paralelo').toBeGreaterThan(1);
   });
 });
 
