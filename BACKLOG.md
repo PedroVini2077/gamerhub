@@ -1288,7 +1288,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**56 itens abertos** (+ 1 ideia sem compromisso)
+**57 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2626,6 +2626,39 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[01/10]` **O deploy das Edge Functions depende de DUAS cotas por IP de
+  terceiro, e as duas estouraram no mesmo minuto.** *Medido no deploy da Fase
+  3, que falhou e só passou na 2ª tentativa.*
+
+  ```
+  tentativa 1 · supabase/setup-cli@v1
+      Failed to resolve latest Supabase CLI release: rate limit exceeded
+  tentativa 2 · o mesmo job, ao baixar a imagem do runtime
+      toomanyrequests: Rate exceeded
+      Retrying after 4s: public.ecr.aws/supabase/edge-runtime:v1.77.1
+  ```
+
+  **É a mesma classe que matou a GDELT** (`docs/regras/COTAS.md`): teto por IP,
+  e o runner do GitHub compartilha IP com o mundo. A diferença é que aqui dá
+  para sair da fila — **`version: latest` pergunta à API do GitHub, sem
+  autenticar; versão fixa não pergunta nada.**
+
+  | | |
+  | --- | --- |
+  | o conserto | trocar `version: latest` por um número em `.github/workflows/implantar-edges.yml` |
+  | de brinde | o que vai para produção para de mudar sozinho quando a Supabase publicar release |
+  | o 2º caso (imagem do ECR) | **se resolve sozinho** — o CLI já retenta, e retentou com sucesso. Não mexer |
+
+  **Por que eu NÃO fiz, e é §1.1:** eu cheguei a escrever `version: 2.58.0` e
+  apaguei — **o número é um chute**. Este ambiente não alcança a API do GitHub
+  para outros repositórios (o proxy recusa), e o log do deploy não imprime a
+  versão que resolveu. Pinar um número que eu não conferi quebraria o deploy
+  inteiro, que é pior do que a falha transitória que ele conserta.
+
+  **O que resolve:** abrir https://github.com/supabase/cli/releases e me passar
+  o número da última — ou mandar que eu use a `v1` da action com um token, que
+  é a outra saída e eu também não consegui conferir daqui.
 
 - ⬜ `[01/10]` **A regra de FAIXA (`docs/regras/BANCO.md`) não cobre ARRAY nem
   texto que vira PADRÃO DE BUSCA.** *Proposta de mudança em regra — §6.2 exige
