@@ -20,7 +20,7 @@
 // o caso esperado dela. Os dois viram linha em `comFalha` e a coleta segue.
 
 import { lerFeed, type ItemBruto } from "./rss.ts";
-import { coletarDasApis, type Falha } from "./gdelt.ts";
+import { coletarDasApis, TIMEOUT_DA_CONSULTA_MS, type Falha } from "./gdelt.ts";
 
 export const TETO_POR_FEED = 15;
 export const TIMEOUT_DO_FEED = 10_000;
@@ -28,10 +28,19 @@ export const TIMEOUT_DO_FEED = 10_000;
 export type Fonte = { id: string; nome: string; url: string; tipo: string };
 export type ItemColetado = ItemBruto & { fonte_id: string; fonte_nome: string };
 
-/** O `fetch` de verdade, no formato que `coletarDasApis` espera. */
-export async function buscarTexto(url: string) {
+/**
+ * O `fetch` de verdade. O TIMEOUT depende de quem está do outro lado.
+ *
+ * `[01/10]` Um só não serve: site de RSS responde em 1–3 s e a GDELT levou
+ * **12 s só para devolver um `429`** (medido duas vezes). Com o teto do RSS
+ * ela estourava sempre — e foi o que o primeiro clique real mostrou.
+ *
+ * Esticar o teto do RSS junto seria pior: feed morto passaria a prender o
+ * editor por 20 s em vez de 10, e são treze deles.
+ */
+export async function buscarTexto(url: string, tetoMs = TIMEOUT_DO_FEED) {
   const r = await fetch(url, {
-    signal: AbortSignal.timeout(TIMEOUT_DO_FEED),
+    signal: AbortSignal.timeout(tetoMs),
     headers: { "User-Agent": "GamerHubNews/1.0 (+https://gamerhub.com.br)" },
   });
   return { ok: r.ok, status: r.status, texto: await r.text() };
@@ -72,7 +81,7 @@ async function coletarDosFeeds(
  */
 export async function coletarTudo(
   fontes: Fonte[],
-  buscar = buscarTexto,
+  buscar: (url: string, tetoMs?: number) => Promise<{ ok: boolean; status: number; texto: string }> = buscarTexto,
   esperar = dormir,
 ): Promise<{ itens: ItemColetado[]; comFalha: Falha[] }> {
   const feeds = fontes.filter((f) => f.tipo === "rss");
@@ -81,7 +90,7 @@ export async function coletarTudo(
 
   const [doRss, daApi] = await Promise.all([
     coletarDosFeeds(feeds, buscar),
-    coletarDasApis(apis, buscar, esperar),
+    coletarDasApis(apis, (u) => buscar(u, TIMEOUT_DA_CONSULTA_MS), esperar),
   ]);
 
   const comFalha = [...doRss.comFalha, ...daApi.comFalha];

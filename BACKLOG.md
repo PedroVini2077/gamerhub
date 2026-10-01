@@ -77,6 +77,25 @@ entrou como 2º coletor, ao lado do RSS.
 > verdade responde. Por isso o `429` é tratado como caso ESPERADO — vira linha
 > em `comFalha`, a tela diz, e o RSS segue intacto.
 >
+> ### `[01/10]` O 1º clique real: o radar FUNCIONOU, a GDELT não entrou
+>
+> 170 manchetes de 15 fontes, Groq aceitou, pautas agrupadas (uma com 4
+> veículos), endereços resolvidos por número, **zero erro** em `admin_logs`.
+>
+> A GDELT deu `Signal timed out.` nas duas consultas — **não o `429` que eu
+> previ**. Ela leva 10–12 s só para recusar, e herdava os 10 s do RSS.
+> Corrigido: timeout próprio de 20 s e teto de 1 consulta por clique.
+>
+> **🟠 O gatilho que decide o próximo passo, e ele é objetivo:** se no próximo
+> clique a GDELT estourar DE NOVO com 20 s, a conclusão deixa de ser "ajustar
+> o teto" e passa a ser **"ela não cabe dentro do clique"**. A saída então é
+> `EdgeRuntime.waitUntil()`: coletar em segundo plano e os itens aparecerem no
+> clique seguinte, já que `news_items_raw` é persistente e existe para isso.
+> Custo: ~1 dia de trabalho; ganho: zero espera para o editor e a GDELT com
+> todo o tempo que precisar. **Não comecei porque ainda não há evidência de
+> que seja necessário** — e porque, se ela responder em 20 s, o desenho atual
+> é mais simples e já está de pé.
+
 > **Falta a Fase 2:** agrupamento em evento + classificação de confiabilidade.
 
 > ### 🔴 `[01/10]` ANTES DA FASE 1: o radar nunca funcionou em produção
@@ -2692,7 +2711,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->173<!--/n--> arq ·
-  <!--n:src.lib.linhas-->21.287<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->21.354<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
