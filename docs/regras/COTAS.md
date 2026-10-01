@@ -33,7 +33,8 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Sentry** | eventos por mês | 5.000 | **descarta em silêncio** | Parcial, desde 27/08 |
 | **Gmail** (send-email) | envios por dia | ~500 | cadastro e recuperação de senha param | Sim, desde 23/08 (`admin_logs`) |
 | **Safe Browsing** | consultas por dia | 10.000 | link deixa de ser checado | Sim, desde 23/08 (`admin_logs`) |
-| **Groq** (redigir-materia) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
+| **Groq** (requisições) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
+| **Groq** (**tokens por minuto**) | tokens de UMA requisição, entrada + `max_tokens` | **8.000** (`on_demand`) | `HTTP 413`: a requisição é recusada inteira | Sim, desde 25/09 — mas ver o quadro abaixo |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
@@ -49,6 +50,39 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > tem cota e não custa nada — o que conta é o mesmo teto da Groq. E ele também
 > não multiplica: só `is_staff()` alcança, e é um clique de editor, não um por
 > visitante. A pergunta da regra 2 foi feita **antes** de ligar.
+
+>
+> ### ⚠️ `[01/10]` A pergunta da regra 2 foi feita, e ela era a PERGUNTA ERRADA
+>
+> A linha da Groq dizia só *"requisições por dia"*, e eu tinha escrito, duas
+> vezes, que a pergunta da regra 2 *"foi feita antes de ligar"*. Foi. **E a
+> resposta certa para a pergunta errada não protege de nada.**
+>
+> O radar falhou em **7 de 7 chamadas** entre 26 e 28/09 — quer dizer, nunca
+> funcionou em produção. Nenhuma delas chegou perto do teto diário. O que
+> estourou foi um segundo medidor que não estava nesta tabela:
+>
+> ```
+> Request too large for model `openai/gpt-oss-120b` ... service tier
+> `on_demand` on tokens per minute (TPM): Limit 8000, Requested 9231
+> ```
+>
+> Dois detalhes que decidem o conserto, e nenhum é óbvio:
+> **(a)** é teto por minuto aplicado a **uma requisição só** — pedido grande
+> demais é recusado mesmo com a janela inteira livre; e **(b)** a Groq soma o
+> **`max_tokens`** ao que você pediu, então os 2.500 reservados para a resposta
+> contavam contra os mesmos 8.000.
+>
+> **A regra 2 ganha uma segunda metade, e é o que esta sessão aprendeu:**
+> depois de *"quantas vezes por dia?"*, perguntar **"e quanto cabe de uma
+> vez?"**. Serviço que cobra por volume tem os dois medidores, e o de volume
+> morde primeiro em qualquer coisa que mande texto longo — moderação de lote,
+> resumo, tradução, embedding.
+>
+> *Registrado aqui porque a frase errada não era inofensiva: uma tabela que se
+> apresenta como o inventário do que cada serviço conta deixa de ser verdade
+> para quem a lê — inclusive para mim, que a reli em 26/09 montando o radar e
+> conferi que a conta de requisições fechava.*
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em

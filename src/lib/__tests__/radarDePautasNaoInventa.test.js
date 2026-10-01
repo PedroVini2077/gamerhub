@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { lerFeed, fatiaJusta } from '../../../supabase/functions/radar-de-pautas/rss.ts';
+import {
+  INSTRUCAO, ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
+  orcamentoDaLista, TPM_DO_PLANO, RESERVA_DE_SAIDA, CHARS_POR_TOKEN,
+  RESUMO_PARA_O_MODELO,
+} from '../../../supabase/functions/radar-de-pautas/pedido.ts';
 
 /**
  * `[26/09]` O radar de pautas não pode inventar notícia nem fonte.
@@ -28,28 +33,170 @@ if (FONTE.length < 3000) {
     + '  passariam verde sem ter lido uma linha do que vigiam.');
 }
 
-describe('a fonte de cada pauta e REAL', () => {
-  it('a funcao monta um conjunto fechado com os enderecos coletados', () => {
-    expect(FONTE, 'o conjunto `enderecosValidos` sumiu da Edge Function. Ele e o '
-      + 'que impede o modelo de citar uma URL que ele mesmo escreveu: sem ele, '
-      + '"fontes confiaveis" vira promessa do prompt, e basta o modelo inventar '
-      + 'um endereco plausivel de um site conhecido para ele chegar na tela.')
-      .toMatch(/enderecosValidos\s*=\s*new Set\(/);
-    expect(FONTE, 'o conjunto existe mas ninguem o consulta').toMatch(/enderecosValidos\.has\(/);
+/** Monta um item como o que sai do RSS, com fonte e id. */
+const item = (n, extra = {}) => ({
+  titulo: `Manchete ${n}`,
+  url: `https://fonte${n % 3}.com/noticia-${n}`,
+  resumo: `resumo ${n} `.repeat(60).slice(0, 400),   // 400 chars, como o limpar()
+  publicado_em: null,
+  fonte_id: `f${n % 3}`,
+  fonte_nome: `Fonte ${n % 3}`,
+  ...extra,
+});
+
+describe('a fonte de cada pauta e REAL — e agora por CONSTRUCAO', () => {
+  // ── A mudanca, e por que ela e mais forte do que o filtro antiga ─────────
+  //
+  // Antes: o modelo devolvia URLs e nos descartavamos as que nao estavam no
+  // conjunto coletado. Funcionava — pegou 1 endereco inventado em producao,
+  // em 28/09. Mas a garantia dependia do filtro existir e ser consultado.
+  //
+  // Agora: o modelo devolve NUMERO. Nao ha campo onde escrever um endereco, e
+  // a URL sai do item que nos mesmos mandamos. Citar fonte que nao existe
+  // deixou de ser algo que se filtra e passou a ser algo que nao cabe.
+
+  const usados = [item(1), item(2), item(3)];
+
+  it('resolve o numero no endereco REAL, e o modelo nao escreve endereco nenhum', () => {
+    const { pautas, foraDaLista } = resolverPautas(
+      { pautas: [{ titulo: 'T', angulo: 'A', editoria: 'gaming', por_que_agora: 'P', itens: [1, 3] }] },
+      usados, 8,
+    );
+    expect(foraDaLista).toBe(0);
+    expect(pautas[0].urls).toEqual([usados[0].url, usados[2].url]);
   });
 
-  it('pauta que perdeu todas as fontes e DESCARTADA', () => {
-    // Deixar passar a pauta sem URL seria pior do que nao ter guarda nenhuma:
-    // ela chegaria na tela com titulo e angulo, parecendo apurada, e sem nada
-    // que o editor pudesse abrir para conferir.
-    expect(FONTE, 'a pauta sem nenhuma fonte valida voltou a ser aceita').
-      toMatch(/if\s*\(!urls\.length\)\s*return \[\]/);
+  it('ignora QUALQUER endereco que o modelo tente mandar por fora', () => {
+    // Se um dia o modelo resolver devolver `urls` apesar da instrucao, nada
+    // disso pode chegar na tela: o resolvedor so olha `itens`.
+    const { pautas } = resolverPautas({
+      pautas: [{
+        titulo: 'T', angulo: 'A', editoria: 'gaming', por_que_agora: 'P',
+        itens: [2], urls: ['https://www.ign.com/noticia-que-nao-existe'],
+      }],
+    }, usados, 8);
+    expect(pautas[0].urls, 'o endereco inventado entrou na resposta. Ele e '
+      + 'indistinguivel de apuracao do lado de quem le.').toEqual([usados[1].url]);
   });
 
-  it('o descarte GRITA em vez de acontecer em silencio', () => {
-    // Modelo inventando endereco e sinal de que o prompt parou de segurar.
-    // Descartar calado esconderia a degradacao (§1.5).
-    expect(FONTE).toMatch(/inventados\s*>\s*0[\s\S]{0,200}gritar\(/);
+  it('numero fora da faixa, texto e lixo contam como fora da lista', () => {
+    const { pautas, foraDaLista } = resolverPautas({
+      pautas: [{ titulo: 'T', angulo: 'A', editoria: 'g', por_que_agora: 'p',
+        itens: [1, 99, 0, -2, 'tres', null, 2.5] }],
+    }, usados, 8);
+    expect(foraDaLista, 'indice invalido passou como se fosse fonte').toBe(6);
+    expect(pautas[0].urls).toEqual([usados[0].url]);
+  });
+
+  it('pauta que perdeu TODAS as fontes e DESCARTADA', () => {
+    // Deixar passar seria pior do que nao ter guarda: ela chegaria na tela
+    // com titulo e angulo, parecendo apurada, e sem nada que o editor
+    // pudesse abrir para conferir.
+    const { pautas, foraDaLista } = resolverPautas(
+      { pautas: [{ titulo: 'Parece apurada', angulo: 'A', itens: [42] }] }, usados, 8,
+    );
+    expect(pautas).toEqual([]);
+    expect(foraDaLista).toBe(1);
+  });
+
+  it('o mesmo numero citado duas vezes nao vira duas fontes', () => {
+    const { pautas } = resolverPautas(
+      { pautas: [{ titulo: 'T', angulo: 'A', itens: [2, 2, 2] }] }, usados, 8,
+    );
+    expect(pautas[0].urls).toHaveLength(1);
+  });
+
+  it('resposta sem `pautas`, nula ou com lixo nao estoura', () => {
+    for (const r of [{}, null, { pautas: 'nao e lista' }, { pautas: [null, 7] }]) {
+      expect(() => resolverPautas(r, usados, 8)).not.toThrow();
+      expect(resolverPautas(r, usados, 8).pautas).toEqual([]);
+    }
+  });
+
+  it('as NOTAS levam o resumo INTEIRO, nao o cortado que o modelo viu', () => {
+    // O corte em 160 existe para o orcamento do pedido. As notas sao o que a
+    // `redigir-materia` exige para escrever — cortar ali empobreceria o
+    // rascunho por um motivo que nao tem nada a ver com ele.
+    const { pautas } = resolverPautas({ pautas: [{ titulo: 'T', itens: [1] }] }, usados, 8);
+    expect(usados[0].resumo.length).toBe(400);
+    expect(pautas[0].notas).toContain(usados[0].resumo);
+  });
+});
+
+describe('o ORCAMENTO do pedido — a trava do HTTP 413', () => {
+  // ── O defeito que ela conserta, e ele esta MEDIDO em admin_logs ──────────
+  //
+  // O radar falhou em 7 de 7 chamadas entre 26 e 28/09. O corpo do erro da
+  // Groq, gravado por `gritar()`:
+  //
+  //   "Request too large ... on tokens per minute (TPM): Limit 8000,
+  //    Requested 9231, please reduce your message size"
+  //
+  // Nao era corpo HTTP grande demais: era o teto por MINUTO batido por uma
+  // requisicao so — e a Groq soma o `max_tokens` ao que voce pediu.
+
+  const estimarTokens = (chars) => Math.ceil(chars / CHARS_POR_TOKEN);
+
+  it('o pedido INTEIRO cabe no teto por minuto, com folga', () => {
+    const pedido = estimarTokens(INSTRUCAO.length + ORCAMENTO_DA_LISTA) + RESERVA_DE_SAIDA;
+    expect(pedido, `o pedido maximo estimado e ${pedido} tokens e o teto do plano `
+      + `e ${TPM_DO_PLANO}. A Groq responde HTTP 413 e o radar nao ordena nada — `
+      + 'foi assim em 7 de 7 chamadas entre 26 e 28/09. Reduza RESERVA_DE_SAIDA, '
+      + 'encurte a INSTRUCAO, ou baixe FOLGA em supabase/functions/radar-de-pautas/'
+      + 'pedido.ts.').toBeLessThanOrEqual(TPM_DO_PLANO);
+  });
+
+  it('a lista NUNCA passa do orcamento, nem com item patologico', () => {
+    // Fonte que comece a devolver resumo gigante nao pode derrubar o radar:
+    // o certo e entrar menos item, nao estourar o pedido.
+    const monstros = Array.from({ length: 200 }, (_, n) =>
+      item(n, { titulo: 'T'.repeat(300), resumo: 'R'.repeat(400) }));
+    const { lista, usados, chars } = montarPedido(monstros, ORCAMENTO_DA_LISTA);
+    expect(chars).toBeLessThanOrEqual(ORCAMENTO_DA_LISTA);
+    expect(lista.length).toBeLessThanOrEqual(ORCAMENTO_DA_LISTA);
+    expect(usados.length).toBeGreaterThan(0);
+  });
+
+  it('com o conteudo REAL medido no banco, os 60 itens ainda cabem', () => {
+    // Medido em 01/10 sobre `news_items_raw`: titulo medio 77 chars, resumo
+    // medio 238. Se um dia nao couberem mais, isto falha e me obriga a olhar
+    // em vez de o radar degradar calado.
+    const reais = Array.from({ length: 60 }, (_, n) =>
+      item(n, { titulo: 'T'.repeat(77), resumo: 'R'.repeat(238) }));
+    const { usados } = montarPedido(reais, ORCAMENTO_DA_LISTA);
+    expect(usados, 'os 60 itens medidos deixaram de caber no orcamento').toHaveLength(60);
+  });
+
+  it('a numeracao e contigua a partir de 1 — e e ela que resolve o endereco', () => {
+    // Se a numeracao da lista nao bater com o indice de `usados`, o modelo
+    // cita o item 5 e nos devolvemos a fonte do 7. Nada estoura: sai uma
+    // pauta com fonte real que nao sustenta ela. E o pior caso possivel.
+    const { lista, usados } = montarPedido([item(1), item(2), item(3)], ORCAMENTO_DA_LISTA);
+    usados.forEach((u, i) => {
+      expect(lista).toContain(`${i + 1}. [${u.fonte_nome}] ${u.titulo}`);
+    });
+    const { pautas } = resolverPautas({ pautas: [{ titulo: 'T', itens: [2] }] }, usados, 8);
+    expect(pautas[0].urls).toEqual([usados[1].url]);
+  });
+
+  it('a lista NAO leva endereco — era 6.027 dos 27.310 chars medidos', () => {
+    const { lista } = montarPedido([item(1), item(2)], ORCAMENTO_DA_LISTA);
+    expect(lista, 'a URL voltou para a lista. Alem de inflar o pedido, ela '
+      + 'ensina o modelo a escrever endereco — que e exatamente o que o '
+      + 'formato por numero existe para impedir.').not.toMatch(/https?:\/\//);
+  });
+
+  it('o resumo vai CORTADO para o modelo', () => {
+    const { lista } = montarPedido([item(1, { resumo: 'R'.repeat(400) })], ORCAMENTO_DA_LISTA);
+    expect(lista).toContain('R'.repeat(RESUMO_PARA_O_MODELO));
+    expect(lista).not.toContain('R'.repeat(RESUMO_PARA_O_MODELO + 1));
+  });
+
+  it('o orcamento e DERIVADO: instrucao maior encolhe a lista', () => {
+    // Se alguem dobrar a instrucao e o orcamento nao reagir, o pedido volta a
+    // estourar — e o numero escrito a mao envelheceria calado.
+    expect(orcamentoDaLista(INSTRUCAO.repeat(4)))
+      .toBeLessThan(orcamentoDaLista(INSTRUCAO));
   });
 });
 
@@ -59,9 +206,13 @@ describe('a porta e o pedido', () => {
     expect(FONTE).toMatch(/ehEquipe\s*!==\s*true[\s\S]{0,200}?403/);
   });
 
-  it('a instrucao proibe assunto fora da lista coletada', () => {
-    expect(FONTE).toMatch(/SOMENTE com as manchetes da lista/);
-    expect(FONTE).toMatch(/nao invente\s*\n?endereco|nao invente endereco/i);
+  it('a instrucao proibe assunto fora da lista, e manda citar por NUMERO', () => {
+    expect(INSTRUCAO).toMatch(/SOMENTE com as manchetes da lista/);
+    expect(INSTRUCAO, 'a instrucao parou de mandar citar por numero. O modelo '
+      + 'volta a escrever endereco, e o resolvedor descarta tudo em silencio — '
+      + 'o radar passa a devolver zero pauta sem dizer por que.')
+      .toMatch(/Cite cada manchete pelo NUMERO/);
+    expect(INSTRUCAO).toMatch(/Nao escreva enderecos/);
   });
 
   it('uma fonte que falha nao derruba as outras', () => {

@@ -533,3 +533,153 @@ agora" passa a significar auditar a superfície pública que já existe — e el
 está em estado melhor do que a primeira versão desta análise dava a entender
 (`robots.txt`, `sitemap.xml` e `MetaDaRota` já existem, com teste de contrato).
 Pré-render, SSR e SSG ficam congelados até haver conteúdo público.
+
+---
+
+## Q. `[01/10]` RADAR DE DESCOBERTA — a auditoria, e o que ela MEDIU
+
+> Pedido dele em 01/10: o radar responde bem *"o que as fontes que escolhemos
+> publicaram?"* e precisa responder também *"o que está começando a pegar fogo
+> agora e interessa ao GamerHub?"*. Ele exigiu auditoria antes de qualquer
+> código — e deixou explícito, num segundo prompt, que os exemplos (GTA 6,
+> Marvel) são **só casos de teste**: nada de palavra-chave, fonte, peso ou
+> tratamento especial para assunto nenhum. O motor é genérico para as 9
+> editorias.
+
+### 1. Diagnóstico — o que está bom, e o que limita
+
+**O que está bom e não deve ser tocado:**
+
+| | |
+| --- | --- |
+| a IA não é fonte | ela recebe o que o sistema coletou e ordena. A `redigir-materia` recusa trabalhar sem notas |
+| a guarda de endereço | URL que o modelo escreve e não veio da coleta é **descartada**, e o descarte grita |
+| a porta | `is_staff()`, não "estar logado" — o que está em jogo é cota de terceiro |
+| falha parcial não perde tudo | IA fora do ar devolve as manchetes cruas com aviso amarelo |
+| a fatia justa | rodízio entre fontes, para a rápida não comer a vaga da boa |
+
+**O que limita, medido no banco em 01/10:**
+
+| | |
+| --- | --- |
+| fontes | 15 cadastradas, **13 ativas** — todas `tipo='rss'` |
+| itens | **212** em `news_items_raw`, **todos das últimas 24h** |
+| `processado` | **0 de 212** — a coluna existe e **ninguém a usa** |
+| `news_tags` / `news_article_tags` | **vazias** |
+| `news_items_raw` | RLS ligada, **0 policies, 0 colunas concedidas** — só a service role alcança |
+| artigos | 4 (3 em revisão, 1 no ar) |
+
+**A limitação de fundo, em uma frase:** o radar só enxerga o que **13 editores
+alheios decidiram publicar**. Se nenhum deles cobrir um assunto, ele não existe
+para o GamerHub — e a lista de itens é **plana**: 60 manchetes soltas, sem
+noção de que 8 delas falam da mesma coisa.
+
+### 2. As fontes de descoberta — MEDIDAS, não escolhidas por preferência
+
+| Fonte | Função | Custo / limite | Qualidade medida | Risco | Recomendação |
+| --- | --- | --- | --- | --- | --- |
+| **GDELT DOC 2.0** | busca + **volume de cobertura** | grátis, **sem chave**. Limite real **1 req / 5 s** — não está na doc, veio de um `429` medido | 4 artigos pt-BR em 72 h (`br.ign.com`, `canaltech`, `pt.ign.com`). `TimelineVol` deu **120 pontos horários em 7 dias** | serialização obrigatória; é cortesia de um projeto acadêmico | **FASE 1** |
+| **Google Trends RSS** | sinal de atenção | grátis, sem chave, HTTP 200 | 10 tendências/BR com tráfego aproximado — **e 0 de 10 eram do nosso escopo hoje** | endpoint não oficial, pode sumir | **FASE 3**, só como sinal anexado |
+| **YouTube Data v3** | sinal de atenção | chave Google; **~100 `search.list`/dia** | não testado — exige chave | mais um segredo para ele criar | **FASE 4** |
+| **Reddit** | sinal de comunidade | **403 sem OAuth** (medido hoje) | — | exige app registrado + segredo | **adiado** |
+| **Brave Search News** | busca | **exige cartão de crédito**; US$ 5 de crédito/mês ≈ 1.000 buscas | não testado | cartão é atrito real para este projeto | **adiado** |
+| **NewsAPI** | busca | grátis = 100 req/dia, **24 h de atraso** | — | **os termos PROÍBEM produção**: *"cannot be used in a staging or production environment"* | **DESQUALIFICADO** |
+
+> **O NewsAPI não foi recusado por gosto.** Ele é proibido por contrato no uso
+> que faríamos dele, e 24 h de atraso é o oposto de *"o que está pegando fogo
+> agora"*. As duas razões são independentes e cada uma basta.
+
+### 3. A medição que decidiu o papel do "trending"
+
+O RSS de tendências do Google para o Brasil, lido em 01/10, trouxe:
+
+> lotofácil · Japão x Equador · energia elétrica · onça-pintada ·
+> Marjorie Estiano · Arnold Schwarzenegger · Alexander Zverev ·
+> previsão do tempo Londrina
+
+**Zero de dez pertencem a qualquer das 9 editorias.** É o Caso D do teste de
+aceitação dele, acontecendo na primeira leitura.
+
+**A conclusão de desenho, e ela é forte:** tendência **nunca** entra como
+fonte de pauta. Ela só pode ser **anexada a um assunto que já veio de uma
+fonte jornalística** — e aí responde "quanta gente está procurando por isto",
+que é outra pergunta. Trending como entrada transformaria o radar numa máquina
+de futebol e loteria.
+
+### 4. Arquitetura proposta — e o que ela recusa
+
+```
+   RSS (13 fontes)        GDELT (busca + volume)        [Fase 3+] Trends/YouTube
+         │                        │                              │
+         └────────────┬───────────┘                              │
+                      ↓                                          │
+               NORMALIZAÇÃO  (título, url, resumo, data, fonte)   │
+                      ↓                                          │
+               DEDUPLICAÇÃO  (url canônica)                       │
+                      ↓                                          │
+          AGRUPAMENTO EM EVENTO  ←───── sinais anexados ──────────┘
+                      ↓
+            IA ORDENA E EXPLICA  (não descobre, não confirma)
+                      ↓
+                 RADAR DE EVENTOS
+                      ↓
+                    EDITOR
+```
+
+**O que a arquitetura recusa, explicitamente:**
+
+- perguntar ao modelo *"o que está acontecendo?"* — ele não tem internet e
+  inventaria;
+- tratar volume de busca como acontecimento;
+- tratar comunidade como confirmação;
+- **score mágico**. Se houver ordenação, ela é a soma de sinais nomeados, e a
+  tela mostra **os sinais**, não o número.
+
+### 5. Classificação de confiabilidade — e ela não se mistura
+
+| | O que significa | De onde pode vir |
+| --- | --- | --- |
+| `confirmado` | fonte oficial ou evidência sólida | anúncio do estúdio/fabricante |
+| `relato` | veículo jornalístico relata | RSS, GDELT |
+| `rumor` | alegação não confirmada | veículo citando "fontes" |
+| `vazamento` | material supostamente vazado | veículo relatando leak |
+| `tendencia` | aumento de atenção | Trends, YouTube |
+| `discussao` | comunidade falando | Reddit, fórum |
+
+**`tendencia` e `discussao` nunca viram `relato` por acumulação.** Muita gente
+falando não é fato — e é por isso que a classificação é um campo próprio, e
+não um número somado aos outros.
+
+### 6. Rollout incremental
+
+| Fase | O que entra | Por que nesta ordem |
+| --- | --- | --- |
+| **1** | GDELT como 2ª fonte de coleta, ao lado do RSS | grátis, sem chave, sem ação do dono, e já responde "o que saiu fora das minhas fontes" |
+| **2** | agrupamento em evento + classificação | é o que impede 20 sites virarem 20 pautas |
+| **3** | `TimelineVol` do GDELT e Trends como **sinal anexado** | só faz sentido quando já existe evento a que anexar |
+| **4** | YouTube / comunidade | exigem segredo novo e ação dele |
+
+### 7. Mudanças necessárias — e o que NÃO muda
+
+| Camada | Fase 1 |
+| --- | --- |
+| banco | **nenhuma migration.** `news_items_raw` já tem `fonte_id` nulável, `url` único e `coletado_em` |
+| Edge Function | `radar-de-pautas` ganha um coletor GDELT ao lado do RSS |
+| frontend | a tela passa a mostrar de onde veio cada item |
+| env | **nada** — GDELT não tem chave |
+| testes | o coletor novo entra na trava que já existe |
+| documentação | esta seção + `OPERACAO.md` |
+
+**Não muda:** RLS, policies, triggers, a porta `is_staff()`, a guarda de
+endereço inventado, o comportamento de falha parcial, nem as 9 editorias.
+
+### 8. Critérios de sucesso, verificáveis
+
+1. o radar traz assunto que **nenhum dos 13 RSS** publicou;
+2. várias fontes sobre o mesmo acontecimento viram **um** evento;
+3. rumor continua marcado como rumor;
+4. nenhuma URL inventada passa;
+5. tendência **nunca** vira pauta sozinha;
+6. GDELT fora do ar **não** derruba o RSS;
+7. IA fora do ar **não** perde a coleta;
+8. nenhuma linha do código cita assunto específico — o motor é genérico.
