@@ -121,12 +121,12 @@ export const TETO_DE_PAUTAS = 8;
 
 /**
  * O custo medido de UMA pauta no JSON: título, ângulo, editoria, "por que
- * agora", **a confiabilidade** (`[01/10]`, Fase 2 — ~6 tokens), os índices e
- * a estrutura em volta. A trava multiplica isto pelo teto
+ * agora", **a confiabilidade** (`[01/10]`, Fase 2 — ~6 tokens), **os termos de
+ * busca** (`[01/10]`, Fase 3 — ~15 tokens), os índices e a estrutura em volta. A trava multiplica isto pelo teto
  * e exige que `RESERVA_DA_RESPOSTA` cubra — é o que transforma "eu acho que
  * cabe" em conta conferida a cada `npm test`.
  */
-export const TOKENS_POR_PAUTA = 170;
+export const TOKENS_POR_PAUTA = 185;
 
 /**
  * `max_tokens`: a resposta **mais** o raciocínio, que dividem o mesmo teto.
@@ -225,6 +225,7 @@ export type Pauta = {
   editoria: string;
   por_que_agora: string;
   confiabilidade: string;
+  termos: string[];
   urls: string[];
   notas: string;
 };
@@ -278,6 +279,12 @@ export function resolverPautas(
       // nenhum: melhor sem rótulo do que com rótulo que ninguém sabe ler.
       confiabilidade: CONFIABILIDADE.includes(p.confiabilidade as never)
         ? String(p.confiabilidade) : "",
+      // Termo curto demais casa com meio banco; longo demais nao casa com
+      // nada. O teto de 3 e o mesmo que a instrucao pede — modelo que mande
+      // dez nao vira dez `ILIKE`.
+      termos: (Array.isArray(p.termos) ? p.termos : [])
+        .filter((t: unknown) => typeof t === "string" && t.trim().length >= 3)
+        .map((t: string) => t.trim().slice(0, 60)).slice(0, 3),
       // As URLs são NOSSAS, do item que nós mandamos — o modelo não as escreve.
       urls: unicos.map((i) => i.url),
       // Aqui vai o resumo INTEIRO, não o cortado: as notas são o que a

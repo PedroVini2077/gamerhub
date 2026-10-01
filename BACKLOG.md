@@ -180,9 +180,66 @@ entrou como 2º coletor, ao lado do RSS.
 > *"como a MANCHETE se apresenta"* acima da lista. Quatro reinjeções provaram
 > a trava.
 >
-> **Falta a Fase 3:** `TimelineVol` e Trends como SINAL ANEXADO a evento que
-> já existe — e é ela que traz `tendencia` e `discussao`. Depende de fonte de
-> descoberta estável, e o Google News ainda é intermitente.
+> ### 🔄 `[01/10]` FASE 3 EM EXECUÇÃO — e ela TROCOU DE FONTE
+>
+> **As duas fontes que o plano previa estão mortas**, e isso foi medido, não
+> suposto:
+>
+> | fonte do plano | estado |
+> | --- | --- |
+> | `TimelineVol` do GDELT | a GDELT foi **desligada hoje** — 7 tentativas, 2 IPs, 0 sucessos |
+> | Google Trends | **rejeitado na auditoria** por trazer loteria e futebol; ele mesmo reclamou disso |
+>
+> Dizer "a Fase 3 não dá" seria verdade e inútil. O valor dela é **um sinal de
+> aceleração anexado ao evento** — e o banco já tem com que produzi-lo:
+>
+> ```
+> 772 itens · 5 dias distintos · 17 fontes
+>
+> Gears of War / E-Day    25/09:  1 menção
+>                         28/09:  2 menções
+>                         01/10: 16 menções   <- 8x o dia anterior
+> ```
+>
+> **A fonte do sinal passa a ser o NOSSO histórico.** É melhor que a original
+> em três eixos: não depende de fornecedor que nos bloqueia, não precisa de
+> chave nem de ação dele, e usa dado que já pagamos para coletar.
+>
+> **O que isso NÃO é:** não é Trends. Ele mede o mundo inteiro procurando; nós
+> medimos **os veículos que escolhemos publicando**. É um sinal mais estreito e
+> mais honesto — "a imprensa de games está falando mais disso hoje do que
+> ontem", não "o Brasil está buscando isso".
+>
+> **O limite, com todas as letras:** 5 dias de histórico é base fina. Assunto
+> que nasceu hoje não tem com que comparar, e o sinal vai dizer "novo", que é
+> a verdade. A base engorda sozinha a cada clique.
+>
+> #### ✅ `[01/10]` A FASE 3 FOI ENTREGUE
+>
+> RPC `news_aceleracao_de_termos` (faixas de 1–30 dias e 20 termos, `%`/`_`
+> escapados, `REVOKE` de `anon`/`authenticated` **provado assumindo os dois
+> papéis**), o modelo passou a devolver até 3 `termos` por pauta, e o sinal vai
+> para a tela como selo com dica. Medido na produção: `Xbox` 22×20 → **nenhum
+> rótulo** (é sempre mencionado), `Gears of War` 15×3 → **5x o normal**. É o
+> melhor argumento de que a régua não grita à toa.
+>
+> **O sinal roda por ÚLTIMO e numa chamada só** — 8 pautas × 3 termos é 1
+> consulta, não 24 —, e falha dele devolve mapa vazio: enfeite não custa pauta.
+> Cinco reinjeções provaram a trava.
+>
+> #### 🐛 `[01/10]` E a divisão do arquivo revelou um BUG REAL, já corrigido
+>
+> O `index.ts` passou de 300 linhas (§4), e ao extrair a tradução do erro da
+> Groq apareceu isto: havia um `const corpo = await res.text()` **dentro** do
+> `if (!res.ok)`, e o montador da resposta também se chama `corpo()`. A string
+> sombreava a função, `corpo({...})` lançava `TypeError`, o `try/catch` em volta
+> engolia — e **toda** recusa da Groq chegava na tela como *"A IA respondeu algo
+> que eu nao entendi"*. Reproduzido fora do projeto antes de afirmar.
+>
+> O `admin_logs` ficava **certo** (o `gritar` acontece antes), então a mentira
+> era só para quem clicou. É o §1.5 na letra: mensagem errada manda investigar
+> o lugar errado. A tradução virou `falhaDaGroq.ts`, pura e com teste; a sombra
+> virou checagem no texto-fonte.
 
 > ### 🔴 `[01/10]` ANTES DA FASE 1: o radar nunca funcionou em produção
 >
@@ -1231,7 +1288,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**56 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2570,6 +2627,47 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[01/10]` **A regra de FAIXA (`docs/regras/BANCO.md`) não cobre ARRAY nem
+  texto que vira PADRÃO DE BUSCA.** *Proposta de mudança em regra — §6.2 exige
+  que eu peça antes de escrever.*
+
+  A lista de hoje cobre Número, Texto, UUID e Nulo. A Fase 3 precisou de duas
+  coisas que não estão lá: **teto de cardinalidade do array** (`p_termos[1:20]`
+  — sem isso, dez mil `ILIKE` numa chamada) e **escape de `%`/`_` em valor que
+  vira `ILIKE`**. O segundo é o não óbvio: **não é injeção** (é parâmetro, o
+  Postgres nunca o executa), é **resultado absurdo apresentado como medição** —
+  um `%` solto casa com tudo e a tela diz "12x o normal" sobre 772 linhas.
+
+  Eu cumpri as duas nesta migration. O que proponho é escrevê-las na regra,
+  porque o próximo que escrever RPC de busca não vai ter visto isto acontecer.
+
+- ⬜ `[01/10]` **Nada TYPE-CHECA as Edge Functions — e foi por isso que o bug
+  do `corpo` sombreado foi para produção.** *Proposta: §7 marca infraestrutura
+  como 🟡, então ela espera decisão dele.*
+
+  **O que foi medido hoje** (Deno 2.9.7 instalado só para a medição, não
+  commitado):
+
+  | | |
+  | --- | --- |
+  | funções com erro de tipo | **3 de 10** — `radar-de-pautas` (9), `delete-user` (1), `send-email` (1) |
+  | o bug real seria pego? | **sim**: `TS2349 This expression is not callable`, apontando a linha |
+  | estado depois deste PR | `radar-de-pautas` em **0 erros** — restam 2, em 2 funções |
+
+  As Edge Functions são TypeScript e **nenhum portão as compila**. O `npm run
+  build` só olha `src/`; as travas que "leem" a Edge Function leem como TEXTO.
+  O Supabase as implanta sem checar tipo. Então um erro de tipo só aparece em
+  produção, e aqui apareceu como mensagem errada na tela do dono.
+
+  **O que falta decidir, e é por isso que não executei:** é um job novo no CI
+  (`denoland/setup-deno`), com ~1 min e dependência de rede ao JSR/npm — a
+  pergunta 6 do §9.8 ("isso cria manutenção permanente?") é **sim**. A trava
+  que entrou neste PR cobre o caso concreto; este portão cobriria a **classe**.
+
+  **Minha recomendação: fazer.** Dois erros em duas funções é dívida pequena
+  demais para justificar adiar o portão que impede a próxima.
+
+
 - ⬜ `[18/09]` **Revogar as colunas derivadas de `posts` — a SEGUNDA camada da
   SEC-027.** *Só depois do deploy desta branch, e a ordem importa.*
 
@@ -2809,8 +2907,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->175<!--/n--> arq ·
-  <!--n:src.lib.linhas-->21.773<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->177<!--/n--> arq ·
+  <!--n:src.lib.linhas-->22.051<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

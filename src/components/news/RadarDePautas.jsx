@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Radar, ExternalLink, Plus, AlertTriangle } from 'lucide-react';
+import { Radar, ExternalLink, Plus, AlertTriangle, TrendingUp } from 'lucide-react';
 import { buscarPautas } from '../../services/newsRadarService';
 import { editoriaValida, rotuloDaEditoria } from '../../lib/news/editorias';
 import { CONFIABILIDADE, confiabilidadeValida } from '../../lib/news/confiabilidade';
+import { seloDoSinal } from '../../lib/news/aceleracao';
 import AvisoDeErro from '../ui/AvisoDeErro';
 
 /**
@@ -158,18 +159,22 @@ function Pauta({ pauta, onCriar }) {
 
   // `[01/10]` Mesma regra da editoria: rótulo que a tela não conhece não vira
   // selo. Melhor sem selo do que com um que ninguém sabe ler.
-  const selo = confiabilidadeValida(pauta.confiabilidade)
+  const seloDeConfianca = confiabilidadeValida(pauta.confiabilidade)
     ? CONFIABILIDADE[pauta.confiabilidade] : null;
+
+  // `[01/10]` FASE 3: o sinal vem do servidor como texto, e a tela só desenha
+  // o que sabe explicar — mesma regra da editoria e da confiabilidade.
+  const selo = seloDoSinal(pauta.sinal);
 
   return (
     <div className="rounded-lg border border-dark-500 p-3 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm text-white font-medium">{pauta.titulo}</p>
-        {selo && (
-          <span title={selo.dica}
+        {seloDeConfianca && (
+          <span title={seloDeConfianca.dica}
             className={`shrink-0 rounded border px-1.5 py-0.5 font-mono text-[9px]
-                        uppercase tracking-wider ${selo.classe}`}>
-            {selo.rotulo}
+                        uppercase tracking-wider ${seloDeConfianca.classe}`}>
+            {seloDeConfianca.rotulo}
           </span>
         )}
       </div>
@@ -192,6 +197,16 @@ function Pauta({ pauta, onCriar }) {
         {pauta.urls.length > 1 && (
           <span className="text-[10px] font-mono text-neon-green/70">
             {pauta.urls.length} veículos
+          </span>
+        )}
+        {/* `[01/10]` FASE 3: o sinal de aceleração, medido no NOSSO histórico.
+            Ele fica junto da contagem de veículos de propósito — as duas
+            respondem "quanto peso isto tem", e separá-las faria o editor
+            procurar em dois lugares. `TrendingUp` e não seta tipográfica (§4). */}
+        {selo && (
+          <span title={selo.dica}
+            className={`flex items-center gap-1 text-[10px] font-mono ${selo.classe}`}>
+            <TrendingUp size={10} /> {selo.rotulo}
           </span>
         )}
         {pauta.urls.map((u) => (

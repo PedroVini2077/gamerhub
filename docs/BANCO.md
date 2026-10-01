@@ -246,6 +246,24 @@ transforma esta pegadinha em bug silencioso (§4).
 - Cargos: `admin_set_role` (fluxo de indicação), funções de avaliação/
   rebaixamento; override de emergência exclusivo do owner.
 
+**Chamadas só pelo SERVIÇO (nenhuma tela alcança):**
+
+- **`[01/10]` `news_aceleracao_de_termos(p_termos text[], p_janela_dias int)`** —
+  a FASE 3 do radar. Devolve, por termo, quantas vezes ele apareceu em
+  `news_items_raw` **hoje** contra **os dias anteriores**, e desde quando. É o
+  substituto do `TimelineVol` da GDELT e do Google Trends, que morreram no mesmo
+  dia (teto por IP · trazer loteria e futebol).
+
+  > **Faixa, não só tipo** (regra desta página): `p_janela_dias` cortado em
+  > **1–30** e `p_termos` em **20** — sem isso, dez mil `ILIKE`. E o `%`/`_` são
+  > **escapados**, porque os termos vêm do modelo: um `%` solto casaria com
+  > tudo e inflaria a contagem **em silêncio**. Não é injeção (é parâmetro), é
+  > resultado absurdo apresentado como medição. Provado: `50%_teste` → 0.
+  >
+  > `REVOKE ALL ... FROM PUBLIC, anon, authenticated`, e isso foi **provado
+  > assumindo os dois papéis**, não lendo o grant: `permission denied` nos dois.
+  > Nenhuma tela precisa dela — a Edge Function chama com a service role.
+
 **Triggers:**
 
 - `handle_new_user` / `handle_user_confirmed` (em `auth.users`) — cria perfil.

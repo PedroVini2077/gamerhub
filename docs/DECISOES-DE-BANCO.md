@@ -324,6 +324,35 @@ zero policies e zero grants; abri-la daria leitura e escrita amplas a todo
 
 ---
 
+## News
+
+### `[01/10]` O sinal de aceleração sai do NOSSO histórico, não de um fornecedor
+
+**A decisão.** A Fase 3 do radar precisava responder *"isto está crescendo?"*.
+O plano previa `TimelineVol` da GDELT e Google Trends. Ambos caíram no mesmo
+dia — a GDELT por teto **por IP** (7 tentativas, 2 IPs, 0 sucessos) e o Trends
+por trazer loteria e futebol na própria auditoria que o avaliou. A contagem
+passou a sair de `news_items_raw`, via `news_aceleracao_de_termos`.
+
+| Alternativa recusada | Por quê |
+| --- | --- |
+| esperar uma fonte de tendência que funcione | a Fase 3 ficaria parada por um fornecedor; o valor dela nunca foi a fonte, é o sinal anexado ao evento |
+| uma consulta por pauta | 8 pautas × 3 termos seriam 24 `ILIKE` por clique. É uma chamada, com os termos de todas |
+| devolver um score numérico | o plano pedia *"sem score mágico"*. `5x o normal` quem lê refaz na mão; "87 de relevância" não |
+| contador desnormalizado por termo | é a lição de `posts.likes` (`BANCO.md`): contador desnormalizado desincroniza no primeiro caminho que alguém esquecer. 772 linhas contam na hora |
+
+**O trade-off aceito, e ele está escrito na tela:** isto mede **os veículos que
+assinamos publicando**, não o público buscando. É um sinal mais estreito e mais
+honesto do que o Trends teria sido — e a dica de cada selo diz "veículos" para
+que ninguém conclua o contrário.
+
+**O limite que fica:** base curta chama de `novo` o que talvez só seja *"novo
+para nós"*. Ela engorda sozinha a cada busca, e dizer isso é mais barato do que
+esconder. A prosa inteira está em
+`20261001220000_news_aceleracao_de_termos_para_a_fase_3_do_radar.sql`.
+
+---
+
 ## Vigilância
 
 ### `SEC-050` · O auditor devolve NÚMERO para o CI, e NOMES só para o dono

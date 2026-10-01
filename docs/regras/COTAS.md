@@ -54,6 +54,17 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > visitante. A pergunta da regra 2 foi feita **antes** de ligar.
 
 >
+> **`[01/10]` A FASE 3 do radar não acrescentou NENHUMA cota externa, e isso
+> foi o critério de escolha.** O sinal de aceleração ia sair do `TimelineVol`
+> da GDELT ou do Google Trends — um morreu por teto de IP, o outro foi
+> recusado por trazer loteria e futebol — e passou a sair de `news_items_raw`.
+> As três perguntas desta página, respondidas antes de ligar: **quantas vezes
+> por dia?** uma consulta a mais por clique de editor, e só `is_staff()`
+> alcança. **Quanto cabe de uma vez?** 20 termos, cortado na própria RPC — 8
+> pautas × 3 termos é uma consulta, não 24. **Quanto tempo leva?** é o nosso
+> Postgres com 772 linhas, não rede de terceiro. Fornecedor que não existe é o
+> único que nunca recusa.
+
 > ### ⚠️ `[01/10]` A pergunta da regra 2 foi feita, e ela era a PERGUNTA ERRADA
 >
 > A linha da Groq dizia só *"requisições por dia"*, e eu tinha escrito, duas
