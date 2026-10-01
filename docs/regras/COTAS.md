@@ -35,7 +35,7 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Safe Browsing** | consultas por dia | 10.000 | link deixa de ser checado | Sim, desde 23/08 (`admin_logs`) |
 | **Groq** (requisições) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
 | **Groq** (**tokens por minuto**) | tokens de UMA requisição, entrada + `max_tokens` | **8.000** (`on_demand`) | `HTTP 413`: a requisição é recusada inteira | Sim, desde 25/09 — mas ver o quadro abaixo |
-| **GDELT** (radar, Fase 1) | requisições **por IP** · e **tempo de resposta** | **1 a cada 5 s** · leva **10–12 s só para recusar** | a consulta é recusada **ou estoura o tempo**; o RSS continua | Sim, desde 01/10 (`comFalha` diz o motivo **e o relógio**) |
+| ~~**GDELT**~~ (radar, Fase 1) | requisições **por IP** | **1 a cada 5 s** | **`[01/10]` DESLIGADA no mesmo dia** — ver o quadro abaixo | — |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
@@ -173,6 +173,42 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > **O que mudou:** a GDELT ganhou timeout próprio de 20 s, e o teto por clique
 > caiu de 2 para **1** — com 20 s cada, duas em série custariam 45 s de espera
 > para quem clicou. A fonte que fica de fora é **dita** em `comFalha`.
+>
+> ### ⛔ `[01/10]` E com o timeout certo ela mostrou a resposta REAL: `429`
+>
+> O clique seguinte, já com 20 s:
+>
+> ```
+> a GDELT recusou por excesso de consultas em 10s (limite dela, nao nosso)
+> ```
+>
+> **O timeout era suficiente — ela responde em 10 s.** O que ela faz é
+> **recusar**. E recusa na PRIMEIRA requisição, sem espaçamento nenhum
+> envolvido: o orçamento de 1 req/5 s do IP já estava gasto antes de nós
+> chegarmos.
+>
+> **Isso fecha a questão, e a hipótese do IP compartilhado vira conclusão
+> prática:** cinco tentativas daqui (inclusive uma após 70 s de silêncio) e
+> duas da Edge Function, com IPs diferentes. **Zero sucessos. Nenhum.**
+>
+> **`EdgeRuntime.waitUntil()` NÃO resolveria** — e eu tinha registrado isso
+> como o próximo passo. O problema nunca foi tempo: é cota por IP. Mover para
+> segundo plano dá mais relógio e **zero cota**. O gatilho que eu escrevi
+> estava apontando para a saída errada.
+>
+> **As duas fontes foram DESLIGADAS** (`ativa = false`), porque uma fonte que
+> falha em 100% dos cliques é a 4ª regra desta página na veia: alarme que
+> sempre grita errado é pior do que alarme nenhum. Ela aparecia como "2 fontes
+> não responderam" em toda busca, e a tela dizia "15 fontes" quando 13
+> funcionam.
+>
+> **A lição sobre ESCOLHA de fornecedor, que é o que fica:** a auditoria
+> escolheu a GDELT por ser *"grátis, sem chave, sem ação do dono"* — e os três
+> eram verdade. O que não foi perguntado é **de que IP nós saímos**. Serviço
+> com teto por IP é inutilizável atrás de infraestrutura compartilhada, e
+> tanto este ambiente quanto a Edge Function da Supabase são compartilhados
+> por construção. **"Sem chave" não é só conveniência: é o sintoma de que o
+> fornecedor identifica você pelo IP, e aí o IP é a cota.**
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em
