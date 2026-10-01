@@ -103,6 +103,28 @@ entrou como 2º coletor, ao lado do RSS.
 > o título, e mandar os dois ao modelo custaria duas vezes o mesmo fato no
 > pedido com teto medido. O `lerFeed` passou a descartar resumo redundante —
 > regra genérica, com trava nos dois sentidos.
+>
+> ### 🟠 `[01/10]` 3º clique: o Google News deu `HTTP 503` — causa DESCONHECIDA
+>
+> O radar entregou de novo (170 manchetes de 13 feeds, pautas boas: QSSR do
+> PS5 com 4 veículos, Steam Autumn Sale, Gears of War). Mas as duas buscas
+> amplas voltaram `503`.
+>
+> **Descartado medindo:** não é o `User-Agent` — daqui o Google News responde
+> `200` em 1 s com três UAs, inclusive o nosso exato.
+>
+> **Em aberto:** instabilidade do serviço × bloqueio do IP de datacenter da
+> Edge Function. A segunda é a mesma classe da GDELT. **Um clique não
+> decide**, e eu não alcanço os logs da Edge Function daqui.
+>
+> **O que entrou:** retentativa única para `5xx` (semântica do HTTP), com
+> `429`/`4xx` explicitamente de fora. Se as duas falharem, a tela diz *"503
+> nas duas tentativas"*.
+>
+> **O gatilho:** se o próximo clique der `503 nas duas` de novo, a conclusão
+> vira **bloqueio**, e aí as saídas são (a) desligar as buscas e fechar a Fase
+> 1 só com os 13 feeds, ou (b) uma fonte de descoberta que identifique por
+> CHAVE e não por IP — que é a lição de hoje aplicada à escolha seguinte.
 
 > **Falta a Fase 2:** agrupamento em evento + classificação de confiabilidade.
 
@@ -2719,7 +2741,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->173<!--/n--> arq ·
-  <!--n:src.lib.linhas-->21.435<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->21.516<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

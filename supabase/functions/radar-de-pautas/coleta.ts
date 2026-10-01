@@ -48,18 +48,72 @@ export async function buscarTexto(url: string, tetoMs = TIMEOUT_DO_FEED) {
 
 export const dormir = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/**
+ * `[01/10]` UMA retentativa para erro TRANSITÓRIO — e só para ele.
+ *
+ * ── O caso que a produziu ─────────────────────────────────────────────────
+ *
+ * No 1º clique com o Google News, as duas consultas voltaram `HTTP 503` da
+ * Edge Function. Daqui elas respondem `200` em 1 segundo — medido com três
+ * User-Agents diferentes, inclusive o nosso exato, então **não é o UA**.
+ *
+ * Eu não sei a causa (pode ser instabilidade, pode ser bloqueio do IP de
+ * datacenter) e **um clique não decide**. Mas `5xx` significa, pela própria
+ * definição do HTTP, *"o servidor falhou, tente de novo"* — e nós estávamos
+ * desistindo na primeira.
+ *
+ * ── Por que SÓ `5xx`, e isto é o que impede a retentativa de virar abuso ──
+ *
+ * `429` é cota: repetir gasta mais do recurso que já acabou, e foi o que
+ * derrubou a GDELT. `403` e `404` são decisão deliberada do servidor —
+ * insistir não muda a resposta e só gasta o relógio de quem clicou.
+ *
+ * **Uma** tentativa extra, não um laço: se o segundo pedido também falhar, a
+ * fonte entra em `comFalha` como antes. O ganho é distinguir "piscou" de
+ * "está fora", e isso também é diagnóstico — duas falhas seguidas são
+ * evidência melhor do que uma.
+ */
+export const ESPERA_DA_RETENTATIVA_MS = 1_200;
+
+/** `5xx` é "o servidor falhou"; `4xx` é "o servidor decidiu". Só o 1º repete. */
+export const ehTransitorio = (status: number) => status >= 500 && status < 600;
+
+export async function buscarComRetentativa(
+  buscar: (url: string, tetoMs?: number) => Promise<{ ok: boolean; status: number; texto: string }>,
+  esperar: (ms: number) => Promise<void>,
+  url: string,
+  tetoMs?: number,
+) {
+  const primeira = await buscar(url, tetoMs);
+  if (primeira.ok || !ehTransitorio(primeira.status)) return primeira;
+
+  await esperar(ESPERA_DA_RETENTATIVA_MS);
+  return buscar(url, tetoMs);
+}
+
 /** Lê os feeds RSS em paralelo. Um que falha não cala os outros doze. */
 async function coletarDosFeeds(
   fontes: Fonte[],
-  buscar: (url: string) => Promise<{ ok: boolean; status: number; texto: string }>,
+  buscar: (url: string, tetoMs?: number) => Promise<{ ok: boolean; status: number; texto: string }>,
+  esperar: (ms: number) => Promise<void>,
 ): Promise<{ itens: ItemColetado[]; comFalha: Falha[] }> {
   const itens: ItemColetado[] = [];
   const comFalha: Falha[] = [];
 
   await Promise.all(fontes.map(async (f) => {
     try {
-      const r = await buscar(f.url);
-      if (!r.ok) { comFalha.push({ nome: f.nome, motivo: `HTTP ${r.status}` }); return; }
+      // Os treze vão em paralelo, então a retentativa de um não segura os
+      // outros: no pior caso a coleta custa uma volta de rede a mais.
+      const r = await buscarComRetentativa(buscar, esperar, f.url);
+      if (!r.ok) {
+        // Dizer que JA tentou duas vezes muda o que a mensagem significa para
+        // quem le a tela: "HTTP 503" parece soluco, "503 nas duas" e sintoma.
+        comFalha.push({
+          nome: f.nome,
+          motivo: ehTransitorio(r.status) ? `HTTP ${r.status} nas duas tentativas` : `HTTP ${r.status}`,
+        });
+        return;
+      }
       const lidos = lerFeed(r.texto, TETO_POR_FEED);
       if (!lidos.length) { comFalha.push({ nome: f.nome, motivo: "feed sem itens" }); return; }
       for (const i of lidos) itens.push({ ...i, fonte_id: f.id, fonte_nome: f.nome });
@@ -89,7 +143,7 @@ export async function coletarTudo(
   const outras = fontes.filter((f) => f.tipo !== "rss" && f.tipo !== "api");
 
   const [doRss, daApi] = await Promise.all([
-    coletarDosFeeds(feeds, buscar),
+    coletarDosFeeds(feeds, buscar, esperar),
     coletarDasApis(apis, (u) => buscar(u, TIMEOUT_DA_CONSULTA_MS), esperar),
   ]);
 
