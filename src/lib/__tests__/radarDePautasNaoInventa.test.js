@@ -5,6 +5,7 @@ import {
   ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
   orcamentoDaLista, TPM_DO_PLANO, RESERVA_DE_SAIDA, CHARS_POR_TOKEN,
   RESUMO_PARA_O_MODELO, RESERVA_DE_RACIOCINIO, RESERVA_DA_RESPOSTA,
+  TETO_DE_PAUTAS, TOKENS_POR_PAUTA,
 } from '../../../supabase/functions/radar-de-pautas/pedido.ts';
 import { INSTRUCAO } from '../../../supabase/functions/radar-de-pautas/contrato.ts';
 
@@ -193,6 +194,29 @@ describe('o ORCAMENTO do pedido — a trava do HTTP 413', () => {
       + 'razao de ele estar nessa etapa.').toBeGreaterThanOrEqual(PISO);
   });
 
+  it('`[01/10]` a RESPOSTA cabe nas pautas que o modelo vai escrever', () => {
+    // ── A trava que faltava, e a falta dela me custou DUAS rodadas ───────
+    //
+    //   1a  max_tokens 1.300 -> failed_generation VAZIO
+    //       o raciocinio comeu tudo antes de o modelo escrever
+    //   2a  max_tokens 2.400 -> failed_generation TRUNCADO:
+    //       `{"pautas":[{"titulo":"Nintendo lanca bundle... EA Spor`
+    //       o raciocinio coube, a RESPOSTA nao
+    //
+    // Nos dois casos eu tinha uma conta na cabeca e nenhuma no teste. A
+    // relacao `reserva >= pautas x custo da pauta` e o que faltava: ela
+    // transforma "eu acho que cabe" em conta conferida a cada `npm test`.
+    const precisa = TETO_DE_PAUTAS * TOKENS_POR_PAUTA;
+    expect(RESERVA_DA_RESPOSTA, `a reserva da resposta (${RESERVA_DA_RESPOSTA}) nao `
+      + `cobre ${TETO_DE_PAUTAS} pautas a ${TOKENS_POR_PAUTA} tokens = ${precisa}.\n\n`
+      + '  O modelo comeca a escrever e o `max_tokens` acaba NO MEIO do JSON.\n'
+      + '  A Groq devolve HTTP 400 `json_validate_failed` com um\n'
+      + '  `failed_generation` cortado — foi assim em 01/10, com 8 pautas e\n'
+      + '  1.000 de reserva.\n\n'
+      + '  Quem subir TETO_DE_PAUTAS tem de subir RESERVA_DA_RESPOSTA junto.')
+      .toBeGreaterThanOrEqual(precisa);
+  });
+
   it('`[01/10]` a reserva de saida cobre RESPOSTA + RACIOCINIO', () => {
     // A regressao de 01/10, virada trava. `max_tokens` na Groq cobre os dois,
     // e o `gpt-oss-120b` gasta 300-900 tokens pensando ANTES de escrever.
@@ -238,6 +262,40 @@ describe('o ORCAMENTO do pedido — a trava do HTTP 413', () => {
     // estourar — e o numero escrito a mao envelheceria calado.
     expect(orcamentoDaLista(INSTRUCAO.repeat(4)))
       .toBeLessThan(orcamentoDaLista(INSTRUCAO));
+  });
+});
+
+describe('`[01/10]` o corpo da resposta nunca perde campo no caminho de FALHA', () => {
+  // ── A tela MENTIA, e o print dele mostrou ────────────────────────────────
+  //
+  //     "170 manchetes de 0 fontes"   <- com TREZE fontes funcionando
+  //
+  // So o retorno de sucesso carregava `fontes`. Os cinco caminhos de falha
+  // nao, e o cliente faz `?? 0`. E a classe "dois lugares que precisam
+  // concordar" do §4, na forma mais traicoeira: o caminho feliz esta certo,
+  // entao o defeito so aparece quando ja houve outro problema.
+
+  it('toda resposta com `status` passa pelo montador unico', () => {
+    // As respostas de porta fechada (401/403/502/503) ficam de fora de
+    // proposito: elas acontecem ANTES de haver coleta, entao `coletados` e
+    // `fontes` nem existem. O recorte e "depois que a coleta aconteceu".
+    const depoisDaColeta = FONTE.slice(FONTE.indexOf('const corpo = ('));
+    const soltas = [...depoisDaColeta.matchAll(/return responder\(\{[^)]*?status:/gs)];
+
+    expect(soltas.length, 'apareceu um `return responder({ status: ... })` montado '
+      + 'a mao depois da coleta. Ele vai esquecer `fontes` como os cinco '
+      + 'anteriores esqueceram, e a tela volta a dizer "0 fontes" com treze '
+      + 'funcionando. Use `responder(corpo({ ... }))`.').toBe(0);
+  });
+
+  it('o montador inclui os campos que a TELA le', () => {
+    const montador = FONTE.slice(FONTE.indexOf('const corpo = ('),
+                                 FONTE.indexOf('const corpo = (') + 400);
+    for (const campo of ['coletados', 'fontes', 'comFalha', 'pautas']) {
+      expect(montador, `o montador perdeu \`${campo}\`, que o cliente le com `
+        + '`?? 0` ou `?? []` — some em silencio e a tela mostra numero errado')
+        .toMatch(new RegExp(`\\b${campo}\\b`));
+    }
   });
 });
 

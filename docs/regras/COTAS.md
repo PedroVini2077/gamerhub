@@ -36,7 +36,7 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **Groq** (requisições) | requisições por dia | ~1.000 no plano grátis | a IA para de redigir; o painel **diz** e a equipe escreve à mão | Sim, desde 25/09 (`admin_logs`, no `429`) |
 | **Groq** (**tokens por minuto**) | tokens de UMA requisição, entrada + `max_tokens` | **8.000** (`on_demand`) | `HTTP 413`: a requisição é recusada inteira | Sim, desde 25/09 — mas ver o quadro abaixo |
 | ~~**GDELT**~~ | requisições **por IP** | 1 a cada 5 s | **`[01/10]` DESLIGADA no mesmo dia** — ver o quadro abaixo | — |
-| **Google News RSS** (busca ampla) | não documentado | — | **`[01/10]` `HTTP 503` da Edge Function** no 1º clique; daqui responde 200 em 1 s | Sim — `comFalha` diz o motivo e **que já tentou duas vezes** |
+| **Google News RSS** (busca ampla) | não documentado | — | **`[01/10]` `HTTP 503` INTERMITENTE** da Edge Function: funcionou às 19:21, falhou às 20:58 | Sim — `comFalha` diz o motivo e **que já tentou duas vezes** |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
@@ -116,6 +116,37 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > **A segunda metade:** num modelo de raciocínio, `max_tokens` **não** é o
 > tamanho da resposta — é resposta **mais** pensamento. Tratar os dois como um
 > só é um medidor interno que não estava em tabela nenhuma.
+>
+> ### ⚠️ `[01/10]` E eu errei esse número uma TERCEIRA vez, de outro jeito
+>
+> Com 2.400 o `400` voltou — mas com outro corpo, e a diferença é tudo:
+>
+> ```
+> 1ª (1.300)  failed_generation: ""                      <- VAZIO
+> 2ª (2.400)  failed_generation: "{\"pautas\":[{\"titulo\":
+>             \"Nintendo lança bundle... EA Spor         <- TRUNCADO
+> ```
+>
+> **Vazio era o raciocínio comendo tudo. Truncado é a RESPOSTA não cabendo.**
+> O modelo começou a escrever e o teto acabou no meio do JSON.
+>
+> Eu estimava ~125 tokens por pauta; com título, ângulo de 1–2 frases, "por que
+> agora" e os índices, uma pauta custa perto de **160**. Oito pautas são 1.280,
+> e a reserva da resposta era 1.000.
+>
+> **E de novo o número que me corrigiria estava no log:** `chars 13931, itens
+> 59` dá ~2.939 tokens de entrada; com 2.400 de saída o pedido custava ~5.689
+> de 8.000. **Sobravam 2.300 sem uso** enquanto eu apertava a saída.
+>
+> **O que mudou, e por que não vai acontecer uma quarta vez:** a relação virou
+> trava. `RESERVA_DA_RESPOSTA >= TETO_DE_PAUTAS × TOKENS_POR_PAUTA` é conferido
+> a cada `npm test`, então quem subir o número de pautas é obrigado a subir a
+> reserva junto. **Eu tinha a conta na cabeça e nenhuma no teste** — duas
+> vezes.
+>
+> A `FOLGA` também saiu de 0,75 para 0,85, com medição: eu estimava ~6.000 e a
+> Groq respondeu `Requested 4364`. Era margem empilhada sobre margem, e o preço
+> eram manchetes a menos **ou** resposta cortada.
 
 > **`[01/10]` A GDELT entrou com as DUAS perguntas respondidas — a antiga e a
 > que esta sessão acrescentou.**
@@ -265,6 +296,30 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > `comFalha` dizendo *"HTTP 503 nas duas tentativas"* — e isso também é
 > diagnóstico: duas falhas seguidas são evidência melhor do que uma. O próximo
 > clique diz se era soluço ou se é bloqueio.
+>
+> ### ✅ `[01/10]` O clique seguinte respondeu: é INTERMITENTE, não bloqueio
+>
+> E eu quase errei a conclusão. O clique deu `503 nas duas tentativas` nas duas
+> fontes, e o gatilho que eu mesmo tinha escrito dizia *"se der 503 nas duas de
+> novo, a conclusão vira bloqueio"*. **Eu desliguei as duas fontes.**
+>
+> Antes de escrever a decisão, conferi no banco — e a tabela desmentiu:
+>
+> ```
+> Busca ampla · games              15 itens  ·  coletados 19:21 UTC
+> Busca ampla · tecnologia e geek  15 itens  ·  coletados 19:21 UTC
+> ```
+>
+> **Elas FUNCIONARAM** num clique anterior que eu não tinha visto. `503` às
+> 20:58 e `200` às 19:21 do mesmo dia, do mesmo IP: isso é instabilidade, não
+> bloqueio. **As duas foram religadas**, e a retentativa de `5xx` é exatamente
+> a resposta certa para esse padrão.
+>
+> **A lição é sobre o gatilho, não sobre o Google.** Eu escrevi um gatilho que
+> olhava só o SINTOMA ("deu 503 duas vezes?") e não o HISTÓRICO ("alguma vez
+> funcionou?"). Gatilho que decide por uma amostra decide errado quando o
+> fenômeno é intermitente — e `news_items_raw` tinha a resposta o tempo todo,
+> porque **item coletado é prova de sucesso que sobrevive ao clique**.
 
 As linhas sem "sim" na última coluna são as perigosas, e o Sentry era o caso
 irônico: **a ferramenta que existe pra acabar com falha silenciosa falhava em

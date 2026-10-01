@@ -36,13 +36,13 @@ import { fatiaJusta } from "./rss.ts";
 import { coletarTudo } from "./coleta.ts";
 import {
   ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
-  RESERVA_DE_SAIDA, TPM_DO_PLANO,
+  RESERVA_DE_SAIDA, TPM_DO_PLANO, TETO_DE_PAUTAS,
 } from "./pedido.ts";
 import { INSTRUCAO, ESQUEMA_DA_RESPOSTA } from "./contrato.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "7cbc0b548e3b1357";
+const IMPRESSAO_DESTE_CODIGO = "73182d7737826abd";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -57,7 +57,6 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const MODELO = "openai/gpt-oss-120b";
 
 const TETO_DO_PEDIDO  = 60;   // manchetes mandadas ao modelo
-const TETO_DE_PAUTAS  = 8;    // sugestoes devolvidas
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -141,12 +140,24 @@ Deno.serve(async (req: Request) => {
 
   const { itens: coletados, comFalha } = await coletarTudo(fontes);
 
+  /**
+   * `[01/10]` O corpo da resposta, montado num lugar SÓ.
+   *
+   * Só o retorno de SUCESSO carregava `fontes`; os cinco caminhos de falha
+   * não, e o cliente faz `?? 0` — a tela dizia **"170 manchetes de 0
+   * fontes"** com treze funcionando. Consertar nos cinco lugares convidaria
+   * o sexto a nascer errado (§4): aqui o campo comum é estrutural.
+   */
+  const corpo = (extra: Record<string, unknown>) => ({
+    coletados: coletados.length, fontes: fontes.length, comFalha, pautas: [], ...extra,
+  });
+
   if (!coletados.length) {
     await gritar(admin, "nenhuma fonte respondeu", { comFalha });
-    return responder({
-      status: "sem_itens", comFalha,
+    return responder(corpo({
+      status: "sem_itens",
       error: "Nenhuma fonte respondeu agora. Tente de novo em alguns minutos.",
-    }, 200);
+    }), 200);
   }
 
   // Guarda o que chegou. `url` e UNIQUE: `ignoreDuplicates` faz a repeticao
@@ -165,11 +176,11 @@ Deno.serve(async (req: Request) => {
   if (!GROQ_API_KEY) {
     // Sem chave a leitura editorial nao acontece — mas a COLETA aconteceu, e
     // devolver as manchetes cruas ja e util. Dizer isso e melhor do que 503.
-    return responder({
-      status: "sem_chave", coletados: coletados.length, comFalha, pautas: [],
+    return responder(corpo({
+      status: "sem_chave",
       itens: coletados.slice(0, 30),
       error: "A IA nao esta configurada (GROQ_API_KEY) — segue a lista crua.",
-    });
+    }));
   }
 
   // ── 2. A LEITURA EDITORIAL ────────────────────────────────────────────────
@@ -187,11 +198,10 @@ Deno.serve(async (req: Request) => {
   if (!usados.length) {
     await gritar(admin, "nenhum item coube no orcamento do pedido",
       { orcamento: ORCAMENTO_DA_LISTA, candidatos: justos.length });
-    return responder({
-      status: "erro_provedor", coletados: coletados.length, comFalha,
-      pautas: [], itens: justos.slice(0, 30),
+    return responder(corpo({
+      status: "erro_provedor", itens: justos.slice(0, 30),
       error: "Nao consegui montar o pedido para a IA — segue a lista crua.",
-    });
+    }));
   }
 
   let resposta: unknown = {};
@@ -257,21 +267,19 @@ Deno.serve(async (req: Request) => {
             : "Muitos pedidos seguidos. Espere um minuto e tente de novo — segue a lista crua.")
           : `A IA nao respondeu (HTTP ${res.status}) — segue a lista crua.`;
 
-      return responder({
+      return responder(corpo({
         status: res.status === 429 && porDia ? "cota" : "erro_provedor",
-        coletados: coletados.length, comFalha, pautas: [], itens: usados.slice(0, 30),
-        error: aviso,
-      });
+        itens: usados.slice(0, 30), error: aviso,
+      }));
     }
     const json = await res.json();
     resposta = JSON.parse(semCerca(json?.choices?.[0]?.message?.content ?? "{}"));
   } catch (e) {
     await gritar(admin, "falha ao chamar ou interpretar a Groq", { erro: String(e).slice(0, 300) });
-    return responder({
-      status: "erro_provedor", coletados: coletados.length, comFalha,
-      pautas: [], itens: usados.slice(0, 30),
+    return responder(corpo({
+      status: "erro_provedor", itens: usados.slice(0, 30),
       error: "A IA respondeu algo que eu nao entendi — segue a lista crua.",
-    });
+    }));
   }
 
   // ── 3. RESOLVER OS NUMEROS EM FONTES REAIS ────────────────────────────────
@@ -288,13 +296,10 @@ Deno.serve(async (req: Request) => {
       { foraDaLista, pautas: limpas.length, itensNoPedido: usados.length });
   }
 
-  return responder({
+  return responder(corpo({
     status: "ok",
-    coletados: coletados.length,
-    fontes: fontes.length,
     noPedido: usados.length,
-    comFalha,
     enderecosDescartados: foraDaLista,
     pautas: limpas,
-  });
+  }));
 });
