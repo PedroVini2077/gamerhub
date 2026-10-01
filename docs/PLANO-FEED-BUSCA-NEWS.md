@@ -695,6 +695,24 @@ Function. O IP de lá é outro, e só o primeiro clique de verdade diz.
 `{itens, comFalha}`. Coletor novo é um `tipo` novo e um adaptador — não mexe
 no `index.ts` nem no pedido ao modelo.
 
+### `[01/10]` O 400 que apareceu no mesmo dia, e por que ele importa para a Fase 2
+
+Depois de o `413` ser corrigido baixando `max_tokens` de 2.500 para 1.300,
+surgiu `HTTP 400 json_validate_failed` com `failed_generation: ""` — **vazio**.
+Não era JSON ruim: era **nenhuma saída**. O `gpt-oss-120b` é modelo de
+raciocínio e gasta 300–900 tokens pensando do mesmo `max_tokens`.
+
+**O que a Fase 2 herda disso, e é a parte que muda decisão:** agrupar em evento
+e classificar confiabilidade **aumenta a resposta** — cada pauta ganha campos
+novos, e o modelo tem mais o que decidir. A reserva de saída vai ter de crescer
+junto, e ela sai do mesmo teto de 8.000 que a lista de manchetes.
+
+Então a Fase 2 começa com uma conta, não com código: **quantos tokens a mais a
+resposta nova custa, e quantas manchetes isso tira da entrada.** Hoje o piso
+está travado em 50 itens (`radarDePautasNaoInventa`), e com 15 fontes em rodízio
+abaixo disso cada fonte entra com menos de 4 manchetes — fino demais para
+agrupar assunto repetido, que é justamente o que a Fase 2 existe para fazer.
+
 ### 8. Critérios de sucesso, verificáveis
 
 1. o radar traz assunto que **nenhum dos 13 RSS** publicou;

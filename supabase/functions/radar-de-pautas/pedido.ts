@@ -51,15 +51,69 @@
 // errar para cima manda o radar inteiro para o `413`.
 
 import type { ItemBruto } from "./rss.ts";
+import { INSTRUCAO } from "./contrato.ts";
 
 /** Teto de tokens por minuto do plano gratuito, medido no corpo do erro 413. */
 export const TPM_DO_PLANO = 8_000;
 
-/** `max_tokens`: 8 pautas citando números cabem folgadas aqui. */
-export const RESERVA_DE_SAIDA = 1_300;
+/**
+ * `[01/10]` O ESPAÇO DO RACIOCÍNIO — e ele é a causa do `json_validate_failed`.
+ *
+ * ── A regressão, e ela foi minha, no mesmo dia ──────────────────────────────
+ *
+ * De manhã eu baixei a reserva de saída de 2.500 para 1.300 para matar o `413`.
+ * O `413` morreu. À tarde apareceu, de forma INTERMITENTE:
+ *
+ *     HTTP 400 · code: json_validate_failed
+ *     "Failed to validate JSON. Please adjust your prompt."
+ *     failed_generation: ""        <- VAZIO
+ *
+ * **`failed_generation` vazio não é JSON ruim: é NENHUMA saída.** Prompt ruim
+ * produz JSON malformado; aqui o modelo não escreveu caractere nenhum.
+ *
+ * ── O mecanismo ────────────────────────────────────────────────────────────
+ *
+ * O `gpt-oss-120b` é modelo de RACIOCÍNIO. Ele gasta tokens de cadeia de
+ * pensamento — a documentação da Groq dá `reasoning_effort` só para os GPT-OSS,
+ * e relatos convergentes medem **300 a 900 tokens** antes da resposta — e esses
+ * tokens saem do MESMO `max_tokens`.
+ *
+ * O JSON de 8 pautas citando números custa ~900 tokens. 900 + 900 = 1.800, e a
+ * reserva era 1.300: fica **em cima da fronteira**, e é por isso que falhava
+ * "às vezes" em vez de sempre. Quando o raciocínio ganha a corrida, o `content`
+ * sai vazio e o validador de JSON da Groq recusa o pedido inteiro.
+ *
+ * ── Eu apertei o lado ERRADO, e o número prova ─────────────────────────────
+ *
+ * No `429` de cinco minutos depois a Groq disse `Requested 4364` contra teto de
+ * 8.000 — e 4364 − 1300 = **3.064 tokens de entrada**. Sobravam ~3.600 tokens
+ * sem uso. O pedido nunca esteve apertado; só a saída estava.
+ */
+export const RESERVA_DE_RACIOCINIO = 900;
 
-/** Conservador — o conteúdo medido dá ~4,3. Ver o cabeçalho. */
-export const CHARS_POR_TOKEN = 3.6;
+/** O JSON de `TETO_DE_PAUTAS` pautas, medido pelo tamanho dos campos. */
+export const RESERVA_DA_RESPOSTA = 1_000;
+
+/**
+ * `max_tokens`: a resposta **mais** o raciocínio, que dividem o mesmo teto.
+ *
+ * Os 500 de sobra existem porque `reasoning_effort: "low"` reduz a cadeia de
+ * pensamento mas não a elimina, e porque o modelo pode alongar um ângulo.
+ */
+export const RESERVA_DE_SAIDA = RESERVA_DA_RESPOSTA + RESERVA_DE_RACIOCINIO + 500;
+
+/**
+ * `[01/10]` MEDIDO, e não mais chutado para baixo.
+ *
+ * Era 3,6 — escolhido conservador quando eu não tinha número. A Groq entregou
+ * um: `Requested 4364` com `max_tokens` 1.300 e uma lista de 14.527 chars dá
+ * 3.064 tokens de entrada, ou seja **4,74 chars/token** neste conteúdo.
+ *
+ * 4,3 mantém ~9% de margem abaixo do medido. A conservadoria de 3,6 custava
+ * 26% do orçamento à toa — e era ela que não deixava espaço para a saída
+ * crescer sem a lista encolher.
+ */
+export const CHARS_POR_TOKEN = 4.3;
 
 /** Usar só 3/4 do teto. O que sobra absorve a variação de tokenização. */
 export const FOLGA = 0.75;
@@ -83,36 +137,6 @@ export function orcamentoDaLista(instrucao: string): number {
   return Math.max(0, Math.floor(sobra * CHARS_POR_TOKEN));
 }
 
-export const INSTRUCAO = `Voce e o editor de pauta do GamerHub News, um site brasileiro sobre
-games, tecnologia e cultura geek.
-
-Voce recebe uma lista NUMERADA de manchetes coletadas HOJE dos feeds que a
-equipe assina. Seu trabalho e LER essa lista e dizer o que vale virar materia.
-
-REGRA NUMERO UM:
-Trabalhe SOMENTE com as manchetes da lista. Nao acrescente assunto que nao
-esteja nela e nao complete com o que voce sabe de outro lugar. Voce nao tem
-internet e nao sabe o que aconteceu hoje — quem sabe e a lista.
-Cite cada manchete pelo NUMERO dela. Nao escreva enderecos: eu ja os tenho.
-
-O QUE FAZER:
-- Junte manchetes que falam do MESMO assunto numa pauta so, citando o numero
-  de todas elas. Assunto coberto por varias fontes e mais forte, nao mais fraco.
-- Descarte o que nao interessa a um publico gamer brasileiro.
-- Ordene da mais relevante para a menos.
-- Para cada pauta escreva um angulo: o que o GamerHub tem a dizer sobre aquilo
-  que nao e so repetir a manchete.
-
-RESPONDA SOMENTE COM UM JSON, sem texto antes nem depois:
-{"pautas":[{"titulo":"...","angulo":"...","editoria":"...","por_que_agora":"...","itens":[1,2]}]}
-
-titulo        um titulo em portugues, ate 90 caracteres, factual, sem caca-clique
-angulo        1 a 2 frases: o recorte que o GamerHub daria
-editoria      uma de: gaming, esports, hardware, mobile, playstation, xbox, nintendo, pc, cultura
-por_que_agora 1 frase curta dizendo por que isso e assunto hoje
-itens         os NUMEROS da lista que sustentam a pauta, do mais direto ao menos`;
-
-// Derivado da instrucao acima — ver `pedido.ts` para o porque de cada parcela.
 export const ORCAMENTO_DA_LISTA = orcamentoDaLista(INSTRUCAO);
 
 /**
