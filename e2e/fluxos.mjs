@@ -12,7 +12,10 @@
  *   3. `/admin` e `/owner` **negando** acesso a `role = 'user'` — permissão
  *      conferida num navegador de verdade, não só em transação SQL;
  *   4. publicar → aparecer no feed → apagar → sumir;
- *   5. logout.
+ *   5. `[02/10]` editar o próprio perfil e **recarregar** para provar que
+ *      persistiu — privilégio de coluna em `profiles` é por papel, e foi
+ *      revogá-los que derrubou postar, comentar, mural e chat (SEC-025);
+ *   6. logout.
  *
  * Fora de escopo de propósito: banimento e moderação. Precisariam de uma
  * segunda conta como vítima, são destrutivos, e a hierarquia já é validada em
@@ -25,6 +28,7 @@ import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from
 import { marcaDeTeste } from './publicarPost.mjs';
 import { percorrerCicloDoPost } from './cicloDoPost.mjs';
 import { conferirPortaoDeEntrada } from './portaoDeEntrada.mjs';
+import { percorrerEdicaoDePerfil } from './editarPerfil.mjs';
 import { ROTAS_LOGADO, ROTAS_PROIBIDAS_PARA_USUARIO, MARCAS_DE_PAINEL } from './rotas.mjs';
 
 const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
@@ -170,7 +174,14 @@ try {
   // fluxos de conteúdo que faltam cabem lá, não aqui (§4).
   await percorrerCicloDoPost(page, { base: BASE, marca: MARCA, ok, main });
 
-  // ── 5. Sair ─────────────────────────────────────────────────────────────
+  // ── `[02/10]` 5. Editar o próprio perfil ────────────────────────────────
+  //
+  // Fica DEPOIS do ciclo do post e ANTES do logout de propósito: ele restaura
+  // o que mexeu, então precisa de sessão viva até o fim. Se o roteiro morrer
+  // no meio, o passo reprova dizendo quais valores ficaram para trás.
+  await percorrerEdicaoDePerfil(page, { base: BASE, ok });
+
+  // ── 6. Sair ─────────────────────────────────────────────────────────────
   await page.getByRole('button', { name: /^Sair$/i }).click();
   // Sem sessão, a rota `/` volta a ser a Landing — que não tem a linha de
   // publicar. `[26/09]` Era o `#post-title`; o compositor saiu do feed.

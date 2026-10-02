@@ -21,7 +21,7 @@ import {
   Tv, Radio, MicOff, Mic, RotateCcw, CheckCircle, XCircle,
   Crown, Shield, UserCog, Image, Mail, UserMinus, Clock, ScrollText,
   Lock, Settings2, Wrench, Siren, Bell, SlidersHorizontal, Filter, EyeOff, Eye,
-  Flag, MailQuestion, MailCheck, ShieldCheck, Trophy,
+  Flag, MailQuestion, MailCheck, ShieldCheck, Trophy, Archive,
 } from 'lucide-react';
 
 // ─── Categorias ──────────────────────────────────────────────────────────────
@@ -143,6 +143,11 @@ export const ACTION_META = {
   // e isso é ação de moderação como qualquer outra. O e-mail do destinatário
   // não entra na trilha de propósito: ela é lida por toda a equipe.
   contact_reply:             A(MailCheck,    'text-neon-cyan',   '#22d3ee'),
+  // `[02/10]` A retenção passou a ter DUAS dimensões: tempo e quantidade. Esta
+  // linha só aparece quando o TETO corta — e, quando aparece, a notícia é que
+  // a trilha deixou de cobrir os 365 dias que o painel anuncia. Em operação
+  // normal o teto apaga zero, então esta action nunca deveria ser vista.
+  retencao_teto_atingido:    A(Archive,      'text-orange-400',  '#fb923c'),
   moderation_rejected:       A(Eye,          'text-neon-green',  '#39ff14'),
 
   // conteúdo — posts (o trigger `log_post_event` grava os `content_*`)
@@ -245,6 +250,19 @@ export function feedItemMeta(item) {
 // `logMeta.test.js` confere que este número bate com o `interval` do SQL — se
 // alguém mudar um lado, a UI passa a mentir sobre quando o log some.
 export const LOG_RETENTION_DAYS = 365;
+
+// `[02/10]` A segunda dimensão da retenção. Prazo promete que nada vive mais
+// de 365 dias; ele NÃO promete quantas linhas cabem nesses 365 dias — e só a
+// segunda garantia limita o tamanho.
+//
+// 80.000 é **1,6x** a projeção medida em 02/10 (139 linhas/dia de média nos
+// últimos 30 dias → ~50.700/ano), então em operação normal ele apaga ZERO.
+// É backstop para o cenário do pico, que foi de 924 linhas num dia.
+//
+// `retencaoHibrida.test.js` confere que este número bate com o `aplicar_teto_
+// de_linhas('admin_logs', N)` da migration — se alguém mudar um lado, a UI
+// passa a prometer uma janela que o banco não cumpre.
+export const LOG_RETENTION_MAX_ROWS = 80000;
 
 // ─── Actions geradas pelo BANCO ──────────────────────────────────────────────
 // Nenhuma delas aparece como string em `src/`, então o teste que varre o

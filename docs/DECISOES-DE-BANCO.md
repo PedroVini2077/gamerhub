@@ -429,6 +429,43 @@ escrito. Abrir virou ato deliberado; antes, fechar é que era.
 
 ---
 
+### `[02/10]` Retenção HÍBRIDA — e por que a margem é derivada, não parâmetro
+
+**Decidido:** teto de quantidade somado ao prazo, dentro do `cleanup_old_data()`
+que já existe. `admin_logs` 365d + 80.000 · `admin_notifications` **365d (nova)**
++ 20.000 · `notifications` lida+30d + **500 por usuário**. Margem de corte em
+125% do teto. Duas funções auxiliares, `aplicar_teto_de_linhas(tabela, teto)` e
+`aplicar_teto_por_usuario(teto)`.
+
+**Os números são medidos, não escolhidos:** 139 linhas/dia de média em
+`admin_logs` nos 30 dias até 02/10, pico de 924 num dia. 80.000 é **1,6x** a
+projeção anual da média, então em operação normal o teto apaga zero.
+
+**Recusado 1 — teto sem margem.** Cortar no número exato faz a tabela que
+encosta no teto perder algumas linhas **toda noite, para sempre** — e cada
+passada dispararia o aviso do §1.5 até ele virar ruído. Era restrição
+explícita do dono.
+
+**Recusado 2 — a margem como segundo parâmetro.** Dois números independentes
+divergem, e margem só faz sentido em relação ao teto. Ela é `ceil(teto * 1.25)`.
+
+**Recusado 3 — teto GLOBAL em `notifications`.** Faria o usuário movimentado
+apagar a notificação do usuário quieto, e quem recebe pouco é quem mais sente
+a perda. O corte é por `PARTITION BY user_id`.
+
+**Recusado 4 — fazer o teto inline no `cleanup_old_data()`.** Provar que o
+corte respeita o teto exigiria fabricar 80.000 linhas. Com a função auxiliar o
+**mesmo caminho de código** se prova em ROLLBACK com teto 10 — e foi assim que
+a margem, a idempotência e o lado do corte foram verificados.
+
+**Recusado 5 — nome de tabela dinâmico com `format('%I')`.** Ele impede
+injeção e não impede apontar a faxina para a tabela errada, que é o estrago
+que importa. Mapa fechado, com `RAISE` no `ELSE`.
+
+→ `supabase/migrations/20261002200000_retencao_hibrida_tempo_mais_quantidade.sql`
+
+---
+
 ## `[25/09]` A procedência da IA é uma COLUNA autodeclarada, não uma trilha
 
 **Decidido:** `news_articles.redigido_com_ia boolean NOT NULL DEFAULT false`,
