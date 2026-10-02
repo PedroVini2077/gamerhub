@@ -687,8 +687,8 @@ apresenta, não se o fato foi conferido"* — e a trava reprova se a frase sumir
 | --- | --- | --- |
 | **1** ✅ **`[01/10]`** | GDELT como 2ª fonte de coleta, ao lado do RSS | grátis, sem chave, sem ação do dono, e já responde "o que saiu fora das minhas fontes" |
 | **2** ✅ **`[01/10]`** | agrupamento em evento + classificação | é o que impede 20 sites virarem 20 pautas |
-| **3** | `TimelineVol` do GDELT e Trends como **sinal anexado** | só faz sentido quando já existe evento a que anexar |
-| **4** | YouTube / comunidade | exigem segredo novo e ação dele |
+| **3** ✅ **`[01/10]`** | sinal de aceleração anexado ao evento — **e ele TROCOU DE FONTE**: `TimelineVol` e Trends morreram no mesmo dia, e o sinal passou a sair do nosso próprio `news_items_raw` (ver a seção no fim deste arquivo) | só faz sentido quando já existe evento a que anexar |
+| **4** ⏸️ | YouTube / comunidade | exigem segredo novo e **ação dele** — é o único bloco do radar que não depende só de mim |
 
 ### 7. Mudanças necessárias — e o que NÃO muda
 

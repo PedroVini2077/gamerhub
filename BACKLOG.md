@@ -36,7 +36,20 @@
 ## 🔄 EM EXECUÇÃO
 
 
-### ⬜ `[01/10]` RADAR DE PAUTAS — EVOLUÇÃO PARA DESCOBERTA (auditoria iniciada)
+### 🔵 `[02/10]` RADAR DE PAUTAS — as Fases 1, 2 e 3 estão FEITAS
+
+> **`[02/10]` Conferido contra o sistema.** As três fases que não dependiam de
+> ninguém estão no ar: a 2ª fonte de coleta (Fase 1), o agrupamento visível com
+> selo de confiabilidade (Fase 2) e o sinal de aceleração (Fase 3). **801
+> manchetes** em `news_items_raw`, de 15 fontes.
+>
+> **Falta só a Fase 4 — YouTube e comunidade — e ela depende DELE:** exige
+> segredo novo (chave da YouTube Data API) e a decisão de ligar. É o único
+> bloco do radar que não depende só de mim.
+>
+> O histórico de como cada fase chegou aqui fica abaixo, porque cada uma
+> desmentiu uma previsão minha — e é isso que não pode se perder.
+
 
 **Pedido dele em 01/10.** O radar hoje responde *"o que as fontes que escolhemos
 publicaram?"*. Ele quer que responda também *"o que está começando a pegar fogo
@@ -356,57 +369,32 @@ rascunho de teste com mais de 2h — **nunca** o que está publicado.
 
 ---
 
-### 🔄 `[25/09]` GAMERHUB NEWS — o plano, com a ordem decidida hoje
+### 🔵 `[02/10]` O GamerHub News está DE PÉ — o que falta são três acabamentos
 
-**Objetivo dele:** *"vamos tentar terminar esse GamerHub News ainda hj"*.
+> **`[02/10]` Este item encolheu porque foi conferido contra o código, não
+> contra a memória (§1.4).** Ele listava 8 etapas e duas estavam marcadas
+> erradas: a **etapa 5** (cena do News na landing) aparecia como *PARCIAL* e
+> está **feita desde 25/09, com a arte dele** (PR #251, `5-marca` em
+> `src/assets/landing/cenas/`); e a **ingestão automática** aparecia como "a
+> tabela existe e está fechada", quando o radar enche `news_items_raw` desde
+> 26/09 — **801 manchetes** medidas em 02/10.
+>
+> As 8 etapas do plano de 25/09 estão **todas concluídas**, e por isso saíram
+> daqui (§6.2 regra 2). O histórico está nos PRs #246 a #255 e no
+> `PLANO-FEED-BUSCA-NEWS.md`.
 
-**O que já existe** (PR #246): 5 tabelas, RLS provada em ROLLBACK, `busca`
-gerada com `portugues_sem_acento`. **Zero tela.**
+**O que o News ainda não tem.** Nenhuma destas impede usá-lo — ele cria,
+escreve, revisa, publica, lê e tem radar de pautas.
 
-| # | Etapa | Estado |
+| falta | o que custa | por que não entrou |
 | --- | --- | --- |
-| 1 | O corte editorial B no banco: `in_review` + publicar só `is_super()` | ✅ trigger, provado em ROLLBACK 8/8 |
-| 2 | `is_owner()` nas oito (5 funções + 3 policies) | ✅ SEC-054 + SEC-054b |
-| 3 | Service de leitura do News | ✅ `newsService.js`, sem RPC e sem `conteudo` na lista |
-| 4 | `/news` (lista) e `/news/:slug` (artigo) — **só logado** | ✅ |
-| 5 | O anúncio do News na LANDING | ⚠️ **PARCIAL** — ver abaixo |
-| 6 | Painel editorial (criar, editar, enviar para revisão, publicar) | ✅ aba **News** do admin |
-| 7 | Travas: vocabulário × banco, rota coberta por e2e | ✅ |
-| 8 | **Rascunhar com IA** a partir das NOTAS do editor | ✅ Edge Function + painel + 4 invariantes |
+| **capa por upload** | bucket + policy + compressão (`lib/image.js`) | hoje é URL colada, e funciona. É bloco próprio, com egress junto |
+| **agendamento pela tela** | um job que vire `scheduled` em `published` | o banco **aceita** `scheduled` e a tela não oferece. Sem o job, agendar seria promessa que ninguém cumpre — e o `vocabularioDoNewsNaoDeriva` já trava os dois lados |
+| **paginação da lista** | cursor, como o feed já faz | teto de 30 (`TETO_DA_LISTA`), **dito na tela**. Só dói quando passar de 30 artigos |
 
-> **A etapa 5 ficou PELA METADE, e é honesto dizer por quê.** O News foi
-> anunciado dentro da cena do feed na landing — uma frase, sem arte nova. O que
-> ele merece é **cena própria**, como Feed, Mural, Lives, Keys e Ranks têm: cada
-> uma tem arte dele e sobreposição própria.
->
-> Eu **não** produzi essa arte de propósito. A decisão de 25/09 é clara: a arte
-> é dele, a composição é minha — e as duas vezes em que eu tentei produzir arte
-> (3D e ícones) foram descartadas. Fazer de novo seria gastar sessão para jogar
-> fora.
->
-> **O que eu preciso dele:** a arte da cena do News, no mesmo formato das
-> outras 7. Aí a cena entra em `SECOES` e ganha `#news` na navegação e no rodapé.
-
-> **`[25/09]` A etapa 6 ENTROU.** O News deixou de ser sala vazia: a equipe cria,
-> escreve com o mesmo editor do post, manda para revisão, e super admin publica.
->
-> **O que o News AINDA não tem**, e nenhuma destas é bloqueio para usá-lo:
->
-> | Falta | Por que não entrou agora |
-> | --- | --- |
-> | **capa por upload** | hoje é URL colada. Upload exige bucket, policy e compressão (`lib/image.js`) — é um bloco próprio |
-> | **agendamento pela tela** | o banco aceita `scheduled`, a tela não oferece. Sem um job que vire `scheduled` em `published`, agendar seria uma promessa que ninguém cumpre |
-> | **ingestão automática** (`news_items_raw`) | a tabela existe e está fechada. É o bloco de coletar de fontes |
-> | **paginação da lista** | teto de 30, dito na tela |
-
-**Fora deste bloco, decididos hoje e enfileirados depois:** a RPC da wordlist,
-o `pg_trgm`, a rota de publicar (botão "+"), e a fonte da landing.
-
-**Risco que eu já enxergo:** a etapa 5 é de camada 1 (landing) e as outras são
-camada 3. Pela §0.4 a landing vem antes — mas anunciar uma tela que ainda não
-existe é pior do que não anunciar. Por isso ela vai **junto** com a 4, não antes.
-
----
+**A ordem que eu sugiro**, se for retomar: paginação (menor, e a fundação já
+existe no feed) → agendamento (o banco já aceita) → capa por upload (o maior,
+e o único que mexe em egress).
 
 ### 🔴 `[25/09]` AÇÃO DELE — criar a `GROQ_API_KEY` (sem ela a IA não redige)
 
