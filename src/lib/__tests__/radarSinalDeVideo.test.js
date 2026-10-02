@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  montarUrlDaBusca, lerRespostaDaBusca, buscarVideos, contarVideosDaPauta,
-  rotuloDeVideo, motivoDaFalha, TETO_DE_BUSCAS_POR_CLIQUE, JANELA_DE_HORAS,
+  montarUrlDaBusca, montarConsulta, lerRespostaDaBusca, buscarVideos,
+  contarVideosDaPauta, rotuloDeVideo, motivoDaFalha,
+  TETO_DE_BUSCAS_POR_CLIQUE, JANELA_DE_HORAS, TETO_DE_TERMOS,
 } from '../../../supabase/functions/radar-de-pautas/youtube.ts';
 import { seloDeVideo } from '../news/sinalDeVideo';
 
@@ -61,8 +62,8 @@ const canal = (id, title) => ({
 });
 
 describe('o sinal de vídeo — a URL da busca', () => {
-  const FONTE = 'https://www.googleapis.com/youtube/v3/search?q=games+OR+xbox';
-  const url = new URL(montarUrlDaBusca(FONTE, CHAVE, new Date('2026-10-02T12:00:00Z')));
+  const FONTE = 'https://www.googleapis.com/youtube/v3/search?q=ignorado';
+  const url = new URL(montarUrlDaBusca(FONTE, ['gta 6'], CHAVE, new Date('2026-10-02T12:00:00Z')));
 
   it('pede type=video — sem isso volta CANAL, e voltou', () => {
     expect(
@@ -74,12 +75,44 @@ describe('o sinal de vídeo — a URL da busca', () => {
     ).toBe('video');
   });
 
+  it('a consulta sai das PAUTAS, não da linha da fonte', () => {
+    expect(
+      url.searchParams.get('q'),
+      'o `q` deixou de vir dos termos das pautas.\n'
+      + '    Consulta generica com UMA chamada nao acha nada: `games OR gameplay`\n'
+      + '    ordenado por data devolve os 50 uploads mais recentes que mencionam\n'
+      + '    "games", e a chance de dois falarem da pauta e quase nula. Foi o que\n'
+      + '    aconteceu no 1o clique real — 16 fontes lidas, nenhum selo, nenhuma\n'
+      + '    falha. A consulta e a pergunta tem de ser a mesma coisa.',
+    ).toBe('"gta 6"');
+  });
+
+  it('termo com espaço vai entre ASPAS, e aspa solta não vaza', () => {
+    expect(
+      montarConsulta(['grand theft auto', 'nacon']),
+      'termo com espaco sem aspas vira palavras soltas, e a busca passa a casar\n'
+      + '    com qualquer video que diga "auto".',
+    ).toBe('"grand theft auto" OR nacon');
+
+    expect(
+      montarConsulta(['o "melhor" jogo']),
+      'aspa DENTRO do termo sobreviveu. Ela quebra a expressao inteira do lado\n'
+      + '    do Google — e isso volta `200` com resultado errado, nao erro.',
+    ).toBe('"o melhor jogo"');
+
+    expect(montarConsulta([]), 'sem termo o `q` tem de ser vazio').toBe('');
+    expect(
+      montarConsulta(Array.from({ length: 40 }, (_, i) => `termo${i}`)).split(' OR '),
+      `a consulta passou de ${TETO_DE_TERMOS} termos`,
+    ).toHaveLength(TETO_DE_TERMOS);
+  });
+
   it('o CADASTRO não consegue desligar a proteção', () => {
     // Uma fonte cadastrada com `type=channel` e `order=viewCount` — o estrago
     // do primeiro teste real, so que vindo de uma linha de tabela.
     const torta = 'https://www.googleapis.com/youtube/v3/search'
       + '?q=games&type=channel&order=viewCount&publishedAfter=2020-01-01T00:00:00Z';
-    const u = new URL(montarUrlDaBusca(torta, CHAVE, new Date('2026-10-02T12:00:00Z')));
+    const u = new URL(montarUrlDaBusca(torta, ['gta 6'], CHAVE, new Date('2026-10-02T12:00:00Z')));
     expect(
       [u.searchParams.get('type'), u.searchParams.get('order')],
       'a URL cadastrada na fonte conseguiu mudar `type` ou `order`.\n'
@@ -87,13 +120,19 @@ describe('o sinal de vídeo — a URL da busca', () => {
       + '    sinal significa alguma coisa nao sao configuracao. Uma linha de\n'
       + '    tabela com `type=channel` traria canal — o bug do primeiro teste\n'
       + '    real, so que sem ninguem reler a linha.',
-    ).toEqual(['video', 'date']);
+    ).toEqual(['video', 'relevance']);
     expect(u.searchParams.get('publishedAfter')).toBe('2026-10-01T12:00:00.000Z');
+    expect(
+      u.searchParams.get('q'),
+      'o `q` da linha da fonte sobreviveu. Ele e ignorado de proposito desde\n'
+      + '    `[02/10]`: a consulta sai das pautas, e a linha so carrega a base\n'
+      + '    (endpoint, regiao, idioma).',
+    ).toBe('"gta 6"');
   });
 
   it('a chave NUNCA vem do cadastro — ela vem do ambiente', () => {
     const comChaveFalsa = 'https://www.googleapis.com/youtube/v3/search?q=games&key=CHAVE-DO-BANCO';
-    const u = new URL(montarUrlDaBusca(comChaveFalsa, CHAVE));
+    const u = new URL(montarUrlDaBusca(comChaveFalsa, ['gta 6'], CHAVE));
     expect(
       u.searchParams.get('key'),
       'uma chave escrita na linha da fonte sobreviveu.\n'
@@ -102,13 +141,18 @@ describe('o sinal de vídeo — a URL da busca', () => {
     ).toBe(CHAVE);
   });
 
-  it('pede order=date e uma janela de 24h', () => {
+  it('pede order=relevance e uma janela de 24h', () => {
+    // `[02/10]` Era `date`, e eu estava errado. A 1a versao nao achou NADA no
+    // primeiro clique real, e o motivo era este somado a consulta generica:
+    // `date` dentro de uma janela de 24h so troca relevancia por hora de
+    // upload — o `publishedAfter` ja garante "hoje" sozinho.
     expect(
       url.searchParams.get('order'),
-      'o `order=date` sumiu. O padrao da API e `relevance`, que devolve o video\n'
-      + '    mais POPULAR — tipicamente de anos atras. Para "esta falando disso\n'
-      + '    hoje" isso e a resposta errada com cara de certa.',
-    ).toBe('date');
+      'o `order` saiu de `relevance`. Dentro da janela de 24h, ordenar por DATA\n'
+      + '    devolve os uploads mais recentes (canais pequenos postando qualquer\n'
+      + '    coisa) em vez dos mais relevantes para os termos das pautas.\n'
+      + '    Foi exatamente isso que fez o sinal nao achar nada no 1o clique.',
+    ).toBe('relevance');
 
     const desde = url.searchParams.get('publishedAfter');
     expect(desde, 'o `publishedAfter` sumiu — sem a janela o sinal deixa de significar "hoje".')
@@ -152,7 +196,7 @@ describe('o sinal de vídeo — a cota', () => {
     let chamadas = 0;
     const contando = async (u) => { chamadas += 1; return buscar(u); };
 
-    const r = await buscarVideos(fontes, CHAVE, contando);
+    const r = await buscarVideos(fontes, ['gta 6'], CHAVE, contando);
 
     expect(
       chamadas,
@@ -171,7 +215,7 @@ describe('o sinal de vídeo — a cota', () => {
   });
 
   it('sem chave o radar segue inteiro, e o motivo e DITO', async () => {
-    const r = await buscarVideos([{ nome: 'YouTube', url: 'https://x.test/?q=games' }], undefined, buscar);
+    const r = await buscarVideos([{ nome: 'YouTube', url: 'https://x.test/?q=games' }], ['gta 6'], undefined, buscar);
     expect(r.videos).toEqual([]);
     expect(
       r.comFalha[0]?.motivo,

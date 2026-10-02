@@ -44,7 +44,7 @@ import { pedirAoModelo } from "./modelo.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "9f19ebdf754530c3";
+const IMPRESSAO_DESTE_CODIGO = "4a318093d5a4a49c";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -249,7 +249,7 @@ Deno.serve(async (req: Request) => {
   // Aceleração (Fase 3) e vídeo (Fase 4). É a ÚLTIMA coisa que acontece, de
   // propósito: sinal que falha não pode custar pauta. O porquê de cada um está
   // em `sinais.ts`, `aceleracao.ts` e `youtube.ts`.
-  const { pautas: comSinal, falhasDeVideo } = await anexarSinais(limpas, {
+  const { pautas: comSinal, falhasDeVideo, videosConsiderados } = await anexarSinais(limpas, {
     chamarAceleracao: (termos, dias) => admin.rpc("news_aceleracao_de_termos",
       { p_termos: termos, p_janela_dias: dias }),
     fontesDeVideo,
@@ -266,6 +266,7 @@ Deno.serve(async (req: Request) => {
     // fonte nao respondeu" e a mesma informacao, venha ela de um feed ou da
     // API do YouTube. Duas listas separadas fariam uma delas ser esquecida.
     comFalha: [...comFalha, ...falhasDeVideo],
+    videosConsiderados,
     pautas: comSinal,
   }));
 });

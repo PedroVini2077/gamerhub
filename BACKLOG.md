@@ -1223,7 +1223,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**55 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2117,37 +2117,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[02/10]` 🟠 **OCULTAR não tem inversa pela TELA — `restoreContent` existe
-  e nenhum botão chega nele.** *Achado ao desenhar o E2E do ocultar, 02/10.*
-
-  **O mecanismo, medido no código:**
-
-  | Caminho | O que ele cobre |
-  | --- | --- |
-  | Fila → botão "Restaurar" | só enquanto o item está `pending`. O `ModerationQueue` chama `fetchModerationQueue('pending', …)` com o status **fixo**; resolvido some da tela |
-  | `/admin` → Posts → "Restaurar post" | só quando `p.deleted_at` existe (`PostsPanel.jsx:106`). Post **oculto** mostra o selo "Oculto" e só tem "Excluir" |
-  | Painel do fundador | nenhuma referência a `hidden_at` |
-
-  Confirmada a ocultação, `restoreContent` (`moderationService.js`) fica
-  inalcançável. **É a classe do `apply_suspension` sem `lift_suspension`** — a
-  regra do §5 (`BANCO.md`, "toda ação de estado precisa da INVERSA").
-
-  **Severidade 🟠, não 🔴, e com o número:** medido em 02/10, **0 posts ocultos
-  vivos**, 0 comentários, 0 mural. É lacuna latente. O estrago aparece na
-  primeira vez que a equipe ocultar algo por engano — e aí o conserto vira
-  `UPDATE` no banco, que é o oposto de ter painel.
-
-  **Minha recomendação (🟡, espera decisão dele):** mostrar o botão de
-  restaurar no `PostsPanel` quando `hidden_at` existir, chamando
-  `restoreContent('post', id)` — a função já existe, já tem `count: 'exact'` e
-  já grava na trilha. É aditivo e não muda o caminho feliz. A alternativa
-  (filtro de status na fila) é maior e resolve só o que passou pela fila.
-
-  **Isto BLOQUEIA o E2E do ocultar:** um roteiro que oculta e morre no meio
-  deixaria um post preso sem caminho de volta pela tela — eu criaria o
-  problema que acabei de encontrar.
-
-
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -2205,13 +2174,25 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   o comportamento depois de ocultar (não só apagar) · usuário comum ×
   moderador na mesma tela.
 
-  **`[02/10]` O do OCULTAR está BLOQUEADO**, e o motivo é um achado: ocultar
-  não tem inversa pela tela (item próprio, logo acima). Automatizá-lo antes de
-  fechar isso significa um roteiro que, ao morrer no meio, deixa um post preso
-  sem caminho de volta. O desenho já está feito e cabe em uma sessão assim que
-  a inversa existir: comum publica → staff denuncia (o autor não pode denunciar
-  o próprio, `canReport` exclui) → staff oculta pela fila → confere que sumiu
-  do feed → **restaura** → comum apaga.
+  **`[02/10]` O bloqueio do OCULTAR foi REMOVIDO** — a inversa passou a existir
+  (botão "Mostrar post" no painel, `handleMostrarPost` → `restoreContent`, com
+  trava de 3 checagens). O roteiro já pode ser escrito.
+
+  **E os TRÊS que sobram são o mesmo cenário**, descoberto ao desenhar: os três
+  gatilhos de notificação pulam o próprio autor (`v_owner = NEW.user_id →
+  return NEW`, medido em `pg_proc`), e `canReport` exclui o autor. Ou seja,
+  **notificação, ocultar e comum × moderador exigem as duas contas** e cabem num
+  roteiro só, em vez de três logando duas vezes cada:
+
+      comum publica → staff curte e comenta (gera notificação) → staff denuncia
+      → staff oculta pela fila → confere que sumiu → staff MOSTRA de novo
+      → comum entra, vê o sino, abre o painel, marca lido → comum apaga
+
+  **Live chat** é o único que cabe numa conta só, e sai separado.
+
+  **Por que não foi escrito ainda:** a sessão foi gasta na inversa (que o
+  destravou) e na correção da Fase 4. O desenho está aqui inteiro e não depende
+  da conversa.
 
   **`[24/09]` O corte foi FEITO:** o bloco do ciclo do post virou
   `e2e/cicloDoPost.mjs` (148 linhas) e o `fluxos.mjs` caiu de 288 para **189**.
@@ -2839,8 +2820,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->185<!--/n--> arq ·
-  <!--n:src.lib.linhas-->23.364<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->186<!--/n--> arq ·
+  <!--n:src.lib.linhas-->23.526<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

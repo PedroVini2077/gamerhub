@@ -81,6 +81,29 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > e isso só foi possível porque a pergunta mudou o desenho em vez de pedir
 > conserto depois.
 >
+> ### ⚠️ `[02/10]` O 1º clique real não achou NADA, e o erro era de desenho
+>
+> *"170 manchetes de 16 fontes"*, nenhum selo de vídeo, e **nenhuma linha em
+> `comFalha`**. O silêncio nos dois lugares é o que permite o diagnóstico sem
+> adivinhar: todo caminho de falha empurra uma linha, então a API respondeu,
+> vieram vídeos, e nenhuma pauta casou.
+>
+> **A causa não era cota.** Era `order=date` sobre uma consulta genérica: os
+> 50 uploads mais recentes que mencionam "games" são canais pequenos postando
+> qualquer coisa, e a chance de dois falarem de "GTA 6" é quase nula. Pior, o
+> `order=date` não resolvia nem o problema que eu inventei para ele — o
+> `publishedAfter` já garante "hoje" sozinho.
+>
+> **A correção não gastou mais cota:** continua UMA busca, mas o `q` passou a
+> ser montado com os termos das próprias pautas. Relevante por construção,
+> porque a consulta e a pergunta viraram a mesma coisa.
+>
+> **A lição é sobre o número que faltava.** Eu não tinha como distinguir "a
+> API falhou" de "achou vídeos e nada casou" olhando a tela — os dois são
+> ausência de selo. Agora a resposta carrega `videosConsiderados`, e esse
+> número teria dado o diagnóstico em um minuto em vez de um clique perdido.
+> É o §1.5 aplicado ao estado INTERMEDIÁRIO, não só ao erro.
+
 > **E a segunda fonte, se alguém cadastrar uma, não é consultada em silêncio:**
 > ela vira linha em `comFalha` dizendo que ficou fora do teto. Fonte ativa que
 > nunca é lida, sem nada dizer, é a "cobertura que não cobre" do §1.5.

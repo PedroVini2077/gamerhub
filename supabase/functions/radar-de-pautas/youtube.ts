@@ -46,13 +46,41 @@
 // Isto não é teoria: o primeiro teste real do dono, no navegador, voltou um
 // **canal**, e o radar teria anexado "um canal" a uma pauta.
 //
-// **`order=date`** — o padrão é `relevance`, que devolve o vídeo mais popular
-// de três anos atrás. Para "está falando disso HOJE" isso é a resposta errada
-// com cara de certa.
+// **`publishedAfter`** — é o que faz o sinal significar "hoje" em vez de
+// "algum dia". Sem ele, `relevance` devolve o vídeo mais popular de três anos
+// atrás: a resposta errada com cara de certa.
 //
-// **`publishedAfter`** — sem a janela, `order=date` ainda pode trazer o que
-// escapou do filtro de relevância. A janela é o que faz o sinal significar
-// "hoje" em vez de "algum dia".
+// **`q` montado a partir das PAUTAS** — ver o bloco seguinte. Sem isso a
+// busca é genérica, e genérico com uma chamada só não acha nada.
+//
+// ============================================================================
+// ⚠️ `[02/10]` A PRIMEIRA VERSÃO NÃO ACHOU NADA, E O ERRO ERA MEU
+// ============================================================================
+//
+// Ela ia ao ar com `q` fixo na linha da fonte (`games OR gameplay OR
+// playstation OR …`) e `order=date`. O primeiro clique real do dono devolveu
+// **16 fontes lidas, nenhum selo de vídeo e nenhuma linha em `comFalha`** — e
+// o silêncio nos dois lugares é o que permite o diagnóstico: todo caminho de
+// falha empurra uma linha, então a API respondeu, vieram vídeos, e **nenhuma
+// pauta casou**.
+//
+// **Por que não casava.** `order=date` + consulta genérica + 50 resultados =
+// os 50 uploads MAIS RECENTES que mencionam "games" em algum lugar. São
+// canais pequenos postando qualquer coisa; a chance de dois deles falarem de
+// "GTA 6" é quase nula.
+//
+// E `order=date` não estava nem resolvendo o problema que eu inventei para
+// ele: **o `publishedAfter` já garante "hoje" sozinho.** Ordenar por data
+// dentro de uma janela de 24h só troca relevância por hora de upload.
+//
+// **A correção: a consulta sai das PRÓPRIAS PAUTAS.** Depois que o modelo
+// agrupa, cada pauta traz até 3 termos — e eles viram um `q` só, com `OR`.
+// Continua sendo **uma** chamada, e agora ela é relevante por construção,
+// porque a pergunta e a consulta passaram a ser a mesma coisa.
+//
+// A linha da fonte deixou de carregar o assunto e passou a carregar só a base
+// (endpoint, região, idioma). O motor fica **ainda mais cego ao assunto** do
+// que antes: nem a tabela o nomeia.
 //
 // ============================================================================
 // O QUE ESTE SINAL NÃO É
@@ -109,6 +137,29 @@ export function motivoDaFalha(status: number, corpo: string): string {
   return razao ? `HTTP ${status} (${razao})` : `HTTP ${status}`;
 }
 
+/** Quantos termos cabem na consulta. 8 pautas x 3 termos = 24. */
+export const TETO_DE_TERMOS = 24;
+
+/**
+ * Monta o `q` a partir dos termos das pautas.
+ *
+ * Termo com espaco vai entre ASPAS: sem elas, `grand theft auto` viraria tres
+ * palavras soltas e a busca casaria com qualquer video que diga "auto".
+ *
+ * Aspas DENTRO do termo sao removidas em vez de escapadas — o modelo nao
+ * deveria produzi-las, e uma aspa solta quebra a expressao inteira do lado do
+ * Google, que e uma falha silenciosa: a busca volta `200` com o resultado
+ * errado.
+ */
+export function montarConsulta(termos: string[]): string {
+  const limpos = [...new Set(
+    termos.map((t) => t.replace(/["']/g, " ").replace(/\s+/g, " ").trim())
+      .filter((t) => t.length >= 3),
+  )].slice(0, TETO_DE_TERMOS);
+
+  return limpos.map((t) => (t.includes(" ") ? `"${t}"` : t)).join(" OR ");
+}
+
 /**
  * Monta a URL da busca a partir da URL CADASTRADA na fonte.
  *
@@ -138,13 +189,19 @@ export function motivoDaFalha(status: number, corpo: string): string {
  * `agora` entra por parâmetro para o teste poder fixar o relógio — sem isso a
  * asserção sobre `publishedAfter` seria uma corrida com o próprio relógio.
  */
-export function montarUrlDaBusca(urlDaFonte: string, chave: string, agora = new Date()): string {
+export function montarUrlDaBusca(
+  urlDaFonte: string, termos: string[], chave: string, agora = new Date(),
+): string {
   const u = new URL(urlDaFonte);
   const desde = new Date(agora.getTime() - JANELA_DE_HORAS * 3600_000).toISOString();
 
-  // Os tres que o cadastro nao decide — ver o cabecalho desta funcao.
+  // Os QUATRO que o cadastro nao decide — ver o cabecalho desta funcao.
+  u.searchParams.set("q", montarConsulta(termos));
   u.searchParams.set("type", "video");
-  u.searchParams.set("order", "date");
+  // `relevance` (o padrao da API), e nao `date`: a janela de 24h ja garante
+  // "hoje", e ordenar por data dentro dela so troca relevancia por hora de
+  // upload. Explicito porque o padrao de API de terceiro pode mudar.
+  u.searchParams.set("order", "relevance");
   u.searchParams.set("publishedAfter", desde);
 
   // Estes o cadastro PODE mudar: sao recorte editorial, nao protecao.
@@ -204,12 +261,18 @@ export function lerRespostaDaBusca(texto: string, teto = TETO_DE_VIDEOS): Video[
  */
 export async function buscarVideos(
   fontes: { nome: string; url: string }[],
+  termos: string[],
   chave: string | undefined,
   buscar: (url: string, tetoMs?: number) => Promise<{ ok: boolean; status: number; texto: string }>,
   agora = new Date(),
 ): Promise<{ videos: Video[]; comFalha: FalhaDeVideo[] }> {
   const comFalha: FalhaDeVideo[] = [];
   if (!fontes.length) return { videos: [], comFalha };
+
+  // Sem termo nao ha o que procurar — e nao ha pauta para receber sinal. Nao
+  // e falha: e nao haver pergunta. Gastar uma das 100 buscas do dia aqui seria
+  // queimar cota para enfeitar coisa nenhuma.
+  if (!montarConsulta(termos)) return { videos: [], comFalha };
 
   // Sem chave o sinal simplesmente NAO EXISTE, e isso e dito. O radar inteiro
   // continua funcionando — foi assim que a Fase 4 pode entrar sem virar
@@ -233,7 +296,7 @@ export async function buscarVideos(
   const videos: Video[] = [];
   for (const f of usadas) {
     try {
-      const r = await buscar(montarUrlDaBusca(f.url, chave, agora), TIMEOUT_DA_BUSCA_MS);
+      const r = await buscar(montarUrlDaBusca(f.url, termos, chave, agora), TIMEOUT_DA_BUSCA_MS);
       if (!r.ok) { comFalha.push({ nome: f.nome, motivo: motivoDaFalha(r.status, r.texto) }); continue; }
       const lidos = lerRespostaDaBusca(r.texto);
       if (!lidos.length) { comFalha.push({ nome: f.nome, motivo: "nenhum video na janela de 24h" }); continue; }

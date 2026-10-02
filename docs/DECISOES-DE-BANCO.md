@@ -484,6 +484,18 @@ executável.
 `CHECK (url ~* '^https?://')`. Relaxar a regra para um tipo é regra com
 exceção, e regra com exceção é regra que ninguém confere.
 
+> **⚠️ `[02/10]` E a linha deixou de guardar o assunto, horas depois.** A 1ª
+> versão punha `q=games OR gameplay OR …` aqui, e o **primeiro clique real não
+> achou nada**: 16 fontes lidas, nenhum selo, nenhuma falha. Consulta genérica
+> + `order=date` devolve os 50 uploads mais recentes que mencionam "games", e
+> a chance de dois falarem da pauta é quase nula.
+>
+> Hoje o `q` sai dos termos das **próprias pautas**, e a linha carrega só a
+> base. O motor fica ainda mais cego ao assunto do que o desenho original
+> pedia: nem a tabela o nomeia.
+>
+> → `20261002204449_radar_fase_4_a_consulta_de_video_sai_das_pautas.sql`
+
 **Recusado 3 — deixar o cadastro mandar nos parâmetros.** `type`, `order` e
 `publishedAfter` são sobrescritos pelo código. Sem `type=video` a API devolve
 **canal** — medido no primeiro teste real da chave —, e esse estrago vindo de
