@@ -1748,6 +1748,68 @@ lugar do histórico.
 
 ---
 
+## `[02/10]` SEC-055 — a BUSCA DE PESSOAS entregava a base inteira, com cargos
+
+🟠 **Alto.** Explorável por qualquer pessoa com conta, e o que vaza é o insumo
+de todo ataque seguinte: quem existe, e quem manda.
+
+### O achado, e ele nasceu de uma REGRA, não de uma varredura
+
+A Fase 3 do radar precisou escapar `%` e `_` num `ILIKE` porque os termos vinham
+do modelo. Ao escrever isso como regra em
+[`docs/regras/BANCO.md`](regras/BANCO.md), a pergunta do §1.3 — *"onde mais esse
+mesmo padrão existe?"* — achou `buscar_pessoas`:
+
+```sql
+AND pr.username ILIKE '%' || v_termo || '%'      -- v_termo CRU
+```
+
+`SECURITY DEFINER`, e `authenticated` executa. **Medido em produção**, assumindo
+o papel de um usuário comum:
+
+```
+buscar_pessoas('%%', 50)   ->  6 perfis — a BASE INTEIRA:
+
+   claudestaff:admin · claudetester:user · ogamerhub:super_admin
+   ogamerpedro:user  · opedrovini:owner  · ovinipedro:admin
+```
+
+### Risco · impacto · solução
+
+| | |
+| --- | --- |
+| **Risco** | digitar `%%` (ou `__`, ou `a%`) na caixa de busca de pessoas |
+| **Impacto** | **enumeração** (§1.3 a nomeia): o cadastro completo, e a coluna `role` junto — o mapa de quem atacar. Não dá poder nenhum sozinho; é o reconhecimento que vem antes de todos os outros |
+| **Solução** | `public.escapar_curinga()`, aplicada ao termo antes do `ILIKE` |
+
+**Medido depois:** `buscar_pessoas('%%', 50)` devolve **0**, e `'pedro'`
+continua devolvendo os 3 na ordem certa (`opedrovini` antes de `ogamerpedro`,
+porque quem começa com o termo vem primeiro).
+
+### Isto NÃO é injeção de SQL, e a diferença decide o conserto
+
+O valor é **parâmetro**: o Postgres nunca o executa como código, e
+`quote_literal`/`format('%L')` não resolveriam nada. O estrago é o **coringa do
+operador de padrão**, e ele tem duas caras:
+
+1. **enumeração** — o caso acima;
+2. **número absurdo com cara de medição** — no radar, um `%` solto contaria a
+   tabela inteira e a tela diria *"12x o normal"*. Nada estoura, nada loga, e o
+   número mente parecendo dado (§1.5).
+
+### A barra vem PRIMEIRO, e o radar de ontem errava nisso
+
+O escape que entrou com a Fase 3 cobria `%` e `_` e parava ali. Um termo
+terminado em `\` deixa o padrão terminando em caractere de escape, e o Postgres
+**levanta erro** na cara de quem buscou. `escapar_curinga` escapa a barra antes,
+e o radar passou a usar a mesma função — **uma** cópia, porque duas divergem
+(§4).
+
+Trava: `padraoDeBuscaNaoVazaCuringa.test.js` (`INV-PORTA-014`), que varre as
+migrations por **bloco de função** e exige o escape. Quatro reinjeções a
+provaram, e **ela achou um falso positivo nela mesma no 1º run**: a policy
+`"User insere proprio like de comentario"` tem a palavra *like* no nome.
+
 ## `[25/09]` SEC-053 — o BANIMENTO não alcançava as policies
 
 🟠 **Alto.** Explorável por quem tem conta, e o alvo é a própria ferramenta que

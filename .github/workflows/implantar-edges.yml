@@ -76,9 +76,28 @@ jobs:
             exit 1
           fi
 
+      # `[02/10]` A VERSÃO É FIXA, e não é zelo de reprodutibilidade.
+      #
+      # Com `version: latest` a action pergunta à API do GitHub qual é a última
+      # release — **sem autenticar**. O deploy da Fase 3 do radar morreu nisso:
+      #
+      #     Failed to resolve latest Supabase CLI release: rate limit exceeded
+      #
+      # O runner compartilha IP com o mundo, então o teto de 60 req/h por IP
+      # não é nosso para administrar. É a MESMA classe que matou a GDELT
+      # (`docs/regras/COTAS.md`): serviço que identifica por IP é inutilizável
+      # atrás de infraestrutura compartilhada. Aqui dá para sair da fila
+      # inteira, porque versão fixa não consulta a API.
+      #
+      # De brinde: o que vai para produção deixa de mudar sozinho no dia em que
+      # a Supabase publicar uma release.
+      #
+      # Para subir a versão: ver https://github.com/supabase/cli/releases.
+      # Este workflow dispara quando ELE MESMO muda, então o próprio merge
+      # prova que o número existe — se não existir, o deploy reprova na hora.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.119.0
 
       # `deploy` sem nome implanta todas. A configuração de `verify_jwt` de cada
       # uma vem do `supabase/config.toml` — versionada, e não de uma flag que

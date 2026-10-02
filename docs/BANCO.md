@@ -264,6 +264,23 @@ transforma esta pegadinha em bug silencioso (§4).
   > assumindo os dois papéis**, não lendo o grant: `permission denied` nos dois.
   > Nenhuma tela precisa dela — a Edge Function chama com a service role.
 
+- **`[02/10]` `escapar_curinga(p_texto text)`** — escapa `\`, `%` e `_` para uso
+  em `ILIKE`/`LIKE`. **Não é proteção contra injeção** (o valor é parâmetro e o
+  Postgres nunca o executa): é contra o **coringa**. Um `%` solto casa com a
+  tabela inteira — foi o SEC-055, em que `buscar_pessoas('%%')` devolvia os 6
+  perfis **com os cargos** a qualquer pessoa logada.
+
+  > **A barra é escapada PRIMEIRO**, e a ordem não é detalhe: escapar `%` antes
+  > faria os próprios `\` introduzidos serem escapados de novo. E sem tratar a
+  > barra, um termo terminado em `\` deixa o padrão terminando em caractere de
+  > escape, e o Postgres **levanta erro** na cara de quem buscou.
+  >
+  > `REVOKE ALL FROM PUBLIC, anon, authenticated` — ninguém a chama de fora; ela
+  > só serve de dentro das RPCs, que são `DEFINER` e rodam com o privilégio do
+  > dono. `buscar_pessoas` e `news_aceleracao_de_termos` usam **esta** função:
+  > duas cópias de um escape divergem (§4), e a do radar já divergia (não
+  > cobria a barra).
+
 **Triggers:**
 
 - `handle_new_user` / `handle_user_confirmed` (em `auth.users`) — cria perfil.

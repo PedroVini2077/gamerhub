@@ -116,6 +116,29 @@ banimento permanente.
 - **UUID de alvo:** existe? é o próprio? tem cargo igual ou superior?
 - **Nulo:** `p_days IS NULL` passa por `< 1`? Em SQL, **não** — `NULL < 1` é
   `NULL`, e o `IF` não dispara. Checar `IS NULL` explicitamente.
+- **`[02/10]` ARRAY: faixa de CARDINALIDADE, não só do que tem dentro.** Um
+  `text[]` sem teto aceita dez mil elementos, e cada um pode virar um `ILIKE`,
+  uma linha ou uma volta de laço. O corte vai na assinatura ou no corpo —
+  `unnest(p_termos[1:20])` em `news_aceleracao_de_termos` — e não no cliente,
+  que é a mesma lição do `36500`.
+- **`[02/10]` TEXTO QUE VIRA PADRÃO DE BUSCA: escapar `%` e `_`.** Vale para
+  `ILIKE`, `LIKE`, `SIMILAR TO` e glob.
+
+  ```sql
+  -- `\` escapa os coringas que o chamador pode mandar sem querer.
+  r.titulo ILIKE '%' || replace(replace(btrim(termo), '%', '\%'), '_', '\_') || '%'
+  ```
+
+  **Isto NÃO é injeção, e confundir os dois leva ao conserto errado.** O valor
+  é parâmetro: o Postgres nunca o executa como código, e `format('%L')` ou
+  `quote_literal` não resolvem nada aqui. O estrago é outro — **resultado
+  absurdo apresentado como medição**. Um `%` solto casa com a tabela inteira,
+  e a tela diz *"12x o normal"* sobre uma contagem de tudo. Nada estoura, nada
+  loga, e o número mente com cara de dado (§1.5).
+
+  **O gatilho:** o valor veio de fora (modelo, usuário, feed) e entra num
+  operador de padrão? Escapa. Provado em produção: o termo `50%_teste` devolve
+  `0`, não as 772 linhas.
 
 **O limite superior é decisão de produto, e tem que estar escrita.** "Mais que
 30 dias é caso de banimento, que tem hierarquia própria e caminho de reversão"

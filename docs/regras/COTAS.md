@@ -38,6 +38,8 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | ~~**GDELT**~~ | requisições **por IP** | 1 a cada 5 s | **`[01/10]` DESLIGADA no mesmo dia** — ver o quadro abaixo | — |
 | **Google News RSS** (busca ampla) | não documentado | — | **`[01/10]` `HTTP 503` INTERMITENTE** da Edge Function: funcionou às 19:21, falhou às 20:58 | Sim — `comFalha` diz o motivo e **que já tentou duas vezes** |
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
+| **API do GitHub** (de dentro do runner) | requisições **por IP**, sem autenticar | 60/h, e o IP é compartilhado | **`[02/10]`** a action que resolve `version: latest` falha e o **deploy das Edge Functions não acontece** | Sim — workflow vermelho + email |
+| **`public.ecr.aws`** (imagem do runtime) | *puxões* por IP | não documentado | `toomanyrequests` ao baixar a imagem | Sim, e **o CLI retenta sozinho** — medido: passou na 2ª |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
 > `429` grita em `admin_logs` antes de a função responder, e a tela diz *"A cota
@@ -64,6 +66,34 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > pautas × 3 termos é uma consulta, não 24. **Quanto tempo leva?** é o nosso
 > Postgres com 772 linhas, não rede de terceiro. Fornecedor que não existe é o
 > único que nunca recusa.
+
+> ### ⚠️ `[02/10]` E a MESMA classe da GDELT derrubou o nosso próprio DEPLOY
+>
+> O deploy da Fase 3 falhou, e só passou na segunda tentativa:
+>
+> ```
+> supabase/setup-cli@v1
+>     Failed to resolve latest Supabase CLI release: rate limit exceeded
+> o CLI, ao puxar o runtime
+>     toomanyrequests: Rate exceeded          <- este RETENTOU e passou
+> ```
+>
+> **Teto por IP, de novo, e desta vez do lado de dentro.** A lição que ficou
+> escrita quando a GDELT morreu — *"serviço com teto por IP é inutilizável
+> atrás de infraestrutura compartilhada"* — eu a escrevi pensando em
+> **fornecedor de dado**, e ela vale igual para **a nossa esteira**: o runner
+> do GitHub compartilha IP com o mundo.
+>
+> **A diferença, e é ela que decide o conserto:** com a GDELT não havia saída,
+> porque consultar o índice *era* o produto. Aqui a consulta é acidental —
+> `version: latest` pergunta à API qual é a última release. **Versão fixa não
+> pergunta nada**, e sai da fila inteira. O pin entrou em
+> `implantar-edges.yml`, com o número lido pelo dono na página de releases
+> (este ambiente não alcança a API do GitHub para outros repositórios).
+>
+> **O segundo caso NÃO foi mexido, de propósito:** o CLI já retenta a imagem
+> sozinho e retentou com sucesso. Mexer onde já existe conserto é criar
+> manutenção sem ganho (§9.8, pergunta 7).
 
 > ### ⚠️ `[01/10]` A pergunta da regra 2 foi feita, e ela era a PERGUNTA ERRADA
 >

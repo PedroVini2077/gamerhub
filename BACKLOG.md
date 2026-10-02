@@ -1288,7 +1288,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**57 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2627,80 +2627,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[01/10]` **O deploy das Edge Functions depende de DUAS cotas por IP de
-  terceiro, e as duas estouraram no mesmo minuto.** *Medido no deploy da Fase
-  3, que falhou e só passou na 2ª tentativa.*
-
-  ```
-  tentativa 1 · supabase/setup-cli@v1
-      Failed to resolve latest Supabase CLI release: rate limit exceeded
-  tentativa 2 · o mesmo job, ao baixar a imagem do runtime
-      toomanyrequests: Rate exceeded
-      Retrying after 4s: public.ecr.aws/supabase/edge-runtime:v1.77.1
-  ```
-
-  **É a mesma classe que matou a GDELT** (`docs/regras/COTAS.md`): teto por IP,
-  e o runner do GitHub compartilha IP com o mundo. A diferença é que aqui dá
-  para sair da fila — **`version: latest` pergunta à API do GitHub, sem
-  autenticar; versão fixa não pergunta nada.**
-
-  | | |
-  | --- | --- |
-  | o conserto | trocar `version: latest` por um número em `.github/workflows/implantar-edges.yml` |
-  | de brinde | o que vai para produção para de mudar sozinho quando a Supabase publicar release |
-  | o 2º caso (imagem do ECR) | **se resolve sozinho** — o CLI já retenta, e retentou com sucesso. Não mexer |
-
-  **Por que eu NÃO fiz, e é §1.1:** eu cheguei a escrever `version: 2.58.0` e
-  apaguei — **o número é um chute**. Este ambiente não alcança a API do GitHub
-  para outros repositórios (o proxy recusa), e o log do deploy não imprime a
-  versão que resolveu. Pinar um número que eu não conferi quebraria o deploy
-  inteiro, que é pior do que a falha transitória que ele conserta.
-
-  **O que resolve:** abrir https://github.com/supabase/cli/releases e me passar
-  o número da última — ou mandar que eu use a `v1` da action com um token, que
-  é a outra saída e eu também não consegui conferir daqui.
-
-- ⬜ `[01/10]` **A regra de FAIXA (`docs/regras/BANCO.md`) não cobre ARRAY nem
-  texto que vira PADRÃO DE BUSCA.** *Proposta de mudança em regra — §6.2 exige
-  que eu peça antes de escrever.*
-
-  A lista de hoje cobre Número, Texto, UUID e Nulo. A Fase 3 precisou de duas
-  coisas que não estão lá: **teto de cardinalidade do array** (`p_termos[1:20]`
-  — sem isso, dez mil `ILIKE` numa chamada) e **escape de `%`/`_` em valor que
-  vira `ILIKE`**. O segundo é o não óbvio: **não é injeção** (é parâmetro, o
-  Postgres nunca o executa), é **resultado absurdo apresentado como medição** —
-  um `%` solto casa com tudo e a tela diz "12x o normal" sobre 772 linhas.
-
-  Eu cumpri as duas nesta migration. O que proponho é escrevê-las na regra,
-  porque o próximo que escrever RPC de busca não vai ter visto isto acontecer.
-
-- ⬜ `[01/10]` **Nada TYPE-CHECA as Edge Functions — e foi por isso que o bug
-  do `corpo` sombreado foi para produção.** *Proposta: §7 marca infraestrutura
-  como 🟡, então ela espera decisão dele.*
-
-  **O que foi medido hoje** (Deno 2.9.7 instalado só para a medição, não
-  commitado):
-
-  | | |
-  | --- | --- |
-  | funções com erro de tipo | **3 de 10** — `radar-de-pautas` (9), `delete-user` (1), `send-email` (1) |
-  | o bug real seria pego? | **sim**: `TS2349 This expression is not callable`, apontando a linha |
-  | estado depois deste PR | `radar-de-pautas` em **0 erros** — restam 2, em 2 funções |
-
-  As Edge Functions são TypeScript e **nenhum portão as compila**. O `npm run
-  build` só olha `src/`; as travas que "leem" a Edge Function leem como TEXTO.
-  O Supabase as implanta sem checar tipo. Então um erro de tipo só aparece em
-  produção, e aqui apareceu como mensagem errada na tela do dono.
-
-  **O que falta decidir, e é por isso que não executei:** é um job novo no CI
-  (`denoland/setup-deno`), com ~1 min e dependência de rede ao JSR/npm — a
-  pergunta 6 do §9.8 ("isso cria manutenção permanente?") é **sim**. A trava
-  que entrou neste PR cobre o caso concreto; este portão cobriria a **classe**.
-
-  **Minha recomendação: fazer.** Dois erros em duas funções é dívida pequena
-  demais para justificar adiar o portão que impede a próxima.
-
-
 - ⬜ `[18/09]` **Revogar as colunas derivadas de `posts` — a SEGUNDA camada da
   SEC-027.** *Só depois do deploy desta branch, e a ordem importa.*
 
@@ -2940,8 +2866,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->177<!--/n--> arq ·
-  <!--n:src.lib.linhas-->22.051<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->178<!--/n--> arq ·
+  <!--n:src.lib.linhas-->22.204<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
