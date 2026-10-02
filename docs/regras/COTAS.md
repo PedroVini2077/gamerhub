@@ -40,7 +40,7 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 | **API do GitHub** (de dentro do runner) | requisições **por IP**, sem autenticar | 60/h, e o IP é compartilhado | **`[02/10]`** a action que resolve `version: latest` falha e o **deploy das Edge Functions não acontece** | Sim — workflow vermelho + email |
 | **`public.ecr.aws`** (imagem do runtime) | *puxões* por IP | não documentado | `toomanyrequests` ao baixar a imagem | Sim, e **o CLI retenta sozinho** — medido: passou na 2ª |
-| **YouTube Data API v3** *(ainda não ligada)* | **`search.list` por dia** | **100** — e há um teto SEPARADO de 10.000 unidades/dia para todo o resto | a busca de vídeo para de responder (`403 quotaExceeded`) | **`[02/10]`** a definir junto com o código da Fase 4 |
+| **YouTube Data API v3** | **`search.list` por dia** | **100** — e há um teto SEPARADO de 10.000 unidades/dia para todo o resto | o sinal de vídeo some das pautas; o radar continua inteiro | **`[02/10]`** Sim — `comFalha` diz *"a cota diaria de buscas do YouTube acabou — ela volta amanha"*, na tela de quem clicou |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
 > `429` grita em `admin_logs` antes de a função responder, e a tela diz *"A cota
@@ -67,6 +67,28 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > pautas × 3 termos é uma consulta, não 24. **Quanto tempo leva?** é o nosso
 > Postgres com 772 linhas, não rede de terceiro. Fornecedor que não existe é o
 > único que nunca recusa.
+
+> ### ✅ `[02/10]` E a resposta foi a que a linha previa — UMA busca por clique
+>
+> A Fase 4 entrou, e o desenho saiu direto da pergunta feita antes do código:
+> **uma busca por clique de editor**, com os termos de todas as pautas cruzados
+> localmente contra os vídeos daquela única resposta. Oito pautas não viram
+> oito chamadas.
+>
+> A conta: 1 `search.list` por clique contra 100/dia dá ~100 cliques de editor
+> por dia. O limite real passa a ser a Groq (1 requisição por clique, ~1.000/dia
+> no plano grátis) — ou seja, **a cota que eu temia deixou de ser a que morde**,
+> e isso só foi possível porque a pergunta mudou o desenho em vez de pedir
+> conserto depois.
+>
+> **E a segunda fonte, se alguém cadastrar uma, não é consultada em silêncio:**
+> ela vira linha em `comFalha` dizendo que ficou fora do teto. Fonte ativa que
+> nunca é lida, sem nada dizer, é a "cobertura que não cobre" do §1.5.
+>
+> **O que a chave dele revelou, e é o motivo de `type=video` ser obrigatório:**
+> o primeiro teste no navegador devolveu um **CANAL**. Sem o parâmetro, o
+> `search.list` mistura canal, playlist e vídeo — e um canal entraria na
+> contagem como se fosse vídeo, sem erro nenhum.
 
 > ### ⚠️ `[02/10]` A YouTube entra na tabela ANTES de existir, e por um motivo
 >

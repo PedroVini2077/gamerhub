@@ -272,6 +272,14 @@ src/
 │   │   │                  #   (o Trends que o plano previa foi recusado). O
 │   │   │                  #   `Nx` é a única forma variável dos três selos,
 │   │   │                  #   então a tela valida antes de pôr na `className`
+│   │   ├── sinalDeVideo.js # `[02/10]` FASE 4 do radar: o selo "N videos hoje".
+│   │   │                  #   Mede o que foi PUBLICADO no YouTube nas últimas
+│   │   │                  #   24h, NÃO o que foi assistido — e nunca encosta
+│   │   │                  #   no selo de confiabilidade, porque "muita gente
+│   │   │                  #   falando" não é fato. Mesma regra dos outros
+│   │   │                  #   três: formato que a tela não conhece não vira
+│   │   │                  #   selo. A outra metade é `radar-de-pautas/
+│   │   │                  #   youtube.ts`, e uma trava reprova se divergirem
 │   │   ├── rascunhoDeIa.js #  `[25/09]` O CONTRATO com a Edge Function que
 │   │   │                  #   rascunha matéria: o mínimo de notas que ela
 │   │   │                  #   exige e o marcador `[CONFERIR: …]` que ela

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { MODELOS_CONFERIDOS, MODELOS_REPROVADOS } from '../modelosConferidos';
 
 /**
@@ -17,15 +18,26 @@ import { MODELOS_CONFERIDOS, MODELOS_REPROVADOS } from '../modelosConferidos';
  * entre sem alguém ter aberto a tabela de limites **do nosso plano** e olhado.
  */
 
+// `[02/10]` Era um `index.ts` por funcao. Passou a ser a PASTA inteira: o
+// radar cresceu e a escolha do modelo saiu para `modelo.ts` — e a trava, lendo
+// so o index, aprovaria uma funcao que mudou de modelo noutro arquivo irmao.
+// Mesmo motivo da impressao das edges, que ja lia os irmaos.
+function fonteDaFuncao(nome) {
+  const dir = `supabase/functions/${nome}`;
+  const arquivos = readdirSync(dir).filter((f) => f.endsWith('.ts'));
+  if (!arquivos.length) throw new Error(`nenhum .ts lido em ${dir}/ — a pasta mudou de nome?`);
+  return arquivos.map((f) => readFileSync(join(dir, f), 'utf8')).join('\n');
+}
+
 const FUNCOES = [
-  ['redigir-materia', 'supabase/functions/redigir-materia/index.ts'],
-  ['radar-de-pautas', 'supabase/functions/radar-de-pautas/index.ts'],
+  ['redigir-materia', 'redigir-materia'],
+  ['radar-de-pautas', 'radar-de-pautas'],
 ];
 
 describe('o modelo de cada Edge Function foi conferido no nosso plano', () => {
   it('a extração acha a string do modelo — senão a trava aprova o vazio', () => {
     for (const [nome, caminho] of FUNCOES) {
-      const m = readFileSync(caminho, 'utf8').match(/const MODELO = "([^"]+)"/);
+      const m = fonteDaFuncao(caminho).match(/const MODELO = "([^"]+)"/);
       expect(m, `nao achei \`const MODELO = "..."\` em ${nome}. O formato mudou? `
         + 'Sem isto a trava passa verde sem olhar modelo nenhum.').toBeTruthy();
     }
@@ -33,7 +45,7 @@ describe('o modelo de cada Edge Function foi conferido no nosso plano', () => {
 
   it('nenhuma função usa modelo fora da lista de conferidos', () => {
     const fora = FUNCOES
-      .map(([nome, caminho]) => [nome, readFileSync(caminho, 'utf8').match(/const MODELO = "([^"]+)"/)?.[1]])
+      .map(([nome, caminho]) => [nome, fonteDaFuncao(caminho).match(/const MODELO = "([^"]+)"/)?.[1]])
       .filter(([, id]) => !Object.hasOwn(MODELOS_CONFERIDOS, id));
 
     expect(fora.map(([n, id]) => `${n} -> ${id}`), 'estas funcoes usam modelo que '
@@ -49,7 +61,7 @@ describe('o modelo de cada Edge Function foi conferido no nosso plano', () => {
   it('nenhum modelo REPROVADO voltou para uma função', () => {
     const voltaram = [];
     for (const [nome, caminho] of FUNCOES) {
-      const id = readFileSync(caminho, 'utf8').match(/const MODELO = "([^"]+)"/)?.[1];
+      const id = fonteDaFuncao(caminho).match(/const MODELO = "([^"]+)"/)?.[1];
       if (id && Object.hasOwn(MODELOS_REPROVADOS, id)) voltaram.push(`${nome} -> ${id}`);
     }
     expect(voltaram, 'modelo REPROVADO de volta:\n'
@@ -62,7 +74,7 @@ describe('o modelo de cada Edge Function foi conferido no nosso plano', () => {
     // volta derrubaria o parse. A tela diria "a IA respondeu algo que eu nao
     // entendi" sobre uma resposta correta.
     for (const [nome, caminho] of FUNCOES) {
-      expect(readFileSync(caminho, 'utf8'), `${nome} perdeu o \`semCerca\` antes do `
+      expect(fonteDaFuncao(caminho), `${nome} perdeu o \`semCerca\` antes do `
         + 'JSON.parse').toMatch(/semCerca\(/);
     }
   });

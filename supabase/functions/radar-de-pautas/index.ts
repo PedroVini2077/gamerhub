@@ -19,44 +19,43 @@
 //
 // ONDE MORA O QUE NÃO ESTÁ AQUI: `coleta.ts` despacha RSS e API · `gdelt.ts`
 // o 2º coletor e o teto dele · `pedido.ts` o orçamento de tokens · `contrato.ts`
-// a instrução e o esquema estrito da resposta. Em uma linha: o modelo cita
-// NÚMERO e nunca endereço, e a lista para de crescer antes do teto da Groq.
+// a instrução e o esquema estrito · `sinais.ts` o que se anexa à pauta pronta,
+// com `aceleracao.ts` e `youtube.ts`. Em uma linha: o modelo cita NÚMERO e
+// nunca endereço, e a lista para de crescer antes do teto da Groq.
 //
 // ============================================================================
 // COTA — as duas perguntas do §0.2, respondidas em `docs/regras/COTAS.md`
 // ============================================================================
 //
 // Uma execucao por clique de editor; so `is_staff()` alcanca. Os tetos que
-// contam sao o da GDELT (frequencia, ver `gdelt.ts`) e o de tokens por minuto
-// da Groq (volume, ver `pedido.ts`). Nenhum multiplica por visitante.
+// contam sao o da Groq (tokens por minuto, ver `pedido.ts`) e o do YouTube
+// (**100 search.list por dia**, e por isso e UMA busca por clique e nunca uma
+// por pauta — ver `youtube.ts`). Nenhum multiplica por visitante.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { fatiaJusta } from "./rss.ts";
 import { coletarTudo } from "./coleta.ts";
-import {
-  ORCAMENTO_DA_LISTA, montarPedido, resolverPautas,
-  RESERVA_DE_SAIDA, TETO_DE_PAUTAS,
-} from "./pedido.ts";
-import { INSTRUCAO, ESQUEMA_DA_RESPOSTA } from "./contrato.ts";
-import { medirAceleracao, sinalDaPauta, JANELA_DE_DIAS } from "./aceleracao.ts";
-import { lerFalhaDaGroq } from "./falhaDaGroq.ts";
+import { ORCAMENTO_DA_LISTA, montarPedido, resolverPautas, TETO_DE_PAUTAS } from "./pedido.ts";
+import { JANELA_DE_DIAS } from "./aceleracao.ts";
+import { anexarSinais } from "./sinais.ts";
+import { buscarTexto } from "./coleta.ts";
+import { pedirAoModelo } from "./modelo.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "4f8792f961c4aea6";
+const IMPRESSAO_DESTE_CODIGO = "9f19ebdf754530c3";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+// `[02/10]` FASE 4. SEM `!`, e de proposito: a chave pode nao estar
+// configurada, e o radar continua inteiro sem ela — o sinal de video e que
+// fica de fora, dizendo na tela que ficou (ver `youtube.ts`).
+const YOUTUBE_KEY   = Deno.env.get("YOUTUBE_API_KEY");
 const SERVICE_ROLE  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const GROQ_API_KEY  = Deno.env.get("GROQ_API_KEY") ?? "";
 
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-// `[26/09]` Era `llama-3.3-70b-versatile` e dava `HTTP 404`: o Groq responde
-// 404 quando o modelo existe mas a conta nao o alcanca, e aquele e Enterprise.
-// O porque completo esta no cabecalho da `redigir-materia`; a lista do que foi
-// conferido no plano gratis, em `src/lib/modelosConferidos.js`.
-const MODELO = "openai/gpt-oss-120b";
+// A escolha do modelo e a chamada em si moram em `modelo.ts` desde `[02/10]`.
 
 const TETO_DO_PEDIDO  = 60;   // manchetes mandadas ao modelo
 
@@ -73,9 +72,6 @@ const JSON_CORS = { ...CORS, "Content-Type": "application/json" };
  * isto, um ```json em volta derruba o `JSON.parse` e a tela diz "a IA
  * respondeu algo que eu nao entendi" sobre uma resposta que estava correta.
  */
-const semCerca = (t: string) =>
-  t.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/,"").trim();
-
 const responder = (corpo: unknown, status = 200) =>
   new Response(JSON.stringify(corpo), { status, headers: JSON_CORS });
 
@@ -138,9 +134,12 @@ Deno.serve(async (req: Request) => {
   // `[01/10]` `tipo` entra no SELECT e `api` entra no filtro: a Fase 1 trouxe
   // a GDELT como segundo coletor, e a consulta dela e uma LINHA desta tabela
   // (nada de assunto escrito no codigo — ver `gdelt.ts`).
+  // `[02/10]` `youtube` entra no filtro mas NAO vai para o `coletarTudo`: ele
+  // despacha por tipo e chamaria a fonte de "tipo sem coletor". O vídeo e
+  // SINAL, nao manchete — ele e lido depois das pautas prontas.
   const { data: fontes, error: erroFontes } = await admin
     .from("news_sources").select("id, nome, url, tipo")
-    .eq("ativa", true).in("tipo", ["rss", "api"]);
+    .eq("ativa", true).in("tipo", ["rss", "api", "youtube"]);
 
   if (erroFontes) {
     await gritar(admin, `nao consegui ler as fontes: ${erroFontes.message}`);
@@ -153,7 +152,9 @@ Deno.serve(async (req: Request) => {
     }, 200);
   }
 
-  const { itens: coletados, comFalha } = await coletarTudo(fontes);
+  const fontesDeVideo = fontes.filter((f) => f.tipo === "youtube");
+  const { itens: coletados, comFalha } = await coletarTudo(
+    fontes.filter((f) => f.tipo !== "youtube"));
 
   /**
    * `[01/10]` O corpo da resposta, montado num lugar SÓ.
@@ -219,51 +220,15 @@ Deno.serve(async (req: Request) => {
     }));
   }
 
-  let resposta: unknown = {};
-  try {
-    const res = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODELO, temperature: 0.4, max_tokens: RESERVA_DE_SAIDA,
-        // Raciocinio BAIXO: o gpt-oss-120b gasta a cadeia de pensamento do
-        // MESMO `max_tokens`, e foi isso que esvaziou a resposta (`pedido.ts`,
-        // RESERVA_DE_RACIOCINIO). Ordenar manchete nao pede raciocinio fundo.
-        reasoning_effort: "low",
-        // Esquema estrito no lugar de `json_object` — garante a FORMA, nao so
-        // a sintaxe. Ver `contrato.ts`: nao e isto que conserta o 400.
-        response_format: { type: "json_schema", json_schema: ESQUEMA_DA_RESPOSTA },
-        messages: [
-          { role: "system", content: INSTRUCAO },
-          { role: "user", content: `MANCHETES COLETADAS HOJE:\n\n${lista}\n\n`
-            + `Devolva no maximo ${TETO_DE_PAUTAS} pautas.` },
-        ],
-      }),
-    });
-    if (!res.ok) {
-      const bruto = (await res.text()).slice(0, 300);
-      // A MENSAGEM TEM QUE SER VERDADEIRA (§1.5) — e o mesmo HTTP 400 teve
-      // tres significados diferentes no mesmo dia. A traducao mora em
-      // `falhaDaGroq.ts`, que e pura e por isso tem trava.
-      const falha = lerFalhaDaGroq(res.status, bruto);
-
-      await gritar(admin, falha.motivo,
-        { status: res.status, corpo: bruto, charsDaLista: chars, itensNoPedido: usados.length });
-
-      // A coleta valeu. Devolve as manchetes cruas em vez de perder tudo.
-      return responder(corpo({
-        status: falha.status, itens: usados.slice(0, 30), error: falha.aviso,
-      }));
-    }
-    const json = await res.json();
-    resposta = JSON.parse(semCerca(json?.choices?.[0]?.message?.content ?? "{}"));
-  } catch (e) {
-    await gritar(admin, "falha ao chamar ou interpretar a Groq", { erro: String(e).slice(0, 300) });
+  const doModelo = await pedirAoModelo(lista, chars, usados.length, GROQ_API_KEY);
+  if (!doModelo.ok) {
+    await gritar(admin, doModelo.motivo, doModelo.metadata);
+    // A coleta valeu. Devolve as manchetes cruas em vez de perder tudo.
     return responder(corpo({
-      status: "erro_provedor", itens: usados.slice(0, 30),
-      error: "A IA respondeu algo que eu nao entendi — segue a lista crua.",
+      status: doModelo.status, itens: usados.slice(0, 30), error: doModelo.aviso,
     }));
   }
+  const resposta = doModelo.resposta;
 
   // ── 3. RESOLVER OS NUMEROS EM FONTES REAIS ────────────────────────────────
   //
@@ -279,24 +244,28 @@ Deno.serve(async (req: Request) => {
       { foraDaLista, pautas: limpas.length, itensNoPedido: usados.length });
   }
 
-  // ── 4. O SINAL DE ACELERAÇÃO ──────────────────────────────────────────────
+  // ── 4. OS SINAIS ANEXADOS ─────────────────────────────────────────────────
   //
-  // `[01/10]` FASE 3. Uma consulta só, com os termos de TODAS as pautas — e
-  // ela é a ÚLTIMA coisa que acontece, de propósito: se falhar, as pautas já
-  // estão prontas e o sinal simplesmente não aparece. Enfeite informativo não
-  // pode custar o conteúdo (ver o cabeçalho de `aceleracao.ts`).
-  const medidas = await medirAceleracao(
-    limpas.flatMap((p) => p.termos),
-    (termos, dias) => admin.rpc("news_aceleracao_de_termos",
+  // Aceleração (Fase 3) e vídeo (Fase 4). É a ÚLTIMA coisa que acontece, de
+  // propósito: sinal que falha não pode custar pauta. O porquê de cada um está
+  // em `sinais.ts`, `aceleracao.ts` e `youtube.ts`.
+  const { pautas: comSinal, falhasDeVideo } = await anexarSinais(limpas, {
+    chamarAceleracao: (termos, dias) => admin.rpc("news_aceleracao_de_termos",
       { p_termos: termos, p_janela_dias: dias }),
-  );
-  const comSinal = limpas.map((p) => ({ ...p, sinal: sinalDaPauta(p.termos, medidas) }));
+    fontesDeVideo,
+    chaveDoYoutube: YOUTUBE_KEY,
+    buscar: buscarTexto,
+  });
 
   return responder(corpo({
     status: "ok",
     noPedido: usados.length,
     enderecosDescartados: foraDaLista,
     janelaDoSinal: JANELA_DE_DIAS,
+    // A falha do video entra JUNTO das de coleta: para quem le a tela, "uma
+    // fonte nao respondeu" e a mesma informacao, venha ela de um feed ou da
+    // API do YouTube. Duas listas separadas fariam uma delas ser esquecida.
+    comFalha: [...comFalha, ...falhasDeVideo],
     pautas: comSinal,
   }));
 });

@@ -511,6 +511,30 @@ igual.
 
 ---
 
+### `[02/10]` FASE 4 — a chave do YouTube NUNCA entra no banco
+
+A fonte de vídeo é uma linha de `news_sources`, como as outras, e a URL dela
+guarda o assunto. **A `key` não.** Ela vem de `Deno.env.get("YOUTUBE_API_KEY")`
+e é acrescentada na hora de montar a requisição.
+
+Isso não é zelo abstrato. `news_sources` é lida pela equipe inteira, e uma
+chave ali seria:
+
+- **segredo compartilhado com todo mundo que alcança o painel** — e a régua de
+  papéis existe justamente para que acesso seja decidido, não herdado;
+- **invisível para o `segredos-vazados.mjs`**, que varre arquivo rastreado e
+  não enxerga linha de tabela;
+- **impossível de rotacionar sem mexer em dado**, em vez de trocar um secret.
+
+E a função recusa chave vinda do cadastro: se alguém escrever `&key=...` na URL
+da fonte, o código a **sobrescreve** com a do ambiente. Um teste reprova se
+essa sobrescrita sair — porque a chave do cadastro iria junto para o log de
+quem for depurar a URL.
+
+**Sem a chave o radar continua inteiro** e a tela diz que o sinal ficou de
+fora. Segredo ausente que derruba funcionalidade inteira é o que transforma
+"não configurei ainda" em incidente.
+
 ## `[25/09]` A porta da IA que rascunha matéria — `is_staff()`, não "estar logado"
 
 `redigir-materia` nasceu com a porta que a `moderate-links` levou meses para

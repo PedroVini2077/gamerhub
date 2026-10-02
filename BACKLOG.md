@@ -1223,7 +1223,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**55 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2117,6 +2117,37 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
+- ⬜ `[02/10]` 🟠 **OCULTAR não tem inversa pela TELA — `restoreContent` existe
+  e nenhum botão chega nele.** *Achado ao desenhar o E2E do ocultar, 02/10.*
+
+  **O mecanismo, medido no código:**
+
+  | Caminho | O que ele cobre |
+  | --- | --- |
+  | Fila → botão "Restaurar" | só enquanto o item está `pending`. O `ModerationQueue` chama `fetchModerationQueue('pending', …)` com o status **fixo**; resolvido some da tela |
+  | `/admin` → Posts → "Restaurar post" | só quando `p.deleted_at` existe (`PostsPanel.jsx:106`). Post **oculto** mostra o selo "Oculto" e só tem "Excluir" |
+  | Painel do fundador | nenhuma referência a `hidden_at` |
+
+  Confirmada a ocultação, `restoreContent` (`moderationService.js`) fica
+  inalcançável. **É a classe do `apply_suspension` sem `lift_suspension`** — a
+  regra do §5 (`BANCO.md`, "toda ação de estado precisa da INVERSA").
+
+  **Severidade 🟠, não 🔴, e com o número:** medido em 02/10, **0 posts ocultos
+  vivos**, 0 comentários, 0 mural. É lacuna latente. O estrago aparece na
+  primeira vez que a equipe ocultar algo por engano — e aí o conserto vira
+  `UPDATE` no banco, que é o oposto de ter painel.
+
+  **Minha recomendação (🟡, espera decisão dele):** mostrar o botão de
+  restaurar no `PostsPanel` quando `hidden_at` existir, chamando
+  `restoreContent('post', id)` — a função já existe, já tem `count: 'exact'` e
+  já grava na trilha. É aditivo e não muda o caminho feliz. A alternativa
+  (filtro de status na fila) é maior e resolve só o que passou pela fila.
+
+  **Isto BLOQUEIA o E2E do ocultar:** um roteiro que oculta e morre no meio
+  deixaria um post preso sem caminho de volta pela tela — eu criaria o
+  problema que acabei de encontrar.
+
+
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -2173,6 +2204,14 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   **Falta**, na ordem em que ele listou: live chat · notificações na tela ·
   o comportamento depois de ocultar (não só apagar) · usuário comum ×
   moderador na mesma tela.
+
+  **`[02/10]` O do OCULTAR está BLOQUEADO**, e o motivo é um achado: ocultar
+  não tem inversa pela tela (item próprio, logo acima). Automatizá-lo antes de
+  fechar isso significa um roteiro que, ao morrer no meio, deixa um post preso
+  sem caminho de volta. O desenho já está feito e cabe em uma sessão assim que
+  a inversa existir: comum publica → staff denuncia (o autor não pode denunciar
+  o próprio, `canReport` exclui) → staff oculta pela fila → confere que sumiu
+  do feed → **restaura** → comum apaga.
 
   **`[24/09]` O corte foi FEITO:** o bloco do ciclo do post virou
   `e2e/cicloDoPost.mjs` (148 linhas) e o `fluxos.mjs` caiu de 288 para **189**.
@@ -2520,34 +2559,30 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[02/10]` 🟠 **FASE 4 do radar — vídeo do YouTube na pauta.** *A chave
-  existe desde 02/10; o que falta é código.*
+- ⬜ `[02/10]` 🟡 **CONFERIR que a `YOUTUBE_API_KEY` está nos secrets das Edge
+  Functions** — não basta existir no Google Cloud. *Ação dele, 30 segundos.*
 
-  **Feito, e sai desta fila:** o passo a passo (`docs/OPERACAO.md`), a linha da
-  cota em `docs/regras/COTAS.md` escrita **antes** de existir chave, e a
-  criação da `YOUTUBE_API_KEY` por ele — conferido: o navegador respondeu `200`
-  com `regionCode: "BR"` e `totalResults: 130394`.
+  A Fase 4 foi entregue e **o radar funciona sem a chave** — ele só não mostra
+  o selo de vídeo, e diz na tela que a chave não está configurada. Então isto
+  não é bloqueio: é a diferença entre a feature estar ligada e estar muda.
 
-  **A cota decide o desenho, e isso já está escrito:** 10.000 unidades/dia
-  somando tudo, **mas `search.list` tem teto SEPARADO de 100 por dia** — e é a
-  chamada que esta fase usa. Logo: **uma busca por clique de editor, nunca uma
-  por pauta.** Oito pautas × uma busca cada são 8 chamadas por clique, e 12
-  cliques no dia acabam com a cota.
+  **Onde (URL direta):**
+  `https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/functions/secrets`
 
-  > **⚠️ A resposta de teste dele revelou uma armadilha do endpoint.** O que
-  > voltou foi um **canal**, não um vídeo — porque faltava `&type=video` na
-  > consulta. Sem esse parâmetro o `search.list` mistura canal, playlist e
-  > vídeo, e o radar anexaria "um canal" a uma pauta. Entra no código junto
-  > com `&order=date` e `&publishedAfter`, senão a busca devolve o vídeo mais
-  > popular de três anos atrás para uma pauta de hoje.
+  **O que ele vai ver:** a lista de secrets das Edge Functions. Procurar
+  `YOUTUBE_API_KEY`. Se não estiver lá, "Add new secret" → nome exatamente
+  `YOUTUBE_API_KEY` → o valor da chave do Google Cloud.
 
-  **O que ainda NÃO foi decidido:** se o vídeo entra como fonte da pauta (igual
-  ao RSS) ou como anexo separado na tela. A primeira é mais barata e reaproveita
-  o `comFalha`; a segunda deixa claro que vídeo não é apuração. Minha
-  recomendação é a **segunda**, pela mesma razão do selo de confiabilidade:
-  misturar vídeo do YouTube com veículo de imprensa na mesma lista de fontes
-  diz que os dois valem igual.
+  **Como conferir que deu certo:** clicar em "Buscar pautas" no painel do News.
+  Se a chave estiver certa, as pautas com assunto quente ganham um selo
+  vermelho `N videos hoje`. Se não estiver, aparece na lista de fontes que não
+  responderam: *"YOUTUBE_API_KEY nao esta configurada — o sinal de video fica
+  de fora"*.
 
+  **Conferido antes de pedir o clique (§9.12):** o código lê a chave **sem**
+  `!` (`Deno.env.get("YOUTUBE_API_KEY")`, sem asserção de não-nulo), então
+  secret ausente não derruba a função — testado em
+  `radarSinalDeVideo.test.js`. Pôr a chave é seguro; não pôr também.
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
@@ -2804,8 +2839,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->183<!--/n--> arq ·
-  <!--n:src.lib.linhas-->23.033<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->185<!--/n--> arq ·
+  <!--n:src.lib.linhas-->23.364<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

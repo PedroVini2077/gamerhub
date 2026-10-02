@@ -1,6 +1,6 @@
 # Migrations
 
-**Esta pasta é a verdade sobre o schema.** As <!--n:migrations-->243<!--/n-->
+**Esta pasta é a verdade sobre o schema.** As <!--n:migrations-->244<!--/n-->
 migrations aqui, aplicadas em ordem de nome, reconstroem o banco do zero.
 
 ## Por que ela existe
@@ -45,6 +45,7 @@ Depois cole `/tmp/schema-completo.sql` no SQL Editor do Supabase.
   | `OPENAI_API_KEY` · `HUGGINGFACE_API_KEY` | a moderação de imagem e de texto por IA |
   | `GOOGLE_SAFE_BROWSING_KEY` | a checagem de link malicioso |
   | `GROQ_API_KEY` | o GamerHub News — rascunho de matéria e radar de pautas |
+  | `YOUTUBE_API_KEY` | o **sinal de vídeo** do radar (Fase 4). Sem ele o radar continua inteiro: só o selo "N videos hoje" some, e a tela **diz** que a chave não está configurada — foi desenhado assim para não virar dependência dura |
   | `TURNSTILE_SECRET_KEY` | o captcha do canal de contato |
 
   > #### ⚠️ `[02/10]` Esta lista estava INCOMPLETA, e o robô de documentação

@@ -466,6 +466,34 @@ que importa. Mapa fechado, com `RAISE` no `ELSE`.
 
 ---
 
+### `[02/10]` `news_sources.tipo = 'youtube'` — tipo próprio, não `api`
+
+**Decidido:** a fonte de vídeo da Fase 4 entra com um tipo novo no `CHECK`, e
+o `index.ts` a separa antes de chamar o `coletarTudo`.
+
+**Por quê:** YouTube produz **sinal**, não manchete. O `coletarTudo` despacha
+por tipo e só conhece quem alimenta a lista que vai ao modelo — uma fonte de
+vídeo ali seria lida como manchete, e "um youtuber disse" passaria a valer o
+mesmo que "a Eurogamer publicou". O radar inteiro existe para não fazer isso.
+
+**Recusado 1 — entrar como `api`.** Funcionaria no dia 1 e quebraria no dia em
+que alguém lesse a tabela e concluísse que vídeo é fonte. Tipo é documentação
+executável.
+
+**Recusado 2 — guardar só o termo de busca, sem URL.** `news_sources` tem
+`CHECK (url ~* '^https?://')`. Relaxar a regra para um tipo é regra com
+exceção, e regra com exceção é regra que ninguém confere.
+
+**Recusado 3 — deixar o cadastro mandar nos parâmetros.** `type`, `order` e
+`publishedAfter` são sobrescritos pelo código. Sem `type=video` a API devolve
+**canal** — medido no primeiro teste real da chave —, e esse estrago vindo de
+uma linha de tabela que ninguém releu é pior do que vindo do código. Mesma
+lógica do teto que mora na RPC e não no dropdown.
+
+→ `supabase/migrations/20261002202240_radar_fase_4_fonte_de_video_do_youtube.sql`
+
+---
+
 ## `[25/09]` A procedência da IA é uma COLUNA autodeclarada, não uma trilha
 
 **Decidido:** `news_articles.redigido_com_ia boolean NOT NULL DEFAULT false`,
