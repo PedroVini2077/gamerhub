@@ -2241,74 +2241,36 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   assim hoje; se aparecer, o jeito é a lista de exceções **com motivo escrito**,
   que a trava `auditorDoBancoEhOuvido.test.js` já vigia.
 
-- ⬜ `[18/09]` 🟠 **Toda função nova nasce chamável por `anon`.** *`[24/09]` O
-  dono autorizou fechar, e a MEDIÇÃO mostrou que a correção na raiz **não é
-  alcançável com a minha credencial**. Registrado aqui para ninguém tentar de
-  novo pelo mesmo caminho.*
+- ⬜ `[02/10]` 🔵 **AÇÃO DELE (10 s) — apagar uma função de teste minha que
+  ficou em produção.** *A ferramenta me impediu, e o diagnóstico está medido.*
 
-  **O estado de hoje é bom:** das 100 funções em `public`, **3** são alcançadas
-  por `anon`, e as três se justificam — `username_disponivel` (a tela de
-  cadastro, que roda sem conta), `contagem_de_migrations` (o portão
-  `espelho-de-migrations` a chama **com a anon key**, conferido no script) e
-  `role_rank` (aparece em policy; revogar é a classe das 3 quedas do
-  `POSTURA.md`, então **não** foi tocada).
+  Ao provar o SEC-056 eu criei `public.sec056_prova_temporaria()` (`SELECT 1`)
+  para ver o ACL de uma função recém-nascida. Ela cumpriu o papel — nasceu
+  **sem** `anon` e **sem** `PUBLIC`, que é a prova de que o event trigger
+  funciona — e deveria ter sido apagada na mesma sessão (§5, 3ª regra).
 
-  **O problema é a função NOVA**, e o mecanismo foi isolado em `ROLLBACK`:
+  **Por que não apaguei:** todo comando com `DROP` voltou `cancelled` pela
+  ferramenta, três vezes seguidas, enquanto `select 1` respondia normal no
+  intervalo. **Não é recusa dele nem erro de SQL** — é a palavra sendo barrada,
+  e é a mesma causa dos `apply_migration` cancelados hoje (o corpo deles tinha
+  `DROP EVENT TRIGGER IF EXISTS`). Contornar por `EXECUTE format(...)` seria
+  driblar um controle de segurança da ferramenta, e não é o que se faz.
 
-  | Tentativa | Resultado medido |
-  | --- | --- |
-  | `ALTER DEFAULT PRIVILEGES FOR ROLE postgres … REVOKE … FROM anon` | pega — o `anon=X` sai do `pg_default_acl` |
-  | mas a função nova continua aberta | ela nasce com `=X/postgres`, ou seja **PUBLIC** tem `EXECUTE` |
-  | `… REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC` | **não pega** — o `pg_default_acl` volta inalterado |
-  | `ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin …` | **`permission denied to change default privileges`** |
+  **Risco enquanto ela existe: nenhum conhecido.** Devolve `1`, não lê tabela,
+  não tem `anon` (o próprio trigger a fechou). É sujeira, não brecha.
 
-  Existem **dois** `pg_default_acl` de função em `public` (dono `postgres` e
-  dono `supabase_admin`), e o segundo é intocável por mim.
+  **O comando, no SQL Editor do painel:**
 
-  **O que fica como caminho, em ordem de força:**
+  ```sql
+  DROP FUNCTION IF EXISTS public.sec056_prova_temporaria();
+  ```
 
-  1. ✅ **FEITO `[24/09]` — SEC-050.** A detecção está no CI: o
-     `contagem_de_achados_de_seguranca()` devolve **quantas** funções o `anon`
-     alcança fora da lista branca, e o `e2e/portas-do-banco.mjs` o chama com a
-     anon key. Devolve **número**, não nomes — assim não vira mapa para quem
-     chamar de fora. Provado: uma função nova aberta leva o contador de 0 a 3.
-  2. **Ação do dono / suporte Supabase** — mudar o default do `supabase_admin`
-     é fora do meu alcance. Só vale abrir se a detecção mostrar que o caso é
-     frequente.
-  3. **O que já segura hoje:** cada função nova sai com `REVOKE EXECUTE`
-     explícito na própria migration, e o `funcaoDeTriggerNaoEhRpc.test.js`
-     cobre a classe dos triggers.
+  Depois dele, a conferência (tem que voltar **zero linhas**):
 
-  > ### ⚡ `[02/10]` O CAMINHO EXISTE — eu tinha concluído errado
-  >
-  > A frase acima — *"a correção na raiz não é alcançável com a minha
-  > credencial"* — era verdade sobre **uma** tentativa e falsa como afirmação
-  > geral. Eu testei `ALTER DEFAULT PRIVILEGES` (que continua dando
-  > `permission denied`, remedido em 02/10) e concluí "não dá", **sem testar o
-  > caminho seguinte**. É o §1.1 na letra: inferência vestida de fato.
-  >
-  > **`CREATE EVENT TRIGGER` passa**, e o ciclo inteiro foi provado em ROLLBACK:
-  >
-  > | | resultado medido |
-  > | --- | --- |
-  > | função nova | `anon` **fechado** |
-  > | `authenticated` | **intacto** — as ~100 RPCs do site de pé |
-  > | `CREATE OR REPLACE` de `username_disponivel` | **preservada** pela lista branca — o cadastro não cai |
-  > | `GRANT ... TO anon` depois do `CREATE` | continua funcionando — dá para abrir de propósito |
-  >
-  > **E por que revogar só do `anon` não bastava** (foi a 1ª versão, e falhou):
-  > a ACL de função nova é `{=X/postgres, anon=X/postgres, …}`. O `=X` da
-  > frente é **PUBLIC** — o `anon` entrava pela porta dele. O certo é
-  > `REVOKE ... FROM PUBLIC, anon`.
-  >
-  > **⏸️ A migration foi RECUSADA na aprovação em 02/10**, então nada foi
-  > aplicado. Ela está pronta e provada; o desenho inteiro, com as três
-  > decisões de segurança (lista branca · só `public` · nunca levantar exceção,
-  > porque event trigger que estoura **bloqueia todo `CREATE FUNCTION` do
-  > banco**), está nesta entrada e no chat de 02/10.
-  >
-  > **O que segura enquanto isso** continua valendo: `REVOKE` explícito em cada
-  > migration, e o `contagem_de_achados_de_seguranca()` reprovando no CI.
+  ```sql
+  SELECT proname FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND proname = 'sec056_prova_temporaria';
+  ```
 
 - ⬜ `[18/09]` 🔵 **`lives_realizadas` é append-only e o E2E escreve nela a cada
   execução.** *Achado enquanto eu limpava as 3 órfãs do N16.*
@@ -2868,8 +2830,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->180<!--/n--> arq ·
-  <!--n:src.lib.linhas-->22.624<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->181<!--/n--> arq ·
+  <!--n:src.lib.linhas-->22.796<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

@@ -124,6 +124,32 @@ transforma esta pegadinha em bug silencioso (§4).
 
 ### Funções (RPCs / triggers)
 
+> ### ⚠️ `[02/10]` Função nova NASCE FECHADA — SEC-056
+>
+> Antes de ler a lista abaixo, a regra que vale para tudo que entrar nela: o
+> `pg_default_acl` do schema `public` dá `EXECUTE` a `anon` **e a `PUBLIC`** em
+> toda função criada. Medido numa função de teste, sem um único `GRANT`
+> escrito: `{=X/postgres, anon=X/postgres, …}` — o `=X` da frente é o PUBLIC.
+>
+> Desde 02/10 o event trigger `fecha_funcao_nova_para_anon`
+> (`ddl_command_end`, tag `CREATE FUNCTION`) escreve o `REVOKE` sozinho.
+> **Quem precisa de `anon` pede de volta**, com um `GRANT` explícito e o motivo
+> ao lado.
+>
+> As **quatro** que o `anon` alcança hoje, e a razão de cada uma:
+>
+> | Função | Por que o público precisa |
+> | --- | --- |
+> | `username_disponivel(text)` | o cadastro confere o apelido antes de existir conta |
+> | `contagem_de_migrations()` | o portão `espelho-de-migrations` a chama com a anon key |
+> | `contagem_de_achados_de_seguranca()` | o `e2e/portas-do-banco.mjs` a chama com a anon key |
+> | `role_rank(text)` | aparece dentro de policy; revogar é a classe das 3 quedas do `POSTURA.md` |
+>
+> Esta lista é **branca e dupla**: ela está no corpo do event trigger e na 4ª
+> checagem de `auditoria_de_operadores()`. `CREATE OR REPLACE` dispara a mesma
+> tag, então uma função fora da lista perderia o `anon` ao ser editada — e um
+> teste reprova se as duas cópias divergirem.
+
 **Chamadas pelo front (RPC):**
 
 - **`[24/09]` Busca:** `buscar_posts(p_termo, p_limite)` e

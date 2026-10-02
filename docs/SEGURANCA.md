@@ -1748,6 +1748,77 @@ lugar do histórico.
 
 ---
 
+## `[02/10]` SEC-056 — toda função nova nascia aberta, e a proteção era a minha memória
+
+🔵 **Baixo hoje, e é por isso que ficou 14 dias de pé.** Nenhuma função
+concreta estava exposta quando isto foi fechado — as quatro que o `anon`
+alcança são as quatro que ele **deve** alcançar, medido. O que estava aberto
+era o **mecanismo**: a próxima função a ser criada nasceria chamável por quem
+não tem conta, e nada avisaria.
+
+### O default, medido em vez de deduzido
+
+Uma função criada sem um único `GRANT` escrito:
+
+```
+{=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
+ ^^^^^^^^^^^  o `=X` sem papel à esquerda é o PUBLIC
+```
+
+É o mesmo achado da SEC-052 (*"toda tabela nova nasce aberta"*), do outro lado:
+lá era `pg_default_acl` sobre TABELA, aqui sobre FUNÇÃO. A diferença é que, para
+tabela, a régua de 12/09 já mandava escrever `REVOKE ALL` explícito — e para
+função a defesa era a trava do SEC-042, que cobre **uma classe** (função de
+trigger) e deixa o mecanismo de pé.
+
+### Por que event trigger, e a correção de uma frase minha
+
+Em 24/09 eu escrevi que fechar isso **não era alcançável com esta credencial**.
+Era verdade de *uma tentativa* — `ALTER DEFAULT PRIVILEGES` só alcança o default
+de quem o escreve, e o `pg_default_acl` daqui tem entrada do `supabase_admin`,
+papel que eu não assumo. Não era verdade do objetivo: `CREATE EVENT TRIGGER`
+funciona, e age **depois** do fato, exatamente onde o default já se aplicou.
+
+Inferência vestida de fato (§1.1), e o custo foram 14 dias com o mecanismo
+aberto porque eu tinha registrado "não dá".
+
+### As quatro exceções, e por que elas existem em DOIS lugares
+
+`username_disponivel` · `contagem_de_migrations` ·
+`contagem_de_achados_de_seguranca` · `role_rank` — os dois portões do CI que
+batem com a chave anônima, e a conferência de apelido antes de existir conta.
+Lista **medida** em `pg_proc.proacl`, não escolhida: são exatamente as únicas
+quatro com `anon` hoje.
+
+Elas precisam estar no event trigger porque **`CREATE OR REPLACE` também dispara
+a tag `CREATE FUNCTION`**: sem a lista, a próxima edição de `username_disponivel`
+arrancaria o `anon` dela e o cadastro pararia de conferir apelido, em silêncio.
+
+A mesma lista vive na 4ª checagem de `auditoria_de_operadores()`, e duas cópias
+divergem (§4). `funcaoNovaNasceFechada.test.js` reprova se divergirem, e a
+mensagem diz qual dos dois sentidos é o perigoso.
+
+### O silêncio que ficou, e o que o cobre
+
+A função engole exceção (`EXCEPTION WHEN OTHERS THEN NULL`). Não é descuido:
+erro num event trigger **aborta o comando que o disparou**, ou seja, travaria
+qualquer migration. A escolha é não travar.
+
+O custo é que uma falha ali deixa a função aberta sem avisar — e o que torna
+isso aceitável (§1.5) é a detecção já existir e já estar no CI: a 4ª checagem do
+auditor acusa `alcancavel por ANON`, `contagem_de_achados_de_seguranca()`
+devolve o número, e `e2e/portas-do-banco.mjs` o lê com a anon key. **O trigger
+previne; o auditor detecta.** Nenhum dos dois sozinho bastaria, e é de
+propósito.
+
+### O que ele NÃO cobre
+
+Função criada em schema que não seja `public`, e função cujo `REVOKE` falhe por
+motivo que o auditor também não veja. A primeira é limite escrito do filtro; a
+segunda é o parágrafo acima.
+
+---
+
 ## `[02/10]` SEC-055 — a BUSCA DE PESSOAS entregava a base inteira, com cargos
 
 🟠 **Alto.** Explorável por qualquer pessoa com conta, e o que vaza é o insumo

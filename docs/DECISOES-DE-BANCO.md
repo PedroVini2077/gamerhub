@@ -394,6 +394,41 @@ bater.
 
 ---
 
+### `[02/10]` `SEC-056` · O banco escreve o `REVOKE` sozinho — EVENT TRIGGER
+
+**Decidido:** um event trigger em `ddl_command_end`, filtrando a tag
+`CREATE FUNCTION`, que roda `REVOKE EXECUTE ... FROM PUBLIC, anon` em toda
+função nova de `public`. Quatro exceções em lista branca, medidas em
+`pg_proc.proacl`.
+
+**O problema não era nenhuma função**: as quatro que o `anon` alcança são as
+quatro que ele deve alcançar. Era o **default** — `pg_default_acl` dá `EXECUTE`
+a `anon` e a `PUBLIC` em toda função criada, e a defesa era eu lembrar do
+`REVOKE` em cada migration.
+
+**Recusado 1 — `ALTER DEFAULT PRIVILEGES`.** Medido: tira o `anon` do
+`pg_default_acl` do `postgres` e **não tira o `PUBLIC`**; e a entrada do
+`supabase_admin` responde `permission denied to change default privileges`.
+Foi essa medição que, em 24/09, eu generalizei errado para *"não é alcançável"*
+— era verdade da tentativa, não do objetivo.
+
+**Recusado 2 — continuar só com a detecção (SEC-050).** Ela fica, e é o que
+cobre a falha do trigger. Mas detectar depois de a função estar no ar é pior do
+que a função nascer fechada, e a lista branca existe dos dois lados agora.
+
+**Recusado 3 — o event trigger levantar exceção ao falhar.** Seria o §1.5 bem
+cumprido e o site mal servido: erro em event trigger **aborta o comando que o
+disparou**, ou seja, travaria toda migration do projeto. A escolha é engolir, e
+pagar com a detecção do SEC-050, que já está no CI.
+
+**O que isso muda no dia a dia:** função nova que o público precisa passou a
+exigir **duas** linhas — o `CREATE` e um `GRANT ... TO anon` com o motivo
+escrito. Abrir virou ato deliberado; antes, fechar é que era.
+
+→ `supabase/migrations/20261002190000_sec056_funcao_nova_nasce_fechada_para_anon.sql`
+
+---
+
 ## `[25/09]` A procedência da IA é uma COLUNA autodeclarada, não uma trilha
 
 **Decidido:** `news_articles.redigido_com_ia boolean NOT NULL DEFAULT false`,
