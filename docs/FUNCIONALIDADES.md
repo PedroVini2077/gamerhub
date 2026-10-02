@@ -668,6 +668,50 @@ três sugestões saem do texto que a pessoa já escreveu: custo zero, resposta
 instantânea, e **zero chance de inventar fato** — que numa seção de notícia é a
 propriedade que mais importa.
 
+##### `[02/10]` A sugestão de editoria passou a olhar CONTEXTO, não tamanho
+
+Ela errava, e o caso é real:
+
+> «Diablo IV temporada 15 transforma o jogo em museu dos 30 anos da série»
+> → sugeria **Filmes e Séries**
+
+O motivo era uma regra que parecia inofensiva: *a palavra encontrada mais longa
+ganha*. `temporada` tem 9 letras, `jogo` tem 4 — e **tamanho de palavra não tem
+relação nenhuma com o quanto ela informa**.
+
+Agora cada palavra do vocabulário é de um de dois tipos:
+
+| | |
+| --- | --- |
+| **define** | só existe numa editoria — `gpu`, `anime`, `gameplay`, `netflix` |
+| **acompanha** | aparece em várias — `temporada`, `estreia`, `lançamento`, `trailer`, `evento`, `série`. Diz *o que aconteceu*, nunca *com o quê* |
+
+**Palavra que acompanha nunca decide sozinha.** Ela só soma para uma editoria
+que já tem evidência própria — e é daí que vem o contexto:
+
+| título | sugestão | por quê |
+| --- | --- | --- |
+| Diablo IV temporada 15 … o jogo … | **Games** | `jogo` define; `temporada` só acompanha |
+| Fortnite recebe nova temporada | **Games** | `fortnite` define |
+| Netflix anuncia nova temporada | **Filmes e séries** | `netflix` define |
+| Stranger Things ganha nova temporada | **Filmes e séries** | `stranger things` define |
+| Nova temporada chega em breve | *(nenhuma)* | só palavra que acompanha |
+| O filme virou jogo | *(nenhuma)* | empate — e empate se diz calando |
+
+**O resumo e o corpo passaram a contar também**, com peso menor que o título:
+uma matéria sobre um jogo dificilmente passa dois parágrafos sem dizer "jogo".
+
+**O que continua igual:** a sugestão é um botão, nada se aplica sozinho, e
+quando não há evidência suficiente ela simplesmente **não aparece** — melhor
+não sugerir do que sugerir errado com falsa confiança.
+
+> **A limitação que fica, dita assim.** Nome próprio é vocabulário, e
+> vocabulário acaba. «Hollow Knight recebe nova temporada» não tem como ser
+> classificado por regra nenhuma sem que alguém diga o que é Hollow Knight — e
+> a resposta nesse caso é *nenhuma sugestão*, não um palpite. A lista de nomes
+> foi medida nas 801 manchetes reais que o radar já coletou, pelas que mais
+> aparecem; ela cresce quando doer, não por precaução.
+
 #### `[26/09]` Radar de pautas — de onde vêm as ideias
 
 **O pedido dele:** *"eu imaginei ela me dando as ideias, as fontes confiáveis,
