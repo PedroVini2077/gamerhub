@@ -344,9 +344,16 @@ describe('a porta e o pedido', () => {
     // a doc da Groq diz que ele "pode produzir JSON valido que nao casa com o
     // esquema" e "as vezes disparar erro 400" — seria trocar o problema por
     // ele mesmo.
-    expect(FONTE, 'o `response_format` voltou para `json_object`, que garante '
+    //
+    // `[02/10]` Le `modelo.ts`, nao o index: a chamada saiu de la quando a
+    // Fase 4 fez o arquivo passar de 300 linhas. Lida no index, esta checagem
+    // passaria a aprovar o vazio — que e a classe que o `varrerFontes` existe
+    // para impedir.
+    const MODELO_TS = readFileSync('supabase/functions/radar-de-pautas/modelo.ts', 'utf8');
+    expect(MODELO_TS.length, 'modelo.ts veio vazio — o caminho mudou?').toBeGreaterThan(200);
+    expect(MODELO_TS, 'o `response_format` voltou para `json_object`, que garante '
       + 'SINTAXE e nao FORMA').toMatch(/type:\s*"json_schema"/);
-    expect(FONTE, 'o `reasoning_effort` sumiu. Sem ele a cadeia de pensamento '
+    expect(MODELO_TS, 'o `reasoning_effort` sumiu. Sem ele a cadeia de pensamento '
       + 'do gpt-oss-120b volta a comer o `max_tokens` da resposta, e o HTTP 400 '
       + '`json_validate_failed` com `failed_generation` vazio volta junto.')
       .toMatch(/reasoning_effort:\s*"low"/);

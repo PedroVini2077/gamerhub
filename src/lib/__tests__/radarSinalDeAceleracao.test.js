@@ -104,10 +104,27 @@ describe('o sinal falhando nao pode custar as pautas', () => {
     expect(vistos[0].dias).toBe(JANELA_DE_DIAS);
   });
 
-  it('o sinal e a ULTIMA coisa do fluxo — pautas prontas antes dele', () => {
-    // Se ele subisse para antes do `resolverPautas`, uma falha dele passaria a
-    // custar o conteudo em vez de custar o enfeite.
-    expect(INDEX.indexOf('medirAceleracao(')).toBeGreaterThan(INDEX.indexOf('resolverPautas('));
+  it('os sinais sao a ULTIMA coisa do fluxo — pautas prontas antes deles', () => {
+    // Se subissem para antes do `resolverPautas`, uma falha deles passaria a
+    // custar o CONTEUDO em vez de custar o enfeite.
+    //
+    // `[02/10]` Era `medirAceleracao(`; a Fase 4 trouxe o sinal de video e os
+    // dois passaram a entrar por `anexarSinais()`. A regra nao mudou — mudou o
+    // ponto de entrada, e agora ela cobre OS DOIS de uma vez, que e mais forte
+    // do que cobrir um.
+    const sinais = INDEX.indexOf('anexarSinais(');
+    expect(
+      sinais,
+      '`anexarSinais(` nao aparece no index.ts do radar.\n'
+      + '    Ou ele foi renomeado, ou os sinais voltaram a ser chamados soltos —\n'
+      + '    e ai esta trava deixa de vigiar a ordem de ninguem.',
+    ).toBeGreaterThan(-1);
+    expect(
+      sinais > INDEX.indexOf('resolverPautas('),
+      'os sinais passaram a rodar ANTES de as pautas estarem prontas.\n'
+      + '    Sinal e enfeite informativo: falha dele nao pode custar o conteudo.\n'
+      + '    O editor que clicou tem de receber as pautas de qualquer jeito.',
+    ).toBe(true);
   });
 });
 

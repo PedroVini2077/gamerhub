@@ -782,6 +782,8 @@ Ele lê os feeds na hora e devolve, para cada pauta:
 | **ângulo** | o recorte do GamerHub, que é o que separa matéria de repost |
 | **por que agora** | o que torna aquilo assunto hoje |
 | **as fontes** | endereços **reais**, de feeds cadastrados, que dá para abrir |
+| **`[01/10]` o sinal de aceleração** | `crescendo`, `3x o normal`, `esfriando` — medido nos VEÍCULOS que assinamos, não em buscas do público |
+| **`[02/10]` o sinal de vídeo** | `3 videos hoje` — quantos canais publicaram vídeo sobre o assunto nas últimas 24h |
 
 **A guarda que faz "fonte confiável" ser verdade, e não promessa.** O modelo
 devolve os endereços que sustentam cada pauta; **todo endereço que não estava
@@ -789,6 +791,17 @@ na lista coletada é descartado** antes de a resposta sair do servidor, e a
 contagem do descarte volta junto. Sem isso bastaria ele escrever uma URL
 plausível de um site conhecido — e, do lado de quem lê, isso é
 indistinguível de apuração.
+
+**`[02/10]` O sinal de vídeo mede publicação, não audiência — e está escrito na
+dica.** `3 videos hoje` quer dizer que três canais acharam o assunto digno de
+vídeo nas últimas 24 horas. Não é view, não é confirmação, e por isso ele é um
+selo separado que **nunca** altera o de confiabilidade: título de vídeo é
+qualquer pessoa com uma conta; manchete de veículo é alguém que assinou
+embaixo. Um vídeo só não vira selo — selo que aparece sempre deixa de informar.
+
+Se a chave do YouTube não estiver configurada, ou a cota do dia acabar, **o
+radar continua inteiro**: só o selo some, e a linha "não respondeu" diz o
+motivo em português. Sinal é enfeite informativo; ele não pode custar pauta.
 
 **"Criar rascunho com estas notas" fecha o ciclo.** A matéria nasce com título,
 editoria e fonte preenchidos **e** com as manchetes coladas no campo de notas —

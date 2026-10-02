@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Radar, ExternalLink, Plus, AlertTriangle, TrendingUp } from 'lucide-react';
+// Marca vai de `react-icons/fa6`, nunca do lucide (§4, regras de UI).
+import { FaYoutube } from 'react-icons/fa6';
 import { buscarPautas } from '../../services/newsRadarService';
 import { editoriaValida, rotuloDaEditoria } from '../../lib/news/editorias';
 import { CONFIABILIDADE, confiabilidadeValida } from '../../lib/news/confiabilidade';
 import { seloDoSinal } from '../../lib/news/aceleracao';
+import { seloDeVideo } from '../../lib/news/sinalDeVideo';
 import AvisoDeErro from '../ui/AvisoDeErro';
 
 /**
@@ -165,6 +168,9 @@ function Pauta({ pauta, onCriar }) {
   // `[01/10]` FASE 3: o sinal vem do servidor como texto, e a tela só desenha
   // o que sabe explicar — mesma regra da editoria e da confiabilidade.
   const selo = seloDoSinal(pauta.sinal);
+  // `[02/10]` FASE 4: mesma regra, selo PRÓPRIO. Vídeo não confirma nada, então
+  // ele nunca encosta no selo de confiabilidade.
+  const seloVideo = seloDeVideo(pauta.video);
 
   return (
     <div className="rounded-lg border border-dark-500 p-3 space-y-2">
@@ -207,6 +213,12 @@ function Pauta({ pauta, onCriar }) {
           <span title={selo.dica}
             className={`flex items-center gap-1 text-[10px] font-mono ${selo.classe}`}>
             <TrendingUp size={10} /> {selo.rotulo}
+          </span>
+        )}
+        {seloVideo && (
+          <span title={seloVideo.dica}
+            className={`flex items-center gap-1 text-[10px] font-mono ${seloVideo.classe}`}>
+            <FaYoutube size={10} /> {seloVideo.rotulo}
           </span>
         )}
         {pauta.urls.map((u) => (
