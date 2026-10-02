@@ -1288,7 +1288,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**55 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2626,6 +2626,22 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
+  está feita.** *Decisão dele em 02/10, com a medição na mão.*
+
+  | pacote | custo gzip | por que ficou |
+  | --- | --- | --- |
+  | `react` · `react-dom` 19.2.8 → 19.3.0 | **+8,4 kB** | embute `<ViewTransition />` e Fragment Refs, que o `src/` **não usa** (grep: zero). Das dezenas de correções, **uma** nos alcança (`useDeferredValue` travando, no painel do fundador) e o sintoma nunca foi relatado |
+  | `lucide-react` 1.37 → 1.48 | **+2,4 kB** | ícones que já temos |
+  | `@types/react` · `@types/react-dom` | 0 | acompanham o React — tipo à frente do runtime anuncia API que não existe |
+
+  **Quando revisitar:** correção que nos alcance, vontade de usar
+  `<ViewTransition />`, ou advisory. **O teto terá de subir junto** — hoje está
+  em 229 e o React sozinho leva para ~237.
+
+  Detalhe e as alternativas recusadas em `docs/DECISOES-FERRAMENTAL.md`.
+
 
 - ⬜ `[18/09]` **Revogar as colunas derivadas de `posts` — a SEGUNDA camada da
   SEC-027.** *Só depois do deploy desta branch, e a ordem importa.*

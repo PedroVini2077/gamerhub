@@ -78,8 +78,50 @@ const DIST = 'dist';
 // Os tetos abaixo são o tamanho REAL de hoje mais uma folga pequena. Não houve
 // ganho nem perda de peso: houve o fim de uma mentira de medição. O histórico
 // e a evidência estão em `docs/OPERACAO.md`.
+// ── `[02/10]` O GZIP sobe de 228 para 229, e a frase que o teto exige ──────
+//
+// **Por que o site precisou engordar:** para o cliente do Supabase sair de
+// 2.112 para 2.117. Ele custa **+1,0 kB gzip** e é a biblioteca que cuida de
+// sessão, login e de toda chamada protegida por RLS — a que eu menos quero
+// cinco minors atrasada.
+//
+// ── O que foi RECUSADO junto, e é a parte que justifica o número ser 1 ─────
+//
+// O PR do Dependabot trazia 14 pacotes. Cada um foi medido sozinho, em gzip,
+// a partir da base de 227,8:
+//
+//     9 devDependencies (vite 8.0->8.3, eslint, playwright, jsdom, @types)
+//                                             -0,2   <- DEVOLVEM byte
+//     @sentry/react     10.72 -> 10.75.3       0,0
+//     @supabase/supabase-js 2.112 -> 2.117    +1,0   <- entrou
+//     lucide-react      1.37 -> 1.48          +2,4   <- RECUSADO
+//     react/react-dom   19.2.8 -> 19.3.0      +8,4   <- RECUSADO
+//
+// O React saiu porque o 19.3 embute dois subsistemas novos inteiros —
+// `<ViewTransition />` e Fragment Refs — que entram no pacote usemos ou não.
+// Grep no `src/`: zero uso dos dois. Das dezenas de correções dele, UMA nos
+// alcança (`useDeferredValue` travando), num painel que só a equipe abre, sem
+// sintoma relatado. `npm audit` em 0: não havia pressão de segurança. 8,4 kB é
+// 3,7% do orçamento inteiro, cobrados de quem chega pela primeira vez.
+//
+// O Lucide saiu por relação custo/benefício: 2,4 kB por ícones que já temos.
+//
+// ── E o que este episódio revelou sobre o PRÓPRIO teto ─────────────────────
+//
+// A folga era de **0,2 kB**. Qualquer dependência de runtime estourava — até
+// um patch do cliente Supabase. Isso não é defeito do portão: é ele fazendo o
+// que o comentário no topo promete, *forçar a frase*. Mas significa que todo
+// PR do Dependabot vai reprovar aqui, todo mês, e isso tem de ser decisão
+// consciente em vez de surpresa.
+//
+// **Onde está o byte, se um dia precisarmos de folga de verdade:**
+// `vendor-supabase` são 53,3 kB gzip — 23% do orçamento — e estão no primeiro
+// carregamento porque `hooks/useAuth.jsx` importa o cliente direto: o site
+// precisa saber na primeira pintura se você está logado. Mexer nisso é mexer
+// num arquivo de alto risco (`CLAUDE.md` §7), então fica registrado como
+// onde a sala existe, não como plano.
 const TETO_BRUTO_KB = 760;
-const TETO_GZIP_KB = 228;
+const TETO_GZIP_KB = 229;
 
 // Teto por arquivo, para QUALQUER chunk — inclusive os de rota, que não estão
 // no conjunto ansioso.

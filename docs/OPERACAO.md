@@ -689,7 +689,7 @@ engorda. Ele confere quatro coisas:
 
 | O que | Teto | Por quê |
 | --- | --- | --- |
-| JS do carregamento inicial | 760 kB brutos / 228 kB gzip | é o que o navegador busca antes de pintar qualquer coisa |
+| JS do carregamento inicial | 760 kB brutos / **229 kB gzip** | é o que o navegador busca antes de pintar qualquer coisa. **`[02/10]`** o gzip subiu de 228 para 229 — o cliente do Supabase foi de 2.112 para 2.117 e custou 1,0 kB. O porquê, e os dois pacotes que foram RECUSADOS no mesmo PR, estão em [`DECISOES-FERRAMENTAL.md`](DECISOES-FERRAMENTAL.md) |
 | Qualquer chunk isolado | 320 kB | chunk de **rota** não aparece no `index.html` e escapa do teto acima — mas quem abre a página paga tudo |
 | `Admin-*.js` e `Owner-*.js` existem | — | se um `lazy()` virar `import` estático o chunk some, nada quebra, e **todo visitante anônimo passa a baixar o código da equipe**. `[12/09]` Esta linha dizia `LandingScene-*.js`, que foi apagado com a cena 3D em 11/09 — o script já apontava para os painéis |
 | O HTML ainda é legível | — | se as expressões pararem de casar, ele sai com erro em vez de medir zero byte e aprovar |
@@ -1417,7 +1417,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->29.910<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->30.038<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
