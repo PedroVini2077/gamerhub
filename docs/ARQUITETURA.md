@@ -278,12 +278,21 @@ src/
 │   │   │                  #   escreve no lugar do que as notas não tinham.
 │   │   │                  #   Puro de propósito — a trava precisa importá-lo
 │   │   │                  #   sem arrastar o cliente do Supabase junto
-│   │   ├── assistente.js  #   `[25/09]` SUGERE, nunca decide: editoria pelo
-│   │   │                  #   título (vocabulário FECHADO, sem chute), resumo
-│   │   │                  #   das primeiras frases do CORPO, e avisos de
+│   │   ├── assistente.js  #   `[25/09]` SUGERE, nunca decide: resumo das
+│   │   │                  #   primeiras frases do CORPO e avisos de
 │   │   │                  #   conferência. Nada chama modelo — tudo é derivado
 │   │   │                  #   do que a pessoa já escreveu, então custo zero e
-│   │   │                  #   ZERO chance de alucinar
+│   │   │                  #   ZERO chance de alucinar. `[02/10]` A escolha da
+│   │   │                  #   editoria saiu daqui e ele a REEXPORTA
+│   │   ├── editoriaProvavel.js # `[02/10]` Qual editoria o texto sugere, em
+│   │   │                  #   DUAS camadas: palavra que DEFINE (`gpu`,
+│   │   │                  #   `netflix`) × palavra que ACOMPANHA (`temporada`,
+│   │   │                  #   `estreia`, `trailer`). A que acompanha nunca
+│   │   │                  #   decide sozinha — só soma para editoria que já
+│   │   │                  #   tem evidência. Antes era "a pista mais longa
+│   │   │                  #   ganha", e `temporada` (9) vencia `jogo` (4).
+│   │   │                  #   Empate devolve `null`: melhor não sugerir do que
+│   │   │                  #   sugerir errado com falsa confiança
 │   │   ├── slug.js        #   Título -> endereço. A regex daqui é a MESMA do
 │   │   │                  #   `CHECK` do banco, travada: slug montado errado
 │   │   │                  #   viraria `violates check constraint` na cara de

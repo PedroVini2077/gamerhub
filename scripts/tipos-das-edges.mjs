@@ -31,11 +31,24 @@
  * AS TRÊS ESCOLHAS, e cada uma tem motivo
  * ============================================================================
  *
- * **1. `--node-modules-dir=auto` em vez de um `deno.json` no repositório.**
- * A checagem precisa resolver `npm:openai`, que o `edge-runtime.d.ts` do
- * Supabase importa. Um `supabase/functions/deno.json` resolveria — e ficaria
- * na árvore que o CLI empacota e implanta. Flag de linha de comando não toca
- * no que vai para produção.
+ * **1. A checagem roda numa CÓPIA, fora do repositório.**
+ *
+ * Ela precisa resolver `npm:openai`, que os tipos do `jsr:@supabase/functions-js`
+ * importam — e para isso o Deno **instala**. A primeira versão disto usava
+ * `--node-modules-dir=auto` com o repositório como raiz, e o efeito foi medido
+ * pelo `npm run fim` no mesmo dia:
+ *
+ *     depois de `npm run tipos` ... 790,6 kB  / 239,0 kB gzip   REPROVA
+ *     depois de `npm ci` limpo ..... 749,8 kB / 227,8 kB gzip   passa
+ *
+ * O Deno tinha posto `openai` no `node_modules/` do projeto, e o Vite o
+ * arrastou para o pacote: **41 kB de código que ninguém importou**. O portão
+ * de bytes pegou, e é exatamente o caso em que um portão salva o outro.
+ *
+ * Por isso a cópia: o `node_modules` do Deno nasce e morre em `/tmp`, e nada
+ * toca nem o repositório nem a árvore que o CLI do Supabase empacota e
+ * implanta. Os caminhos voltam reescritos para o repositório, senão o erro
+ * mandaria quem conserta para um diretório temporário.
  *
  * **2. Uma função por vez, e o relatório vai até o fim.** Parar no primeiro
  * erro esconderia os outros nove, e quem conserta prefere a lista inteira.
@@ -47,8 +60,9 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync, cpSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const PASTA = 'supabase/functions';
 
@@ -70,26 +84,34 @@ if (funcoes.length === 0) {
   process.exit(1);
 }
 
+// A copia vive em /tmp e leva o `deno.json` junto — assim o `node_modules`
+// que o Deno cria nasce LA, e nao na raiz do repositorio.
+const copia = mkdtempSync(join(tmpdir(), 'tipos-edges-'));
+cpSync(PASTA, copia, { recursive: true });
+writeFileSync(join(copia, 'deno.json'), '{"nodeModulesDir":"auto"}\n');
+
 let comErro = 0;
 
-for (const nome of funcoes) {
-  try {
-    // `--no-lock`: o `deno.lock` nasceria na raiz do repositorio a cada
-    // execucao, mudaria sozinho, e nao serve a ninguem — o Supabase nao o le
-    // ao implantar. Arquivo que aparece sujando o `git status` sem ter dono e
-    // ruido, e ruido ensina a ignorar o canal (§0.2, 4a regra).
-    execFileSync('deno', ['check', '--no-lock', '--node-modules-dir=auto',
-      join(PASTA, nome, 'index.ts')],
-      { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
-    console.log(`    OK        ${nome}`);
-  } catch (e) {
-    comErro++;
-    console.log(`    FALHOU    ${nome}`);
-    // Só as linhas de erro: o `deno check` imprime cada download tambem.
-    const saida = String(e.stderr ?? e.stdout ?? e.message)
-      .split('\n').filter((l) => !/^\s*(Download|Check|Initialize)/.test(l));
-    console.log(saida.map((l) => `      ${l}`).join('\n'));
+try {
+  for (const nome of funcoes) {
+    try {
+      execFileSync('deno', ['check', join(copia, nome, 'index.ts')],
+        { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8', cwd: copia });
+      console.log(`    OK        ${nome}`);
+    } catch (e) {
+      comErro++;
+      console.log(`    FALHOU    ${nome}`);
+      // Só as linhas de erro — o `deno check` imprime cada download também —,
+      // e o caminho da copia volta a ser o caminho do repositorio.
+      const saida = String(e.stderr ?? e.stdout ?? e.message)
+        .split('\n')
+        .filter((l) => !/^\s*(Download|Check|Initialize)/.test(l))
+        .map((l) => l.split(`file://${copia}`).join(PASTA).split(copia).join(PASTA));
+      console.log(saida.map((l) => `      ${l}`).join('\n'));
+    }
   }
+} finally {
+  rmSync(copia, { recursive: true, force: true });
 }
 
 console.log();

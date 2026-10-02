@@ -27,10 +27,12 @@ import { editoriaValida } from '../editorias';
  */
 
 describe('o assistente sugere a partir do que já existe', () => {
-  it('editoria: casa palavra INTEIRA, e a pista mais longa ganha', () => {
+  // `[02/10]` Este caso se chamava *"a pista mais longa ganha"*, e esse era o
+  // BUG: `temporada` (9 letras) vencia `jogo` (4). O modelo agora é
+  // evidência, e o porquê está em `editoriaProvavelNaoChuta.test.js`.
+  it('editoria: casa palavra INTEIRA, e quem define ganha de quem acompanha', () => {
     expect(sugerirEditoria('Nova GPU da NVIDIA chega em novembro')).toBe('hardware');
     expect(sugerirEditoria('O filme de Zelda ganhou data')).toBe('filmes-series');
-    // "inteligência artificial" tem de ganhar de "ia" solto.
     expect(sugerirEditoria('Inteligência artificial no desenvolvimento')).toBe('ia');
   });
 

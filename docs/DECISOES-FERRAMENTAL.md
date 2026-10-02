@@ -591,8 +591,33 @@ verifica, e coisa que depende de um terceiro.**
 **Recusado: `deno.json` no repositório.** A checagem precisa resolver
 `npm:openai`, que os tipos do `jsr:@supabase/functions-js` importam. Um
 `supabase/functions/deno.json` resolveria — e ficaria na árvore que o CLI
-empacota e **implanta**. O flag `--node-modules-dir=auto` não toca em nada do
-que vai para produção.
+empacota e **implanta**.
+
+> #### ⚠️ `[02/10]` A primeira saída estava errada, e o portão de bytes provou
+>
+> Eu escrevi aqui que `--node-modules-dir=auto` *"não toca em nada do que vai
+> para produção"*. **Toca.** O Deno precisa INSTALAR para resolver o
+> `npm:openai`, e com a raiz no repositório ele instalou no `node_modules/` do
+> projeto — de onde o Vite o arrastou para o pacote do site:
+>
+> | | |
+> | --- | --- |
+> | depois de `npm run tipos` | **790,6 kB** / 239,0 kB gzip — **reprova** |
+> | depois de `npm ci` limpo | 749,8 kB / 227,8 kB gzip — passa |
+>
+> **41 kB de código que ninguém importou**, no carregamento inicial. Quem pegou
+> foi o **orçamento de bytes** no `npm run fim` — um portão salvando o outro, e
+> o melhor argumento que existe para ter os dois.
+>
+> **O CI não teria pegado**, e isso é o que assusta: lá o orçamento roda
+> *antes* do `npm run tipos`, na mesma esteira. O sintoma só aparece em quem
+> builda depois — na máquina da pessoa.
+>
+> Hoje a checagem roda numa **cópia em `/tmp`** com o `deno.json` junto: o
+> `node_modules` do Deno nasce e morre lá, e os caminhos dos erros voltam
+> reescritos para o repositório (senão mandariam quem conserta para um
+> diretório já apagado). Trava: `tiposDasEdgesNaoPoluiORepo.test.js`, provada
+> reinjetando a versão original.
 
 **Recusado: só a trava do caso concreto.** Ela já existe
 (`radarSinalDeAceleracao.test.js` checa a sombra do `corpo` no texto-fonte) e

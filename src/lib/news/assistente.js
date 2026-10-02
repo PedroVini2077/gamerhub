@@ -1,5 +1,17 @@
 import { analisarFormatacao } from '../formatacao/analisar';
-import { EDITORIAS, editoriaValida } from './editorias';
+import { EDITORIAS } from './editorias';
+import { sugerirEditoria } from './editoriaProvavel';
+
+/**
+ * `[02/10]` O VOCABULÁRIO E O PLACAR SAÍRAM DAQUI.
+ *
+ * `sugerirEditoria` continua sendo exportada por este módulo — quem importa
+ * dela não muda uma linha. O que mudou é onde ela mora: a decisão de editoria
+ * virou um modelo de duas camadas (`definem` × `acompanham`) com vocabulário
+ * próprio, e isso é outra responsabilidade (§4). O motivo inteiro, e o bug que
+ * o produziu, estão no cabeçalho de `editoriaProvavel.js`.
+ */
+export { sugerirEditoria };
 
 /**
  * `[25/09]` O ASSISTENTE DA MATÉRIA — sugere, nunca decide.
@@ -35,54 +47,6 @@ import { EDITORIAS, editoriaValida } from './editorias';
  * PAGA, decisão de custo do dono. O seam existe: quem chamar `sugestoesPara`
  * recebe o mesmo formato, venha de onde vier.
  */
-
-/**
- * Palavra → editoria. Fechado de propósito.
- *
- * Termo desconhecido **não chuta**: a função devolve `null` e a tela não sugere
- * nada. Sugerir "gaming" por padrão faria toda matéria nascer na editoria
- * errada por omissão, e ninguém repara em campo já preenchido.
- */
-const PISTAS = {
-  gaming: ['jogo', 'jogos', 'game', 'games', 'gameplay', 'dlc', 'patch', 'beta', 'lançamento', 'trailer'],
-  hardware: ['gpu', 'cpu', 'placa', 'processador', 'ssd', 'monitor', 'console', 'notebook', 'setup'],
-  tecnologia: ['app', 'software', 'atualização', 'sistema', 'android', 'windows', 'linux', 'navegador'],
-  ia: ['ia', 'inteligência artificial', 'modelo', 'chatgpt', 'gemini', 'copilot', 'llm'],
-  internet: ['rede social', 'streaming', 'youtube', 'twitch', 'discord', 'creator', 'viral'],
-  geek: ['quadrinho', 'quadrinhos', 'hq', 'anime', 'mangá', 'colecionável', 'cosplay'],
-  'cultura-pop': ['cultura pop', 'música', 'show', 'celebridade', 'meme'],
-  'filmes-series': ['filme', 'filmes', 'série', 'séries', 'temporada', 'netflix', 'cinema', 'estreia'],
-  industria: ['estúdio', 'demissão', 'aquisição', 'processo', 'receita', 'bilhão', 'milhão', 'ceo'],
-};
-
-/** Sem acento e em minúscula, para a pista casar com o que a pessoa digitou. */
-const normalizar = (t) => (typeof t === 'string' ? t : '')
-  .normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
-
-/**
- * A editoria que o título sugere — ou `null` quando não dá para dizer.
- *
- * Empate é resolvido pela ordem das pistas, e isso é aceitável porque a
- * sugestão **nunca é aplicada sozinha**: ela aparece como um botão que a pessoa
- * clica. Uma sugestão errada custa um clique; uma sugestão silenciosa custa uma
- * matéria na editoria errada.
- */
-export function sugerirEditoria(titulo) {
-  const texto = ` ${normalizar(titulo)} `;
-  let melhor = null;
-  let maisLonga = 0;
-
-  for (const [slug, pistas] of Object.entries(PISTAS)) {
-    for (const pista of pistas) {
-      const p = normalizar(pista);
-      // Palavra INTEIRA: "ia" não pode casar dentro de "familia".
-      if (!new RegExp(`(^|[^a-z0-9])${p}([^a-z0-9]|$)`).test(texto)) continue;
-      // A pista mais longa ganha: "inteligencia artificial" vence "ia".
-      if (p.length > maisLonga) { maisLonga = p.length; melhor = slug; }
-    }
-  }
-  return melhor && editoriaValida(melhor) ? melhor : null;
-}
 
 /** O texto puro de um bloco da árvore — sem asterisco, sem marcação. */
 const textoDoBloco = (bloco) => {
@@ -167,7 +131,11 @@ export function avisosDaMateria({ conteudo, resumo, fonte_url: fonte, capa_url: 
  */
 export function sugestoesPara(artigo = {}) {
   return {
-    editoria: sugerirEditoria(artigo.titulo),
+    // `[02/10]` O resumo e o corpo entram como APOIO. Eles já estavam aqui —
+    // só o título era olhado, e era desperdício: uma matéria sobre um jogo
+    // dificilmente passa dois parágrafos sem dizer "jogo". O título continua
+    // pesando mais (ver PESOS em `editoriaProvavel.js`).
+    editoria: sugerirEditoria(artigo.titulo, `${artigo.resumo ?? ''} ${artigo.conteudo ?? ''}`),
     resumo: artigo.resumo?.trim() ? null : resumoAutomatico(artigo.conteudo),
     avisos: avisosDaMateria(artigo),
   };
