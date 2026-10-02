@@ -25,10 +25,14 @@ import { join } from 'node:path';
  *     {postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, ...}
  *
  * **Toda funcao nova nasce com EXECUTE para `anon`.** Para TABELA o projeto ja
- * fechou esse padrao (SEC-005); para FUNCAO ele continua aberto. Fechar isso de
- * vez e mudanca de contrato do schema inteiro (§7 🟡), entao esta proposta ao
- * dono no `BACKLOG.md` — e enquanto ela nao for decidida, este teste e o que
- * segura a classe.
+ * fechou esse padrao (SEC-005); para FUNCAO ele ficou aberto por 14 dias.
+ *
+ * **`[02/10]` A raiz FOI fechada — SEC-056.** O dono aprovou a mudanca de
+ * contrato, e um event trigger em `ddl_command_end` escreve o `REVOKE`
+ * sozinho. Este teste deixou de ser "o que segura a classe" e passou a ser a
+ * segunda camada: ele cobre a migration ANTIGA, escrita antes do mecanismo
+ * existir, e o caso de alguem desligar o event trigger sem mexer aqui.
+ * O mecanismo tem trava propria em `funcaoNovaNasceFechada.test.js`.
  *
  * ── Severidade: 🔵 BAIXO, dito para nao inflar o achado ───────────────────
  *

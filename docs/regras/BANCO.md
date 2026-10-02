@@ -241,6 +241,42 @@ revogada assim no SEC-005.
 FUNÇÃO não é tocado por revoke de TABELA — é por isso que `username_disponivel`,
 `check_login_status` e `verify-contact` continuam de pé.
 
+> **`[02/10]` E as três ficam de pé por portas DIFERENTES** — conferido em
+> `pg_proc.proacl` ao fechar a SEC-056, porque essa distinção passou a decidir
+> coisa. `username_disponivel` tem `anon` de verdade; `check_login_status` é
+> `service_role` **só**, alcançado pelo público *através* de uma Edge Function;
+> e `verify-contact` é Edge Function, não RPC. Lidas em fila, as três pareciam
+> a mesma coisa — e a lista de quem tem `anon` agora é carga: ela é a exceção
+> do event trigger abaixo.
+
+### ⚠️ `[02/10]` SEC-056 — e TODA FUNÇÃO NOVA também nascia aberta
+
+O quadro acima é sobre TABELA. O mesmo `pg_default_acl` faz o mesmo com
+**função**, e pior: ele dá `EXECUTE` a `anon` **e a `PUBLIC`**. Medido numa
+função criada sem um único `GRANT` escrito:
+
+```
+{=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}
+ ^^^^^^^^^^^  o `=X` sem papel à esquerda é o PUBLIC
+```
+
+**A regra mudou de lugar: ela deixou de ser minha e passou a ser do banco.** Um
+event trigger em `ddl_command_end` escreve o `REVOKE EXECUTE ... FROM PUBLIC,
+anon` em toda função nova de `public`. Não é mais "lembrar de escrever o
+revoke" — é preciso **pedir** o `anon` de volta, com um `GRANT` explícito e o
+motivo escrito ao lado, como a régua de papéis já exigia.
+
+**Duas consequências que mordem na prática:**
+
+1. **`CREATE OR REPLACE` dispara a mesma tag.** Editar uma das quatro funções
+   abertas sem que ela esteja na lista de exceção arranca o `anon` dela na
+   hora, em silêncio. A lista está no corpo do trigger **e** na 4ª checagem de
+   `auditoria_de_operadores()`, e um teste reprova se as duas divergirem.
+2. **Função nova que o público precisa agora exige duas linhas**, não uma: o
+   `CREATE` e o `GRANT ... TO anon`. Isso é o desenho, não um atrito — "nunca
+   dê `GRANT ... TO anon` sem escrever qual tela pública o exige" deixou de
+   depender de alguém lembrar.
+
 **Prova, não confiança:** `e2e/portas-do-banco.mjs` bate na REST API com a chave
 anônima de verdade e exige `HTTP 401`. Ele reprova nos DOIS sentidos — porta que
 abriu e porta que fechou —, então mudar a régua exige mudar a expectativa **com
