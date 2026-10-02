@@ -90,6 +90,7 @@ deriva que não estoura em lugar nenhum.
 | `decisaoRevalidaEstado.test.js` | `INV-WF-001` · `INV-WF-002` |
 | `funcaoDeTriggerNaoEhRpc.test.js` | `INV-PORTA-001` |
 | `funcaoNovaNasceFechada.test.js` | `INV-PORTA-015` |
+| `retencaoHibrida.test.js` | `INV-TRILHA-003` |
 | `colunasPrivilegiadasDeProfiles.test.js` | `INV-PORTA-003` |
 | `contadorDeLoginFechado.test.js` | `INV-PORTA-005` |
 | `trilhaNaoEhForjavel.test.js` | `INV-TRILHA-001` |

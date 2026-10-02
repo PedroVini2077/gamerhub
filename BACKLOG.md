@@ -43,9 +43,10 @@
 > selo de confiabilidade (Fase 2) e o sinal de aceleração (Fase 3). **801
 > manchetes** em `news_items_raw`, de 15 fontes.
 >
-> **Falta só a Fase 4 — YouTube e comunidade — e ela depende DELE:** exige
-> segredo novo (chave da YouTube Data API) e a decisão de ligar. É o único
-> bloco do radar que não depende só de mim.
+> **Falta só a Fase 4 — YouTube e comunidade.** `[02/10]` **A chave já existe:**
+> ele criou a `YOUTUBE_API_KEY` no mesmo dia e o navegador respondeu `200` com
+> `regionCode: "BR"`. O que falta agora é só código — ver o item da Fase 4 na
+> fila.
 >
 > O histórico de como cada fase chegou aqui fica abaixo, porque cada uma
 > desmentiu uma previsão minha — e é isso que não pode se perder.
@@ -1609,15 +1610,48 @@ AGORA** escrito nele.
   manutenção permanente para um problema que pode ter sido instabilidade da
   CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
 
-- ⬜ `[01/10]` 🟠 **RETENÇÃO HÍBRIDA: tempo + quantidade, em lote.** *Pedido
-  dele em 01/10, mandado GRAVAR e começar "quando fizer sentido".* Teto de
-  quantidade em `admin_logs` (hoje só 365 dias), retenção para
-  `admin_notifications` (hoje **fora** do `cleanup_old_data()`) e limite por
-  usuário em `notifications`. Tudo dentro do `cleanup_old_data()` e do cron
-  diário que já existem — **sem criar sistema paralelo**, ordem dele. Com
-  margem de limpeza, lote, índice medido antes, e sem particionamento.
-  **O prompt inteiro e as três coisas que eu já sei estão na seção própria**,
-  logo acima da "Gerenciar as fontes do radar pela TELA".
+- ⬜ `[01/10]` 🟠 **RETENÇÃO HÍBRIDA — FEITA E PROVADA, falta UMA aprovação.**
+  *`[02/10]` Construída e testada em ROLLBACK; o último passo espera ele.*
+
+  **O que JÁ está no banco:** `aplicar_teto_de_linhas(tabela, teto)`,
+  `aplicar_teto_por_usuario(teto)` e o índice `idx_admin_notifications_created`
+  (era o único que faltava — as outras duas tabelas já tinham o seu).
+
+  **O que FALTA:** só o `CREATE OR REPLACE FUNCTION cleanup_old_data()`, que é
+  quem chama os tetos. **Enquanto ele não for aplicado, NADA mudou em
+  produção** — a faxina das 04:00 roda exatamente como rodava.
+
+  **Por que parou aí:** a ferramenta pede aprovação para SQL destrutivo
+  (`MCP tool call requires approval`) e a dele não chegou nesta sessão. O SQL
+  exato está em
+  `supabase/migrations/20261002200000_retencao_hibrida_tempo_mais_quantidade.sql`
+  — é só aplicar o arquivo inteiro, e ele é idempotente (`CREATE OR REPLACE` +
+  `CREATE INDEX IF NOT EXISTS`).
+
+  **Ao aplicar, não esquecer:** registrar a linha em
+  `supabase_migrations.schema_migrations` (version `20261002200000`), senão o
+  portão `espelho-de-migrations` reprova — o arquivo existe e a linha não.
+
+  | alvo | tempo | teto | corta a partir de |
+  | --- | --- | --- | --- |
+  | `admin_logs` | 365d | 80.000 | 100.000 |
+  | `admin_notifications` | **365d — não tinha prazo nenhum** | 20.000 | 25.000 |
+  | `notifications` | lida + 30d | **500 por usuário** | 625 |
+
+  **Medido em 02/10:** 139 linhas/dia de média em `admin_logs`, pico de 924 num
+  dia, projeção de ~50.700/ano. 80.000 é 1,6x isso — em operação normal o teto
+  apaga **zero**.
+
+  **A margem de limpeza eu tinha PERDIDO e voltei atrás.** A primeira versão
+  cortava no número exato, ou seja, toda noite por um fio — exatamente o que o
+  prompt dele proibia. Hoje é 125% do teto, derivada e não parâmetro.
+
+  **Provado em ROLLBACK:** corta para o teto · 2ª passada apaga 0 (idempotente)
+  · dentro da margem não toca · sobra o mais NOVO, não o mais velho · usuário
+  abaixo do teto fica intacto · teto `0` e `NULL` recusados · tabela fora do
+  mapa recusada.
+
+  Trava: `retencaoHibrida.test.js` (5 checagens, 5 reinjeções).
 
 - ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
   diferentes: `liveService.unsilenceUser({postId, userId})` e
@@ -2249,12 +2283,17 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   **sem** `anon` e **sem** `PUBLIC`, que é a prova de que o event trigger
   funciona — e deveria ter sido apagada na mesma sessão (§5, 3ª regra).
 
-  **Por que não apaguei:** todo comando com `DROP` voltou `cancelled` pela
-  ferramenta, três vezes seguidas, enquanto `select 1` respondia normal no
-  intervalo. **Não é recusa dele nem erro de SQL** — é a palavra sendo barrada,
-  e é a mesma causa dos `apply_migration` cancelados hoje (o corpo deles tinha
-  `DROP EVENT TRIGGER IF EXISTS`). Contornar por `EXECUTE format(...)` seria
-  driblar um controle de segurança da ferramenta, e não é o que se faz.
+  **Por que não apaguei, e o meu primeiro diagnóstico estava ERRADO.** Eu
+  escrevi, e disse a ele no chat, que *"a ferramenta está barrando a palavra
+  `DROP`"*. Não está. O que acontece é **pedido de aprovação**: SQL destrutivo
+  exige o `MCP tool call requires approval`, e no modo automático esse pedido
+  era cancelado sozinho — por isso a resposta chegava como `cancelled` sem
+  motivo, três vezes seguidas, enquanto `select 1` passava.
+
+  Só descobri ao sair do modo automático, quando a mensagem real apareceu.
+  **É o §1.1 outra vez:** três observações iguais (`DROP` → `cancelled`) e eu
+  as transformei numa causa — *"a palavra é barrada"* — sem ter visto o
+  mecanismo. A correlação era verdadeira; a explicação, inventada.
 
   **Risco enquanto ela existe: nenhum conhecido.** Devolve `1`, não lê tabela,
   não tem `anon` (o próprio trigger a fechou). É sujeira, não brecha.
@@ -2555,24 +2594,33 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[02/10]` 🔴 **AÇÃO DELE — criar a `YOUTUBE_API_KEY`.** *Ele pediu o passo
-  a passo em 02/10; é o que destrava a Fase 4 do radar.*
+- ⬜ `[02/10]` 🟠 **FASE 4 do radar — vídeo do YouTube na pauta.** *A chave
+  existe desde 02/10; o que falta é código.*
 
-  O passo a passo completo — com as URLs diretas, o que ele vê em cada tela, o
-  que preencher e como conferir — está em `docs/OPERACAO.md`.
+  **Feito, e sai desta fila:** o passo a passo (`docs/OPERACAO.md`), a linha da
+  cota em `docs/regras/COTAS.md` escrita **antes** de existir chave, e a
+  criação da `YOUTUBE_API_KEY` por ele — conferido: o navegador respondeu `200`
+  com `regionCode: "BR"` e `totalResults: 130394`.
 
-  **Conferido antes de pedir o clique (§9.12):** nenhum código lê
-  `YOUTUBE_API_KEY` hoje (`grep` em `src/` e `supabase/`), então criar a chave
-  **não muda nada** e não tem como quebrar. Ela fica esperando o código.
-
-  **A cota, medida na documentação oficial antes de ligar:** 10.000 unidades/dia
+  **A cota decide o desenho, e isso já está escrito:** 10.000 unidades/dia
   somando tudo, **mas `search.list` tem teto SEPARADO de 100 por dia** — e é a
-  chamada que a Fase 4 usa. Isso obriga **uma busca por clique de editor, nunca
-  uma por pauta**, e está escrito em `docs/regras/COTAS.md` antes de existir
-  código.
+  chamada que esta fase usa. Logo: **uma busca por clique de editor, nunca uma
+  por pauta.** Oito pautas × uma busca cada são 8 chamadas por clique, e 12
+  cliques no dia acabam com a cota.
 
-  **O passo 3 não é opcional:** restringir a chave à YouTube Data API. Chave do
-  Google vai no corpo da requisição; vazou, qualquer um gasta a nossa cota.
+  > **⚠️ A resposta de teste dele revelou uma armadilha do endpoint.** O que
+  > voltou foi um **canal**, não um vídeo — porque faltava `&type=video` na
+  > consulta. Sem esse parâmetro o `search.list` mistura canal, playlist e
+  > vídeo, e o radar anexaria "um canal" a uma pauta. Entra no código junto
+  > com `&order=date` e `&publishedAfter`, senão a busca devolve o vídeo mais
+  > popular de três anos atrás para uma pauta de hoje.
+
+  **O que ainda NÃO foi decidido:** se o vídeo entra como fonte da pauta (igual
+  ao RSS) ou como anexo separado na tela. A primeira é mais barata e reaproveita
+  o `comFalha`; a segunda deixa claro que vídeo não é apuração. Minha
+  recomendação é a **segunda**, pela mesma razão do selo de confiabilidade:
+  misturar vídeo do YouTube com veículo de imprensa na mesma lista de fontes
+  diz que os dois valem igual.
 
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
@@ -2830,8 +2878,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->181<!--/n--> arq ·
-  <!--n:src.lib.linhas-->22.796<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->182<!--/n--> arq ·
+  <!--n:src.lib.linhas-->22.970<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

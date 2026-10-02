@@ -2015,9 +2015,33 @@ Duas razões, e as duas dizem para não agir sozinho:
    próprio painel, sem inversa** — a classe do erro da `apply_suspension` sem
    `lift_suspension`.
 
-As duas estão propostas no `BACKLOG.md`. Até lá os nomes ficam na lista de
-exceção **com o motivo escrito na migration**, e a trava
-`auditorDoBancoEhOuvido.test.js` reprova se a lista crescer em silêncio.
+### ✅ `[25/09]` SEC-054 — a razão 1 foi decidida, e as cinco TROCARAM
+
+A decisão sobre semântica foi tomada: **as cinco passaram a usar `is_owner()`**.
+Conferido no banco em 02/10, lendo `pg_proc.prosrc` das seis:
+
+| função | `is_owner()` | literal `role = 'owner'` |
+| --- | --- | --- |
+| `owner_get_stats` · `owner_get_users` · `owner_get_metrics` · `owner_get_audit_logs` · `owner_get_notifications` | **sim** | não |
+| `operador_ativo` | não | **sim — e é o desenho** |
+
+`operador_ativo` fica no literal de propósito: ela **é** a maquinaria da guarda,
+e escrevê-la em termos de `is_owner()` seria circular — `is_owner()` chama
+`role_rank`, e a função existe justamente para dizer quem está apto antes disso.
+
+**A razão 2 continua valendo, e é a parte que confunde.** As cinco saíram da
+checagem do literal (SEC-051) e **continuam na lista de exceção da primeira
+checagem** (SEC-043, *"administrativa e não chama `exige_operador_ativo()`"*) —
+por um motivo diferente do original: pôr a guarda de operador na leitura do
+painel do fundador criaria o risco de **trancá-lo fora do próprio painel, sem
+inversa**. Ninguém consegue banir o fundador pelo produto, então a guarda só
+adicionaria o travamento, nunca a proteção.
+
+> **`[02/10]` Esta seção afirmava que as cinco NÃO tinham sido consertadas e que
+> a proposta estava no `BACKLOG.md`.** As duas frases envelheceram: a troca
+> aconteceu na SEC-054, e não há item nenhum sobre isso no backlog (conferido
+> por `grep`). Corrigido com a medição acima — a linha errada ensinava a
+> procurar um débito que já tinha sido pago.
 
 **O que muda de verdade:** função **nova** que autorize por literal passa a ser
 vista. O ponto cego fecha para o futuro, que é onde ele doía.

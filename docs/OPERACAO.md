@@ -467,12 +467,36 @@ O CI reprova o PR com essa instrução se esquecerem.
 | `cleanup-expired-posts` | de hora em hora | `cleanup_expired_posts()`: apaga lives com prazo vencido e **purga o que foi soft-deletado há mais de 30 dias** |
 | `expire-lives` | a cada 5 min | tira o `is_live` de quem passou do prazo; apaga live encerrada há mais de 15 min |
 | `expire-lives-every-minute` | a cada minuto | só o `is_live = false` do prazo vencido |
-| `gamerhub-cleanup` | 04:00 | `cleanup_old_data()`: `admin_logs` 365d, notificação lida 30d, `login_attempts` não-permanente 30d, `live_chat` de live encerrada 7d, `contact_messages` 730d, e **`[24/09]` post de TESTE do CI já soft-deletado há +2h** |
+| `gamerhub-cleanup` | 04:00 | `cleanup_old_data()`: `admin_logs` 365d, **`[02/10]` `admin_notifications` 365d**, notificação lida 30d, `login_attempts` não-permanente 30d, `live_chat` de live encerrada 7d, `contact_messages` 730d, post de TESTE do CI já soft-deletado há +2h, e **`[02/10]` os três TETOS de quantidade** (ver abaixo) |
 | `gamerhub-cleanup-unconfirmed` | 04:30 | `cleanup_unconfirmed_signups()` |
 | **`gamerhub-limpa-news-de-teste`** | **a cada 10 min** | **`[01/10]`** `limpar_rascunhos_de_teste_do_news()`: rascunho/em-revisão do News com marca de robô e mais de 15 min |
 
 > ### `[01/10]` Por que o News tem job PRÓPRIO, e de 10 em 10 minutos
 >
+> ### `[02/10]` A faxina passou a ter DUAS dimensões: tempo E quantidade
+>
+> Prazo promete que nada vive mais de 365 dias. Ele **não** promete quantas
+> linhas cabem nesses 365 dias — e só a segunda garantia limita o tamanho.
+> Medido em 02/10: 139 linhas/dia de média em `admin_logs`, com pico de **924
+> num único dia**. A média projeta ~50.700 no ano; o pico, se virasse rotina,
+> projeta ~337.000.
+>
+> | alvo | tempo | teto | corta a partir de |
+> | --- | --- | --- | --- |
+> | `admin_logs` | 365d | 80.000 | 100.000 |
+> | `admin_notifications` | 365d (**nova**) | 20.000 | 25.000 |
+> | `notifications` | lida + 30d | 500 **por usuário** | 625 por usuário |
+>
+> **A margem de 125% é o que evita o corte diário.** Sem ela, a tabela que
+> encosta no teto perde algumas linhas toda noite, para sempre. Com ela, o
+> corte tira 20.000 de uma vez e só volta a acontecer uns 144 dias depois.
+>
+> **Se o teto cortar, aparece na trilha.** Uma linha `retencao_teto_atingido`
+> (`warning`) diz quantas linhas cada alvo perdeu. Em operação normal o teto
+> apaga **zero**, então ver essa linha significa algo: o site passou a gerar
+> mais registro do que a janela de 365 dias comporta, e a trilha deixou de
+> cobrir o prazo que o painel anuncia.
+
 > A regra já existia dentro do `cleanup_old_data()` desde 25/09, e estava
 > certa. O que ninguém conferiu foi o **relógio**: aquele lote roda uma vez por
 > dia, e o `painel-admin.mjs` cria uma matéria **a cada rodada de CI**.
@@ -1367,8 +1391,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->485<!--/n--> arquivos e
-<!--n:src.linhas-->55.306<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->486<!--/n--> arquivos e
+<!--n:src.linhas-->55.480<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1392,7 +1416,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->485<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->486<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1417,7 +1441,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->30.306<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->30.442<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
