@@ -95,7 +95,7 @@ jobs:
       # Para subir a versão: ver https://github.com/supabase/cli/releases.
       # Este workflow dispara quando ELE MESMO muda, então o próprio merge
       # prova que o número existe — se não existir, o deploy reprova na hora.
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.119.0
 
