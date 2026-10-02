@@ -105,19 +105,34 @@ export function avisosDaMateria({ conteudo, resumo, fonte_url: fonte, capa_url: 
   const corpo = (conteudo ?? '').trim();
 
   if (!fonte?.trim()) {
-    avisos.push('Sem link de fonte. O News promete "sem repost sem fonte" — se a apuração é própria, tudo bem ignorar.');
+    avisos.push('Falta o link da fonte — o campo "Link da fonte", acima. O News '
+      + 'promete "sem repost sem fonte"; se a apuração é sua, pode ignorar.');
   }
   if (!resumo?.trim()) {
-    avisos.push('Sem resumo. É o texto que aparece no cartão da lista; sem ele o cartão fica só com o título.');
+    avisos.push('Falta o resumo — o campo "Resumo", acima. É o texto que aparece '
+      + 'no cartão da lista; sem ele o cartão fica só com o título.');
   }
-  if (corpo.length < 280) {
-    avisos.push(`O corpo tem ${corpo.length} caracteres. Curto para uma matéria — confira se não ficou faltando o final.`);
+
+  // `[02/10]` VAZIO e CURTO são coisas diferentes, e a mensagem antiga tratava
+  // as duas como uma. Ela dizia *"confira se não ficou faltando o final"* sobre
+  // um corpo de ZERO caracteres — texto de truncamento para um texto que nunca
+  // começou. Quem acabou de colar as notas e ainda não clicou em "Redigir
+  // rascunho" lia aquilo e procurava um final que não existe.
+  if (!corpo.length) {
+    avisos.push('O corpo ainda está vazio. Cole o que apurou em "Rascunhar com IA" '
+      + 'e clique em "Redigir rascunho", ou escreva direto no campo do corpo.');
+  } else if (corpo.length < 280) {
+    avisos.push(`O corpo tem ${corpo.length} caracteres — curto para uma matéria. `
+      + 'Confira se não ficou faltando o final.');
   }
+
   if (!capa?.trim()) {
-    avisos.push('Sem capa. O cartão encolhe e funciona, mas a matéria aparece menor na lista.');
+    avisos.push('Falta a capa — o campo "Imagem de capa", acima. O cartão encolhe '
+      + 'e funciona, mas a matéria aparece menor na lista.');
   }
   if ((titulo ?? '').length > 90) {
-    avisos.push(`O título tem ${titulo.length} caracteres. Acima de ~90 ele corta no cartão em telas pequenas.`);
+    avisos.push(`O título tem ${titulo.length} caracteres. Acima de ~90 ele corta `
+      + 'no cartão em telas pequenas — vale encurtar.');
   }
   return avisos;
 }

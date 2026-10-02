@@ -34,8 +34,38 @@ Depois cole `/tmp/schema-completo.sql` no SQL Editor do Supabase.
 **O que as migrations NÃO contêm** — precisa ser feito pelo dashboard:
 
 - buckets do Storage e suas policies;
-- secrets das Edge Functions (`OPENAI_API_KEY`, `GMAIL_*`,
-  `SEND_EMAIL_HOOK_SECRET`, `GOOGLE_SAFE_BROWSING_KEY`, `HUGGINGFACE_API_KEY`);
+- **secrets das Edge Functions** — a lista inteira, e ela é derivada do código
+  por uma trava (`segredosDaRestauracao.test.js`), não escrita à mão:
+
+  | secret | quem morre sem ele |
+  | --- | --- |
+  | `SEND_EMAIL_HOOK_SECRET` | o Auth Hook de email — cadastro e troca de senha |
+  | `GMAIL_USER` · `GMAIL_APP_PASSWORD` | o envio em si |
+  | `SMTP_HOST` · `SMTP_PORT` · `SMTP_USER` · `SMTP_PASS` · `SMTP_FROM` | o caminho SMTP da `send-email` |
+  | `OPENAI_API_KEY` · `HUGGINGFACE_API_KEY` | a moderação de imagem e de texto por IA |
+  | `GOOGLE_SAFE_BROWSING_KEY` | a checagem de link malicioso |
+  | `GROQ_API_KEY` | o GamerHub News — rascunho de matéria e radar de pautas |
+  | `TURNSTILE_SECRET_KEY` | o captcha do canal de contato |
+
+  > #### ⚠️ `[02/10]` Esta lista estava INCOMPLETA, e o robô de documentação
+  > tinha razão
+  >
+  > Ela citava cinco e o código lia **quatro a mais**: `GROQ_API_KEY`,
+  > `TURNSTILE_SECRET_KEY` e os cinco `SMTP_*`. Quem restaurasse o banco por
+  > este arquivo levantaria um site em que o News não redige, o radar não busca
+  > e o contato recusa todo mundo — **sem erro na tela de ninguém**, porque
+  > cada uma dessas funções degrada em silêncio quando a chave falta.
+  >
+  > É a falha silenciosa (§1.5) aplicada à recuperação de desastre, que é
+  > **exatamente o que esta pasta existe para não ter** — está escrito seis
+  > parágrafos acima. A lista envelheceu porque era escrita à mão: três Edge
+  > Functions novas entraram desde que ela foi redigida.
+  >
+  > Por isso ela deixou de ser escrita à mão. `segredosDaRestauracao.test.js`
+  > lê os `Deno.env.get()` das <!--n:edge.funcoes-->10<!--/n--> funções e
+  > reprova se algum não estiver aqui. Os `SUPABASE_*` ficam de fora porque a
+  > plataforma os injeta sozinha — ninguém os cria no dashboard.
+
 - o Auth Hook de email apontando para a `send-email`;
 - as próprias Edge Functions (elas estão em [`../functions/`](../functions/)).
 

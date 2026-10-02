@@ -589,6 +589,29 @@ ter quem olhe.
 > Supabase de produção. Isso é o que torna o teste real, e é também o que exige
 > cuidado — ver o quadro de limites abaixo.
 
+> ### ⚠️ `[02/10]` O ROBÔ DE BRANCHES vinha pedindo para APAGAR este pré-site
+>
+> A issue **#224**, aberta automaticamente toda segunda, listava `preview` como
+> *"branch órfã — resto de PR fechado"* e sugeria apagá-la.
+>
+> **Ela não é resto de nada.** O critério do robô é *"tem PR aberto?"*, e o
+> desenho desta branch é justamente **não ter PR**: ele dá push nela quando quer
+> ver algo, e o custo é 1 deploy por pedido. O critério não a alcança por
+> construção.
+>
+> **E o projeto já sabia disso do outro lado:** o CI **reprova** o PR que
+> desligar o deploy dela em `vercel.json`, com a mensagem *"ela é a única que
+> DEVE deployar"*. Dois mecanismos do mesmo repositório discordando sobre a
+> mesma branch — um exigindo que ela viva, o outro pedindo para matá-la.
+>
+> Passou despercebido porque **"branch órfã" soa inofensivo**. É a 4ª regra do
+> §0.2 na forma mais cara: alarme que grita errado toda semana vira alarme que
+> ninguém lê, e o dia em que ele gritar certo ninguém vai ouvir.
+>
+> **O conserto liga os dois lados em vez de listar `preview` à mão:** branch com
+> deploy ligado de propósito em `vercel.json` entra automaticamente nas
+> protegidas do robô, e `branchesAbandonadas.test.js` reprova se sair.
+
 ### Como funciona, e por que é sob demanda
 
 A branch `preview` é a **única** com deploy ligado além da `main`. Ela **só
@@ -1344,8 +1367,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->483<!--/n--> arquivos e
-<!--n:src.linhas-->54.930<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->484<!--/n--> arquivos e
+<!--n:src.linhas-->55.134<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1369,7 +1392,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->483<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->484<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1394,7 +1417,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->29.756<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->29.910<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 

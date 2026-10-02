@@ -94,6 +94,24 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > **O segundo caso NÃO foi mexido, de propósito:** o CLI já retenta a imagem
 > sozinho e retentou com sucesso. Mexer onde já existe conserto é criar
 > manutenção sem ganho (§9.8, pergunta 7).
+>
+> ### ✅ `[02/10]` Resolvido na raiz, e com uma lição sobre DIAGNÓSTICO
+>
+> A `setup-cli` subiu para **v3**, que instala a CLI **do pacote npm** em vez
+> das releases do GitHub. A chamada à API deixa de existir — a cota some em vez
+> de ser contornada. A linha da tabela acima fica como história.
+>
+> **E eu devo uma correção.** Escrevi ontem que a saída era versão fixa. Era
+> *uma* saída: a v1 tinha um input **`github-token`**, documentado como *"para
+> resolver a última release sem bater no limite não autenticado"*. **Existia
+> solução oficial para exatamente o nosso erro, e eu não a achei** — porque
+> diagnostiquei pela mensagem e fui direto ao conserto, sem abrir a definição
+> da action.
+>
+> **A regra que fica:** quando a cota de um TERCEIRO estourar, ler a interface
+> dele antes de contornar. Fornecedor que conhece o próprio limite costuma ter
+> escrito o que fazer — e levou 20 segundos de `curl` para descobrir isso
+> depois.
 
 > ### ⚠️ `[01/10]` A pergunta da regra 2 foi feita, e ela era a PERGUNTA ERRADA
 >

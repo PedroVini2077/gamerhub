@@ -649,6 +649,35 @@ próprio merge prova**, porque o workflow dispara quando ele mesmo muda.
 retenta sozinho, e retentou com sucesso. Mexer onde já há conserto é criar
 manutenção sem ganho.
 
+> #### ✅ `[02/10]` A v3 da action resolve isso na RAIZ — e eu tinha perdido uma saída
+>
+> O Dependabot propôs `supabase/setup-cli` **v1 → v3**, e ler a definição YAML
+> das duas decidiu:
+>
+> | | v1 | v3 |
+> | --- | --- | --- |
+> | de onde instala | **releases do GitHub** | **pacote npm**, via Bun |
+> | pergunta à API do GitHub? | sim, para resolver a versão | **não** |
+> | runtime | `node20` (daí o aviso de deprecação nos nossos logs) | composite |
+> | inputs | `version`, **`github-token`** | `version` |
+>
+> **A cota que nos derrubou deixa de existir**, em vez de ser contornada: não há
+> chamada à API. O caminho que ainda baixa do GitHub é só o de Alpine/musl, e o
+> nosso runner é glibc — ele sai no primeiro `if`.
+>
+> O `version: 2.119.0` continua valendo: conferido no registro do npm, essa
+> versão está publicada e é a `latest`.
+>
+> **E a correção que eu devo:** escrevi acima, e em `COTAS.md`, que a saída era
+> versão fixa. Era *uma* saída. A v1 tinha um input **`github-token`**,
+> documentado como *"GitHub token used to resolve the latest Supabase CLI
+> release without hitting unauthenticated API limits"* — existia uma solução
+> oficial para exatamente o nosso erro, e eu não a achei porque diagnostiquei
+> pela mensagem e fui direto ao conserto, sem abrir a definição da
+> action. **Ler a interface do que a gente usa é barato; eu pulei isso.**
+>
+> A v3 remove o input porque remove o problema.
+
 ## Infraestrutura
 
 ### `[23/08]` Envio de email por conta Google dedicada

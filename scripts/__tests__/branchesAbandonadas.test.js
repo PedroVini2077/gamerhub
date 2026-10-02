@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 
-import { classificar } from '../branches-abandonadas.mjs';
+import { classificar, PROTEGIDAS } from '../branches-abandonadas.mjs';
 
 /**
  * A varredura de branches — e a armadilha que ela mesma pode virar.
@@ -43,6 +43,45 @@ describe('varredura de branches abandonadas', () => {
       'A `main` entrou na lista de branches a apagar. Ela precisa estar em '
       + 'PROTEGIDAS, em scripts/branches-abandonadas.mjs.',
     ).toEqual(['qualquer']);
+  });
+
+  /**
+   * `[02/10]` A SEGUNDA forma de este robô errar, e ela aconteceu.
+   *
+   * Ele abriu a issue #224 pedindo para apagar a branch `preview`. Ela não é
+   * resto de nada: é o **pré-site sob demanda** que o dono pediu em 17/09, e
+   * o desenho dela é justamente **não ter PR** — ele dá push quando quer ver
+   * algo antes de mergear, e o custo é 1 deploy por pedido.
+   *
+   * O critério do robô ("tem PR aberto?") não alcança esse caso por
+   * construção. E o projeto já dizia, do outro lado, que a branch é legítima:
+   * o CI **reprova** o PR que a desligar em `vercel.json`. Dois mecanismos do
+   * mesmo repositório discordando sobre a mesma branch, por sete meses, sem
+   * ninguém reparar — porque "branch órfã" soa inofensivo.
+   *
+   * A trava liga os dois lados em vez de listar `preview` à mão: **branch que
+   * o projeto manda deployar de propósito é branch que o projeto usa.**
+   */
+  it('branch que o `vercel.json` manda DEPLOYAR nunca e sugerida para apagar', () => {
+    const cfg = JSON.parse(readFileSync('vercel.json', 'utf8'));
+    const ligadas = Object.entries(cfg.git?.deploymentEnabled ?? {})
+      .filter(([, ligada]) => ligada === true).map(([nome]) => nome);
+
+    // Controle: sem alguma ligada, o laco abaixo nao testaria nada.
+    expect(ligadas.length, 'nenhuma branch ligada em vercel.json — o `preview` '
+      + 'saiu de la? Entao esta checagem parou de olhar qualquer coisa')
+      .toBeGreaterThan(0);
+
+    for (const nome of ligadas) {
+      expect(PROTEGIDAS, `a branch "${nome}" tem deploy LIGADO em vercel.json — `
+        + 'o projeto a usa de proposito. Fora de PROTEGIDAS, o robo semanal '
+        + 'abre issue pedindo para apagar uma funcionalidade, que foi a issue '
+        + '#224. Acrescente em scripts/branches-abandonadas.mjs.')
+        .toContain(nome);
+    }
+    // E ela nao pode ser classificada como orfa nem sem PR aberto.
+    const { orfas } = classificar([...ligadas, 'dependabot/x'], []);
+    expect(orfas).toEqual(['dependabot/x']);
   });
 
   it('a contagem é DITA pelo script, e é ela que o workflow lê', () => {

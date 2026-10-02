@@ -586,6 +586,11 @@ src/
     │                      # SugestoesDaMateria — o conselho do assistente, e
     │                      # toda sugestão é BOTÃO: nada se aplica sozinho, nem
     │                      # em campo vazio. Quem assina é quem clicou.
+    │                      # `[02/10]` E quando a sugestão CONCORDA com o que
+    │                      # já está escolhido, ela vira uma LINHA sem botão —
+    │                      # antes sumia, e o bloco ficava só com avisos e
+    │                      # parecia quebrado. Silêncio não distingue "conferi
+    │                      # e está certo" de "não consegui dizer nada".
     │                      # PainelEditorial + EditorDeArtigo — a aba "News" do
     │                      # admin. Ilha: buscam os próprios dados em vez de
     │                      # entrar na corrente de props do Admin. "Publicar"
