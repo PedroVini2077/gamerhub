@@ -575,6 +575,80 @@ minutos, pega ponto cego. Não vale automatizar.
 
 ---
 
+## `[02/10]` O CI passa a COMPILAR as Edge Functions, e a versão do CLI é fixa
+
+**Duas decisões de esteira, do mesmo dia e com a mesma raiz: coisa que ninguém
+verifica, e coisa que depende de um terceiro.**
+
+### `deno check` entrou no CI
+
+| | |
+| --- | --- |
+| **O problema** | as Edge Functions são TypeScript e **nada as compilava**. `npm run build` só olha `src/`; as travas que as leem, leem como TEXTO; o Supabase implanta sem checar tipo |
+| **O que custou** | um `const corpo` sombreou o montador da resposta do radar; o `TypeError` caiu no `try/catch` em volta e **toda** recusa da Groq virou *"A IA respondeu algo que eu nao entendi"* na tela, com o `admin_logs` certo. `deno check` diz `TS2349` com a linha |
+| **Medido ao ligar** | **3 das 10** funções tinham erro de tipo. Uma era bug real; uma era só a mudança de tipo do TS 5.7; a terceira era o bug do radar, já corrigido |
+
+**Recusado: `deno.json` no repositório.** A checagem precisa resolver
+`npm:openai`, que os tipos do `jsr:@supabase/functions-js` importam. Um
+`supabase/functions/deno.json` resolveria — e ficaria na árvore que o CLI
+empacota e **implanta**.
+
+> #### ⚠️ `[02/10]` A primeira saída estava errada, e o portão de bytes provou
+>
+> Eu escrevi aqui que `--node-modules-dir=auto` *"não toca em nada do que vai
+> para produção"*. **Toca.** O Deno precisa INSTALAR para resolver o
+> `npm:openai`, e com a raiz no repositório ele instalou no `node_modules/` do
+> projeto — de onde o Vite o arrastou para o pacote do site:
+>
+> | | |
+> | --- | --- |
+> | depois de `npm run tipos` | **790,6 kB** / 239,0 kB gzip — **reprova** |
+> | depois de `npm ci` limpo | 749,8 kB / 227,8 kB gzip — passa |
+>
+> **41 kB de código que ninguém importou**, no carregamento inicial. Quem pegou
+> foi o **orçamento de bytes** no `npm run fim` — um portão salvando o outro, e
+> o melhor argumento que existe para ter os dois.
+>
+> **O CI não teria pegado**, e isso é o que assusta: lá o orçamento roda
+> *antes* do `npm run tipos`, na mesma esteira. O sintoma só aparece em quem
+> builda depois — na máquina da pessoa.
+>
+> Hoje a checagem roda numa **cópia em `/tmp`** com o `deno.json` junto: o
+> `node_modules` do Deno nasce e morre lá, e os caminhos dos erros voltam
+> reescritos para o repositório (senão mandariam quem conserta para um
+> diretório já apagado). Trava: `tiposDasEdgesNaoPoluiORepo.test.js`, provada
+> reinjetando a versão original.
+
+**Recusado: só a trava do caso concreto.** Ela já existe
+(`radarSinalDeAceleracao.test.js` checa a sombra do `corpo` no texto-fonte) e
+cobre **um** caso. O portão cobre a classe, e a pergunta 6 do §9.8 — *"isso cria
+manutenção permanente?"* — foi respondida com sim e aceita: dois erros em duas
+funções é dívida pequena demais para adiar o portão que impede o próximo.
+
+### A versão do Supabase CLI deixou de ser `latest`
+
+O deploy da Fase 3 **falhou** e só passou na segunda tentativa:
+
+```
+Failed to resolve latest Supabase CLI release: rate limit exceeded
+```
+
+`version: latest` faz a action perguntar à API do GitHub, **sem autenticar**, e
+o runner compartilha IP com o mundo. **É a mesma classe que matou a GDELT**
+([`regras/COTAS.md`](regras/COTAS.md)): serviço que identifica por IP é
+inutilizável atrás de infraestrutura compartilhada. A diferença é que aqui dá
+para sair da fila inteira — versão fixa não consulta nada.
+
+**O número veio do dono**, lendo a página de releases: eu não alcanço a API do
+GitHub para outros repositórios deste ambiente, e pinar um número chutado
+quebraria o deploy — pior do que a falha transitória que ele conserta. **O
+próprio merge prova**, porque o workflow dispara quando ele mesmo muda.
+
+**Não mexido de propósito:** o segundo limite do mesmo job
+(`toomanyrequests` ao puxar a imagem do runtime no `public.ecr.aws`). O CLI já
+retenta sozinho, e retentou com sucesso. Mexer onde já há conserto é criar
+manutenção sem ganho.
+
 ## Infraestrutura
 
 ### `[23/08]` Envio de email por conta Google dedicada

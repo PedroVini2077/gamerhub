@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio:
 // e assim que "editei a funcao e esqueci de implantar" passa a reprovar o PR.
-const IMPRESSAO_DESTE_CODIGO = "6e7bdb0cb02e6391";
+const IMPRESSAO_DESTE_CODIGO = "bf8145dcb3e7aab3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,8 +62,13 @@ Deno.serve(async (req) => {
       { status: 200, headers: corsHeaders }
     )
   } catch (err) {
+    // `[02/10]` Era `err.message` direto, e o `catch` do JS nao garante Error:
+    // uma string lancada daria `undefined`, e um `null` lancado FARIA O PROPRIO
+    // CATCH ESTOURAR — a funcao morreria sem corpo e sem motivo, que e o §1.5
+    // pelo pior caminho. O `deno check` do CI acusou isso (`TS18046`).
+    const motivo = err instanceof Error ? err.message : String(err)
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: motivo }),
       { status: 500, headers: corsHeaders }
     )
   }

@@ -14,7 +14,7 @@ todas as tabelas públicas.**
 | Tabela                       | Descrição                                                        |
 | ---------------------------- | ---------------------------------------------------------------- |
 | `profiles`                   | Perfil do usuário (1:1 com `auth.users`): username, avatar, bio, role, banimento, redes, preferências. **`[12/09]` `role` e `banned` são `NOT NULL`** — o `CHECK` de `role` sozinho não bastava, porque `NULL = ANY(ARRAY[...])` é NULL e constraint só reprova em `false` explícito (SEC-017) |
-| `news_articles`              | **`[25/09]`** Artigos do GamerHub News. LOGADO: `anon` não alcança. **Cinco estados** (`draft` · `in_review` · `scheduled` · `published` · `archived`). `conteudo` é **NULO enquanto o artigo não vai ao ar** — rascunho por definição ainda não tem corpo, e o `CHECK` `news_articles_corpo_exigido_no_ar` cobra só em `published`/`scheduled` (o mesmo formato do `publicado_tem_data`). De brinde, ninguém consegue **esvaziar** matéria no ar. E o trigger `news_guarda_a_publicacao`, que é o corte editorial: pôr no ar (`published` **ou** `scheduled`) e mexer no que já está no ar é só de `is_super()`. Ele levanta **exceção** em vez de negar por policy, porque policy nega com 0 linhas e nenhum erro — o editor clicaria em publicar e nada aconteceria. **`[25/09]`** `redigido_com_ia boolean NOT NULL DEFAULT false` — o rascunho saiu da Edge Function `redigir-materia`. **Autodeclarado** pelo painel quando o editor aplica o texto gerado: serve à procedência (quem revisa precisa saber ANTES de ler), não a fiscalizar quem queira esconder |
+| `news_articles`              | **`[25/09]`** Artigos do GamerHub News. LOGADO: `anon` não alcança. **Cinco estados** (`draft` · `in_review` · `scheduled` · `published` · `archived`). `conteudo` é **NULO enquanto o artigo não vai ao ar** — rascunho por definição ainda não tem corpo, e o `CHECK` `news_articles_corpo_exigido_no_ar` cobra só em `published`/`scheduled` (o mesmo formato do `publicado_tem_data`). De brinde, ninguém consegue **esvaziar** matéria no ar. E o trigger `news_guarda_a_publicacao`, que é o corte editorial: pôr no ar (`published` **ou** `scheduled`) e mexer no que já está no ar é só de `is_super()`. Ele levanta **exceção** em vez de negar por policy, porque policy nega com 0 linhas e nenhum erro — o editor clicaria em publicar e nada aconteceria. **`[25/09]`** `redigido_com_ia boolean NOT NULL DEFAULT false` — o rascunho saiu da Edge Function `redigir-materia`. **Autodeclarado** pelo painel quando o editor aplica o texto gerado: serve à procedência (quem revisa precisa saber ANTES de ler), não a fiscalizar quem queira esconder | **`[02/10]` Quem espelha o `CHECK` de `editoria` é `src/lib/news/editorias.js`, e só ele** — `editoriaProvavel.js`, que nasceu hoje na mesma pasta, é o vocabulário de PISTAS que sugere uma editoria no painel. Ele não é cópia de nada do banco, e mudá-lo não mexe no `CHECK`. Dito aqui porque o mapa de territórios manda `src/lib/news/` inteiro para este documento, e a próxima pessoa não precisa redescobrir qual dos dois arquivos o banco vigia
 | `news_sources`               | **`[25/09]`** Fontes editoriais. Só a equipe vê — fonte é bastidor. **`[26/09]` Semeada com 12 feeds MEDIDOS** (curl em 22 candidatas; as que deram 403/404/vazio ficaram de fora **com o motivo escrito** na migration `news_fontes_rss_iniciais`). **`[01/10]` a `radar-de-pautas` consome `tipo IN ('rss','api')`**, e a **consulta inteira mora no `url`** da linha — é o que mantém o motor cego ao assunto (exigência dele) e permite trocar o que se procura sem deploy. **As duas linhas de busca ampla são `rss` (Google News), e as `api` (GDELT) estão desligadas no mesmo dia** com sete tentativas e zero sucessos: o teto dela é por IP e saímos de IP compartilhado (`DECISOES.md`). Elas ficam cadastradas e inativas de propósito — apagar perderia o registro de que foram tentadas |
 | `news_tags` · `news_article_tags` | **`[25/09]`** Tags do News e a ligação com o artigo |
 | `news_items_raw`             | **`[25/09]`** Caixa de entrada da ingestão. RLS ligada e **zero policies**: ninguém lê pela REST API, nem a equipe. **`[26/09]` Deixou de ser vazia:** a `radar-de-pautas` grava aqui o que colhe dos feeds, com `url` UNIQUE + `ignoreDuplicates` — é o que faz reexecutar o radar custar quase nada |
@@ -263,6 +263,23 @@ transforma esta pegadinha em bug silencioso (§4).
   > `REVOKE ALL ... FROM PUBLIC, anon, authenticated`, e isso foi **provado
   > assumindo os dois papéis**, não lendo o grant: `permission denied` nos dois.
   > Nenhuma tela precisa dela — a Edge Function chama com a service role.
+
+- **`[02/10]` `escapar_curinga(p_texto text)`** — escapa `\`, `%` e `_` para uso
+  em `ILIKE`/`LIKE`. **Não é proteção contra injeção** (o valor é parâmetro e o
+  Postgres nunca o executa): é contra o **coringa**. Um `%` solto casa com a
+  tabela inteira — foi o SEC-055, em que `buscar_pessoas('%%')` devolvia os 6
+  perfis **com os cargos** a qualquer pessoa logada.
+
+  > **A barra é escapada PRIMEIRO**, e a ordem não é detalhe: escapar `%` antes
+  > faria os próprios `\` introduzidos serem escapados de novo. E sem tratar a
+  > barra, um termo terminado em `\` deixa o padrão terminando em caractere de
+  > escape, e o Postgres **levanta erro** na cara de quem buscou.
+  >
+  > `REVOKE ALL FROM PUBLIC, anon, authenticated` — ninguém a chama de fora; ela
+  > só serve de dentro das RPCs, que são `DEFINER` e rodam com o privilégio do
+  > dono. `buscar_pessoas` e `news_aceleracao_de_termos` usam **esta** função:
+  > duas cópias de um escape divergem (§4), e a do radar já divergia (não
+  > cobria a barra).
 
 **Triggers:**
 

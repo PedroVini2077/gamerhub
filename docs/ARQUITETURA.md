@@ -278,12 +278,21 @@ src/
 │   │   │                  #   escreve no lugar do que as notas não tinham.
 │   │   │                  #   Puro de propósito — a trava precisa importá-lo
 │   │   │                  #   sem arrastar o cliente do Supabase junto
-│   │   ├── assistente.js  #   `[25/09]` SUGERE, nunca decide: editoria pelo
-│   │   │                  #   título (vocabulário FECHADO, sem chute), resumo
-│   │   │                  #   das primeiras frases do CORPO, e avisos de
+│   │   ├── assistente.js  #   `[25/09]` SUGERE, nunca decide: resumo das
+│   │   │                  #   primeiras frases do CORPO e avisos de
 │   │   │                  #   conferência. Nada chama modelo — tudo é derivado
 │   │   │                  #   do que a pessoa já escreveu, então custo zero e
-│   │   │                  #   ZERO chance de alucinar
+│   │   │                  #   ZERO chance de alucinar. `[02/10]` A escolha da
+│   │   │                  #   editoria saiu daqui e ele a REEXPORTA
+│   │   ├── editoriaProvavel.js # `[02/10]` Qual editoria o texto sugere, em
+│   │   │                  #   DUAS camadas: palavra que DEFINE (`gpu`,
+│   │   │                  #   `netflix`) × palavra que ACOMPANHA (`temporada`,
+│   │   │                  #   `estreia`, `trailer`). A que acompanha nunca
+│   │   │                  #   decide sozinha — só soma para editoria que já
+│   │   │                  #   tem evidência. Antes era "a pista mais longa
+│   │   │                  #   ganha", e `temporada` (9) vencia `jogo` (4).
+│   │   │                  #   Empate devolve `null`: melhor não sugerir do que
+│   │   │                  #   sugerir errado com falsa confiança
 │   │   ├── slug.js        #   Título -> endereço. A regex daqui é a MESMA do
 │   │   │                  #   `CHECK` do banco, travada: slug montado errado
 │   │   │                  #   viraria `violates check constraint` na cara de
@@ -914,7 +923,7 @@ src/
 | --- | --- |
 | `supabase/migrations/` | **A verdade sobre o schema.** As migrations que recriam o banco do zero |
 | `supabase/functions/` | Espelho das Edge Functions em produção. Editar aqui e implantar, nunca o contrário — os testes de contrato leem daqui |
-| `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, **segredos vazados**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
+| `scripts/` | Portões do CI (orçamento de bytes, documentação quebrada, **mapa de arquivos**, **segredos vazados**, **`tipos-das-edges.mjs` — o `deno check` que compila as Edge Functions, a única parte do código que nada compilava**, ignorar deploy da Vercel), o relatório de documentação envelhecida, e os dois que rodam FORA do CI: `inicio-de-sessao.sh` (gatilho do `SessionStart`) e `fim-de-sessao.mjs` (`npm run fim`) |
 | `stryker.config.json` | Configuração do teste de mutação (`npm run mutacao`). Escopo deliberadamente pequeno: só a lógica pura de `src/lib/` |
 | `e2e/` | Testes em navegador de verdade: rotas, fluxos autenticados (publicar, comentar e **curtir** — `curtir.mjs`, `[24/09]`, que confere a curtida DEPOIS de recarregar, porque a tela é otimista e mente por desenho entre o clique e a resposta), painel de admin, portas das Edge Functions, **portas do banco** (`portas-do-banco.mjs`, o único que fala com o Postgres), **o ciclo de vida de um post** (`cicloDoPost.mjs`, `[24/09]` — publicar, curtir, comentar, responder, apagar e varrer sobras; saiu do `fluxos.mjs`, que ficou com a SESSÃO), **portas da web** (`portas-da-web.mjs`, `[19/09]` — a borda HTTP: cabeçalho de segurança por VALOR, **as seis diretivas travadas da CSP** (`[24/09]`) e vazamento de arquivo; o único que bate na PRODUÇÃO), **a CSP num navegador** (`politica-de-conteudo.mjs`, `[24/09]` — que ela não quebra a tela, enquanto o de cima confere que ela continua no ar), e **conteúdo visível** (`conteudo-visivel.mjs`, que rola as páginas públicas num tamanho de celular e reprova o que ficar em `opacity: 0`) |
 | `.claude/` | `settings.json` com o hook `SessionStart` — o gatilho que injeta o estado real do projeto no começo de toda sessão |

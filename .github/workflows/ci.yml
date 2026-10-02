@@ -158,6 +158,27 @@ jobs:
       - name: Orçamento de bytes do carregamento
         run: node scripts/orcamento-de-bytes.mjs
 
+      # `[02/10]` A OUTRA METADE DO CÓDIGO PASSA A SER COMPILADA.
+      #
+      # O `Build` acima compila `src/`. As Edge Functions são TypeScript e
+      # NADA as compilava: as travas que as leem, leem como texto, e o Supabase
+      # implanta sem checar tipo. Erro de tipo só aparecia em produção — e
+      # apareceu: um `const corpo` sombreou o montador da resposta do radar, o
+      # `TypeError` caiu no `try/catch` em volta, e toda recusa da Groq virou
+      # "A IA respondeu algo que eu nao entendi" na tela, com o `admin_logs`
+      # certo. `deno check` acusa como `TS2349` com a linha.
+      #
+      # A VERSÃO É FIXA, e isso é a lição de ontem: `v2.x` faz a action
+      # perguntar à API do GitHub qual é a última, sem autenticar, e o runner
+      # compartilha IP com o mundo — foi exatamente assim que o deploy das Edge
+      # Functions morreu com `rate limit exceeded` (`docs/regras/COTAS.md`).
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: 2.9.7
+
+      - name: As Edge Functions compilam (deno check)
+        run: npm run tipos
+
       # `[04/09]` Queda do registro do npm NAO e vulnerabilidade encontrada.
       #
       # O `npm audit` sai com 1 nos DOIS casos: quando acha vulnerabilidade e
