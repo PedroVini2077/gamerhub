@@ -2244,9 +2244,32 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   porque os dois compositores têm o mesmo `aria-label` no botão, e o caminho de
   teclado não era exercitado por roteiro nenhum. `INV-CONTEUDO-003`.
 
-  **Falta**, na ordem em que ele listou: live chat · atualização de perfil ·
-  notificações na tela · o comportamento depois de ocultar (não só apagar) ·
-  usuário comum × moderador na mesma tela.
+  **`[02/10]` Feito: atualização de perfil.** `e2e/editarPerfil.mjs`, chamado
+  de dentro do `fluxos.mjs`. Escolhido primeiro entre os cinco porque é o único
+  que precisa só da conta comum que já existe, é inteiramente reversível, e
+  cobre a superfície que já derrubou o site três vezes — privilégio de COLUNA
+  em `profiles` é por papel, e o formulário escreve **nove** colunas. Revogar
+  uma não quebra teste nenhum de `src/`.
+
+  A assertiva é **recarregar**, como no `curtir.mjs`, e pela mesma razão
+  agravada: o `useProfileForm` de propósito NÃO repopula o formulário a cada
+  `refreshProfile()` (senão um poll em segundo plano apagaria o que a pessoa
+  está digitando), então depois de salvar a tela mostra o texto novo **venha o
+  que vier do servidor**. O toast também não serve de testemunha — quem o
+  impede de mentir é o `count: 'exact'`, que é o mecanismo sob teste.
+
+  A limpeza é **provada**: restaura os valores originais, recarrega e confere;
+  se falhar, reprova dizendo o que ficou para trás, porque o perfil da conta de
+  teste aparece no perfil **público**.
+
+  **Não rodado nesta sessão, e isso está dito:** as credenciais da conta
+  descartável são secret do CI. O que foi provado aqui é a trava de seletor
+  (`perfilTemOsCamposDoE2e.test.js`, reinjetada). A primeira execução real é a
+  do CI.
+
+  **Falta**, na ordem em que ele listou: live chat · notificações na tela ·
+  o comportamento depois de ocultar (não só apagar) · usuário comum ×
+  moderador na mesma tela.
 
   **`[24/09]` O corte foi FEITO:** o bloco do ciclo do post virou
   `e2e/cicloDoPost.mjs` (148 linhas) e o `fluxos.mjs` caiu de 288 para **189**.
@@ -2878,8 +2901,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->182<!--/n--> arq ·
-  <!--n:src.lib.linhas-->22.970<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->183<!--/n--> arq ·
+  <!--n:src.lib.linhas-->23.033<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

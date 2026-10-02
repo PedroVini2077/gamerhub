@@ -150,6 +150,18 @@ transforma esta pegadinha em bug silencioso (§4).
 > tag, então uma função fora da lista perderia o `anon` ao ser editada — e um
 > teste reprova se as duas cópias divergirem.
 
+> **`[02/10]` Duas funções que o front NUNCA chama:**
+> `aplicar_teto_de_linhas(tabela, teto)` e `aplicar_teto_por_usuario(teto)` são
+> a dimensão de QUANTIDADE da retenção, usadas só pelo `cleanup_old_data()` do
+> cron das 04:00. As duas são `SECURITY DEFINER` com `REVOKE` para `PUBLIC`,
+> `anon` **e** `authenticated` — o event trigger do SEC-056 fecha as duas
+> primeiras sozinho, e o `authenticated` é a régua de papéis.
+>
+> Elas existem separadas em vez de inline justamente para **poder ser
+> testadas**: provar o teto de 80.000 exigiria fabricar 80.000 linhas, e com
+> `aplicar_teto_de_linhas('admin_logs', 10)` o mesmo caminho de código se prova
+> em ROLLBACK. Os prazos e os tetos estão em `OPERACAO.md`.
+
 **Chamadas pelo front (RPC):**
 
 - **`[24/09]` Busca:** `buscar_posts(p_termo, p_limite)` e

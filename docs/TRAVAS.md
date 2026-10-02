@@ -91,6 +91,7 @@ deriva que não estoura em lugar nenhum.
 | `funcaoDeTriggerNaoEhRpc.test.js` | `INV-PORTA-001` |
 | `funcaoNovaNasceFechada.test.js` | `INV-PORTA-015` |
 | `retencaoHibrida.test.js` | `INV-TRILHA-003` |
+| `perfilTemOsCamposDoE2e.test.js` | `INV-TELA-018` |
 | `colunasPrivilegiadasDeProfiles.test.js` | `INV-PORTA-003` |
 | `contadorDeLoginFechado.test.js` | `INV-PORTA-005` |
 | `trilhaNaoEhForjavel.test.js` | `INV-TRILHA-001` |
