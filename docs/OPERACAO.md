@@ -1417,7 +1417,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->30.026<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->30.173<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -1831,6 +1831,128 @@ repita os passos 2 e 3. Enquanto a chave velha existir, quem a tiver consome a
 cota da conta — e o efeito no site é a IA parar de redigir para a equipe inteira.
 
 ---
+
+## `[02/10]` LIGAR A YOUTUBE DATA API — passo a passo
+
+> **Pedido dele em 02/10.** É o que falta para a **Fase 4 do radar** (vídeo e
+> comunidade como fonte de pauta). Enquanto a chave não existir, nada muda: o
+> radar segue com os 15 feeds.
+
+### Antes de clicar: isto é seguro?
+
+**Sim, e foi conferido, não suposto.** `grep` em `src/` e `supabase/` por
+`YOUTUBE_API_KEY`: **nenhum código lê essa variável hoje**. Criar a chave e
+guardá-la não liga nada nem muda comportamento — ela fica esperando o código
+da Fase 4. Se você criar e nunca usar, o custo é zero.
+
+### A cota, ANTES de ligar — e ela tem uma armadilha
+
+Números da documentação oficial do Google, lidos hoje (não de memória):
+
+| o que o Google conta | teto do plano gratuito |
+| --- | --- |
+| unidades por dia, somando todos os endpoints | **10.000** |
+| **chamadas de `search.list` por dia** | **100** — e esta é a que morde |
+| toda requisição, **inclusive inválida** | custa pelo menos 1 ponto |
+
+**A armadilha é o segundo número.** `search.list` — "procure vídeos sobre X" —
+é exatamente o que a Fase 4 faria, e ele tem teto **próprio** de 100 por dia,
+separado das 10.000 unidades. É o mesmo formato que me pegou na Groq: dois
+medidores, e o específico aperta muito antes do geral.
+
+**O que isso obriga no desenho**, e fica escrito aqui antes de existir código:
+**uma busca por clique de editor, nunca uma por pauta.** Oito pautas × uma
+busca cada = 8 chamadas por clique, e 12 cliques no dia acabam com a cota.
+
+### 1. Abra o projeto no Google Cloud
+
+Link direto: `https://console.cloud.google.com/apis/library/youtube.googleapis.com`
+
+**O que você vai ver:** a página da **YouTube Data API v3** na biblioteca de
+APIs, com um botão **Enable** (ou **Gerenciar**, se já estiver ligada).
+
+Se ele pedir para escolher ou criar um projeto, crie um — sugestão de nome:
+**`gamerhub`**. Projeto do Google Cloud é de graça; o que tem cota é a API.
+
+Clique em **Enable**.
+
+### 2. Gere a chave
+
+Link direto: `https://console.cloud.google.com/apis/credentials`
+
+**O que você vai ver:** a página **Credentials**, com o botão
+**+ CREATE CREDENTIALS** no topo. Escolha **API key**.
+
+A chave aparece numa caixinha. **Copie.**
+
+### 3. RESTRINJA a chave — este passo não é opcional
+
+Ainda na caixinha, clique em **Edit API key** (ou abra a chave na lista).
+
+| Campo | O que escolher |
+| --- | --- |
+| **API restrictions** | **Restrict key** → marque **apenas** `YouTube Data API v3` |
+| **Application restrictions** | pode deixar **None** — quem chama é a nossa Edge Function, de um IP que não controlamos |
+
+**Por que isto importa.** Chave de API do Google vai no corpo da requisição,
+não em cabeçalho de sessão — se ela vazar, qualquer pessoa gasta a **nossa**
+cota de 100 buscas por dia. Restrita a uma API só, o estrago para na cota do
+YouTube em vez de alcançar qualquer serviço do Google que o projeto ligar
+depois.
+
+Clique em **Save**.
+
+### 4. Guarde no cofre do Supabase
+
+Link direto, já no projeto certo:
+
+`https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/functions/secrets`
+
+**O que você vai ver:** a página **Edge Function Secrets**, com a lista dos
+segredos que já existem e os campos **Key** e **Value**.
+
+| Campo | O que digitar |
+| --- | --- |
+| **Key** | `YOUTUBE_API_KEY` |
+| **Value** | a chave colada inteira (começa com `AIza`) |
+
+Clique em **Save**.
+
+> **O nome tem que ser exatamente esse**, pelo mesmo motivo da `GROQ_API_KEY`:
+> o código vai ler `Deno.env.get("YOUTUBE_API_KEY")`, e nome diferente faz a
+> função dizer "não está configurada" para sempre sem explicar que o problema
+> é o nome.
+
+### 5. Como conferir que funcionou
+
+**Hoje não dá para conferir pelo site** — e é melhor dizer isso do que inventar
+uma verificação. Nenhum código lê a chave ainda.
+
+O que dá para conferir **agora**, e prova que a chave está viva, é uma
+requisição no navegador (troque `SUA_CHAVE`):
+
+```
+https://www.googleapis.com/youtube/v3/search?part=snippet&q=gamerhub&maxResults=1&key=SUA_CHAVE
+```
+
+| O que volta | O que quer dizer |
+| --- | --- |
+| um JSON com `items` | está funcionando |
+| `403` com `API key not valid` | colada pela metade, ou ainda não salvou |
+| `403` com `has not been used in project` / `is disabled` | faltou o **Enable** do passo 1 |
+| `403` com `quotaExceeded` | a chave está certa e as 100 buscas do dia acabaram |
+
+> **Essa requisição de teste já gasta 1 das 100 buscas do dia.** Vale a pena —
+> é a diferença entre saber e supor —, mas não fique repetindo.
+
+Para ver o consumo depois:
+`https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas`
+
+### O que fazer se ela vazar
+
+Mesmo caminho do passo 2: abra a chave em **Credentials**, clique em
+**DELETE**, crie outra e refaça o passo 4. Como ela está restrita a uma API
+(passo 3), o estrago possível é a cota do YouTube — não é acesso a dado nosso.
 
 ## `[26/09]` AS FONTES DO RADAR DE PAUTAS — ligar, desligar, acrescentar
 

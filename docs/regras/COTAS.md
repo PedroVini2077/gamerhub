@@ -40,6 +40,7 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 | **GitHub Actions** | minutos por mês | ilimitado (repo público) | — | — |
 | **API do GitHub** (de dentro do runner) | requisições **por IP**, sem autenticar | 60/h, e o IP é compartilhado | **`[02/10]`** a action que resolve `version: latest` falha e o **deploy das Edge Functions não acontece** | Sim — workflow vermelho + email |
 | **`public.ecr.aws`** (imagem do runtime) | *puxões* por IP | não documentado | `toomanyrequests` ao baixar a imagem | Sim, e **o CLI retenta sozinho** — medido: passou na 2ª |
+| **YouTube Data API v3** *(ainda não ligada)* | **`search.list` por dia** | **100** — e há um teto SEPARADO de 10.000 unidades/dia para todo o resto | a busca de vídeo para de responder (`403 quotaExceeded`) | **`[02/10]`** a definir junto com o código da Fase 4 |
 
 > **`[25/09]` A Groq entrou já com a terceira regra cumprida**, e não depois: o
 > `429` grita em `admin_logs` antes de a função responder, e a tela diz *"A cota
@@ -66,6 +67,32 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > pautas × 3 termos é uma consulta, não 24. **Quanto tempo leva?** é o nosso
 > Postgres com 772 linhas, não rede de terceiro. Fornecedor que não existe é o
 > único que nunca recusa.
+
+> ### ⚠️ `[02/10]` A YouTube entra na tabela ANTES de existir, e por um motivo
+>
+> Ele pediu o passo a passo para ligar a YouTube Data API (Fase 4 do radar). A
+> linha acima foi escrita **antes de a chave existir**, porque é agora que a
+> pergunta muda o desenho — depois de o código estar escrito, ela vira conserto.
+>
+> **E a resposta já tem a armadilha das duas anteriores.** A documentação
+> oficial dá dois medidores:
+>
+> ```
+> 10.000 unidades/dia   somando TODOS os endpoints
+>    100 search.list/dia   <- teto SEPARADO, e é este que morde
+> ```
+>
+> `search.list` — *"procure vídeos sobre X"* — é exatamente o que a Fase 4 faz.
+> É o mesmo formato do `413` da Groq e do `429` da GDELT: **dois medidores, e o
+> específico aperta muito antes do geral.** A pergunta *"quantas vezes por
+> dia?"* respondida contra as 10.000 daria uma falsa folga de 100×.
+>
+> **O que isso obriga, e fica escrito antes de existir código:** uma busca por
+> **clique de editor**, nunca uma por pauta. Oito pautas × uma busca cada são 8
+> chamadas por clique — 12 cliques no dia e a cota acabou.
+>
+> O passo a passo para ligar, com a restrição da chave a uma API só, está em
+> [`OPERACAO.md`](../OPERACAO.md).
 
 > ### ⚠️ `[02/10]` E a MESMA classe da GDELT derrubou o nosso próprio DEPLOY
 >
