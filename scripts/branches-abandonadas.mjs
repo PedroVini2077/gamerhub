@@ -40,11 +40,21 @@ const TOKEN = process.env.GITHUB_TOKEN ?? '';
 const BASE = 'https://api.github.com';
 
 /** Branch que o script NUNCA sugere apagar, por mais atrás que esteja. */
-const PROTEGIDAS = [
+export const PROTEGIDAS = [
   'main',
   // A branch de trabalho combinada com o dono (`CLAUDE.md` §8). Ela fica atrás
   // por definição entre um merge e o `--force-with-lease` que a realinha.
   'claude/gamerhub-technical-summary-vhguK',
+  // `[02/10]` O PRÉ-SITE. Ela NUNCA tem PR aberto — é esse o desenho: o dono
+  // dá push nela quando quer ver algo antes de mergear, e o custo é exatamente
+  // 1 deploy por pedido. Por isso ela caía em "órfã" toda semana.
+  //
+  // O robô vinha pedindo para apagar **uma funcionalidade**, e por sete meses
+  // ninguém reparou porque "branch órfã" soa inofensivo. Apagá-la tiraria do
+  // dono o pré-site que ele pediu em 17/09 — e o CI, do outro lado, REPROVA
+  // o PR que desligar o deploy dela. Os dois lados do projeto discordavam
+  // sobre a mesma branch.
+  'preview',
 ];
 
 async function api(caminho) {
