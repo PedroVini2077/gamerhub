@@ -23,8 +23,31 @@ import { sugestoesPara, rotuloSugerido } from '../../lib/news/assistente';
 export default function SugestoesDaMateria({ campos, onAplicar }) {
   const { editoria, resumo, avisos } = sugestoesPara(campos);
 
-  // A sugestão de editoria só vale se for DIFERENTE do que já está escolhido.
+  // A sugestão de editoria só vira BOTÃO se for diferente do que já está
+  // escolhido — aplicar o que já está aplicado não é oferta, é ruído.
   const editoriaUtil = editoria && editoria !== campos.editoria ? editoria : null;
+
+  /**
+   * `[02/10]` E quando ela CONCORDA, a tela passa a dizer isso.
+   *
+   * Reclamação dele: *"as sugestões não estão aparecendo mais, em nenhum news
+   * que eu tento postar"*. Não era bug — era o conserto da véspera funcionando.
+   * Os rascunhos dele vêm do radar e já nascem com a editoria preenchida;
+   * enquanto a sugestão estava ERRADA (`filmes-series` para uma matéria de
+   * Diablo) ela discordava, e o botão aparecia. Quando passou a acertar, ela
+   * concordou — e o botão sumiu.
+   *
+   * O bloco então mostrava **só avisos**, e um bloco chamado "Sugestões" que
+   * nunca sugere nada parece quebrado. Silêncio é resposta ambígua: não dá
+   * para distinguir *"conferi e está certo"* de *"não consegui dizer nada"*.
+   *
+   * Uma linha, sem botão: ela informa e não oferece ação nenhuma.
+   */
+  const editoriaConfere = editoria && editoria === campos.editoria ? editoria : null;
+
+  // `editoriaConfere` NÃO entra aqui de propósito: ela não é motivo para o
+  // bloco existir. Matéria completa e sem aviso continua não mostrando nada —
+  // painel que fala quando não tem o que dizer é o começo da fadiga de alarme.
   const temAlgo = editoriaUtil || resumo || avisos.length > 0;
   if (!temAlgo) return null;
 
@@ -55,6 +78,14 @@ export default function SugestoesDaMateria({ campos, onAplicar }) {
             </button>
           )}
         </div>
+      )}
+
+      {editoriaConfere && !editoriaUtil && (
+        <p className="text-xs text-gray-500">
+          Editoria:{' '}
+          <span className="text-neon-green">{rotuloSugerido(editoriaConfere)}</span>
+          {' '}— é a que já está escolhida.
+        </p>
       )}
 
       {avisos.length > 0 && (

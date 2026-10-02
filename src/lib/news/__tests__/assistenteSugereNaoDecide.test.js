@@ -105,3 +105,66 @@ describe('o assistente sugere a partir do que já existe', () => {
     expect(s.resumo, 'sobrescrever o que a pessoa escreveu e decidir por ela').toBeNull();
   });
 });
+
+/**
+ * `[02/10]` O QUE ELE RELATOU, e as duas coisas que saíram disso.
+ *
+ * ── 1. "as sugestões não estão aparecendo mais" ───────────────────────────
+ *
+ * **Não era bug — era o conserto da véspera funcionando.** Os rascunhos dele
+ * vêm do radar e já nascem com `editoria` preenchida. O botão só aparece
+ * quando a sugestão DISCORDA do que está escolhido; enquanto ela errava
+ * (`filmes-series` para uma matéria de Diablo) ela discordava, e o botão
+ * aparecia. Quando passou a acertar, concordou — e sumiu.
+ *
+ * Medido nos cinco títulos reais do site, com a regra antiga × a de hoje:
+ *
+ *     Diablo IV temporada 15 …      antes: filmes-series   hoje: gaming
+ *     Sony traz upscaling por IA …  antes: ia              hoje: null (empate)
+ *     Xbox / Nintendo (3 títulos)   antes: null            hoje: gaming
+ *
+ * **O defeito real era de TELA:** um bloco chamado "Sugestões" que só mostra
+ * avisos parece quebrado, e silêncio é resposta ambígua — não dá para
+ * distinguir *"conferi e está certo"* de *"não consegui dizer nada"*.
+ *
+ * ── 2. "esse aviso... não explica o que exatamente está faltando" ─────────
+ *
+ * E um dos avisos **mentia**: com o corpo em zero caractere ele dizia
+ * *"confira se não ficou faltando o final"* — texto de truncamento para um
+ * texto que nunca começou. Quem acabou de colar as notas e ainda não clicou
+ * em "Redigir rascunho" lia aquilo e procurava um final que não existe.
+ */
+describe('os avisos dizem o que falta E onde', () => {
+  const vazio = {
+    titulo: 'Um título qualquer', conteudo: '', resumo: '', fonte_url: '', capa_url: '',
+  };
+
+  it('corpo VAZIO e corpo CURTO dão mensagens diferentes', () => {
+    const doVazio = avisosDaMateria(vazio).find((a) => /corpo/i.test(a));
+    const doCurto = avisosDaMateria({ ...vazio, conteudo: 'a'.repeat(100) })
+      .find((a) => /corpo/i.test(a));
+
+    expect(doVazio).toBeTruthy();
+    expect(doCurto).toBeTruthy();
+    expect(doVazio, 'vazio e curto sao estados diferentes e pedem acoes diferentes')
+      .not.toBe(doCurto);
+  });
+
+  it('o aviso do corpo VAZIO nao fala em "final" — isso e texto de truncamento', () => {
+    const aviso = avisosDaMateria(vazio).find((a) => /corpo/i.test(a));
+    expect(aviso, 'com 0 caracteres nao existe final para conferir. Dizer isso '
+      + 'manda a pessoa procurar um texto que nunca comecou — mensagem de erro '
+      + 'tem de ser verdadeira (§1.5)')
+      .not.toMatch(/final/i);
+  });
+
+  it('cada aviso diz O QUE FAZER, nao so o que falta', () => {
+    // O pedido dele foi literal: "nao explica oq exatamente esta faltando".
+    // Toda frase precisa nomear o campo ou a acao.
+    const semAcao = avisosDaMateria(vazio).filter(
+      (a) => !/campo|clique|cole|escreva|encurtar|confira/i.test(a),
+    );
+    expect(semAcao, 'estes avisos dizem que algo falta e nao dizem onde resolver')
+      .toEqual([]);
+  });
+});

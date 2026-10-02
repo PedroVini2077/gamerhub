@@ -668,6 +668,50 @@ três sugestões saem do texto que a pessoa já escreveu: custo zero, resposta
 instantânea, e **zero chance de inventar fato** — que numa seção de notícia é a
 propriedade que mais importa.
 
+##### `[02/10]` Quando a sugestão CONCORDA, a tela diz — e os avisos dizem ONDE
+
+Relato dele no mesmo dia: *"as sugestões não estão aparecendo mais, em nenhum
+news que eu tento postar"*.
+
+**Não era bug — era o conserto abaixo funcionando.** O botão de editoria só
+aparece quando a sugestão **discorda** do que já está escolhido, e os rascunhos
+dele vêm do radar já com a editoria preenchida. Enquanto a sugestão errava
+(`Filmes e Séries` para uma matéria de Diablo IV) ela discordava, e o botão
+aparecia; quando passou a acertar, concordou e sumiu.
+
+**O defeito real era de tela:** um bloco chamado "Sugestões" que só mostra
+avisos **parece quebrado**. E silêncio é resposta ambígua — não dá para
+distinguir *"conferi e está certo"* de *"não consegui dizer nada"*.
+
+Agora ele diz, numa linha sem botão: **"Editoria: Games — é a que já está
+escolhida."** Sem botão de propósito: aplicar o que já está aplicado não é
+oferta, é ruído. E matéria completa, sem aviso nenhum, **continua não mostrando
+nada** — a confirmação não é motivo para o bloco existir.
+
+##### `[02/10]` E um aviso MENTIA sobre o corpo vazio
+
+A segunda reclamação: *"esse aviso… não explica o que exatamente está
+faltando"*. Um deles era pior do que vago:
+
+> O corpo tem **0** caracteres. Curto para uma matéria — **confira se não ficou
+> faltando o final.**
+
+**Texto de truncamento para um texto que nunca começou.** Quem acabou de colar
+as notas e ainda não clicou em "Redigir rascunho" lia aquilo e ia procurar um
+final que não existe.
+
+Vazio e curto passaram a ser estados diferentes, e **todo aviso diz onde
+resolver**:
+
+| antes | agora |
+| --- | --- |
+| "O corpo tem 0 caracteres… confira se não ficou faltando o final." | "O corpo ainda está vazio. Cole o que apurou em *Rascunhar com IA* e clique em *Redigir rascunho*, ou escreva direto no campo do corpo." |
+| "Sem resumo. É o texto que aparece no cartão…" | "Falta o resumo — **o campo "Resumo", acima**. É o texto que aparece no cartão…" |
+| "Sem capa. O cartão encolhe…" | "Falta a capa — **o campo "Imagem de capa", acima**…" |
+
+Há trava que reprova se o aviso do corpo vazio voltar a falar em "final", e se
+algum aviso deixar de nomear o campo ou a ação.
+
 ##### `[02/10]` A sugestão de editoria passou a olhar CONTEXTO, não tamanho
 
 Ela errava, e o caso é real:
