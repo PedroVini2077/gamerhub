@@ -1595,3 +1595,60 @@ Tempo, de novo. E há uma pergunta aberta que só aparece em aparelho de verdade
 **seis** camadas dessas na mesma página. Em GPU de celular isso tem custo de
 memória de vídeo que nenhuma medição de byte enxerga. Fica registrado como o
 próximo lugar a olhar se alguém relatar travamento ao rolar.
+
+---
+
+## `[02/10]` Um PR de 14 dependências, pesado UM a UM
+
+O Dependabot propôs 14 atualizações num PR só, e ele reprovava o orçamento em
+**+11,7 kB gzip**. O número agregado não diz nada acionável — então cada pacote
+foi medido sozinho, na mesma máquina, a partir da mesma base.
+
+**Base (`main`, 02/10): 749,8 kB bruto · 227,8 kB gzip.**
+
+| o que foi somado à base | bruto | gzip | delta gzip |
+| --- | --- | --- | --- |
+| **9 devDependencies** (vite 8.0→8.3, eslint, playwright, jsdom, autoprefixer, globals, `@types/*`) | 749,2 kB | **227,6 kB** | **−0,2** |
+| `@sentry/react` 10.72 → 10.75.3 | 749,8 kB | 227,8 kB | **0,0** |
+| `@supabase/supabase-js` 2.112 → 2.117 | 755,2 kB | 228,8 kB | **+1,0** |
+| `lucide-react` 1.37 → 1.48 | 757,5 kB | 230,2 kB | **+2,4** |
+| `react` · `react-dom` 19.2.8 → 19.3.0 | 778,3 kB | 236,2 kB | **+8,4** |
+| as 14 juntas | 791,3 kB | 239,5 kB | **+11,7** |
+
+### As três coisas que só a medição separada mostra
+
+**1. As devDependencies DEVOLVEM byte.** O Vite 8.3 gera um pacote levemente
+menor que o 8.0 — **−0,2 kB**. A intuição de que "atualizar engorda" estava
+errada para 9 dos 14.
+
+**2. O custo é quase todo de UM pacote.** `react`/`react-dom` respondem por
+**8,4 dos 11,7 kB** — 72% do crescimento, em 2 dos 14 pacotes. E não é inchaço
+aleatório: o 19.3 embute `<ViewTransition />` e Fragment Refs, dois subsistemas
+novos que entram no pacote **usemos ou não**. Grep no `src/`: zero uso dos dois.
+
+**3. A folga do teto era 0,2 kB.** Esse é o achado que sobrevive ao PR: com
+227,8 contra um teto de 228, **qualquer** dependência de runtime estourava — um
+patch do cliente Supabase já bastava. Não é defeito do portão; é ele forçando a
+decisão que o cabeçalho dele promete forçar. Mas significa que todo PR do
+Dependabot reprova aqui, todo mês.
+
+### O que ficou, e o que custou
+
+Entraram as 9 devDeps, o Sentry, o `react-query` e o Supabase: **755,3 kB bruto
+· 228,8 kB gzip**, com o teto gzip subindo de 228 para **229**. Ficaram de fora
+o React 19.3 e o `lucide-react`.
+
+**Medição de laboratório, não de campo** (§0.3 regra 5): tudo acima é byte de
+build na mesma máquina. O que isso significa em tempo de carregamento para
+alguém no 4G está no Vercel Speed Insights, não aqui.
+
+### Onde está o byte, se um dia precisarmos de folga de verdade
+
+`vendor-supabase` são **53,3 kB gzip — 23% do orçamento inteiro** — e estão no
+primeiro carregamento porque `hooks/useAuth.jsx` importa o cliente direto: o
+site precisa saber na primeira pintura se você está logado.
+
+**Isto não é proposta.** `useAuth` é arquivo de alto risco (`CLAUDE.md` §7) e
+adiar a autenticação muda a primeira pintura de todo mundo. Fica registrado
+como **onde a sala existe**, para que "subir o teto" não pareça a única saída
+que alguém olhou.

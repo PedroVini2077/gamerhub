@@ -97,7 +97,8 @@ Está no estudo de direção. Os pontos que continuam abertos:
 
 ## O orçamento, que é o limite duro
 
-`760 kB` brutos / `228 kB` gzip no carregamento inicial, com portão no CI. A
+`760 kB` brutos / `229 kB` gzip no carregamento inicial, com portão no CI
+(**`[02/10]`** o gzip era 228 e subiu 1 kB — ver `DECISOES-FERRAMENTAL.md`). A
 cena 3D sozinha pesava **708 kB** — é por isso que ela não cabia. SVG, CSS e
 tipografia cabem em **unidades de kB**.
 

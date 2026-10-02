@@ -575,6 +575,60 @@ minutos, pega ponto cego. Não vale automatizar.
 
 ---
 
+## `[02/10]` O PR de 14 dependências virou 9 — cada bump foi PESADO sozinho
+
+O Dependabot propôs 14 atualizações num PR só (#226). Ele reprovava o orçamento
+de bytes: **+11,7 kB gzip**. A saída preguiçosa seria subir o teto e mergear;
+a saída honesta foi medir cada pacote isolado, a partir da base de **227,8 kB**.
+
+| grupo | custo gzip | decisão |
+| --- | --- | --- |
+| **9 devDependencies** — vite 8.0→8.3, eslint, playwright, jsdom, autoprefixer, globals | **−0,2** *(devolvem byte)* | **entrou** |
+| `@sentry/react` 10.72 → 10.75.3 | **0,0** | **entrou** |
+| `@tanstack/react-query` 5.102 → 5.104 | ~0 | **entrou** |
+| `@supabase/supabase-js` 2.112 → 2.117 | **+1,0** | **entrou** |
+| `lucide-react` 1.37 → 1.48 | **+2,4** | **recusado** |
+| `react` · `react-dom` 19.2.8 → **19.3.0** | **+8,4** | **recusado** |
+| `@types/react` · `@types/react-dom` → 19.3 | 0 (não vão ao pacote) | **recusado** |
+
+### Por que o React 19.3 ficou de fora
+
+Ele **não é um minor pequeno**: embute dois subsistemas novos inteiros —
+`<ViewTransition />` e Fragment Refs — que entram no pacote usemos ou não. É
+isso que custa os 8,4 kB, e é o motivo de um "minor" pesar 3,7% do orçamento.
+
+Conferido no `src/`, não suposto: **zero uso** de `ViewTransition`, de
+`Activity`, de `useActionState` e de `useEffectEvent`. Das dezenas de correções
+do changelog, **uma** nos alcança — `useDeferredValue` travando, usado num
+arquivo só (`UsuariosTab.jsx`, painel do fundador) — e **o sintoma nunca foi
+relatado**. `npm audit` em **0 vulnerabilidades**: não havia pressão de
+segurança empurrando.
+
+**Os `@types/react` foram junto, e por outro motivo:** tipo à frente do runtime
+anuncia API que não existe. Eles acompanham o React quando ele subir.
+
+**Quando revisitar:** quando houver correção que nos alcance, quando quisermos
+`<ViewTransition />`, ou quando um advisory aparecer. A conta já está feita —
+são 8,4 kB, e o teto terá de subir junto.
+
+### E o que este episódio revelou sobre o próprio teto
+
+A folga era de **0,2 kB**. Qualquer dependência de runtime estourava — até um
+patch do cliente Supabase. **Todo PR do Dependabot vai reprovar aqui, todo
+mês.**
+
+Isso não é defeito: o comentário no topo do `orcamento-de-bytes.mjs` diz que o
+limite existe *"para forçar essa frase"*, e ele forçou — este bloco é a frase.
+O que muda é a expectativa: crescimento de dependência passa a ser decisão
+consciente e recorrente, não surpresa de CI vermelho.
+
+**Onde está o byte, se um dia precisarmos de folga de verdade:**
+`vendor-supabase` são **53,3 kB gzip — 23% do orçamento** — e estão no primeiro
+carregamento porque `hooks/useAuth.jsx` importa o cliente direto: o site precisa
+saber na primeira pintura se você está logado. Mexer nisso é mexer num arquivo
+que o §7 lista como alto risco (*"quebrar `useAuth` derruba o site inteiro"*).
+Fica registrado como **onde a sala existe**, não como plano.
+
 ## `[02/10]` O CI passa a COMPILAR as Edge Functions, e a versão do CLI é fixa
 
 **Duas decisões de esteira, do mesmo dia e com a mesma raiz: coisa que ninguém
