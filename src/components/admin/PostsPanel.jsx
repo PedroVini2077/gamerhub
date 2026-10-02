@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, RotateCcw, Clock } from 'lucide-react';
+import { Trash2, RotateCcw, Clock, Eye } from 'lucide-react';
 
 const TTL_DAYS = 30;
 
@@ -9,7 +9,7 @@ function daysLeft(deletedAt) {
 }
 
 export default function PostsPanel({
-  posts, handleDeletePost, handleRestorePost,
+  posts, handleDeletePost, handleRestorePost, handleMostrarPost,
   handlePermanentDeletePost, handlePermanentDeleteAllDeleted,
   hasMore, loadingMore, onLoadMore,
 }) {
@@ -118,11 +118,25 @@ export default function PostsPanel({
                   </button>
                 </>
               ) : (
-                <button onClick={() => handleDeletePost(p.id)}
-                  title="Excluir post"
-                  className="text-gray-600 hover:text-red-400 transition-colors">
-                  <Trash2 size={15} />
-                </button>
+                <>
+                  {/* `[02/10]` A inversa de OCULTAR, que nao existia em tela
+                      nenhuma. A fila so lista `pending`, entao o item some ao
+                      ser resolvido; o "Restaurar post" ao lado desfaz APAGAR,
+                      nao ocultar. Sem este botao, `restoreContent` ficava
+                      inalcancavel e o conserto virava UPDATE no banco. */}
+                  {p.hidden_at && (
+                    <button onClick={() => handleMostrarPost?.(p.id)}
+                      title="Mostrar post (tirar da ocultação)"
+                      className="text-gray-600 hover:text-neon-green transition-colors">
+                      <Eye size={15} />
+                    </button>
+                  )}
+                  <button onClick={() => handleDeletePost(p.id)}
+                    title="Excluir post"
+                    className="text-gray-600 hover:text-red-400 transition-colors">
+                    <Trash2 size={15} />
+                  </button>
+                </>
               )}
             </div>
           </div>

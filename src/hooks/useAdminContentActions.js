@@ -1,7 +1,8 @@
-import { Key, RotateCcw, Trash2 } from 'lucide-react';
+import { Key, RotateCcw, Trash2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import { logAudit } from '../lib/auditLog';
+import { restoreContent } from '../services/moderationService';
 
 /**
  * Ações destrutivas sobre posts e keys, todas atrás de um ConfirmModal.
@@ -63,6 +64,45 @@ export function useAdminContentActions({ setConfirmModal, username, posts, refre
         const { error } = await supabase.rpc('restore_post', { p_post_id: postId });
         if (error) { toast.error('Erro ao restaurar post: ' + error.message); return; }
         await done('Post restaurado', 'admin_restore_post', `Post restaurado pelo admin ${actor}`, 'info');
+      },
+    });
+  }
+
+  /**
+   * `[02/10]` MOSTRAR de novo um post OCULTADO — a inversa que não existia.
+   *
+   * ── O buraco, medido no código ──────────────────────────────────────────
+   *
+   * `ocultar` tinha caminho de ida e nenhum de volta pela tela:
+   *
+   *   - a fila de moderação só lista `pending` (status FIXO no
+   *     `ModerationQueue`), então o item some assim que é resolvido;
+   *   - o `handleRestorePost` acima desfaz **apagar**, não **ocultar** — o
+   *     botão dele só aparece quando `deleted_at` existe;
+   *   - o painel do fundador não menciona `hidden_at`.
+   *
+   * Resultado: `restoreContent` existia no `moderationService` e **nenhum
+   * botão chegava nele**. É a classe do `apply_suspension` sem
+   * `lift_suspension` (`BANCO.md`, "toda ação de estado precisa da INVERSA"),
+   * e o conserto, sem isto, seria `UPDATE` no banco — o oposto de ter painel.
+   *
+   * Usa `restoreContent` e não a RPC `restore_post`: aquela mexe em
+   * `deleted_at`, que é outro estado. Ocultar e apagar são ações diferentes e
+   * precisam de inversas diferentes — juntá-las faria "mostrar" ressuscitar
+   * post apagado sem ninguém pedir.
+   */
+  function handleMostrarPost(postId) {
+    setConfirmModal({
+      title: 'Mostrar Post', icon: Eye, accent: 'green',
+      message: 'Tornar este post visível de novo? Ele volta a aparecer no feed e no perfil do autor.',
+      confirmLabel: 'Mostrar', confirmIcon: Eye,
+      onConfirm: async () => {
+        // `restoreContent` usa `count: 'exact'`: RLS negando devolve 0 linhas
+        // e NENHUM erro, e sem isso o painel diria "mostrado" sem nada mudar.
+        const { error } = await restoreContent('post', postId);
+        if (error) { toast.error('Erro ao mostrar post: ' + error.message); return; }
+        await done('Post visível de novo', 'admin_restore_post',
+          `Post tirado da ocultação pelo admin ${actor}`, 'info');
       },
     });
   }
@@ -141,7 +181,7 @@ export function useAdminContentActions({ setConfirmModal, username, posts, refre
   }
 
   return {
-    handleDeletePosts, handleDeletePost, handleRestorePost,
+    handleDeletePosts, handleDeletePost, handleRestorePost, handleMostrarPost,
     handlePermanentDeletePost, handlePermanentDeleteAllDeleted, handleDeleteKey,
   };
 }

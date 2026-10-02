@@ -42,6 +42,7 @@ export default function AdminTabContent({ tab, isSuperAdmin, data, filters, acti
         <PostsPanel
           posts={data.posts} handleDeletePost={actions.handleDeletePost}
           handleRestorePost={actions.handleRestorePost}
+          handleMostrarPost={actions.handleMostrarPost}
           handlePermanentDeletePost={actions.handlePermanentDeletePost}
           handlePermanentDeleteAllDeleted={actions.handlePermanentDeleteAllDeleted}
           hasMore={data.postsHasMore} loadingMore={data.loadingMorePosts}

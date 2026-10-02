@@ -50,12 +50,12 @@ export async function anexarSinais<T extends { termos: string[] }>(
     buscar: Buscar;
     agora?: Date;
   },
-): Promise<{ pautas: PautaComSinais<T>[]; falhasDeVideo: FalhaDeVideo[] }> {
+): Promise<{ pautas: PautaComSinais<T>[]; falhasDeVideo: FalhaDeVideo[]; videosConsiderados: number }> {
   const termos = pautas.flatMap((p) => p.termos);
 
   const [medidas, doVideo] = await Promise.all([
     medirAceleracao(termos, opcoes.chamarAceleracao),
-    buscarVideos(opcoes.fontesDeVideo, opcoes.chaveDoYoutube, opcoes.buscar, opcoes.agora)
+    buscarVideos(opcoes.fontesDeVideo, termos, opcoes.chaveDoYoutube, opcoes.buscar, opcoes.agora)
       // O `buscarVideos` ja engole o que acontece DENTRO dele; este catch cobre
       // o que acontece ANTES, como uma URL impossivel de montar.
       .catch((e): { videos: never[]; comFalha: FalhaDeVideo[] } => ({
@@ -71,5 +71,10 @@ export async function anexarSinais<T extends { termos: string[] }>(
       video: rotuloDeVideo(contarVideosDaPauta(p.termos, doVideo.videos)),
     })),
     falhasDeVideo: doVideo.comFalha,
+    // `[02/10]` O numero que teria me dado o diagnostico em um minuto. A 1a
+    // versao do sinal nao achou nada e nao disse nada: sem erro e sem selo,
+    // "a API falhou" e "achou videos e nenhuma pauta casou" eram
+    // indistinguiveis de fora. Agora o estado intermediario aparece.
+    videosConsiderados: doVideo.videos.length,
   };
 }
