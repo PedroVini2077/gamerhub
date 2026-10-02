@@ -2180,54 +2180,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
-- ⬜ `[24/09]` 🟠 **O painel do Fundador autoriza por LITERAL, e as duas saídas
-  têm risco.** *Achado na parte 1 da auditoria (SEC-051). **Não é
-  vulnerabilidade** — o efeito é correto. É decisão de semântica, e por isso
-  não decidi sozinho.*
-
-  Cinco funções (`owner_get_stats`, `owner_get_users`, `owner_get_metrics`,
-  `owner_get_audit_logs`, `owner_get_notifications`) autorizam assim:
-
-  ```sql
-  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'owner')
-  ```
-
-  | Saída | O que ganha | O que arrisca |
-  | --- | --- | --- |
-  | **trocar por `is_owner()`** | some o literal que já causou 3 falhas; elas voltam a ser visíveis para o auditor | **muda semântica**: `is_owner()` é `role_rank >= 4`, o literal é `= 'owner'`. Um cargo futuro de rank 5 passaria num e não no outro |
-  | **pôr `exige_operador_ativo()`** | cumpre o `INV-AUTZ-003` à risca | **risco de trancar o fundador fora do próprio painel, sem inversa** — e ninguém consegue puni-lo por RPC de qualquer forma (hierarquia estrita), então o ganho é ~zero |
-  | **deixar como está** | zero risco | o literal continua, e as cinco ficam na lista de isenção do auditor |
-
-  **Minha recomendação:** trocar por `is_owner()` **se** você quiser que um
-  cargo futuro acima de owner herde o painel; manter o literal **se** o painel
-  deve ser do fundador e de mais ninguém, para sempre. **Não** pôr a guarda de
-  operador nas cinco — o ganho não paga o risco de lockout.
-
-  Enquanto não decide, as cinco estão isentas **com o motivo escrito** na
-  migration, e a trava reprova se a lista crescer.
-
-  > **`[25/09]` Agora são CINCO FUNÇÕES + TRÊS POLICIES, e é a mesma decisão.**
-  > A SEC-053 passou o auditor a olhar policy também, e ele achou
-  > `site_config_owner_delete`, `_insert` e `_update` usando o mesmo
-  > `role = 'owner'` literal. Eu cheguei a trocá-las por `is_owner()` e
-  > **desfiz** — o argumento acima (muda semântica) vale igual para elas, e
-  > fazer em silêncio o que este item classifica como decisão sua seria pior do
-  > que não fazer. As três entraram na lista de isenção com o motivo, e a trava
-  > `auditorDoBancoEhOuvido.test.js` cobre essa lista também.
-  >
-  > **Quando você decidir, a decisão vale para as oito de uma vez.**
-
-  > ### ✅ `[25/09]` ELE DECIDIU: trocar por `is_owner()`, nas oito
-  >
-  > *"Pode fazer esse do is_owner"*. Vale para as **cinco funções** do painel e
-  > para as **três policies** de `site_config`. Consequência aceita: um cargo
-  > futuro de rank ≥ 4 herdaria o painel do Fundador — é o que a troca
-  > significa, e ele decidiu sabendo.
-  >
-  > **NÃO entra junto:** pôr `exige_operador_ativo()` nas cinco. A recomendação
-  > contra continua de pé (risco de trancar o fundador fora do próprio painel,
-  > sem inversa) e ele não pediu isso.
-
 - ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
   "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
   GamerHub está seguro'".*
@@ -2327,10 +2279,36 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
      explícito na própria migration, e o `funcaoDeTriggerNaoEhRpc.test.js`
      cobre a classe dos triggers.
 
-  > **Continua ABERTO, e o motivo é preciso:** a prevenção na raiz não foi
-  > feita — função nova **ainda nasce** alcançável pelo `anon`. O que mudou é
-  > que a brecha deixou de ser silenciosa: o CI reprova no mesmo PR. Chamar isso
-  > de fechado seria exatamente o que o §1.1 proíbe.
+  > ### ⚡ `[02/10]` O CAMINHO EXISTE — eu tinha concluído errado
+  >
+  > A frase acima — *"a correção na raiz não é alcançável com a minha
+  > credencial"* — era verdade sobre **uma** tentativa e falsa como afirmação
+  > geral. Eu testei `ALTER DEFAULT PRIVILEGES` (que continua dando
+  > `permission denied`, remedido em 02/10) e concluí "não dá", **sem testar o
+  > caminho seguinte**. É o §1.1 na letra: inferência vestida de fato.
+  >
+  > **`CREATE EVENT TRIGGER` passa**, e o ciclo inteiro foi provado em ROLLBACK:
+  >
+  > | | resultado medido |
+  > | --- | --- |
+  > | função nova | `anon` **fechado** |
+  > | `authenticated` | **intacto** — as ~100 RPCs do site de pé |
+  > | `CREATE OR REPLACE` de `username_disponivel` | **preservada** pela lista branca — o cadastro não cai |
+  > | `GRANT ... TO anon` depois do `CREATE` | continua funcionando — dá para abrir de propósito |
+  >
+  > **E por que revogar só do `anon` não bastava** (foi a 1ª versão, e falhou):
+  > a ACL de função nova é `{=X/postgres, anon=X/postgres, …}`. O `=X` da
+  > frente é **PUBLIC** — o `anon` entrava pela porta dele. O certo é
+  > `REVOKE ... FROM PUBLIC, anon`.
+  >
+  > **⏸️ A migration foi RECUSADA na aprovação em 02/10**, então nada foi
+  > aplicado. Ela está pronta e provada; o desenho inteiro, com as três
+  > decisões de segurança (lista branca · só `public` · nunca levantar exceção,
+  > porque event trigger que estoura **bloqueia todo `CREATE FUNCTION` do
+  > banco**), está nesta entrada e no chat de 02/10.
+  >
+  > **O que segura enquanto isso** continua valendo: `REVOKE` explícito em cada
+  > migration, e o `contagem_de_achados_de_seguranca()` reprovando no CI.
 
 - ⬜ `[18/09]` 🔵 **`lives_realizadas` é append-only e o E2E escreve nela a cada
   execução.** *Achado enquanto eu limpava as 3 órfãs do N16.*
@@ -2614,6 +2592,26 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[02/10]` 🔴 **AÇÃO DELE — criar a `YOUTUBE_API_KEY`.** *Ele pediu o passo
+  a passo em 02/10; é o que destrava a Fase 4 do radar.*
+
+  O passo a passo completo — com as URLs diretas, o que ele vê em cada tela, o
+  que preencher e como conferir — está em `docs/OPERACAO.md`.
+
+  **Conferido antes de pedir o clique (§9.12):** nenhum código lê
+  `YOUTUBE_API_KEY` hoje (`grep` em `src/` e `supabase/`), então criar a chave
+  **não muda nada** e não tem como quebrar. Ela fica esperando o código.
+
+  **A cota, medida na documentação oficial antes de ligar:** 10.000 unidades/dia
+  somando tudo, **mas `search.list` tem teto SEPARADO de 100 por dia** — e é a
+  chamada que a Fase 4 usa. Isso obriga **uma busca por clique de editor, nunca
+  uma por pauta**, e está escrito em `docs/regras/COTAS.md` antes de existir
+  código.
+
+  **O passo 3 não é opcional:** restringir a chave à YouTube Data API. Chave do
+  Google vai no corpo da requisição; vazou, qualquer um gasta a nossa cota.
+
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
