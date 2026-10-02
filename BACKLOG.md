@@ -417,60 +417,6 @@ produção na Groq, conferido em 25/09.
 
 ---
 
-### 🟠 `[01/10]` RETENÇÃO HÍBRIDA: tempo + quantidade, em lote — GRAVADO, não iniciado
-
-**Pedido dele em 01/10, com a instrução explícita de guardar e só começar
-quando fizer sentido.** Está escrito aqui inteiro para não depender da
-conversa (§6.2, 01/09).
-
-**O que ele pediu, na letra do prompt:**
-
-| Tabela | O que muda |
-| --- | --- |
-| `admin_logs` | manter 365 dias **e** somar um teto de QUANTIDADE (eu proponho o valor); excedeu → apaga os mais antigos **em lote**, nunca `DELETE` por log novo |
-| `admin_notifications` | hoje **não participa** do `cleanup_old_data()`; avaliar a estrutura e dar retenção temporal + limite quantitativo |
-| `notifications` | manter a regra de lida/30d; avaliar **limite por usuário**, preservando as mais recentes |
-
-**As restrições dele, e elas desenham a solução:**
-
-- **Não criar sistema paralelo de limpeza.** O `cleanup_old_data()` já
-  centraliza e o cron `gamerhub-cleanup` já roda diário — preservar essa
-  arquitetura, não criar outro cron.
-- **Margem de limpeza:** deixar passar do teto e só então voltar a ele, em
-  vez de limpar a cada pequeno excesso.
-- **Segurança:** a função continua só para o cron. Nada de `EXECUTE` para
-  `anon`/`authenticated`. Não mexer em RLS nem em permissão sem necessidade.
-- **Desempenho:** conferir os índices que já existem **antes** e criar só o
-  necessário; `DELETE` grande vai em lote; **nada de particionamento** com o
-  volume de hoje.
-- **Escopo:** só ciclo de vida de log/notificação. Não tocar em conteúdo,
-  post, perfil nem dado de negócio.
-- **Provar com teste de banco:** dentro do prazo fica · fora do prazo sai ·
-  excesso remove só os mais antigos · o lote é idempotente · recente não é
-  afetado · `admin_notifications` passa a ter retenção · a função continua
-  inacessível ao cliente.
-
-**O que eu já sei e muda o plano, sem ter começado:**
-
-1. **Há um precedente a respeitar e eu acabei de criá-lo.** Em 01/10 nasceu
-   `limpar_rascunhos_de_teste_do_news()`, que é uma função de limpeza
-   **fora** do `cleanup_old_data()`. Ela tem justificativa escrita (o lote
-   diário varre 365 e 730 dias; aquilo precisa rodar de 10 em 10 min), mas
-   quando eu for fazer este item preciso dizer por que ela é exceção e não
-   abre precedente para a retenção híbrida — senão vira o "sistema paralelo"
-   que ele proibiu.
-2. **O teto por quantidade precisa de índice, e isso se mede antes.** Apagar
-   "os mais antigos além de N" é `ORDER BY created_at` + `OFFSET N`, e sem
-   índice em `created_at` isso é varredura completa a cada noite.
-3. **A margem é o que evita o churn.** Teto 50 mil com margem até 60 mil
-   apaga 10 mil de uma vez a cada vários dias, em vez de algumas linhas toda
-   noite — é a diferença entre um `DELETE` planejado e ruído diário.
-
-**Por que não comecei agora:** ele mandou guardar e começar *"quando fizer
-sentido"*. Faz sentido depois da Fase 2 do radar, ou a qualquer momento em
-que ele pedir — é trabalho de banco, independente do bloco do News.
-
----
 ### 🔵 `[26/09]` Gerenciar as fontes do radar pela TELA
 
 Hoje ligar, desligar e acrescentar fonte é `UPDATE`/`INSERT` no banco — o passo
@@ -1277,7 +1223,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**55 itens abertos** (+ 1 ideia sem compromisso)
+**54 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1609,49 +1555,6 @@ AGORA** escrito nele.
   **Não fiz o cache** porque foi a 1ª vez em meses e `actions/cache` é
   manutenção permanente para um problema que pode ter sido instabilidade da
   CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
-
-- ⬜ `[01/10]` 🟠 **RETENÇÃO HÍBRIDA — FEITA E PROVADA, falta UMA aprovação.**
-  *`[02/10]` Construída e testada em ROLLBACK; o último passo espera ele.*
-
-  **O que JÁ está no banco:** `aplicar_teto_de_linhas(tabela, teto)`,
-  `aplicar_teto_por_usuario(teto)` e o índice `idx_admin_notifications_created`
-  (era o único que faltava — as outras duas tabelas já tinham o seu).
-
-  **O que FALTA:** só o `CREATE OR REPLACE FUNCTION cleanup_old_data()`, que é
-  quem chama os tetos. **Enquanto ele não for aplicado, NADA mudou em
-  produção** — a faxina das 04:00 roda exatamente como rodava.
-
-  **Por que parou aí:** a ferramenta pede aprovação para SQL destrutivo
-  (`MCP tool call requires approval`) e a dele não chegou nesta sessão. O SQL
-  exato está em
-  `supabase/migrations/20261002200000_retencao_hibrida_tempo_mais_quantidade.sql`
-  — é só aplicar o arquivo inteiro, e ele é idempotente (`CREATE OR REPLACE` +
-  `CREATE INDEX IF NOT EXISTS`).
-
-  **Ao aplicar, não esquecer:** registrar a linha em
-  `supabase_migrations.schema_migrations` (version `20261002200000`), senão o
-  portão `espelho-de-migrations` reprova — o arquivo existe e a linha não.
-
-  | alvo | tempo | teto | corta a partir de |
-  | --- | --- | --- | --- |
-  | `admin_logs` | 365d | 80.000 | 100.000 |
-  | `admin_notifications` | **365d — não tinha prazo nenhum** | 20.000 | 25.000 |
-  | `notifications` | lida + 30d | **500 por usuário** | 625 |
-
-  **Medido em 02/10:** 139 linhas/dia de média em `admin_logs`, pico de 924 num
-  dia, projeção de ~50.700/ano. 80.000 é 1,6x isso — em operação normal o teto
-  apaga **zero**.
-
-  **A margem de limpeza eu tinha PERDIDO e voltei atrás.** A primeira versão
-  cortava no número exato, ou seja, toda noite por um fio — exatamente o que o
-  prompt dele proibia. Hoje é 125% do teto, derivada e não parâmetro.
-
-  **Provado em ROLLBACK:** corta para o teto · 2ª passada apaga 0 (idempotente)
-  · dentro da margem não toca · sobra o mais NOVO, não o mais velho · usuário
-  abaixo do teto fica intacto · teto `0` e `NULL` recusados · tabela fora do
-  mapa recusada.
-
-  Trava: `retencaoHibrida.test.js` (5 checagens, 5 reinjeções).
 
 - ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
   diferentes: `liveService.unsilenceUser({postId, userId})` e
