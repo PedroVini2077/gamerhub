@@ -26,8 +26,8 @@ tempo. Um PR teria mostrado as duas linhas.
 | `responder-contato/` | não* | `[03/09]` A equipe responde uma mensagem do formulário de contato, e o e-mail sai com a cara do site. A checagem de equipe é do BANCO (`is_staff()` nas duas RPCs), chamadas com a credencial de quem pediu |
 | `verify-contact/` | não* | `[03/09]` A única porta do formulário público de contato: confere o token do Cloudflare Turnstile e só então chama a RPC com `service_role` |
 | `redigir-materia/` | não* | **`[25/09]`** Rascunha matéria do GamerHub News a partir das NOTAS do editor, pela Groq. Exige `is_staff()`, **não escreve no banco** — devolve o rascunho e quem aplica é o clique de quem assina. Sem o segredo `GROQ_API_KEY` responde `503` dizendo isso |
-| `radar-de-pautas/` | não* | **`[26/09]`** Lê as fontes cadastradas, guarda em `news_items_raw` e pede ao modelo para ordenar o que vale virar matéria. Exige `is_staff()`. **`[01/10]` DOIS coletores:** RSS em paralelo (13 feeds) e a GDELT em série (até 2 consultas, 5,2 s entre elas — teto dela, medido num `429`). A consulta da GDELT é uma LINHA de `news_sources` (`tipo='api'`), não código: o motor é cego ao assunto, e uma trava varre o código para garantir. Coletor que falha vira `comFalha` e não derruba o outro. **`[01/10]` O pedido ao modelo usa `json_schema` ESTRITO (não `json_object`) e `reasoning_effort: "low"`:** o `gpt-oss-120b` gasta a cadeia de pensamento do mesmo `max_tokens` da resposta, e sem espaço para os dois ele devolve `content` vazio — `HTTP 400 json_validate_failed`. **`[01/10]` O modelo cita a manchete pelo NÚMERO; o endereço é resolvido aqui** — inventar fonte não cabe no formato. O pedido tem orçamento de caracteres derivado do teto por minuto da Groq (`pedido.ts`), que é o que o `HTTP 413` custou: 7 chamadas em 7 | **`[01/10]` FASE 3: o SINAL DE ACELERAÇÃO.** Cada pauta devolve até 3 `termos`, e a RPC `news_aceleracao_de_termos` diz quantas vezes cada um apareceu hoje × nos dias anteriores no NOSSO histórico — não é Trends, é "os veículos que assinamos estão falando mais disso". Roda **por último** e numa chamada só; falha dela devolve mapa vazio, porque enfeite não pode custar pauta. **`[01/10]` A tradução do erro da Groq saiu para `falhaDaGroq.ts`:** havia um `const corpo` sombreando o montador da resposta, o `TypeError` caía no `try/catch` e **toda** recusa virava *"A IA respondeu algo que eu nao entendi"* na tela, com o `admin_logs` certo
-| `delete-user/` | não* | **`[25/09]` corrigido:** esta linha dizia **sim**. O `supabase/config.toml` e a função no ar dizem `false`, medidos hoje — ela é chamada do navegador e o preflight `OPTIONS` morreria no gateway. Quem valida é o `auth.getUser()` dela. Exclusão da própria conta |
+| `radar-de-pautas/` | não* | **`[26/09]`** Lê as fontes cadastradas, guarda em `news_items_raw` e pede ao modelo para ordenar o que vale virar matéria. Exige `is_staff()`. **`[01/10]` DOIS coletores:** RSS em paralelo (13 feeds) e a GDELT em série (até 2 consultas, 5,2 s entre elas — teto dela, medido num `429`). A consulta da GDELT é uma LINHA de `news_sources` (`tipo='api'`), não código: o motor é cego ao assunto, e uma trava varre o código para garantir. Coletor que falha vira `comFalha` e não derruba o outro. **`[01/10]` O pedido ao modelo usa `json_schema` ESTRITO (não `json_object`) e `reasoning_effort: "low"`:** o `gpt-oss-120b` gasta a cadeia de pensamento do mesmo `max_tokens` da resposta, e sem espaço para os dois ele devolve `content` vazio — `HTTP 400 json_validate_failed`. **`[01/10]` O modelo cita a manchete pelo NÚMERO; o endereço é resolvido aqui** — inventar fonte não cabe no formato. O pedido tem orçamento de caracteres derivado do teto por minuto da Groq (`pedido.ts`), que é o que o `HTTP 413` custou: 7 chamadas em 7 | **`[01/10]` FASE 3: o SINAL DE ACELERAÇÃO.** Cada pauta devolve até 3 `termos`, e a RPC `news_aceleracao_de_termos` diz quantas vezes cada um apareceu hoje × nos dias anteriores no NOSSO histórico — não é Trends, é "os veículos que assinamos estão falando mais disso". Roda **por último** e numa chamada só; falha dela devolve mapa vazio, porque enfeite não pode custar pauta. **`[01/10]` A tradução do erro da Groq saiu para `falhaDaGroq.ts`:** havia um `const corpo` sombreando o montador da resposta, o `TypeError` caía no `try/catch` e **toda** recusa virava *"A IA respondeu algo que eu nao entendi"* na tela, com o `admin_logs` certo **`[02/10]` A tradução do erro da Groq é PURA** (`falhaDaGroq.ts`) e tem teste: erro embutido no fluxo não se exercita sem rede
+| `delete-user/` | não* | **`[25/09]` corrigido:** esta linha dizia **sim**. O `supabase/config.toml` e a função no ar dizem `false`, medidos hoje — ela é chamada do navegador e o preflight `OPTIONS` morreria no gateway. Quem valida é o `auth.getUser()` dela. Exclusão da própria conta | **`[02/10]`** O `catch` fazia `err.message` num `unknown`: um `throw null` faria o PRÓPRIO catch estourar, e a função morreria sem corpo e sem motivo. Achado pelo `deno check` que entrou no CI (`TS18046`)
 | `cleanup-orphans/` | sim | Aposentada — limpeza de órfãos do storage, já executada em 06/2026 |
 
 **Apagadas em 27/08/2026** e removidas deste espelho: `cleanup-expired-posts`
@@ -56,22 +56,41 @@ lado deixou de ser chamável por `anon`. As duas coisas são uma só: ver
 
 ## Como manter isto honesto
 
-Estes arquivos foram capturados do que estava implantado em **23/08/2026**. O
-Supabase continua sendo quem executa: nada aqui é implantado automaticamente, e
-**um deploy pelo dashboard faz o repositório mentir sem que nada mude aqui.**
+> ### ⚠️ `[02/10]` DUAS afirmações desta seção tinham ENVELHECIDO
+>
+> Ela dizia *"nada aqui é implantado automaticamente"* e *"não existe teste que
+> compare este espelho com a produção"*. **As duas deixaram de ser verdade**, e
+> eu as reli hoje por causa do portão de documentação (§6.2 camada 3).
+>
+> | O que estava escrito | O que o sistema diz |
+> | --- | --- |
+> | "nada é implantado automaticamente" | `.github/workflows/implantar-edges.yml` roda `supabase functions deploy` em todo `push` para `main` que toque `supabase/functions`. Medido no log do deploy de ontem: *"Deployed Functions on project yuqbdcoljlvncxdnesxk: …"* |
+> | "não existe teste que compare o espelho com a produção" | `scripts/edges-implantadas.mjs` (`npm run edges`) compara a **impressão** de cada função no ar com a do repositório, e roda no mesmo workflow. No log de ontem: *"As 10 funcoes no ar foram geradas deste codigo."* |
+>
+> A segunda envelheceu bem: a objeção original — *"exigiria um token de gestão
+> do Supabase no CI"* — continua correta, e foi contornada em vez de ignorada.
+> A impressão é um `GET` público que cada função responde, então a comparação
+> **não precisa de credencial nenhuma**.
 
-Duas regras, então:
+Estes arquivos foram capturados do que estava implantado em **23/08/2026**, e
+hoje o repositório é a **origem**: o CI implanta o que está aqui.
 
-1. **Mudança em Edge Function começa aqui.** Edite o arquivo, abra o PR,
-   implante o conteúdo do arquivo. Nunca o contrário.
-2. **Não existe teste que compare este espelho com a produção.** Compará-los
-   exigiria um token de gestão do Supabase guardado no CI — trocar uma
-   divergência de documentação por uma chave de administração exposta é péssimo
-   negócio.
+Três regras:
 
-O que **existe** é `e2e/portas-fechadas.mjs`: ele bate nas funções em produção
-a cada PR e exige que as portas continuem fechadas. Ele não garante que o código
-daqui seja igual ao de lá; garante que a parte que mais dói não regrediu.
+1. **Mudança em Edge Function começa aqui.** Edite o arquivo, abra o PR. O
+   merge na `main` implanta. **Um deploy pelo dashboard faz o repositório
+   mentir** — e a próxima execução do `npm run edges` acusa, porque a impressão
+   no ar deixa de bater com a daqui.
+2. **O espelho É comparado com a produção**, pela impressão, sem credencial.
+   Ver a seção da IMPRESSÃO abaixo.
+3. **`[02/10]` O tipo é conferido antes de implantar.** `npm run tipos` roda
+   `deno check` nas 10 funções e **reprova o PR**. Era o único código do
+   projeto que ninguém compilava — e um `const` sombreando uma função chegou a
+   produção por isso.
+
+E `e2e/portas-fechadas.mjs` bate nas funções em produção a cada PR e exige que
+as portas continuem fechadas. Ele não garante que o código daqui seja igual ao
+de lá — disso cuida a impressão; garante que a parte que mais dói não regrediu.
 
 ## Rodar localmente
 

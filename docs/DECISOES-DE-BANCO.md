@@ -326,6 +326,27 @@ zero policies e zero grants; abri-la daria leitura e escrita amplas a todo
 
 ## News
 
+### `[02/10]` O escape de coringa é UMA função, não um `replace` por chamador
+
+**A decisão.** `buscar_pessoas` e `news_aceleracao_de_termos` comparam contra
+um valor que veio de fora (o usuário; o modelo). As duas passaram a usar
+`public.escapar_curinga()`.
+
+| Alternativa recusada | Por quê |
+| --- | --- |
+| `replace(replace(x,'%','\%'),'_','\_')` em cada chamador | é o que o radar fazia, e **já tinha divergido antes de existir o segundo chamador**: faltava a barra, então um termo terminado em `\` fazia o Postgres levantar erro. Duas cópias de uma regra divergem (§4) |
+| `quote_literal` / `format('%L')` | **resolveria outro problema.** O valor é parâmetro — não há injeção aqui. O estrago é o coringa, e escapar aspas não toca nele |
+| validar no cliente (recusar `%` na caixa de busca) | o site usa a `anon key`: a REST API é chamável direto (§1.3). E recusar seria pior produto — quem busca `100%` tem direito de achar |
+| `GRANT` da função para `authenticated` | ninguém a chama de fora. Ela só serve de dentro de RPC `DEFINER`, que roda com o privilégio do dono |
+
+**A ordem dentro dela é a parte não óbvia:** a barra é escapada **primeiro**,
+senão os `\` que o próprio escape introduz seriam escapados de novo pelos
+`replace` seguintes.
+
+A história inteira está na migration
+`20261002014550_escapar_curinga_fecha_a_enumeracao_pela_busca_de_pessoas.sql`;
+o achado, em [SEGURANCA.md](SEGURANCA.md) (SEC-055).
+
 ### `[01/10]` O sinal de aceleração sai do NOSSO histórico, não de um fornecedor
 
 **A decisão.** A Fase 3 do radar precisava responder *"isto está crescendo?"*.

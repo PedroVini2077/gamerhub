@@ -56,7 +56,7 @@ import { getEmailContent, buildEmail } from "./email-template.ts";
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio:
 // e assim que "editei a funcao e esqueci de implantar" passa a reprovar o PR.
-const IMPRESSAO_DESTE_CODIGO = "3902c34dfc0a8c1d";
+const IMPRESSAO_DESTE_CODIGO = "732f68f68a1445f3";
 
 const GMAIL_USER         = Deno.env.get("GMAIL_USER") ?? "";
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD") ?? "";
@@ -132,8 +132,20 @@ async function gritar(
   }
 }
 
-/** `v1,whsec_BASE64` ou `whsec_BASE64` -> os bytes da chave. */
-function bytesDoSegredo(bruto: string): Uint8Array {
+/**
+ * `v1,whsec_BASE64` ou `whsec_BASE64` -> os bytes da chave.
+ *
+ * `[02/10]` O tipo diz `Uint8Array<ArrayBuffer>` e nao `Uint8Array` por causa
+ * do TypeScript 5.7: o array tipado passou a carregar o buffer no tipo, e
+ * `Uint8Array` sozinho vira `Uint8Array<ArrayBufferLike>`, que o
+ * `crypto.subtle.importKey` recusa.
+ *
+ * **Isto nao era um bug** — o `Uint8Array.from` sempre devolveu um buffer
+ * comum e o HMAC sempre funcionou em producao. E anotacao, nao conserto, e
+ * esta escrito assim para ninguem "consertar" um `SharedArrayBuffer` que o
+ * codigo nunca produziu.
+ */
+function bytesDoSegredo(bruto: string): Uint8Array<ArrayBuffer> {
   const base64 = bruto.replace(/^v1,/, "").replace(/^whsec_/, "");
   return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 }
