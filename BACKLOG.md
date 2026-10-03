@@ -1556,6 +1556,47 @@ AGORA** escrito nele.
   manutenção permanente para um problema que pode ter sido instabilidade da
   CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
 
+- ⬜ `[03/10]` 🔵 **SALAS DE VOZ — o custo em DINHEIRO é ~R$0, e não é ele que
+  decide.** *Pergunta dele em 03/10: "tô pensando em salas de voz… qual seria o
+  custo disso agora?"*
+
+  **Medido nos preços de hoje, não de memória** (fontes no chat de 03/10):
+
+  | Caminho | Grátis por mês | Quanto isso dá, em sala de 5 |
+  | --- | --- | --- |
+  | **Cloudflare Realtime** (SFU + TURN) | 1.000 GB | **~3.470 h/mês** |
+  | Malha P2P (sem servidor) + TURN da Cloudflare | idem, e só ~15% do tráfego passa pelo TURN | praticamente ilimitado até 4 pessoas |
+  | LiveKit Cloud (Build) | 5.000 min de participante | **~16 h/mês** — e cobra depois |
+
+  A conta: voz Opus ≈ 32 kbps = 14,4 MB por hora de stream. Sala de 5 num SFU
+  são 20 streams-hora por hora de sala = 288 MB/h.
+
+  **O LiveKit está fora por um motivo que não é o preço:** o plano grátis é
+  *pay-as-you-go* depois do teto — ele **cobra em silêncio**. Seria o primeiro
+  serviço do projeto a fazer isso, e o §0.2 inteiro existe porque cota que
+  estoura sem ninguém saber é o padrão que já nos pegou duas vezes.
+
+  **O que custa de verdade, e é por isso que isto é 🔵 e não 🟠:**
+
+  1. **Moderação não alcança voz.** O subsistema inteiro — wordlist, IA de
+     texto, IA de imagem, fila — é para conteúdo que fica gravado. Voz não
+     deixa rastro, e o site tem idade mínima de 13 anos. Uma sala sem
+     moderação possível é a classe do §1.3: "pensar em como isto seria
+     abusado" tem resposta óbvia e nenhuma defesa pronta.
+  2. **LGPD.** Voz é dado pessoal. A `PRIVACIDADE.md` descreve o que o site
+     coleta **medido na implementação**; ligar voz exige mexer no documento e
+     no aceite — e documento legal tem trava própria (`documentosLegais`).
+  3. **Teto de conexões simultâneas do Supabase:** 200 no plano grátis, e a
+     sinalização do WebRTC gastaria uma por pessoa em sala. Não morde hoje;
+     morde no dia em que o site tiver gente, que é justamente quando a
+     feature faria sentido.
+
+  **Minha recomendação:** se o objetivo é *ter voz agora*, um convite para
+  **Discord** custa R$0, zero código e já tem moderação de voz pronta. Sala
+  nativa só compensa quando o site tiver gente suficiente para que sair dele
+  seja o problema — e aí a decisão volta com os três custos acima na mesa.
+
+
 - ⬜ `[02/10]` 🟠 **Migrar para o Tailwind 4 — é a única saída real do
   `GHSA-vfj7-8cjw-p6xm`.** *Advisory sem conserto, aceito por escrito em
   02/10.*
@@ -2137,27 +2178,6 @@ acidente.
 o ouve pelo `contagem_de_achados_de_seguranca`. Contraprova em ROLLBACK: tabela
 criada do zero nasceu com os quatro privilégios, **o auditor acusou**, a
 contagem do CI foi a 1, e o `REVOKE` a zerou.
-
-- ⬜ `[25/09]` 🟠 **✅ DECIDIDO (saída B): admin ESCREVE, super admin PUBLICA.**
-  *"Gostei da opção b, pode ser ela mesma".*
-
-  | Ação | Quem pode, a partir da decisão |
-  | --- | --- |
-  | criar rascunho · editar | admin · super admin · owner |
-  | **publicar** | **só** super admin · owner |
-  | apagar | só super admin · owner |
-
-  **Por que B e não "como está":** rascunho é reversível; publicado é a voz do
-  GamerHub falando com todo mundo, e erro editorial publicado não desfaz. Quem
-  escreve deixa de ser quem aprova.
-
-  **Por que NÃO o papel `editor` (saída C):** mexer em `role_rank` encosta em
-  todo o sistema de hierarquia, e isso já derrubou o site três vezes. O ganho só
-  aparece quando existir gente que escreve e não modera — hoje não existe.
-
-  **O que entra junto, e é o que faz B funcionar:** um estado `in_review` e o
-  botão "enviar para revisão". Sem isso o admin escreve e fica preso, sem
-  caminho — seria a regra da INVERSA (§5) quebrada na estreia.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
 
