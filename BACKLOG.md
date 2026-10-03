@@ -71,7 +71,7 @@ onde cota mora, e nos PRs #284 a #286.
 - 🟠 **Contador de tentativas de login** — nunca foi LIGADO. Precisa do
   Password Verification Hook, e o passo a passo pesquisado já está no
   `OPERACAO.md`.
-- 🟢 O resto da fila: 55 itens, quase todos 🔵/🟢.
+- 🟢 O resto da fila: 52 itens, quase todos 🔵/🟢.
 
 **Depende de você** (decisão, não clique):
 
@@ -1070,7 +1070,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**56 itens abertos** (+ 1 ideia sem compromisso)
+**55 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
