@@ -16,6 +16,20 @@
  *
  * Três roteiros separados fariam seis logins para exercitar o mesmo par.
  *
+ * ── DUAS SESSÕES ABERTAS, não login e logout alternados ─────────────────
+ *
+ * `[03/10]` Cada conta tem o seu `BrowserContext`. A 1ª versão logava e
+ * deslogava, e isso custava caro de dois jeitos: cinco logins de relógio, e —
+ * pior — a assertiva mais importante ficava difícil de posicionar.
+ *
+ * Porque ela é **o autor deixar de ver**: moderador vê conteúdo oculto de
+ * propósito (o `PostCard` tem borda própria para `hidden_at`), então conferir
+ * o feed do STAFF depois de ocultar não prova nada. A 1ª versão fazia isso e
+ * acusava um bug que não existia.
+ *
+ * Com as duas sessões vivas, "o staff oculta" e "o autor deixa de ver" ficam
+ * a duas linhas uma da outra.
+ *
  * ── A pergunta que ele fez, e que este roteiro responde ─────────────────
  *
  * *"Não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo
@@ -57,186 +71,147 @@ const MARCA = marcaDeTeste('[e2e ');
 
 await exigirServidor(BASE);
 const browser = await abrirNavegador();
-const ctx = await browser.newContext();
-const page = await ctx.newPage();
+
+// Uma sessao por conta. Contextos sao isolados por construcao — cookie e
+// storage de um nao alcancam o outro.
+const ctxComum = await browser.newContext();
+const ctxStaff = await browser.newContext();
+const comum = await ctxComum.newPage();
+const staff = await ctxStaff.newPage();
 
 const erros = [];
-page.on('pageerror', (e) => erros.push(`exceçao: ${e.message}`));
+for (const [quem, pg] of [['comum', comum], ['staff', staff]]) {
+  pg.on('pageerror', (e) => erros.push(`excecao (${quem}): ${e.message}`));
+}
 
 let passo = 0;
 const ok = (m) => console.log(`  ${String(++passo).padStart(2)}. OK   ${m}`);
 
-console.log(`\n  Comum x moderador em ${BASE}\n`);
+/** O card do post no feed, pelo padrao provado no `cicloDoPost.mjs`. */
+const cardDoPost = (pg) =>
+  pg.locator('.card').filter({ has: pg.locator('h2', { hasText: MARCA }) }).first();
 
-/**
- * As abas do painel. `[02/10]` Copiado do `painel-admin.mjs`: elas sao
- * `button[aria-pressed]`, e procurar por NOME casaria tambem com o item da
- * barra lateral que leva para a mesma area.
- */
-const aba = (p, nome) => p.locator('button[aria-pressed]').filter({ hasText: nome }).first();
+/** As abas do painel sao `button[aria-pressed]` — ver `painel-admin.mjs`. */
+const aba = (pg, nome) => pg.locator('button[aria-pressed]').filter({ hasText: nome }).first();
+
+/** Os avisos que a tela deu, para a mensagem de erro dizer o que ela disse. */
+const avisosDaTela = async (pg) =>
+  (await pg.locator('[role="status"]').allInnerTexts().catch(() => []))
+    .map((t) => t.trim()).filter(Boolean);
+
+console.log(`\n  Comum x moderador em ${BASE}\n`);
 
 /** O que precisa ser desfeito, na ORDEM INVERSA de como foi feito. */
 const aDesfazer = [];
+let ondeFalhou = comum;
 
 try {
-  // ── 1. A conta COMUM publica ────────────────────────────────────────────
-  await entrar(page, BASE, COMUM.email, COMUM.senha);
-  ok('entrou como conta comum');
+  // ── 1. As duas sessoes ──────────────────────────────────────────────────
+  await entrar(comum, BASE, COMUM.email, COMUM.senha);
+  await entrar(staff, BASE, STAFF.email, STAFF.senha);
+  ok('as duas sessoes abertas, lado a lado');
 
-  await publicarEEsperarNoFeed(page, {
+  // ── 2. A conta COMUM publica ────────────────────────────────────────────
+  ondeFalhou = comum;
+  await publicarEEsperarNoFeed(comum, {
     titulo: `${MARCA} post que vai ser moderado`,
-    corpo: 'Post criado pelo roteiro de duas contas. Ele é ocultado, mostrado de novo e apagado.',
+    corpo: 'Post do roteiro de duas contas: ele e ocultado, mostrado de novo e apagado.',
     marca: MARCA,
   });
   aDesfazer.push('o post da conta comum');
   ok('conta comum publicou');
 
-  await sair(page);
-
-  // ── 2. O STAFF curte e comenta — é isto que GERA a notificação ─────────
-  await entrar(page, BASE, STAFF.email, STAFF.senha);
-  ok('entrou como staff');
-
-  // `[02/10]` A 1a versao usava `article, [data-post]` e NAO achou nada: a raiz
-  // do `PostCard` e um `<div className="card p-5">`. O log do CI mostrou o post
-  // na tela e o roteiro dizendo que ele nao estava — eu inventei um seletor em
-  // vez de reusar o que o `cicloDoPost.mjs` ja provava.
-  const tituloNoFeed = page.locator('h2', { hasText: MARCA });
-  const cartao = page.locator('.card').filter({ has: tituloNoFeed }).first();
-  await cartao.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
-    throw new Error(
-      `o staff nao enxerga o post ${MARCA} no feed.\n`
-      + '    Ou o feed nao carregou, ou a conta comum nao publicou de verdade —\n'
-      + '    e o passo anterior so provou que o TITULO apareceu para ela.');
+  // ── 3. O STAFF curte e comenta — e isto GERA a notificacao ─────────────
+  //
+  // Os tres gatilhos de notificacao pulam o proprio autor, entao estas duas
+  // acoes so existem com a segunda conta.
+  ondeFalhou = staff;
+  await staff.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const noStaff = cardDoPost(staff);
+  await noStaff.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
+    throw new Error(`o staff nao enxerga o post ${MARCA} no feed — o feed nao carregou?`);
   });
 
-  await cartao.getByRole('button', { name: /^(Curtir|Descurtir) — \d+ curtida\(s\)$/ }).click();
-  ok('staff curtiu o post da conta comum');
+  await noStaff.getByRole('button', { name: /^(Curtir|Descurtir) — \d+ curtida\(s\)$/ }).click();
+  await comentarEEsperarNaLista(staff, { card: noStaff, texto: `${MARCA} comentario do staff` });
+  ok('staff curtiu e comentou — as duas notificacoes estao geradas');
 
-  await comentarEEsperarNaLista(page, { card: cartao, texto: `${MARCA} comentario do staff` });
-  ok('staff comentou — as duas notificações estão geradas');
-
-  // ── 3. DENUNCIAR: é o que coloca o item na fila ────────────────────────
+  // ── 4. DENUNCIAR: e o que coloca o item na fila ────────────────────────
   //
-  // O autor não pode denunciar o próprio post (`canReport`), e sem denúncia
-  // não existe item na fila — ou seja, não existe caminho de UI para ocultar.
-  await cartao.getByRole('button', { name: 'Denunciar post' }).click();
-
-  // `[02/10]` O `ReportModal` NAO tem `role="dialog"` — a raiz dele e um
-  // `.fixed inset-0`. Ancorar num seletor de classe seria fragil, entao o
-  // marcador e o TITULO do modal, que e um `<h3>` e portanto tem papel de
-  // heading. Os controles sao buscados na pagina: enquanto o modal esta
-  // aberto, ele e a unica coisa com `radio`.
-  const tituloDoModal = page.getByRole('heading', { name: /^Denunciar$/ });
+  // O autor nao pode denunciar o proprio post (`canReport`), entao sem a
+  // segunda conta nao existe caminho de UI para ocultar.
+  await noStaff.getByRole('button', { name: 'Denunciar post' }).click();
+  const tituloDoModal = staff.getByRole('heading', { name: /^Denunciar$/ });
   await tituloDoModal.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {
     throw new Error('o modal de denuncia nao abriu depois do clique em "Denunciar post"');
   });
-  await page.getByRole('radio').first().check();
-  await page.getByRole('button', { name: /^Denunciar$/ }).click();
+  await staff.getByRole('radio').first().check();
+  await staff.getByRole('button', { name: /^Denunciar$/ }).click();
   await tituloDoModal.waitFor({ state: 'detached', timeout: 20000 }).catch(() => {
     throw new Error('o modal de denuncia nao fechou — a denuncia pode nao ter sido gravada');
   });
-  aDesfazer.push('a denúncia na fila de moderação (ela sai sozinha ao resolver o item)');
   ok('staff denunciou o post');
 
-  // ── 4. OCULTAR pela fila ───────────────────────────────────────────────
-  await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await aba(page, 'Moderação').click();
+  // ── 5. OCULTAR pela fila ───────────────────────────────────────────────
+  await staff.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await aba(staff, 'Moderação').click();
 
-  const naFila = page.locator('.card', { hasText: MARCA }).first();
+  const naFila = staff.locator('.card', { hasText: MARCA }).first();
   await naFila.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
     throw new Error(
       `o post ${MARCA} nao apareceu na fila de moderacao.\n`
       + '    A denuncia foi gravada (o modal fechou), entao ou o trigger que\n'
-      + '    enfileira nao disparou, ou a fila so lista `pending` e o item ja\n'
-      + '    nasceu com outro status. Confira `moderation_queue`.');
+      + '    enfileira nao disparou, ou o item nasceu com outro status.');
   });
 
   await naFila.getByRole('combobox', { name: 'Ação de moderação' }).selectOption('hide');
   await naFila.getByRole('button', { name: /Confirmar ocultação/ }).click();
 
-  // `[03/10]` ESPERAR o item sair da fila. A 1a versao clicava e navegava
-  // embora no mesmo instante — e o banco mostrou o resultado: `hidden_at`
-  // NULO e o item ainda `pending`, `reviewed_at` nulo. A ocultacao nunca
-  // aconteceu, e o roteiro acusou "ocultei e continua no feed".
-  //
-  // O item sumir da fila e o sinal OBSERVAVEL de que a resolucao terminou —
-  // melhor do que escolher uma das varias requisicoes que ela dispara.
+  // Esperar o item SAIR da fila: e o sinal observavel de que a resolucao
+  // terminou. A 1a versao navegava embora no mesmo instante, e o banco
+  // mostrava `hidden_at` nulo com o item ainda `pending`.
   await naFila.waitFor({ state: 'detached', timeout: 25000 }).catch(async () => {
-    const avisos = (await page.locator('[role="status"]').allInnerTexts().catch(() => []))
-      .map((t) => t.trim()).filter(Boolean);
+    const avisos = await avisosDaTela(staff);
     throw new Error(
       'confirmei a ocultacao e o item NAO saiu da fila.\n'
       + (avisos.length ? `    A TELA DISSE: ${avisos.join(' | ')}\n` : '    A tela nao avisou nada.\n')
-      + '    `hideContent` usa `count: \'exact\'`, entao RLS negando vira erro\n'
-      + '    visivel em vez de sucesso silencioso — se nao houve aviso, a\n'
-      + '    requisicao pode nem ter saido.');
+      + "    `hideContent` usa `count: 'exact'`, entao RLS negando vira erro\n"
+      + '    visivel em vez de sucesso silencioso.');
   });
   aDesfazer.push('o post OCULTADO — desfaz em /admin > Posts > botao "Mostrar post"');
-  ok('staff ocultou o post pela fila (item saiu da fila)');
+  ok('staff ocultou o post pela fila (o item saiu da fila)');
 
-  // ── 5. O post SUMIU do feed ────────────────────────────────────────────
+  // ── 6. O AUTOR deixa de ver. ESTA e a assertiva do fluxo ───────────────
   //
-  // Esta é a assertiva que nenhum teste de RLS dá: a policy pode estar certa e
-  // a tela continuar mostrando, porque a lista veio de um cache do React Query.
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForTimeout(2500);
-  if (await page.locator('h2', { hasText: MARCA }).count()) {
-    // `[03/10]` A versao anterior AFIRMAVA que `hidden_at` estava preenchido —
-    // e nao estava: o item seguia `pending` no banco. Mensagem que afirma a
-    // causa manda investigar o lugar errado (§1.5). Agora ela separa o que e
-    // FATO (o post esta na tela) do que e hipotese.
+  // `[03/10]` A 1a versao conferia o feed do STAFF e acusava um bug que nao
+  // existia: moderador ve conteudo oculto de proposito — o `PostCard` tem
+  // borda propria para `hidden_at`. Quem precisa deixar de ver e o AUTOR.
+  ondeFalhou = comum;
+  await comum.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await comum.locator('[data-publicar="linha"]').waitFor({ state: 'visible', timeout: 30000 });
+  await comum.waitForTimeout(1500);
+  if (await comum.locator('h2', { hasText: MARCA }).count()) {
     throw new Error(
-      `o post ${MARCA} continua no feed depois da ocultacao.\n`
-      + '    FATO: o item saiu da fila (o passo anterior esperou por isso) e o\n'
-      + '    titulo continua visivel no feed.\n'
-      + '    Hipoteses, nesta ordem: a consulta do feed parou de filtrar\n'
-      + '    `hidden_at`; a tela serviu cache sem revalidar; ou a resolucao da\n'
-      + '    fila marcou o item sem escrever em `posts` — que seria o "0 linhas\n'
-      + '    sem erro" que o `count: \'exact\'` existe para impedir.');
+      `o post ${MARCA} foi ocultado e o AUTOR continua vendo no feed.\n`
+      + '    FATO: o item saiu da fila, entao a resolucao terminou.\n'
+      + '    Hipoteses: a policy de SELECT parou de esconder post oculto do\n'
+      + '    proprio dono; a consulta do feed deixou de filtrar `hidden_at`; ou\n'
+      + '    a resolucao marcou o item sem escrever em `posts`.');
   }
-  ok('o post ocultado sumiu do feed');
+  ok('o AUTOR deixou de ver o post ocultado');
 
-  // ── 6. MOSTRAR de novo — a inversa que nasceu em 02/10 ─────────────────
-  await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await aba(page, 'Posts').click();
-
-  const noPainel = page.locator('.card', { hasText: MARCA }).first();
-  await noPainel.waitFor({ state: 'visible', timeout: 30000 });
-  await noPainel.getByText('Oculto').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
-    throw new Error('o painel nao marca o post como "Oculto" — o selo sumiu da lista');
-  });
-
-  await noPainel.getByTitle(/Mostrar post/).click().catch(() => {
-    throw new Error(
-      'o botao "Mostrar post" nao existe para um post OCULTO.\n'
-      + '    Esta e a inversa de ocultar, e sem ela `restoreContent` volta a ser\n'
-      + '    inalcancavel pela tela — o estado de antes de 02/10.');
-  });
-  await page.getByRole('button', { name: /^Mostrar$/ }).click();
-  await page.waitForTimeout(1500);
-  aDesfazer.pop();   // a ocultação foi desfeita
-  ok('staff tirou o post da ocultação pelo painel');
-
-  await sair(page);
-
-  // ── 7. A conta COMUM vê a notificação ──────────────────────────────────
-  await entrar(page, BASE, COMUM.email, COMUM.senha);
-
-  const sino = page.getByRole('button', { name: /^Notificações/ });
+  // ── 7. A notificacao chegou ────────────────────────────────────────────
+  const sino = comum.getByRole('button', { name: /^Notificações/ });
   await sino.waitFor({ state: 'visible', timeout: 30000 });
   const rotulo = await sino.getAttribute('aria-label');
   if (!/\d+ não lidas/.test(rotulo ?? '')) {
     throw new Error(
       `o sino diz "${rotulo}" — nenhuma notificacao nao lida.\n`
       + '    O staff curtiu E comentou o post desta conta, e os dois gatilhos\n'
-      + '    gravam em `notifications`. Se nao chegou, ou o trigger nao disparou,\n'
-      + '    ou a consulta do sino parou de ver as linhas.');
+      + '    gravam em `notifications`.');
   }
-  ok(`o sino mostra notificação nova (${rotulo})`);
-
   await sino.click();
-  const painel = page.locator('.notif-panel');
+  const painel = comum.locator('.notif-panel');
   await painel.waitFor({ state: 'visible', timeout: 10000 });
   const texto = await painel.innerText();
   if (!/coment|curt/i.test(texto)) {
@@ -244,36 +219,55 @@ try {
       'o painel de notificacoes abriu e nao fala de comentario nem de curtida.\n'
       + `    O que ele mostrou: ${texto.slice(0, 200)}`);
   }
-  ok('o painel mostra a notificação do staff');
-
-  // Limpeza: marcar lido tira o "não lidas" e deixa a faxina das 04:00
-  // recolher as linhas em 30 dias.
   await painel.getByRole('button', { name: /Marcar tudo lido/ }).click();
-  await page.waitForTimeout(1000);
-  ok('notificações marcadas como lidas (limpeza)');
+  await comum.waitForTimeout(1000);
+  ok(`o autor viu a notificacao do staff (${rotulo}) e marcou lida`);
 
-  // ── 8. A conta COMUM apaga o post ──────────────────────────────────────
-  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  const meu = page.locator('.card')
-    .filter({ has: page.locator('h2', { hasText: MARCA }) }).first();
+  // ── 8. MOSTRAR de novo — a inversa que nasceu em 02/10 ─────────────────
+  ondeFalhou = staff;
+  await staff.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await aba(staff, 'Posts').click();
+
+  const noPainel = staff.locator('.card', { hasText: MARCA }).first();
+  await noPainel.waitFor({ state: 'visible', timeout: 30000 });
+  await noPainel.getByText('Oculto').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {
+    throw new Error('o painel nao marca o post como "Oculto" — o selo sumiu da lista');
+  });
+  await noPainel.getByTitle(/Mostrar post/).click().catch(() => {
+    throw new Error(
+      'o botao "Mostrar post" nao existe para um post OCULTO.\n'
+      + '    Sem ele `restoreContent` volta a ser inalcancavel pela tela — o\n'
+      + '    estado de antes de 02/10.');
+  });
+  await staff.getByRole('button', { name: /^Mostrar$/ }).click();
+  await staff.waitForTimeout(2000);
+  aDesfazer.pop();
+  ok('staff tirou o post da ocultacao pelo painel');
+
+  // ── 9. O autor volta a ver, e apaga ────────────────────────────────────
+  ondeFalhou = comum;
+  await comum.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const meu = cardDoPost(comum);
   await meu.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
     throw new Error(
       `o post ${MARCA} NAO voltou ao feed depois de "Mostrar post".\n`
-      + '    A inversa aceitou o clique e o post continua escondido — e e assim\n'
-      + '    que `restoreContent` falharia em silencio (0 linhas, nenhum erro).');
+      + '    A inversa aceitou o clique e o post continua escondido — e assim\n'
+      + "    que `restoreContent` falharia em silencio (0 linhas, nenhum erro).");
   });
   ok('o post voltou ao feed depois de ser mostrado');
 
   await meu.getByRole('button', { name: 'Deletar post' }).click();
-  await page.getByRole('button', { name: /^(Deletar|Excluir|Apagar)$/ }).first().click();
-  await page.locator('h2', { hasText: MARCA }).first()
-    .waitFor({ state: 'detached', timeout: 20000 })
+  await comum.getByRole('button', { name: /^(Deletar|Excluir|Apagar)$/ }).first().click();
+  // A exclusao tem contagem regressiva de 5 s antes de acontecer.
+  await comum.locator('h2', { hasText: MARCA }).first()
+    .waitFor({ state: 'detached', timeout: 25000 })
     .catch(() => { throw new Error('o post nao sumiu depois de apagar'); });
   aDesfazer.length = 0;
   ok('conta comum apagou o post (limpeza provada)');
 
-  await sair(page);
-  ok('saiu');
+  await sair(comum);
+  await sair(staff);
+  ok('as duas sessoes sairam');
 } catch (e) {
   console.error(`\n  FALHOU em: passo ${passo + 1}`);
   console.error(`  ${e?.message ?? e}`);
@@ -281,16 +275,15 @@ try {
     console.error('\n  SOBROU EM PRODUCAO, e precisa ser limpo a mao:');
     for (const x of aDesfazer) console.error(`    - ${x}`);
   }
-  await salvarEvidencia(page, { erros, causa: `passo ${passo + 1}: ${e?.message ?? e}` });
+  await salvarEvidencia(ondeFalhou, { erros, causa: `passo ${passo + 1}: ${e?.message ?? e}` });
   await browser.close();
   process.exit(1);
 }
 
-// Exceção de JS em qualquer ponto reprova, mesmo com todos os passos verdes:
-// tela que funciona estourando erro no console é bug esperando escalar.
+// Excecao de JS em qualquer ponto reprova, mesmo com todos os passos verdes.
 if (erros.length) {
-  console.error(`\n  Passos OK, mas houve exceçao de JS: ${erros.join(' | ')}\n`);
-  await salvarEvidencia(page, { erros, causa: `excecao de JS: ${erros.join(' | ')}` });
+  console.error(`\n  Passos OK, mas houve excecao de JS: ${erros.join(' | ')}\n`);
+  await salvarEvidencia(comum, { erros, causa: `excecao de JS: ${erros.join(' | ')}` });
   await browser.close();
   process.exit(1);
 }

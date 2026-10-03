@@ -94,4 +94,20 @@ export async function percorrerChatDaLive(page, { marca, ok }) {
       + '    vazia enquanto o dado existe.');
   });
   ok('chat da live: a mensagem PERSISTIU depois de recarregar');
+
+  // `[03/10]` SAIR da live. Entrar nela muda a URL para `/lives/<id>`, e o
+  // passo seguinte do `lives.mjs` procura a aba "Gameplays" — que so existe na
+  // LISTAGEM. Sem isto, o roteiro morria com um timeout de 30 s esperando um
+  // botao que a tela da live nao tem.
+  //
+  // Pela interface, e nao por `goto`: e o caminho que a pessoa percorre, e o
+  // botao existir faz parte do que vale conferir.
+  await page.getByRole('button', { name: 'Sair da live' }).click().catch(() => {});
+  await page.waitForURL((u) => !/\/lives\/[0-9a-f-]{36}/.test(u.pathname), { timeout: 15000 })
+    .catch(() => { throw new Error(
+      'cliquei em "Sair da live" e a URL continua dentro dela.\n'
+      + `    URL agora: ${page.url()}\n`
+      + '    O passo seguinte procura a aba "Gameplays", que so existe na\n'
+      + '    listagem — deixar a live aberta derruba ele.'); });
+  ok('chat da live: saiu da live e voltou para a listagem');
 }
