@@ -42,6 +42,84 @@
 > *"vamos só resumir tudo, e deixar engatilhado pra próxima sessão pra deixarmos
 > visível o ponto de partida"*. **Esta seção é a primeira coisa a ler.**
 
+#### ⛔ ANTES DE TUDO — o CI está VERMELHO, e a culpa é de um roteiro MEU
+
+> **`[03/10]` 🔴 O E2E `duasContas.mjs` (PR #287, ontem) está SUSPENDENDO a
+> conta de teste a cada execução — e em ~3 execuções ela será BANIDA.**
+
+**O sintoma.** O PR #289, que só tem documentação, reprovou em `fluxos
+autenticados` e `painel de admin num navegador` — e reprovou **de novo** na
+re-execução, então não é instabilidade. A `main` estava verde às 10:54 com o
+mesmo código.
+
+**A causa raiz, provada e não deduzida.** A tabela `violations` tem 4 linhas de
+2 pontos para `@claudetester`, e os quatro horários batem **um a um** com as
+quatro execuções do E2E desde que o roteiro entrou:
+
+| Violação | Execução |
+| --- | --- |
+| 02:05 e 02:13 | as duas do próprio PR #287 |
+| 10:50 | PR #288 |
+| 12:08 | PR #289 — a que falhou |
+
+4 × 2 = **8**, que é exatamente o `mod_suspend_threshold` do `site_config`. O
+trigger `handle_violation_escalation` disparou `apply_mod_auto_suspend` às
+12:08:53 e a conta ficou suspensa **até 10/10**.
+
+**Por que isso derruba DOIS roteiros com um mecanismo só:** `LinhaDePublicar`
+tem exatamente dois `return null` — sem conta e **suspenso**. Suspenso, a linha
+`[data-publicar="linha"]` nunca aparece (o passo 6 esperou 30 s por ela), e ir
+ao vivo é recusado, então o `LiveGoModal` fica **aberto** e intercepta o clique
+seguinte. Um só defeito, dois sintomas que pareciam sem relação.
+
+**O que eu errei, e é a regra que eu mesmo aplico nos outros.** O §5 manda:
+*"toda ação de estado precisa da INVERSA e da LIMPEZA"*. Eu escrevi o desfazer
+de cada passo do roteiro — o post é restaurado, o post é apagado — e **não vi
+que o ponto de infração não tem inversa**. Restaurar o conteúdo não devolve o
+ponto. Ele acumula entre execuções, para sempre.
+
+**E o relógio está correndo:** o `mod_ban_threshold` é **15**. Mais 4
+execuções (8 pontos) e `@claudetester` é **banido automaticamente**.
+
+##### O conserto, em duas partes
+
+**(1) Destravar agora — eu NÃO consegui aplicar.** As duas tentativas de
+escrita pelo MCP voltaram `cancelled`: é o prompt de aprovação que cai sozinho
+no modo automático, o mesmo que ele relatou de manhã. O comando, pronto para
+colar no SQL Editor:
+
+```sql
+-- As 4 linhas são artefato do E2E, não moderação real (reason='spam',
+-- geradas pelo duasContas.mjs). Apagar ZERA a soma e o gatilho para de armar.
+delete from violations v using profiles p
+ where p.id = v.user_id and p.username = 'claudetester';
+
+-- A suspensão sai pela RPC, nunca por UPDATE cru (§5, regra 1): ela grava
+-- em admin_logs e a trilha continua verdadeira.
+select lift_suspension(id) from profiles where username = 'claudetester';
+```
+
+Conferir depois: `select suspended_until from profiles where username =
+'claudetester';` tem de voltar `null`.
+
+**(2) A trava, que é o conserto de verdade.** Sem ela isto volta na 4ª
+execução. Três saídas, e a escolha é dele:
+
+| Saída | O que custa |
+| --- | --- |
+| **o roteiro apaga a própria violação no desfazer** | é a mais fiel ao §5 (a inversa existe de verdade), e não mexe em produto |
+| **conta de teste isenta da escalada** | mais simples, mas cria um caminho que o produto não tem — e o que não é exercitado não é testado |
+| **o roteiro não ocultar de verdade** | perde justamente a cobertura que o PR #287 existiu para criar |
+
+**Minha recomendação é a primeira.** E a trava da trava: um teste que reinjeta
+o caso — roda o desfazer e exige `sum(points) = 0` — senão a próxima versão do
+roteiro volta a esquecer.
+
+**O PR #289 fica ABERTO e vermelho**, de propósito (§8): não é certo empilhar
+merge enquanto a conta de teste caminha para o ban.
+
+---
+
 #### 0. 🚀 A PRIMEIRA TAREFA DE QUINTA — a auditoria do GamerHub como APP ANDROID
 
 > **Prompt dele, entregue no fim da sessão de 03/10**, com a cota já na beira:
@@ -1158,7 +1236,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**56 itens abertos** (+ 1 ideia sem compromisso)
+**57 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2509,6 +2587,12 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   começar pela landing (camada 1). O site logado tem barra lateral e cabeçalho
   próprios, onde rodapé grande disputa espaço com o conteúdo — pode ser que o
   certo lá seja uma versão bem enxuta, ou nenhum.
+
+## 🔴 Crítico
+
+- ⬜ `[03/10]` 🔴 **O E2E `duasContas.mjs` suspende a conta de teste a cada
+  execução — CI VERMELHO, e em ~3 execuções ela é BANIDA.** *Causa raiz provada;
+  o conserto de 2 linhas de SQL está na seção 🚩 PONTO DE PARTIDA, no topo.*
 
 ## 🟠 Importante — dá para fazer
 
