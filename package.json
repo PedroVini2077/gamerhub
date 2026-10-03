@@ -15,6 +15,7 @@
     "test:e2e:lives": "node e2e/lives.mjs",
     "test:portas": "node e2e/portas-fechadas.mjs",
     "test:e2e:painel": "node e2e/painel-admin.mjs",
+    "test:e2e:duas-contas": "node e2e/duasContas.mjs",
     "test:e2e:quadros": "node e2e/quadros-de-video.mjs",
     "test:e2e:visivel": "node e2e/conteudo-visivel.mjs",
     "mapa": "node scripts/mapa-de-arquivos.mjs",

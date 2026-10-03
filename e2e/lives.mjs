@@ -15,29 +15,24 @@
  *
  * ── As DUAS camadas, que é o ponto do pedido ────────────────────────────────
  *
- * | Camada | O que ela responde |
- * | --- | --- |
- * | **produto** (navegador) | a tela mostra o estado certo? |
- * | **API/banco** (token real) | o que ficou GRAVADO é o mesmo que a tela diz? |
+ * O navegador responde "a tela mostra o estado certo?"; o token real responde
+ * "o que ficou GRAVADO é o mesmo que a tela diz?".
  *
- * A segunda camada usa o **token de verdade do usuário**, obtido no endpoint de
- * auth — não `SET LOCAL role` numa transação SQL. Essa diferença importa: a
- * transação prova a RLS, o token prova o **caminho inteiro** (PostgREST, JWT,
+ * A segunda camada usa o **token de verdade do usuário**, não `SET LOCAL role`:
+ * a transação prova a RLS, o token prova o **caminho inteiro** (PostgREST, JWT,
  * policy, trigger). Foi por não ter a segunda que a SEC-027 precisou ser
  * testada duas vezes.
  *
- * ── A regra que ele repetiu, e que este arquivo obedece ─────────────────────
- *
- * *"Não confunda HTTP com sucesso."* Nenhum passo aqui conclui nada por `204`
- * ou `200 []`: todo ataque é seguido de uma RELEITURA do estado persistido.
- * Foi assim que um "achado confirmado" do pentest anterior virou falso positivo
- * — o `UPDATE` era aceito e o trigger revertia por baixo.
+ * *"Não confunda HTTP com sucesso."* Nenhum passo conclui nada por `204` ou
+ * `200 []`: todo ataque é seguido de uma RELEITURA do estado persistido — foi
+ * assim que um "achado confirmado" do pentest virou falso positivo.
  *
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/lives.mjs
  * Exige E2E_EMAIL e E2E_PASSWORD (conta comum).
  */
 import { abrirNavegador, exigirServidor, salvarEvidencia, recusarSeBanido } from './util.mjs';
 import { marcaDeTeste } from './publicarPost.mjs';
+import { percorrerChatDaLive } from './chatDaLive.mjs';
 
 const BASE  = process.env.SMOKE_BASE ?? 'http://localhost:4173';
 const EMAIL = process.env.E2E_EMAIL;
@@ -192,6 +187,12 @@ try {
   if (linha.live_ended_at)  throw new Error('live recem-criada ja nasceu com live_ended_at (SEC-034)');
   if (linha.expires_at)     throw new Error('o cliente conseguiu gravar expires_at (SEC-027)');
   ok('banco concorda com a tela: no ar, was_live derivado, sem data de fim');
+
+  // ── 3b. `[02/10]` O CHAT da live ──────────────────────────────────────────
+  // Entra aqui porque a live está NO AR — a policy de INSERT de `live_chat`
+  // exige isso, e depois do passo 5 ela não está mais. O porquê de ele existir
+  // está no cabeçalho de `chatDaLive.mjs`.
+  await percorrerChatDaLive(page, { marca: TITULO, ok });
 
   // ── 4. O ATAQUE, com o token REAL do usuario ──────────────────────────────
   // Este e o passo que a transacao SQL nao consegue fazer: bater na REST API

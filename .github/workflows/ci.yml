@@ -894,6 +894,34 @@ jobs:
           E2E_STAFF_EMAIL: ${{ secrets.E2E_STAFF_EMAIL }}
           E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
 
+      # `[02/10]` COMUM x MODERADOR — os três fluxos que a lista de 18/09 ainda
+      # pedia e que, medidos, são o MESMO cenário: os gatilhos de notificação
+      # pulam o próprio autor, e `canReport` exclui o autor do post. Nenhum
+      # deles existe com uma conta só.
+      #
+      # Fica NESTE job, e não num novo, por duas razões:
+      #
+      #   1. ele é o único que já tem a conta de staff e o grupo de
+      #      concorrência dela. Um job precisa das DUAS contas, e o GitHub só
+      #      aceita UM grupo por job — então ele toma o mais escasso;
+      #   2. o servidor de preview já está de pé aqui.
+      #
+      # **Rodar junto do `fluxos` (mesma conta comum) é seguro, e isso é
+      # medido, não suposto:** cada roteiro marca o próprio post com o relógio
+      # (`marcaDeTeste`), então nenhum toca no do outro; e o logout do site é
+      # de escopo LOCAL — há trava para isso (`logoutEhLocal.test.js`), que
+      # nasceu justamente porque o padrão do supabase-js é global e sair num
+      # lugar derrubava o outro.
+      - name: Comum x moderador — notificação, ocultar e a inversa
+        if: steps.conta.outputs.rodar == 'sim'
+        run: npm run test:e2e:duas-contas
+        env:
+          SMOKE_BASE: http://127.0.0.1:4173
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_STAFF_EMAIL: ${{ secrets.E2E_STAFF_EMAIL }}
+          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD }}
+
       - name: Guardar a evidência da falha
         if: failure()
         uses: actions/upload-artifact@v7

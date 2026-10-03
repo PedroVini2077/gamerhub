@@ -86,3 +86,38 @@ export async function recusarSeBanido(page) {
     + '  Desbane a conta no painel (ou por unban_user) e rode de novo.\n'
     + `  Motivo mostrado na tela: ${motivo.slice(0, 200)}`);
 }
+
+/**
+ * `[02/10]` ENTRAR e SAIR — extraídos porque o roteiro de duas contas seria a
+ * QUARTA cópia do mesmo trecho (§6.1: mesma lógica em 2+ lugares, extrair).
+ *
+ * `fluxos.mjs`, `lives.mjs` e `painel-admin.mjs` continuam com a versão inline
+ * deles: migrá-los exigiria tocar o `painel-admin.mjs`, que está em 449 linhas
+ * e me obrigaria a dividi-lo no meio de outra tarefa (§4). Está no `BACKLOG.md`
+ * com esse motivo — e é dívida declarada, não esquecida.
+ *
+ * O `// ENTRAR` exato não é capricho: a aba "Entrar" do topo do card também
+ * casa com `/entrar/i`, e o Playwright recusa seletor ambíguo (ainda bem).
+ */
+export async function entrar(page, base, email, senha) {
+  await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.locator('#email').waitFor({ state: 'visible', timeout: 20000 });
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill(senha);
+  await page.getByRole('button', { name: '// ENTRAR' }).click();
+
+  // A sessão demora a resolver; o cabeçalho com o botão Sair é o sinal mais
+  // barato de que ela resolveu, e serve para conta comum E de staff.
+  await page.getByRole('button', { name: /^Sair$/i })
+    .waitFor({ state: 'visible', timeout: 30000 })
+    .catch(() => { throw new Error(`nao consegui entrar como ${email} — o botao Sair nao apareceu`); });
+  await recusarSeBanido(page);
+}
+
+/** Sai e ESPERA a sessão cair — sem isso o próximo login corre com o antigo. */
+export async function sair(page) {
+  await page.getByRole('button', { name: /^Sair$/i }).click();
+  await page.getByRole('button', { name: /^Sair$/i })
+    .waitFor({ state: 'detached', timeout: 20000 })
+    .catch(() => { throw new Error('o logout nao derrubou a sessao — o botao Sair continua na tela'); });
+}
