@@ -44,7 +44,7 @@ import { pedirAoModelo } from "./modelo.ts";
 
 // A impressao deste codigo. Gerada por `npm run impressao-edges` — NAO editar a
 // mao. Um GET devolve este valor, e o portao do CI compara com o do repositorio.
-const IMPRESSAO_DESTE_CODIGO = "4a318093d5a4a49c";
+const IMPRESSAO_DESTE_CODIGO = "290c13067963523b";
 
 const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
