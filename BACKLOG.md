@@ -36,247 +36,94 @@
 ## 🔄 EM EXECUÇÃO
 
 
-### 🔵 `[02/10]` RADAR DE PAUTAS — as Fases 1, 2 e 3 estão FEITAS
+### 🚩 `[03/10]` PONTO DE PARTIDA — quando você voltar (quinta)
 
-> **`[02/10]` Conferido contra o sistema.** As três fases que não dependiam de
-> ninguém estão no ar: a 2ª fonte de coleta (Fase 1), o agrupamento visível com
-> selo de confiabilidade (Fase 2) e o sinal de aceleração (Fase 3). **801
-> manchetes** em `news_items_raw`, de 15 fontes.
->
-> **Falta só a Fase 4 — YouTube e comunidade.** `[02/10]` **A chave já existe:**
-> ele criou a `YOUTUBE_API_KEY` no mesmo dia e o navegador respondeu `200` com
-> `regionCode: "BR"`. O que falta agora é só código — ver o item da Fase 4 na
-> fila.
->
-> O histórico de como cada fase chegou aqui fica abaixo, porque cada uma
-> desmentiu uma previsão minha — e é isso que não pode se perder.
+> Escrito a pedido dele no fim da sessão de 02–03/10, com a cota na beira:
+> *"vamos só resumir tudo, e deixar engatilhado pra próxima sessão pra deixarmos
+> visível o ponto de partida"*. **Esta seção é a primeira coisa a ler.**
 
+#### 1. EM EXECUÇÃO está VAZIO — não há tarefa pela metade
 
-**Pedido dele em 01/10.** O radar hoje responde *"o que as fontes que escolhemos
-publicaram?"*. Ele quer que responda também *"o que está começando a pegar fogo
-agora e interessa ao GamerHub?"*.
+O radar de pautas fechou inteiro: as Fases 1, 2, 3 e **4** estão no ar, e a
+`YOUTUBE_API_KEY` está nos secrets (provado pelos cliques dele: `7 videos hoje`,
+`15`, `4`). O histórico de como cada fase desmentiu uma previsão minha **não se
+perdeu** — ele está em [`docs/regras/COTAS.md`](docs/regras/COTAS.md), que é
+onde cota mora, e nos PRs #284 a #286.
 
-**Ele deixou explícito** (2º prompt): GTA 6, Marvel e afins são **só exemplos de
-teste**. Nada de palavra-chave, fonte, peso ou tratamento especial para assunto
-nenhum — o motor tem de ser **genérico** para as 9 editorias.
+#### 2. O que estas 24 horas fecharam — 16 PRs, #273 a #287
 
-**Medido no banco em 01/10:** 15 fontes (13 ativas) · 212 `news_items_raw`,
-todos das últimas 24h · `processado` = 0 em todos (a coluna existe e **ninguém
-a usa**) · 4 artigos · `news_tags` e `news_article_tags` **vazias**.
+| | |
+| --- | --- |
+| **SEC-055** | `buscar_pessoas('%%')` devolvia a base inteira **com os cargos** a qualquer pessoa logada. Não era injeção: era o coringa do `ILIKE` chegando cru |
+| **SEC-056** | **toda função nova nascia aberta** para `anon` **e `PUBLIC`**. A proteção era eu lembrar do `REVOKE`; agora é um event trigger do banco |
+| **Retenção híbrida** | `admin_logs` crescia 139 linhas/dia (pico 924) sem teto de quantidade. Hoje tem teto, com margem de 125% para não cortar toda noite |
+| **Radar Fase 4** | o sinal de vídeo do YouTube — **1 busca por clique**, contra as 100/dia que `search.list` permite |
+| **Auditoria E2E** | os 4 fluxos que faltavam da lista de 18/09. Três eram o mesmo cenário: só existem com **duas contas** |
+| **Portão de tipos** | as Edge Functions são TypeScript e **nada as compilava**. 3 das 10 tinham erro — uma era bug real |
+| **Advisories aceitos** | `braces` não tem versão corrigida. Em vez de desligar o portão, ele passou a exigir motivo, data e **condição de saída** |
 
-**O que ele pediu ANTES de qualquer código:** auditoria da arquitetura atual
-(12 pontos), avaliação técnica comparada de fontes de descoberta (Brave News,
-NewsAPI, GDELT, Google Trends, YouTube Data, Reddit), e uma primeira entrega
-com 6 partes — diagnóstico, arquitetura, tabela de fontes, mudanças
-necessárias, rollout incremental e critérios de sucesso.
+#### 3. O que falta, por ordem de quem decide
 
-**Princípio que não pode cair:** descoberta ≠ evidência ≠ análise ≠ decisão
-editorial. A IA agrupa e sugere; ela **não** é fonte. Classificação obrigatória
-dos sinais: confirmado · relato · rumor · vazamento · tendência · discussão.
-Sem "score mágico" — se houver ordenação, ela é explicável por sinal.
+**Depende só de código** (posso tocar sem você):
 
-**Estado:** auditoria entregue, e **a FASE 1 está feita** (`[01/10]`): a GDELT
-entrou como 2º coletor, ao lado do RSS.
+- 🟠 **Tailwind 4** — é a única saída real do advisory do `braces`, e é migração
+  de verdade (o motor de CSS muda). Está na fila abaixo com a conta feita.
+- 🟠 **Contador de tentativas de login** — nunca foi LIGADO. Precisa do
+  Password Verification Hook, e o passo a passo pesquisado já está no
+  `OPERACAO.md`.
+- 🟢 O resto da fila: 55 itens, quase todos 🔵/🟢.
 
-> **O que a Fase 1 entregou, e o que ela NÃO prova ainda.** As consultas são
-> **linhas de `news_sources`** com `tipo = 'api'` — nenhum assunto no código, e
-> uma trava varre a Edge Function para garantir isso. Nenhuma migration de
-> schema foi precisa: o `CHECK` já aceitava `'api'` desde a fundação do News
-> (medido, não suposto).
->
-> **O que eu NÃO consegui verificar:** a GDELT respondeu `429` em **todas** as
-> tentativas daqui — inclusive uma sozinha depois de 70 s de silêncio. O teto
-> dela é 1 req/5 s **por IP**, e o IP deste ambiente é compartilhado. Hipótese,
-> não fato (§1.1): o IP da Edge Function é outro, e só o primeiro clique de
-> verdade responde. Por isso o `429` é tratado como caso ESPERADO — vira linha
-> em `comFalha`, a tela diz, e o RSS segue intacto.
->
-> ### `[01/10]` DOIS cliques reais: o radar FUNCIONA, a GDELT foi DESLIGADA
->
-> **O radar entrega.** 170 manchetes de 13 feeds, Groq aceita, pautas agrupadas
-> (uma com 4 veículos sobre o mesmo acontecimento), endereços resolvidos por
-> número, **zero erro** em `admin_logs` nos dois cliques.
->
-> **A GDELT não serve, e está desligada** (`ativa = false`). Sete tentativas,
-> dois IPs, **zero sucessos** — o 2º clique, já com timeout de 20 s, mostrou a
-> resposta real: `429` na PRIMEIRA requisição, sem espaçamento envolvido. O
-> orçamento de 1 req/5 s daquele IP já estava gasto por terceiros.
->
-> **⚠️ O gatilho que eu tinha escrito aqui estava ERRADO, e corrijo:** eu disse
-> que o próximo passo seria `EdgeRuntime.waitUntil()`. **Não resolveria** — o
-> problema nunca foi tempo, é cota por IP, e segundo plano dá mais relógio e
-> zero cota. A história completa está em `DECISOES.md`.
->
-> **✅ Ele decidiu, e o Google News RSS entrou no lugar — sem uma linha de
-> código.** Ele é RSS, então as duas consultas são `tipo='rss'` e caem no
-> coletor que já existia. 100 itens, 15 lidos, 1 segundo, e traz veículos
-> fora dos nossos 13 feeds. O trade-off aceito: o link é um redirecionador do
-> Google, e o título carrega o nome do veículo.
->
-> **Um defeito nosso que ele revelou:** o `description` do Google News repete
-> o título, e mandar os dois ao modelo custaria duas vezes o mesmo fato no
-> pedido com teto medido. O `lerFeed` passou a descartar resumo redundante —
-> regra genérica, com trava nos dois sentidos.
->
-> ### 🟠 `[01/10]` 3º clique: o Google News deu `HTTP 503` — causa DESCONHECIDA
->
-> O radar entregou de novo (170 manchetes de 13 feeds, pautas boas: QSSR do
-> PS5 com 4 veículos, Steam Autumn Sale, Gears of War). Mas as duas buscas
-> amplas voltaram `503`.
->
-> **Descartado medindo:** não é o `User-Agent` — daqui o Google News responde
-> `200` em 1 s com três UAs, inclusive o nosso exato.
->
-> **Em aberto:** instabilidade do serviço × bloqueio do IP de datacenter da
-> Edge Function. A segunda é a mesma classe da GDELT. **Um clique não
-> decide**, e eu não alcanço os logs da Edge Function daqui.
->
-> **O que entrou:** retentativa única para `5xx` (semântica do HTTP), com
-> `429`/`4xx` explicitamente de fora. Se as duas falharem, a tela diz *"503
-> nas duas tentativas"*.
->
-> ### `[01/10]` O 4º clique: TRÊS achados, e o gatilho que eu escrevi era RUIM
->
-> **1. `HTTP 400` de novo — mas por outro motivo.** O `failed_generation` veio
-> **truncado** (`"Nintendo lança bundle... EA Spor`), não vazio: o raciocínio
-> coube, a RESPOSTA não. Eu estimava ~125 tokens por pauta; são ~160, e 8
-> pautas não cabiam em 1.000. **Terceira vez que erro esse número, sempre com
-> a conta na cabeça e nenhuma no teste** — agora a relação é trava.
->
-> **2. "170 manchetes de 0 fontes".** Só o retorno de SUCESSO carregava
-> `fontes`; os cinco caminhos de falha não, e o cliente faz `?? 0`. A tela
-> mentia justamente quando já havia outro problema. Virou montador único.
->
-> **3. O `503` é INTERMITENTE, e eu quase concluí errado.** O gatilho que eu
-> tinha escrito aqui dizia *"se der 503 nas duas de novo, é bloqueio"* — e eu
-> **desliguei as duas fontes**. Antes de escrever a decisão, conferi o banco:
-> elas trouxeram **15 itens cada às 19:21**. Funcionaram. `503` às 20:58 e
-> `200` às 19:21, mesmo IP. **Religadas.**
->
-> **A lição é sobre o gatilho, não sobre o Google.** Eu escrevi um que olhava
-> só o SINTOMA ("deu 503 duas vezes?") e não o HISTÓRICO ("alguma vez
-> funcionou?"). Gatilho de uma amostra decide errado quando o fenômeno é
-> intermitente — e `news_items_raw` tinha a resposta o tempo todo, porque
-> **item coletado é prova de sucesso que sobrevive ao clique**.
+**Depende de você** (decisão, não clique):
 
-> ### ✅ `[01/10]` FASE 2 FEITA — agrupamento verificável + confiabilidade
->
-> **Duas descobertas que mudaram o plano, antes de escrever código:**
->
-> **1. O agrupamento JÁ EXISTE.** A instrução ao modelo já manda *"junte
-> manchetes que falam do MESMO assunto numa pauta só"*, e funciona — medido
-> no clique de 15:38, a pauta do QSSR agrupou 4 veículos. Então a Fase 2 não
-> **cria** o agrupamento: ela o torna **verificável** (a tela diz quantos
-> veículos sustentam o evento) e acrescenta a classificação.
->
-> **2. Classificar a partir de manchete é LEITURA DE MANCHETE.** O modelo vê
-> título + 160 chars de resumo. Dizer "confirmado" com base nisso é afirmar
-> sobre o mundo a partir de um título — a mesma família do "fonte inventada"
-> que já está travada. **A classificação descreve o que a MANCHETE AFIRMA, e
-> isso vai escrito na instrução, no nome e na tela.**
->
-> **3. `tendencia` e `discussao` NÃO entram agora.** O plano define seis
-> valores, mas as fontes de hoje são todas veículo jornalístico: nenhuma
-> produz "aumento de atenção" ou "comunidade falando". Entrar com os seis
-> criaria dois valores que nenhuma fonte alcança — código morto por
-> construção (§6.1). Eles entram na **Fase 3**, junto com Trends/Reddit, que
-> é de onde eles vêm.
->
-> **Entram quatro:** `confirmado` · `relato` · `rumor` · `vazamento`.
->
-> **Custo medido:** +1 campo de uma palavra por pauta ≈ 6 tokens × 8 = 48. O
-> `TOKENS_POR_PAUTA` subiu de 160 para 170 e a trava reconferiu a conta — foi
-> exatamente esse descuido que quebrou o radar três vezes hoje.
->
-> **Entregue:** vocabulário de 4 valores com `enum` no esquema (aqui o `enum`
-> é certo — são 2 cópias, não 3, e a trava cobre as duas), selo na tela com
-> dica, contagem de veículos quando o evento tem mais de um, e a ressalva
-> *"como a MANCHETE se apresenta"* acima da lista. Quatro reinjeções provaram
-> a trava.
->
-> ### 🔄 `[01/10]` FASE 3 EM EXECUÇÃO — e ela TROCOU DE FONTE
->
-> **As duas fontes que o plano previa estão mortas**, e isso foi medido, não
-> suposto:
->
-> | fonte do plano | estado |
-> | --- | --- |
-> | `TimelineVol` do GDELT | a GDELT foi **desligada hoje** — 7 tentativas, 2 IPs, 0 sucessos |
-> | Google Trends | **rejeitado na auditoria** por trazer loteria e futebol; ele mesmo reclamou disso |
->
-> Dizer "a Fase 3 não dá" seria verdade e inútil. O valor dela é **um sinal de
-> aceleração anexado ao evento** — e o banco já tem com que produzi-lo:
->
-> ```
-> 772 itens · 5 dias distintos · 17 fontes
->
-> Gears of War / E-Day    25/09:  1 menção
->                         28/09:  2 menções
->                         01/10: 16 menções   <- 8x o dia anterior
-> ```
->
-> **A fonte do sinal passa a ser o NOSSO histórico.** É melhor que a original
-> em três eixos: não depende de fornecedor que nos bloqueia, não precisa de
-> chave nem de ação dele, e usa dado que já pagamos para coletar.
->
-> **O que isso NÃO é:** não é Trends. Ele mede o mundo inteiro procurando; nós
-> medimos **os veículos que escolhemos publicando**. É um sinal mais estreito e
-> mais honesto — "a imprensa de games está falando mais disso hoje do que
-> ontem", não "o Brasil está buscando isso".
->
-> **O limite, com todas as letras:** 5 dias de histórico é base fina. Assunto
-> que nasceu hoje não tem com que comparar, e o sinal vai dizer "novo", que é
-> a verdade. A base engorda sozinha a cada clique.
->
-> #### ✅ `[01/10]` A FASE 3 FOI ENTREGUE
->
-> RPC `news_aceleracao_de_termos` (faixas de 1–30 dias e 20 termos, `%`/`_`
-> escapados, `REVOKE` de `anon`/`authenticated` **provado assumindo os dois
-> papéis**), o modelo passou a devolver até 3 `termos` por pauta, e o sinal vai
-> para a tela como selo com dica. Medido na produção: `Xbox` 22×20 → **nenhum
-> rótulo** (é sempre mencionado), `Gears of War` 15×3 → **5x o normal**. É o
-> melhor argumento de que a régua não grita à toa.
->
-> **O sinal roda por ÚLTIMO e numa chamada só** — 8 pautas × 3 termos é 1
-> consulta, não 24 —, e falha dele devolve mapa vazio: enfeite não custa pauta.
-> Cinco reinjeções provaram a trava.
->
-> #### 🐛 `[01/10]` E a divisão do arquivo revelou um BUG REAL, já corrigido
->
-> O `index.ts` passou de 300 linhas (§4), e ao extrair a tradução do erro da
-> Groq apareceu isto: havia um `const corpo = await res.text()` **dentro** do
-> `if (!res.ok)`, e o montador da resposta também se chama `corpo()`. A string
-> sombreava a função, `corpo({...})` lançava `TypeError`, o `try/catch` em volta
-> engolia — e **toda** recusa da Groq chegava na tela como *"A IA respondeu algo
-> que eu nao entendi"*. Reproduzido fora do projeto antes de afirmar.
->
-> O `admin_logs` ficava **certo** (o `gritar` acontece antes), então a mentira
-> era só para quem clicou. É o §1.5 na letra: mensagem errada manda investigar
-> o lugar errado. A tradução virou `falhaDaGroq.ts`, pura e com teste; a sombra
-> virou checagem no texto-fonte.
+- 🟠 **Migrar o email para fora do Gmail** — hoje são ~500 envios/dia e o
+  cadastro para quando estourar. Escolher o provedor é decisão de custo.
+- **A reorganização documental** (Fase 0 feita, esperando aprovação) — está na
+  fila abaixo.
 
-> ### 🔴 `[01/10]` ANTES DA FASE 1: o radar nunca funcionou em produção
->
-> Ele mandou olhar os logs antes de implementar, e tinha razão. Medido em
-> `admin_logs`: **7 de 7 chamadas** entre 26 e 28/09 recusadas com `HTTP 413`.
-> Não é "a IA às vezes falha" — é **nunca ter ordenado uma pauta no ar**.
->
-> Causa raiz, no corpo do erro que a própria função gravou: `tokens per minute
-> (TPM): Limit 8000, Requested 9231`. Teto por minuto aplicado a **uma
-> requisição só**, e a Groq soma o `max_tokens` ao pedido.
->
-> **Corrigido neste bloco** (ver `docs/regras/COTAS.md` e `SEGURANCA.md`):
-> lista numerada sem URLs (−6.027 chars medidos), resumo cortado em 160 para o
-> modelo (o inteiro continua nas notas), `max_tokens` de 2.500 → 1.300, e
-> orçamento de caracteres **derivado** do teto, não digitado. Pedido máximo
-> estimado: **exatamente 6.000** tokens — 75% do teto, por construção, contra os
-> 9.302 estimados do formato antigo (a Groq mediu 9.231 naquele: o estimador
-> erra 0,8% para cima, que é o lado seguro).
->
-> **Trava:** `radarDePautasNaoInventa.test.js` passou a executar a lógica em
-> vez de varrer o texto-fonte. Provada reinjetando quatro vezes.
+#### 4. A VISÃO DE FUTURO envelheceu — TRÊS itens já existem
+
+Você pediu para eu olhar [`docs/VISAO-DE-FUTURO.md`](docs/VISAO-DE-FUTURO.md) e
+dizer o que já dá para fazer. **Antes disso veio um achado:** o documento
+propunha três coisas que **o site já tem**. Conferido no código, não na memória:
+
+| O que ele propunha | O que existe hoje |
+| --- | --- |
+| 📰 **Notícias gamer** — *"curadoria manual antes de qualquer integração"* | o **GamerHub News inteiro**: 5 tabelas, painel, corte editorial, IA que rascunha e o radar de pautas com 4 fases |
+| 🔎 **Busca global** — *"busca por usuário primeiro"* | `Busca.jsx` + `buscaService.js` já buscam **pessoas E posts**. Falta lives e jogos |
+| 🤝 **Presença** — *"reaproveitam o canal de presença que já existe"* | `hooks/usePresenca.js` existe e funciona — o canal está de pé |
+| A tela de **boas-vindas** depois de entrar (ideia 1 de 04/09) | `lib/boasVindas.js` + a tela, com piso e teto de tempo |
+
+**Isto é exatamente a falha que o próprio documento registrou em 17/09**, quando
+você pegou que "Conquistas" já existia: *"item que sai daqui tem que ser riscado
+daqui no mesmo PR"*. A regra foi escrita e não foi cumprida — por mim, três
+vezes. O documento foi corrigido neste PR.
+
+#### 5. O que da VISÃO DE FUTURO já dá para fazer HOJE
+
+Critério: aproveita o que já existe, cabe numa sessão, e não depende de volume
+de gente. **Em ordem de recomendação:**
+
+| | Ideia | Por que já dá, e qual é a menor versão |
+| --- | --- | --- |
+| **1º** | 🔎 **Terminar a busca global** | o mais barato da lista. A busca já tem RPC, tela, teto e trava contra o coringa — falta **lives e artigos do News** entrarem nela. É acrescentar duas consultas a uma tela que já existe |
+| **2º** | 🖥️ **A aba "Porta de entrada"** no painel | *"quase tudo já é gravado"*, e isso continua verdade: `dbHealth`, as cotas do Gmail e do Safe Browsing e as Edge Functions **já gritam em `admin_logs`**. Falta a TELA que separa "quebrou na porta" de "quebrou lá dentro". É a sua dor de 05/09, e é §1.5 puro |
+| **3º** | 🏅 **Perder XP por infração** | o `ACTION_POINTS` da fila de moderação **já classifica a gravidade**. A menor versão não cria tabela nem decisão nova. **Mas tem 5 perguntas abertas** (piso, visibilidade, a inversa) e elas são suas |
+| **4º** | 🎬 **Clips** | a moderação de mídia por IA já cobre vídeo (por amostragem de quadros, documentado). Seria um marcador a mais no post |
+| **5º** | 🔇 **Silenciar por tempo numa live** | a menor versão é um campo de minutos no modal e um `now()` na leitura |
+
+**O que eu NÃO recomendo começar agora**, e o motivo é o mesmo para os três:
+🎤 salas de voz, 🏅 torneios e 👥 comunidades **dependem de gente**, não de
+código. Construí-los hoje é construir para uma sala vazia — a própria VISÃO já
+diz isso das expansões maiores, e vale igual para estes.
+
+**E uma que mudou de resposta nesta sessão:** 📺 **compartilhar tela estilo
+Discord** — dá para fazer, mas `getDisplayMedia()` **não existe em navegador de
+celular nenhum** (iOS Safari, Chrome Android, Firefox Android, Samsung Internet,
+Opera Mobile — todos). Medido em 02/10. Como você usa o site pelo celular, isso
+decide sozinho.
 
 ---
+
 ### ✅ `[25/09]` AS DUAS PERGUNTAS DELE — respondidas E implementadas
 
 Ele aprovou as duas recomendações e mandou fazer. O que entrou:
@@ -2576,31 +2423,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
-
-- ⬜ `[02/10]` 🟡 **CONFERIR que a `YOUTUBE_API_KEY` está nos secrets das Edge
-  Functions** — não basta existir no Google Cloud. *Ação dele, 30 segundos.*
-
-  A Fase 4 foi entregue e **o radar funciona sem a chave** — ele só não mostra
-  o selo de vídeo, e diz na tela que a chave não está configurada. Então isto
-  não é bloqueio: é a diferença entre a feature estar ligada e estar muda.
-
-  **Onde (URL direta):**
-  `https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/functions/secrets`
-
-  **O que ele vai ver:** a lista de secrets das Edge Functions. Procurar
-  `YOUTUBE_API_KEY`. Se não estiver lá, "Add new secret" → nome exatamente
-  `YOUTUBE_API_KEY` → o valor da chave do Google Cloud.
-
-  **Como conferir que deu certo:** clicar em "Buscar pautas" no painel do News.
-  Se a chave estiver certa, as pautas com assunto quente ganham um selo
-  vermelho `N videos hoje`. Se não estiver, aparece na lista de fontes que não
-  responderam: *"YOUTUBE_API_KEY nao esta configurada — o sinal de video fica
-  de fora"*.
-
-  **Conferido antes de pedir o clique (§9.12):** o código lê a chave **sem**
-  `!` (`Deno.env.get("YOUTUBE_API_KEY")`, sem asserção de não-nulo), então
-  secret ausente não derruba a função — testado em
-  `radarSinalDeVideo.test.js`. Pôr a chave é seguro; não pôr também.
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*

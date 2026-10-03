@@ -57,9 +57,36 @@ valor.** Nenhuma destas ideias precisa nascer inteira, e quase nenhuma deveria.
 | 📅 | **Eventos** | um post fixado com data, e quem confirma presença |
 | 🏅 | **Torneios** | um evento com chave simples de eliminação; ranking e equipes vêm depois |
 | 🎤 | **Salas de voz** | é a mais cara da lista — sala de texto ao vivo primeiro, voz só se a de texto pegar |
-| 🤝 | **Amigos e presença** | seguir alguém; "jogando agora" e "ao vivo agora" reaproveitam o canal de presença que já existe |
-| 📰 | **Notícias gamer** | curadoria manual da equipe antes de qualquer integração automática |
-| 🔎 | **Busca global** | busca por usuário primeiro; jogos, posts, lives e o resto entram um por vez |
+| 🤝 | **Amigos e presença** | seguir alguém. O canal de presença **existe** (`hooks/usePresenca.js`) — o que falta é o laço social, não a infraestrutura |
+| ~~📰~~ | ~~**Notícias gamer**~~ | **JÁ FEITO** — ver abaixo |
+| 🔎 | **Busca global** | **METADE FEITA** — pessoas e posts já buscam; faltam lives, artigos e jogos |
+
+> ### `[03/10]` E ACONTECEU DE NOVO — três vezes, e a regra já estava escrita
+>
+> A lição de 17/09, logo abaixo, terminava assim: **"item que sai daqui tem que
+> ser riscado daqui no mesmo PR"**. Ela não foi cumprida. Conferido no código
+> em 03/10, a pedido dele, ao perguntar *"o que já dá pra fazer?"*:
+>
+> | A linha dizia | O sistema tem |
+> | --- | --- |
+> | 📰 Notícias gamer — *"curadoria manual antes de qualquer integração"* | o **GamerHub News inteiro**: `news_sources`, `news_items_raw`, `news_articles`, `news_tags`, painel, corte editorial, IA que rascunha, e o radar de pautas com as 4 fases |
+> | 🔎 Busca global — *"busca por usuário primeiro"* | `pages/Busca.jsx` + `services/buscaService.js`, com `buscar_pessoas` **e** `buscar_posts`, teto de 50 e trava contra o coringa do `ILIKE` (SEC-055) |
+> | 🤝 Presença — *"reaproveitam o canal de presença que já existe"* | `hooks/usePresenca.js`, no ar |
+> | A tela de boas-vindas (ideia 1 de 04/09, abaixo) | `lib/boasVindas.js`, com o piso e o teto que o texto previa |
+>
+> **Por que a regra de 17/09 não bastou, e é o §9.8 na veia.** Ela é "comentário
+> explicando o porquê" — a **mais fraca** das cinco travas do §2 —, e nenhum
+> portão a executa: o território deste arquivo é vazio de propósito, então o
+> varredor de documentação envelhecida não o alcança por commit.
+>
+> **E não vou criar mecanismo novo para isto** (§9.8, perguntas 1 e 6). O custo
+> de um portão que cruzasse "possibilidade" com "código existente" seria
+> permanente, e o estrago aqui é pequeno e visível: o documento recomenda uma
+> coisa pronta, e **o dono pegou nas duas vezes**. O que muda é a regra ganhar o
+> lugar onde ela é lida: a conferência passa a ser parte de **responder com este
+> documento na mão** — se eu for propor uma linha daqui, confiro no código antes
+> de abrir a boca. É o §1.4 (*documento envelhece, o sistema não mente*) aplicado
+> à fonte que eu mesmo consulto.
 
 > ### `[17/09]` CONQUISTAS saíram da lista — elas já EXISTEM
 >
@@ -134,6 +161,13 @@ mapa.
 > uma decisão dele**. O backlog carrega o ponteiro e a decisão pendente.
 
 ### 1. A tela de boas-vindas depois de entrar
+
+> **`[03/10]` FEITO.** Conferido no código: `src/lib/boasVindas.js` responde as
+> duas perguntas difíceis (*"entrou AGORA?"* e *"é a primeira vez?"*) fora do
+> componente, justamente para serem testáveis sem navegador. O desenho abaixo
+> foi seguido — inclusive o piso e o teto de tempo, que é a regra 3 do §0.3.
+> O texto fica como registro de **por que** ela é assim.
+
 
 **O que ele descreveu:** em vez do redirecionamento seco, uma tela rápida —
 *"seja bem-vindo (nome), preparando tudo pra você"* na primeira vez, *"bem-vindo
