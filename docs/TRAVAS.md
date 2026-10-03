@@ -93,6 +93,8 @@ deriva que não estoura em lugar nenhum.
 | `retencaoHibrida.test.js` | `INV-TRILHA-003` |
 | `radarSinalDeVideo.test.js` | `INV-EDIT-014` |
 | `perfilTemOsCamposDoE2e.test.js` | `INV-TELA-018` |
+| `duasContasAchaAsTelas.test.js` | `INV-TELA-019` · `INV-TELA-020` |
+| `falhaDoE2eEhLegivelDeFora.test.js` | `INV-TELA-021` |
 | `colunasPrivilegiadasDeProfiles.test.js` | `INV-PORTA-003` |
 | `contadorDeLoginFechado.test.js` | `INV-PORTA-005` |
 | `trilhaNaoEhForjavel.test.js` | `INV-TRILHA-001` |

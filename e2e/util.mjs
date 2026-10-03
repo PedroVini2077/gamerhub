@@ -49,7 +49,33 @@ export async function exigirServidor(base) {
  * Sem isto, um E2E que falha no CI só diz "timeout" e ninguém descobre o porquê
  * sem reproduzir na mão. Screenshot + texto da tela + URL + exceções de JS.
  */
-export async function salvarEvidencia(page, { erros = [] } = {}) {
+/**
+ * `[03/10]` A falha do E2E passa a ser legível FORA do log do job.
+ *
+ * ── O buraco, e ele custou duas rodadas ────────────────────────────────────
+ *
+ * O log de um job do GitHub é servido de outro host (blob storage). Quem lê a
+ * API — eu, e qualquer ferramenta — **não alcança**. Resultado: dois roteiros
+ * novos falharam e o diagnóstico dependeu de alguém abrir o navegador, achar o
+ * job e colar o texto. Isso transforma "o CI reprovou" em "espere por uma
+ * pessoa", que é o oposto do que um portão existe para fazer.
+ *
+ * **Anotação de erro é outra coisa:** ela vive em
+ * `/repos/{owner}/{repo}/check-runs/{id}/annotations`, aparece no topo do PR, e
+ * é lida pela API como qualquer outro dado.
+ *
+ * Por isso a evidência agora sai nos DOIS canais. O log continua tendo o texto
+ * inteiro da tela; a anotação leva o essencial — e `%0A` é como o GitHub
+ * aceita quebra de linha num comando de workflow.
+ */
+function anotarNoCI(titulo, corpo) {
+  if (!process.env.GITHUB_ACTIONS) return;
+  const escapar = (t) => String(t)
+    .replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  console.log(`::error title=${escapar(titulo).slice(0, 120)}::${escapar(corpo).slice(0, 4000)}`);
+}
+
+export async function salvarEvidencia(page, { erros = [], causa = '' } = {}) {
   try {
     mkdirSync('e2e-evidencia', { recursive: true });
     await page.screenshot({ path: 'e2e-evidencia/falha.png', fullPage: true });
@@ -59,6 +85,15 @@ export async function salvarEvidencia(page, { erros = [] } = {}) {
     console.error(`\n  URL no momento da falha: ${page.url()}`);
     if (erros.length) console.error(`  Exceçoes de JS: ${erros.join(' | ')}`);
     console.error('\n  Screenshot em e2e-evidencia/falha.png (artefato do CI).\n');
+
+    // A tela inteira não cabe numa anotação, e nem deve: o que resolve é a
+    // CAUSA mais o endereço. O texto completo continua no log e no screenshot.
+    anotarNoCI(
+      `E2E falhou: ${(causa || 'ver o log').split('\n')[0].slice(0, 100)}`,
+      `${causa}\n\nURL: ${page.url()}`
+      + (erros.length ? `\nExcecoes de JS: ${erros.join(' | ')}` : '')
+      + `\n\n--- primeiras linhas da tela ---\n${texto.slice(0, 1200)}`,
+    );
   } catch { /* evidência é bônus; nunca esconder o erro original */ }
 }
 
@@ -85,4 +120,39 @@ export async function recusarSeBanido(page) {
     + '  A BannedScreen cobre a tela e nenhuma acao do teste alcanca a pagina.\n'
     + '  Desbane a conta no painel (ou por unban_user) e rode de novo.\n'
     + `  Motivo mostrado na tela: ${motivo.slice(0, 200)}`);
+}
+
+/**
+ * `[02/10]` ENTRAR e SAIR — extraídos porque o roteiro de duas contas seria a
+ * QUARTA cópia do mesmo trecho (§6.1: mesma lógica em 2+ lugares, extrair).
+ *
+ * `fluxos.mjs`, `lives.mjs` e `painel-admin.mjs` continuam com a versão inline
+ * deles: migrá-los exigiria tocar o `painel-admin.mjs`, que está em 449 linhas
+ * e me obrigaria a dividi-lo no meio de outra tarefa (§4). Está no `BACKLOG.md`
+ * com esse motivo — e é dívida declarada, não esquecida.
+ *
+ * O `// ENTRAR` exato não é capricho: a aba "Entrar" do topo do card também
+ * casa com `/entrar/i`, e o Playwright recusa seletor ambíguo (ainda bem).
+ */
+export async function entrar(page, base, email, senha) {
+  await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.locator('#email').waitFor({ state: 'visible', timeout: 20000 });
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill(senha);
+  await page.getByRole('button', { name: '// ENTRAR' }).click();
+
+  // A sessão demora a resolver; o cabeçalho com o botão Sair é o sinal mais
+  // barato de que ela resolveu, e serve para conta comum E de staff.
+  await page.getByRole('button', { name: /^Sair$/i })
+    .waitFor({ state: 'visible', timeout: 30000 })
+    .catch(() => { throw new Error(`nao consegui entrar como ${email} — o botao Sair nao apareceu`); });
+  await recusarSeBanido(page);
+}
+
+/** Sai e ESPERA a sessão cair — sem isso o próximo login corre com o antigo. */
+export async function sair(page) {
+  await page.getByRole('button', { name: /^Sair$/i }).click();
+  await page.getByRole('button', { name: /^Sair$/i })
+    .waitFor({ state: 'detached', timeout: 20000 })
+    .catch(() => { throw new Error('o logout nao derrubou a sessao — o botao Sair continua na tela'); });
 }

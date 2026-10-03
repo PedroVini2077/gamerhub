@@ -59,7 +59,7 @@ const ok = (msg) => console.log(`  ${String(++passo).padStart(2)}. OK   ${msg}`)
 async function morrer(etapa, erro) {
   console.error(`\n  FALHOU em: ${etapa}`);
   console.error(`  ${erro?.message ?? erro}\n`);
-  await salvarEvidencia(page, { erros });
+  await salvarEvidencia(page, { erros, causa: `${etapa}: ${erro?.message ?? erro}` });
   await browser.close();
   process.exit(1);
 }
@@ -195,7 +195,7 @@ try {
 // tela que funciona estourando erro no console é bug esperando escalar.
 if (erros.length) {
   console.error(`\n  Passos OK, mas houve exceçao de JS: ${erros.join(' | ')}\n`);
-  await salvarEvidencia(page, { erros });
+  await salvarEvidencia(page, { erros, causa: `excecao de JS: ${erros.join(' | ')}` });
   await browser.close();
   process.exit(1);
 }

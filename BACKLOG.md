@@ -1223,7 +1223,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**55 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1555,6 +1555,50 @@ AGORA** escrito nele.
   **Não fiz o cache** porque foi a 1ª vez em meses e `actions/cache` é
   manutenção permanente para um problema que pode ter sido instabilidade da
   CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
+
+- ⬜ `[02/10]` 🟠 **Migrar para o Tailwind 4 — é a única saída real do
+  `GHSA-vfj7-8cjw-p6xm`.** *Advisory sem conserto, aceito por escrito em
+  02/10.*
+
+  **O problema:** `braces` tem advisory de DoS por exaustão de pilha, e **não
+  existe versão corrigida** — 3.0.3 é a última publicada e o advisory cobre
+  `<=3.0.3`. Ela é transitiva do Tailwind 3:
+
+      tailwindcss → chokidar / fast-glob → micromatch → braces
+
+  O `npm audit fix` oferece Tailwind 4, que **não corrige o braces**: ele
+  remove a cadeia inteira, porque o 4 usa outro motor.
+
+  **O risco hoje é baixo, e isso é medido:** é dependência de build, não vai
+  para o navegador, não processa entrada de usuário, e quem escolhe os nossos
+  globs é o `tailwind.config.js` — exige quem já tem escrita no repositório.
+  Por isso virou exceção escrita em `scripts/advisories-aceitos.mjs`, com
+  motivo, data e esta condição de saída.
+
+  **Por que não foi feito agora:** Tailwind 4 move a configuração para CSS
+  (`@theme`), muda a sintaxe de várias utilidades e toca a folha de estilo
+  inteira. Fazer isso no meio de outra tarefa é trocar um risco teórico de
+  build por um risco real de produto.
+
+  **Quando for feito:** a entrada em `ACEITOS` sai junto — e o portão reprova
+  se ela ficar, porque ele acusa aceito que já não aparece.
+
+
+- ⬜ `[02/10]` 🔵 **Três roteiros E2E ainda têm o login INLINE.** *Dívida que
+  eu declarei ao extrair o `entrar`/`sair` para `e2e/util.mjs`.*
+
+  `fluxos.mjs`, `lives.mjs` e `painel-admin.mjs` repetem o mesmo trecho de
+  login. O `duasContas.mjs` seria a quarta cópia, então o helper nasceu — mas
+  migrar os três exigiria tocar o `painel-admin.mjs`, que está em **449
+  linhas** e me obrigaria a dividi-lo no meio de outra tarefa (§4).
+
+  **Não é urgente:** as quatro cópias fazem a mesma coisa e nenhuma está
+  errada. O risco é a deriva — mudar o seletor do botão de entrar conserta uma
+  e deixa três quebrando no CI com `waiting for locator`.
+
+  **Quando for feito, o `painel-admin.mjs` sai junto** — ele é o único arquivo
+  de `e2e/` acima de 300 linhas.
+
 
 - ⬜ `[10/09]` 🔵 **`unsilenceUser` existe duas vezes**, com assinaturas
   diferentes: `liveService.unsilenceUser({postId, userId})` e
@@ -2116,93 +2160,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   caminho — seria a regra da INVERSA (§5) quebrada na estreia.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[18/09]` 🟠 **AUDITORIA E2E — o que falta cobrir.** *Pedido dele em 18/09:
-  "não considere 'a função/RLS/trigger está correta' equivalente a 'o fluxo do
-  GamerHub está seguro'".*
-
-  **Feito nesta rodada:** `e2e/lives.mjs` — criar, encerrar, reativar e apagar
-  live pela interface, conferindo a TELA contra o ESTADO PERSISTIDO com o token
-  real do usuário. Roda no CI junto do `fluxos`.
-
-  **`[24/09]` Feito: likes.** `e2e/curtir.mjs`, chamado de dentro do
-  `fluxos.mjs`, no post da própria execução. O que ele prova e nenhum teste
-  anterior provava: a curtida é **otimista** (`src/lib/like.js` acende o
-  coração antes de o servidor responder), então conferir o número logo depois
-  do clique não prova nada — a prova é **recarregar**. E o descurtir é o lado
-  perigoso: `DELETE` negado pela RLS devolve **204 e zero linhas, sem erro**,
-  o cliente não reverte, e a tela apaga uma curtida que continua no banco.
-  Nenhum status HTTP pega isso. Virou `INV-TELA-004`.
-
-  **`[24/09]` Feito: respostas em thread.** `responderEEsperarAninhada`, no
-  próprio `e2e/comentar.mjs` — o cabeçalho dele dizia desde 05/09 que a
-  resposta aninhada NÃO era coberta, e ficou verdade por 19 dias. A assertiva
-  que importa não é o texto aparecer: é o **recuo**. Resposta que entra na
-  lista como comentário solto tem o `INSERT` aprovado, o texto na tela e só a
-  estrutura errada — nada estoura. Conferido por **estrutura** — o bloco do
-  comentário pai tem de CONTER o texto da resposta. Comparar a POSIÇÃO dos dois
-  textos foi a primeira tentativa e reprovou uma resposta CERTA: o recuo do
-  bloco convive com um avatar menor na resposta, e a soma pode dar para
-  qualquer lado. Envia por **Enter**
-  porque os dois compositores têm o mesmo `aria-label` no botão, e o caminho de
-  teclado não era exercitado por roteiro nenhum. `INV-CONTEUDO-003`.
-
-  **`[02/10]` Feito: atualização de perfil.** `e2e/editarPerfil.mjs`, chamado
-  de dentro do `fluxos.mjs`. Escolhido primeiro entre os cinco porque é o único
-  que precisa só da conta comum que já existe, é inteiramente reversível, e
-  cobre a superfície que já derrubou o site três vezes — privilégio de COLUNA
-  em `profiles` é por papel, e o formulário escreve **nove** colunas. Revogar
-  uma não quebra teste nenhum de `src/`.
-
-  A assertiva é **recarregar**, como no `curtir.mjs`, e pela mesma razão
-  agravada: o `useProfileForm` de propósito NÃO repopula o formulário a cada
-  `refreshProfile()` (senão um poll em segundo plano apagaria o que a pessoa
-  está digitando), então depois de salvar a tela mostra o texto novo **venha o
-  que vier do servidor**. O toast também não serve de testemunha — quem o
-  impede de mentir é o `count: 'exact'`, que é o mecanismo sob teste.
-
-  A limpeza é **provada**: restaura os valores originais, recarrega e confere;
-  se falhar, reprova dizendo o que ficou para trás, porque o perfil da conta de
-  teste aparece no perfil **público**.
-
-  **Não rodado nesta sessão, e isso está dito:** as credenciais da conta
-  descartável são secret do CI. O que foi provado aqui é a trava de seletor
-  (`perfilTemOsCamposDoE2e.test.js`, reinjetada). A primeira execução real é a
-  do CI.
-
-  **Falta**, na ordem em que ele listou: live chat · notificações na tela ·
-  o comportamento depois de ocultar (não só apagar) · usuário comum ×
-  moderador na mesma tela.
-
-  **`[02/10]` O bloqueio do OCULTAR foi REMOVIDO** — a inversa passou a existir
-  (botão "Mostrar post" no painel, `handleMostrarPost` → `restoreContent`, com
-  trava de 3 checagens). O roteiro já pode ser escrito.
-
-  **E os TRÊS que sobram são o mesmo cenário**, descoberto ao desenhar: os três
-  gatilhos de notificação pulam o próprio autor (`v_owner = NEW.user_id →
-  return NEW`, medido em `pg_proc`), e `canReport` exclui o autor. Ou seja,
-  **notificação, ocultar e comum × moderador exigem as duas contas** e cabem num
-  roteiro só, em vez de três logando duas vezes cada:
-
-      comum publica → staff curte e comenta (gera notificação) → staff denuncia
-      → staff oculta pela fila → confere que sumiu → staff MOSTRA de novo
-      → comum entra, vê o sino, abre o painel, marca lido → comum apaga
-
-  **Live chat** é o único que cabe numa conta só, e sai separado.
-
-  **Por que não foi escrito ainda:** a sessão foi gasta na inversa (que o
-  destravou) e na correção da Fase 4. O desenho está aqui inteiro e não depende
-  da conversa.
-
-  **`[24/09]` O corte foi FEITO:** o bloco do ciclo do post virou
-  `e2e/cicloDoPost.mjs` (148 linhas) e o `fluxos.mjs` caiu de 288 para **189**.
-  Ele ficou com a SESSÃO — entrar, alcançar cada rota, ser negado no painel,
-  sair — e os fluxos que faltam cabem no roteiro do conteúdo.
-
-  **Por que não foi tudo agora:** cada fluxo desses escreve em produção (o CI
-  usa contas descartáveis reais), e um E2E que cria dado e falha no meio deixa
-  sujeira para gente de verdade ver. Um por vez, com limpeza provada.
-
 
 - ⬜ `[19/09]` 🟢 **RPC administrativa NOVA não entra sozinha na guarda da
   SEC-043.** *`[24/09]` **Rebaixado de 🟠 para 🟢**: a parte que importava foi
@@ -2820,8 +2777,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->186<!--/n--> arq ·
-  <!--n:src.lib.linhas-->23.615<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->188<!--/n--> arq ·
+  <!--n:src.lib.linhas-->23.832<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

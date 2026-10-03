@@ -99,16 +99,42 @@ export async function percorrerEdicaoDePerfil(page, { base, ok }) {
 
   const original = await lerCampos(page);
   const marca = marcaDePerfil();
-  const teste = { bio: `bio de teste ${marca}`, discord: `disc-${marca}` };
+  // `discord` tem CHECK no banco: `^@?[A-Za-z0-9._#-]{1,64}$` — **sem espaco**.
+  // A 1a versao mandava `disc-e2e 1759…` e o CI reprovou com a frase certa na
+  // tela: "informe so o @ ou o nome de usuario, nao o link inteiro". Dado de
+  // teste tambem passa pelas regras do produto.
+  // Conferido contra TODAS as constraints de `profiles` (02/10), para nao
+  // gastar outra rodada de CI: `bio` tem teto de 300 (o campo corta em 200) e
+  // `discord` tem o formato acima mais teto de 64. Nenhum outro alcanca estes
+  // dois campos.
+  const teste = {
+    bio: `bio de teste ${marca}`,
+    discord: `e2e${marca.replace(/\D/g, '')}`,
+  };
 
   const resposta = await escreverEGravar(page, teste);
   if (!resposta.ok()) {
+    // `[02/10]` A mensagem AFIRMAVA a causa — "privilegio de coluna revogado" —
+    // e a causa real era outra: o CHECK de formato do campo de rede social, que
+    // a propria tela dizia em portugues. Mensagem de erro que afirma a causa
+    // errada manda investigar o lugar errado, e e pior do que "erro
+    // desconhecido" (§1.5). Agora ela REPORTA o que a tela disse e lista as
+    // hipoteses como hipoteses.
+    const naTela = (await page.locator('[role="status"]').allInnerTexts().catch(() => []))
+      .map((t) => t.trim()).filter(Boolean);
     throw new Error(
       `o PATCH de /profiles voltou ${resposta.status()}.\n`
-      + '    Privilegio de COLUNA em `profiles` e por PAPEL, e o formulario\n'
-      + '    escreve nove delas. Uma revogada derruba o salvamento inteiro —\n'
-      + '    foi a classe da SEC-025, que tirou postar, comentar, mural e chat\n'
-      + '    do ar de uma vez. Confira `information_schema.column_privileges`.');
+      + (naTela.length
+        ? `    A TELA DISSE: ${naTela.join(' | ')}\n`
+        : '    A tela nao mostrou aviso nenhum.\n')
+      + '\n'
+      + '    Se a frase acima explica, siga por ela. Se nao houver frase, as duas\n'
+      + '    hipoteses, nesta ordem:\n'
+      + '      - CHECK de formato num dos campos (`profiles_redes_sao_handles`\n'
+      + '        exige handle, nao URL, e nao aceita espaco);\n'
+      + '      - privilegio de COLUNA revogado — e por PAPEL, e o formulario\n'
+      + '        escreve NOVE colunas. Foi a classe da SEC-025, que tirou postar,\n'
+      + '        comentar, mural e chat do ar de uma vez.');
   }
   ok('perfil  salvou sem erro do servidor');
 

@@ -48,9 +48,9 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->490<!--/n--> arquivos · <!--n:src.linhas-->56.192<!--/n--> linhas |
-| dividido em | `lib` <!--n:src.lib.arquivos-->186<!--/n--> · `components` <!--n:src.components.arquivos-->201<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->49<!--/n--> · `pages` <!--n:src.pages.arquivos-->26<!--/n--> · `services` <!--n:src.services.arquivos-->25<!--/n--> |
-| rede de testes | <!--n:testes.arquivos-->137<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->24<!--/n--> roteiros de navegador |
+| código em `src/` | <!--n:src.arquivos-->492<!--/n--> arquivos · <!--n:src.linhas-->56.409<!--/n--> linhas |
+| dividido em | `lib` <!--n:src.lib.arquivos-->188<!--/n--> · `components` <!--n:src.components.arquivos-->201<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->49<!--/n--> · `pages` <!--n:src.pages.arquivos-->26<!--/n--> · `services` <!--n:src.services.arquivos-->25<!--/n--> |
+| rede de testes | <!--n:testes.arquivos-->139<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->26<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->10<!--/n--> |
 | banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
 
@@ -64,8 +64,8 @@ digitado à mão:
 > `[03/09]` **Esta seção mudou, e a mudança foi aprovada pelo dono.** Ela dizia
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
-> **dobrou** — <!--n:src.arquivos-->490<!--/n--> arquivos,
-> <!--n:src.linhas-->56.192<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> **dobrou** — <!--n:src.arquivos-->492<!--/n--> arquivos,
+> <!--n:src.linhas-->56.409<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
 > *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
@@ -122,8 +122,8 @@ com leitura parcial.
 ### Honestidade sobre o método
 
 **Ao relatar, dizer qual método foi usado e o número real de cobertura** —
-"li <!--n:src.arquivos-->490<!--/n--> de <!--n:src.arquivos-->490<!--/n-->
-arquivos" ou "li 40 de <!--n:src.arquivos-->490<!--/n-->, parei em X". Nunca deixar parecer
+"li <!--n:src.arquivos-->492<!--/n--> de <!--n:src.arquivos-->492<!--/n-->
+arquivos" ou "li 40 de <!--n:src.arquivos-->492<!--/n-->, parei em X". Nunca deixar parecer
 que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
 não concluída.
 
@@ -303,7 +303,7 @@ select * from pg_stat_user_indexes where idx_scan = 0;  -- índice nunca usado
 
 **6. Saúde do projeto**
 ```bash
-npm audit            # 0 vulnerabilidades — inclusive `low` e `moderate`
+npm audit            # 0 vulnerabilidades — inclusive `low` e `moderate` (*)
 npm run lint         # 0 erros; warnings não podem AUMENTAR
 npx vitest run       # tudo verde
 npm run build        # limpo
@@ -318,6 +318,19 @@ node e2e/smoke.mjs   # rotas de pé num navegador real
 > num log de job **verde**, que ninguém abre: três deles passaram semanas ali até
 > o dono perguntar se a faxina estava sendo feita. Agora eles sobem para o resumo
 > do PR. **O zero desta linha continua sendo trabalho da faxina, não do portão.**
+
+> **`[02/10]` (*) O zero deixou de ser alcançável, e isso é fato, não desleixo.**
+> Apareceu `GHSA-vfj7-8cjw-p6xm` em `braces` — e **não existe versão
+> corrigida**: 3.0.3 é a última publicada e o advisory cobre `<=3.0.3`. Ela é
+> transitiva do Tailwind 3 (`tailwindcss → chokidar/fast-glob → micromatch →
+> braces`), e o que o `npm audit fix` oferece é subir o Tailwind para 4 — que
+> não corrige o `braces`: ele **remove a cadeia**, porque usa outro motor.
+>
+> A meta continua sendo zero. O que mudou é que ela passou a admitir
+> **exceção escrita**, com motivo, data e condição de saída, em
+> `scripts/advisories-aceitos.mjs` — e o portão reprova tanto o advisory novo
+> sem decisão quanto o aceito que **já não aparece**, porque lista de exceção
+> é o mecanismo que apodrece sozinho.
 
 ### Regras da faxina
 
