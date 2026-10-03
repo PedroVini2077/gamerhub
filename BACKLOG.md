@@ -42,6 +42,94 @@
 > *"vamos só resumir tudo, e deixar engatilhado pra próxima sessão pra deixarmos
 > visível o ponto de partida"*. **Esta seção é a primeira coisa a ler.**
 
+#### 0. 🚀 A PRIMEIRA TAREFA DE QUINTA — a auditoria do GamerHub como APP ANDROID
+
+> **Prompt dele, entregue no fim da sessão de 03/10**, com a cota já na beira:
+> *"eu a tempos queria transformar o nosso site em app mobile"*. Ele escreveu um
+> prompt longo e detalhado e pediu para começarmos por ele na quinta.
+>
+> **Eu NÃO comecei de propósito.** Auditoria de arquitetura inteira consome uma
+> sessão, e o §6 proíbe declarar fase concluída com leitura parcial para poupar
+> token — fazer um terço dela agora entregaria um diagnóstico pela metade, que é
+> pior do que nenhum.
+
+**A pergunta que ele quer respondida, na letra dele:** *"A arquitetura atual do
+GamerHub permite transformá-lo em um aplicativo Android instalável de verdade
+(APK), mantendo a maior parte possível da aplicação atual, e qual seria o
+caminho técnico mais adequado para isso?"*
+
+**O regime da tarefa, e ele é explícito e repetido:** **SOMENTE LEITURA.** Nada
+de implementar, criar branch, commitar, instalar dependência, mexer em
+`package.json`, Vite, Supabase, Vercel ou deploy. Só investigação, análise,
+planejamento e documentação.
+
+**O objetivo real dele é menor do que parece**, e isso muda a recomendação:
+
+```
+GamerHub atual -> versão Android -> gerar APK -> instalar NO PRÓPRIO celular -> testar
+```
+
+Não é Play Store. É uso pessoal, para teste, no aparelho dele.
+
+**As 15 seções do relatório que ele pediu** — veredito de viabilidade ·
+arquitetura encontrada · abordagens avaliadas (**e ele proibiu assumir
+Capacitor de saída**) · recomendada · impacto no frontend · no Supabase · no
+build · **celular × PC** · quando o PC realmente entra · **Android Studio ×
+Android SDK/CLI, diferenciados** · riscos · arquitetura proposta · roadmap em
+fases · checklist · e um **ESTADO DA JORNADA** para a investigação não se perder
+entre sessões.
+
+A seção que ele marcou como *"a parte mais importante"* é a **7**: o que dá para
+fazer **só pelo celular**, etapa por etapa, classificada em 🟢 viável · 🟡
+possível mas imprático · 🔴 exige PC. Ele quer o **ponto exato** em que o PC
+passa a valer a pena, não um "você precisa de Android Studio" genérico.
+
+##### O que eu já conferi — e uma premissa dele precisa de correção
+
+Dois `grep` de 30 segundos, feitos antes de registrar, porque o prompt afirma
+algo sobre o sistema (§1.4):
+
+| Ele escreveu | O que medi |
+| --- | --- |
+| *"também possui configuração de PWA/manifest"* | **meia verdade, e a metade que falta é a que decide uma das abordagens** |
+
+**O `public/manifest.webmanifest` EXISTE** e está completo para instalação:
+`display: standalone`, `start_url: /`, cores de tema, e os três ícones
+(192, 512 e **maskable** 512). O `index.html` o referencia na linha 7.
+
+**E NÃO existe service worker.** Nenhum: `grep` por `pwa`, `workbox`,
+`serviceWorker` e `registerSW` em `package.json` e `vite.config.js` não devolve
+nada. Não há `vite-plugin-pwa`.
+
+**Por que isso importa antes mesmo da auditoria começar:** a abordagem **PWA/TWA**
+— que é a mais barata das que ele listou — depende exatamente disso, e hoje o
+site tem a **metade declarativa** (manifest) sem a **metade funcional** (service
+worker, offline, cache). Então "já é PWA" é falso, e "não dá para ser" também:
+é uma lacuna conhecida e mensurável, não um impedimento.
+
+**O que NÃO vou afirmar sem medir** (§1.1): se o Chrome Android de hoje oferece
+"Instalar app" com manifest e **sem** service worker. Eu tenho uma impressão, e
+impressão não entra em auditoria — a regra do Chrome mudou de versão para versão
+e isso se confere na documentação, não na memória. **Fica como a 1ª verificação
+de quinta**, porque ela sozinha pode encurtar o caminho inteiro.
+
+##### Como vou conduzir, para não estourar a sessão
+
+A auditoria tem o mesmo problema de cobertura do §6: ele pediu para varrer
+frontend, backend, Supabase, build e ~40 Web APIs. **Vou aplicar a regra de
+cobertura que já existe** — 100% no que decide a resposta (auth e sessão,
+Realtime, Storage/upload, as Web APIs realmente usadas, o build) e **amostra
+declarada** no resto, dizendo o número e o critério. Nada de "revisei o
+frontend".
+
+**Onde o documento final vai morar:** documento novo pede proposta (§6.2,
+Contrato de Evolução), então a primeira coisa que faço é propor **o quê, por quê,
+onde e o que não será substituído** — provavelmente um `docs/PLANO-ANDROID.md`,
+no mesmo formato do `PLANO-FEED-BUSCA-NEWS.md`, que já é o lugar onde Fase 0 de
+um bloco grande mora. O **ESTADO DA JORNADA** que ele pediu vive dentro dele.
+
+---
+
 #### 1. EM EXECUÇÃO está VAZIO — não há tarefa pela metade
 
 O radar de pautas fechou inteiro: as Fases 1, 2, 3 e **4** estão no ar, e a
@@ -1070,7 +1158,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**55 itens abertos** (+ 1 ideia sem compromisso)
+**56 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2423,6 +2511,15 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[03/10]` 🟠 **AUDITORIA: o GamerHub como APP ANDROID (APK) — somente
+  leitura.** *Prompt dele de 03/10, e é a PRIMEIRA tarefa de quinta.*
+
+  O desenho inteiro, o regime de só-leitura, as 15 seções do relatório e o que
+  eu já conferi (o manifest existe, **service worker não**) estão na seção
+  **🚩 PONTO DE PARTIDA**, no topo deste arquivo. Esta linha existe para o
+  `inicio-de-sessao.sh` colocá-la na minha frente.
+
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
