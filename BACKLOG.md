@@ -81,12 +81,57 @@ ponto. Ele acumula entre execuções, para sempre.
 **E o relógio está correndo:** o `mod_ban_threshold` é **15**. Mais 4
 execuções (8 pontos) e `@claudetester` é **banido automaticamente**.
 
+##### ⚠️ E investigar isso revelou um defeito DE PRODUTO, maior que o meu
+
+Fui procurar a RPC que limpa os pontos para me desentupir, e **ela não
+existe**. Medido em `pg_proc`: nada no banco inteiro lê ou escreve `violations`
+além do próprio gatilho de escalada. As três consequências:
+
+| O que acontece | Evidência |
+| --- | --- |
+| `lift_suspension` **não zera os pontos** | o corpo dela faz `UPDATE profiles SET suspended_until = NULL` e não toca em `violations` |
+| então **remover uma suspensão é quase inútil** para quem está no limiar | com 8 pontos guardados, a próxima infração de **qualquer tamanho** soma e volta a cruzar os 8 — o perdão do moderador é desfeito pela infração seguinte |
+| e o acúmulo **não tem janela de tempo** | `handle_violation_escalation` faz `SUM(points) WHERE user_id = ...`, sem recorte de data: soma a vida inteira da pessoa |
+
+**O desenho completo disso:** quem chegar a 15 pontos somados **ao longo de
+toda a vida da conta** é banido automaticamente, e não existe caminho no
+produto para perdoar um ponto. Alguém que levou 7 advertências em dois anos
+está a uma infração do banimento permanente, e nenhum admin consegue mudar
+isso pela tela.
+
+**É o §5 na letra — "toda ação de estado precisa da INVERSA"** — aplicado ao
+produto, não ao meu roteiro. A ação `registrar ponto` existe; a inversa
+`perdoar ponto` não.
+
+**Isto é 🟡 (decisão dele), não conserto meu**, porque as perguntas são de
+produto: o ponto deve **decair** (90 dias? 180?), ou deve existir um
+**"perdoar"** explícito para a equipe, ou as duas? E `lift_suspension`
+deveria zerar junto, ou são decisões separadas de propósito? Minha
+recomendação: **decaimento por janela** (o `SUM` ganha `WHERE created_at >
+now() - interval 'N days'`) **mais** um perdão explícito que grave em
+`admin_logs`. A janela resolve o caso comum sozinha; o perdão cobre o erro de
+moderação, que é o caso em que a pessoa não deveria esperar N dias.
+
 ##### O conserto, em duas partes
 
-**(1) Destravar agora — eu NÃO consegui aplicar.** As duas tentativas de
-escrita pelo MCP voltaram `cancelled`: é o prompt de aprovação que cai sozinho
-no modo automático, o mesmo que ele relatou de manhã. O comando, pronto para
-colar no SQL Editor:
+**(1) Destravar agora — eu NÃO consegui aplicar, e medi por quê.** Quatro
+tentativas, duas formulações, **nos dois modos de permissão** (ele trocou de
+automático para aprovação no meio e o resultado não mudou). O padrão é claro:
+`select` passa — inclusive `select lift_suspension(...)`, que chegou a rodar e
+parou na checagem de identidade, correta — e **escrita direta volta
+`cancelled`**. *Isto corrige o que escrevi hoje de manhã: eu havia concluído
+que era o prompt caindo no modo automático, e o modo mudou sem mudar o
+resultado, então essa explicação não se sustenta.*
+
+**Não reformulei o comando para passar por baixo do portão** (envolver o
+`delete` num CTE com `returning`, por exemplo). O portão existe para exigir
+aprovação humana em operação destrutiva; driblá-lo entregaria o conserto e
+quebraria a coisa que protege o banco.
+
+E `lift_suspension` não me atende por desenho: pelo MCP eu sou `postgres`, sem
+`auth.uid()`, e `exige_operador_ativo()` barra — que é a segurança funcionando.
+
+O comando, pronto para colar no SQL Editor:
 
 ```sql
 -- As 4 linhas são artefato do E2E, não moderação real (reason='spam',
@@ -1236,7 +1281,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**57 itens abertos** (+ 1 ideia sem compromisso)
+**58 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2595,6 +2640,18 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   o conserto de 2 linhas de SQL está na seção 🚩 PONTO DE PARTIDA, no topo.*
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[03/10]` 🟠 **Ponto de infração não tem INVERSA nem decaimento — e
+  `lift_suspension` não zera os pontos.** *🟡 decisão dele: janela de
+  decaimento, "perdoar" explícito, ou os dois.*
+
+  Medido em `pg_proc`: nada no banco lê ou escreve `violations` além do
+  gatilho de escalada. `handle_violation_escalation` soma a vida inteira da
+  conta, sem recorte de data, e bane em 15. Quem levar 7 advertências em dois
+  anos fica a uma infração do ban permanente, e **nenhum admin consegue
+  perdoar um ponto pela tela**. O diagnóstico inteiro e a minha recomendação
+  estão na seção 🚩 PONTO DE PARTIDA, no topo.
+
 
 - ⬜ `[03/10]` 🟠 **AUDITORIA: o GamerHub como APP ANDROID (APK) — somente
   leitura.** *Prompt dele de 03/10, e é a PRIMEIRA tarefa de quinta.*
