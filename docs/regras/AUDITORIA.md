@@ -303,7 +303,7 @@ select * from pg_stat_user_indexes where idx_scan = 0;  -- índice nunca usado
 
 **6. Saúde do projeto**
 ```bash
-npm audit            # 0 vulnerabilidades — inclusive `low` e `moderate`
+npm audit            # 0 vulnerabilidades — inclusive `low` e `moderate` (*)
 npm run lint         # 0 erros; warnings não podem AUMENTAR
 npx vitest run       # tudo verde
 npm run build        # limpo
@@ -318,6 +318,19 @@ node e2e/smoke.mjs   # rotas de pé num navegador real
 > num log de job **verde**, que ninguém abre: três deles passaram semanas ali até
 > o dono perguntar se a faxina estava sendo feita. Agora eles sobem para o resumo
 > do PR. **O zero desta linha continua sendo trabalho da faxina, não do portão.**
+
+> **`[02/10]` (*) O zero deixou de ser alcançável, e isso é fato, não desleixo.**
+> Apareceu `GHSA-vfj7-8cjw-p6xm` em `braces` — e **não existe versão
+> corrigida**: 3.0.3 é a última publicada e o advisory cobre `<=3.0.3`. Ela é
+> transitiva do Tailwind 3 (`tailwindcss → chokidar/fast-glob → micromatch →
+> braces`), e o que o `npm audit fix` oferece é subir o Tailwind para 4 — que
+> não corrige o `braces`: ele **remove a cadeia**, porque usa outro motor.
+>
+> A meta continua sendo zero. O que mudou é que ela passou a admitir
+> **exceção escrita**, com motivo, data e condição de saída, em
+> `scripts/advisories-aceitos.mjs` — e o portão reprova tanto o advisory novo
+> sem decisão quanto o aceito que **já não aparece**, porque lista de exceção
+> é o mecanismo que apodrece sozinho.
 
 ### Regras da faxina
 

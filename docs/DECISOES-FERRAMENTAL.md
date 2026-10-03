@@ -758,6 +758,50 @@ como fugir disso sem hospedar o aviso fora do Supabase.
 
 ---
 
+## `[02/10]` Advisory SEM conserto vira exceção ESCRITA, não portão desligado
+
+**Decidido:** o passo de auditoria virou `scripts/advisories-aceitos.mjs`, que
+reprova `high`/`critical` **sem decisão escrita** — e também reprova exceção
+que **deixou de aparecer**.
+
+**O que forçou a decisão:** `GHSA-vfj7-8cjw-p6xm` em `braces`. **Não existe
+versão corrigida** — 3.0.3 é a última publicada e o advisory cobre `<=3.0.3`.
+Ela é transitiva do Tailwind 3 (`tailwindcss → chokidar/fast-glob →
+micromatch → braces`), e o "fix" que o npm oferece é subir o Tailwind para 4:
+isso não corrige o `braces`, **remove a cadeia**, porque o Tailwind 4 usa
+outro motor. É reescrita, com a configuração em CSS.
+
+**O risco real, medido:** é dependência de **build**. Não vai para o navegador
+e não processa entrada de usuário. O ataque é exaustão de pilha com padrão
+glob aninhado, e quem escolhe os nossos globs é o `tailwind.config.js` — ou
+seja, exige quem já tem escrita no repositório.
+
+**Recusado 1 — deixar o portão vermelho.** Portão que **não pode ser
+satisfeito** é a 4ª regra do §0.2 pelo avesso: ele não grita à toa, grita o
+que ninguém pode calar. O desfecho previsível é alguém desligá-lo inteiro — e
+ele é o único que olha vulnerabilidade conhecida.
+
+**Recusado 2 — baixar o nível para `critical`.** Fecharia este caso e abriria
+todos os `high` futuros, que é o oposto do que se quer. A exceção tem de ser
+do advisory, não da severidade.
+
+**Recusado 3 — migrar para o Tailwind 4 agora.** É a saída de verdade, e está
+no `BACKLOG.md`. Fazê-la no meio de outra tarefa, com `config` em CSS e toda a
+folha de estilo em jogo, é trocar um risco teórico de build por um risco real
+de produto.
+
+**O que impede isto de virar silenciamento:** cada entrada exige **motivo,
+data e condição de saída**, e `advisoriesAceitosTemMotivo.test.js` reprova as
+três. A condição de saída é a linha que separa decisão de desistência — sem
+ela, "aceito" vira "para sempre" e ninguém escreveu isso.
+
+**E o portão reprova quando um aceito SOME.** Lista de exceção é o mecanismo
+que apodrece sozinho: começa com uma entrada justificada e, dois meses depois,
+tem quatro que ninguém lembra por quê — com o agravante de o verde parecer que
+alguém olhou.
+
+---
+
 ## `[04/09]` Queda do registro do npm não reprova o PR — mas também não passa em silêncio
 
 **O que aconteceu:** o PR #154 ficou vermelho com build, lint e testes **já

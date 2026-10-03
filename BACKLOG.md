@@ -1223,7 +1223,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**54 itens abertos** (+ 1 ideia sem compromisso)
+**55 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1555,6 +1555,34 @@ AGORA** escrito nele.
   **Não fiz o cache** porque foi a 1ª vez em meses e `actions/cache` é
   manutenção permanente para um problema que pode ter sido instabilidade da
   CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
+
+- ⬜ `[02/10]` 🟠 **Migrar para o Tailwind 4 — é a única saída real do
+  `GHSA-vfj7-8cjw-p6xm`.** *Advisory sem conserto, aceito por escrito em
+  02/10.*
+
+  **O problema:** `braces` tem advisory de DoS por exaustão de pilha, e **não
+  existe versão corrigida** — 3.0.3 é a última publicada e o advisory cobre
+  `<=3.0.3`. Ela é transitiva do Tailwind 3:
+
+      tailwindcss → chokidar / fast-glob → micromatch → braces
+
+  O `npm audit fix` oferece Tailwind 4, que **não corrige o braces**: ele
+  remove a cadeia inteira, porque o 4 usa outro motor.
+
+  **O risco hoje é baixo, e isso é medido:** é dependência de build, não vai
+  para o navegador, não processa entrada de usuário, e quem escolhe os nossos
+  globs é o `tailwind.config.js` — exige quem já tem escrita no repositório.
+  Por isso virou exceção escrita em `scripts/advisories-aceitos.mjs`, com
+  motivo, data e esta condição de saída.
+
+  **Por que não foi feito agora:** Tailwind 4 move a configuração para CSS
+  (`@theme`), muda a sintaxe de várias utilidades e toca a folha de estilo
+  inteira. Fazer isso no meio de outra tarefa é trocar um risco teórico de
+  build por um risco real de produto.
+
+  **Quando for feito:** a entrada em `ACEITOS` sai junto — e o portão reprova
+  se ela ficar, porque ele acusa aceito que já não aparece.
+
 
 - ⬜ `[02/10]` 🔵 **Três roteiros E2E ainda têm o login INLINE.** *Dívida que
   eu declarei ao extrair o `entrar`/`sair` para `e2e/util.mjs`.*
