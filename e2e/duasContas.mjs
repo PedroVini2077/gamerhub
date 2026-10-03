@@ -261,7 +261,7 @@ try {
     console.error('\n  SOBROU EM PRODUCAO, e precisa ser limpo a mao:');
     for (const x of aDesfazer) console.error(`    - ${x}`);
   }
-  await salvarEvidencia(page, { erros });
+  await salvarEvidencia(page, { erros, causa: `passo ${passo + 1}: ${e?.message ?? e}` });
   await browser.close();
   process.exit(1);
 }
@@ -270,7 +270,7 @@ try {
 // tela que funciona estourando erro no console é bug esperando escalar.
 if (erros.length) {
   console.error(`\n  Passos OK, mas houve exceçao de JS: ${erros.join(' | ')}\n`);
-  await salvarEvidencia(page, { erros });
+  await salvarEvidencia(page, { erros, causa: `excecao de JS: ${erros.join(' | ')}` });
   await browser.close();
   process.exit(1);
 }

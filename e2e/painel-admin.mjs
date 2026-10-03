@@ -85,7 +85,7 @@ async function morrer(etapa, erro) {
   console.error(`\n  FALHOU em: ${etapa}`);
   console.error(`  ${erro?.message ?? erro}\n`);
   if (erros.length) console.error('  excecoes de JS:', erros.join(' | '), '\n');
-  await salvarEvidencia(page, { erros });
+  await salvarEvidencia(page, { erros, causa: `${etapa}: ${erro?.message ?? erro}` });
   await browser.close();
   process.exit(1);
 }
