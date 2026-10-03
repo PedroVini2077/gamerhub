@@ -38,12 +38,24 @@
 export async function percorrerChatDaLive(page, { marca, ok }) {
   const texto = `${marca} mensagem de chat`;
 
+  // `[03/10]` ABRIR a live primeiro. A 1a versao presumia que o chat aparecia
+  // na LISTAGEM, e o `Lives.jsx` e explicito: `if (activeLive) return (...)`.
+  // Sem clicar na live, o `ChatPanel` nunca monta — e o roteiro morria num
+  // timeout que dizia "o campo nao apareceu", que e verdade e inutil.
+  //
+  // `enterLive` navega para `/lives/<id>`, e o `useParams` restaura a live
+  // depois do reload — e o que torna a assertiva de recarregar possivel aqui.
+  await page.getByText(marca).first().click().catch(() => {});
+  await page.waitForTimeout(1200);
+
   const campo = page.locator('#live-chat-input');
   await campo.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
     throw new Error(
       'o campo do chat da live nao apareceu (`#live-chat-input`).\n'
-      + '    A live esta no ar — o passo anterior conferiu isso no BANCO —,\n'
-      + '    entao ou o `ChatPanel` deixou de montar, ou ele mudou de id.');
+      + `    URL agora: ${page.url()}\n`
+      + '    O chat so existe com a live ABERTA (`/lives/<id>`). Se a URL acima\n'
+      + '    ainda e `/lives`, o clique no titulo nao entrou na live; se ja e\n'
+      + '    `/lives/<id>`, o `ChatPanel` deixou de montar ou mudou de id.');
   });
 
   await campo.fill(texto);

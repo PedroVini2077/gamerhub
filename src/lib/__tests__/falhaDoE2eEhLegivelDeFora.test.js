@@ -53,6 +53,10 @@ const EXIGEM_CAUSA = [
   'e2e/fluxos.mjs',
   'e2e/duasContas.mjs',
   'e2e/painel-admin.mjs',
+  // `[03/10]` Entrou depois de uma rodada em que ELE falhou e a anotacao saiu
+  // vazia: eu tinha listado tres roteiros longos e esquecido o quarto, que e
+  // justamente o que acabara de ganhar um passo novo (o chat).
+  'e2e/lives.mjs',
 ];
 
 describe('a falha do E2E é legível fora do log do job', () => {

@@ -24,21 +24,16 @@
  *
  * ── A limpeza é PROVADA, e aqui ela é obrigação dupla ───────────────────
  *
- * O roteiro escreve em produção com DUAS contas, e o que ele cria é visível
- * para gente de verdade: um post no feed, uma denúncia na fila da equipe, uma
- * notificação no sino de alguém. Cada passo tem o seu desfazer, e o fim
- * CONFERE que desfez.
+ * Ele escreve em produção com DUAS contas, e o que cria é visível para gente
+ * de verdade: post no feed, denúncia na fila, notificação no sino. Cada passo
+ * tem o seu desfazer — o post é apagado por quem o criou, a ocultação é
+ * desfeita pelo painel (`handleMostrarPost`), as notificações são marcadas
+ * como lidas — e o fim CONFERE que desfez.
  *
- * O post é apagado pela conta que o criou; a ocultação é desfeita pelo painel
- * (a inversa que nasceu hoje — ver `handleMostrarPost`); as notificações são
- * marcadas como lidas, e a faxina das 04:00 as recolhe em 30 dias.
+ * ── O que ele NÃO cobre ─────────────────────────────────────────────────
  *
- * ── O que ele NÃO cobre, dito com todas as letras ───────────────────────
- *
- * Banimento e suspensão. São destrutivos sobre uma conta, a inversa deles
- * depende de hierarquia, e um roteiro que morre no meio deixaria a conta de
- * teste banida — o que derruba TODOS os outros roteiros. Continuam validados
- * em transação com ROLLBACK, onde nada sobrevive.
+ * Banimento e suspensão: morrer no meio deixaria a conta de teste banida, o
+ * que derruba TODOS os outros roteiros. Continuam validados em ROLLBACK.
  *
  * Uso:  npm run build && npx vite preview --port 4173 &  →  node e2e/duasContas.mjs
  * Exige E2E_EMAIL/E2E_PASSWORD (conta comum) e E2E_STAFF_EMAIL/E2E_STAFF_PASSWORD.
@@ -159,8 +154,26 @@ try {
 
   await naFila.getByRole('combobox', { name: 'Ação de moderação' }).selectOption('hide');
   await naFila.getByRole('button', { name: /Confirmar ocultação/ }).click();
+
+  // `[03/10]` ESPERAR o item sair da fila. A 1a versao clicava e navegava
+  // embora no mesmo instante — e o banco mostrou o resultado: `hidden_at`
+  // NULO e o item ainda `pending`, `reviewed_at` nulo. A ocultacao nunca
+  // aconteceu, e o roteiro acusou "ocultei e continua no feed".
+  //
+  // O item sumir da fila e o sinal OBSERVAVEL de que a resolucao terminou —
+  // melhor do que escolher uma das varias requisicoes que ela dispara.
+  await naFila.waitFor({ state: 'detached', timeout: 25000 }).catch(async () => {
+    const avisos = (await page.locator('[role="status"]').allInnerTexts().catch(() => []))
+      .map((t) => t.trim()).filter(Boolean);
+    throw new Error(
+      'confirmei a ocultacao e o item NAO saiu da fila.\n'
+      + (avisos.length ? `    A TELA DISSE: ${avisos.join(' | ')}\n` : '    A tela nao avisou nada.\n')
+      + '    `hideContent` usa `count: \'exact\'`, entao RLS negando vira erro\n'
+      + '    visivel em vez de sucesso silencioso — se nao houve aviso, a\n'
+      + '    requisicao pode nem ter saido.');
+  });
   aDesfazer.push('o post OCULTADO — desfaz em /admin > Posts > botao "Mostrar post"');
-  ok('staff ocultou o post pela fila');
+  ok('staff ocultou o post pela fila (item saiu da fila)');
 
   // ── 5. O post SUMIU do feed ────────────────────────────────────────────
   //
@@ -169,11 +182,18 @@ try {
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(2500);
   if (await page.locator('h2', { hasText: MARCA }).count()) {
+    // `[03/10]` A versao anterior AFIRMAVA que `hidden_at` estava preenchido —
+    // e nao estava: o item seguia `pending` no banco. Mensagem que afirma a
+    // causa manda investigar o lugar errado (§1.5). Agora ela separa o que e
+    // FATO (o post esta na tela) do que e hipotese.
     throw new Error(
-      `o post ${MARCA} foi ocultado e CONTINUA no feed.\n`
-      + '    `hidden_at` esta preenchido (a fila aceitou), entao ou a consulta do\n'
-      + '    feed parou de filtrar `hidden_at`, ou a tela serviu cache sem\n'
-      + '    revalidar depois da moderacao.');
+      `o post ${MARCA} continua no feed depois da ocultacao.\n`
+      + '    FATO: o item saiu da fila (o passo anterior esperou por isso) e o\n'
+      + '    titulo continua visivel no feed.\n'
+      + '    Hipoteses, nesta ordem: a consulta do feed parou de filtrar\n'
+      + '    `hidden_at`; a tela serviu cache sem revalidar; ou a resolucao da\n'
+      + '    fila marcou o item sem escrever em `posts` — que seria o "0 linhas\n'
+      + '    sem erro" que o `count: \'exact\'` existe para impedir.');
   }
   ok('o post ocultado sumiu do feed');
 

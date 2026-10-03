@@ -132,7 +132,7 @@ let token; let postId;
 async function morrer(etapa, erro) {
   console.error(`\n  FALHOU em: ${etapa}`);
   console.error(`  ${erro?.message ?? erro}\n`);
-  await salvarEvidencia(page, { erros });
+  await salvarEvidencia(page, { erros, causa: `${etapa}: ${erro?.message ?? erro}` });
   if (token && postId) {
     // Limpeza mesmo no caminho de falha: live de teste que fica no ar é pior do
     // que o teste ter falhado — ela aparece para gente de verdade.
