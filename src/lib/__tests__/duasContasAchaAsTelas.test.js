@@ -34,6 +34,12 @@ import { readFileSync } from 'node:fs';
 
 /** O que o roteiro procura, e onde a tela tem de oferecer. */
 const ALVOS = [
+  // `[02/10]` A RAIZ do card. O roteiro acha o post por
+  // `.card` + `has: h2(marca)` — o padrao que o `cicloDoPost.mjs` ja provava.
+  // A 1a versao inventou `article, [data-post]`, que nao existe, e o CI
+  // mostrou o post NA TELA com o roteiro dizendo que nao estava.
+  { o_que: 'a raiz do card',        marca: 'className={`card p-5',          onde: 'src/components/feed/PostCard.jsx' },
+  { o_que: 'o titulo em h2',        marca: '<h2',                           onde: 'src/components/feed/PostCard.jsx' },
   { o_que: 'denunciar post',        marca: 'aria-label="Denunciar post"',   onde: 'src/components/feed/PostCard.jsx' },
   { o_que: 'deletar post',          marca: 'aria-label="Deletar post"',     onde: 'src/components/feed/PostCard.jsx' },
   { o_que: 'ação de moderação',     marca: 'aria-label="Ação de moderação"', onde: 'src/components/moderation/QueueItemCard.jsx' },

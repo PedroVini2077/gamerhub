@@ -73,6 +73,13 @@ const ok = (m) => console.log(`  ${String(++passo).padStart(2)}. OK   ${m}`);
 
 console.log(`\n  Comum x moderador em ${BASE}\n`);
 
+/**
+ * As abas do painel. `[02/10]` Copiado do `painel-admin.mjs`: elas sao
+ * `button[aria-pressed]`, e procurar por NOME casaria tambem com o item da
+ * barra lateral que leva para a mesma area.
+ */
+const aba = (p, nome) => p.locator('button[aria-pressed]').filter({ hasText: nome }).first();
+
 /** O que precisa ser desfeito, na ORDEM INVERSA de como foi feito. */
 const aDesfazer = [];
 
@@ -95,7 +102,12 @@ try {
   await entrar(page, BASE, STAFF.email, STAFF.senha);
   ok('entrou como staff');
 
-  const cartao = page.locator('article, [data-post]', { hasText: MARCA }).first();
+  // `[02/10]` A 1a versao usava `article, [data-post]` e NAO achou nada: a raiz
+  // do `PostCard` e um `<div className="card p-5">`. O log do CI mostrou o post
+  // na tela e o roteiro dizendo que ele nao estava — eu inventei um seletor em
+  // vez de reusar o que o `cicloDoPost.mjs` ja provava.
+  const tituloNoFeed = page.locator('h2', { hasText: MARCA });
+  const cartao = page.locator('.card').filter({ has: tituloNoFeed }).first();
   await cartao.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
     throw new Error(
       `o staff nao enxerga o post ${MARCA} no feed.\n`
@@ -114,10 +126,19 @@ try {
   // O autor não pode denunciar o próprio post (`canReport`), e sem denúncia
   // não existe item na fila — ou seja, não existe caminho de UI para ocultar.
   await cartao.getByRole('button', { name: 'Denunciar post' }).click();
-  const modal = page.locator('[role="dialog"], .fixed').filter({ hasText: /Denunciar/ }).first();
-  await modal.getByRole('radio').first().check();
-  await modal.getByRole('button', { name: /^Denunciar$/ }).click();
-  await modal.waitFor({ state: 'detached', timeout: 20000 }).catch(() => {
+
+  // `[02/10]` O `ReportModal` NAO tem `role="dialog"` — a raiz dele e um
+  // `.fixed inset-0`. Ancorar num seletor de classe seria fragil, entao o
+  // marcador e o TITULO do modal, que e um `<h3>` e portanto tem papel de
+  // heading. Os controles sao buscados na pagina: enquanto o modal esta
+  // aberto, ele e a unica coisa com `radio`.
+  const tituloDoModal = page.getByRole('heading', { name: /^Denunciar$/ });
+  await tituloDoModal.waitFor({ state: 'visible', timeout: 20000 }).catch(() => {
+    throw new Error('o modal de denuncia nao abriu depois do clique em "Denunciar post"');
+  });
+  await page.getByRole('radio').first().check();
+  await page.getByRole('button', { name: /^Denunciar$/ }).click();
+  await tituloDoModal.waitFor({ state: 'detached', timeout: 20000 }).catch(() => {
     throw new Error('o modal de denuncia nao fechou — a denuncia pode nao ter sido gravada');
   });
   aDesfazer.push('a denúncia na fila de moderação (ela sai sozinha ao resolver o item)');
@@ -125,7 +146,7 @@ try {
 
   // ── 4. OCULTAR pela fila ───────────────────────────────────────────────
   await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.getByRole('button', { name: 'Moderação', exact: true }).click();
+  await aba(page, 'Moderação').click();
 
   const naFila = page.locator('.card', { hasText: MARCA }).first();
   await naFila.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
@@ -158,7 +179,7 @@ try {
 
   // ── 6. MOSTRAR de novo — a inversa que nasceu em 02/10 ─────────────────
   await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.getByRole('button', { name: 'Posts', exact: true }).click();
+  await aba(page, 'Posts').click();
 
   const noPainel = page.locator('.card', { hasText: MARCA }).first();
   await noPainel.waitFor({ state: 'visible', timeout: 30000 });
@@ -213,7 +234,8 @@ try {
 
   // ── 8. A conta COMUM apaga o post ──────────────────────────────────────
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  const meu = page.locator('article, [data-post]', { hasText: MARCA }).first();
+  const meu = page.locator('.card')
+    .filter({ has: page.locator('h2', { hasText: MARCA }) }).first();
   await meu.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
     throw new Error(
       `o post ${MARCA} NAO voltou ao feed depois de "Mostrar post".\n`
