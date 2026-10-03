@@ -22,7 +22,10 @@
 // recebe as pautas de qualquer jeito.
 
 import { medirAceleracao, sinalDaPauta } from "./aceleracao.ts";
-import { buscarVideos, contarVideosDaPauta, rotuloDeVideo, type FalhaDeVideo } from "./youtube.ts";
+import { buscarVideos, type FalhaDeVideo } from "./youtube.ts";
+import {
+  contarVideosDaPauta, rotuloDeVideo, termosQueDistinguem,
+} from "./contagemDeVideo.ts";
 
 export type PautaComSinais<T extends { termos: string[] }> = T & { sinal: string; video: string };
 
@@ -64,11 +67,15 @@ export async function anexarSinais<T extends { termos: string[] }>(
       })),
   ]);
 
+  // Termo que serve a VARIAS pautas nao distingue nenhuma — ver o cabecalho
+  // de `termosQueDistinguem`. Calculado uma vez, sobre o conjunto inteiro.
+  const distinguem = termosQueDistinguem(pautas);
+
   return {
     pautas: pautas.map((p) => ({
       ...p,
       sinal: sinalDaPauta(p.termos, medidas),
-      video: rotuloDeVideo(contarVideosDaPauta(p.termos, doVideo.videos)),
+      video: rotuloDeVideo(contarVideosDaPauta(p.termos, doVideo.videos, distinguem)),
     })),
     falhasDeVideo: doVideo.comFalha,
     // `[02/10]` O numero que teria me dado o diagnostico em um minuto. A 1a

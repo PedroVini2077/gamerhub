@@ -57,44 +57,35 @@
 // ⚠️ `[02/10]` A PRIMEIRA VERSÃO NÃO ACHOU NADA, E O ERRO ERA MEU
 // ============================================================================
 //
-// Ela ia ao ar com `q` fixo na linha da fonte (`games OR gameplay OR
-// playstation OR …`) e `order=date`. O primeiro clique real do dono devolveu
-// **16 fontes lidas, nenhum selo de vídeo e nenhuma linha em `comFalha`** — e
-// o silêncio nos dois lugares é o que permite o diagnóstico: todo caminho de
-// falha empurra uma linha, então a API respondeu, vieram vídeos, e **nenhuma
-// pauta casou**.
+// Ela ia ao ar com `q` fixo na linha da fonte e `order=date`. O 1º clique real
+// deu **16 fontes lidas, nenhum selo e nenhuma linha em `comFalha`** — e o
+// silêncio nos dois lugares é o diagnóstico: a API respondeu, vieram vídeos, e
+// nenhuma pauta casou. Consulta genérica ordenada por data devolve os 50
+// uploads mais recentes que dizem "games"; e o `order=date` nem resolvia o
+// problema que eu inventei para ele, porque o `publishedAfter` já garante
+// "hoje" sozinho.
 //
-// **Por que não casava.** `order=date` + consulta genérica + 50 resultados =
-// os 50 uploads MAIS RECENTES que mencionam "games" em algum lugar. São
-// canais pequenos postando qualquer coisa; a chance de dois deles falarem de
-// "GTA 6" é quase nula.
+// **Hoje a consulta sai das PRÓPRIAS PAUTAS.** Continua uma chamada, e agora
+// é relevante por construção — a consulta e a pergunta são a mesma coisa. A
+// linha da fonte carrega só a base, então o motor fica ainda mais cego ao
+// assunto: nem a tabela o nomeia.
 //
-// E `order=date` não estava nem resolvendo o problema que eu inventei para
-// ele: **o `publishedAfter` já garante "hoje" sozinho.** Ordenar por data
-// dentro de uma janela de 24h só troca relevância por hora de upload.
-//
-// **A correção: a consulta sai das PRÓPRIAS PAUTAS.** Depois que o modelo
-// agrupa, cada pauta traz até 3 termos — e eles viram um `q` só, com `OR`.
-// Continua sendo **uma** chamada, e agora ela é relevante por construção,
-// porque a pergunta e a consulta passaram a ser a mesma coisa.
-//
-// A linha da fonte deixou de carregar o assunto e passou a carregar só a base
-// (endpoint, região, idioma). O motor fica **ainda mais cego ao assunto** do
-// que antes: nem a tabela o nomeia.
+// A história inteira, com os números, está em `docs/regras/COTAS.md`.
 //
 // ============================================================================
 // O QUE ESTE SINAL NÃO É
 // ============================================================================
 //
-// **Não é confirmação.** O plano é explícito: `tendencia` e `discussao` nunca
-// viram `relato` por acumulação. Muita gente falando não é fato. Por isso o
-// rótulo diz "vídeos", conta uma coisa contável, e não encosta no campo de
-// confiabilidade.
+// **Não é confirmação.** `tendencia` e `discussao` nunca viram `relato` por
+// acumulação — muita gente falando não é fato. Por isso o rótulo conta uma
+// coisa contável e não encosta no campo de confiabilidade.
 //
 // **E não é medida de audiência.** `search.list` devolve o que foi PUBLICADO,
-// não o que foi assistido. "4 vídeos hoje" quer dizer que quatro canais
-// acharam o assunto digno de vídeo — o que é um sinal honesto e menor do que
-// parece.
+// não o que foi assistido.
+//
+// A CONTAGEM — quantos vídeos falam de cada pauta — mora em
+// `contagemDeVideo.ts`: ela é pura, e separá-la é o que a torna exercitável
+// sem chave e sem rede.
 
 export type Video = { titulo: string; canal: string; url: string; publicadoEm: string };
 export type FalhaDeVideo = { nome: string; motivo: string };
@@ -306,41 +297,4 @@ export async function buscarVideos(
     }
   }
   return { videos, comFalha };
-}
-
-/** Tira acento e caixa: "Pokemon" tem de casar com "Pokémon". */
-function normalizar(s: string): string {
-  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-}
-
-/**
- * Quantos dos vídeos recentes falam desta pauta.
- *
- * Casa por SUBSTRING no título normalizado, e o termo precisa de 3 caracteres
- * — mesma régua do sinal de aceleração, e pelo mesmo motivo: termo de duas
- * letras casa com tudo e o número vira ruído com cara de medida.
- *
- * **Conta VÍDEO, não casamento.** Um vídeo cujo título bate com três termos da
- * mesma pauta é um vídeo, não três — senão a pauta com mais sinônimos ganharia
- * sozinha, que é exatamente o erro do "score mágico" que o plano recusa.
- */
-export function contarVideosDaPauta(termos: string[], videos: Video[]): number {
-  const alvos = [...new Set(termos.map((t) => normalizar(t.trim())).filter((t) => t.length >= 3))];
-  if (!alvos.length) return 0;
-  return videos.filter((v) => {
-    const t = normalizar(v.titulo);
-    return alvos.some((a) => t.includes(a));
-  }).length;
-}
-
-/**
- * O rótulo. **Lista fechada e número refazível**, como o da aceleração: quem
- * lê "3 videos hoje" consegue conferir contando, e "87 de relevância" não.
- *
- * Um vídeo só não vira rótulo: um canal qualquer postando sobre o assunto não
- * é sinal de nada, e rótulo que aparece sempre deixa de informar.
- */
-export function rotuloDeVideo(quantos: number): string {
-  if (quantos < 2) return "";
-  return `${quantos} videos hoje`;
 }

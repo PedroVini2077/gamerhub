@@ -104,6 +104,25 @@ Não é "quanto sobra". É: **quando estourar, alguém fica sabendo?**
 > número teria dado o diagnóstico em um minuto em vez de um clique perdido.
 > É o §1.5 aplicado ao estado INTERMEDIÁRIO, não só ao erro.
 
+> ### ✅ `[02/10]` O 2º clique achou — e revelou o defeito SEGUINTE
+>
+> `7 videos hoje`, `15`, `4`. O sinal passou a existir. **E duas pautas
+> marcaram exatamente 15**: "hacking e emulação do PS5" e "Nacon controlador
+> PS5" — as duas trazem o termo `ps5`, que casa com qualquer vídeo de
+> PlayStation do dia.
+>
+> **O número não estava errado: estava respondendo outra pergunta.** "15
+> vídeos falam de PS5" não é "15 vídeos falam do controle da Nacon", e quem lê
+> a tela decide a pauta achando que é a segunda.
+>
+> **A correção é a mesma regra do `editoriaProvavel`:** palavra que serve a
+> várias pautas não sustenta nenhuma. Termo presente em mais de uma pauta sai
+> da CONTAGEM — e **fica na CONSULTA**, porque `ps5` traz vídeos que os termos
+> específicos não trariam.
+>
+> Pauta cujos termos são todos genéricos fica sem selo. É a resposta certa:
+> não dá para distinguir, então não se afirma nada.
+
 > **E a segunda fonte, se alguém cadastrar uma, não é consultada em silêncio:**
 > ela vira linha em `comFalha` dizendo que ficou fora do teto. Fonte ativa que
 > nunca é lida, sem nada dizer, é a "cobertura que não cobre" do §1.5.

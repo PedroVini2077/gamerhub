@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   montarUrlDaBusca, montarConsulta, lerRespostaDaBusca, buscarVideos,
-  contarVideosDaPauta, rotuloDeVideo, motivoDaFalha,
-  TETO_DE_BUSCAS_POR_CLIQUE, JANELA_DE_HORAS, TETO_DE_TERMOS,
+  motivoDaFalha, TETO_DE_BUSCAS_POR_CLIQUE, JANELA_DE_HORAS, TETO_DE_TERMOS,
 } from '../../../supabase/functions/radar-de-pautas/youtube.ts';
+import {
+  contarVideosDaPauta, rotuloDeVideo, termosQueDistinguem,
+} from '../../../supabase/functions/radar-de-pautas/contagemDeVideo.ts';
 import { seloDeVideo } from '../news/sinalDeVideo';
 
 /**
@@ -259,6 +262,92 @@ describe('o sinal de vídeo — a contagem', () => {
       + '    numero viraria ruido com cara de medida — mesma regua do sinal de\n'
       + '    aceleracao, que exige 3 caracteres.',
     ).toBe(0);
+  });
+});
+
+describe('o sinal de vídeo — termo genérico não carrega o número', () => {
+  // O caso REAL do 2o clique: duas pautas de PS5 marcaram 15 videos cada,
+  // porque as duas trazem `ps5` e 15 videos do dia falam de PS5. O numero nao
+  // estava errado — estava respondendo OUTRA pergunta.
+  const PAUTAS = [
+    { termos: ['ps5', 'emulacao', 'exploit'] },
+    { termos: ['ps5', 'nacon', 'controlador'] },
+  ];
+
+  it('termo que aparece em DUAS pautas sai da contagem', () => {
+    const d = termosQueDistinguem(PAUTAS);
+    expect(
+      d.has('ps5'),
+      '`ps5` continua contando, e ele serve as DUAS pautas.\n'
+      + '    Palavra que serve a varias pautas nao distingue nenhuma — e a tela\n'
+      + '    passa a dizer "15 videos sobre o controle da Nacon" quando o que\n'
+      + '    ela mediu foi "15 videos que falam PS5".',
+    ).toBe(false);
+    expect([...d].sort()).toEqual(['controlador', 'emulacao', 'exploit', 'nacon']);
+  });
+
+  it('as duas pautas de PS5 deixam de ter o MESMO número', () => {
+    // Os quatro falam de PS5; so dois falam de exploit e um da Nacon.
+    const videos = lerRespostaDaBusca(resposta([
+      video('v1', 'PS5 hoje: as novidades'),
+      video('v2', 'Novo exploit no PS5'),
+      video('v3', 'Outro exploit chega ao PS5'),
+      video('v4', 'Nacon revela controlador para PS5'),
+    ]));
+    const d = termosQueDistinguem(PAUTAS);
+
+    const semFiltro = PAUTAS.map((p) => contarVideosDaPauta(p.termos, videos));
+    const comFiltro = PAUTAS.map((p) => contarVideosDaPauta(p.termos, videos, d));
+
+    // O defeito, reproduzido: o termo compartilhado iguala as duas em 4.
+    expect(
+      semFiltro,
+      'o caso que produziu o defeito deixou de existir no fixture — sem ele\n'
+      + '    esta trava nao prova nada.',
+    ).toEqual([4, 4]);
+
+    expect(
+      comFiltro,
+      'as duas pautas continuam com o mesmo numero, medindo o termo que elas\n'
+      + '    compartilham em vez do que as separa.',
+    ).toEqual([2, 1]);
+  });
+
+  it('termo repetido DENTRO da mesma pauta não a torna genérica', () => {
+    const d = termosQueDistinguem([{ termos: ['gta', 'gta', 'gta 6'] }]);
+    expect(
+      d.has('gta'),
+      '`gta` saiu da contagem por aparecer duas vezes na MESMA pauta.\n'
+      + '    Isso e a pauta falando duas vezes, nao duas pautas disputando.',
+    ).toBe(true);
+  });
+
+  it('o `sinais.ts` REALMENTE passa o filtro — senão nada disto vale', () => {
+    // Descoberto reinjetando: tirar o 3o argumento da chamada em `sinais.ts`
+    // faz tudo voltar a inflar, e NENHUM teste acusava — as funcoes puras
+    // continuam corretas, so ninguem as usa direito. Mesma classe da prop que
+    // deixa de ser passada e transforma o clique em nada.
+    const SINAIS = readFileSync('supabase/functions/radar-de-pautas/sinais.ts', 'utf8');
+    expect(SINAIS.length, 'sinais.ts veio vazio — o caminho mudou?').toBeGreaterThan(200);
+    expect(
+      /contarVideosDaPauta\(\s*p\.termos,\s*[^)]*,\s*distinguem\s*\)/.test(SINAIS),
+      '`sinais.ts` chama `contarVideosDaPauta` SEM o conjunto de termos que\n'
+      + '    distinguem.\n'
+      + '    O 3o argumento e opcional de proposito (a funcao pura precisa poder\n'
+      + '    ser exercitada sem ele), e e justamente isso que torna a omissao\n'
+      + '    silenciosa: tudo compila, os testes puros passam, e o numero da tela\n'
+      + '    volta a medir o termo que as pautas compartilham.',
+    ).toBe(true);
+  });
+
+  it('pauta só com termo genérico fica SEM sinal, e isso é o certo', () => {
+    const videos = lerRespostaDaBusca(resposta([video('v1', 'PS5 e Xbox'), video('v2', 'PS5 novo')]));
+    const d = termosQueDistinguem([{ termos: ['ps5'] }, { termos: ['ps5'] }]);
+    expect(
+      rotuloDeVideo(contarVideosDaPauta(['ps5'], videos, d)),
+      'pauta sem termo proprio ganhou selo. Nao da para distinguir, entao nao\n'
+      + '    se afirma nada — melhor sem selo do que com um que mede o vizinho.',
+    ).toBe('');
   });
 });
 
