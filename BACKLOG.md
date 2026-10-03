@@ -1223,7 +1223,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**55 itens abertos** (+ 1 ideia sem compromisso)
+**56 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1555,6 +1555,57 @@ AGORA** escrito nele.
   **Não fiz o cache** porque foi a 1ª vez em meses e `actions/cache` é
   manutenção permanente para um problema que pode ter sido instabilidade da
   CDN (§9.8, pergunta 6). **Se travar de novo**, aí o cache se paga.
+
+- ⬜ `[03/10]` 🔵 **STREAMING NATIVO (estilo Discord) — e por que o EMBED de
+  hoje não é gambiarra, é a arquitetura certa para zero usuário.** *Pergunta
+  dele em 03/10.*
+
+  **O que o site já faz:** a live é um **embed**. A pessoa transmite na Twitch
+  ou no YouTube e o GamerHub encaixa o player, pondo em volta o que é nosso —
+  chat, XP, moderação, prazo, reativação. **Banda: R$0.** Quem paga a conta de
+  distribuição é a Twitch.
+
+  **Nativo são DUAS arquiteturas diferentes, e elas não se parecem:**
+
+  | | Discord (WebRTC/SFU) | Twitch (RTMP→HLS) |
+  | --- | --- | --- |
+  | latência | < 1 s | 5–30 s |
+  | plateia | dezenas | ilimitada |
+  | precisa de | SFU | ingest + transcode + CDN |
+
+  **Medido nos preços de hoje.** Tela 720p30 ≈ 2 Mbps = **900 MB por hora de
+  espectador** — contra 14,4 MB/h da voz. Vídeo é **62× mais pesado**.
+
+  | Caminho | Grátis | Depois |
+  | --- | --- | --- |
+  | **Cloudflare Realtime** (SFU) | 1.000 GB ≈ **1.110 h de espectador** | US$ 0,05/GB ≈ US$ 0,045 por hora de espectador |
+  | Cloudflare Stream (HLS) | **nenhum** | US$ 1 / 1.000 min entregues + US$ 5 / 1.000 min guardados, **comprados adiantado** |
+
+  Em cenário real: 1 transmissor + 20 espectadores × 10 h/mês = 180 GB, dentro
+  do grátis. Com 50 espectadores × 40 h/mês = 1.800 GB → ~US$ 40/mês.
+
+  **Os dois cobram em silêncio depois do teto** — a mesma objeção que tirou o
+  LiveKit das salas de voz (§0.2). Qualquer um deles entraria obrigado a ter
+  um teto nosso **antes** do deles, e isso é código, não configuração.
+
+  **O custo que decide, e é maior aqui do que na voz:**
+
+  1. **Responsabilidade muda de dono.** Hoje quem hospeda o que é transmitido
+     é a Twitch, com os termos e a moderação dela. Nativo, quem hospeda somos
+     nós — e a moderação de mídia que existe aqui é por **amostragem de
+     quadros de vídeo JÁ ENVIADO** (`MODERACAO-IA.md`). Ao vivo não há
+     "depois": o estrago já saiu.
+  2. **O site tem idade mínima de 13 anos.** Transmissão ao vivo sem
+     moderação possível, para esse público, é a pergunta do §1.3 com resposta
+     óbvia e nenhuma defesa pronta.
+  3. **A parte difícil não é o SFU** — é captura de tela no navegador,
+     reconexão, qualidade adaptativa e o que acontece quando cai no meio.
+
+  **Minha recomendação:** manter o embed. Ele não é limitação — é o que
+  permite ter live com moderação de verdade e custo zero. O caminho de
+  crescimento, se um dia fizer sentido, é **largura** (aceitar Kick, mais
+  plataformas) antes de **profundidade** (hospedar nós mesmos).
+
 
 - ⬜ `[03/10]` 🔵 **SALAS DE VOZ — o custo em DINHEIRO é ~R$0, e não é ele que
   decide.** *Pergunta dele em 03/10: "tô pensando em salas de voz… qual seria o
