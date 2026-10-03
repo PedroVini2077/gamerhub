@@ -42,6 +42,217 @@
 > *"vamos só resumir tudo, e deixar engatilhado pra próxima sessão pra deixarmos
 > visível o ponto de partida"*. **Esta seção é a primeira coisa a ler.**
 
+#### ⛔ ANTES DE TUDO — o CI está VERMELHO, e a culpa é de um roteiro MEU
+
+> **`[03/10]` 🔴 O E2E `duasContas.mjs` (PR #287, ontem) está SUSPENDENDO a
+> conta de teste a cada execução — e em ~3 execuções ela será BANIDA.**
+
+**O sintoma.** O PR #289, que só tem documentação, reprovou em `fluxos
+autenticados` e `painel de admin num navegador` — e reprovou **de novo** na
+re-execução, então não é instabilidade. A `main` estava verde às 10:54 com o
+mesmo código.
+
+**A causa raiz, provada e não deduzida.** A tabela `violations` tem 4 linhas de
+2 pontos para `@claudetester`, e os quatro horários batem **um a um** com as
+quatro execuções do E2E desde que o roteiro entrou:
+
+| Violação | Execução |
+| --- | --- |
+| 02:05 e 02:13 | as duas do próprio PR #287 |
+| 10:50 | PR #288 |
+| 12:08 | PR #289 — a que falhou |
+
+4 × 2 = **8**, que é exatamente o `mod_suspend_threshold` do `site_config`. O
+trigger `handle_violation_escalation` disparou `apply_mod_auto_suspend` às
+12:08:53 e a conta ficou suspensa **até 10/10**.
+
+**Por que isso derruba DOIS roteiros com um mecanismo só:** `LinhaDePublicar`
+tem exatamente dois `return null` — sem conta e **suspenso**. Suspenso, a linha
+`[data-publicar="linha"]` nunca aparece (o passo 6 esperou 30 s por ela), e ir
+ao vivo é recusado, então o `LiveGoModal` fica **aberto** e intercepta o clique
+seguinte. Um só defeito, dois sintomas que pareciam sem relação.
+
+**O que eu errei, e é a regra que eu mesmo aplico nos outros.** O §5 manda:
+*"toda ação de estado precisa da INVERSA e da LIMPEZA"*. Eu escrevi o desfazer
+de cada passo do roteiro — o post é restaurado, o post é apagado — e **não vi
+que o ponto de infração não tem inversa**. Restaurar o conteúdo não devolve o
+ponto. Ele acumula entre execuções, para sempre.
+
+**E o relógio está correndo:** o `mod_ban_threshold` é **15**. Mais 4
+execuções (8 pontos) e `@claudetester` é **banido automaticamente**.
+
+##### ⚠️ E investigar isso revelou um defeito DE PRODUTO, maior que o meu
+
+Fui procurar a RPC que limpa os pontos para me desentupir, e **ela não
+existe**. Medido em `pg_proc`: nada no banco inteiro lê ou escreve `violations`
+além do próprio gatilho de escalada. As três consequências:
+
+| O que acontece | Evidência |
+| --- | --- |
+| `lift_suspension` **não zera os pontos** | o corpo dela faz `UPDATE profiles SET suspended_until = NULL` e não toca em `violations` |
+| então **remover uma suspensão é quase inútil** para quem está no limiar | com 8 pontos guardados, a próxima infração de **qualquer tamanho** soma e volta a cruzar os 8 — o perdão do moderador é desfeito pela infração seguinte |
+| e o acúmulo **não tem janela de tempo** | `handle_violation_escalation` faz `SUM(points) WHERE user_id = ...`, sem recorte de data: soma a vida inteira da pessoa |
+
+**O desenho completo disso:** quem chegar a 15 pontos somados **ao longo de
+toda a vida da conta** é banido automaticamente, e não existe caminho no
+produto para perdoar um ponto. Alguém que levou 7 advertências em dois anos
+está a uma infração do banimento permanente, e nenhum admin consegue mudar
+isso pela tela.
+
+**É o §5 na letra — "toda ação de estado precisa da INVERSA"** — aplicado ao
+produto, não ao meu roteiro. A ação `registrar ponto` existe; a inversa
+`perdoar ponto` não.
+
+**Isto é 🟡 (decisão dele), não conserto meu**, porque as perguntas são de
+produto: o ponto deve **decair** (90 dias? 180?), ou deve existir um
+**"perdoar"** explícito para a equipe, ou as duas? E `lift_suspension`
+deveria zerar junto, ou são decisões separadas de propósito? Minha
+recomendação: **decaimento por janela** (o `SUM` ganha `WHERE created_at >
+now() - interval 'N days'`) **mais** um perdão explícito que grave em
+`admin_logs`. A janela resolve o caso comum sozinha; o perdão cobre o erro de
+moderação, que é o caso em que a pessoa não deveria esperar N dias.
+
+##### O conserto, em duas partes
+
+**(1) Destravar agora — eu NÃO consegui aplicar, e medi por quê.** Quatro
+tentativas, duas formulações, **nos dois modos de permissão** (ele trocou de
+automático para aprovação no meio e o resultado não mudou). O padrão é claro:
+`select` passa — inclusive `select lift_suspension(...)`, que chegou a rodar e
+parou na checagem de identidade, correta — e **escrita direta volta
+`cancelled`**. *Isto corrige o que escrevi hoje de manhã: eu havia concluído
+que era o prompt caindo no modo automático, e o modo mudou sem mudar o
+resultado, então essa explicação não se sustenta.*
+
+**Não reformulei o comando para passar por baixo do portão** (envolver o
+`delete` num CTE com `returning`, por exemplo). O portão existe para exigir
+aprovação humana em operação destrutiva; driblá-lo entregaria o conserto e
+quebraria a coisa que protege o banco.
+
+E `lift_suspension` não me atende por desenho: pelo MCP eu sou `postgres`, sem
+`auth.uid()`, e `exige_operador_ativo()` barra — que é a segurança funcionando.
+
+O comando, pronto para colar no SQL Editor:
+
+```sql
+-- As 4 linhas são artefato do E2E, não moderação real (reason='spam',
+-- geradas pelo duasContas.mjs). Apagar ZERA a soma e o gatilho para de armar.
+delete from violations v using profiles p
+ where p.id = v.user_id and p.username = 'claudetester';
+
+-- A suspensão sai pela RPC, nunca por UPDATE cru (§5, regra 1): ela grava
+-- em admin_logs e a trilha continua verdadeira.
+select lift_suspension(id) from profiles where username = 'claudetester';
+```
+
+Conferir depois: `select suspended_until from profiles where username =
+'claudetester';` tem de voltar `null`.
+
+**(2) A trava, que é o conserto de verdade.** Sem ela isto volta na 4ª
+execução. Três saídas, e a escolha é dele:
+
+| Saída | O que custa |
+| --- | --- |
+| **o roteiro apaga a própria violação no desfazer** | é a mais fiel ao §5 (a inversa existe de verdade), e não mexe em produto |
+| **conta de teste isenta da escalada** | mais simples, mas cria um caminho que o produto não tem — e o que não é exercitado não é testado |
+| **o roteiro não ocultar de verdade** | perde justamente a cobertura que o PR #287 existiu para criar |
+
+**Minha recomendação é a primeira.** E a trava da trava: um teste que reinjeta
+o caso — roda o desfazer e exige `sum(points) = 0` — senão a próxima versão do
+roteiro volta a esquecer.
+
+**O PR #289 fica ABERTO e vermelho**, de propósito (§8): não é certo empilhar
+merge enquanto a conta de teste caminha para o ban.
+
+---
+
+#### 0. 🚀 A PRIMEIRA TAREFA DE QUINTA — a auditoria do GamerHub como APP ANDROID
+
+> **Prompt dele, entregue no fim da sessão de 03/10**, com a cota já na beira:
+> *"eu a tempos queria transformar o nosso site em app mobile"*. Ele escreveu um
+> prompt longo e detalhado e pediu para começarmos por ele na quinta.
+>
+> **Eu NÃO comecei de propósito.** Auditoria de arquitetura inteira consome uma
+> sessão, e o §6 proíbe declarar fase concluída com leitura parcial para poupar
+> token — fazer um terço dela agora entregaria um diagnóstico pela metade, que é
+> pior do que nenhum.
+
+**A pergunta que ele quer respondida, na letra dele:** *"A arquitetura atual do
+GamerHub permite transformá-lo em um aplicativo Android instalável de verdade
+(APK), mantendo a maior parte possível da aplicação atual, e qual seria o
+caminho técnico mais adequado para isso?"*
+
+**O regime da tarefa, e ele é explícito e repetido:** **SOMENTE LEITURA.** Nada
+de implementar, criar branch, commitar, instalar dependência, mexer em
+`package.json`, Vite, Supabase, Vercel ou deploy. Só investigação, análise,
+planejamento e documentação.
+
+**O objetivo real dele é menor do que parece**, e isso muda a recomendação:
+
+```
+GamerHub atual -> versão Android -> gerar APK -> instalar NO PRÓPRIO celular -> testar
+```
+
+Não é Play Store. É uso pessoal, para teste, no aparelho dele.
+
+**As 15 seções do relatório que ele pediu** — veredito de viabilidade ·
+arquitetura encontrada · abordagens avaliadas (**e ele proibiu assumir
+Capacitor de saída**) · recomendada · impacto no frontend · no Supabase · no
+build · **celular × PC** · quando o PC realmente entra · **Android Studio ×
+Android SDK/CLI, diferenciados** · riscos · arquitetura proposta · roadmap em
+fases · checklist · e um **ESTADO DA JORNADA** para a investigação não se perder
+entre sessões.
+
+A seção que ele marcou como *"a parte mais importante"* é a **7**: o que dá para
+fazer **só pelo celular**, etapa por etapa, classificada em 🟢 viável · 🟡
+possível mas imprático · 🔴 exige PC. Ele quer o **ponto exato** em que o PC
+passa a valer a pena, não um "você precisa de Android Studio" genérico.
+
+##### O que eu já conferi — e uma premissa dele precisa de correção
+
+Dois `grep` de 30 segundos, feitos antes de registrar, porque o prompt afirma
+algo sobre o sistema (§1.4):
+
+| Ele escreveu | O que medi |
+| --- | --- |
+| *"também possui configuração de PWA/manifest"* | **meia verdade, e a metade que falta é a que decide uma das abordagens** |
+
+**O `public/manifest.webmanifest` EXISTE** e está completo para instalação:
+`display: standalone`, `start_url: /`, cores de tema, e os três ícones
+(192, 512 e **maskable** 512). O `index.html` o referencia na linha 7.
+
+**E NÃO existe service worker.** Nenhum: `grep` por `pwa`, `workbox`,
+`serviceWorker` e `registerSW` em `package.json` e `vite.config.js` não devolve
+nada. Não há `vite-plugin-pwa`.
+
+**Por que isso importa antes mesmo da auditoria começar:** a abordagem **PWA/TWA**
+— que é a mais barata das que ele listou — depende exatamente disso, e hoje o
+site tem a **metade declarativa** (manifest) sem a **metade funcional** (service
+worker, offline, cache). Então "já é PWA" é falso, e "não dá para ser" também:
+é uma lacuna conhecida e mensurável, não um impedimento.
+
+**O que NÃO vou afirmar sem medir** (§1.1): se o Chrome Android de hoje oferece
+"Instalar app" com manifest e **sem** service worker. Eu tenho uma impressão, e
+impressão não entra em auditoria — a regra do Chrome mudou de versão para versão
+e isso se confere na documentação, não na memória. **Fica como a 1ª verificação
+de quinta**, porque ela sozinha pode encurtar o caminho inteiro.
+
+##### Como vou conduzir, para não estourar a sessão
+
+A auditoria tem o mesmo problema de cobertura do §6: ele pediu para varrer
+frontend, backend, Supabase, build e ~40 Web APIs. **Vou aplicar a regra de
+cobertura que já existe** — 100% no que decide a resposta (auth e sessão,
+Realtime, Storage/upload, as Web APIs realmente usadas, o build) e **amostra
+declarada** no resto, dizendo o número e o critério. Nada de "revisei o
+frontend".
+
+**Onde o documento final vai morar:** documento novo pede proposta (§6.2,
+Contrato de Evolução), então a primeira coisa que faço é propor **o quê, por quê,
+onde e o que não será substituído** — provavelmente um `docs/PLANO-ANDROID.md`,
+no mesmo formato do `PLANO-FEED-BUSCA-NEWS.md`, que já é o lugar onde Fase 0 de
+um bloco grande mora. O **ESTADO DA JORNADA** que ele pediu vive dentro dele.
+
+---
+
 #### 1. EM EXECUÇÃO está VAZIO — não há tarefa pela metade
 
 O radar de pautas fechou inteiro: as Fases 1, 2, 3 e **4** estão no ar, e a
@@ -1070,7 +1281,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**55 itens abertos** (+ 1 ideia sem compromisso)
+**58 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2422,7 +2633,34 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   próprios, onde rodapé grande disputa espaço com o conteúdo — pode ser que o
   certo lá seja uma versão bem enxuta, ou nenhum.
 
+## 🔴 Crítico
+
+- ⬜ `[03/10]` 🔴 **O E2E `duasContas.mjs` suspende a conta de teste a cada
+  execução — CI VERMELHO, e em ~3 execuções ela é BANIDA.** *Causa raiz provada;
+  o conserto de 2 linhas de SQL está na seção 🚩 PONTO DE PARTIDA, no topo.*
+
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[03/10]` 🟠 **Ponto de infração não tem INVERSA nem decaimento — e
+  `lift_suspension` não zera os pontos.** *🟡 decisão dele: janela de
+  decaimento, "perdoar" explícito, ou os dois.*
+
+  Medido em `pg_proc`: nada no banco lê ou escreve `violations` além do
+  gatilho de escalada. `handle_violation_escalation` soma a vida inteira da
+  conta, sem recorte de data, e bane em 15. Quem levar 7 advertências em dois
+  anos fica a uma infração do ban permanente, e **nenhum admin consegue
+  perdoar um ponto pela tela**. O diagnóstico inteiro e a minha recomendação
+  estão na seção 🚩 PONTO DE PARTIDA, no topo.
+
+
+- ⬜ `[03/10]` 🟠 **AUDITORIA: o GamerHub como APP ANDROID (APK) — somente
+  leitura.** *Prompt dele de 03/10, e é a PRIMEIRA tarefa de quinta.*
+
+  O desenho inteiro, o regime de só-leitura, as 15 seções do relatório e o que
+  eu já conferi (o manifest existe, **service worker não**) estão na seção
+  **🚩 PONTO DE PARTIDA**, no topo deste arquivo. Esta linha existe para o
+  `inicio-de-sessao.sh` colocá-la na minha frente.
+
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
