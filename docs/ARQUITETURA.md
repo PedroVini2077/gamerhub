@@ -198,6 +198,13 @@ src/
 │   │                      # do router com as chaves deste mapa
 │   ├── like.js            # Curtida otimista com rollback quando o servidor recusa
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
+│   ├── dominio.js         # `[08/10]` O endereço público do site, em UM lugar.
+│   │                      #   Ele estava escrito à mão em `metaDaPagina.js` e
+│   │                      #   num teste; o app Android seria a 3ª cópia — e
+│   │                      #   divergir aqui manda o usuário para um site que
+│   │                      #   não é o nosso. O link de recuperação de senha
+│   │                      #   deixou de usar `window.location.origin`, que
+│   │                      #   dentro do app é `https://localhost`
 │   ├── embed.js           # getEmbedInfo() — parsing de URLs YouTube/Twitch/TikTok/Instagram
 │   ├── format.js          # Formatação de números (1K, 1M...)
 │   ├── turnstile.js       # Carrega o captcha do Cloudflare SOB DEMANDA, só na
