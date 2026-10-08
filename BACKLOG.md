@@ -137,91 +137,37 @@ qual deixa o moderador sem saber se houve decisão de gente.
 
 ---
 
-#### 0. 🚀 A PRIMEIRA TAREFA DE QUINTA — a auditoria do GamerHub como APP ANDROID
+#### 📱 `[08/10]` ANDROID — auditoria FEITA, esperando uma decisão dele
 
-> **Prompt dele, entregue no fim da sessão de 03/10**, com a cota já na beira:
-> *"eu a tempos queria transformar o nosso site em app mobile"*. Ele escreveu um
-> prompt longo e detalhado e pediu para começarmos por ele na quinta.
->
-> **Eu NÃO comecei de propósito.** Auditoria de arquitetura inteira consome uma
-> sessão, e o §6 proíbe declarar fase concluída com leitura parcial para poupar
-> token — fazer um terço dela agora entregaria um diagnóstico pela metade, que é
-> pior do que nenhum.
+A Fase 0 está inteira em [`docs/PLANO-ANDROID.md`](docs/PLANO-ANDROID.md), com
+o ESTADO DA JORNADA no fim para a investigação não recomeçar do zero.
 
-**A pergunta que ele quer respondida, na letra dele:** *"A arquitetura atual do
-GamerHub permite transformá-lo em um aplicativo Android instalável de verdade
-(APK), mantendo a maior parte possível da aplicação atual, e qual seria o
-caminho técnico mais adequado para isso?"*
+**Veredito: sim, dá — e com pouco retrato.** A arquitetura ajuda de um jeito que
+não era garantido: o site fala com o backend **só por HTTPS e WSS**, sem servidor
+próprio, sem cookie, sem rota de servidor. Recomendação: **Capacitor**.
 
-**O regime da tarefa, e ele é explícito e repetido:** **SOMENTE LEITURA.** Nada
-de implementar, criar branch, commitar, instalar dependência, mexer em
-`package.json`, Vite, Supabase, Vercel ou deploy. Só investigação, análise,
-planejamento e documentação.
+**O que decide o próximo passo é uma pergunta de minutos**, e ela é a Fase 1: o
+Chrome instala o site como app **hoje**, com o manifest que já existe e sem
+service worker? Se sim, pode ser que nenhum APK seja necessário para o seu
+objetivo. **Eu me recusei a responder isso de memória** — a regra do Chrome mudou
+de versão para versão.
 
-**O objetivo real dele é menor do que parece**, e isso muda a recomendação:
+**As três coisas que teriam de mudar, e nenhuma é o site:**
 
-```
-GamerHub atual -> versão Android -> gerar APK -> instalar NO PRÓPRIO celular -> testar
-```
-
-Não é Play Store. É uso pessoal, para teste, no aparelho dele.
-
-**As 15 seções do relatório que ele pediu** — veredito de viabilidade ·
-arquitetura encontrada · abordagens avaliadas (**e ele proibiu assumir
-Capacitor de saída**) · recomendada · impacto no frontend · no Supabase · no
-build · **celular × PC** · quando o PC realmente entra · **Android Studio ×
-Android SDK/CLI, diferenciados** · riscos · arquitetura proposta · roadmap em
-fases · checklist · e um **ESTADO DA JORNADA** para a investigação não se perder
-entre sessões.
-
-A seção que ele marcou como *"a parte mais importante"* é a **7**: o que dá para
-fazer **só pelo celular**, etapa por etapa, classificada em 🟢 viável · 🟡
-possível mas imprático · 🔴 exige PC. Ele quer o **ponto exato** em que o PC
-passa a valer a pena, não um "você precisa de Android Studio" genérico.
-
-##### O que eu já conferi — e uma premissa dele precisa de correção
-
-Dois `grep` de 30 segundos, feitos antes de registrar, porque o prompt afirma
-algo sobre o sistema (§1.4):
-
-| Ele escreveu | O que medi |
+| | O quê |
 | --- | --- |
-| *"também possui configuração de PWA/manifest"* | **meia verdade, e a metade que falta é a que decide uma das abordagens** |
+| 🔴 | **Link de email.** `redirectTo: window.location.origin` e o `APP_URL` fixo na `send-email` apontam para o site. No app a origem vira `http://localhost`. A saída é App Links — e mexe em `Login.jsx`, que é arquivo de alto risco (§7) |
+| 🟠 | **Os cabeçalhos de segurança somem.** CSP, `X-Frame-Options` e companhia vêm do `vercel.json`, ou seja, do SERVIDOR. O Capacitor serve local: nenhum se aplica. E o `portas-da-web.mjs` continuaria verde, porque bate no site — a "cobertura que não cobre" |
+| 🟡 | **Microfone** (`AudioRecorder`) passa a exigir permissão nativa no manifesto |
 
-**O `public/manifest.webmanifest` EXISTE** e está completo para instalação:
-`display: standalone`, `start_url: /`, cores de tema, e os três ícones
-(192, 512 e **maskable** 512). O `index.html` o referencia na linha 7.
+**Celular × PC, a resposta curta:** quase tudo dá no celular. **Trava no
+Gradle** — ele baixa um `aapt2` compilado para **x86-64**, que um ARM não
+executa. Há contorno de terceiros; é a etapa onde um PC economiza horas. E
+**Android Studio não é obrigatório**: o obrigatório é o SDK, que o
+`sdkmanager` instala pela linha de comando.
 
-**E NÃO existe service worker.** Nenhum: `grep` por `pwa`, `workbox`,
-`serviceWorker` e `registerSW` em `package.json` e `vite.config.js` não devolve
-nada. Não há `vite-plugin-pwa`.
-
-**Por que isso importa antes mesmo da auditoria começar:** a abordagem **PWA/TWA**
-— que é a mais barata das que ele listou — depende exatamente disso, e hoje o
-site tem a **metade declarativa** (manifest) sem a **metade funcional** (service
-worker, offline, cache). Então "já é PWA" é falso, e "não dá para ser" também:
-é uma lacuna conhecida e mensurável, não um impedimento.
-
-**O que NÃO vou afirmar sem medir** (§1.1): se o Chrome Android de hoje oferece
-"Instalar app" com manifest e **sem** service worker. Eu tenho uma impressão, e
-impressão não entra em auditoria — a regra do Chrome mudou de versão para versão
-e isso se confere na documentação, não na memória. **Fica como a 1ª verificação
-de quinta**, porque ela sozinha pode encurtar o caminho inteiro.
-
-##### Como vou conduzir, para não estourar a sessão
-
-A auditoria tem o mesmo problema de cobertura do §6: ele pediu para varrer
-frontend, backend, Supabase, build e ~40 Web APIs. **Vou aplicar a regra de
-cobertura que já existe** — 100% no que decide a resposta (auth e sessão,
-Realtime, Storage/upload, as Web APIs realmente usadas, o build) e **amostra
-declarada** no resto, dizendo o número e o critério. Nada de "revisei o
-frontend".
-
-**Onde o documento final vai morar:** documento novo pede proposta (§6.2,
-Contrato de Evolução), então a primeira coisa que faço é propor **o quê, por quê,
-onde e o que não será substituído** — provavelmente um `docs/PLANO-ANDROID.md`,
-no mesmo formato do `PLANO-FEED-BUSCA-NEWS.md`, que já é o lugar onde Fase 0 de
-um bloco grande mora. O **ESTADO DA JORNADA** que ele pediu vive dentro dele.
+**As três decisões abertas:** (1) PWA basta ou quer APK? (2) se APK, App Links
+no domínio? (3) o APK entra no CI ou fica manual?
 
 ---
 
@@ -1253,7 +1199,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**56 itens abertos** (+ 1 ideia sem compromisso)
+**55 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2606,15 +2552,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
-
-- ⬜ `[03/10]` 🟠 **AUDITORIA: o GamerHub como APP ANDROID (APK) — somente
-  leitura.** *Prompt dele de 03/10, e é a PRIMEIRA tarefa de quinta.*
-
-  O desenho inteiro, o regime de só-leitura, as 15 seções do relatório e o que
-  eu já conferi (o manifest existe, **service worker não**) estão na seção
-  **🚩 PONTO DE PARTIDA**, no topo deste arquivo. Esta linha existe para o
-  `inicio-de-sessao.sh` colocá-la na minha frente.
-
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
