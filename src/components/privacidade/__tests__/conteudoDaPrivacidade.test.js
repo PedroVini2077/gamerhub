@@ -209,8 +209,19 @@ describe('nenhuma fonte vem de terceiro', () => {
       // voltar e uma URL de verdade — entao a busca e feita no arquivo SEM
       // comentario, que e mais simples e mais dificil de errar do que tentar
       // reconhecer `href`/`src`/`url()` por expressao regular.
+      // `[08/10]` A CSP tambem sai da varredura, e pelo mesmo motivo do
+      // comentario: ela DECLARA o que seria permitido, nao BUSCA nada. O
+      // `index.html` passou a carregar a politica como `<meta>` porque o app
+      // Android nao tem servidor para mandar o cabecalho — e sem esta linha a
+      // trava leria a lista de permissao como se fosse um `href` de fonte.
+      //
+      // (A permissao em si e sobra: o projeto tirou o Google Fonts e a CSP
+      // continua liberando os dois dominios. Esta anotado no BACKLOG — apertar
+      // a politica exige mexer no `portas-da-web.mjs` junto, porque ele compara
+      // o cabecalho por VALOR contra o site no ar.)
       const semComentario = bruto
         .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/gi, '')
         .replace(/\/\*[\s\S]*?\*\//g, '');
 
       for (const [host, nome] of HOSTS) {

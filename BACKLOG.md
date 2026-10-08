@@ -1199,7 +1199,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**55 itens abertos** (+ 1 ideia sem compromisso)
+**56 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2553,6 +2553,20 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
+  mais.** *Esbarrei nisto ao replicar a política para o app.*
+
+  `style-src ... https://fonts.googleapis.com` e `font-src ...
+  https://fonts.gstatic.com` sobraram de quando as fontes vinham de fora. Hoje
+  elas são servidas por nós (`public/fonts`), e a permissão é sobra — não é
+  brecha, é higiene: ela autoriza um terceiro que ninguém chama.
+
+  **Por que não apertei junto:** o `e2e/portas-da-web.mjs` compara o cabeçalho
+  **por valor** contra o site **no ar**. Mudar o `vercel.json` reprovaria o PR
+  até o deploy acontecer — a mudança e a expectativa precisam entrar no mesmo
+  passo, e isso merece um bloco próprio em vez de carona num PR de Android.
+
+
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
 
@@ -2808,8 +2822,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->191<!--/n--> arq ·
-  <!--n:src.lib.linhas-->24.489<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->193<!--/n--> arq ·
+  <!--n:src.lib.linhas-->24.625<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
