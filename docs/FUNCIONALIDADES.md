@@ -1736,3 +1736,28 @@ não te escuta.
 iPhone — o Safari não implementa o evento, e lá a instalação é pelo menu de
 compartilhar. Inventar um passo a passo de iOS seria uma segunda tela para
 manter, sem nenhum teste possível do nosso lado.
+
+#### E a entrada fixa na barra lateral da landing — a volta que faltava
+
+Respeitar o "não" da faixa criava um caminho **sem volta**: quem a dispensasse e
+mudasse de ideia cinco minutos depois não tinha por onde instalar. A faixa
+aparece uma vez, o navegador esconde a opção dele, e nós tínhamos acabado de
+tirar a nossa do caminho.
+
+A barra lateral da landing ganhou **Instalar o app**. Ela é a porta permanente, e
+a diferença entre as duas é uma pergunta só:
+
+| | quem pergunta | respeita a decisão guardada? |
+| --- | --- | --- |
+| a **faixa** | ela aparece sozinha | **sim** — insistir é o defeito |
+| a **entrada** | a pessoa foi procurar | **não** — esconder é o defeito |
+
+**Por que a gaveta e não um botão flutuante.** Botão flutuante é para a ação
+*principal* da tela, e na landing a principal é entrar ou criar conta. Um segundo
+botão fixo competiria com o Hero e com o CTA, na camada mais externa do site
+(§0.4). A gaveta só abre quando alguém toca no menu — que é a forma certa de
+oferecer ação secundária: descoberta sob demanda, sem empurrar nada.
+
+**Ela também desaparece quando não tem o que fazer:** sem o evento do navegador
+(iPhone, ou site já instalado) a entrada não existe, em vez de virar um botão que
+a pessoa clica e nada acontece.

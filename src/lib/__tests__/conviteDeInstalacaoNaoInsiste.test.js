@@ -27,9 +27,29 @@ import { readFileSync } from 'node:fs';
  *
  * App aberto da gaveta roda em `standalone`. Convidar alguém a instalar o que
  * já está instalado é ruído puro.
+ *
+ * ── `[08/10]` 5. O "não" da faixa vira caminho SEM VOLTA ───────────────────
+ *
+ * A 5ª nasceu da pergunta dele sobre pôr "Instalar app" na barra lateral, e ela
+ * revelou um defeito meu: a 1ª versão do `dispensarConvite` **descartava o
+ * evento**. Quem fechasse a faixa e mudasse de ideia cinco minutos depois ficava
+ * sem porta nenhuma — o navegador esconde a opção num menu que quase ninguém
+ * abre, e nós tínhamos acabado de tirar a nossa do caminho.
+ *
+ * São DUAS perguntas diferentes, e é isso que a trava protege:
+ *
+ * | pergunta | quem faz | respeita o "não"? |
+ * | --- | --- | --- |
+ * | `devoConvidar()` | a FAIXA, que aparece sozinha | **sim** — insistir é o defeito |
+ * | `podeInstalar()` | a ENTRADA FIXA, que é procurada | **não** — esconder é o defeito |
+ *
+ * Trocar uma pela outra na barra lateral fecha a volta de novo, **sem nada
+ * quebrar**: o build passa, a tela funciona, e a entrada só nunca aparece para
+ * quem mais precisa dela.
  */
 
 const LIB = 'src/lib/conviteDeInstalacao.js';
+const BARRA = 'src/components/landing/LandingSidebar.jsx';
 
 /** Um `localStorage` de mentira, porque o ambiente de teste não tem um. */
 function comArmazenamento() {
@@ -161,6 +181,66 @@ describe('o convite de instalação não insiste nem chega tarde', () => {
       'aba anônima com armazenamento bloqueado passou a quebrar a tela.\n'
       + 'Não poder guardar uma preferência nunca pode derrubar o site.',
     ).not.toThrow();
+  });
+
+  it('dispensar a FAIXA não fecha a volta: ainda dá para instalar', async () => {
+    const { mod } = await comEventoDisparado(conviteFalso());
+    expect(mod.podeInstalar(), 'a instalação não estava disponível no começo.').toBe(true);
+
+    mod.dispensarConvite();
+
+    expect(
+      mod.devoConvidar(),
+      'a faixa continuou aparecendo depois de dispensada.',
+    ).toBe(false);
+    expect(
+      mod.podeInstalar(),
+      'dispensar a faixa tirou a ÚNICA forma de instalar naquela visita.\n'
+      + 'O "não" vale para a faixa, que não volta a aparecer sozinha. Ele não\n'
+      + 'vale para a pessoa PROCURAR a opção: o navegador esconde a dele num\n'
+      + 'menu de três pontinhos, então sem a nossa entrada não sobra nenhuma.',
+    ).toBe(true);
+  });
+
+  it('instalar encerra a oferta — não fica botão morto', async () => {
+    const { mod } = await comEventoDisparado(conviteFalso('accepted'));
+    await mod.abrirConvite();
+    expect(
+      mod.podeInstalar(),
+      'a entrada continuou oferecendo instalar depois de instalado.\n'
+      + '`prompt()` não pode ser chamado duas vezes no mesmo evento: o segundo\n'
+      + 'clique não faria NADA, e um botão que não faz nada é pior do que\n'
+      + 'nenhum botão.',
+    ).toBe(false);
+  });
+
+  it('a barra lateral da landing tem a entrada, e ela pergunta o CERTO', () => {
+    const jsx = readFileSync(BARRA, 'utf8');
+
+    expect(
+      /podeInstalar/.test(jsx) && /abrirConvite/.test(jsx),
+      'a entrada "Instalar o app" saiu da barra lateral da landing.\n'
+      + 'Ela é a porta permanente: sem ela, quem dispensa a faixa fica sem\n'
+      + 'nenhuma — e a faixa aparece UMA vez só.',
+    ).toBe(true);
+
+    expect(
+      /\{instalavel && \(/.test(jsx),
+      'a entrada deixou de ser condicionada ao convite existir.\n'
+      + 'Sem o navegador ter oferecido, `abrirConvite()` não tem o que abrir:\n'
+      + 'a pessoa clica e NADA acontece, sem erro e sem explicação. É o caso\n'
+      + 'do iPhone, onde o Safari não implementa o evento (§1.5).',
+    ).toBe(true);
+
+    expect(
+      /devoConvidar/.test(jsx),
+      'a barra lateral passou a perguntar `devoConvidar()`.\n'
+      + 'Essa é a pergunta da FAIXA, e ela respeita a decisão guardada — o que\n'
+      + 'faz a entrada fixa DESAPARECER justamente para quem dispensou a faixa,\n'
+      + 'que é exatamente quem ela existe para atender. A pergunta da entrada é\n'
+      + '`podeInstalar()`. Nada quebra se alguém trocar: a tela funciona e a\n'
+      + 'volta fecha em silêncio.',
+    ).toBe(false);
   });
 
   it('o `preventDefault` continua lá — senão o navegador decide sozinho', () => {

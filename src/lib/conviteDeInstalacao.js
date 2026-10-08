@@ -112,7 +112,18 @@ export function guardarDecisao(valor) {
   }
 }
 
-/** O convite deve aparecer agora? */
+/**
+ * Dá para instalar agora, independente do que ela já respondeu?
+ *
+ * É a pergunta da ENTRADA FIXA (barra lateral), e é diferente da de baixo. A
+ * faixa aparece sozinha e por isso respeita o "não"; a entrada fixa é
+ * procurada, e esconder dela seria esconder a opção de quem está pedindo.
+ */
+export function podeInstalar() {
+  return Boolean(convite) && !estaInstalado();
+}
+
+/** A FAIXA deve aparecer sozinha agora? */
 export function devoConvidar() {
   return Boolean(convite) && !estaInstalado() && decisaoGuardada() === null;
 }
@@ -136,9 +147,18 @@ export async function abrirConvite() {
   return outcome;
 }
 
-/** A pessoa fechou o convite sem instalar. */
+/**
+ * A pessoa fechou a faixa sem instalar.
+ *
+ * `[08/10]` Ela **não** descarta o evento, e isso mudou depois que ele
+ * perguntou se cabia uma entrada fixa na barra lateral. A 1ª versão descartava,
+ * e com isso dispensar a faixa fechava a porta: quem mudasse de ideia cinco
+ * minutos depois não tinha por onde instalar naquela visita.
+ *
+ * O "não" vale para a FAIXA — que não volta a aparecer sozinha. Ele não vale
+ * para a pessoa procurar a opção por conta própria, que é o oposto de insistir.
+ */
 export function dispensarConvite() {
-  convite = null;
   guardarDecisao('dispensou');
   avisarOuvintes();
 }
