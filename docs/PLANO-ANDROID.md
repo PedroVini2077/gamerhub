@@ -157,7 +157,7 @@ package.json              ← + @capacitor/core, /cli, /android
 | `BrowserRouter` | **continua** — o Capacitor serve de `http://localhost` com history API |
 | `localStorage` | **continua** e persiste; a sessão do Supabase sobrevive a fechar o app |
 | `window.location.origin` | **muda de valor** — ver 6.1, é o único ponto do `src/` que isto afeta |
-| botão voltar do Android | **`[08/10]` correção:** eu escrevi "não existe tratamento" e estava errado. O `native-bridge.js` do Capacitor documenta uma **ação padrão**, desligada só quando alguém registra um ouvinte pelo plugin `App`. O comportamento exato mora na biblioteca compilada — continua a MEDIR no aparelho, mas é "existe padrão e é substituível", não "não existe nada" |
+| botão voltar do Android | **`[08/10]` correção:** eu escrevi "não existe tratamento" e estava errado. A ponte nativa que vem dentro do pacote `@capacitor/android` documenta uma **ação padrão**, desligada só quando alguém registra um ouvinte pelo plugin `App`. O comportamento exato mora na biblioteca compilada — continua a MEDIR no aparelho, mas é "existe padrão e é substituível", não "não existe nada" |
 | `safe area` / notch | o site é responsivo e já roda bem no celular, mas em tela cheia nativa a barra de status pode sobrepor — medir no primeiro APK |
 | teclado virtual | já é o do Android hoje, pelo navegador |
 
