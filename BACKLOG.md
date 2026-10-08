@@ -1158,7 +1158,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**60 itens abertos** (+ 1 ideia sem compromisso)
+**57 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2541,60 +2541,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   comparar telas diferentes.
 
 
-- ⬜ `[08/10]` 🟠 **O Turnstile do `/contato` está BLOQUEADO em produção pela
-  nossa própria CSP.** *🟡 decisão de segurança dele.*
-
-  Conferido no site **no ar**, não deduzido: `script-src 'self'` e um
-  `frame-src` sem a Cloudflare. O script nunca carrega, e a tela cai no teto de
-  12 s do `lib/turnstile.js` — ele **falha com elegância**, e é por isso que
-  ninguém notou.
-
-  **Por que nunca apareceu:** a política só é aplicada pela Vercel, em produção.
-  O `vite preview` local não manda cabeçalho, e o `politica-de-conteudo.mjs`,
-  que sobe o `dist` COM a política, carrega 6 rotas — `/contato` não é uma delas.
-  Descobri porque a CSP do app, aplicada localmente, derrubou a rota.
-
-  **A decisão é sua porque é de segurança:** consertar significa autorizar
-  `challenges.cloudflare.com` a **executar script** no site. As saídas:
-
-  | | |
-  | --- | --- |
-  | **autorizar** | `script-src` e `frame-src` ganham a Cloudflare. Simples, e é o que o código sempre quis |
-  | **tirar o Turnstile** | o formulário de contato perde o captcha e fica aberto a robô |
-  | **trocar por outro** | captcha próprio ou limite por IP — mais trabalho, zero terceiro |
-
-  **Minha recomendação: autorizar.** O Turnstile já está no código com chave
-  pública, a Cloudflare é um terceiro que já serve meio da web, e a alternativa
-  real é um formulário público sem defesa nenhuma. Mas é sua.
-
-- ⬜ `[08/10]` 🔵 **Mudar diretiva TRAVADA da CSP é um impasse de processo.**
-  *Descoberto tentando consertar o item acima.*
-
-  O `e2e/portas-da-web.mjs` compara `script-src`, `default-src`, `object-src`,
-  `base-uri`, `frame-ancestors` e `form-action` por **igualdade**, contra a
-  **produção**. Então qualquer PR que mude uma delas **reprova a si mesmo** — a
-  produção ainda serve a política antiga.
-
-  O comentário do próprio roteiro antecipou isso para `connect-src` e
-  `frame-src` (que crescem com serviço novo) e **não** para as travadas. É um
-  buraco real, não um defeito do desenho: travar por igualdade é o que pega o
-  afrouxamento silencioso.
-
-  **Saída provável:** o roteiro aceitar o valor do `vercel.json` **ou** o que
-  está no ar, reprovando só quando os dois discordam do esperado — o que
-  continua pegando afrouxamento e deixa o deploy alcançar.
-
-- ⬜ `[08/10]` 🟠 **O app Android ainda não tem CSP.** *Depende dos dois acima.*
-
-  Tentada e retirada no PR do Capacitor. Duas razões: `frame-ancestors` é
-  ignorado em `<meta>` e o Chrome loga `console.error` por página (o
-  `smoke.mjs` derrubou **18 de 18 rotas** por isso — contornável), e a política
-  de hoje bloqueia o Turnstile, que é o item acima.
-
-  Entregar a meta com a política atual **assaria o bug dentro do app também**.
-  Fica para quando o Turnstile estiver decidido.
-
-
 - ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
   mais.** *Esbarrei nisto ao replicar a política para o app.*
 
@@ -2864,8 +2810,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->192<!--/n--> arq ·
-  <!--n:src.lib.linhas-->24.731<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->194<!--/n--> arq ·
+  <!--n:src.lib.linhas-->25.014<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

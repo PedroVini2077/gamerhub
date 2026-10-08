@@ -13,10 +13,22 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- `[08/10]` Sem estas duas o Android pinta as barras com o cinza
+             padrão, e aparece uma emenda entre a faixa de cima e o cabeçalho
+             preto do site. `windowLightStatusBar=false` mantém o relógio e os
+             ícones CLAROS — com fundo escuro, o contrário os apagaria. -->
+        <item name="android:statusBarColor">@color/fundoDoSistema</item>
+        <item name="android:navigationBarColor">@color/fundoDoSistema</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <!-- O tema de ABERTURA também: senão a emenda aparece no instante em
+             que o app abre, antes de o WebView assumir. -->
+        <item name="android:statusBarColor">@color/fundoDoSistema</item>
+        <item name="android:navigationBarColor">@color/fundoDoSistema</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
