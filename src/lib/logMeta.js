@@ -93,6 +93,12 @@ export const ACTION_META = {
   // cobri-las tinha envelhecido, e é por isso que ela deixou de existir: agora
   // o teste deriva as actions das próprias migrations.
   user_unsuspended:          A(CheckCircle,  'text-neon-green',  '#39ff14'),
+  // `[08/10]` A INVERSA do ponto de infração. Verde porque é desfazer uma
+  // punição, e `RotateCcw` porque é reversão — o mesmo par visual que
+  // `live_reactivated` usa. Ela é gravada SÓ pelo banco, pelo trigger que
+  // dispara quando conteúdo oculto volta ao ar: ninguém pediu para perdoar
+  // ponto, então a trilha é o único lugar onde isso aparece.
+  violation_revoked:         A(RotateCcw,    'text-neon-green',  '#39ff14'),
   auth_rate_limited:         A(ShieldAlert,  'text-yellow-400',  '#facc15'),
   auto_solicitado:           A(RotateCcw,    'text-yellow-400',  '#facc15'),
   admin_delete_unconfirmed:  A(UserMinus,    'text-red-400',     '#f87171'),

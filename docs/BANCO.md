@@ -44,7 +44,7 @@ todas as tabelas públicas.**
 | `site_config`                | Configuração global (manutenção, flags, banner, thresholds de moderação) |
 | `reports`                    | Denúncias da comunidade. Índice único **parcial**: uma pendente por pessoa e conteúdo — depois de dispensada, dá para denunciar de novo |
 | `blocked_words`              | Wordlist de palavras bloqueadas (com severidade)                |
-| `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor). **`[12/09]` `points` tem `CHECK 0..10`** (o teto do `ACTION_POINTS` do painel) e a policy de INSERT usa `can_moderate_content(user_id)` — registrar infração é ato de moderação e respeita a hierarquia (SEC-020) |
+| `violations`                | Infrações confirmadas por moderador (ação, pontos, revisor). **`[08/10]` `revogada_em` / `revogada_por` / `revogada_motivo`**: infração revogada CONTINUA na tabela e para de contar para a escalada — revogar não é apagar, e o `CHECK violations_revogacao_tem_motivo` torna revogação sem explicação impossível. **`[12/09]` `points` tem `CHECK 0..10`** (o teto do `ACTION_POINTS` do painel) e a policy de INSERT usa `can_moderate_content(user_id)` — registrar infração é ato de moderação e respeita a hierarquia (SEC-020) |
 | `moderation_queue`           | Fila de revisão humana. `trigger_type`: `report`, `wordlist`, `ai`, `escalation`, `links` e — desde 29/08 — `sem_analise`, que significa o oposto dos outros: nenhuma checagem conseguiu olhar o conteúdo |
 
 #### Colunas relevantes em `posts`
@@ -343,7 +343,19 @@ transforma esta pegadinha em bug silencioso (§4).
   `mod_report_threshold` denúncias, oculta o conteúdo (`hidden_at`) e enfileira
   em `moderation_queue`.
 - `handle_violation_escalation` (violations INSERT, SECURITY DEFINER) — soma os
-  pontos do usuário e chama `apply_mod_auto_ban` ao atingir `mod_ban_threshold`.
+  pontos **vivos** do usuário (`revogada_em IS NULL`) e chama
+  `apply_mod_auto_ban` ao atingir `mod_ban_threshold`.
+  **`[08/10]` O filtro é a INVERSA do ponto**: sem ele, infração perdoada
+  continuava pesando e a próxima infração de qualquer tamanho re-suspendia —
+  o perdão do moderador era desfeito pelo sistema. Ver `INV-WF-003`.
+- `revogar_infracao_de_conteudo_restaurado()` (**`[08/10]`**, trigger `AFTER
+  UPDATE OF hidden_at` em `posts`, `comments` e `community_posts`, SECURITY
+  DEFINER) — quando conteúdo oculto **volta ao ar**, revoga a infração que a
+  ocultação gerou e grava `violation_revoked` em `admin_logs`. É trigger e não
+  código de service porque restaurar é a inversa de ocultar em **qualquer**
+  caminho: painel, fila, E2E e os que ainda não existem (§5, correção de
+  classe). O mapa de tabela é fechado com `RAISE` — `live_chat` não tem
+  `hidden_at`, então tabela fora do mapa é erro de instalação (§4).
 - `apply_mod_auto_ban(user_id, points)` (SECURITY DEFINER) — ban automático pelo
   sistema (sem caller role): marca `banned`, apaga a atividade, gera log +
   notificação. **`[12/09]` Ela NUNCA alcança a equipe** (`role_rank(alvo) >= 2`):

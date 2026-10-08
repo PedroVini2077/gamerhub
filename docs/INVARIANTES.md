@@ -125,10 +125,19 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | --- | --- | --- | --- |
 | **INV-WF-001** | Uma decisão está vinculada à **geração do estado** que ela contesta — aprovar um pedido do BAN A não pode remover o BAN B | N41, N42 · SEC-044 | `src/lib/__tests__/decisaoRevalidaEstado.test.js` |
 | **INV-WF-002** | Toda decisão **revalida o alvo no momento em que é tomada**, nunca sobre o retrato guardado quando o pedido foi criado | N25, N26, N27, N38, N39 · SEC-045 | `src/lib/__tests__/decisaoRevalidaEstado.test.js` |
+| **INV-WF-003** | Punição tem **inversa**: infração **revogada** não conta para a escalada, e restaurar conteúdo oculto revoga a infração que a ocultação gerou | `[08/10]` CI vermelho — 4 execuções do E2E × 2 pontos = o limiar exato | `src/lib/__tests__/infracaoTemInversa.test.js` |
+| **INV-WF-004** | Revogar **não é apagar**: a linha fica, com quem revogou, quando e por quê — e revogação sem motivo é impossível, por CHECK | `[08/10]` idem — infração que some sem rastro é indistinguível de bug (§1.5) | `src/lib/__tests__/infracaoTemInversa.test.js` · CHECK `violations_revogacao_tem_motivo` |
 
 > As duas são a mesma família vista de dois ângulos: **autorização criada para um
 > estado antigo agindo sobre um estado novo**. Sete achados distintos do
 > levantamento externo eram esta única coisa.
+>
+> **`[08/10]` As duas últimas são outra pergunta da mesma família:** a 001 e a
+> 002 cuidam da decisão que olha um retrato velho; a 003 e a 004 cuidam da
+> decisão que **não pode ser desfeita**. `lift_suspension` existia desde
+> sempre e era decorativa — removia a suspensão e deixava de pé os pontos que
+> a causaram, então a infração seguinte re-suspendia. Perdão que o próprio
+> sistema desfaz não é perdão.
 
 ---
 

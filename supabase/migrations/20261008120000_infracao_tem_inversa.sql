@@ -202,7 +202,11 @@ CREATE TRIGGER trg_revogar_infracao_restaurada
 
 -- ── 4. O poder do admin: remover a suspensão PERDOA os pontos dela ───────────
 
-CREATE OR REPLACE FUNCTION public.lift_suspension(p_user_id uuid, p_note text)
+-- `p_note` MANTEM o `DEFAULT NULL`: o Postgres recusa um CREATE OR REPLACE que
+-- remova default de funcao existente ("cannot remove parameter defaults"), e
+-- com razao — sem ele, toda chamada de um argumento so (`lift_suspension(id)`)
+-- passaria a nao resolver.
+CREATE OR REPLACE FUNCTION public.lift_suspension(p_user_id uuid, p_note text DEFAULT NULL)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -233,6 +237,13 @@ BEGIN
 
   UPDATE profiles SET suspended_until = NULL WHERE id = p_user_id;
 
+  -- A soma e medida ANTES do UPDATE: e exatamente o que esta sendo perdoado.
+  -- A 1a versao somava depois, filtrando `revogada_por = auth.uid()` numa
+  -- janela de 1 segundo — fragil sem motivo, e capaz de contar a revogacao de
+  -- uma chamada anterior do mesmo admin.
+  SELECT COALESCE(SUM(points), 0) INTO v_pontos
+    FROM violations WHERE user_id = p_user_id AND revogada_em IS NULL;
+
   -- A PARTE NOVA, e ela e o que faz a remocao valer algo. Sem isto, os pontos
   -- que causaram a suspensao ficavam de pe: a proxima infracao de QUALQUER
   -- tamanho voltava a cruzar o limiar e re-suspendia na hora. O moderador
@@ -244,10 +255,6 @@ BEGIN
                            || coalesce(' — ' || p_note, '')
    WHERE user_id = p_user_id AND revogada_em IS NULL;
   GET DIAGNOSTICS v_revogadas = ROW_COUNT;
-
-  SELECT COALESCE(SUM(points), 0) INTO v_pontos
-    FROM violations
-   WHERE user_id = p_user_id AND revogada_por = auth.uid() AND revogada_em >= now() - interval '1 second';
 
   INSERT INTO admin_logs (action, details, category, actor_id, actor_username, severity, metadata, admin_id, admin_username)
   VALUES ('user_unsuspended',

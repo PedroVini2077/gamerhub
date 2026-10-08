@@ -100,126 +100,50 @@ dessa tarefa — o ciclo do §8 fica para quando ela fechar.
 > *"vamos só resumir tudo, e deixar engatilhado pra próxima sessão pra deixarmos
 > visível o ponto de partida"*. **Esta seção é a primeira coisa a ler.**
 
-#### ⛔ ANTES DE TUDO — o CI está VERMELHO, e a culpa é de um roteiro MEU
+#### ✅ `[08/10]` RESOLVIDO — a punição ganhou INVERSA, e o CI voltou ao verde
 
-> **`[03/10]` 🔴 O E2E `duasContas.mjs` (PR #287, ontem) está SUSPENDENDO a
-> conta de teste a cada execução — e em ~3 execuções ela será BANIDA.**
+O que derrubou o CI em 03/10 está fechado, e o conserto foi maior do que o
+sintoma. O histórico completo está em
+[`docs/DECISOES-DE-BANCO.md`](docs/DECISOES-DE-BANCO.md); em uma linha: a
+escalada somava a vida inteira da conta e `lift_suspension` era decorativa.
 
-**O sintoma.** O PR #289, que só tem documentação, reprovou em `fluxos
-autenticados` e `painel de admin num navegador` — e reprovou **de novo** na
-re-execução, então não é instabilidade. A `main` estava verde às 10:54 com o
-mesmo código.
+Hoje: a soma conta só infração **viva**, restaurar conteúdo oculto **revoga**
+a infração que a ocultação gerou (trigger nas três tabelas de conteúdo), e
+remover uma suspensão **perdoa** os pontos que a causaram. Revogar não é
+apagar — a linha fica, com quem revogou e por quê, e a revogação automática
+grita em `admin_logs`. Travado por `infracaoTemInversa.test.js`, 6 checagens,
+cada uma provada reinjetando o bug.
 
-**A causa raiz, provada e não deduzida.** A tabela `violations` tem 4 linhas de
-2 pontos para `@claudetester`, e os quatro horários batem **um a um** com as
-quatro execuções do E2E desde que o roteiro entrou:
+**O roteiro de E2E ficou correto sem uma linha de código de teste**, porque ele
+já restaurava o post — que era o argumento para pôr a inversa no produto em vez
+de no roteiro.
 
-| Violação | Execução |
+---
+
+#### 🟡 `[08/10]` O QUE CONTINUA ABERTO, e é decisão dele: DECAIMENTO
+
+A inversa resolve o perdão **explícito** — alguém restaura o conteúdo, ou um
+admin tira a suspensão. **Não resolve o tempo.**
+
+| O que ainda acontece | |
 | --- | --- |
-| 02:05 e 02:13 | as duas do próprio PR #287 |
-| 10:50 | PR #288 |
-| 12:08 | PR #289 — a que falhou |
+| quem serve a suspensão inteira **mantém os pontos** | a próxima infração escala a partir de 8 |
+| a soma **não tem janela** | `SUM(points)` cobre a vida inteira da conta |
+| limiar de ban = 15 | 7 advertências em dois anos deixam a pessoa a uma infração do ban permanente |
 
-4 × 2 = **8**, que é exatamente o `mod_suspend_threshold` do `site_config`. O
-trigger `handle_violation_escalation` disparou `apply_mod_auto_suspend` às
-12:08:53 e a conta ficou suspensa **até 10/10**.
+**Isso é defensável como escalada de reincidência** — e é exatamente por isso
+que é decisão de produto, não conserto meu. As perguntas:
 
-**Por que isso derruba DOIS roteiros com um mecanismo só:** `LinhaDePublicar`
-tem exatamente dois `return null` — sem conta e **suspenso**. Suspenso, a linha
-`[data-publicar="linha"]` nunca aparece (o passo 6 esperou 30 s por ela), e ir
-ao vivo é recusado, então o `LiveGoModal` fica **aberto** e intercepta o clique
-seguinte. Um só defeito, dois sintomas que pareciam sem relação.
+1. O ponto deve **decair** por tempo? (`SUM(points) WHERE created_at > now() -
+   interval 'N days'` — e qual N: 90? 180?)
+2. Ou basta o perdão explícito que acabou de existir?
+3. Se decair, o decaimento vale para o limiar de **ban** também, ou só para o
+   de suspensão?
 
-**O que eu errei, e é a regra que eu mesmo aplico nos outros.** O §5 manda:
-*"toda ação de estado precisa da INVERSA e da LIMPEZA"*. Eu escrevi o desfazer
-de cada passo do roteiro — o post é restaurado, o post é apagado — e **não vi
-que o ponto de infração não tem inversa**. Restaurar o conteúdo não devolve o
-ponto. Ele acumula entre execuções, para sempre.
-
-**E o relógio está correndo:** o `mod_ban_threshold` é **15**. Mais 4
-execuções (8 pontos) e `@claudetester` é **banido automaticamente**.
-
-##### ⚠️ E investigar isso revelou um defeito DE PRODUTO, maior que o meu
-
-Fui procurar a RPC que limpa os pontos para me desentupir, e **ela não
-existe**. Medido em `pg_proc`: nada no banco inteiro lê ou escreve `violations`
-além do próprio gatilho de escalada. As três consequências:
-
-| O que acontece | Evidência |
-| --- | --- |
-| `lift_suspension` **não zera os pontos** | o corpo dela faz `UPDATE profiles SET suspended_until = NULL` e não toca em `violations` |
-| então **remover uma suspensão é quase inútil** para quem está no limiar | com 8 pontos guardados, a próxima infração de **qualquer tamanho** soma e volta a cruzar os 8 — o perdão do moderador é desfeito pela infração seguinte |
-| e o acúmulo **não tem janela de tempo** | `handle_violation_escalation` faz `SUM(points) WHERE user_id = ...`, sem recorte de data: soma a vida inteira da pessoa |
-
-**O desenho completo disso:** quem chegar a 15 pontos somados **ao longo de
-toda a vida da conta** é banido automaticamente, e não existe caminho no
-produto para perdoar um ponto. Alguém que levou 7 advertências em dois anos
-está a uma infração do banimento permanente, e nenhum admin consegue mudar
-isso pela tela.
-
-**É o §5 na letra — "toda ação de estado precisa da INVERSA"** — aplicado ao
-produto, não ao meu roteiro. A ação `registrar ponto` existe; a inversa
-`perdoar ponto` não.
-
-**Isto é 🟡 (decisão dele), não conserto meu**, porque as perguntas são de
-produto: o ponto deve **decair** (90 dias? 180?), ou deve existir um
-**"perdoar"** explícito para a equipe, ou as duas? E `lift_suspension`
-deveria zerar junto, ou são decisões separadas de propósito? Minha
-recomendação: **decaimento por janela** (o `SUM` ganha `WHERE created_at >
-now() - interval 'N days'`) **mais** um perdão explícito que grave em
-`admin_logs`. A janela resolve o caso comum sozinha; o perdão cobre o erro de
-moderação, que é o caso em que a pessoa não deveria esperar N dias.
-
-##### O conserto, em duas partes
-
-**(1) Destravar agora — eu NÃO consegui aplicar, e medi por quê.** Quatro
-tentativas, duas formulações, **nos dois modos de permissão** (ele trocou de
-automático para aprovação no meio e o resultado não mudou). O padrão é claro:
-`select` passa — inclusive `select lift_suspension(...)`, que chegou a rodar e
-parou na checagem de identidade, correta — e **escrita direta volta
-`cancelled`**. *Isto corrige o que escrevi hoje de manhã: eu havia concluído
-que era o prompt caindo no modo automático, e o modo mudou sem mudar o
-resultado, então essa explicação não se sustenta.*
-
-**Não reformulei o comando para passar por baixo do portão** (envolver o
-`delete` num CTE com `returning`, por exemplo). O portão existe para exigir
-aprovação humana em operação destrutiva; driblá-lo entregaria o conserto e
-quebraria a coisa que protege o banco.
-
-E `lift_suspension` não me atende por desenho: pelo MCP eu sou `postgres`, sem
-`auth.uid()`, e `exige_operador_ativo()` barra — que é a segurança funcionando.
-
-O comando, pronto para colar no SQL Editor:
-
-```sql
--- As 4 linhas são artefato do E2E, não moderação real (reason='spam',
--- geradas pelo duasContas.mjs). Apagar ZERA a soma e o gatilho para de armar.
-delete from violations v using profiles p
- where p.id = v.user_id and p.username = 'claudetester';
-
--- A suspensão sai pela RPC, nunca por UPDATE cru (§5, regra 1): ela grava
--- em admin_logs e a trilha continua verdadeira.
-select lift_suspension(id) from profiles where username = 'claudetester';
-```
-
-Conferir depois: `select suspended_until from profiles where username =
-'claudetester';` tem de voltar `null`.
-
-**(2) A trava, que é o conserto de verdade.** Sem ela isto volta na 4ª
-execução. Três saídas, e a escolha é dele:
-
-| Saída | O que custa |
-| --- | --- |
-| **o roteiro apaga a própria violação no desfazer** | é a mais fiel ao §5 (a inversa existe de verdade), e não mexe em produto |
-| **conta de teste isenta da escalada** | mais simples, mas cria um caminho que o produto não tem — e o que não é exercitado não é testado |
-| **o roteiro não ocultar de verdade** | perde justamente a cobertura que o PR #287 existiu para criar |
-
-**Minha recomendação é a primeira.** E a trava da trava: um teste que reinjeta
-o caso — roda o desfazer e exige `sum(points) = 0` — senão a próxima versão do
-roteiro volta a esquecer.
-
-**O PR #289 fica ABERTO e vermelho**, de propósito (§8): não é certo empilhar
-merge enquanto a conta de teste caminha para o ban.
+**Minha recomendação: janela de 180 dias.** Ela resolve o caso comum sozinha
+(quem errou uma vez há meio ano não carrega aquilo para sempre) e preserva a
+escalada de quem reincide em sequência. O perdão explícito continua cobrindo o
+erro de moderação, que é o caso em que a pessoa **não** deveria esperar.
 
 ---
 
@@ -1339,7 +1263,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**58 itens abertos** (+ 1 ideia sem compromisso)
+**56 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2691,25 +2615,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   próprios, onde rodapé grande disputa espaço com o conteúdo — pode ser que o
   certo lá seja uma versão bem enxuta, ou nenhum.
 
-## 🔴 Crítico
-
-- ⬜ `[03/10]` 🔴 **O E2E `duasContas.mjs` suspende a conta de teste a cada
-  execução — CI VERMELHO, e em ~3 execuções ela é BANIDA.** *Causa raiz provada;
-  o conserto de 2 linhas de SQL está na seção 🚩 PONTO DE PARTIDA, no topo.*
-
 ## 🟠 Importante — dá para fazer
-
-- ⬜ `[03/10]` 🟠 **Ponto de infração não tem INVERSA nem decaimento — e
-  `lift_suspension` não zera os pontos.** *🟡 decisão dele: janela de
-  decaimento, "perdoar" explícito, ou os dois.*
-
-  Medido em `pg_proc`: nada no banco lê ou escreve `violations` além do
-  gatilho de escalada. `handle_violation_escalation` soma a vida inteira da
-  conta, sem recorte de data, e bane em 15. Quem levar 7 advertências em dois
-  anos fica a uma infração do ban permanente, e **nenhum admin consegue
-  perdoar um ponto pela tela**. O diagnóstico inteiro e a minha recomendação
-  estão na seção 🚩 PONTO DE PARTIDA, no topo.
-
 
 - ⬜ `[03/10]` 🟠 **AUDITORIA: o GamerHub como APP ANDROID (APK) — somente
   leitura.** *Prompt dele de 03/10, e é a PRIMEIRA tarefa de quinta.*
@@ -2975,8 +2881,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->188<!--/n--> arq ·
-  <!--n:src.lib.linhas-->23.832<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->189<!--/n--> arq ·
+  <!--n:src.lib.linhas-->24.051<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

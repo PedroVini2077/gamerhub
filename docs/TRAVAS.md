@@ -88,6 +88,7 @@ deriva que não estoura em lugar nenhum.
 | `punicaoRespeitaHierarquia.test.js` | `INV-AUTZ-004` |
 | `guardDePapelNaoAceitaNull.test.js` | `INV-AUTZ-005` · `INV-CONTRATO-004` |
 | `decisaoRevalidaEstado.test.js` | `INV-WF-001` · `INV-WF-002` |
+| `infracaoTemInversa.test.js` | `INV-WF-003` · `INV-WF-004` |
 | `funcaoDeTriggerNaoEhRpc.test.js` | `INV-PORTA-001` |
 | `funcaoNovaNasceFechada.test.js` | `INV-PORTA-015` |
 | `retencaoHibrida.test.js` | `INV-TRILHA-003` |
