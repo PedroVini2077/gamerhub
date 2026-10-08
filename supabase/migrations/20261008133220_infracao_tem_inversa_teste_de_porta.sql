@@ -1,0 +1,50 @@
+-- ─────────────────────────────────────────────────────────────────────────────
+-- A INVERSA DO PONTO DE INFRAÇÃO — §5 ("toda ação de estado precisa da INVERSA")
+--
+-- O QUE ESTAVA ERRADO, e foi medido em 03/10 durante um CI vermelho:
+--
+--   1. `handle_violation_escalation` somava `SUM(points) WHERE user_id = ...`
+--      SEM NENHUM recorte: a vida inteira da conta, para sempre.
+--   2. `lift_suspension` zerava `suspended_until` e NÃO tocava em `violations`.
+--      Com 8 pontos guardados e limiar 8, a próxima infração de qualquer
+--      tamanho voltava a cruzar o limiar — o perdão do moderador era desfeito
+--      pela infração seguinte, e a RPC parecia funcionar.
+--   3. Nada no banco inteiro lia ou escrevia `violations` além do próprio
+--      gatilho de escalada (conferido em `pg_proc`): não existia caminho
+--      nenhum, em tela ou em SQL, para perdoar um ponto.
+--
+-- COMO ISSO APARECEU: o roteiro `e2e/duasContas.mjs` oculta um post por
+-- execução. Quatro execuções × 2 pontos = exatamente o `mod_suspend_threshold`,
+-- e a conta de teste foi suspensa por 7 dias — derrubando DOIS roteiros de uma
+-- vez, porque `LinhaDePublicar` devolve `null` para quem está suspenso e ir ao
+-- vivo é recusado. O roteiro restaurava o post e NÃO desfazia o ponto.
+--
+-- A ESCOLHA DE DESENHO, e ela é a razão deste arquivo existir:
+--
+--   REVOGAR, não APAGAR. A violação continua na tabela com quem revogou,
+--   quando e por quê. Apagar a linha resolveria a soma e destruiria a trilha —
+--   e infração que desaparece sem rastro é indistinguível de bug (§1.5).
+--
+--   A INVERSA MORA NA CLASSE, não no caso. Restaurar conteúdo oculto é a
+--   inversa de ocultá-lo, e ela pertence a QUALQUER caminho que limpe
+--   `hidden_at`: o painel do admin, a fila de moderação, o roteiro de E2E e os
+--   caminhos que ainda não existem. Por isso é TRIGGER nas tabelas de conteúdo,
+--   e não código dentro de um service — exatamente o padrão que
+--   `resolver_moderacao_de_conteudo_apagado` já estabeleceu para o DELETE.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--
+-- ── POR QUE ESTA MUDANÇA ESTÁ EM CINCO ARQUIVOS ──────────────────────────────
+-- O `apply_migration` do MCP recusa SQL com `DROP` (medido: a migration inteira
+-- voltou `cancelled`; a parte aditiva passou). Então ela foi aplicada em pedaços,
+-- e o banco registrou cinco versões. O `espelho-de-migrations.mjs` reprovou o PR
+-- porque a pasta tinha UM arquivo e o banco tinha cinco — recriar o banco a
+-- partir daqui produziria um schema incompleto. Estes arquivos são o espelho
+-- fiel do que foi aplicado, na ordem em que foi.
+-- ────────────────────────────────────────────────────────────────────────────
+
+-- Este arquivo nasceu de um teste de porta: eu precisava saber se o
+-- `apply_migration` passava onde o `execute_sql` cancelava. O comentário em si é
+-- verdadeiro e fica.
+COMMENT ON TABLE public.violations IS
+  'Infrações de moderação. Pontos somam para a escalada automática — e só contam enquanto `revogada_em` for NULL.';
