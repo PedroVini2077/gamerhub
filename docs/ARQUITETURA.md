@@ -198,6 +198,12 @@ src/
 │   │                      # do router com as chaves deste mapa
 │   ├── like.js            # Curtida otimista com rollback quando o servidor recusa
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
+│   ├── servicoDeCache.js  # `[08/10]` Liga o service worker (`public/sw.js`),
+│   │                      #   e decide QUANDO: só em produção, só se o
+│   │                      #   navegador tiver, só depois do `load`. Falha de
+│   │                      #   registro não quebra o site e NÃO some: vai para
+│   │                      #   o Sentry, porque "o PWA parou de instalar" é
+│   │                      #   coisa que ninguém descobriria de outro jeito
 │   ├── dominio.js         # `[08/10]` O endereço público do site, em UM lugar.
 │   │                      #   Ele estava escrito à mão em `metaDaPagina.js` e
 │   │                      #   num teste; o app Android seria a 3ª cópia — e

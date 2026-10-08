@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { iniciarMonitoramento } from './lib/monitoring';
+import { registrarServicoDeCache } from './lib/servicoDeCache';
 
 // Liga o monitoramento ANTES de qualquer coisa: erro que acontece durante a
 // montagem do app é justamente o mais grave, e o que ninguém vê acontecer.
@@ -23,6 +24,12 @@ window.addEventListener('vite:preloadError', (event) => {
     window.location.reload();
   }
 });
+
+// `[08/10]` O cache de assets e a tela de offline. Ele sozinho decide se deve
+// existir (só em produção, só se o navegador tiver, só depois do `load`) — e
+// NÃO cacheia HTML, então o tratador de `vite:preloadError` acima continua
+// funcionando: hash velho segue dando 404 e a aba recarrega para pegar o novo.
+registrarServicoDeCache();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
