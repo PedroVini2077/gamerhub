@@ -2512,34 +2512,43 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
-- ⬜ `[08/10]` 🟠 **O app Android TRAVA, e a landing é a pior parte.** *Relato
-  dele no 1º teste do APK: "desempenho bem abaixo do site".*
+- ⬜ `[08/10]` 🟠 **A landing trava no app — e o portão por aparelho do §0.3
+  nunca foi construído.** *🟡 decisão dele: aprovar o portão por MEDIÇÃO.*
 
-  **O que eu já apurei, e é estrutural:** a landing **não tem portão de
-  desempenho nenhum**. São 21 componentes de efeito com animação dirigida por
-  rolagem (`useProgressoDeRolagem`, `PalcoDeRolagem`, `FluxoDeDados`,
-  `ConvergenciaDoHub`, `ElectricTitle`, `PortalDoAtoZero`), e o único gate é
-  `prefers-reduced-motion` — que é **preferência de acessibilidade, não
-  capacidade de aparelho**. Todo mundo recebe tudo.
+  **Confirmado por ele:** *"a maioria é na landing page"*. O feed aguenta. Não
+  é o WebView — é a decoração.
 
-  Isso já era previsto: o §0.3, regra 2, fala em *"quando existir portão por
-  aparelho"*. **Ele nunca existiu.** E a mesma seção registra que a cena 3D foi
-  removida por este tipo exato de custo (−708 kB).
+  **O que a investigação DESCARTOU, medindo:**
 
-  **A hipótese que eu PRECISO testar antes de mexer em efeito nenhum:** o APK
-  entregue é `assembleDebug`, e build de debug roda com `debuggable=true`, que
-  desliga otimizações da ART. Um `assembleRelease` pode fechar parte da
-  diferença sem tocar na landing. **Foi gerado para ele comparar.**
+  | | |
+  | --- | --- |
+  | JavaScript por quadro | `useProgressoDeRolagem` usa `MotionValue`, sem render do React por quadro. O erro que custou 714 ms no `FluxoDeDados` já está registrado no `DESEMPENHO.md` e não se repete |
+  | peso das imagens | 42 arquivos, 3,3 MB, já em variantes responsivas (828 px para celular alto, 1600 para largo) |
 
-  **O que eu NÃO consigo medir daqui, e é honesto dizer:** não alcanço o
-  aparelho dele. Sem `chrome://inspect` de um PC, a evidência que resolve é a
-  comparação entre os dois APKs e, se ela não explicar, isolar a landing
-  (abrir o app já logado, que cai no feed, contra abrir deslogado).
+  **O que sobra, e eu NÃO consigo medir daqui:** quantas camadas pintam ao
+  mesmo tempo. Depende da GPU do aparelho dele.
 
-  **Um confundidor a descartar antes de qualquer conclusão:** no site ele está
-  logado e vê o FEED; no app, deslogado, vê a LANDING. Comparar os dois seria
-  comparar telas diferentes.
+  **A proposta, e ela esbarra numa regra do próprio projeto.** O §0.3, regra 2,
+  prevê um portão por aparelho que **nunca existiu**. Mas a regra 6 fecha o
+  caminho óbvio: *"detectar aparelho é medir, não identificar"* — ler modelo e
+  GPU foi RECUSADO por ser impressão digital.
 
+  Então o portão tem de medir **o próprio desenho**: contar quadros perdidos
+  nos primeiros ~1,5 s e, se estiver ruim, cair para a cena **parada** que já
+  existe para `prefers-reduced-motion` (`PrologoParado`, e o caminho "composição
+  parada, não vazia" do `PortalDoAtoZero`). Não é construir uma segunda landing
+  — é religar o que já está lá por outro motivo.
+
+  **A escolha explícita de quem olha VENCE a medição**, sempre (§0.3, regra 2).
+
+  **O risco, dito antes de construir:** medição de quadro no começo erra se o
+  aparelho estiver ocupado abrindo o app — ela acusaria lentidão inexistente e
+  cortaria o enfeite de quem não precisava. Por isso o corte não pode ser
+  permanente nem vencer a escolha de ninguém.
+
+  **As três perguntas para ele:** (1) aprova o portão por medição? (2) o corte
+  vale só na landing ou no site logado também? (3) botão visível para religar
+  os efeitos, ou basta o `prefers-reduced-motion` do sistema?
 
 - ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
   mais.** *Esbarrei nisto ao replicar a política para o app.*
