@@ -108,6 +108,7 @@ export const REGRAS = {
   reports_content_type_check:        'Tipo de conteúdo desconhecido para uma denúncia.',
   reports_status_check:              'Estado desconhecido para uma denúncia.',
   violations_points_faixa:           'A pontuação da infração está fora da faixa aceita.',
+  violations_revogacao_tem_motivo:   'Revogar uma infração exige escrever o motivo — revogação sem explicação não fica legível depois.',
   violations_action_taken_check:     'Ação de moderação desconhecida.',
   unban_requests_status_check:       'Estado desconhecido para um pedido de desbanimento.',
   live_reactivation_requests_status_check: 'Estado desconhecido para um pedido de reativação.',

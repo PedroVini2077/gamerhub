@@ -1,6 +1,6 @@
 # Migrations
 
-**Esta pasta é a verdade sobre o schema.** As <!--n:migrations-->245<!--/n-->
+**Esta pasta é a verdade sobre o schema.** As <!--n:migrations-->251<!--/n-->
 migrations aqui, aplicadas em ordem de nome, reconstroem o banco do zero.
 
 ## Por que ela existe
@@ -115,3 +115,20 @@ escrevendo direto no disco — para as 180 kB de SQL não passarem pelo contexto
 do Claude. A função foi derrubada em seguida, e o risco foi avaliado antes:
 expunha o histórico de schema a quem tem conta, por um minuto, e **este mesmo
 histórico está num repositório público desde então**. Não era segredo.
+
+## `[08/10]` Uma mudança pode virar VÁRIOS arquivos, e por quê
+
+O `apply_migration` do MCP **recusa SQL que contenha `DROP`** — medido em 08/10:
+a migration inteira da inversa de infração voltou `cancelled`, e a parte
+puramente aditiva passou. O caminho foi aplicá-la em pedaços, e o banco
+registrou **cinco versões** para uma mudança conceitualmente única.
+
+**O `espelho-de-migrations.mjs` reprovou o PR na hora**, e estava certo: a pasta
+tinha um arquivo e o banco tinha cinco. Recriar o banco a partir daqui daria um
+schema incompleto — exatamente o que este README promete que não acontece.
+
+**A regra que fica:** o que vale é o que o BANCO registrou. Se uma mudança foi
+aplicada em pedaços, a pasta leva um arquivo por pedaço, com a versão e o nome
+que o banco gravou, e sem os `DROP ... IF EXISTS` que nunca chegaram a rodar. O
+cabeçalho com o diagnóstico fica no primeiro arquivo da série; os demais
+apontam para ele.

@@ -196,6 +196,68 @@ ano 12020 é uma promoção definitiva com outro nome.
 
 ## Ciclo de vida do conteúdo
 
+### `[08/10]` A INVERSA do ponto de infração — REVOGAR, e não apagar
+
+**O defeito, medido.** `handle_violation_escalation` somava `SUM(points) WHERE
+user_id = ...` **sem recorte nenhum** — a vida inteira da conta. E
+`lift_suspension` zerava `suspended_until` sem tocar em `violations`. Com 8
+pontos guardados e limiar 8, a próxima infração de **qualquer** tamanho voltava
+a cruzar o limiar: o moderador perdoava e o sistema desfazia o perdão sozinho.
+
+Conferido em `pg_proc`: **nada no banco inteiro** lia ou escrevia `violations`
+além do próprio gatilho. Não existia caminho, em tela ou em SQL, para perdoar um
+ponto — a ação `registrar ponto` existia e a inversa não (§5).
+
+**Como apareceu, e é o que prova que não era teórico.** O roteiro
+`e2e/duasContas.mjs` oculta um post por execução. Quatro execuções × 2 pontos =
+exatamente o `mod_suspend_threshold`, a conta de teste foi suspensa por 7 dias, e
+**dois roteiros caíram de uma vez** — `LinhaDePublicar` devolve `null` para quem
+está suspenso, e ir ao vivo é recusado. Os quatro horários em `violations`
+batiam um a um com as quatro execuções.
+
+#### A alternativa RECUSADA: apagar a linha
+
+Apagar resolveria a soma com uma linha de SQL, e foi o primeiro caminho que me
+ocorreu — foi inclusive o que o dono colou para destravar o CI.
+
+**Recusada porque destrói a trilha.** Infração que desaparece sem rastro é
+indistinguível de bug (§1.5), e a tabela existe justamente para responder
+"quanto esta pessoa deve, e por quê". O desenho que ficou: `revogada_em`,
+`revogada_por` e `revogada_motivo`, com **CHECK exigindo o motivo** — a linha
+fica, e quem a ler daqui a seis meses entende por que ela não conta.
+
+#### A segunda escolha: a inversa é TRIGGER, não código de service
+
+`restoreContent` é um `UPDATE ... SET hidden_at = null` **do cliente**, sem RPC.
+Pôr a revogação ali cobriria aquele caminho e deixaria de fora a fila de
+moderação, o roteiro de E2E e os caminhos que ainda não existem.
+
+É a mesma decisão que `resolver_moderacao_de_conteudo_apagado` já tinha tomado
+para o `DELETE`: **correção de classe, não de caso** (§5). O gatilho é `AFTER
+UPDATE OF hidden_at` com `WHEN (OLD.hidden_at IS NOT NULL AND NEW.hidden_at IS
+NULL)` nas três tabelas de conteúdo — e o roteiro de E2E passou a estar correto
+**sem uma linha de código de teste**, porque ele já restaurava o post.
+
+Uma diferença deliberada do precedente: o mapa de tabela é **fechado, com
+`RAISE`**, e não `ELSE 'chat'`. `live_chat` não tem `hidden_at`, então tabela
+fora do mapa aqui é erro de instalação, não um caso a adivinhar (§4).
+
+#### Duas coisas que o teste em ROLLBACK pegou, e a aplicação direta não pegaria
+
+1. **`admin_logs.admin_username` é NOT NULL** e a 1ª versão do gatilho não o
+   preenchia. O sintoma **não** seria "o log não apareceu": seria **restaurar
+   conteúdo oculto parar de funcionar**, porque o trigger derruba o `UPDATE`.
+2. **`CREATE OR REPLACE` não pode remover default de parâmetro.**
+   `lift_suspension` tem `p_note text DEFAULT NULL`, e a minha versão o omitia —
+   o Postgres recusou. Sem o default, toda chamada de um argumento só pararia de
+   resolver.
+
+**E o que NÃO foi decidido**, porque é produto e não banco: o ponto continua
+**sem decaimento por tempo**. Quem serve a suspensão inteira mantém os pontos, e
+a próxima infração escala. Isso é defensável como escalada de reincidência — mas
+é escolha, e está no `BACKLOG.md` esperando o dono.
+
+
 ### `SEC-027` · O cliente declara INTENÇÃO; o servidor deriva o VALOR
 
 **Decidido:** as colunas de ciclo de vida de `posts` (`was_live`, `expires_at`,

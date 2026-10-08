@@ -87,6 +87,23 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   Ao somar `mod_ban_threshold` (15) pontos, `apply_mod_auto_ban` **bane o usuário
   automaticamente** (com cascade da atividade, log e notificação aos admins).
 
+  > **`[08/10]` A punição tem INVERSA, e até então não tinha.** A soma conta só
+  > infração **viva**: restaurar conteúdo oculto revoga automaticamente a
+  > infração que a ocultação gerou, e remover uma suspensão perdoa os pontos
+  > que a causaram. Antes, `lift_suspension` era decorativa — tirava a
+  > suspensão e deixava os 8 pontos de pé, então a infração seguinte
+  > re-suspendia na hora. A linha revogada **fica** na tabela, com quem
+  > revogou e por quê, e a revogação automática grita em `admin_logs` como
+  > `violation_revoked`: ponto que some sem rastro é indistinguível de bug.
+  >
+  > **`[08/10]` E o ponto DECAI: 180 dias.** Antes a soma cobria a vida inteira
+  > da conta — sete advertências em dois anos deixavam a pessoa a uma infração
+  > do ban permanente, e servir a suspensão não devolvia nada. O prazo mora em
+  > `site_config.mod_violation_window_days` e vale para os DOIS limiares: só
+  > para a suspensão criaria alguém banido por pontos que já não suspendem.
+  > A aba Infrações marca **Expirada** (tempo) separado de **Revogada**
+  > (alguém desfez) — "não conta" sem dizer qual não ajuda a decidir.
+
   > **`[12/09]` A escalação automática NÃO alcança a equipe** (SEC-020). Um
   > `admin` conseguia banir o **fundador** com uma linha em `violations`: a
   > policy checava o cargo de quem escreve e nunca contra quem, `points` não
@@ -189,6 +206,9 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
 - **Painel** (`ModerationPanel`, aba Admin) com sub-abas: **Fila**, **Denúncias**
   (filtráveis por status), **Palavrões** (CRUD) e **Infrações** (histórico
   paginado, filtro por usuário).
+  **`[08/10]`** A aba Infrações marca a linha **revogada**: pontuação riscada,
+  selo "Revogada" e o motivo no `title`. Mostrá-la igual a uma viva faria a
+  tela mentir sobre a única coisa que aquela tabela existe para responder.
 
 Thresholds ficam em `site_config` (`mod_report_threshold`, `mod_ban_threshold`,
 `mod_suspend_threshold`), editáveis pela aba **Site** do painel do Owner.

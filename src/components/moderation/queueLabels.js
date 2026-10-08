@@ -104,6 +104,29 @@ export const TIPOS_DE_GATILHO = [
 // (`trigger_violation_escalation`): 8 pontos suspendem, 15 banem.
 export const ACTION_POINTS = { none: 0, warn: 1, hide: 2, suspend_1d: 5, suspend_7d: 10 };
 
+/**
+ * `[08/10]` A JANELA DE DECAIMENTO — o ponto para de contar depois de 180 dias.
+ *
+ * Decisão dele em 08/10. Antes a soma cobria a vida inteira da conta: quem
+ * levasse sete advertências em dois anos ficava a uma infração do ban
+ * permanente, e servir a suspensão não devolvia nada.
+ *
+ * **O valor que MANDA é o do banco** (`site_config.mod_violation_window_days`),
+ * porque é lá que ele ajusta sem migration. Esta constante existe só para a
+ * TELA poder dizer qual infração ainda pesa — e `infracaoTemInversa.test.js`
+ * reprova se as duas divergirem, que é a mesma trava do `LOG_RETENTION_DAYS`.
+ * Sem ela, o painel afirmaria um prazo que o banco não cumpre, e as duas
+ * metades continuariam funcionando: só a promessa ficaria falsa.
+ */
+export const JANELA_DE_INFRACAO_DIAS = 180;
+
+/** Esta infração ainda conta para a escalada? */
+export function infracaoAindaPesa(v) {
+  if (v?.revogada_em) return false;
+  const limite = Date.now() - JANELA_DE_INFRACAO_DIAS * 24 * 60 * 60 * 1000;
+  return new Date(v?.created_at).getTime() > limite;
+}
+
 // Ação que NÃO gera registro de infração. Existe para que "não punir" seja uma
 // escolha explícita do moderador, e não o que acontece quando ele esquece de
 // marcar alguma coisa.

@@ -1053,6 +1053,18 @@ marcador vai virar algo.
     [DESEMPENHO.md](DESEMPENHO.md).
   - **Cor e tamanho saem de lista fechada** (6 cores da marca, 3 tamanhos): o
     usuário escolhe um nome, nunca um valor de CSS. Nome inventado vira texto.
+  - **`[08/10]` Separador de seção (`---`)**, só no post. Três hifens sozinhos
+    numa linha viram uma régua discreta — serve para organizar post longo. No
+    meio da frase continua texto; `--` e `----` não valem (travessão digitado à
+    mão e decoração não podem virar elemento visual sem querer). Separador no
+    começo, no fim, ou dois seguidos são descartados: ele existe para separar
+    duas coisas, e sem as duas não há o que separar.
+  - **`[08/10]` Marcação aninhada passou a funcionar em qualquer ordem.** Negrito
+    com itálico dentro — e o contrário — simplesmente não funcionava, e numa
+    combinação os `~~` apareciam **literalmente na tela**. Medido: 10 de 12 pares
+    e **8 de 48** combinações de três e quatro recursos. Hoje são 60 de 60. O
+    conserto foi trocar as regexes por um varredor; o porquê está no cabeçalho de
+    `src/lib/formatacao/trechos.js`.
   - **O comentário recebe menos:** negrito, itálico, riscado e link. Sem cor
     nem tamanho — conversa não é publicação.
   - **Marcador precisa encostar no texto.** `**forte**` formata; `2 * 3 * 4`

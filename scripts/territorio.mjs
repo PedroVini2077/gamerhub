@@ -253,6 +253,11 @@ export const TERRITORIO = {
   // Mapa de possibilidades, nao de codigo: nenhuma pasta o torna velho. Ele
   // envelhece por DECISAO (uma ideia sai daqui e vira item), e isso e coisa que
   // uma pessoa registra e nenhum script detecta — mesma razao do DECISOES.md.
+  // `[08/10]` A auditoria do Android. Vazio pelo mesmo motivo: ele descreve um
+  // caminho POSSIVEL, nao codigo que existe. Quando a Fase 3 criar `android/`,
+  // esta entrada passa a apontar para ela — e ate la apontar para qualquer
+  // pasta faria o relatorio mensal cobrar atualizacao de algo que nao mudou.
+  'docs/PLANO-ANDROID.md': [],
   'docs/VISAO-DE-FUTURO.md': [],
   'docs/DECISOES.md': [],
   'docs/DECISOES-FERRAMENTAL.md': [],

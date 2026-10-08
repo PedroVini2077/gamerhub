@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchViolations } from '../../services/moderationService';
 import { supabase } from '../../lib/supabase';
-import { ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShieldAlert, ChevronLeft, ChevronRight, RotateCcw, Clock } from 'lucide-react';
+import { JANELA_DE_INFRACAO_DIAS, infracaoAindaPesa } from './queueLabels';
 
 const ACTION_LABEL = {
   warn:       { label: 'Aviso',        cls: 'tag-cyan' },
@@ -86,15 +87,52 @@ export default function ViolationsPanel() {
             <tbody>
               {items.map(v => {
                 const a = ACTION_LABEL[v.action_taken] || { label: v.action_taken, cls: 'tag-cyan' };
+                // `[08/10]` Infração REVOGADA não conta mais para a escalada
+                // (`handle_violation_escalation` filtra por `revogada_em IS
+                // NULL`). Mostrá-la igual a uma viva faria a tela mentir sobre
+                // a única coisa que esta tabela existe para responder: quanto
+                // a pessoa deve. A linha fica — revogar não é apagar —, mas
+                // dizendo o que é.
+                const revogada = Boolean(v.revogada_em);
+                // `[08/10]` Fora da janela de 180 dias a infração também deixa
+                // de pesar — por decaimento, não por perdão. São dois motivos
+                // diferentes e a tela diz qual, senão o moderador lê "não conta"
+                // sem saber se alguém desfez ou se o tempo passou.
+                const pesa = infracaoAindaPesa(v);
+                const expirada = !revogada && !pesa;
                 return (
-                  <tr key={v.id} className="border-b border-dark-600 hover:bg-dark-700/50 transition-colors">
+                  <tr key={v.id}
+                    className={`border-b border-dark-600 hover:bg-dark-700/50 transition-colors${pesa ? '' : ' opacity-60'}`}>
                     <td className="p-3 text-white">
                       @{v.user_profile?.username || '?'}
                     </td>
                     <td className="p-3">
                       <span className={`tag ${a.cls}`}>{a.label}</span>
+                      {expirada && (
+                        <span
+                          title={`Fora da janela de ${JANELA_DE_INFRACAO_DIAS} dias — não conta mais para a escalada`}
+                          className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border border-dark-400 rounded px-1.5 py-0.5 align-middle"
+                        >
+                          <Clock size={10} aria-hidden="true" />
+                          Expirada
+                        </span>
+                      )}
+                      {revogada && (
+                        // O motivo vai no `title` porque ele é uma frase
+                        // inteira e a tabela já tem seis colunas num painel
+                        // que precisa caber no celular.
+                        <span
+                          title={v.revogada_motivo || 'sem motivo registrado'}
+                          className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border border-dark-400 rounded px-1.5 py-0.5 align-middle"
+                        >
+                          <RotateCcw size={10} aria-hidden="true" />
+                          Revogada
+                        </span>
+                      )}
                     </td>
-                    <td className="p-3 text-neon-green font-bold">+{v.points}</td>
+                    <td className={`p-3 font-bold ${pesa ? 'text-neon-green' : 'text-gray-500 line-through'}`}>
+                      +{v.points}
+                    </td>
                     <td className="p-3 text-gray-400 hidden md:table-cell max-w-[150px] truncate">{v.reason || '—'}</td>
                     <td className="p-3 text-gray-500 hidden sm:table-cell">
                       @{v.reviewer?.username || 'Sistema'}

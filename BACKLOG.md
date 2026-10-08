@@ -36,220 +36,138 @@
 ## 🔄 EM EXECUÇÃO
 
 
+### 🟡 `[08/10]` PROMPT DELE — parser de formatação aninhada + separador `---`
+
+> Entregue em 08/10, junto das duas decisões de moderação. **Ele pediu
+> explicitamente para eu gravar o prompt**, e o regime é o oposto do prompt do
+> Android: aqui ele manda **implementar na mesma tarefa**, sem esperar nova
+> autorização depois do diagnóstico.
+
+**PARTE 1 — bug real, achado por ele testando no banco e olhando o site:**
+
+| O que ele observou |
+| --- |
+| negrito `**` e itálico `*` **aninhados** conflitam — às vezes um funciona e o outro não, **nos dois sentidos**, e também em combinações mais profundas |
+| em ao menos uma combinação de `__` com `~~`, o sublinhado renderizou e os `~~` **apareceram literalmente na tela** |
+
+O pipeline a investigar inteiro: `texto bruto → analisarFormatacao() →
+analisarTrechos() → árvore de nós → TextoFormatado.jsx → React`. Arquivos que
+ele já apontou: `src/lib/formatacao/analisar.js`,
+`src/lib/formatacao/vocabulario.js`, `src/components/ui/TextoFormatado.jsx` e os
+testes em `src/lib/formatacao/__tests__/`.
+
+**Ele proibiu dois atalhos, e os dois são regra deste projeto:** não presumir
+que é CSS, e **não tratar comentário no código nem teste existente como prova de
+funcionamento** — executar e verificar (§1.4).
+
+**A matriz que ele quer, e é exaustiva:** os 4 marcadores isolados · todos os
+**pares** nos dois sentidos · todas as combinações de **três** · todas as ordens
+de **quatro** · formatação **lado a lado** · texto, pontuação, acento, emoji,
+quebra de linha · e **delimitador inválido ou literal** (abertura sem
+fechamento, fechamento sem abertura, duplicado, usado como texto). Com
+identificador por caso, entrada, árvore produzida, passou/falhou — e **o número
+de casos planejados, executados, aprovados e reprovados**. Caso que não puder
+ser automatizado é marcado como **não executado**, nunca como aprovado.
+
+**PARTE 2 — separador horizontal `---`** sozinho numa linha, para organizar post
+longo. Ele já antecipou a parte difícil: *"não assuma que basta adicionar uma
+regex ao array TRECHOS — o separador é recurso de estrutura de LINHA ou BLOCO"*,
+e pode precisar de outra etapa do pipeline. As 10 regras de borda que ele quer
+decididas: `---` no meio de frase (literal), `--` e `----` (não viram
+separador), espaço em volta, separadores consecutivos, no começo e no fim,
+entre parágrafos, perto de lista e citação, perto de marcação aninhada.
+
+**A preferência dele:** separador **nos posts, não nos comentários** — "para
+manter os comentários mais simples". Ele pediu para eu conferir como isso se
+encaixa na arquitetura antes de implementar.
+
+**As invariantes que o recurso não pode quebrar** (ele listou, e são as nossas):
+árvore de nós em vez de HTML, **zero `dangerouslySetInnerHTML`**, link por
+`safeExternalUrl`, vocabulário fechado de cor e tamanho, texto não reconhecido
+**continua visível**, e o corte de recursos entre post e comentário respeitado.
+
+**Fora do escopo, por ordem dele:** banco, RLS, função do Supabase,
+autenticação, infraestrutura. E **sem commit, branch, PR ou deploy** dentro
+dessa tarefa — o ciclo do §8 fica para quando ela fechar.
+
+---
+
+
+
 ### 🚩 `[03/10]` PONTO DE PARTIDA — quando você voltar (quinta)
 
 > Escrito a pedido dele no fim da sessão de 02–03/10, com a cota na beira:
 > *"vamos só resumir tudo, e deixar engatilhado pra próxima sessão pra deixarmos
 > visível o ponto de partida"*. **Esta seção é a primeira coisa a ler.**
 
-#### ⛔ ANTES DE TUDO — o CI está VERMELHO, e a culpa é de um roteiro MEU
+#### ✅ `[08/10]` RESOLVIDO — a punição ganhou INVERSA, e o CI voltou ao verde
 
-> **`[03/10]` 🔴 O E2E `duasContas.mjs` (PR #287, ontem) está SUSPENDENDO a
-> conta de teste a cada execução — e em ~3 execuções ela será BANIDA.**
+O que derrubou o CI em 03/10 está fechado, e o conserto foi maior do que o
+sintoma. O histórico completo está em
+[`docs/DECISOES-DE-BANCO.md`](docs/DECISOES-DE-BANCO.md); em uma linha: a
+escalada somava a vida inteira da conta e `lift_suspension` era decorativa.
 
-**O sintoma.** O PR #289, que só tem documentação, reprovou em `fluxos
-autenticados` e `painel de admin num navegador` — e reprovou **de novo** na
-re-execução, então não é instabilidade. A `main` estava verde às 10:54 com o
-mesmo código.
+Hoje: a soma conta só infração **viva**, restaurar conteúdo oculto **revoga**
+a infração que a ocultação gerou (trigger nas três tabelas de conteúdo), e
+remover uma suspensão **perdoa** os pontos que a causaram. Revogar não é
+apagar — a linha fica, com quem revogou e por quê, e a revogação automática
+grita em `admin_logs`. Travado por `infracaoTemInversa.test.js`, 6 checagens,
+cada uma provada reinjetando o bug.
 
-**A causa raiz, provada e não deduzida.** A tabela `violations` tem 4 linhas de
-2 pontos para `@claudetester`, e os quatro horários batem **um a um** com as
-quatro execuções do E2E desde que o roteiro entrou:
-
-| Violação | Execução |
-| --- | --- |
-| 02:05 e 02:13 | as duas do próprio PR #287 |
-| 10:50 | PR #288 |
-| 12:08 | PR #289 — a que falhou |
-
-4 × 2 = **8**, que é exatamente o `mod_suspend_threshold` do `site_config`. O
-trigger `handle_violation_escalation` disparou `apply_mod_auto_suspend` às
-12:08:53 e a conta ficou suspensa **até 10/10**.
-
-**Por que isso derruba DOIS roteiros com um mecanismo só:** `LinhaDePublicar`
-tem exatamente dois `return null` — sem conta e **suspenso**. Suspenso, a linha
-`[data-publicar="linha"]` nunca aparece (o passo 6 esperou 30 s por ela), e ir
-ao vivo é recusado, então o `LiveGoModal` fica **aberto** e intercepta o clique
-seguinte. Um só defeito, dois sintomas que pareciam sem relação.
-
-**O que eu errei, e é a regra que eu mesmo aplico nos outros.** O §5 manda:
-*"toda ação de estado precisa da INVERSA e da LIMPEZA"*. Eu escrevi o desfazer
-de cada passo do roteiro — o post é restaurado, o post é apagado — e **não vi
-que o ponto de infração não tem inversa**. Restaurar o conteúdo não devolve o
-ponto. Ele acumula entre execuções, para sempre.
-
-**E o relógio está correndo:** o `mod_ban_threshold` é **15**. Mais 4
-execuções (8 pontos) e `@claudetester` é **banido automaticamente**.
-
-##### ⚠️ E investigar isso revelou um defeito DE PRODUTO, maior que o meu
-
-Fui procurar a RPC que limpa os pontos para me desentupir, e **ela não
-existe**. Medido em `pg_proc`: nada no banco inteiro lê ou escreve `violations`
-além do próprio gatilho de escalada. As três consequências:
-
-| O que acontece | Evidência |
-| --- | --- |
-| `lift_suspension` **não zera os pontos** | o corpo dela faz `UPDATE profiles SET suspended_until = NULL` e não toca em `violations` |
-| então **remover uma suspensão é quase inútil** para quem está no limiar | com 8 pontos guardados, a próxima infração de **qualquer tamanho** soma e volta a cruzar os 8 — o perdão do moderador é desfeito pela infração seguinte |
-| e o acúmulo **não tem janela de tempo** | `handle_violation_escalation` faz `SUM(points) WHERE user_id = ...`, sem recorte de data: soma a vida inteira da pessoa |
-
-**O desenho completo disso:** quem chegar a 15 pontos somados **ao longo de
-toda a vida da conta** é banido automaticamente, e não existe caminho no
-produto para perdoar um ponto. Alguém que levou 7 advertências em dois anos
-está a uma infração do banimento permanente, e nenhum admin consegue mudar
-isso pela tela.
-
-**É o §5 na letra — "toda ação de estado precisa da INVERSA"** — aplicado ao
-produto, não ao meu roteiro. A ação `registrar ponto` existe; a inversa
-`perdoar ponto` não.
-
-**Isto é 🟡 (decisão dele), não conserto meu**, porque as perguntas são de
-produto: o ponto deve **decair** (90 dias? 180?), ou deve existir um
-**"perdoar"** explícito para a equipe, ou as duas? E `lift_suspension`
-deveria zerar junto, ou são decisões separadas de propósito? Minha
-recomendação: **decaimento por janela** (o `SUM` ganha `WHERE created_at >
-now() - interval 'N days'`) **mais** um perdão explícito que grave em
-`admin_logs`. A janela resolve o caso comum sozinha; o perdão cobre o erro de
-moderação, que é o caso em que a pessoa não deveria esperar N dias.
-
-##### O conserto, em duas partes
-
-**(1) Destravar agora — eu NÃO consegui aplicar, e medi por quê.** Quatro
-tentativas, duas formulações, **nos dois modos de permissão** (ele trocou de
-automático para aprovação no meio e o resultado não mudou). O padrão é claro:
-`select` passa — inclusive `select lift_suspension(...)`, que chegou a rodar e
-parou na checagem de identidade, correta — e **escrita direta volta
-`cancelled`**. *Isto corrige o que escrevi hoje de manhã: eu havia concluído
-que era o prompt caindo no modo automático, e o modo mudou sem mudar o
-resultado, então essa explicação não se sustenta.*
-
-**Não reformulei o comando para passar por baixo do portão** (envolver o
-`delete` num CTE com `returning`, por exemplo). O portão existe para exigir
-aprovação humana em operação destrutiva; driblá-lo entregaria o conserto e
-quebraria a coisa que protege o banco.
-
-E `lift_suspension` não me atende por desenho: pelo MCP eu sou `postgres`, sem
-`auth.uid()`, e `exige_operador_ativo()` barra — que é a segurança funcionando.
-
-O comando, pronto para colar no SQL Editor:
-
-```sql
--- As 4 linhas são artefato do E2E, não moderação real (reason='spam',
--- geradas pelo duasContas.mjs). Apagar ZERA a soma e o gatilho para de armar.
-delete from violations v using profiles p
- where p.id = v.user_id and p.username = 'claudetester';
-
--- A suspensão sai pela RPC, nunca por UPDATE cru (§5, regra 1): ela grava
--- em admin_logs e a trilha continua verdadeira.
-select lift_suspension(id) from profiles where username = 'claudetester';
-```
-
-Conferir depois: `select suspended_until from profiles where username =
-'claudetester';` tem de voltar `null`.
-
-**(2) A trava, que é o conserto de verdade.** Sem ela isto volta na 4ª
-execução. Três saídas, e a escolha é dele:
-
-| Saída | O que custa |
-| --- | --- |
-| **o roteiro apaga a própria violação no desfazer** | é a mais fiel ao §5 (a inversa existe de verdade), e não mexe em produto |
-| **conta de teste isenta da escalada** | mais simples, mas cria um caminho que o produto não tem — e o que não é exercitado não é testado |
-| **o roteiro não ocultar de verdade** | perde justamente a cobertura que o PR #287 existiu para criar |
-
-**Minha recomendação é a primeira.** E a trava da trava: um teste que reinjeta
-o caso — roda o desfazer e exige `sum(points) = 0` — senão a próxima versão do
-roteiro volta a esquecer.
-
-**O PR #289 fica ABERTO e vermelho**, de propósito (§8): não é certo empilhar
-merge enquanto a conta de teste caminha para o ban.
+**O roteiro de E2E ficou correto sem uma linha de código de teste**, porque ele
+já restaurava o post — que era o argumento para pôr a inversa no produto em vez
+de no roteiro.
 
 ---
 
-#### 0. 🚀 A PRIMEIRA TAREFA DE QUINTA — a auditoria do GamerHub como APP ANDROID
+#### ✅ `[08/10]` DECIDIDO — janela de decaimento de 180 dias
 
-> **Prompt dele, entregue no fim da sessão de 03/10**, com a cota já na beira:
-> *"eu a tempos queria transformar o nosso site em app mobile"*. Ele escreveu um
-> prompt longo e detalhado e pediu para começarmos por ele na quinta.
->
-> **Eu NÃO comecei de propósito.** Auditoria de arquitetura inteira consome uma
-> sessão, e o §6 proíbe declarar fase concluída com leitura parcial para poupar
-> token — fazer um terço dela agora entregaria um diagnóstico pela metade, que é
-> pior do que nenhum.
+Ele aprovou a recomendação no mesmo dia. A soma da escalada passou a contar só
+infração **viva** (não revogada) **e recente** (dentro de 180 dias), e o prazo
+mora em `site_config.mod_violation_window_days` — a mesma tela que ajusta os
+dois limiares ajusta este, sem migration.
 
-**A pergunta que ele quer respondida, na letra dele:** *"A arquitetura atual do
-GamerHub permite transformá-lo em um aplicativo Android instalável de verdade
-(APK), mantendo a maior parte possível da aplicação atual, e qual seria o
-caminho técnico mais adequado para isso?"*
+A janela vale para os **dois** limiares de propósito: aplicá-la só à suspensão
+criaria o caso absurdo de alguém ser BANIDO por pontos que já não contam para
+suspender.
 
-**O regime da tarefa, e ele é explícito e repetido:** **SOMENTE LEITURA.** Nada
-de implementar, criar branch, commitar, instalar dependência, mexer em
-`package.json`, Vite, Supabase, Vercel ou deploy. Só investigação, análise,
-planejamento e documentação.
+O painel distingue os dois motivos de um ponto não pesar — **Revogada**
+(alguém desfez) e **Expirada** (o tempo passou) —, porque "não conta" sem dizer
+qual deixa o moderador sem saber se houve decisão de gente.
 
-**O objetivo real dele é menor do que parece**, e isso muda a recomendação:
+---
 
-```
-GamerHub atual -> versão Android -> gerar APK -> instalar NO PRÓPRIO celular -> testar
-```
+#### 📱 `[08/10]` ANDROID — auditoria FEITA, esperando uma decisão dele
 
-Não é Play Store. É uso pessoal, para teste, no aparelho dele.
+A Fase 0 está inteira em [`docs/PLANO-ANDROID.md`](docs/PLANO-ANDROID.md), com
+o ESTADO DA JORNADA no fim para a investigação não recomeçar do zero.
 
-**As 15 seções do relatório que ele pediu** — veredito de viabilidade ·
-arquitetura encontrada · abordagens avaliadas (**e ele proibiu assumir
-Capacitor de saída**) · recomendada · impacto no frontend · no Supabase · no
-build · **celular × PC** · quando o PC realmente entra · **Android Studio ×
-Android SDK/CLI, diferenciados** · riscos · arquitetura proposta · roadmap em
-fases · checklist · e um **ESTADO DA JORNADA** para a investigação não se perder
-entre sessões.
+**Veredito: sim, dá — e com pouco retrato.** A arquitetura ajuda de um jeito que
+não era garantido: o site fala com o backend **só por HTTPS e WSS**, sem servidor
+próprio, sem cookie, sem rota de servidor. Recomendação: **Capacitor**.
 
-A seção que ele marcou como *"a parte mais importante"* é a **7**: o que dá para
-fazer **só pelo celular**, etapa por etapa, classificada em 🟢 viável · 🟡
-possível mas imprático · 🔴 exige PC. Ele quer o **ponto exato** em que o PC
-passa a valer a pena, não um "você precisa de Android Studio" genérico.
+**O que decide o próximo passo é uma pergunta de minutos**, e ela é a Fase 1: o
+Chrome instala o site como app **hoje**, com o manifest que já existe e sem
+service worker? Se sim, pode ser que nenhum APK seja necessário para o seu
+objetivo. **Eu me recusei a responder isso de memória** — a regra do Chrome mudou
+de versão para versão.
 
-##### O que eu já conferi — e uma premissa dele precisa de correção
+**As três coisas que teriam de mudar, e nenhuma é o site:**
 
-Dois `grep` de 30 segundos, feitos antes de registrar, porque o prompt afirma
-algo sobre o sistema (§1.4):
-
-| Ele escreveu | O que medi |
+| | O quê |
 | --- | --- |
-| *"também possui configuração de PWA/manifest"* | **meia verdade, e a metade que falta é a que decide uma das abordagens** |
+| 🔴 | **Link de email.** `redirectTo: window.location.origin` e o `APP_URL` fixo na `send-email` apontam para o site. No app a origem vira `http://localhost`. A saída é App Links — e mexe em `Login.jsx`, que é arquivo de alto risco (§7) |
+| 🟠 | **Os cabeçalhos de segurança somem.** CSP, `X-Frame-Options` e companhia vêm do `vercel.json`, ou seja, do SERVIDOR. O Capacitor serve local: nenhum se aplica. E o `portas-da-web.mjs` continuaria verde, porque bate no site — a "cobertura que não cobre" |
+| 🟡 | **Microfone** (`AudioRecorder`) passa a exigir permissão nativa no manifesto |
 
-**O `public/manifest.webmanifest` EXISTE** e está completo para instalação:
-`display: standalone`, `start_url: /`, cores de tema, e os três ícones
-(192, 512 e **maskable** 512). O `index.html` o referencia na linha 7.
+**Celular × PC, a resposta curta:** quase tudo dá no celular. **Trava no
+Gradle** — ele baixa um `aapt2` compilado para **x86-64**, que um ARM não
+executa. Há contorno de terceiros; é a etapa onde um PC economiza horas. E
+**Android Studio não é obrigatório**: o obrigatório é o SDK, que o
+`sdkmanager` instala pela linha de comando.
 
-**E NÃO existe service worker.** Nenhum: `grep` por `pwa`, `workbox`,
-`serviceWorker` e `registerSW` em `package.json` e `vite.config.js` não devolve
-nada. Não há `vite-plugin-pwa`.
-
-**Por que isso importa antes mesmo da auditoria começar:** a abordagem **PWA/TWA**
-— que é a mais barata das que ele listou — depende exatamente disso, e hoje o
-site tem a **metade declarativa** (manifest) sem a **metade funcional** (service
-worker, offline, cache). Então "já é PWA" é falso, e "não dá para ser" também:
-é uma lacuna conhecida e mensurável, não um impedimento.
-
-**O que NÃO vou afirmar sem medir** (§1.1): se o Chrome Android de hoje oferece
-"Instalar app" com manifest e **sem** service worker. Eu tenho uma impressão, e
-impressão não entra em auditoria — a regra do Chrome mudou de versão para versão
-e isso se confere na documentação, não na memória. **Fica como a 1ª verificação
-de quinta**, porque ela sozinha pode encurtar o caminho inteiro.
-
-##### Como vou conduzir, para não estourar a sessão
-
-A auditoria tem o mesmo problema de cobertura do §6: ele pediu para varrer
-frontend, backend, Supabase, build e ~40 Web APIs. **Vou aplicar a regra de
-cobertura que já existe** — 100% no que decide a resposta (auth e sessão,
-Realtime, Storage/upload, as Web APIs realmente usadas, o build) e **amostra
-declarada** no resto, dizendo o número e o critério. Nada de "revisei o
-frontend".
-
-**Onde o documento final vai morar:** documento novo pede proposta (§6.2,
-Contrato de Evolução), então a primeira coisa que faço é propor **o quê, por quê,
-onde e o que não será substituído** — provavelmente um `docs/PLANO-ANDROID.md`,
-no mesmo formato do `PLANO-FEED-BUSCA-NEWS.md`, que já é o lugar onde Fase 0 de
-um bloco grande mora. O **ESTADO DA JORNADA** que ele pediu vive dentro dele.
+**As três decisões abertas:** (1) PWA basta ou quer APK? (2) se APK, App Links
+no domínio? (3) o APK entra no CI ou fica manual?
 
 ---
 
@@ -1281,7 +1199,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**58 itens abertos** (+ 1 ideia sem compromisso)
+**55 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2633,34 +2551,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   próprios, onde rodapé grande disputa espaço com o conteúdo — pode ser que o
   certo lá seja uma versão bem enxuta, ou nenhum.
 
-## 🔴 Crítico
-
-- ⬜ `[03/10]` 🔴 **O E2E `duasContas.mjs` suspende a conta de teste a cada
-  execução — CI VERMELHO, e em ~3 execuções ela é BANIDA.** *Causa raiz provada;
-  o conserto de 2 linhas de SQL está na seção 🚩 PONTO DE PARTIDA, no topo.*
-
 ## 🟠 Importante — dá para fazer
-
-- ⬜ `[03/10]` 🟠 **Ponto de infração não tem INVERSA nem decaimento — e
-  `lift_suspension` não zera os pontos.** *🟡 decisão dele: janela de
-  decaimento, "perdoar" explícito, ou os dois.*
-
-  Medido em `pg_proc`: nada no banco lê ou escreve `violations` além do
-  gatilho de escalada. `handle_violation_escalation` soma a vida inteira da
-  conta, sem recorte de data, e bane em 15. Quem levar 7 advertências em dois
-  anos fica a uma infração do ban permanente, e **nenhum admin consegue
-  perdoar um ponto pela tela**. O diagnóstico inteiro e a minha recomendação
-  estão na seção 🚩 PONTO DE PARTIDA, no topo.
-
-
-- ⬜ `[03/10]` 🟠 **AUDITORIA: o GamerHub como APP ANDROID (APK) — somente
-  leitura.** *Prompt dele de 03/10, e é a PRIMEIRA tarefa de quinta.*
-
-  O desenho inteiro, o regime de só-leitura, as 15 seções do relatório e o que
-  eu já conferi (o manifest existe, **service worker não**) estão na seção
-  **🚩 PONTO DE PARTIDA**, no topo deste arquivo. Esta linha existe para o
-  `inicio-de-sessao.sh` colocá-la na minha frente.
-
 
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
@@ -2917,8 +2808,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->188<!--/n--> arq ·
-  <!--n:src.lib.linhas-->23.832<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->191<!--/n--> arq ·
+  <!--n:src.lib.linhas-->24.489<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

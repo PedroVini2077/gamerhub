@@ -70,7 +70,10 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
           </div>
           {/* `[25/09]` O comentário também é desenhado formatado — com o mesmo
               componente do post, que nunca produz HTML. */}
-          <TextoFormatado texto={comment.content}
+          {/* `[08/10]` Sem separador: comentário é conversa curta, e régua
+              horizontal ali sugere seções que uma resposta não tem. O corte é o
+              mesmo de `RECURSOS_DE_COMENTARIO`. */}
+          <TextoFormatado texto={comment.content} separador={false}
             className="text-xs text-gray-300 leading-relaxed break-words" />
           <div className="flex items-center gap-4 mt-1.5">
             <button

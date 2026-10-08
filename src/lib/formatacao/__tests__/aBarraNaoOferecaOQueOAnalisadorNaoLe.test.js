@@ -44,6 +44,11 @@ const O_QUE_A_BARRA_ESCREVE = {
   lista: () => '- x',
   citacao: () => '> x',
   link: () => '[x](https://exemplo.com)',
+  // `[08/10]` O separador precisa de algo ANTES para separar — sozinho ele é
+  // descartado de propósito. O exemplo tem de refletir o que o botão escreve
+  // num campo que já tem texto, senão a trava testaria um caso que o produto
+  // nunca produz.
+  separador: () => 'x\n---\ny',
 };
 
 describe('a barra de ferramentas e o analisador concordam', () => {
