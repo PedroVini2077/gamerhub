@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">GamerHub</string>
-    <string name="title_activity_main">GamerHub</string>
-    <string name="package_name">app.gamerhub</string>
-    <string name="custom_url_scheme">app.gamerhub</string>
-</resources>

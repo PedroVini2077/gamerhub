@@ -1158,7 +1158,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**57 itens abertos** (+ 1 ideia sem compromisso)
+**59 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2512,6 +2512,45 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[08/10]` 🟢 **PWA — Fases 2 a 4.** *Decisão dele: "vamos transformar o
+  site num PWA completo". A Fase 1 está feita.*
+
+  | Fase | O que entrega | Risco |
+  | --- | --- | --- |
+  | ~~1~~ | ~~cache dos assets com hash + tela de offline~~ | ✅ feito |
+  | ~~2~~ | ~~roteiro de E2E do worker num navegador~~ | ✅ feito — 6 checagens, no CI |
+  | **3** | ~~aviso de "tem versão nova"~~ → **DESPRIORIZADA**, ver abaixo | — |
+  | ~~4~~ | ~~convite para instalar (`beforeinstallprompt`)~~ | ✅ feito |
+
+  **`[08/10]` A Fase 3 desceu de prioridade, e o motivo é o nosso próprio
+  desenho.** Num PWA comum o HTML É cacheado, e por isso a pessoa fica presa na
+  versão velha — é daí que o aviso tira o valor dele. **Aqui o HTML nunca é
+  cacheado**, então qualquer recarregamento já traz a versão nova e ninguém
+  fica preso.
+
+  O que sobrava era a aba aberta há horas navegando para uma rota ainda não
+  carregada — e isso **já é tratado** pelo `vite:preloadError` do `main.jsx`,
+  que recarrega uma vez. A Fase 3 trocaria um conserto reativo que funciona por
+  um aviso proativo: ganho pequeno, e mais um aviso que o site dá sem precisar.
+
+  Fica registrada, não esquecida: se um dia o HTML passar a ser cacheado, ela
+  volta a ser obrigatória no mesmo instante.
+
+  **A Fase 2 veio antes da 3 de propósito, e está feita.** A trava de unidade
+  lê o ARQUIVO `sw.js` e prova o contrato; o roteiro `e2e/servico-de-cache.mjs`
+  prova o COMPORTAMENTO num navegador. A Fase 3 agora tem rede de proteção.
+
+- ⬜ `[08/10]` 🔵 **Offline de verdade — decisão dele, ainda aberta.**
+
+  Hoje o site sem rede mostra uma tela dizendo que caiu. Mostrar **o feed que a
+  pessoa já viu** é outro bloco: mexe no React Query (persistir o cache de
+  consultas) e levanta a pergunta de **por quanto tempo** um post velho pode
+  ser mostrado como se fosse de agora.
+
+  Ele respondeu "pode ir" para a Fase 1 + aviso de offline, e esta parte ficou
+  explicitamente de fora. Fica registrada para não se perder.
+
+
 - ⬜ `[08/10]` 🟠 **A landing trava no app — e o portão por aparelho do §0.3
   nunca foi construído.** *🟡 decisão dele: aprovar o portão por MEDIÇÃO.*
 
@@ -2819,8 +2858,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->194<!--/n--> arq ·
-  <!--n:src.lib.linhas-->25.014<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->198<!--/n--> arq ·
+  <!--n:src.lib.linhas-->25.720<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

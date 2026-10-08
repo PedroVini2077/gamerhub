@@ -198,6 +198,18 @@ src/
 │   │                      # do router com as chaves deste mapa
 │   ├── like.js            # Curtida otimista com rollback quando o servidor recusa
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
+│   ├── conviteDeInstalacao.js # `[08/10]` O convite para instalar o PWA.
+│   │                      #   Captura o `beforeinstallprompt`, que dispara UMA
+│   │                      #   vez e ANTES do React montar — por isso é chamado
+│   │                      #   do `main.jsx`. Guarda TRÊS estados (dispensou,
+│   │                      #   instalou, nunca decidiu): colapsá-los faria o
+│   │                      #   convite voltar para quem já disse não
+│   ├── servicoDeCache.js  # `[08/10]` Liga o service worker (`public/sw.js`),
+│   │                      #   e decide QUANDO: só em produção, só se o
+│   │                      #   navegador tiver, só depois do `load`. Falha de
+│   │                      #   registro não quebra o site e NÃO some: vai para
+│   │                      #   o Sentry, porque "o PWA parou de instalar" é
+│   │                      #   coisa que ninguém descobriria de outro jeito
 │   ├── dominio.js         # `[08/10]` O endereço público do site, em UM lugar.
 │   │                      #   Ele estava escrito à mão em `metaDaPagina.js` e
 │   │                      #   num teste; o app Android seria a 3ª cópia — e
@@ -674,6 +686,13 @@ src/
     │   │                  # HTML do usuário, e custaria 331 kB brutos MEDIDOS
     │   │                  # contra os 7 kB de hoje (ver DESEMPENHO.md). A prop
     │   │                  # `recursos` é o que dá menos poder ao comentário
+    │   ├── ConviteDeInstalacao.jsx # `[08/10]` O PORTÃO do convite: pergunta se a faixa deve
+    │   │                           # aparecer e só então baixa a faixa (`lazy` atrás da
+    │   │                           # condição, que é o que o §0.3 exige para adiar de verdade)
+    │   ├── FaixaDeInstalacao.jsx   # `[08/10]` A faixa em si — fora do pacote inicial
+    │   │                  # o PWA. FAIXA e não toast de propósito: toast some
+    │   │                  # sozinho, e o navegador só oferece a instalação UMA
+    │   │                  # vez. Dispensável, e o "não" é lembrado
     │   ├── TextoFormatado.jsx # `[25/09]` Desenha o conteúdo do post a partir
     │   │                  # da ÁRVORE do `lib/formatacao`. NUNCA produz HTML:
     │   │                  # cada nó vira elemento React, e o `href` de link

@@ -2,6 +2,7 @@ import { Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
+import ConviteDeInstalacao from './components/ui/ConviteDeInstalacao';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Analytics } from '@vercel/analytics/react';
@@ -270,6 +271,12 @@ export default function App() {
         <ProvedorDaConfigDoSite>
           <AppRoutes />
         </ProvedorDaConfigDoSite>
+        {/* `[08/10]` Fora das rotas de propósito: o convite de instalar não
+            pertence a nenhuma tela, e o navegador dispara o evento quando quer
+            — amarrá-lo a uma rota faria o convite depender de onde a pessoa
+            estava no momento. Ele some sozinho em quem já instalou, em quem já
+            dispensou, e no iPhone (onde o Safari não implementa o evento). */}
+        <ConviteDeInstalacao />
         <SpeedInsights />
         <Analytics />
       </AuthProvider>

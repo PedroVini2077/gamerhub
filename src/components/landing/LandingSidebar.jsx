@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail, FileText } from 'lucide-react';
+import {
+  X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail, FileText, Download,
+} from 'lucide-react';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
+import { podeInstalar, abrirConvite, aoMudarConvite } from '../../lib/conviteDeInstalacao';
 
 /**
  * A navegação lateral da landing.
@@ -21,8 +24,29 @@ import { SECOES, alvoDaSecao } from './secoesDaLanding';
  * As seções da página vêm de `secoesDaLanding.js` — a mesma lista da faixa do
  * topo e do rodapé. "Sobre" e "Entrar" são fixas: uma é o projeto, a outra é o
  * que a landing existe para oferecer.
+ *
+ * ── `[08/10]` E "Instalar o app", que conserta um caminho sem volta ─────────
+ *
+ * A faixa de convite (`ConviteDeInstalacao.jsx`) aparece **uma vez** e respeita
+ * o "não" — e era só isso que existia. Quem a dispensasse e mudasse de ideia
+ * cinco minutos depois ficava sem porta nenhuma: o navegador esconde a opção num
+ * menu de três pontinhos, e nós tínhamos acabado de tirar a nossa do caminho.
+ *
+ * A entrada aqui é a porta permanente. Ela é **procurada**, não empurrada, e por
+ * isso não consulta a decisão guardada — esconder dela seria esconder a opção de
+ * quem está justamente pedindo por ela.
+ *
+ * **Por que a gaveta e não um botão flutuante:** botão flutuante é para a ação
+ * *principal* da tela, e na landing a principal é entrar. Um segundo botão fixo
+ * competiria com o Hero e com o CTA, na camada 1 (§0.4). A gaveta só abre quando
+ * alguém toca no menu — que é a forma certa de oferecer ação secundária.
  */
 export default function LandingSidebar({ aberta, aoFechar }) {
+  // O evento `beforeinstallprompt` pode chegar depois desta tela montar, e aí a
+  // entrada tem de aparecer sem recarregar. Daí a inscrição.
+  const [instalavel, setInstalavel] = useState(() => podeInstalar());
+  useEffect(() => aoMudarConvite(() => setInstalavel(podeInstalar())), []);
+
   // `Escape` fecha, e o corpo para de rolar enquanto a gaveta está aberta —
   // sem isso a página de trás rola junto e a gaveta parece quebrada.
   useEffect(() => {
@@ -38,6 +62,17 @@ export default function LandingSidebar({ aberta, aoFechar }) {
   }, [aberta, aoFechar]);
 
   if (!aberta) return null;
+
+  async function instalar() {
+    try {
+      // `prompt()` precisa do gesto: ele roda ainda dentro deste clique,
+      // ANTES do primeiro `await` lá dentro. Fechar a gaveta primeiro
+      // perderia o gesto em alguns navegadores.
+      await abrirConvite();
+    } finally {
+      aoFechar();
+    }
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex">
@@ -149,6 +184,23 @@ export default function LandingSidebar({ aberta, aoFechar }) {
             <Mail size={16} className="text-neon-cyan" />
             Não consigo entrar — falar com a equipe
           </Link>
+          {/* `[08/10]` É `button` e não `Link` porque não é navegação: o clique
+              abre o diálogo do navegador, sem sair da página.
+
+              Ela só existe quando o navegador ofereceu o convite — e nunca
+              aparece no iPhone, onde o Safari não implementa o evento, nem para
+              quem já instalou. Nos dois casos ela simplesmente não ocupa
+              espaço, em vez de prometer o que não cumpre. */}
+          {instalavel && (
+            <button
+              type="button"
+              onClick={instalar}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-mono text-gray-300 hover:bg-dark-700 hover:text-white transition-colors"
+            >
+              <Download size={16} className="text-neon-green" />
+              Instalar o app
+            </button>
+          )}
           <Link
             to="/login"
             onClick={aoFechar}

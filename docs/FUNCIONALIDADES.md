@@ -1692,3 +1692,72 @@ discreto, uma vez por sessão, que some sozinho em 9 s.
 > confirmação depende do aparelho do dono. O teste que ficou trava o
 > **contrato** do botão (clicar sempre alterna, com e sem preferência salva),
 > que é trabalho real — só não é a prova desta correção.
+
+## `[08/10]` PWA — Fase 1: abre mais rápido e avisa quando a rede cai
+
+Decisão dele depois de pausar o app nativo: *"vamos transformar o site num PWA
+completo"*. O `manifest.webmanifest` já existia e já estava completo — o que
+faltava era o service worker, e ele entrou **em fases**, da mais segura para a
+mais arriscada.
+
+**O que a Fase 1 entrega:**
+
+- **Segunda visita abre sem baixar o bundle de novo.** O worker guarda só
+  `assets/<nome>-<hash>.<ext>`, que é imutável por construção: se o conteúdo
+  mudar, o nome muda junto.
+- **Tela própria quando a rede cai**, em vez do erro do navegador. Ela não
+  depende de nada — nem do bundle, nem de fonte externa —, porque a tela de
+  "você está offline" seria a primeira coisa a quebrar offline.
+- **Menos egress**, que é a cota mais apertada do projeto (§0.2).
+
+**O que ela NÃO faz, e é deliberado:** o site continua precisando de internet
+para mostrar feed, lives e perfil. Offline de verdade mexeria no React Query e
+é outro bloco — está no `BACKLOG.md`.
+
+**A regra que torna isso seguro:** HTML nunca é cacheado. Toda navegação vai
+para a rede. Service worker é o único código que sobrevive ao deploy, e um que
+sirva HTML do cache prende a pessoa na versão velha **sem conserto pelo
+servidor**. Mantendo o `index.html` fresco, um deploy sempre chega.
+
+### `[08/10]` O convite para instalar
+
+O site **já era instalável** desde que o manifest existe — e ninguém sabia,
+porque o navegador esconde a opção num menu de três pontinhos.
+
+Agora aparece uma faixa discreta: *"Instalar o GamerHub — abre direto da sua
+tela inicial"*. Ela é **faixa e não aviso passageiro** de propósito: aviso some
+sozinho, e o navegador só oferece a instalação **uma vez**.
+
+**Ela respeita o não.** Quem fecha não vê de novo — a mesma regra do som
+ambiente, e pelo mesmo motivo: site que insiste no que você recusou é site que
+não te escuta.
+
+**Onde ela não aparece:** em quem já instalou, em quem já dispensou, e no
+iPhone — o Safari não implementa o evento, e lá a instalação é pelo menu de
+compartilhar. Inventar um passo a passo de iOS seria uma segunda tela para
+manter, sem nenhum teste possível do nosso lado.
+
+#### E a entrada fixa na barra lateral da landing — a volta que faltava
+
+Respeitar o "não" da faixa criava um caminho **sem volta**: quem a dispensasse e
+mudasse de ideia cinco minutos depois não tinha por onde instalar. A faixa
+aparece uma vez, o navegador esconde a opção dele, e nós tínhamos acabado de
+tirar a nossa do caminho.
+
+A barra lateral da landing ganhou **Instalar o app**. Ela é a porta permanente, e
+a diferença entre as duas é uma pergunta só:
+
+| | quem pergunta | respeita a decisão guardada? |
+| --- | --- | --- |
+| a **faixa** | ela aparece sozinha | **sim** — insistir é o defeito |
+| a **entrada** | a pessoa foi procurar | **não** — esconder é o defeito |
+
+**Por que a gaveta e não um botão flutuante.** Botão flutuante é para a ação
+*principal* da tela, e na landing a principal é entrar ou criar conta. Um segundo
+botão fixo competiria com o Hero e com o CTA, na camada mais externa do site
+(§0.4). A gaveta só abre quando alguém toca no menu — que é a forma certa de
+oferecer ação secundária: descoberta sob demanda, sem empurrar nada.
+
+**Ela também desaparece quando não tem o que fazer:** sem o evento do navegador
+(iPhone, ou site já instalado) a entrada não existe, em vez de virar um botão que
+a pessoa clica e nada acontece.

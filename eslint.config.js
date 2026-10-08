@@ -5,11 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  // `[08/10]` `android/` carrega uma CÓPIA do `dist/` (o `npx cap sync` copia o
-  // bundle para dentro do projeto nativo). Sem esta linha o lint varre o bundle
-  // minificado e acusa centenas de erros em código que ninguém escreveu — 312,
-  // medido. Mesmo motivo de `dist` já estar aqui.
-  globalIgnores(['dist', 'android']),
+  globalIgnores(['dist']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

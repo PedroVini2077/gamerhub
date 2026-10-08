@@ -37,6 +37,10 @@ export const CHAVES_DECLARADAS = [
   'gh_som_ambiente',
   'gh_som_avisado',
   'gh_aceite_adiado',
+  // `[08/10]` A resposta ao convite de instalar o PWA. Ver
+  // `lib/conviteDeInstalacao.js`: ela existe para o convite NÃO voltar
+  // para quem já disse não.
+  'gh_convite_de_instalacao',
   // `[04/09]` As duas da tela de boas-vindas. Ver `lib/boasVindas.js`.
   'gh_entrando',
   'gh_ja_entrou:',

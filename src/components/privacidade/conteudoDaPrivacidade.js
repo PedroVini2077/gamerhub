@@ -83,6 +83,7 @@ export const BLOCOS = [
         ['Código do cofre da equipe (resumo)', 'destrancar o painel do Fundador neste aparelho — o código em si NUNCA é guardado, só um resumo dele', 'você limpar o navegador'],
         ['Embaralhador do código do cofre', 'fazer o mesmo código gerar resumos diferentes em aparelhos diferentes', 'você limpar o navegador'],
         ['Cofre já aberto nesta aba', 'não pedir o código de novo a cada tela', 'você fecha a aba'],
+        ['Sua resposta ao convite de instalar', 'não insistir: se você fechou o convite para instalar o app, ele não volta', 'você limpar o navegador'],
       ],
     },
   },

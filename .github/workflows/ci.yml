@@ -589,6 +589,16 @@ jobs:
       - name: A CSP não quebra o site (navegador de verdade)
         run: npm run test:csp
 
+      # `[08/10]` O service worker é o ÚNICO código deste projeto que sobrevive
+      # ao deploy: um errado serve a versão velha para sempre, e subir um site
+      # novo NÃO alcança quem já o tem instalado.
+      #
+      # A trava de unidade lê o arquivo `sw.js` e prova o CONTRATO. Este roteiro
+      # prova o COMPORTAMENTO num navegador — e a diferença entre os dois é
+      # exatamente onde mora a falha que não tem conserto depois.
+      - name: O service worker não prende na versão velha (navegador de verdade)
+        run: npm run test:sw
+
       # `[01/09]` Com o banco fora, o site inteiro ficava inacessível: um
       # `return <OfflineGate />` acima do <Routes> matava até /sobre e /login,
       # que não dependem do banco. A regra que ficou: fora do ar bloqueia SÓ o

@@ -23,6 +23,7 @@
     "test:banco": "node e2e/portas-do-banco.mjs",
     "test:web": "node e2e/portas-da-web.mjs",
     "test:csp": "node e2e/politica-de-conteudo.mjs",
+    "test:sw": "node e2e/servico-de-cache.mjs",
     "segredos": "node scripts/segredos-vazados.mjs",
     "test:e2e:navegacao": "node e2e/navegacao.mjs",
     "test:e2e:sembanco": "node e2e/sem-banco.mjs",
@@ -40,7 +41,6 @@
     "tipos": "node scripts/tipos-das-edges.mjs"
   },
   "dependencies": {
-    "@capacitor/core": "^8.5.3",
     "@sentry/react": "^10.75.3",
     "@supabase/supabase-js": "^2.117.2",
     "@tanstack/react-query": "^5.104.0",
@@ -55,8 +55,6 @@
     "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
-    "@capacitor/android": "^8.5.3",
-    "@capacitor/cli": "^8.5.3",
     "@eslint/js": "^10.0.1",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
