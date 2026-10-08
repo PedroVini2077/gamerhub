@@ -111,6 +111,7 @@ DECLARE
   v_tipo      text;
   v_revogadas int;
   v_pontos    int;
+  v_quem      text;
 BEGIN
   -- Mapa FECHADO, com RAISE no else. `resolver_moderacao_de_conteudo_apagado`
   -- usa `ELSE 'chat'`, e aqui isso seria errado: chat nao tem `hidden_at`, logo
@@ -146,14 +147,29 @@ BEGIN
   -- GRITA (§1.5): ponto de infracao que some sozinho, sem nada gravado, e
   -- indistinguivel de bug. A trilha e o unico lugar onde isto aparece, porque
   -- quem restaurou o conteudo nao pediu para perdoar ponto nenhum.
-  INSERT INTO admin_logs (action, details, category, severity, metadata)
+  --
+  -- O INSERT e direto, e NAO pelo `log_audit_event`, de proposito: aquela e a
+  -- porta do CLIENTE, com lista fechada de actions, e `trilhaNaoEhForjavel`
+  -- existe para impedir que o cliente registre o que o banco nao autoriza. Pôr
+  -- `violation_revoked` naquela lista a tornaria forjavel de fora.
+  --
+  -- `admin_username` e NOT NULL — a 1a versao desta migration nao o preenchia e
+  -- o teste em ROLLBACK reprovou com "null value in column admin_username".
+  -- O COALESCE copia a convencao do proprio `log_audit_event`: aqui ele nao e
+  -- chute, e o rotulo honesto de "nenhuma pessoa logada fez isto" (§4).
+  v_quem := (SELECT username FROM profiles WHERE id = auth.uid());
+
+  INSERT INTO admin_logs (action, details, category, severity, metadata,
+                          actor_id, actor_username, admin_id, admin_username)
   VALUES ('violation_revoked',
           v_revogadas || ' infracao(oes) revogada(s) automaticamente porque o '
             || v_tipo || ' voltou ao ar',
           'moderation', 'info',
           jsonb_build_object('content_type', v_tipo, 'content_id', OLD.id,
                              'revogadas', v_revogadas, 'pontos', v_pontos,
-                             'automatico', true));
+                             'automatico', true),
+          auth.uid(), COALESCE(v_quem, 'anônimo'),
+          auth.uid(), COALESCE(v_quem, 'sistema'));
 
   RETURN NEW;
 END;
