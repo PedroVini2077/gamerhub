@@ -2518,15 +2518,13 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   | Fase | O que entrega | Risco |
   | --- | --- | --- |
   | ~~1~~ | ~~cache dos assets com hash + tela de offline~~ | ✅ feito |
-  | **2** | **roteiro de E2E** do worker num navegador de verdade | baixo — e é o que falta para a trava atual deixar de ser só leitura de arquivo |
+  | ~~2~~ | ~~roteiro de E2E do worker num navegador~~ | ✅ feito — 6 checagens, no CI |
   | **3** | aviso de "tem versão nova, toque para atualizar" | **médio** — é onde mora o "preso na versão velha" |
   | **4** | convite para instalar (`beforeinstallprompt`) | baixo |
 
-  **A Fase 2 vem antes da 3 de propósito.** A trava de hoje lê o ARQUIVO
-  `sw.js` e trava o contrato dele; ela não prova que o worker se comporta como
-  o contrato diz. Service worker de verdade só se testa com um navegador, e
-  subir a Fase 3 sem esse roteiro seria mexer na parte arriscada sem rede de
-  proteção.
+  **A Fase 2 veio antes da 3 de propósito, e está feita.** A trava de unidade
+  lê o ARQUIVO `sw.js` e prova o contrato; o roteiro `e2e/servico-de-cache.mjs`
+  prova o COMPORTAMENTO num navegador. A Fase 3 agora tem rede de proteção.
 
 - ⬜ `[08/10]` 🔵 **Offline de verdade — decisão dele, ainda aberta.**
 
@@ -2847,7 +2845,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->196<!--/n--> arq ·
-  <!--n:src.lib.linhas-->25.239<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->25.263<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

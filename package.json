@@ -23,6 +23,7 @@
     "test:banco": "node e2e/portas-do-banco.mjs",
     "test:web": "node e2e/portas-da-web.mjs",
     "test:csp": "node e2e/politica-de-conteudo.mjs",
+    "test:sw": "node e2e/servico-de-cache.mjs",
     "segredos": "node scripts/segredos-vazados.mjs",
     "test:e2e:navegacao": "node e2e/navegacao.mjs",
     "test:e2e:sembanco": "node e2e/sem-banco.mjs",

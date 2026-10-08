@@ -161,6 +161,30 @@ describe('o service worker não prende ninguém na versão velha', () => {
     ).toBe(true);
   });
 
+  it('o roteiro de navegador EXISTE e é chamado pelo CI', () => {
+    // `[08/10]` Roteiro que ninguém chama é cobertura que não cobre, e o
+    // `npm test` não tem como notar — já aconteceu neste projeto com o
+    // `chatDaLive.mjs`. Aqui o risco é maior: esta trava prova o CONTRATO do
+    // `sw.js`, e só aquele roteiro prova o COMPORTAMENTO num navegador. Sem
+    // ele, o que sobra é a leitura de um arquivo.
+    expect(existsSync('e2e/servico-de-cache.mjs'), 'o roteiro do service worker sumiu.')
+      .toBe(true);
+
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+    expect(
+      pkg.scripts['test:sw'],
+      'o script `test:sw` sumiu do `package.json` — o CI o chama por ele.',
+    ).toContain('e2e/servico-de-cache.mjs');
+
+    expect(
+      readFileSync('.github/workflows/ci.yml', 'utf8').includes('npm run test:sw'),
+      'o CI deixou de rodar o roteiro do service worker.\n'
+      + 'Ele passa a existir sem nunca rodar: o arquivo fica no repositório, o\n'
+      + '`npm test` continua verde, e a única prova de COMPORTAMENTO do worker\n'
+      + 'deixa de acontecer — em silêncio.',
+    ).toBe(true);
+  });
+
   it('o registro só acontece em produção', () => {
     const reg = readFileSync('src/lib/servicoDeCache.js', 'utf8');
     expect(
