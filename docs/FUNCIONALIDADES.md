@@ -1718,3 +1718,21 @@ para mostrar feed, lives e perfil. Offline de verdade mexeria no React Query e
 para a rede. Service worker é o único código que sobrevive ao deploy, e um que
 sirva HTML do cache prende a pessoa na versão velha **sem conserto pelo
 servidor**. Mantendo o `index.html` fresco, um deploy sempre chega.
+
+### `[08/10]` O convite para instalar
+
+O site **já era instalável** desde que o manifest existe — e ninguém sabia,
+porque o navegador esconde a opção num menu de três pontinhos.
+
+Agora aparece uma faixa discreta: *"Instalar o GamerHub — abre direto da sua
+tela inicial"*. Ela é **faixa e não aviso passageiro** de propósito: aviso some
+sozinho, e o navegador só oferece a instalação **uma vez**.
+
+**Ela respeita o não.** Quem fecha não vê de novo — a mesma regra do som
+ambiente, e pelo mesmo motivo: site que insiste no que você recusou é site que
+não te escuta.
+
+**Onde ela não aparece:** em quem já instalou, em quem já dispensou, e no
+iPhone — o Safari não implementa o evento, e lá a instalação é pelo menu de
+compartilhar. Inventar um passo a passo de iOS seria uma segunda tela para
+manter, sem nenhum teste possível do nosso lado.

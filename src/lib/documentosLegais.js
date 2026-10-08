@@ -126,7 +126,7 @@ export const DOCUMENTOS = {
      *
      * Subir a versao aqui seria o dano oposto ao de 02/09: pedir reaceite por
      * uma mudanca de arquivo treina todo mundo a clicar sem ler. */
-    impressao: 'c44a1204bd904102',
+    impressao: '5e9d664b4f3f1518',
     mudou: 'a lista do que fica guardado no seu navegador ficou completa: entraram as três chaves do cofre do painel da equipe, que só existem no aparelho de quem é da equipe',
   },
   regras: {
