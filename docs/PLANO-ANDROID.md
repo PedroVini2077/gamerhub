@@ -1,5 +1,82 @@
 # GamerHub como app Android — auditoria técnica (Fase 0)
 
+> ## ⏸️ `[08/10]` PAUSADO POR ELE — e o código saiu do repositório
+>
+> Decisão dele no fim do dia, depois de testar os dois APKs: *"esquece essa
+> parte do mobile, do app mobile nativo... porém só por agora, depois nós vemos
+> isso"*. O motivo é um só e está medido abaixo: **a landing trava dentro de um
+> WebView**, e consertar isso exigiria mexer no desempenho do site, que ele não
+> quer tocar agora — *"no site está bom"*.
+>
+> **O que foi REMOVIDO:** a pasta `android/` (104 MB, gerada por um comando), o
+> `capacitor.config.json` e os três pacotes `@capacitor/*`. Nada disso é
+> conhecimento — é saída de ferramenta, e mantê-la custaria manutenção para algo
+> que não está em uso (§6.1).
+>
+> **O que FICOU, porque é conhecimento e custou para ser descoberto:** este
+> documento inteiro, com a receita de recriação abaixo. Mais três coisas que
+> ficaram no site por valerem sozinhas:
+>
+> | O que ficou | Por que vale sem o app |
+> | --- | --- |
+> | `src/lib/dominio.js` | matou uma duplicação real: o endereço do site estava escrito à mão em dois lugares, e divergir manda o usuário para um site que não é o nosso |
+> | a `<meta>` de CSP no `index.html` | **é relevante para o PWA**: um service worker serve resposta do cache, e cache não carrega os cabeçalhos do servidor — a meta garante a política de qualquer jeito |
+> | a autorização da Cloudflare | nada a ver com o app: ela consertou o Turnstile do `/contato`, que estava morto em produção |
+>
+> ### A medição que encerrou a tentativa
+>
+> | | |
+> | --- | --- |
+> | APK **debug** | trava, "ainda mais na landing page" |
+> | APK **release** (`debuggable=false`) | **trava igual** — a hipótese do build de debug MORREU |
+> | o feed, logado | aguenta |
+>
+> **Conclusão:** não é o WebView nem o tipo de build. É a landing — 21 camadas
+> de efeito sem portão por aparelho (§0.3, regra 2, que nunca foi construído).
+> O diagnóstico completo, com o que foi descartado medindo, está no `BACKLOG.md`.
+>
+> ### A receita para recriar, quando for a hora
+>
+> Tudo abaixo foi **conferido funcionando** em 08/10 — APK gerado, assinado e
+> instalado no aparelho dele.
+>
+> ```bash
+> npm i -D @capacitor/cli @capacitor/android && npm i @capacitor/core
+> npx cap init "GamerHub" "app.gamerhub" --web-dir dist
+> npm run build && npx cap add android
+> ```
+>
+> **Os três ajustes que o `cap add` NÃO gera, e sem os quais o app nasce
+> quebrado:**
+>
+> 1. **`android/app/src/main/AndroidManifest.xml`** — `AudioRecorder` usa
+>    `getUserMedia({audio:true})`, que num WebView exige a permissão do sistema:
+>    ```xml
+>    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+>    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+>    ```
+> 2. **`android/app/src/main/res/values/colors.xml`** (não existe por padrão) —
+>    sem ele o Android pinta a barra de status de cinza e fica uma emenda
+>    visível com o cabeçalho preto do site:
+>    ```xml
+>    <color name="fundoDoSistema">#060608</color>
+>    ```
+>    e, nos temas `AppTheme.NoActionBar` **e** `AppTheme.NoActionBarLaunch`:
+>    `android:statusBarColor`, `android:navigationBarColor` apontando para ele,
+>    mais `android:windowLightStatusBar=false`.
+> 3. **`eslint.config.js`** — `android` no `globalIgnores`, ao lado de `dist`:
+>    a pasta carrega uma cópia do bundle e o lint acusa **312 erros** em código
+>    que ninguém escreveu.
+>
+> **Para construir o APK**, e isto é o que desmentiu a seção 8 deste documento:
+> um container Linux **x86-64** com JDK 21 resolve. O bloqueio do `aapt2` é de
+> ARM, e não existe ali. SDK: `cmdline-tools` → `sdkmanager` → `platform-tools`,
+> `platforms;android-36`, `build-tools;36.0.0` → `./gradlew assembleRelease`.
+>
+> **O que continuaria faltando** quando o app voltar: App Links (o
+> `assetlinks.json` no domínio e a impressão da chave de assinatura), sem os
+> quais o link de recuperação de senha abre o site e não o app.
+
 > **Isto é investigação e planejamento. Nada foi implementado.** Nenhum arquivo
 > de `src/` foi alterado por causa deste documento, nenhuma dependência foi
 > instalada, nenhum projeto Android foi criado, e o banco não foi tocado — o

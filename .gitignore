@@ -14,15 +14,3 @@ e2e-evidencia/
 supabase/.temp/
 .stryker-tmp/
 reports/
-
-# `[08/10]` Capacitor: o que o `npx cap sync` COPIA do `dist/`. É saída de
-# build, não fonte — versioná-lo guardaria duas cópias do mesmo bundle e faria
-# todo PR de front mostrar um diff gigante e ilegível. O projeto `android/` em
-# si FICA versionado: ele carrega o manifesto, as permissões e a configuração.
-android/app/src/main/assets/public/
-android/app/src/main/assets/capacitor.config.json
-android/app/src/main/assets/capacitor.plugins.json
-android/.gradle/
-android/local.properties
-android/app/build/
-android/build/
