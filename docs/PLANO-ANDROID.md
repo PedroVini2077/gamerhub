@@ -208,9 +208,50 @@ E o `e2e/portas-da-web.mjs`, que compara esses cabeçalhos **por valor** e repro
 o PR se um enfraquecer, bate no site. Ele continuaria verde com o app
 desprotegido — a "cobertura que não cobre" do §1.5, aplicada à própria esteira.
 
-**A saída** é replicar a política no `capacitor.config.json` e numa `<meta
-http-equiv>`, e **estender a trava** para conferir o app. Sem a trava, isto
-apodrece em silêncio.
+**A saída** é replicar a política numa `<meta http-equiv>`, com trava que exija
+as duas metades iguais. **Foi tentado em 08/10 e teve de ser retirado**, por
+duas razões que só apareceram ao medir:
+
+1. **`frame-ancestors` é ignorado em `<meta>`** (CSP Level 3) e o Chrome escreve
+   um `console.error` por página. O `e2e/smoke.mjs` trata isso como falha:
+   **18 de 18 rotas** caíram por um aviso que não era defeito. Contornável —
+   basta a meta não carregar as diretivas que só valem em cabeçalho.
+2. **O que NÃO é contornável sozinho:** com a política aplicada localmente, a
+   rota `/contato` falhou porque a CSP bloqueia o Turnstile. Isso revelou um
+   **defeito de produção** (ver abaixo), e a correção depende de uma decisão
+   de segurança do dono.
+
+### 6.2.1 🟠 `[08/10]` E isso DESENTERROU um defeito de produção
+
+Ao aplicar a política localmente, `/contato` parou de funcionar:
+
+```
+Refused to load the script 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+because it violates the following Content Security Policy directive
+```
+
+**Conferido no site no ar**, não deduzido: a CSP de produção tem
+`script-src 'self'` e um `frame-src` sem a Cloudflare. **O Turnstile do
+formulário de contato está bloqueado** — o script nunca carrega e a tela cai no
+teto de 12 s de `lib/turnstile.js`, que existe justamente para a espera não ser
+infinita. Ou seja: ele falha com elegância, e por isso ninguém notou.
+
+**Por que isso nunca apareceu:** a política do `vercel.json` só é aplicada pela
+Vercel, em produção. O `vite preview` local não manda cabeçalho nenhum, e o
+`e2e/politica-de-conteudo.mjs`, que sobe o `dist` COM a política, carrega 6
+rotas — `/contato` não é uma delas.
+
+**Por que eu não consertei:** `script-src` é travado por IGUALDADE em
+`e2e/portas-da-web.mjs`, e de propósito — o comentário de lá diz que
+`connect-src` e `frame-src` crescem com serviço novo, mas afrouxar `script-src`
+é **sempre** decisão de segurança. Autorizar `challenges.cloudflare.com` a
+executar script no site é exatamente essa decisão, e ela é do dono.
+
+**E há um efeito de processo que vale registrar:** aquele portão bate na
+PRODUÇÃO. Qualquer mudança numa diretiva travada reprova o próprio PR que a
+faz, porque a produção ainda serve a política antiga. O portão antecipou isso
+para as diretivas que crescem e não para as travadas — é um impasse real, e
+está no `BACKLOG.md`.
 
 ### 6.3 🟡 O microfone passa a pedir permissão nativa
 
@@ -414,7 +455,8 @@ O que ainda precisa ser investigado:
   . Capacitor 8.5.3; `android/` gerado (appId `app.gamerhub`)
   . `lib/dominio.js` — o endereco do site virou fonte unica, e o
     `resetPasswordForEmail` deixou de usar `window.location.origin`
-  . CSP replicada como `<meta>` + `cspDoAppSegueADaWeb.test.js`
+  . CSP do app: TENTADA e RETIRADA deste bloco — ver 6.2, o motivo e o
+    Turnstile
   . `RECORD_AUDIO` e `MODIFY_AUDIO_SETTINGS` no manifesto
   . `android` no `globalIgnores` do eslint (o bundle copiado dava 312 erros)
   . SDK Android instalado NESTE container (x86-64) — o PC deixou de ser
