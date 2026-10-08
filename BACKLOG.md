@@ -36,63 +36,22 @@
 ## 🔄 EM EXECUÇÃO
 
 
-### 🟡 `[08/10]` PROMPT DELE — parser de formatação aninhada + separador `---`
+### ✅ `[08/10]` PARSER E SEPARADOR — feitos, e o parser voltou uma vez
 
-> Entregue em 08/10, junto das duas decisões de moderação. **Ele pediu
-> explicitamente para eu gravar o prompt**, e o regime é o oposto do prompt do
-> Android: aqui ele manda **implementar na mesma tarefa**, sem esperar nova
-> autorização depois do diagnóstico.
+As duas partes do prompt dele estão no ar: a marcação aninhada funciona em
+qualquer ordem, e o separador `---` existe nos posts (não nos comentários).
 
-**PARTE 1 — bug real, achado por ele testando no banco e olhando o site:**
+**E o defeito voltou no mesmo dia, numa forma que a matriz não escrevia.** Ele
+publicou `**Negrito com *itálico***` e viu um asterisco literal. Os três
+asteriscos do fim são dois fechamentos colados, e o varredor pegava os da
+esquerda — quem abre por último fecha primeiro.
 
-| O que ele observou |
-| --- |
-| negrito `**` e itálico `*` **aninhados** conflitam — às vezes um funciona e o outro não, **nos dois sentidos**, e também em combinações mais profundas |
-| em ao menos uma combinação de `__` com `~~`, o sublinhado renderizou e os `~~` **apareceram literalmente na tela** |
+**Por que os 60 casos não pegaram:** o gerador escrevia um `b` antes de todo
+fechamento, então **nenhum deles produzia um `***`**. A lição não é "faltava um
+caso" — é que teste gerado escolhe a forma fácil, e texto real cola marcação em
+pontuação e em outra marcação. Hoje são **120**, cada ordem nas duas formas.
 
-O pipeline a investigar inteiro: `texto bruto → analisarFormatacao() →
-analisarTrechos() → árvore de nós → TextoFormatado.jsx → React`. Arquivos que
-ele já apontou: `src/lib/formatacao/analisar.js`,
-`src/lib/formatacao/vocabulario.js`, `src/components/ui/TextoFormatado.jsx` e os
-testes em `src/lib/formatacao/__tests__/`.
-
-**Ele proibiu dois atalhos, e os dois são regra deste projeto:** não presumir
-que é CSS, e **não tratar comentário no código nem teste existente como prova de
-funcionamento** — executar e verificar (§1.4).
-
-**A matriz que ele quer, e é exaustiva:** os 4 marcadores isolados · todos os
-**pares** nos dois sentidos · todas as combinações de **três** · todas as ordens
-de **quatro** · formatação **lado a lado** · texto, pontuação, acento, emoji,
-quebra de linha · e **delimitador inválido ou literal** (abertura sem
-fechamento, fechamento sem abertura, duplicado, usado como texto). Com
-identificador por caso, entrada, árvore produzida, passou/falhou — e **o número
-de casos planejados, executados, aprovados e reprovados**. Caso que não puder
-ser automatizado é marcado como **não executado**, nunca como aprovado.
-
-**PARTE 2 — separador horizontal `---`** sozinho numa linha, para organizar post
-longo. Ele já antecipou a parte difícil: *"não assuma que basta adicionar uma
-regex ao array TRECHOS — o separador é recurso de estrutura de LINHA ou BLOCO"*,
-e pode precisar de outra etapa do pipeline. As 10 regras de borda que ele quer
-decididas: `---` no meio de frase (literal), `--` e `----` (não viram
-separador), espaço em volta, separadores consecutivos, no começo e no fim,
-entre parágrafos, perto de lista e citação, perto de marcação aninhada.
-
-**A preferência dele:** separador **nos posts, não nos comentários** — "para
-manter os comentários mais simples". Ele pediu para eu conferir como isso se
-encaixa na arquitetura antes de implementar.
-
-**As invariantes que o recurso não pode quebrar** (ele listou, e são as nossas):
-árvore de nós em vez de HTML, **zero `dangerouslySetInnerHTML`**, link por
-`safeExternalUrl`, vocabulário fechado de cor e tamanho, texto não reconhecido
-**continua visível**, e o corte de recursos entre post e comentário respeitado.
-
-**Fora do escopo, por ordem dele:** banco, RLS, função do Supabase,
-autenticação, infraestrutura. E **sem commit, branch, PR ou deploy** dentro
-dessa tarefa — o ciclo do §8 fica para quando ela fechar.
-
----
-
-
+O histórico fica em `FUNCIONALIDADES.md` e no cabeçalho de `trechos.js`.
 
 ### 🚩 `[03/10]` PONTO DE PARTIDA — quando você voltar (quinta)
 
@@ -1199,7 +1158,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**56 itens abertos** (+ 1 ideia sem compromisso)
+**59 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2553,6 +2512,60 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[08/10]` 🟠 **O Turnstile do `/contato` está BLOQUEADO em produção pela
+  nossa própria CSP.** *🟡 decisão de segurança dele.*
+
+  Conferido no site **no ar**, não deduzido: `script-src 'self'` e um
+  `frame-src` sem a Cloudflare. O script nunca carrega, e a tela cai no teto de
+  12 s do `lib/turnstile.js` — ele **falha com elegância**, e é por isso que
+  ninguém notou.
+
+  **Por que nunca apareceu:** a política só é aplicada pela Vercel, em produção.
+  O `vite preview` local não manda cabeçalho, e o `politica-de-conteudo.mjs`,
+  que sobe o `dist` COM a política, carrega 6 rotas — `/contato` não é uma delas.
+  Descobri porque a CSP do app, aplicada localmente, derrubou a rota.
+
+  **A decisão é sua porque é de segurança:** consertar significa autorizar
+  `challenges.cloudflare.com` a **executar script** no site. As saídas:
+
+  | | |
+  | --- | --- |
+  | **autorizar** | `script-src` e `frame-src` ganham a Cloudflare. Simples, e é o que o código sempre quis |
+  | **tirar o Turnstile** | o formulário de contato perde o captcha e fica aberto a robô |
+  | **trocar por outro** | captcha próprio ou limite por IP — mais trabalho, zero terceiro |
+
+  **Minha recomendação: autorizar.** O Turnstile já está no código com chave
+  pública, a Cloudflare é um terceiro que já serve meio da web, e a alternativa
+  real é um formulário público sem defesa nenhuma. Mas é sua.
+
+- ⬜ `[08/10]` 🔵 **Mudar diretiva TRAVADA da CSP é um impasse de processo.**
+  *Descoberto tentando consertar o item acima.*
+
+  O `e2e/portas-da-web.mjs` compara `script-src`, `default-src`, `object-src`,
+  `base-uri`, `frame-ancestors` e `form-action` por **igualdade**, contra a
+  **produção**. Então qualquer PR que mude uma delas **reprova a si mesmo** — a
+  produção ainda serve a política antiga.
+
+  O comentário do próprio roteiro antecipou isso para `connect-src` e
+  `frame-src` (que crescem com serviço novo) e **não** para as travadas. É um
+  buraco real, não um defeito do desenho: travar por igualdade é o que pega o
+  afrouxamento silencioso.
+
+  **Saída provável:** o roteiro aceitar o valor do `vercel.json` **ou** o que
+  está no ar, reprovando só quando os dois discordam do esperado — o que
+  continua pegando afrouxamento e deixa o deploy alcançar.
+
+- ⬜ `[08/10]` 🟠 **O app Android ainda não tem CSP.** *Depende dos dois acima.*
+
+  Tentada e retirada no PR do Capacitor. Duas razões: `frame-ancestors` é
+  ignorado em `<meta>` e o Chrome loga `console.error` por página (o
+  `smoke.mjs` derrubou **18 de 18 rotas** por isso — contornável), e a política
+  de hoje bloqueia o Turnstile, que é o item acima.
+
+  Entregar a meta com a política atual **assaria o bug dentro do app também**.
+  Fica para quando o Turnstile estiver decidido.
+
+
 - ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
   mais.** *Esbarrei nisto ao replicar a política para o app.*
 
@@ -2822,8 +2835,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->193<!--/n--> arq ·
-  <!--n:src.lib.linhas-->24.625<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->192<!--/n--> arq ·
+  <!--n:src.lib.linhas-->24.731<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

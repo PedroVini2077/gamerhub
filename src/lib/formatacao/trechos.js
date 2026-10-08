@@ -90,30 +90,105 @@ const COLCHETES = [
 const ESPACO = /\s/;
 const PALAVRA = /\w/;
 
+/** Quantos caracteres do marcador sobraram como TEXTO na árvore. */
+function sobraramLiterais(nos, caractere) {
+  let quantos = 0;
+  for (const no of nos) {
+    if (no.tipo === 'texto') {
+      for (const c of no.valor) if (c === caractere) quantos += 1;
+    } else if (no.filhos) {
+      quantos += sobraramLiterais(no.filhos, caractere);
+    }
+  }
+  return quantos;
+}
+
+/** O tamanho da sequência de `caractere` que começa em `j`. */
+function tamanhoDoRun(texto, j, caractere) {
+  let n = 0;
+  while (texto[j + n] === caractere) n += 1;
+  return n;
+}
+
 /**
  * O fechamento de `marca` a partir de `desde`, ou `-1`.
  *
- * As três recusas, e cada uma existe por um caso real:
+ * ── `[08/10]` O BUG DO RUN ADJACENTE, e por que ele exigiu mudar a escolha ──
+ *
+ * `**Negrito com *itálico***` saía como `negrito["Negrito com *itálico"] + "*"`:
+ * um asterisco literal na tela e o itálico perdido. Os três asteriscos do fim
+ * são **dois fechamentos colados** — um do itálico e um do negrito —, e a
+ * versão anterior pegava sempre os da ESQUERDA.
+ *
+ * Ela estava pegando os caracteres errados: quem abriu por ÚLTIMO fecha
+ * PRIMEIRO, então o itálico leva o asterisco da esquerda e o negrito leva os
+ * dois da direita. Pegar da esquerda deixava o itálico sem par.
+ *
+ * ── Como a escolha é feita, e por que não é contagem ────────────────────────
+ *
+ * A tentação era contar delimitadores pendentes dentro do conteúdo. Medido:
+ * não funciona, porque abertura que NUNCA fecha conta igual — `__a_b__` tem um
+ * `_` solto no meio, e a contagem o trataria como pendente, recusando um
+ * fechamento legítimo.
+ *
+ * O critério que funciona é o resultado, não a contagem: para cada corte
+ * possível do run, **analisa o conteúdo e conta quantos caracteres do marcador
+ * SOBRARAM como texto**. Zero sobra é o corte certo. É a mesma pergunta que o
+ * dono fez olhando a tela — *"apareceram asteriscos literais"* — só que feita
+ * pelo parser antes de desenhar.
+ *
+ * ── A reserva, e o caso que ela protege ─────────────────────────────────────
+ *
+ * Nem todo texto consegue zerar: `**a 2 * 3 b**` tem um asterisco que é
+ * multiplicação, e ele SOBRA de propósito. Por isso o primeiro candidato viável
+ * fica guardado como reserva e é usado quando nenhum zera — senão a conta do
+ * autor faria o negrito inteiro desaparecer.
+ *
+ * E a reserva só vale depois de varrer o resto: em `*a **b** c*` o run do meio
+ * não zera (ele é o fechamento do negrito, não do itálico) e o do fim zera.
+ * Devolver a reserva cedo demais fecharia o itálico dentro do negrito.
+ *
+ * ── As recusas que vieram de antes, cada uma com um caso real ───────────────
  *
  * - **quebra de linha encerra a busca.** As regexes antigas usavam `[^…\n]+`,
  *   ou seja, marcação nunca atravessou linha. Mantido: `**a` numa linha e `b**`
  *   na seguinte continua sendo texto.
- * - **`*` que faz parte de `**` não fecha itálico.** É a metade (2) do bug: sem
- *   isto, o itálico fecha no meio de um negrito e todo o resto do texto
- *   desalinha.
  * - **fechamento colado em espaço não fecha.** Mesma regra do CommonMark que já
  *   existia nos lookarounds: `*a *` não marca nada.
+ * - **itálico não fecha antes de letra.** `a*b*c` continua sendo texto.
  */
 function acharFechamento(texto, { marca, palavra }, desde) {
-  for (let j = desde + 1; j <= texto.length - marca.length; j += 1) {
-    if (texto[j] === '\n') return -1;
-    if (!texto.startsWith(marca, j)) continue;
-    if (marca === '*' && texto.startsWith('**', j)) { j += 1; continue; }
-    if (ESPACO.test(texto[j - 1])) continue;
-    if (palavra && PALAVRA.test(texto[j + marca.length] ?? '')) continue;
-    return j;
+  const caractere = marca[0];
+  let reserva = -1;
+
+  for (let j = desde + 1; j < texto.length; j += 1) {
+    if (texto[j] === '\n') break;
+    if (texto[j] !== caractere) continue;
+
+    const run = tamanhoDoRun(texto, j, caractere);
+    const ultimo = j + run - 1;
+    // Run curto demais, ou colado em espaço: não fecha nada. O `j = ultimo`
+    // pula o run inteiro — sem isso, o caractere seguinte seria testado como
+    // se fosse o começo de outro run.
+    if (run < marca.length || ESPACO.test(texto[j - 1])) { j = ultimo; continue; }
+
+    // Os cortes possíveis: quantos caracteres do run ficam para os
+    // delimitadores de dentro, que abriram depois e fecham antes.
+    let melhor = null;
+    for (let sobra = 0; sobra <= run - marca.length; sobra += 1) {
+      const fim = j + sobra;
+      if (palavra && PALAVRA.test(texto[fim + marca.length] ?? '')) continue;
+      const nota = sobraramLiterais(analisarTrechos(texto.slice(desde, fim)), caractere);
+      if (melhor === null || nota < melhor.nota) melhor = { fim, nota };
+      if (nota === 0) break;
+    }
+
+    if (melhor?.nota === 0) return melhor.fim;
+    if (melhor && reserva === -1) reserva = melhor.fim;
+    j = ultimo;
   }
-  return -1;
+
+  return reserva;
 }
 
 /**
