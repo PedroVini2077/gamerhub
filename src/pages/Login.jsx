@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ENDERECO_DO_SITE } from '../lib/dominio';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { supabase } from '../lib/supabase';
@@ -82,7 +83,10 @@ export default function Login() {
 
     if (mode === 'forgot') {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin + '/auth/confirm',
+        // `[08/10]` O SITE, e não `window.location.origin`: dentro do app
+        // Android a origem é `https://localhost`, que o Supabase recusa.
+        // Ver `lib/dominio.js`.
+        redirectTo: ENDERECO_DO_SITE + '/auth/confirm',
       });
       if (error) toast.error(mensagemDeErroDeAuth(error), { id: ID_DO_TOAST_DE_AUTH });
       else { toast.success('Link de recuperação enviado! Verifique seu email.'); switchMode('login'); }

@@ -138,7 +138,17 @@ const EXTENSOES = /\.(js|jsx|ts|tsx|mjs|sql|ya?ml)$/;
 
 function arquivosDe(dir, acc = []) {
   for (const nome of readdirSync(dir)) {
-    if (nome === 'node_modules' || nome === '.git' || nome === 'dist') continue;
+    // `[08/10]` `android` entrou ao lado de `dist`, e pelo mesmo motivo: ele
+    // carrega SAÍDA DE BUILD que o git ignora — `app/build/` do Gradle e o
+    // bundle copiado pelo `cap sync`. Sem esta linha o portão valida citação
+    // contra arquivo que não está no repositório: ele PASSA na máquina de quem
+    // acabou de compilar e REPROVA no CI, que não tem nada daquilo.
+    //
+    // Foi exatamente o que aconteceu: `docs/PLANO-ANDROID.md` citava
+    // `native-bridge.js`, que só existe em `android/app/build/intermediates/`.
+    // Verde local e vermelho no CI é a pior combinação — ensina a não confiar
+    // no portão, que é como portão morre (§0.2, 4ª regra).
+    if (nome === 'node_modules' || nome === '.git' || nome === 'dist' || nome === 'android') continue;
     const caminho = join(dir, nome);
     if (statSync(caminho).isDirectory()) arquivosDe(caminho, acc);
     else acc.push(relative(RAIZ, caminho));

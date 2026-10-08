@@ -209,8 +209,13 @@ describe('nenhuma fonte vem de terceiro', () => {
       // voltar e uma URL de verdade — entao a busca e feita no arquivo SEM
       // comentario, que e mais simples e mais dificil de errar do que tentar
       // reconhecer `href`/`src`/`url()` por expressao regular.
+      // `[08/10]` A CSP sai da varredura pelo mesmo motivo do comentário: ela
+      // DECLARA o que seria permitido, não BUSCA nada. O `index.html` carrega
+      // a política como `<meta>` porque o app Android não tem servidor para
+      // mandar o cabeçalho.
       const semComentario = bruto
         .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/<meta\s+http-equiv="Content-Security-Policy"[^>]*>/gi, '')
         .replace(/\/\*[\s\S]*?\*\//g, '');
 
       for (const [host, nome] of HOSTS) {

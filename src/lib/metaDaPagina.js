@@ -1,3 +1,4 @@
+import { ENDERECO_DO_SITE } from './dominio';
 /**
  * `[17/09]` Título, descrição e canonical por PÁGINA — Etapa 2 do Prompt 1.
  *
@@ -47,7 +48,7 @@
  * passa a existir para todo mundo.
  */
 
-const DOMINIO = 'https://gamerhub-nine.vercel.app';
+const DOMINIO = ENDERECO_DO_SITE;
 
 /**
  * O catálogo das páginas PÚBLICAS.

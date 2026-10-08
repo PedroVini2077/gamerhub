@@ -157,7 +157,7 @@ package.json              ← + @capacitor/core, /cli, /android
 | `BrowserRouter` | **continua** — o Capacitor serve de `http://localhost` com history API |
 | `localStorage` | **continua** e persiste; a sessão do Supabase sobrevive a fechar o app |
 | `window.location.origin` | **muda de valor** — ver 6.1, é o único ponto do `src/` que isto afeta |
-| botão voltar do Android | hoje **não existe** tratamento; sem ele, voltar na primeira tela fecha o app |
+| botão voltar do Android | **`[08/10]` correção:** eu escrevi "não existe tratamento" e estava errado. A ponte nativa que vem dentro do pacote `@capacitor/android` documenta uma **ação padrão**, desligada só quando alguém registra um ouvinte pelo plugin `App`. O comportamento exato mora na biblioteca compilada — continua a MEDIR no aparelho, mas é "existe padrão e é substituível", não "não existe nada" |
 | `safe area` / notch | o site é responsivo e já roda bem no celular, mas em tela cheia nativa a barra de status pode sobrepor — medir no primeiro APK |
 | teclado virtual | já é o do Android hoje, pelo navegador |
 
@@ -208,9 +208,50 @@ E o `e2e/portas-da-web.mjs`, que compara esses cabeçalhos **por valor** e repro
 o PR se um enfraquecer, bate no site. Ele continuaria verde com o app
 desprotegido — a "cobertura que não cobre" do §1.5, aplicada à própria esteira.
 
-**A saída** é replicar a política no `capacitor.config.json` e numa `<meta
-http-equiv>`, e **estender a trava** para conferir o app. Sem a trava, isto
-apodrece em silêncio.
+**A saída** é replicar a política numa `<meta http-equiv>`, com trava que exija
+as duas metades iguais. **Foi tentado em 08/10 e teve de ser retirado**, por
+duas razões que só apareceram ao medir:
+
+1. **`frame-ancestors` é ignorado em `<meta>`** (CSP Level 3) e o Chrome escreve
+   um `console.error` por página. O `e2e/smoke.mjs` trata isso como falha:
+   **18 de 18 rotas** caíram por um aviso que não era defeito. Contornável —
+   basta a meta não carregar as diretivas que só valem em cabeçalho.
+2. **O que NÃO é contornável sozinho:** com a política aplicada localmente, a
+   rota `/contato` falhou porque a CSP bloqueia o Turnstile. Isso revelou um
+   **defeito de produção** (ver abaixo), e a correção depende de uma decisão
+   de segurança do dono.
+
+### 6.2.1 🟠 `[08/10]` E isso DESENTERROU um defeito de produção
+
+Ao aplicar a política localmente, `/contato` parou de funcionar:
+
+```
+Refused to load the script 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+because it violates the following Content Security Policy directive
+```
+
+**Conferido no site no ar**, não deduzido: a CSP de produção tem
+`script-src 'self'` e um `frame-src` sem a Cloudflare. **O Turnstile do
+formulário de contato está bloqueado** — o script nunca carrega e a tela cai no
+teto de 12 s de `lib/turnstile.js`, que existe justamente para a espera não ser
+infinita. Ou seja: ele falha com elegância, e por isso ninguém notou.
+
+**Por que isso nunca apareceu:** a política do `vercel.json` só é aplicada pela
+Vercel, em produção. O `vite preview` local não manda cabeçalho nenhum, e o
+`e2e/politica-de-conteudo.mjs`, que sobe o `dist` COM a política, carrega 6
+rotas — `/contato` não é uma delas.
+
+**Por que eu não consertei:** `script-src` é travado por IGUALDADE em
+`e2e/portas-da-web.mjs`, e de propósito — o comentário de lá diz que
+`connect-src` e `frame-src` crescem com serviço novo, mas afrouxar `script-src`
+é **sempre** decisão de segurança. Autorizar `challenges.cloudflare.com` a
+executar script no site é exatamente essa decisão, e ela é do dono.
+
+**E há um efeito de processo que vale registrar:** aquele portão bate na
+PRODUÇÃO. Qualquer mudança numa diretiva travada reprova o próprio PR que a
+faz, porque a produção ainda serve a política antiga. O portão antecipou isso
+para as diretivas que crescem e não para as travadas — é um impasse real, e
+está no `BACKLOG.md`.
 
 ### 6.3 🟡 O microfone passa a pedir permissão nativa
 
@@ -265,6 +306,20 @@ documentação oficial do Google ou do Termux, o que por si só é um dado.
 | 11. Instalar no próprio aparelho | 🟢 | abrir o APK e permitir "fontes desconhecidas" |
 | 12. Testar | 🟢 | é usar o app |
 | 13. Depurar | 🟡 | sem `chrome://inspect` de um PC, sobra log na tela |
+
+> ### ✅ `[08/10]` E A RESPOSTA MUDOU no mesmo dia — o PC não é necessário
+>
+> Esta seção foi escrita pensando no aparelho dele. **O ambiente onde eu rodo é
+> outro:** Linux **x86-64**, JDK 21, 27 GB livres. O bloqueio do `aapt2`
+> compilado para x86-64 — que é o que trava no celular — **não existe aqui**.
+>
+> O SDK foi instalado (462 MB: plataforma 36 e build-tools 36) e o APK é
+> construído neste container e entregue como arquivo. Ele só instala.
+>
+> **A seção abaixo continua valendo**, e de propósito: ela é a resposta para
+> *"e se eu quiser construir no meu celular?"*, que é uma pergunta diferente de
+> *"como eu tenho um APK?"*. Confundir as duas foi o que me fez escrever a
+> tabela inteira apontando para um PC que não era preciso.
 
 ### 8.1 O ponto exato onde o PC entra, e não é o que parece
 
@@ -370,7 +425,9 @@ A escolha deixa espaço, e é um dos motivos dela:
 ```
 GAMERHUB ANDROID — ESTADO DA JORNADA
 
-Status:        AUDITORIA CONCLUÍDA (Fase 0). Nada implementado.
+Status:        FASE 3 EM EXECUÇÃO. Capacitor instalado, `android/` gerado,
+                os três pré-requisitos (auth, CSP, microfone) FEITOS.
+                APK em construção.
 Objetivo:      APK instalável no aparelho dele, para teste pessoal.
                 Play Store está fora de escopo.
 
@@ -394,9 +451,19 @@ O que ainda precisa ser investigado:
   . safe area / notch em tela cheia
   . comportamento do botão voltar
 
-O que NÃO foi alterado:
-  . nada. Nenhum arquivo de src/, nenhuma dependência, nenhum projeto
-    Android, nenhuma migration, nenhuma configuração de deploy.
+`[08/10]` O QUE JA FOI IMPLEMENTADO (ele aprovou e mandou seguir):
+  . Capacitor 8.5.3; `android/` gerado (appId `app.gamerhub`)
+  . `lib/dominio.js` — o endereco do site virou fonte unica, e o
+    `resetPasswordForEmail` deixou de usar `window.location.origin`
+  . CSP do app: TENTADA e RETIRADA deste bloco — ver 6.2, o motivo e o
+    Turnstile
+  . `RECORD_AUDIO` e `MODIFY_AUDIO_SETTINGS` no manifesto
+  . `android` no `globalIgnores` do eslint (o bundle copiado dava 312 erros)
+  . SDK Android instalado NESTE container (x86-64) — o PC deixou de ser
+    necessario para gerar o APK
+
+O que NAO foi alterado:
+  . banco, RLS, Edge Functions, deploy da Vercel — nada disso foi tocado.
 
 Próxima etapa:   Fase 1 — medir o caminho curto (PWA).
 Pré-requisitos:  nenhum. É uma verificação de minutos.

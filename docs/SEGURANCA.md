@@ -2151,3 +2151,28 @@ Provado reinjetando **quatro** políticas quebradas: youtube fora do `frame-src`
 > As três versões erraram pelo mesmo motivo de fundo: **eu aceitei um sinal
 > barato no lugar da evidência certa.** Vale registrar porque a mesma tentação
 > vai aparecer na próxima trava que dependa de navegador.
+
+## `[08/10]` A Cloudflare foi autorizada a executar script — decisão dele
+
+**O defeito:** a CSP do site tinha `script-src 'self'`, e o Turnstile do
+`/contato` carrega script de `https://challenges.cloudflare.com`. O navegador
+recusava, o script nunca carregava, e a tela caía no teto de 12 s do
+`lib/turnstile.js`. **O formulário público ficou sem captcha**, falhando com
+elegância — sem erro na tela, sem log, sem teste quebrado (§1.5).
+
+**Por que ninguém viu:** a política só é aplicada pela Vercel, em produção. O
+`vite preview` local não manda cabeçalho, e o `e2e/politica-de-conteudo.mjs`,
+que sobe o `dist` COM a política, carrega 6 rotas — `/contato` não é uma delas.
+Apareceu só quando a mesma política foi aplicada localmente para o app Android.
+
+**O que foi autorizado, com todas as letras:** a Cloudflare passa a poder
+executar JavaScript dentro do GamerHub, em `script-src` e `frame-src` (o
+captcha desenha a caixinha num iframe). Se a conta dela for comprometida, esse
+código roda no site.
+
+**A alternativa que isso descartou** era um formulário público sem defesa
+nenhuma contra robô. A terceira saída — captcha próprio ou limite por IP —
+ficou de fora por custo, e continua possível.
+
+**Travado por** `deployPendenteNaoEhAfrouxamento.test.js`, que exige a
+Cloudflare nos dois lugares e explica o que cada um faz.

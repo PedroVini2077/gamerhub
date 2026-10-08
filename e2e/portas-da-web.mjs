@@ -87,9 +87,30 @@ const CABECALHOS = [
  * `script-src 'self' 'unsafe-inline'` passaria numa checagem de "contem
  * 'self'" sorrindo, e e exatamente o XSS que a CSP existe para barrar.
  */
+/**
+ * `[08/10]` O valor no ar e um SUBCONJUNTO do esperado?
+ *
+ * Se for, a mudanca AFROUXOU e a producao apenas nao recebeu o deploy ainda —
+ * ela esta mais restrita do que mandamos, o que nao abre porta nenhuma.
+ *
+ * Se NAO for (o esperado e que e subconjunto, ou os dois divergem), a producao
+ * tem algo que nos nao autorizamos. Isso reprova, como sempre reprovou.
+ */
+function aguardandoDeploy(noAr, esperado) {
+  const partes = (v) => v.trim().split(/\s+/).filter(Boolean);
+  const alvo = new Set(partes(esperado));
+  return partes(noAr).every((t) => alvo.has(t));
+}
+
 const CSP_TRAVADAS = [
   ['default-src',     "'self'", 'o piso de tudo que a politica nao nomeia'],
-  ['script-src',      "'self'", 'XSS inline e script de origem arbitraria'],
+  // `[08/10]` A Cloudflare entrou por DECISAO DELE, nao por manutencao. O
+  // `/contato` usa o Turnstile, e a politica o bloqueava: o script nunca
+  // carregava e a tela caia no teto de 12s do `lib/turnstile.js` — falha
+  // elegante, e por isso invisivel por quem sabe quanto tempo.
+  // O que se autoriza aqui e a Cloudflare EXECUTAR SCRIPT no site. A
+  // alternativa era um formulario publico sem defesa nenhuma contra robo.
+  ['script-src',      "'self' https://challenges.cloudflare.com", 'XSS inline e script de origem arbitraria'],
   ['object-src',      "'none'", 'plugin legado (Flash/PDF) usado como vetor'],
   ['base-uri',        "'self'", 'sequestro de todo caminho relativo via <base>'],
   ['frame-ancestors', "'none'", 'clickjacking — a versao moderna do X-Frame-Options'],
@@ -134,8 +155,21 @@ const NAO_PODEM_RECEBER_O_APP = [
 
 const falhas = [];
 const ok = [];
+const avisos = [];
 
 function reprova(titulo, detalhe) { falhas.push({ titulo, detalhe }); }
+
+/**
+ * `[08/10]` Aviso NAO reprova, e essa distincao e o ponto.
+ *
+ * Existe um estado que nao e "passou" nem "falhou": a producao ainda nao
+ * recebeu o deploy de uma politica que AFROUXOU. Chamar isso de falha
+ * transforma o portao em algo que reprova o caminho correto — e portao que
+ * reprova quem esta certo ensina a ser ignorado (§0.2, 4a regra).
+ *
+ * Chamar de sucesso seria pior: some o sinal de que o deploy nao aconteceu.
+ */
+function avisa(titulo, detalhe) { avisos.push({ titulo, detalhe }); }
 
 async function pegar(caminho) {
   const r = await fetch(SITE + caminho, { redirect: 'follow' });
@@ -206,6 +240,27 @@ async function main() {
           + '    Diretiva que some nao quebra tela nenhuma. E o default-src nao\n'
           + '    cobre o buraco: frame-ancestors, form-action e base-uri NAO tem\n'
           + '    fallback nenhum — sem a diretiva, nao ha restricao alguma.');
+      } else if (valor !== exigido && aguardandoDeploy(valor, exigido)) {
+        // `[08/10]` A PRODUCAO ESTA ATRASADA, e isso nao e afrouxamento.
+        //
+        // Este roteiro bate na PRODUCAO, entao o PR que afrouxa uma diretiva
+        // travada reprovava A SI MESMO: o site ainda serve a politica antiga, e
+        // so passa a servir a nova depois do merge. Impasse real — o proprio
+        // comentario de CSP_TRAVADAS antecipou isso para as diretivas que
+        // crescem e esqueceu das travadas.
+        //
+        // A tolerancia e ESTREITA de proposito: so vale quando o valor no ar e
+        // um SUBCONJUNTO do esperado, ou seja, quando a mudanca AFROUXA. Nesse
+        // caso a producao esta mais RESTRITA do que mandamos — o risco e o
+        // recurso novo nao funcionar, nunca uma porta aberta.
+        //
+        // Quando a mudanca APERTA (o esperado e subconjunto do que esta no ar),
+        // a producao esta mais FRACA, e ai reprova como sempre reprovou.
+        avisa(`a diretiva "${diretiva}" ainda nao chegou na producao`,
+          `no ar:     ${diretiva} ${valor}\n    esperado:  ${diretiva} ${exigido}\n`
+          + '    O valor no ar e mais RESTRITO que o esperado, entao isto e deploy\n'
+          + '    pendente, nao afrouxamento. Some sozinho no proximo deploy — e se\n'
+          + '    NAO sumir, este aviso continua aparecendo em todo PR.');
       } else if (valor !== exigido) {
         reprova(`a diretiva "${diretiva}" da CSP AFROUXOU`,
           `esperado: ${diretiva} ${exigido}\n    recebido: ${diretiva} ${valor}\n`
@@ -290,8 +345,19 @@ async function main() {
   // ── Relatório ────────────────────────────────────────────────────────────
   for (const linha of ok) console.log(`  OK      ${linha}`);
 
+  // Os avisos aparecem ANTES do veredito, e tambem como anotacao do GitHub:
+  // deploy pendente que so existe no log de um job verde e exatamente o tipo
+  // de sinal que ninguem le (§1.5).
+  for (const a of avisos) {
+    console.log(`\n  AVISO   ${a.titulo}\n    ${a.detalhe}`);
+    if (process.env.GITHUB_ACTIONS) {
+      console.log(`::warning title=${a.titulo}::${a.detalhe.replace(/\n/g, '%0A')}`);
+    }
+  }
+
   if (falhas.length === 0) {
-    console.log(`\n  ${ok.length} verificacoes, nenhuma falha.`);
+    console.log(`\n  ${ok.length} verificacoes, nenhuma falha`
+      + `${avisos.length ? `, ${avisos.length} aviso(s) de deploy pendente` : ''}.`);
     console.log('  Isto cobre a BORDA HTTP. Logica, permissao e XP continuam');
     console.log('  sendo trabalho de auditoria (§6) — verde aqui nao e verde la.\n');
     return;

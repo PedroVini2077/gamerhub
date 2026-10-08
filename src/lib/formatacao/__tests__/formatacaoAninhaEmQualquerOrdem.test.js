@@ -45,14 +45,42 @@ function ordens(lista) {
 }
 
 /**
- * Monta o texto aninhado. O ESPAÇO em volta do miolo não é estética: sem ele,
- * o itálico encosta em letra e é recusado de propósito (`a*b*c`).
+ * Monta o texto aninhado com os fechamentos SEPARADOS por texto.
+ *
+ * O ESPAÇO em volta do miolo não é estética: sem ele, o itálico encosta em
+ * letra e é recusado de propósito (`a*b*c`).
  */
-function aninhar(nomes) {
+function aninharSeparado(nomes) {
   let texto = 'miolo';
   for (let i = nomes.length - 1; i >= 0; i -= 1) {
     const m = MARCAS[nomes[i]];
     texto = `${m}a ${texto} b${m}`;
+  }
+  return texto;
+}
+
+/**
+ * `[08/10]` O mesmo aninhamento com os fechamentos COLADOS — e esta é a forma
+ * que o defeito exigia.
+ *
+ * ── Por que a matriz de 60 casos não pegou nada ────────────────────────────
+ *
+ * Porque o gerador acima escreve `b` antes de todo fechamento. Com um `b` no
+ * meio, os delimitadores nunca ficam adjacentes, e **nenhum dos 60 casos
+ * produzia um `***`** — que é exatamente onde o parser errava.
+ *
+ * O dono escreveu `**Negrito com *itálico***` num post de verdade e o site
+ * mostrou um asterisco literal. A matriz, verde, nunca tinha escrito aquilo.
+ *
+ * **A lição não é "faltava um caso": é que o gerador escolhia a forma fácil.**
+ * Texto real cola marcação em pontuação e em outra marcação; teste gerado com
+ * separador no meio exercita a gramática pelo lado que não dói.
+ */
+function aninharColado(nomes) {
+  let texto = 'miolo';
+  for (let i = nomes.length - 1; i >= 0; i -= 1) {
+    const m = MARCAS[nomes[i]];
+    texto = `${m}a ${texto}${m}`;
   }
   return texto;
 }
@@ -86,8 +114,15 @@ describe('marcação aninhada funciona em qualquer ordem e profundidade', () => 
     ...ordens(NOMES),
   ];
 
-  it.each(combinacoes.map((c) => [c.join(' > '), c]))('%s', (_rotulo, nomes) => {
-    const entrada = aninhar(nomes);
+  // Cada combinação é testada nas DUAS formas: com os fechamentos separados por
+  // texto e com eles COLADOS. A segunda é a que faltava.
+  const casos = combinacoes.flatMap((c) => [
+    [`${c.join(' > ')} — fechamentos separados`, c, aninharSeparado],
+    [`${c.join(' > ')} — fechamentos COLADOS`, c, aninharColado],
+  ]);
+
+  it.each(casos)('%s', (_rotulo, nomes, montar) => {
+    const entrada = montar(nomes);
     const nos = arvore(entrada);
     const presentes = tipos(nos);
 
@@ -115,6 +150,111 @@ describe('marcação aninhada funciona em qualquer ordem e profundidade', () => 
       'literalmente": eles não falharam sozinhos — ficaram órfãos dentro de um',
       'itálico que não deveria existir.',
     ].join('\n')).toBe(false);
+  });
+});
+
+describe('os casos do post real — fechamentos colados (08/10)', () => {
+  /**
+   * O defeito que o dono viu no feed, na URL do post de teste. A frase
+   * publicada era, literalmente:
+   *
+   *     **Negrito com *itálico***; *itálico com **negrito***.
+   *
+   * O primeiro saía como `negrito["Negrito com *itálico"] + "*"` — asterisco
+   * literal na tela e itálico perdido. O segundo funcionava **por acidente**:
+   * o guard que pulava `**` ao procurar fechamento de `*` caía, por sorte, na
+   * posição certa. Os dois estão aqui para que nenhum volte a depender de sorte.
+   */
+
+  /** O caminho de tipos até o nó mais fundo, para checar a HIERARQUIA. */
+  function caminho(nos) {
+    for (const no of nos) {
+      if (no.tipo === 'texto') continue;
+      return [no.tipo, ...(no.filhos ? caminho(no.filhos) : [])];
+    }
+    return [];
+  }
+
+  /** O texto visível de um tipo de nó, onde quer que ele esteja. */
+  function conteudoDe(nos, tipo) {
+    for (const no of nos) {
+      if (no.tipo === tipo) return texto(no.filhos ?? []);
+      if (no.filhos) {
+        const achado = conteudoDe(no.filhos, tipo);
+        if (achado !== null) return achado;
+      }
+    }
+    return null;
+  }
+
+  const CASOS = [
+    ['A — negrito envolvendo itálico', '**Negrito com *itálico***',
+      ['negrito', 'italico'], 'Negrito com itálico', 'itálico', ''],
+    ['B — itálico envolvendo negrito', '*Itálico com **negrito***',
+      ['italico', 'negrito'], 'Itálico com negrito', 'negrito', ''],
+  ];
+
+  it.each(CASOS)('%s', (_r, entrada, hierarquia, fora, dentro, cauda) => {
+    const nos = arvore(entrada);
+
+    expect(caminho(nos), [
+      `A hierarquia de ${JSON.stringify(entrada)} saiu errada.`,
+      'O de FORA tem de envolver o de DENTRO — se os dois virarem irmãos, o',
+      'texto continua legível e a ênfase fica no lugar errado.',
+    ].join('\n')).toEqual(hierarquia);
+
+    expect(conteudoDe(nos, hierarquia[0]), 'o trecho externo perdeu ou ganhou texto.')
+      .toBe(fora);
+    expect(conteudoDe(nos, hierarquia[1]), 'o trecho interno não é só o que devia ser.')
+      .toBe(dentro);
+
+    expect(texto(nos).replace(fora, ''), [
+      `Sobrou marcador como TEXTO em ${JSON.stringify(entrada)}.`,
+      'Era isto que aparecia na tela do feed: um asterisco solto depois do',
+      'negrito, porque o fechamento pegou os caracteres da ESQUERDA do run.',
+    ].join('\n')).toBe(cauda);
+  });
+
+  // A pontuação não pode mudar a associação dos marcadores — ela fica FORA do
+  // trecho formatado, como o autor escreveu.
+  const PONTUACAO = ['.', ',', ';', ':', ')', '!', '?', '...'];
+
+  it.each(PONTUACAO)('pontuação %s depois do fechamento fica de fora', (p) => {
+    for (const [, entrada, hierarquia, fora] of CASOS) {
+      const nos = arvore(entrada + p);
+      expect(caminho(nos), `${JSON.stringify(entrada + p)} mudou a hierarquia.`)
+        .toEqual(hierarquia);
+      expect(conteudoDe(nos, hierarquia[0]), `${JSON.stringify(p)} entrou no trecho formatado.`)
+        .toBe(fora);
+      expect(texto(nos).endsWith(p), `${JSON.stringify(p)} sumiu do fim.`).toBe(true);
+    }
+  });
+
+  it('entre parênteses, os dois lados ficam de fora', () => {
+    const nos = arvore('(**Negrito com *itálico***)');
+    expect(caminho(nos)).toEqual(['negrito', 'italico']);
+    expect(texto(nos)).toBe('(Negrito com itálico)');
+  });
+
+  it('marcador que NÃO fecha nada continua dentro do trecho formatado', () => {
+    // `[08/10]` Esta entrou por reinjeção: apagar a "reserva" de
+    // `acharFechamento` não quebrava NENHUM teste, e ela é o que impede o
+    // conteúdo de desaparecer quando nenhum corte zera.
+    //
+    // Aqui o asterisco do meio é MULTIPLICAÇÃO — ele sobra de propósito, e
+    // nenhum corte do run final consegue zerar a conta. Sem a reserva o
+    // negrito inteiro deixa de existir e a frase vira texto cru.
+    const nos = arvore('**a 2 * 3 b**');
+    expect(tipos(nos), 'o negrito sumiu porque o conteúdo tinha um asterisco literal.')
+      .toEqual(new Set(['negrito']));
+    expect(texto(nos), 'a conta do autor foi alterada.').toBe('a 2 * 3 b');
+  });
+
+  it('a frase INTEIRA do post, com os dois casos na mesma linha', () => {
+    const nos = arvore('**Negrito com *itálico***; *itálico com **negrito***.');
+    expect(texto(nos), 'o texto visível mudou — sobrou ou sumiu caractere.')
+      .toBe('Negrito com itálico; itálico com negrito.');
+    expect(tipos(nos)).toEqual(new Set(['negrito', 'italico']));
   });
 });
 

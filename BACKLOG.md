@@ -36,63 +36,22 @@
 ## 🔄 EM EXECUÇÃO
 
 
-### 🟡 `[08/10]` PROMPT DELE — parser de formatação aninhada + separador `---`
+### ✅ `[08/10]` PARSER E SEPARADOR — feitos, e o parser voltou uma vez
 
-> Entregue em 08/10, junto das duas decisões de moderação. **Ele pediu
-> explicitamente para eu gravar o prompt**, e o regime é o oposto do prompt do
-> Android: aqui ele manda **implementar na mesma tarefa**, sem esperar nova
-> autorização depois do diagnóstico.
+As duas partes do prompt dele estão no ar: a marcação aninhada funciona em
+qualquer ordem, e o separador `---` existe nos posts (não nos comentários).
 
-**PARTE 1 — bug real, achado por ele testando no banco e olhando o site:**
+**E o defeito voltou no mesmo dia, numa forma que a matriz não escrevia.** Ele
+publicou `**Negrito com *itálico***` e viu um asterisco literal. Os três
+asteriscos do fim são dois fechamentos colados, e o varredor pegava os da
+esquerda — quem abre por último fecha primeiro.
 
-| O que ele observou |
-| --- |
-| negrito `**` e itálico `*` **aninhados** conflitam — às vezes um funciona e o outro não, **nos dois sentidos**, e também em combinações mais profundas |
-| em ao menos uma combinação de `__` com `~~`, o sublinhado renderizou e os `~~` **apareceram literalmente na tela** |
+**Por que os 60 casos não pegaram:** o gerador escrevia um `b` antes de todo
+fechamento, então **nenhum deles produzia um `***`**. A lição não é "faltava um
+caso" — é que teste gerado escolhe a forma fácil, e texto real cola marcação em
+pontuação e em outra marcação. Hoje são **120**, cada ordem nas duas formas.
 
-O pipeline a investigar inteiro: `texto bruto → analisarFormatacao() →
-analisarTrechos() → árvore de nós → TextoFormatado.jsx → React`. Arquivos que
-ele já apontou: `src/lib/formatacao/analisar.js`,
-`src/lib/formatacao/vocabulario.js`, `src/components/ui/TextoFormatado.jsx` e os
-testes em `src/lib/formatacao/__tests__/`.
-
-**Ele proibiu dois atalhos, e os dois são regra deste projeto:** não presumir
-que é CSS, e **não tratar comentário no código nem teste existente como prova de
-funcionamento** — executar e verificar (§1.4).
-
-**A matriz que ele quer, e é exaustiva:** os 4 marcadores isolados · todos os
-**pares** nos dois sentidos · todas as combinações de **três** · todas as ordens
-de **quatro** · formatação **lado a lado** · texto, pontuação, acento, emoji,
-quebra de linha · e **delimitador inválido ou literal** (abertura sem
-fechamento, fechamento sem abertura, duplicado, usado como texto). Com
-identificador por caso, entrada, árvore produzida, passou/falhou — e **o número
-de casos planejados, executados, aprovados e reprovados**. Caso que não puder
-ser automatizado é marcado como **não executado**, nunca como aprovado.
-
-**PARTE 2 — separador horizontal `---`** sozinho numa linha, para organizar post
-longo. Ele já antecipou a parte difícil: *"não assuma que basta adicionar uma
-regex ao array TRECHOS — o separador é recurso de estrutura de LINHA ou BLOCO"*,
-e pode precisar de outra etapa do pipeline. As 10 regras de borda que ele quer
-decididas: `---` no meio de frase (literal), `--` e `----` (não viram
-separador), espaço em volta, separadores consecutivos, no começo e no fim,
-entre parágrafos, perto de lista e citação, perto de marcação aninhada.
-
-**A preferência dele:** separador **nos posts, não nos comentários** — "para
-manter os comentários mais simples". Ele pediu para eu conferir como isso se
-encaixa na arquitetura antes de implementar.
-
-**As invariantes que o recurso não pode quebrar** (ele listou, e são as nossas):
-árvore de nós em vez de HTML, **zero `dangerouslySetInnerHTML`**, link por
-`safeExternalUrl`, vocabulário fechado de cor e tamanho, texto não reconhecido
-**continua visível**, e o corte de recursos entre post e comentário respeitado.
-
-**Fora do escopo, por ordem dele:** banco, RLS, função do Supabase,
-autenticação, infraestrutura. E **sem commit, branch, PR ou deploy** dentro
-dessa tarefa — o ciclo do §8 fica para quando ela fechar.
-
----
-
-
+O histórico fica em `FUNCIONALIDADES.md` e no cabeçalho de `trechos.js`.
 
 ### 🚩 `[03/10]` PONTO DE PARTIDA — quando você voltar (quinta)
 
@@ -1199,7 +1158,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**55 itens abertos** (+ 1 ideia sem compromisso)
+**57 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2553,6 +2512,58 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
 ## 🟠 Importante — dá para fazer
 
+- ⬜ `[08/10]` 🟠 **A landing trava no app — e o portão por aparelho do §0.3
+  nunca foi construído.** *🟡 decisão dele: aprovar o portão por MEDIÇÃO.*
+
+  **Confirmado por ele:** *"a maioria é na landing page"*. O feed aguenta. Não
+  é o WebView — é a decoração.
+
+  **O que a investigação DESCARTOU, medindo:**
+
+  | | |
+  | --- | --- |
+  | JavaScript por quadro | `useProgressoDeRolagem` usa `MotionValue`, sem render do React por quadro. O erro que custou 714 ms no `FluxoDeDados` já está registrado no `DESEMPENHO.md` e não se repete |
+  | peso das imagens | 42 arquivos, 3,3 MB, já em variantes responsivas (828 px para celular alto, 1600 para largo) |
+
+  **O que sobra, e eu NÃO consigo medir daqui:** quantas camadas pintam ao
+  mesmo tempo. Depende da GPU do aparelho dele.
+
+  **A proposta, e ela esbarra numa regra do próprio projeto.** O §0.3, regra 2,
+  prevê um portão por aparelho que **nunca existiu**. Mas a regra 6 fecha o
+  caminho óbvio: *"detectar aparelho é medir, não identificar"* — ler modelo e
+  GPU foi RECUSADO por ser impressão digital.
+
+  Então o portão tem de medir **o próprio desenho**: contar quadros perdidos
+  nos primeiros ~1,5 s e, se estiver ruim, cair para a cena **parada** que já
+  existe para `prefers-reduced-motion` (`PrologoParado`, e o caminho "composição
+  parada, não vazia" do `PortalDoAtoZero`). Não é construir uma segunda landing
+  — é religar o que já está lá por outro motivo.
+
+  **A escolha explícita de quem olha VENCE a medição**, sempre (§0.3, regra 2).
+
+  **O risco, dito antes de construir:** medição de quadro no começo erra se o
+  aparelho estiver ocupado abrindo o app — ela acusaria lentidão inexistente e
+  cortaria o enfeite de quem não precisava. Por isso o corte não pode ser
+  permanente nem vencer a escolha de ninguém.
+
+  **As três perguntas para ele:** (1) aprova o portão por medição? (2) o corte
+  vale só na landing ou no site logado também? (3) botão visível para religar
+  os efeitos, ou basta o `prefers-reduced-motion` do sistema?
+
+- ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
+  mais.** *Esbarrei nisto ao replicar a política para o app.*
+
+  `style-src ... https://fonts.googleapis.com` e `font-src ...
+  https://fonts.gstatic.com` sobraram de quando as fontes vinham de fora. Hoje
+  elas são servidas por nós (`public/fonts`), e a permissão é sobra — não é
+  brecha, é higiene: ela autoriza um terceiro que ninguém chama.
+
+  **Por que não apertei junto:** o `e2e/portas-da-web.mjs` compara o cabeçalho
+  **por valor** contra o site **no ar**. Mudar o `vercel.json` reprovaria o PR
+  até o deploy acontecer — a mudança e a expectativa precisam entrar no mesmo
+  passo, e isso merece um bloco próprio em vez de carona num PR de Android.
+
+
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
 
@@ -2808,8 +2819,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->191<!--/n--> arq ·
-  <!--n:src.lib.linhas-->24.489<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->194<!--/n--> arq ·
+  <!--n:src.lib.linhas-->25.014<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

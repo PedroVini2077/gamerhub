@@ -1062,9 +1062,17 @@ marcador vai virar algo.
   - **`[08/10]` Marcação aninhada passou a funcionar em qualquer ordem.** Negrito
     com itálico dentro — e o contrário — simplesmente não funcionava, e numa
     combinação os `~~` apareciam **literalmente na tela**. Medido: 10 de 12 pares
-    e **8 de 48** combinações de três e quatro recursos. Hoje são 60 de 60. O
-    conserto foi trocar as regexes por um varredor; o porquê está no cabeçalho de
+    e **8 de 48** combinações de três e quatro recursos. O conserto foi trocar as
+    regexes por um varredor; o porquê está no cabeçalho de
     `src/lib/formatacao/trechos.js`.
+  - **`[08/10]` E voltou, numa forma que a matriz não cobria.** Ele publicou
+    `**Negrito com *itálico***` e viu um asterisco literal. Os três asteriscos
+    do fim são **dois fechamentos colados**, e o varredor pegava os caracteres
+    da ESQUERDA — quem abriu por último fecha primeiro, então o itálico leva o
+    da esquerda e o negrito leva os dois da direita. Hoje o parser escolhe o
+    corte **pelo resultado**: analisa cada corte possível e fica com o que não
+    deixa marcador sobrando. São **120 combinações** travadas, cada ordem nas
+    duas formas — fechamentos separados por texto e colados.
   - **O comentário recebe menos:** negrito, itálico, riscado e link. Sem cor
     nem tamanho — conversa não é publicação.
   - **Marcador precisa encostar no texto.** `**forte**` formata; `2 * 3 * 4`
