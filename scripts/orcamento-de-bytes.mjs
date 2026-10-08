@@ -120,8 +120,30 @@ const DIST = 'dist';
 // precisa saber na primeira pintura se você está logado. Mexer nisso é mexer
 // num arquivo de alto risco (`CLAUDE.md` §7), então fica registrado como
 // onde a sala existe, não como plano.
+// ── `[08/10]` O GZIP sobe de 229 para 230, e a frase que o teto exige ──────
+//
+// **Por que o site precisou engordar:** o PWA. Para o navegador poder oferecer
+// a instalação, duas coisas têm de existir no pacote inicial — o registro do
+// service worker e a CAPTURA do `beforeinstallprompt`, que dispara uma vez e
+// antes do React montar. Adiar qualquer uma delas é não ter a funcionalidade.
+//
+// E este teto fez o trabalho dele: o portão reprovou, e a reprovação achou
+// **enfeite no caminho crítico**. A faixa de convite inteira (`FaixaDeInstalacao`)
+// estava sendo baixada por todo mundo, inclusive por quem já instalou e por
+// quem está no iPhone, onde ela nem aparece. Ela foi para trás de um `lazy()`
+// atrás da CONDIÇÃO — e aí o chunk não é pedido na maioria das visitas, que é a
+// diferença entre este caso e a 1ª armadilha do §0.3.
+//
+//     antes do PWA                              228,9 kB gzip
+//     Fases 1+2 (service worker + offline)       229,0   +0,1
+//     Fase 4 com a faixa no caminho crítico      229,9   +0,9  <- estourou
+//     Fase 4 com a faixa adiada por condição     229,5   +0,5  <- 44% devolvido
+//
+// A folga volta a ser ~0,5 kB, e a nota de 02/10 continua valendo na íntegra:
+// **todo PR do Dependabot vai reprovar aqui**, e onde existe sala de verdade
+// é no `vendor-supabase`, não neste número.
 const TETO_BRUTO_KB = 760;
-const TETO_GZIP_KB = 229;
+const TETO_GZIP_KB = 230;
 
 // Teto por arquivo, para QUALQUER chunk — inclusive os de rota, que não estão
 // no conjunto ansioso.

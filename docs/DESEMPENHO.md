@@ -1652,3 +1652,53 @@ site precisa saber na primeira pintura se você está logado.
 adiar a autenticação muda a primeira pintura de todo mundo. Fica registrado
 como **onde a sala existe**, para que "subir o teto" não pareça a única saída
 que alguém olhou.
+
+---
+
+## `[08/10]` O PWA estourou o orçamento, e a reprovação achou enfeite no caminho crítico
+
+O portão de bytes reprovou as Fases 1, 2 e 4 do PWA. Vale registrar porque ele
+fez exatamente o que o cabeçalho dele promete: a conversa não foi "subir o
+teto?", foi **"o que está aqui que não precisava estar?"**.
+
+| | gzip | contra a base |
+| --- | --- | --- |
+| antes do PWA | 228,9 kB | — |
+| Fases 1+2 — service worker + tela offline | 229,0 kB | +0,1 |
+| Fase 4 — com a faixa de convite no pacote inicial | **229,9 kB** | +0,9 ← estourou |
+| Fase 4 — com a faixa adiada por condição | **229,5 kB** | +0,5 ← 44% devolvido |
+
+### O que era irredutível, e por quê
+
+Duas coisas têm de estar no pacote inicial ou a funcionalidade não existe: o
+registro do service worker, e a **captura do `beforeinstallprompt`** — que
+dispara uma vez e normalmente antes do React montar. Adiar essa captura é
+perder o evento.
+
+### O que não era, e é a parte que interessa
+
+A faixa de convite inteira estava sendo baixada por **todo mundo** — inclusive
+por quem já instalou e por quem está no iPhone, onde ela nem aparece. Ela foi
+para trás de um `lazy()`, e o portão de entrada (`ConviteDeInstalacao.jsx`)
+ficou no pacote inicial só com a pergunta.
+
+**Por que isto adia de verdade, e a cena 3D não adiava.** A 1ª armadilha do
+§0.3 é precisamente *"`lazy()` não adia download"*: a cena era lazy e montava
+com o Hero, então o pedido saía no primeiro instante. A diferença aqui é a
+**condição** — `devoConvidar()` é falso na maioria das visitas, e aí o chunk
+nunca é pedido.
+
+**E essa ordem virou trava**, porque invertê-la é invisível: o chunk da faixa é
+separado e cabe no teto por arquivo, então o orçamento de bytes ficaria **verde**
+enquanto todo visitante pagasse a faixa. A checagem está em
+`conviteDeInstalacaoNaoInsiste.test.js` — e ela nasceu decoração, comparando dois
+`indexOf` onde o `-1` da condição apagada é menor que tudo. Só a reinjeção
+mostrou.
+
+### O teto subiu para 230, e a folga continua apertada
+
+Meio quilobyte de folga. A nota de 02/10 vale na íntegra: todo PR do Dependabot
+reprova aqui, e a sala de verdade está no `vendor-supabase`, não neste número.
+
+**Medição de laboratório** (§0.3 regra 5): byte de build, mesma máquina, com
+`.env.local` presente — que é o que a Vercel serve.

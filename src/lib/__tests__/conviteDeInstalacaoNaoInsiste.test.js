@@ -243,6 +243,39 @@ describe('o convite de instalação não insiste nem chega tarde', () => {
     ).toBe(false);
   });
 
+  it('a faixa continua ADIADA por condição, não só por `lazy()`', () => {
+    const portao = readFileSync('src/components/ui/ConviteDeInstalacao.jsx', 'utf8');
+
+    expect(
+      /lazy\(\(\) => import\('\.\/FaixaDeInstalacao'\)\)/.test(portao),
+      'a faixa voltou para o pacote inicial.\n'
+      + 'Ela é enfeite útil para uma MINORIA — quem tem o convite do navegador e\n'
+      + 'ainda não respondeu — e estaria sendo baixada inclusive por quem já\n'
+      + 'instalou e por quem está no iPhone, onde ela nem aparece.',
+    ).toBe(true);
+
+    // `[08/10]` A ordem é o que faz o `lazy` valer de algo, e é a 1ª armadilha
+    // do §0.3: a cena 3D era lazy e montava com o Hero, então o pedido saía no
+    // primeiro instante — caminho crítico com outro nome. Pior, isso NÃO seria
+    // pego pelo orçamento de bytes: o chunk é separado e cabe no teto por
+    // arquivo. O portão ficaria verde e todo visitante pagaria a faixa.
+    //
+    // E esta checagem nasceu DECORAÇÃO: a 1ª versão comparava dois `indexOf`, e
+    // apagar a condição fazia o dela virar `-1` — menor que tudo, então o teste
+    // passava justamente no caso que ele existe para pegar. Descoberto
+    // reinjetando, que é a única forma de descobrir isso (§2).
+    const corpo = portao.slice(portao.indexOf('export default function'));
+    const condicao = corpo.indexOf('if (!aparecer) return null;');
+    const montagem = corpo.indexOf('<Faixa');
+    expect(
+      condicao >= 0 && montagem >= 0 && condicao < montagem,
+      'a condição deixou de vir ANTES do `lazy`.\n'
+      + 'Sem ela o chunk é pedido em TODA visita, e o orçamento de bytes não\n'
+      + 'acusa — ele mede o conjunto ansioso, e este chunk é separado. É a 1ª\n'
+      + 'armadilha do §0.3: `lazy()` não adia nada se o componente monta sempre.',
+    ).toBe(true);
+  });
+
   it('o `preventDefault` continua lá — senão o navegador decide sozinho', () => {
     expect(
       /evento\.preventDefault\(\)/.test(readFileSync(LIB, 'utf8')),

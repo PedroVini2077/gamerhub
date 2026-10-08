@@ -1,95 +1,50 @@
-import { useState, useEffect } from 'react';
-import { Download, X } from 'lucide-react';
-import {
-  devoConvidar, abrirConvite, dispensarConvite, aoMudarConvite,
-} from '../../lib/conviteDeInstalacao';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { devoConvidar, aoMudarConvite } from '../../lib/conviteDeInstalacao';
 
 /**
- * `[08/10]` A faixa que convida a instalar o GamerHub.
+ * `[08/10]` O PORTÃO da faixa de instalação — e por que ele é um arquivo.
  *
- * ── Por que ela é uma FAIXA e não um toast ─────────────────────────────────
+ * ── O que ele resolve, com número ──────────────────────────────────────────
  *
- * Toast some sozinho. A oportunidade de instalar sumiria junto, e quem estava
- * lendo outra coisa perderia a única vez que o convite aparece — o navegador
- * dispara `beforeinstallprompt` uma vez só.
+ * A faixa entrou no caminho crítico e o **orçamento de bytes estourou**:
+ * 229,0 → 229,9 kB comprimidos, contra teto de 229. Ela é enfeite útil para
+ * uma minoria — quem tem o convite do navegador e ainda não respondeu — e
+ * estava sendo baixada por todo mundo, inclusive por quem já instalou e por
+ * quem está no iPhone, onde ela nem existe.
  *
- * ── Por que ela é dispensável, e por que isso é a parte importante ─────────
+ * ── Por que `lazy()` funciona AQUI, e não funcionou na cena 3D ─────────────
  *
- * O botão de fechar não é cortesia: é o que diferencia convite de insistência.
- * A decisão fica guardada, e quem disse não **não vê de novo** — a mesma regra
- * do som ambiente, e pelo mesmo motivo.
+ * A 1ª armadilha do §0.3 é exatamente isto: *"`lazy()` não adia download"* —
+ * a cena 3D era lazy e montava com o Hero, então o pedido saía no primeiro
+ * instante e o caminho crítico continuava o mesmo, só com outro nome.
  *
- * ── Onde ela NÃO aparece ───────────────────────────────────────────────────
+ * A diferença é a CONDIÇÃO. Aqui o `lazy` está atrás de `devoConvidar()`, que
+ * é falso na maioria das visitas: já instalou, já dispensou, o navegador não
+ * ofereceu, ou é Safari. Nesses casos o chunk **nunca é pedido**. Quando é, é
+ * depois da pintura e para mostrar uma faixa que ninguém está esperando.
  *
- * Em quem já instalou, em quem já dispensou, e no iPhone — onde o Safari não
- * implementa o evento. Nos três casos ela simplesmente não existe, sem ocupar
- * espaço nem explicar nada.
+ * ── Por que o portão mora num arquivo separado ─────────────────────────────
+ *
+ * Porque ele é a parte que NÃO pode ser adiada: a pergunta precisa existir no
+ * pacote inicial para alguém poder respondê-la. Deixá-lo dentro da faixa seria
+ * carregar a faixa para descobrir se a faixa deve aparecer.
  */
+const Faixa = lazy(() => import('./FaixaDeInstalacao'));
+
 export default function ConviteDeInstalacao() {
   const [aparecer, setAparecer] = useState(() => devoConvidar());
-  const [instalando, setInstalando] = useState(false);
 
+  // O evento do navegador pode chegar depois desta tela montar.
   useEffect(() => aoMudarConvite(() => setAparecer(devoConvidar())), []);
 
   if (!aparecer) return null;
 
-  async function instalar() {
-    setInstalando(true);
-    try {
-      await abrirConvite();
-    } finally {
-      // O convite some em qualquer desfecho: se instalou, não faz mais
-      // sentido; se recusou no diálogo do navegador, insistir seria pior.
-      setInstalando(false);
-      setAparecer(false);
-    }
-  }
-
-  function fechar() {
-    dispensarConvite();
-    setAparecer(false);
-  }
-
+  // `fallback` nulo de propósito: enquanto o chunk vem, o certo é não existir
+  // nada. Um esqueleto piscando no canto da tela chamaria atenção para algo
+  // que a pessoa não pediu.
   return (
-    <div
-      role="region"
-      aria-label="Instalar o GamerHub"
-      // `bottom-24` no celular: o atalho de publicar do feed é um botão
-      // flutuante em `bottom-5 right-5`, e a faixa o cobriria inteiro.
-      className="fixed bottom-24 md:bottom-4 left-1/2 -translate-x-1/2 z-40 w-[min(26rem,calc(100vw-2rem))]
-                 bg-dark-800 border border-neon-green/30 rounded-2xl shadow-lg
-                 px-4 py-3 flex items-center gap-3 animate-fade-up"
-    >
-      <Download size={18} className="text-neon-green shrink-0" aria-hidden="true" />
-
-      <div className="min-w-0 flex-1">
-        <p className="text-sm text-white font-medium leading-tight">
-          Instalar o GamerHub
-        </p>
-        <p className="text-xs text-gray-400 leading-snug mt-0.5">
-          Abre direto da sua tela inicial, sem passar pelo navegador.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={instalar}
-        disabled={instalando}
-        className="shrink-0 text-xs font-mono uppercase tracking-wider text-neon-green
-                   border border-neon-green/40 rounded-lg px-3 py-2
-                   hover:bg-neon-green/10 disabled:opacity-50 transition-colors"
-      >
-        {instalando ? 'Abrindo…' : 'Instalar'}
-      </button>
-
-      <button
-        type="button"
-        onClick={fechar}
-        aria-label="Agora não"
-        className="shrink-0 text-gray-500 hover:text-gray-300 transition-colors"
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
-    </div>
+    <Suspense fallback={null}>
+      <Faixa />
+    </Suspense>
   );
 }

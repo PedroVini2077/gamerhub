@@ -686,7 +686,10 @@ src/
     │   │                  # HTML do usuário, e custaria 331 kB brutos MEDIDOS
     │   │                  # contra os 7 kB de hoje (ver DESEMPENHO.md). A prop
     │   │                  # `recursos` é o que dá menos poder ao comentário
-    │   ├── ConviteDeInstalacao.jsx # `[08/10]` A faixa que convida a instalar
+    │   ├── ConviteDeInstalacao.jsx # `[08/10]` O PORTÃO do convite: pergunta se a faixa deve
+    │   │                           # aparecer e só então baixa a faixa (`lazy` atrás da
+    │   │                           # condição, que é o que o §0.3 exige para adiar de verdade)
+    │   ├── FaixaDeInstalacao.jsx   # `[08/10]` A faixa em si — fora do pacote inicial
     │   │                  # o PWA. FAIXA e não toast de propósito: toast some
     │   │                  # sozinho, e o navegador só oferece a instalação UMA
     │   │                  # vez. Dispensável, e o "não" é lembrado
