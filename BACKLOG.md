@@ -1158,7 +1158,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**59 itens abertos** (+ 1 ideia sem compromisso)
+**60 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2511,6 +2511,35 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[08/10]` 🟠 **O app Android TRAVA, e a landing é a pior parte.** *Relato
+  dele no 1º teste do APK: "desempenho bem abaixo do site".*
+
+  **O que eu já apurei, e é estrutural:** a landing **não tem portão de
+  desempenho nenhum**. São 21 componentes de efeito com animação dirigida por
+  rolagem (`useProgressoDeRolagem`, `PalcoDeRolagem`, `FluxoDeDados`,
+  `ConvergenciaDoHub`, `ElectricTitle`, `PortalDoAtoZero`), e o único gate é
+  `prefers-reduced-motion` — que é **preferência de acessibilidade, não
+  capacidade de aparelho**. Todo mundo recebe tudo.
+
+  Isso já era previsto: o §0.3, regra 2, fala em *"quando existir portão por
+  aparelho"*. **Ele nunca existiu.** E a mesma seção registra que a cena 3D foi
+  removida por este tipo exato de custo (−708 kB).
+
+  **A hipótese que eu PRECISO testar antes de mexer em efeito nenhum:** o APK
+  entregue é `assembleDebug`, e build de debug roda com `debuggable=true`, que
+  desliga otimizações da ART. Um `assembleRelease` pode fechar parte da
+  diferença sem tocar na landing. **Foi gerado para ele comparar.**
+
+  **O que eu NÃO consigo medir daqui, e é honesto dizer:** não alcanço o
+  aparelho dele. Sem `chrome://inspect` de um PC, a evidência que resolve é a
+  comparação entre os dois APKs e, se ela não explicar, isolar a landing
+  (abrir o app já logado, que cai no feed, contra abrir deslogado).
+
+  **Um confundidor a descartar antes de qualquer conclusão:** no site ele está
+  logado e vê o FEED; no app, deslogado, vê a LANDING. Comparar os dois seria
+  comparar telas diferentes.
+
 
 - ⬜ `[08/10]` 🟠 **O Turnstile do `/contato` está BLOQUEADO em produção pela
   nossa própria CSP.** *🟡 decisão de segurança dele.*
