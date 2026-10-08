@@ -348,6 +348,10 @@ transforma esta pegadinha em bug silencioso (§4).
   **`[08/10]` O filtro é a INVERSA do ponto**: sem ele, infração perdoada
   continuava pesando e a próxima infração de qualquer tamanho re-suspendia —
   o perdão do moderador era desfeito pelo sistema. Ver `INV-WF-003`.
+  **`[08/10]` E a JANELA**: `created_at > now() - make_interval(days => N)`,
+  com N em `site_config.mod_violation_window_days` (180). Valor ausente ou < 1
+  cai no padrão — `make_interval(days => 0)` é "agora", e desligaria a
+  escalada inteira em silêncio.
 - `revogar_infracao_de_conteudo_restaurado()` (**`[08/10]`**, trigger `AFTER
   UPDATE OF hidden_at` em `posts`, `comments` e `community_posts`, SECURITY
   DEFINER) — quando conteúdo oculto **volta ao ar**, revoga a infração que a

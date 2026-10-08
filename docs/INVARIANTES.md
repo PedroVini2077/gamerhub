@@ -127,6 +127,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-WF-002** | Toda decisão **revalida o alvo no momento em que é tomada**, nunca sobre o retrato guardado quando o pedido foi criado | N25, N26, N27, N38, N39 · SEC-045 | `src/lib/__tests__/decisaoRevalidaEstado.test.js` |
 | **INV-WF-003** | Punição tem **inversa**: infração **revogada** não conta para a escalada, e restaurar conteúdo oculto revoga a infração que a ocultação gerou | `[08/10]` CI vermelho — 4 execuções do E2E × 2 pontos = o limiar exato | `src/lib/__tests__/infracaoTemInversa.test.js` |
 | **INV-WF-004** | Revogar **não é apagar**: a linha fica, com quem revogou, quando e por quê — e revogação sem motivo é impossível, por CHECK | `[08/10]` idem — infração que some sem rastro é indistinguível de bug (§1.5) | `src/lib/__tests__/infracaoTemInversa.test.js` · CHECK `violations_revogacao_tem_motivo` |
+| **INV-WF-005** | O ponto de infração **decai**: fora da janela de `site_config.mod_violation_window_days` (180 dias) ele não conta, e a janela vale para suspensão **e** ban | `[08/10]` a soma cobria a vida inteira da conta, e servir a suspensão não devolvia nada | `src/lib/__tests__/infracaoTemInversa.test.js` |
 
 > As duas são a mesma família vista de dois ângulos: **autorização criada para um
 > estado antigo agindo sobre um estado novo**. Sete achados distintos do

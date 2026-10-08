@@ -120,30 +120,20 @@ de no roteiro.
 
 ---
 
-#### 🟡 `[08/10]` O QUE CONTINUA ABERTO, e é decisão dele: DECAIMENTO
+#### ✅ `[08/10]` DECIDIDO — janela de decaimento de 180 dias
 
-A inversa resolve o perdão **explícito** — alguém restaura o conteúdo, ou um
-admin tira a suspensão. **Não resolve o tempo.**
+Ele aprovou a recomendação no mesmo dia. A soma da escalada passou a contar só
+infração **viva** (não revogada) **e recente** (dentro de 180 dias), e o prazo
+mora em `site_config.mod_violation_window_days` — a mesma tela que ajusta os
+dois limiares ajusta este, sem migration.
 
-| O que ainda acontece | |
-| --- | --- |
-| quem serve a suspensão inteira **mantém os pontos** | a próxima infração escala a partir de 8 |
-| a soma **não tem janela** | `SUM(points)` cobre a vida inteira da conta |
-| limiar de ban = 15 | 7 advertências em dois anos deixam a pessoa a uma infração do ban permanente |
+A janela vale para os **dois** limiares de propósito: aplicá-la só à suspensão
+criaria o caso absurdo de alguém ser BANIDO por pontos que já não contam para
+suspender.
 
-**Isso é defensável como escalada de reincidência** — e é exatamente por isso
-que é decisão de produto, não conserto meu. As perguntas:
-
-1. O ponto deve **decair** por tempo? (`SUM(points) WHERE created_at > now() -
-   interval 'N days'` — e qual N: 90? 180?)
-2. Ou basta o perdão explícito que acabou de existir?
-3. Se decair, o decaimento vale para o limiar de **ban** também, ou só para o
-   de suspensão?
-
-**Minha recomendação: janela de 180 dias.** Ela resolve o caso comum sozinha
-(quem errou uma vez há meio ano não carrega aquilo para sempre) e preserva a
-escalada de quem reincide em sequência. O perdão explícito continua cobrindo o
-erro de moderação, que é o caso em que a pessoa **não** deveria esperar.
+O painel distingue os dois motivos de um ponto não pesar — **Revogada**
+(alguém desfez) e **Expirada** (o tempo passou) —, porque "não conta" sem dizer
+qual deixa o moderador sem saber se houve decisão de gente.
 
 ---
 
@@ -2882,7 +2872,7 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
   fatias (`src/lib/`, <!--n:src.lib.arquivos-->191<!--/n--> arq ·
-  <!--n:src.lib.linhas-->24.447<!--/n--> linhas; `src/services/`,
+  <!--n:src.lib.linhas-->24.489<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

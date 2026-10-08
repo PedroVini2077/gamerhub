@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { JANELA_DE_INFRACAO_DIAS } from '../../components/moderation/queueLabels';
 
 /**
  * `[08/10]` A INVERSA DO PONTO DE INFRACAO — §5.
@@ -108,6 +109,47 @@ describe('a infração tem inversa — o ponto pode ser perdoado', () => {
       + 'Sem `AND revogada_em IS NULL` na soma, o perdão é decorativo: o ponto\n'
       + 'continua pesando e a próxima infração re-suspende por algo que um\n'
       + 'moderador já desfez. Era exatamente este o bug de 03/10.',
+    ).toBe(true);
+  });
+
+  it('a escalada tem JANELA de tempo, e ela vem do `site_config`', () => {
+    const f = corpoDaFuncao('handle_violation_escalation');
+    const soma = f.corpo.match(/SUM\(points\)[\s\S]*?;/i);
+    expect(
+      /created_at\s*>\s*now\(\)\s*-\s*make_interval/i.test(soma[0]),
+      `a escalada voltou a somar a vida inteira da conta (${f.nome}).\n`
+      + 'Sem a janela, servir a suspensão não devolve nada: os pontos ficam de pé\n'
+      + 'para sempre, e sete advertências espalhadas por dois anos deixam a pessoa\n'
+      + 'a uma infração do BAN permanente. Decisão dele em 08/10: 180 dias.',
+    ).toBe(true);
+
+    expect(
+      /mod_violation_window_days/.test(f.corpo),
+      'a janela virou número escondido no corpo da função.\n'
+      + 'Ela mora em `site_config`, junto dos dois limiares que ela governa — a\n'
+      + 'mesma tela que ajusta `mod_ban_threshold` tem de ajustar esta, sem\n'
+      + 'migration e sem mim.',
+    ).toBe(true);
+
+    // Janela ausente ou absurda nao pode virar "o passado inteiro" nem "agora":
+    // `make_interval(days => 0)` faria TODO ponto parar de contar, em silencio.
+    expect(
+      /v_janela\s*<\s*1\s*THEN\s*v_janela\s*:=/i.test(f.corpo),
+      'a guarda de valor absurdo da janela sumiu.\n'
+      + '`make_interval(days => 0)` é "agora": nenhuma infração contaria, a\n'
+      + 'escalada desligaria inteira e nada estouraria (§1.5).',
+    ).toBe(true);
+  });
+
+  it('o prazo da TELA bate com o do banco', () => {
+    const m = ultimaQueCasa(/mod_violation_window_days/);
+    expect(m, 'nenhuma migration define `mod_violation_window_days`.').not.toBeNull();
+    expect(
+      m.sql.includes(`'${JANELA_DE_INFRACAO_DIAS}'`),
+      `o painel diz ${JANELA_DE_INFRACAO_DIAS} dias e a migration grava outro valor (${m.nome}).\n`
+      + 'As duas metades continuam funcionando e só a promessa fica falsa: o\n'
+      + 'moderador lê "Expirada" numa infração que o banco ainda soma, ou o\n'
+      + 'contrário. É a mesma trava do `LOG_RETENTION_DAYS`.',
     ).toBe(true);
   });
 

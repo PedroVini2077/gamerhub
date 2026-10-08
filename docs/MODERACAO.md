@@ -95,6 +95,14 @@ automático). Fluxo: filtro barato síncrono → ocultação automática por den
   > re-suspendia na hora. A linha revogada **fica** na tabela, com quem
   > revogou e por quê, e a revogação automática grita em `admin_logs` como
   > `violation_revoked`: ponto que some sem rastro é indistinguível de bug.
+  >
+  > **`[08/10]` E o ponto DECAI: 180 dias.** Antes a soma cobria a vida inteira
+  > da conta — sete advertências em dois anos deixavam a pessoa a uma infração
+  > do ban permanente, e servir a suspensão não devolvia nada. O prazo mora em
+  > `site_config.mod_violation_window_days` e vale para os DOIS limiares: só
+  > para a suspensão criaria alguém banido por pontos que já não suspendem.
+  > A aba Infrações marca **Expirada** (tempo) separado de **Revogada**
+  > (alguém desfez) — "não conta" sem dizer qual não ajuda a decidir.
 
   > **`[12/09]` A escalação automática NÃO alcança a equipe** (SEC-020). Um
   > `admin` conseguia banir o **fundador** com uma linha em `violations`: a
