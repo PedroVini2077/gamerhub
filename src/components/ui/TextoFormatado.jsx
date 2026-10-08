@@ -90,9 +90,14 @@ function Filhos({ nos }) {
  * @param {object} p
  * @param {string} p.texto      o conteúdo cru do post, como foi digitado
  * @param {string} [p.className] classes do parágrafo, para o card decidir o tom
+ * @param {boolean} [p.separador] `---` sozinho numa linha vira régua. Ligado por
+ *   omissão, e quem NÃO quer opta por sair — hoje só o comentário. O padrão é
+ *   este de propósito: esquecer de ligar faria o post perder o recurso em
+ *   silêncio, enquanto esquecer de desligar mostra uma régua, que é visível e
+ *   inócuo. Entre duas falhas, a que aparece é sempre a melhor (§1.5).
  */
-export default function TextoFormatado({ texto, className = '' }) {
-  const blocos = analisarFormatacao(texto);
+export default function TextoFormatado({ texto, className = '', separador = true }) {
+  const blocos = analisarFormatacao(texto, { separador });
   if (!blocos.length) return null;
 
   return (
@@ -106,6 +111,13 @@ export default function TextoFormatado({ texto, className = '' }) {
               ))}
             </ul>
           );
+        }
+        if (bloco.tipo === 'separador') {
+          // `<hr>` é o elemento que o HTML já tem para "muda de assunto aqui" —
+          // então leitor de tela anuncia sozinho, sem `role` inventado.
+          // Discreto de propósito: o pedido foi organizar post longo, não criar
+          // uma faixa que disputa atenção com o conteúdo.
+          return <hr key={i} className="border-0 border-t border-dark-500 my-3" />;
         }
         if (bloco.tipo === 'citacao') {
           return (

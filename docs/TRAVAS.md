@@ -89,6 +89,7 @@ deriva que não estoura em lugar nenhum.
 | `guardDePapelNaoAceitaNull.test.js` | `INV-AUTZ-005` · `INV-CONTRATO-004` |
 | `decisaoRevalidaEstado.test.js` | `INV-WF-001` · `INV-WF-002` |
 | `infracaoTemInversa.test.js` | `INV-WF-003` · `INV-WF-004` |
+| `formatacaoAninhaEmQualquerOrdem.test.js` | `INV-TELA-022` |
 | `funcaoDeTriggerNaoEhRpc.test.js` | `INV-PORTA-001` |
 | `funcaoNovaNasceFechada.test.js` | `INV-PORTA-015` |
 | `retencaoHibrida.test.js` | `INV-TRILHA-003` |

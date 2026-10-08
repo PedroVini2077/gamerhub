@@ -45,81 +45,32 @@
  * de conversão de dado.
  */
 
-import { corValida, tamanhoValido } from './vocabulario';
+import { analisarTrechos } from './trechos';
 
 /** Um parágrafo em branco separa blocos. Linha isolada continua no mesmo. */
 const LINHA_DE_LISTA = /^[-*]\s+(.*)$/;
-const LINHA_DE_CITACAO = /^>\s?(.*)$/;
 
 /**
- * Marcações de trecho, em ordem de tentativa.
+ * `[08/10]` SEPARADOR DE SEÇÃO — exatamente três hifens, sozinhos na linha.
  *
- * `negrito` antes de `italico` não é detalhe: `**x**` casaria como itálico de
- * `*x*` com asteriscos sobrando se a ordem se invertesse.
+ * É regra de LINHA, não de trecho, e isso não é detalhe de implementação: pôr
+ * `---` entre as marcações de trecho faria `a --- b` virar uma régua no meio da
+ * frase. Aqui, só a linha inteira conta — então hífen no meio do texto continua
+ * sendo hífen, sem precisar de nenhuma guarda.
+ *
+ * **Por que EXATAMENTE três.** `--` é travessão digitado à mão e aparece em
+ * texto normal; `----` é alguém decorando. Aceitar faixas de tamanho variável
+ * transformaria um erro de digitação em elemento visual, que é o oposto de
+ * previsível. O `{3}` com âncoras nas duas pontas é o que fecha isso.
+ *
+ * **Espaço em volta é tolerado** porque espaço à direita é invisível: recusar
+ * `--- ` faria a régua sumir sem que ninguém conseguisse ver por quê (§1.5).
+ *
+ * Não colide com lista: `LINHA_DE_LISTA` exige **espaço** depois do `-`, e
+ * `---` não tem. Medido antes de escrever, não deduzido.
  */
-const TRECHOS = [
-  // `[25/09]` O `(?!\s)` depois de abrir e o `(?<!\s)` antes de fechar não são
-  // preciosismo: sem eles, `2 * 3 * 4` vira "2 _3_ 4" e a conta que a pessoa
-  // escreveu some da tela. Um `*` colado num espaço não está marcando nada —
-  // é a mesma regra do CommonMark (o delimitador tem de "encostar" no texto),
-  // e vale para os QUATRO pares, não só para o que apareceu.
-  { tipo: 'negrito', re: /\*\*(?!\s)([^*\n]+)(?<!\s)\*\*/ },
-  { tipo: 'italico', re: /(?<![*\w])\*(?!\s)([^*\n]+)(?<!\s)\*(?!\w)/ },
-  { tipo: 'sublinhado', re: /__(?!\s)([^_\n]+)(?<!\s)__/ },
-  { tipo: 'tachado', re: /~~(?!\s)([^~\n]+)(?<!\s)~~/ },
-  // `[25/09]` Cor e tamanho. O NOME é capturado, nunca um valor de CSS — e a
-  // validade dele é conferida abaixo, contra o vocabulário fechado. Nome
-  // desconhecido não vira palpite nem some: volta a ser texto.
-  { tipo: 'cor',      re: /\[cor=([a-z]+)\]([\s\S]*?)\[\/cor\]/ },
-  { tipo: 'tamanho',  re: /\[tamanho=([a-z]+)\]([\s\S]*?)\[\/tamanho\]/ },
-  // Link: só a forma explícita `[texto](url)`. URL solta no meio do texto NÃO
-  // vira link — decidir por conta própria o que é endereço em entrada de
-  // usuário é como brecha nasce (ver `lib/url.js`).
-  { tipo: 'link', re: /\[([^\]\n]+)\]\(([^)\s]+)\)/ },
-];
-
-/** Quebra um texto simples nos trechos marcados. Devolve nós de linha. */
-function analisarTrechos(texto) {
-  if (!texto) return [];
-
-  // Acha a marcação que aparece PRIMEIRO no texto — não a primeira da lista.
-  // Sem isso, um itálico no começo seria ignorado por causa de um negrito no
-  // fim, e a saída dependeria da ordem das regras em vez da do texto.
-  let melhor = null;
-  for (const { tipo, re } of TRECHOS) {
-    const m = re.exec(texto);
-    if (m && (melhor === null || m.index < melhor.m.index)) melhor = { tipo, m };
-  }
-  if (!melhor) return [{ tipo: 'texto', valor: texto }];
-
-  const { tipo, m } = melhor;
-  const antes = texto.slice(0, m.index);
-  const depois = texto.slice(m.index + m[0].length);
-
-  let no;
-  if (tipo === 'link') {
-    no = { tipo: 'link', texto: m[1], url: m[2] };
-  } else if (tipo === 'cor' || tipo === 'tamanho') {
-    const nome = m[1];
-    const conhecido = tipo === 'cor' ? corValida(nome) : tamanhoValido(nome);
-    // Nome fora do vocabulário NÃO vira estilo e NÃO some: o trecho inteiro
-    // volta a ser texto, com a marcação à mostra. Escolher um valor por conta
-    // própria aqui seria o fallback silencioso que o §4 proíbe.
-    no = conhecido
-      ? { tipo, nome, filhos: analisarTrechos(m[2]) }
-      : { tipo: 'texto', valor: m[0] };
-  } else {
-    // Recursão só no CONTEÚDO da marca: `**a *b* c**` funciona, e a recursão
-    // termina porque o conteúdo é sempre menor que a entrada.
-    no = { tipo, filhos: analisarTrechos(m[1]) };
-  }
-
-  return [
-    ...(antes ? analisarTrechos(antes) : []),
-    no,
-    ...(depois ? analisarTrechos(depois) : []),
-  ];
-}
+const LINHA_SEPARADORA = /^\s*-{3}\s*$/;
+const LINHA_DE_CITACAO = /^>\s?(.*)$/;
 
 /**
  * Transforma o texto de um post na árvore que a tela desenha.
@@ -127,7 +78,7 @@ function analisarTrechos(texto) {
  * @param {unknown} texto
  * @returns {Array<{tipo: string}>} blocos: `paragrafo`, `lista` ou `citacao`
  */
-export function analisarFormatacao(texto) {
+export function analisarFormatacao(texto, { separador = true } = {}) {
   if (typeof texto !== 'string' || !texto.trim()) return [];
 
   const linhas = texto.replace(/\r\n?/g, '\n').split('\n');
@@ -141,6 +92,18 @@ export function analisarFormatacao(texto) {
   };
 
   for (const linha of linhas) {
+    // O separador é testado ANTES de tudo: ele encerra o que vier antes, e
+    // nenhuma outra regra pode reivindicar a linha.
+    if (separador && LINHA_SEPARADORA.test(linha)) {
+      fecharParagrafo();
+      const anterior = blocos[blocos.length - 1];
+      // Separador sem nada antes não separa coisa nenhuma, e dois seguidos são
+      // uma régua dupla que ninguém pediu. Os dois casos somem em silêncio DE
+      // PROPÓSITO — não há informação do autor a perder, só decoração repetida.
+      if (anterior && anterior.tipo !== 'separador') blocos.push({ tipo: 'separador' });
+      continue;
+    }
+
     const daLista = LINHA_DE_LISTA.exec(linha);
     const daCitacao = LINHA_DE_CITACAO.exec(linha);
 
@@ -167,6 +130,10 @@ export function analisarFormatacao(texto) {
     paragrafo.push(linha);
   }
   fecharParagrafo();
+
+  // Separador no FIM também não separa nada — mesma regra do começo, aplicada
+  // depois porque só aqui se sabe que ele ficou por último.
+  if (blocos[blocos.length - 1]?.tipo === 'separador') blocos.pop();
 
   return blocos;
 }

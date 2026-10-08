@@ -75,7 +75,12 @@ function ultimaQueCasa(padrao) {
 
 /** O corpo da funcao nomeada, da ultima migration que a define. */
 function corpoDaFuncao(nome) {
-  const padrao = new RegExp(`FUNCTION\\s+public\\.${nome}\\s*\\(`, 'i');
+  // `CREATE ... FUNCTION`, e nao qualquer mencao: `EXECUTE FUNCTION public.x()`
+  // num arquivo de gatilho tambem casa com "FUNCTION public.x(", e como
+  // `ultimaQueCasa` devolve o ULTIMO arquivo, a trava passou a ler um arquivo
+  // que so CHAMA a funcao — e acusou que o corpo dela tinha sumido. Achado ao
+  // dividir a migration em cinco arquivos, em 08/10.
+  const padrao = new RegExp(`CREATE\\s+(OR\\s+REPLACE\\s+)?FUNCTION\\s+public\\.${nome}\\s*\\(`, 'i');
   const m = ultimaQueCasa(padrao);
   if (!m) return null;
   // Do nome da funcao ate o fim do bloco `$...$ ... $...$` que a encerra.

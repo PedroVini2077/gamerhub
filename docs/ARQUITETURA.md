@@ -310,9 +310,14 @@ src/
 │   │                      #   banco) — é o que evita oferecer o botão que o
 │   │                      #   servidor vai recusar
 │   ├── formatacao/        # `[25/09]` A formatação de texto do usuário.
-│   │   ├── analisar.js    #   O analisador: texto -> ÁRVORE de nós. Nunca HTML.
+│   │   ├── analisar.js    #   Os BLOCOS: parágrafo, lista, citação e `[08/10]`
+│   │                      #   separador (`---` sozinho numa linha, só em post).
 │   │                      #   `temFormatacao()` decide se a prévia aparece, e é
 │   │                      #   DERIVADA da árvore — recurso novo conta sozinho
+│   │   ├── trechos.js     # `[08/10]` Os TRECHOS: negrito, itálico, sublinhado,
+│   │                      #   tachado, cor, tamanho, link. VARREDOR, não regex —
+│   │                      #   delimitador simétrico aninhado não é regular, e as
+│   │                      #   regexes erravam 40 de 48 combinações de 3 e 4
 │   │   └── vocabulario.js #   A lista FECHADA de cores e tamanhos, e o que a
 │   │                      #   barra oferece em cada lugar. O usuário escolhe um
 │   │                      #   NOME; nenhuma string dele encosta em CSS

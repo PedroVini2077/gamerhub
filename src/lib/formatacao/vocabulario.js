@@ -99,5 +99,9 @@ export const envolverTamanho = (nome) => ({ abre: `[tamanho=${nome}]`, fecha: '[
  */
 export const RECURSOS_COMPLETOS = [
   'negrito', 'italico', 'sublinhado', 'tachado', 'cor', 'tamanho', 'lista', 'citacao', 'link',
+  // `[08/10]` Separador de seção. Fica FORA de `RECURSOS_DE_COMENTARIO` por
+  // pedido dele: comentário é conversa curta, e régua horizontal ali sugere uma
+  // estrutura de seções que uma resposta de duas linhas não tem.
+  'separador',
 ];
 export const RECURSOS_DE_COMENTARIO = ['negrito', 'italico', 'tachado', 'link'];

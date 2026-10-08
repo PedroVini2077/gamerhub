@@ -1,5 +1,5 @@
 import { useRef, useState, useId, useMemo } from 'react';
-import { Bold, Italic, Underline, Strikethrough, List, Quote, Link2, Palette, Type } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, List, Quote, Link2, Palette, Type, Minus } from 'lucide-react';
 import {
   MARCACOES, CORES, TAMANHOS, envolverCor, envolverTamanho, RECURSOS_COMPLETOS,
 } from '../../lib/formatacao/vocabulario';
@@ -126,6 +126,28 @@ export default function EditorDeTexto({
     });
   }
 
+  /**
+   * `[08/10]` O separador é uma LINHA inteira, não um prefixo nem um embrulho:
+   * ele entra numa linha só dele, com uma linha em branco de cada lado para não
+   * grudar no parágrafo anterior e virar texto.
+   */
+  function inserirSeparador() {
+    const area = areaRef.current;
+    if (!area) return;
+    const i = area.selectionStart;
+    const antes = value.slice(0, i);
+    const depois = value.slice(i);
+    const bloco = `${antes.endsWith('\n') || !antes ? '' : '\n'}---\n`;
+    const novo = antes + bloco + depois;
+    if (novo.length > maxLength) return;
+    onChange(novo);
+    requestAnimationFrame(() => {
+      area.focus();
+      const fim = i + bloco.length;
+      area.setSelectionRange(fim, fim);
+    });
+  }
+
   return (
     <div className="mb-3">
       <div className="flex flex-wrap items-center gap-0.5 mb-1.5 pb-1.5 border-b border-dark-500">
@@ -147,6 +169,7 @@ export default function EditorDeTexto({
         {(tem('lista') || tem('citacao') || tem('link')) && <span className="w-px h-4 bg-dark-400 mx-1" />}
         {tem('lista') && <Botao icone={List} titulo="Lista" onClick={() => prefixarLinha('- ')} />}
         {tem('citacao') && <Botao icone={Quote} titulo="Citação" onClick={() => prefixarLinha('> ')} />}
+        {tem('separador') && <Botao icone={Minus} titulo="Separador" onClick={inserirSeparador} />}
         {tem('link') && (
           <Botao icone={Link2} titulo="Link"
             onClick={() => envolver({ abre: '[', fecha: '](https://)' })} />
@@ -193,7 +216,11 @@ export default function EditorDeTexto({
             Como vai ficar
           </p>
           <div className="rounded-lg border border-dark-500 bg-dark-800/60 px-3 py-2 overflow-x-hidden">
-            <TextoFormatado texto={value} className="text-sm text-gray-400 leading-relaxed" />
+            {/* A prévia tem de mostrar o que a tela final vai mostrar. Sai do
+                MESMO `recursos` que decide a barra — duas listas divergiriam, e
+                a divergência apareceria como "na prévia tinha e no post não". */}
+            <TextoFormatado texto={value} separador={tem('separador')}
+              className="text-sm text-gray-400 leading-relaxed" />
           </div>
         </div>
       )}
