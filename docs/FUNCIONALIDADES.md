@@ -1758,6 +1758,52 @@ botão fixo competiria com o Hero e com o CTA, na camada mais externa do site
 (§0.4). A gaveta só abre quando alguém toca no menu — que é a forma certa de
 oferecer ação secundária: descoberta sob demanda, sem empurrar nada.
 
-**Ela também desaparece quando não tem o que fazer:** sem o evento do navegador
-(iPhone, ou site já instalado) a entrada não existe, em vez de virar um botão que
-a pessoa clica e nada acontece.
+#### ⚠️ `[09/10]` E ela SUMIA quando não tinha o que fazer — durou dez minutos
+
+Estava escrito aqui, no dia anterior, que a entrada *"desaparece quando não tem
+o que fazer: sem o evento do navegador a entrada não existe, em vez de virar um
+botão que a pessoa clica e nada acontece"*. A segunda metade da frase continua
+verdadeira. A primeira era o defeito.
+
+Ele abriu a gaveta na produção recém-publicada, não viu a entrada, e perguntou:
+
+> *"Tem certeza que foi pra produção?"*
+
+Tinha. O chunk da landing no ar batia **por hash** com o build local e continha
+a string. **O recurso estava publicado e invisível.**
+
+**"Nada" tinha três causas, e a tela não distinguia nenhuma:**
+
+| o que a pessoa vê | o que pode ser |
+| --- | --- |
+| nenhuma entrada | o deploy não chegou |
+| nenhuma entrada | o navegador ainda não ofereceu |
+| nenhuma entrada | o aparelho não pode (iPhone), ou já está instalado |
+
+Pelo teste dos três canais (§1.5): a pessoa não vê nada, nada fica gravado,
+nenhum teste falha. As travas provavam o contrato do código — não que alguém
+conseguisse instalar.
+
+#### Como ficou
+
+A entrada **existe sempre**, com uma única exceção honesta: quem abriu pelo app
+já instalado não a vê, porque ali a ausência não é ambígua — a pessoa está
+dentro do que o botão ofereceria.
+
+| situação | o que o clique faz |
+| --- | --- |
+| o navegador ofereceu | instala na hora, pelo diálogo nativo |
+| o navegador não ofereceu | abre um painel com **o passo a passo daquela plataforma** |
+
+O painel escolhe por **plataforma, não por navegador** — iPhone/iPad, Android,
+computador. Plataforma envelhece muito mais devagar que nome de navegador, e é
+ela que decide o caminho: no iOS a instalação é pelo botão Compartilhar, no
+resto é pelo menu.
+
+**O desconhecido tem receita própria, e isso é a regra do §4 aplicada a texto.**
+Ele não chuta os passos de outra plataforma — diz o que procurar. Mandar alguém
+no Windows "tocar em Compartilhar" faz a pessoa procurar um botão que não
+existe, e concluir que o site está quebrado.
+
+**Isso também resolve o iPhone**, que estava no `BACKLOG.md` como "sem conserto
+em código". Era o mesmo buraco visto de outro ângulo, e a decisão foi revista.

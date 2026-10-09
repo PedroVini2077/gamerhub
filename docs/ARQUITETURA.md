@@ -198,6 +198,11 @@ src/
 │   │                      # do router com as chaves deste mapa
 │   ├── like.js            # Curtida otimista com rollback quando o servidor recusa
 │   ├── ranks.js           # Tiers de XP, cálculo de rank, fontes de XP
+│   ├── comoInstalar.js    # `[09/10]` O passo a passo de instalar, por PLATAFORMA,
+│   │                      #   para quando o navegador NÃO oferece o convite.
+│   │                      #   Mapa explícito, e o desconhecido é uma receita de
+│   │                      #   verdade ("procure no menu"), não os passos de
+│   │                      #   outra plataforma — isso seria o §4 vestido de ajuda
 │   ├── conviteDeInstalacao.js # `[08/10]` O convite para instalar o PWA.
 │   │                      #   Captura o `beforeinstallprompt`, que dispara UMA
 │   │                      #   vez e ANTES do React montar — por isso é chamado
@@ -686,6 +691,10 @@ src/
     │   │                  # HTML do usuário, e custaria 331 kB brutos MEDIDOS
     │   │                  # contra os 7 kB de hoje (ver DESEMPENHO.md). A prop
     │   │                  # `recursos` é o que dá menos poder ao comentário
+    │   ├── ComoInstalar.jsx # `[09/10]` O painel que explica como instalar quando o
+    │   │                    # navegador não oferece. Ele existe porque a entrada da
+    │   │                    # barra lateral SUMIA nesse caso, e a ausência era
+    │   │                    # indistinguível de um deploy que não chegou
     │   ├── ConviteDeInstalacao.jsx # `[08/10]` O PORTÃO do convite: pergunta se a faixa deve
     │   │                           # aparecer e só então baixa a faixa (`lazy` atrás da
     │   │                           # condição, que é o que o §0.3 exige para adiar de verdade)

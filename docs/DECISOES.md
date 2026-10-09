@@ -2873,3 +2873,51 @@ BR</source>`, então **o nome e o domínio aparecem** — mas a URL que vai para
 notas do rascunho é a do Google.
 
 *Pendente de decisão dele. Registrado no `BACKLOG.md`.*
+
+---
+
+## `[09/10]` A Fase 3 do PWA (aviso de "tem versão nova") foi DESPRIORIZADA — com condição de volta
+
+**O que é.** A fase que detecta um service worker novo esperando e mostra
+*"tem versão nova, recarregue"*.
+
+**Por que não fazemos.** Pelo nosso próprio desenho. Num PWA comum o HTML **é**
+cacheado, e por isso a pessoa fica presa na versão velha — é daí que o aviso
+tira o valor dele. Aqui o **HTML nunca é cacheado**: qualquer recarregamento já
+traz a versão nova, e ninguém fica preso.
+
+O que sobrava era a aba aberta há horas navegando para uma rota ainda não
+carregada. Isso **já é tratado** pelo `vite:preloadError` do `main.jsx`, que
+recarrega uma vez. A Fase 3 trocaria um conserto reativo que funciona por um
+aviso proativo — ganho pequeno, e mais um aviso que o site dá sem precisar
+(§0.2, 4ª regra).
+
+**A condição de volta, e ela é o que separa decisão de desistência:** se algum
+dia o HTML passar a ser cacheado, a Fase 3 vira obrigatória **no mesmo
+instante**. A trava `servicoDeCacheNaoPrendeNaVersaoVelha.test.js` é quem
+reprova essa mudança, então ela não acontece sem alguém decidir.
+
+## `[09/10]` A instalação em iOS deixou de ser "sem conserto em código"
+
+**A decisão anterior, de 08/10,** dizia que o iPhone ficava de fora: o Safari
+não implementa `beforeinstallprompt`, e inventar um passo a passo de iOS seria
+*"uma segunda tela para manter, sem nenhum teste possível do nosso lado"*.
+
+**O que a desmentiu.** O mesmo buraco existia no Android, e ele o encontrou em
+dez minutos: a entrada fixa da barra lateral sumia quando o navegador ainda não
+tinha oferecido o convite, e a ausência era indistinguível de um deploy que não
+havia chegado — ele perguntou exatamente isso.
+
+Ou seja: a tela de instruções não era um extra para o iOS. Era **a resposta
+certa para todo navegador que não oferece o diálogo nativo**, e o iOS é só o
+caso permanente dela.
+
+**E as duas objeções caíram.** "Segunda tela para manter" virou um painel com o
+texto em `lib/comoInstalar.js`, escolhido por **plataforma** — que envelhece
+muito mais devagar que nome de navegador. "Sem teste possível" virou
+`entradaDeInstalacaoNaoSome.test.js`, que prova a entrada não sumir, o clique
+não ficar mudo, a ordem das plataformas e o desconhecido não receber o passo a
+passo de outra.
+
+*Registrado porque a decisão de 08/10 está escrita em `conviteDeInstalacao.js`
+e em `FUNCIONALIDADES.md`, e sem esta entrada alguém a leria como atual.*
