@@ -1,9 +1,37 @@
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Tv } from 'lucide-react';
 import { listContainer, listItem } from '../../lib/motion';
 import AvatarPopup from '../ui/AvatarPopup';
 
-export default function LivesList({ lives, enterLive }) {
+/**
+ * `[09/10]` A LISTA, e o vazio que MENTIA.
+ *
+ * ── O que o E2E achou, e análise de código não acharia ────────────────────
+ *
+ * Com uma live no ar e a tela recém-carregada, três coisas apareciam juntas:
+ *
+ *     cabeçalho ........ "1 ao vivo"
+ *     aba Gameplays .... "(1)"
+ *     o miolo .......... "Nenhuma live acontecendo agora — volte mais tarde!"
+ *
+ * **Nada disso é bug de dados.** O `LiveGoModal` sempre define um `live_kind`
+ * (padrão `gameplay`), e a aba padrão é `Da comunidade`, que casa justamente
+ * com `!live_kind`. Quem acaba de ficar ao vivo cai numa aba que diz que não
+ * tem nada — e a separação entre live de jogador e live da comunidade é
+ * DELIBERADA, então o conserto não é juntar as duas.
+ *
+ * ── Por que o conserto é de LEITURA ───────────────────────────────────────
+ *
+ * O vazio afirmava uma coisa sobre o SITE ("nenhuma live acontecendo") quando
+ * só sabia uma coisa sobre a ABA. Ele passa a dizer o que sabe — e, quando há
+ * live em outro lugar, a levar até lá. É a mesma regra do §4 sobre o
+ * fallback: não escolher um valor por quem não perguntou.
+ */
+export default function LivesList({ lives, enterLive, totalNoAr = 0, irParaAbaComLive }) {
+  // `totalNoAr` é o site inteiro; `lives` é só esta aba. A diferença entre os
+  // dois é exatamente o que o texto antigo escondia.
+  const haEmOutraAba = lives.length === 0 && totalNoAr > 0;
+
   if (lives.length === 0) return (
     <div className="card p-10 text-center">
       <div className="flex justify-center mb-5">
@@ -62,8 +90,33 @@ export default function LivesList({ lives, enterLive }) {
           <text x="110" y="42" fontSize="7" fill="#39ff14" fillOpacity="0.2" fontFamily="monospace">?</text>
         </svg>
       </div>
-      <p className="text-gray-400 font-mono text-sm">Nenhuma live acontecendo agora</p>
-      <p className="text-gray-600 font-mono text-xs mt-1">Volte mais tarde!</p>
+      {haEmOutraAba ? (
+        <>
+          <p className="text-gray-400 font-mono text-sm">
+            Nenhuma live nesta aba
+          </p>
+          <p className="text-gray-600 font-mono text-xs mt-1">
+            {totalNoAr === 1 ? 'Há 1 live no ar' : `Há ${totalNoAr} lives no ar`}, em outra categoria.
+          </p>
+          {irParaAbaComLive && (
+            <button
+              type="button"
+              onClick={irParaAbaComLive}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider
+                         text-neon-green border border-neon-green/40 rounded-lg px-3 py-2
+                         hover:bg-neon-green/10 transition-colors"
+            >
+              <Tv size={13} aria-hidden="true" />
+              Ver onde estão
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="text-gray-400 font-mono text-sm">Nenhuma live acontecendo agora</p>
+          <p className="text-gray-600 font-mono text-xs mt-1">Volte mais tarde!</p>
+        </>
+      )}
     </div>
   );
 

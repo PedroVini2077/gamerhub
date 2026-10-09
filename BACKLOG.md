@@ -33,7 +33,7 @@
 
 ---
 
-**54 itens abertos** (+ 5 desativados, no bloco do fim)
+**52 itens abertos** (+ 5 desativados, no bloco do fim)
 
 > **`[09/10]` Este arquivo tinha 2.758 linhas, e o primeiro item da fila
 > aparecia na 1.213.** Quase metade dele era passado: 22 seções já concluídas
@@ -718,20 +718,6 @@
   explicitamente de fora. Fica registrada para não se perder.
 
 
-- ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
-  mais.** *Esbarrei nisto ao replicar a política para o app.*
-
-  `style-src ... https://fonts.googleapis.com` e `font-src ...
-  https://fonts.gstatic.com` sobraram de quando as fontes vinham de fora. Hoje
-  elas são servidas por nós (`public/fonts`), e a permissão é sobra — não é
-  brecha, é higiene: ela autoriza um terceiro que ninguém chama.
-
-  **Por que não apertei junto:** o `e2e/portas-da-web.mjs` compara o cabeçalho
-  **por valor** contra o site **no ar**. Mudar o `vercel.json` reprovaria o PR
-  até o deploy acontecer — a mudança e a expectativa precisam entrar no mesmo
-  passo, e isso merece um bloco próprio em vez de carona num PR de Android.
-
-
 - ⬜ `[02/10]` **React 19.3 e `lucide-react` 1.48 ficaram de fora, e a conta já
   está feita.** *Decisão dele em 02/10, com a medição na mão.*
 
@@ -834,16 +820,10 @@
   cobertos por trava de contrato e por prova em ROLLBACK, mas não por navegador
   — e é honesto dizer qual é qual.*
 
-- ⬜ `[25/09]` 🔵 **A formatação não chegou ao MURAL.** *`MuralCard` continua
-  desenhando texto puro. É trocar uma linha — mas o mural tem tom próprio
-  (recado curto), e levar cor e tamanho para lá é decisão sua, não minha.*
+- ⬜ `[09/10]` 🔵 **O mural ganha a BARRA do editor?** *A renderização já
+  entrou em 09/10 — quem escreve `**oi**` no mural agora vê negrito, com o
+  mesmo corte do comentário (sem separador).*
 
-- ⬜ `[18/09]` 🟢 **A tela de lives diz "1 ao vivo" e "Nenhuma live acontecendo
-  agora" ao mesmo tempo.** *Achado pelo E2E novo, não por análise de código.*
-
-  As abas de `/lives` são: `Da comunidade` (`!live_kind`, **a padrão**),
-  `Gameplays`, `Reacts`, `Outros`. O `LiveGoModal` SEMPRE define um `live_kind`
-  (padrão `gameplay`), então **uma live criada por "Ficar ao vivo" nunca aparece
   na aba padrão**.
 
   Resultado, com a tela recém-carregada: o cabeçalho conta `1 ao vivo`, a aba
@@ -996,8 +976,8 @@
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->203<!--/n--> arq ·
-  <!--n:src.lib.linhas-->26.358<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->204<!--/n--> arq ·
+  <!--n:src.lib.linhas-->26.502<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

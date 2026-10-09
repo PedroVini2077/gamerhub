@@ -2075,7 +2075,7 @@ vista. O ponto cego fecha para o futuro, que é onde ele doía.
 ## `[24/09]` A CSP entrou — e o que destravou foi medir, não coragem
 
 O item ficou aberto desde 19/09 com um motivo honesto: **CSP errada derruba o
-site**. React+Vite gera estilo inline, e Supabase, Sentry, Google Fonts e os
+site**. React+Vite gera estilo inline, e Supabase, Sentry e os
 embeds de live precisam estar liberados por nome; um `default-src` apertado
 demais apaga a tela inteira — a classe do erro do SEC-025.
 
@@ -2089,9 +2089,31 @@ publicar**.
 | `script-src` | `'self'` | **é a que importa.** Nenhum script externo, nenhum inline |
 | `frame-src` | youtube · youtube-nocookie · player.twitch · clips.twitch | as três origens que o `EmbedPlayer` realmente usa — lidas no código |
 | `connect-src` | `'self'` · `*.supabase.co` · `wss://*.supabase.co` · sentry · vitals | REST, realtime, erro e métrica |
-| `style-src` | `'self' 'unsafe-inline'` + fonts.googleapis | o `unsafe-inline` é obrigatório: React e Framer Motion escrevem estilo inline |
+| `style-src` | `'self' 'unsafe-inline'` | o `unsafe-inline` é obrigatório: React e Framer Motion escrevem estilo inline. **`[09/10]` o `fonts.googleapis.com` SAIU** |
+| `font-src` | `'self' data:` | **`[09/10]` o `fonts.gstatic.com` SAIU** — as fontes vêm de `public/fonts` desde 03/09, e a permissão era sobra |
 | `img-src` / `media-src` | `'self' data: blob: https:` | o `avatar_url` do usuário é uma URL arbitrária; apertar aqui quebraria foto de perfil |
 | `base-uri` · `object-src` · `frame-ancestors` · `form-action` | `'self'` / `'none'` | fecham sequestro de base, plugin, clickjacking e post para fora |
+
+> #### `[09/10]` O Google Fonts saiu da política — 37 dias depois de sair do site
+>
+> As fontes passaram a ser servidas de `public/fonts` em **03/09**, por decisão
+> de privacidade: fonte de terceiro entrega o IP de quem visita. A CSP, porém,
+> continuou autorizando `fonts.googleapis.com` e `fonts.gstatic.com`.
+>
+> **Não era brecha — era sobra.** A política autorizava um terceiro que
+> ninguém chama. Mas permissão que sobra é exatamente o que deixa de ser
+> notada no dia em que alguém a usa.
+>
+> **E a razão pela qual isto não tinha sido feito antes estava errada.** O item
+> do backlog dizia que o `portas-da-web.mjs` compara a CSP **por valor** contra
+> a produção, então o PR reprovaria até o deploy. Conferido hoje no próprio
+> script: `style-src` e `font-src` **não estão** em `CSP_TRAVADAS`, e o
+> comentário de lá diz por quê — *"ficam de fora de propósito: eles crescem
+> quando entra um serviço novo"*. Não havia impasse nenhum.
+>
+> **Como foi provado que não quebrou:** `npm run test:csp` sobe o `dist` com a
+> política nova e carrega 6 rotas num Chromium de verdade — zero violação, com
+> o controle confirmando que o roteiro enxerga violação quando existe.
 
 ### Como foi verificada — e o controle sem o qual a medição mentiria
 

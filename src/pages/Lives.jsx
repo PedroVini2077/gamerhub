@@ -181,6 +181,13 @@ export default function Lives() {
 
   const visibleLives = lives.filter(LIVE_TABS.find(t => t.id === liveTab).match);
 
+  // `[09/10]` A primeira aba que TEM live, para o vazio poder levar até lá.
+  // Ela existe porque o `LiveGoModal` sempre define um `live_kind` (padrão
+  // `gameplay`) e a aba padrão casa com `!live_kind`: quem acabava de ficar ao
+  // vivo caía numa aba dizendo "nenhuma live acontecendo" com a própria live
+  // no ar, contada no cabeçalho ao lado.
+  const abaComLive = LIVE_TABS.find(t => t.id !== liveTab && lives.some(t.match));
+
   return (
     <div>
       <div className="flex items-center gap-2 mb-5">
@@ -213,7 +220,12 @@ export default function Lives() {
         })}
       </div>
 
-      <LivesList lives={visibleLives} enterLive={enterLive} />
+      <LivesList
+        lives={visibleLives}
+        enterLive={enterLive}
+        totalNoAr={lives.length}
+        irParaAbaComLive={abaComLive ? () => setLiveTab(abaComLive.id) : undefined}
+      />
 
       {showGoLive && (
         <LiveGoModal profile={profile} onClose={() => setShowGoLive(false)} onCreated={reloadLives} />
