@@ -346,6 +346,7 @@ que as seções 1–6, e está aqui **declarado** em vez de disfarçado de compl
 | `edgeFunctionsParseiam.test.js` | as Edge Functions são código válido | — |
 | `orcamentoVeOCss.test.js` | o orçamento de bytes enxerga o CSS | — |
 | `regrasCarregadas.test.js` | CLAUDE.md — as regras continuam sendo carregadas | — |
+| `transformDoCssNaoBrigaComTailwind.test.js` | classe nossa e utilitária do Tailwind disputando `translate`/`rotate`/`scale` — a marca do hero saiu 55 px da tela no celular | — |
 
 **8 que leem a ESTEIRA (CI, scripts, package.json)**
 
