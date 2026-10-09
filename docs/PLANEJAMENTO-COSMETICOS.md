@@ -146,20 +146,34 @@ avatar passa por `lib/image.js`, que comprime antes de subir (maior lado
 **[CÓDIGO]** `docs/regras/COTAS.md` registra o teto que morde: **egress de 5 GB/mês**
 no Supabase, e *"projeto pausado; o site cai"* ao estourar.
 
-### 2.6 ⚠️ Um bug encontrado durante a investigação — NÃO corrigido
+### 2.6 ✅ Um bug encontrado durante a investigação — CORRIGIDO em 09/10
 
-**[CÓDIGO]** `src/pages/Busca.jsx:128`:
+**[CÓDIGO]** `src/pages/Busca.jsx` chamava:
 
 ```jsx
 <Avatar url={p.avatar_url} username={p.username} size={32} />
 ```
 
 O componente aceita `profile`, não `url`/`username`. **Toda pessoa no resultado
-da busca aparece como "?"**, sem foto, desde o PR #243.
+da busca apareceu como "?"**, sem foto, desde o PR #243.
 
-Não foi corrigido porque a regra desta tarefa é explícita — *"se encontrar um
-problema, registre a observação. Não a corrija"*. **Fica como item para o
-`BACKLOG.md`.**
+Durante *esta* investigação ele ficou registrado e não corrigido, porque a
+regra da tarefa era explícita — *"se encontrar um problema, registre a
+observação. Não a corrija"*. **Ele foi corrigido depois, com autorização dele**,
+e a correção vale menos do que a pergunta que ela obrigou a fazer: *onde mais
+alguém passa prop que o componente ignora?*
+
+A varredura achou **1 ocorrência em todo o `src/`** — ou seja, era isolado. E a
+trava que entrou junto, `propQueNinguemDeclaraNaoPassa.test.js`, é da **classe**
+e não desta linha: o React descarta prop desconhecida sem erro, sem log e sem
+lint, então o componente desenha o caminho do valor ausente e isso é
+indistinguível de "não tem dado". Detalhe em
+[`TRAVAS.md`](TRAVAS.md) (`INV-CONTRATO-008`).
+
+**Por que isso importa para o assunto deste documento:** o `Avatar` é a peça
+que as molduras vão envolver, e ele é o exemplo vivo de que **a assinatura dele
+é um contrato que ninguém conferia**. Qualquer fase de cosméticos que
+acrescente prop ali — `moldura`, `figurinha` — nasce sob essa trava.
 
 ---
 

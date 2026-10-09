@@ -67,7 +67,7 @@ o banco. O detalhe e a evidência estão no documento de planejamento.
 | **as conquistas NÃO têm tabela** — são derivadas, e isso impede desbloqueio permanente sem persistência nova | §2.3 |
 | `authenticated` tem `UPDATE` em **12 colunas nominais** de `profiles` | §2.4 |
 | dois buckets, ambos públicos; egress de **5 GB/mês** é o teto que morde | §2.5 |
-| **bug achado**: a busca chama `<Avatar url=… username=…>` e o componente só aceita `profile` — todo mundo aparece como "?" | §2.6 |
+| **bug achado** na busca (`<Avatar url=… username=…>` contra um componente que só aceita `profile`) — **corrigido em 09/10**, com trava de classe | §2.6 |
 | Rive canvas-lite = **222 KB** comprimido, contra um orçamento total de 230 KB | §3.2 |
 | OpenMoji é **CC BY-SA 4.0**: derivado obriga a mesma licença | §3.3 |
 | `lucide-react` é **ISC**, `react-icons` é **MIT** | §3.3 |
@@ -100,7 +100,10 @@ Nenhuma implementação deve começar antes destas:
 3. **Coleção nova exigindo deploy é aceitável agora?**
 4. **Onde as figurinhas entram primeiro?** (recomendação: chat da live)
 5. **Moldura aparece em avatar de 24 px?**
-6. **O bug da busca vira item do backlog?**
+
+> **`[09/10]` A 6ª decisão saiu da lista porque foi tomada:** *"o bug da busca
+> vira item do backlog?"* — ele respondeu **consertar**, e a correção já está
+> na `main` com trava (§2.6). Ela fica registrada aqui para não ser reaberta.
 
 ---
 

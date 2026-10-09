@@ -214,6 +214,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-CONTRATO-005** | Ninguém dá `update` em tabela **sem policy de UPDATE** — a RLS nega em silêncio, com 0 linhas e nenhum erro | (moderação quebrada por meses) | `src/lib/__tests__/tabelasSemUpdate.test.js` |
 | **INV-CONTRATO-006** | Escrita que pode ser negada **confere quantas linhas caíram** | idem | `src/lib/__tests__/apagarConfereLinhas.test.js` |
 | **INV-CONTRATO-007** | Todo tipo da fila de moderação existe nos **três** mapas: rótulo, tabela de leitura e tabela de autor — e o link leva ao lugar certo, ou a lugar nenhum | (o `chat` que caiu no `else`) | `src/components/moderation/__tests__/queueLabels.test.js` |
+| **INV-CONTRATO-008** | **`[09/10]`** Ninguém chama um componente vigiado com prop que ele **não declara**. O React descarta prop desconhecida sem erro, sem log e sem lint: o componente desenha o caminho do valor ausente, e isso é indistinguível de "não tem dado" | a busca mostrando "?" no lugar de **toda** foto de perfil desde o PR #243 | `src/lib/__tests__/propQueNinguemDeclaraNaoPassa.test.js` |
 
 ---
 

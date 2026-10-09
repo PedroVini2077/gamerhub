@@ -125,7 +125,14 @@ export default function Busca() {
                 {pessoas.map((p) => (
                   <a key={p.id} href={`/u/${p.username}`}
                     className="flex items-center gap-3 py-1.5 hover:opacity-80 transition-opacity">
-                    <Avatar url={p.avatar_url} username={p.username} size={32} />
+                    {/* `[09/10]` `profile={p}` e não `url=`/`username=`: o
+                        `Avatar` só declara `profile`, e a `buscar_pessoas` já
+                        devolve `{ id, username, avatar_url, role }` — a forma
+                        exata que ele espera. Com as props erradas TODA pessoa
+                        da busca aparecia como "?", desde o PR #243, sem erro e
+                        sem log: prop que o componente não declara é ignorada
+                        pelo React. */}
+                    <Avatar profile={p} size={32} />
                     <span className="text-sm text-gray-200 font-body">@{p.username}</span>
                   </a>
                 ))}
