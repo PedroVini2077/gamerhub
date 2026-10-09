@@ -106,6 +106,36 @@ jobs:
       - name: Testes unitários
         run: npm test -- --reporter=default --reporter=json --outputFile=vitest-report.json
 
+      # `[09/10]` A FALHA DO VITEST PRECISA SER LEGÍVEL DE FORA.
+      #
+      # Em 03/10 a anotação `::error::` entrou para os roteiros de E2E, pelo
+      # mesmo motivo que vale aqui: o GitHub serve o log do job de OUTRO host,
+      # e a API não o alcança. "O CI reprovou" vira "espere por alguém".
+      #
+      # Só que o `vitest` ficou de fora, e isso cobrou hoje: um teste meu
+      # passava local e falhava no CI (faltava `.env.local`, que o Vite carrega
+      # nos testes), e a única informação disponível era `exit code 1`.
+      #
+      # O relatório JSON já é gerado acima para a guarda do piso. Aqui ele vira
+      # anotação — o nome de cada teste que falhou, no topo do PR e na API.
+      - name: Qual teste falhou (legível pela API)
+        if: failure()
+        run: |
+          node -e '
+            const r = require("./vitest-report.json");
+            const falhos = r.testResults.flatMap(a =>
+              a.assertionResults.filter(t => t.status === "failed")
+                .map(t => ({ arquivo: a.name.replace(process.cwd() + "/", ""), nome: t.fullName,
+                             causa: (t.failureMessages || [])[0] || "" })));
+            if (falhos.length === 0) {
+              console.log("::warning::O vitest reprovou sem nenhum teste falho — veja a guarda do piso ou um erro de IMPORTAÇÃO de arquivo de teste.");
+            }
+            for (const f of falhos.slice(0, 20)) {
+              const causa = f.causa.split("\n")[0].slice(0, 300);
+              console.log(`::error file=${f.arquivo}::${f.nome} — ${causa}`);
+            }
+          '
+
       # O CI quebrando é o caso FÁCIL: fica vermelho e alguém olha.
       # O caso perigoso é o contrário — o CI passar sem testar nada. Um arquivo
       # de teste renomeado para fora do padrão, um `describe.skip` esquecido, um

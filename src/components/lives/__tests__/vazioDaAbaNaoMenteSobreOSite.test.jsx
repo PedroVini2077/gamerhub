@@ -3,6 +3,23 @@
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+// `[09/10]` O MOCK existe por um motivo que só o CI mostrou.
+//
+// `LivesList` importa `AvatarPopup`, que alcança `lib/supabase.js` — e esse
+// módulo **estoura na importação** quando faltam `VITE_SUPABASE_URL` e
+// `VITE_SUPABASE_ANON_KEY`. Localmente eu tenho um `.env.local` e o Vite o
+// carrega nos testes; o CI não tem, e lá o arquivo inteiro falhava antes de
+// rodar uma asserção.
+//
+// Verde local e vermelho no CI é a pior combinação, e a causa não aparecia:
+// a API do GitHub não alcança o log do job, e a anotação `::error::` de 03/10
+// cobre os roteiros de E2E, não o `vitest`. Diagnosticado reproduzindo a
+// condição — `mv .env.local /tmp` e rodar de novo.
+//
+// Mocar o SUPABASE e não o `AvatarPopup`: o popup é parte do componente em
+// teste e deve continuar real. O que não pertence a este teste é a conexão.
+vi.mock('../../../lib/supabase', () => ({ supabase: {} }));
+
 import LivesList from '../LivesList';
 
 afterEach(cleanup);
