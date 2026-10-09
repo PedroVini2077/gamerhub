@@ -34,11 +34,17 @@
  *
  * ── Onde ele NÃO vai aparecer, e isso não é defeito ────────────────────────
  *
- * **No iPhone.** O Safari não implementa `beforeinstallprompt`: lá a instalação
- * é manual, pelo menu de compartilhar. O convite simplesmente não aparece, e
- * **não há nada a consertar em código** — inventar um passo a passo de iOS aqui
- * seria uma segunda tela para manter, sem nenhum teste possível do nosso lado.
- * Fica anotado no `BACKLOG.md`.
+ * **No iPhone.** O Safari não implementa `beforeinstallprompt`: lá a FAIXA não
+ * aparece, e isso continua certo — ela existe para oferecer o diálogo nativo,
+ * que não existe ali.
+ *
+ * > `[09/10]` Estava escrito aqui que *"não há nada a consertar em código"*, e
+ * > que um passo a passo de iOS seria uma segunda tela sem teste possível.
+ * > **A primeira metade estava errada e a segunda era desculpa.** O mesmo
+ * > buraco apareceu no Android — a entrada fixa sumia quando o navegador não
+ * > tinha oferecido — e ele o encontrou em dez minutos, perguntando se o deploy
+ * > havia chegado. O conserto é `lib/comoInstalar.js`, que atende os dois, e a
+ * > "tela sem teste possível" tem trava em `entradaDeInstalacaoNaoSome.test.js`.
  *
  * **E em quem já instalou.** Um app aberto da gaveta roda em `standalone`, e
  * convidar alguém a instalar o que ela já instalou é ruído.

@@ -5,7 +5,8 @@ import {
   X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail, FileText, Download,
 } from 'lucide-react';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
-import { podeInstalar, abrirConvite, aoMudarConvite } from '../../lib/conviteDeInstalacao';
+import { podeInstalar, abrirConvite, estaInstalado } from '../../lib/conviteDeInstalacao';
+import ComoInstalar from '../ui/ComoInstalar';
 
 /**
  * A navegação lateral da landing.
@@ -40,12 +41,20 @@ import { podeInstalar, abrirConvite, aoMudarConvite } from '../../lib/conviteDeI
  * *principal* da tela, e na landing a principal é entrar. Um segundo botão fixo
  * competiria com o Hero e com o CTA, na camada 1 (§0.4). A gaveta só abre quando
  * alguém toca no menu — que é a forma certa de oferecer ação secundária.
+ *
+ * ── `[09/10]` E ela parou de SUMIR, que é o conserto que importa ───────────
+ *
+ * A 1ª versão só aparecia com o convite do navegador em mãos. Parecia certo —
+ * botão que não faz nada é pior do que botão nenhum — e estava errado pelo
+ * motivo que ele encontrou em dez minutos: ele abriu a gaveta, não viu a
+ * entrada, e perguntou **se o deploy tinha ido para produção**. Tinha.
+ *
+ * "Nada" tinha três causas e a tela não distinguia nenhuma. Hoje a entrada
+ * existe sempre (fora de quem já abriu pelo app instalado): com convite ela
+ * instala na hora, sem convite ela **explica como**.
  */
 export default function LandingSidebar({ aberta, aoFechar }) {
-  // O evento `beforeinstallprompt` pode chegar depois desta tela montar, e aí a
-  // entrada tem de aparecer sem recarregar. Daí a inscrição.
-  const [instalavel, setInstalavel] = useState(() => podeInstalar());
-  useEffect(() => aoMudarConvite(() => setInstalavel(podeInstalar())), []);
+  const [mostrarComo, setMostrarComo] = useState(false);
 
   // `Escape` fecha, e o corpo para de rolar enquanto a gaveta está aberta —
   // sem isso a página de trás rola junto e a gaveta parece quebrada.
@@ -64,14 +73,20 @@ export default function LandingSidebar({ aberta, aoFechar }) {
   if (!aberta) return null;
 
   async function instalar() {
-    try {
-      // `prompt()` precisa do gesto: ele roda ainda dentro deste clique,
-      // ANTES do primeiro `await` lá dentro. Fechar a gaveta primeiro
-      // perderia o gesto em alguns navegadores.
-      await abrirConvite();
-    } finally {
-      aoFechar();
+    if (podeInstalar()) {
+      // `prompt()` precisa do gesto: ele roda ainda dentro deste clique, ANTES
+      // do primeiro `await` lá dentro. Fechar a gaveta primeiro perderia o
+      // gesto em alguns navegadores.
+      const desfecho = await abrirConvite();
+      if (desfecho !== 'indisponivel') {
+        aoFechar();
+        return;
+      }
     }
+    // Sem convite do navegador, o certo NÃO é não fazer nada: é dizer onde a
+    // opção mora. Foi a ausência silenciosa que fez o recurso parecer um
+    // deploy que não chegou.
+    setMostrarComo(true);
   }
 
   return createPortal(
@@ -187,11 +202,11 @@ export default function LandingSidebar({ aberta, aoFechar }) {
           {/* `[08/10]` É `button` e não `Link` porque não é navegação: o clique
               abre o diálogo do navegador, sem sair da página.
 
-              Ela só existe quando o navegador ofereceu o convite — e nunca
-              aparece no iPhone, onde o Safari não implementa o evento, nem para
-              quem já instalou. Nos dois casos ela simplesmente não ocupa
-              espaço, em vez de prometer o que não cumpre. */}
-          {instalavel && (
+              `[09/10]` O único caso em que ela não existe é quem JÁ abriu pelo
+              app instalado — ali a ausência não é ambígua, a pessoa está
+              dentro do que o botão ofereceria. Em todo o resto ela aparece, e
+              o clique resolve de um jeito ou de outro. */}
+          {!estaInstalado() && (
             <button
               type="button"
               onClick={instalar}
@@ -211,6 +226,8 @@ export default function LandingSidebar({ aberta, aoFechar }) {
           </Link>
         </div>
       </nav>
+
+      {mostrarComo && <ComoInstalar aoFechar={() => setMostrarComo(false)} />}
     </div>,
     document.body,
   );
