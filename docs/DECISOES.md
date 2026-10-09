@@ -2921,3 +2921,20 @@ passo de outra.
 
 *Registrado porque a decisão de 08/10 está escrita em `conviteDeInstalacao.js`
 e em `FUNCIONALIDADES.md`, e sem esta entrada alguém a leria como atual.*
+
+---
+
+## `[25/09]` A busca acha PALAVRA, não pedaço de palavra — `pg_trgm` ficou de fora
+
+**Aprovado por ele em 25/09.** Registrado aqui em 09/10, ao limpar o backlog:
+a entrada estava lá marcada como item aberto (`- ⬜`) com um ✅ no meio do
+título. Item que já foi decidido não é fila — é decisão, e o lugar é este.
+
+**O que vale hoje:** `"config"` **não** acha `"configuração"`. A busca casa a
+palavra inteira, com flexão e sem depender de acento.
+
+**O que foi recusado:** `pg_trgm`, que daria a busca por pedaço. É outra
+extensão, outro índice e outra conta de custo — e o acervo de hoje não
+justifica nenhum dos três.
+
+**A condição de volta:** quando houver acervo que justifique.
