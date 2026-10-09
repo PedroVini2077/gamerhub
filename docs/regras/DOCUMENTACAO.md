@@ -46,6 +46,8 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/PRIVACIDADE.md` | O que o site coleta **de verdade**, medido na implementação | Promessa não verificada |
 | `docs/PLANO-FEED-BUSCA-NEWS.md` | **`[24/09]`** A **Fase 0** do bloco feed/busca/formatação/news: o que foi MEDIDO, a arquitetura proposta e o que depende de decisão do dono | Implementação, e fila (a fila é o `BACKLOG.md`) |
 | `docs/PLANO-ANDROID.md` | **`[08/10]`** A **Fase 0** da pergunta "o GamerHub vira app Android?": o que foi MEDIDO no código, as abordagens avaliadas, celular × PC, e o **ESTADO DA JORNADA** que impede a investigação de recomeçar do zero a cada sessão | Implementação, e fila (a fila é o `BACKLOG.md`) |
+| `docs/PLANEJAMENTO-COSMETICOS.md` | **`[09/10]`** O **estudo** de molduras, figurinhas e inventário: o que foi MEDIDO no código e no banco, as licenças CONFERIDAS na fonte, a matriz de estratégias e o plano por fases. Cada afirmação marcada com a origem — `[CÓDIGO]`, `[OFICIAL]`, `[RECOMENDAÇÃO]`, `[HIPÓTESE]`, `[DECISÃO PENDENTE]` | Implementação, e fila (a fila é o `BACKLOG.md`) |
+| `docs/PROMPT-CONTINUIDADE-COSMETICOS.md` | **`[09/10]`** Como **retomar** aquele estudo numa sessão sem histórico: o pedido original, o que já foi apurado (para não refazer), o que falta, e o prompt pronto para colar | O conteúdo do estudo, que é o documento acima |
 | `docs/VISAO-DE-FUTURO.md` | **Onde o produto pode chegar** — possibilidades, sem data e sem compromisso, com a menor versão de cada uma | Fila, prazo, especificação |
 | `docs/DECISOES.md` | O que foi decidido e **descartado** no PRODUTO, com data e motivo | Item a fazer |
 | `docs/DECISOES-FERRAMENTAL.md` | O mesmo, para a **esteira**: CI, Vercel, Sentry, email | Decisão de produto |
@@ -59,7 +61,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `BACKLOG.md` | **TRÊS trabalhos** (`[09/10]`): a fila do que falta, a seção **EM EXECUÇÃO** (memória operacional da tarefa em curso) e o bloco **DESATIVADO**, onde a decisão já foi tomada | Decisão de produto, histórico, item já feito, pensamento solto |
 | `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado. **Retrato de um dia — deve envelhecer**, e o varredor o ignora de propósito | Estado atual do sistema |
 
-> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->59<!--/n-->
+> **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->61<!--/n-->
 > documentos.** Os que faltavam não eram menores — eram `PRIVACIDADE.md`,
 > `PAINEIS.md` e os próprios `docs/regras/`, que são regra executável. Tabela de
 > "onde cada coisa mora" incompleta é pior do que tabela nenhuma: ela responde
@@ -286,7 +288,7 @@ Duas partes da camada 3 são mecanizáveis, e viraram portão:
 | `scripts/documentacao-a-revisar.mjs` (`npm run docs`) | **que documento ESTA sessão tornou suspeito?** | não — é lista de leitura |
 
 **O número deixa de ser digitado.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->512<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->513<!--/n-->` —, invisível no markdown
 renderizado. O script mede e reescreve; o CI confere. **Chave desconhecida é
 erro, não silêncio**: um typo faria aquele número nunca mais ser atualizado, com
 o agravante de parecer vigiado.
@@ -309,12 +311,12 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->30.441<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->31.088<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
 **o que mudou embaixo de cada um**. `npm run docs -- --tudo` lista os
-<!--n:docs.arquivos-->59<!--/n--> por idade, para varredura completa.
+<!--n:docs.arquivos-->61<!--/n--> por idade, para varredura completa.
 
 **A regra prática, e ela é curta:** rodar `npm run docs` **antes de fechar
 qualquer bloco de trabalho**, e abrir o que ele apontar. Um documento marcado
