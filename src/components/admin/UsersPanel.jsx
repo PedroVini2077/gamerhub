@@ -63,7 +63,7 @@ function PendingSignups() {
       </p>
       <div className="space-y-1.5">
         {items.map(u => (
-          <div key={u.id} className="flex items-center gap-2 text-xs font-mono bg-dark-800 rounded px-3 py-2">
+          <div key={u.id} className="flex items-center gap-2 text-xs font-mono bg-dark-800 rounded-sm px-3 py-2">
             <span className="text-white truncate" style={{ flex: '0 1 auto', maxWidth: '35%' }}>@{u.username}</span>
             <span className="text-gray-500 truncate flex-1">{u.email}</span>
             <span className="text-gray-600 shrink-0">{u.days_pending}d</span>
@@ -163,19 +163,19 @@ function UserRow({ user, currentUserId, isSuperAdmin, podeGerirCargo, podeDesban
               <div className="flex gap-2 flex-wrap">
                 {user.role === 'user' && (
                   <button onClick={() => { onNominate(user, 'admin'); setExpanded(false); }}
-                    className="flex items-center gap-1.5 text-xs font-mono text-purple-300/80 hover:text-purple-300 border border-purple-400/30 hover:border-purple-400/60 px-3 py-1.5 rounded transition-all">
+                    className="flex items-center gap-1.5 text-xs font-mono text-purple-300/80 hover:text-purple-300 border border-purple-400/30 hover:border-purple-400/60 px-3 py-1.5 rounded-sm transition-all">
                     <UserPlus size={12} />Indicar para Admin
                   </button>
                 )}
                 {user.role === 'admin' && podeGerirCargo && (
                   <button onClick={() => { onNominate(user, 'super_admin'); setExpanded(false); }}
-                    className="flex items-center gap-1.5 text-xs font-mono text-neon-green/80 hover:text-neon-green border border-neon-green/30 hover:border-neon-green/60 px-3 py-1.5 rounded transition-all">
+                    className="flex items-center gap-1.5 text-xs font-mono text-neon-green/80 hover:text-neon-green border border-neon-green/30 hover:border-neon-green/60 px-3 py-1.5 rounded-sm transition-all">
                     <UserPlus size={12} />Indicar p/ Super Admin
                   </button>
                 )}
                 {(user.role === 'admin' || user.role === 'super_admin') && (
                   <button onClick={() => { onDemote(user); setExpanded(false); }}
-                    className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
+                    className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded-sm transition-all">
                     <ShieldAlert size={12} />Solicitar rebaixamento
                   </button>
                 )}
@@ -187,31 +187,31 @@ function UserRow({ user, currentUserId, isSuperAdmin, podeGerirCargo, podeDesban
             <div className="flex gap-2 flex-wrap">
               {canBan && !user.banned && (
                 <button onClick={() => { onBanClick(user); setExpanded(false); }}
-                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/80 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
+                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/80 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded-sm transition-all">
                   <Ban size={12} />Banir usuário
                 </button>
               )}
               {user.banned && podeDesbanir && (
                 <button onClick={() => { onUnbanDirect(user); setExpanded(false); }}
-                  className="flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
+                  className="flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded-sm transition-all">
                   <Shield size={12} />Desbanir
                 </button>
               )}
               {user.banned && !podeDesbanir && (
                 hasUnbanPending ? (
-                  <span className="flex items-center gap-1.5 text-xs font-mono text-gray-500 border border-dark-400 px-3 py-1.5 rounded cursor-default">
+                  <span className="flex items-center gap-1.5 text-xs font-mono text-gray-500 border border-dark-400 px-3 py-1.5 rounded-sm cursor-default">
                     <Clock size={12} />Em análise...
                   </span>
                 ) : (
                   <button onClick={() => { onRequestUnban(user); setExpanded(false); }}
-                    className="flex items-center gap-1.5 text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/10 px-3 py-1.5 rounded transition-all">
+                    className="flex items-center gap-1.5 text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:bg-yellow-400/10 px-3 py-1.5 rounded-sm transition-all">
                     <RotateCcw size={12} />Solicitar Desbanimento
                   </button>
                 )
               )}
               {user.role === 'user' && !user.banned && (
                 <button onClick={() => onDeletePosts(user.id, user.username)}
-                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded transition-all">
+                  className="flex items-center gap-1.5 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 px-3 py-1.5 rounded-sm transition-all">
                   <Trash2 size={12} />Deletar posts
                 </button>
               )}

@@ -9,7 +9,7 @@ export default function DemotionCard({ request: req, onDecide }) {
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-3 flex-wrap">
         <CandidateHeader profile={req.target} extra={
-          <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-red-400/15 text-red-300 shrink-0">
+          <span className="text-xs font-mono px-1.5 py-0.5 rounded-sm bg-red-400/15 text-red-300 shrink-0">
             {roleLabel(req.previous_role)} <ArrowRight size={11} className="inline align-[-1px]" /> {roleLabel(req.proposed_role)}
           </span>
         } />

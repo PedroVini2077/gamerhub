@@ -9,7 +9,7 @@ const ACCENT = {
 export default function DecisionButton({ icon: Icon, accent = 'green', onClick, children }) {
   return (
     <button type="button" onClick={onClick}
-      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border rounded transition-colors ${ACCENT[accent]}`}>
+      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border rounded-sm transition-colors ${ACCENT[accent]}`}>
       {Icon && <Icon size={12} />} {children}
     </button>
   );

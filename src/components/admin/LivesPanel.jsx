@@ -53,7 +53,7 @@ export default function LivesPanel({
                     </p>
                   </div>
                   <button onClick={() => unsilenceUser(t.id)}
-                    className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded transition-all">
+                    className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded-sm transition-all">
                     Remover
                   </button>
                 </div>
@@ -83,7 +83,7 @@ export default function LivesPanel({
                   <p className="text-xs font-mono text-gray-600">por {l.profiles?.username}</p>
                 </div>
                 <button onClick={() => handleEndLive(l.id, l.title)}
-                  className="text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/20 hover:border-red-400/50 px-2 py-0.5 rounded transition-all shrink-0">
+                  className="text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/20 hover:border-red-400/50 px-2 py-0.5 rounded-sm transition-all shrink-0">
                   Encerrar
                 </button>
               </div>
@@ -116,12 +116,12 @@ export default function LivesPanel({
                     </p>
                   </div>
                   {hasPending ? (
-                    <span className="text-xs font-mono text-yellow-400/70 border border-yellow-400/20 px-2 py-0.5 rounded shrink-0 flex items-center gap-1">
+                    <span className="text-xs font-mono text-yellow-400/70 border border-yellow-400/20 px-2 py-0.5 rounded-sm shrink-0 flex items-center gap-1">
                       <Clock size={10} />Aguardando
                     </span>
                   ) : (
                     <button onClick={() => setReactivateModal(l)}
-                      className="flex items-center gap-1 text-xs font-mono text-neon-green/70 hover:text-neon-green border border-neon-green/20 hover:border-neon-green/50 px-2 py-0.5 rounded transition-all shrink-0">
+                      className="flex items-center gap-1 text-xs font-mono text-neon-green/70 hover:text-neon-green border border-neon-green/20 hover:border-neon-green/50 px-2 py-0.5 rounded-sm transition-all shrink-0">
                       <RotateCcw size={10} />
                       {isSuperAdmin ? 'Reativar' : 'Solicitar'}
                     </button>

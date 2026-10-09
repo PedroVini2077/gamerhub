@@ -97,7 +97,7 @@ export default function SuperAdminPanel({
                   </div>
                 </div>
                 <button onClick={() => setUnlockModal(entry)}
-                  className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded transition-all">
+                  className="shrink-0 flex items-center gap-1.5 text-xs font-mono text-neon-green border border-neon-green/30 hover:bg-neon-green/10 px-3 py-1.5 rounded-sm transition-all">
                   Desbloquear
                 </button>
               </div>
@@ -143,16 +143,16 @@ export default function SuperAdminPanel({
               </div>
               <span className="tag tag-purple shrink-0" style={{ fontSize: 9 }}>pendente</span>
             </div>
-            <div className="bg-dark-600 rounded px-3 py-2 border border-dark-500">
+            <div className="bg-dark-600 rounded-sm px-3 py-2 border border-dark-500">
               <p className="text-xs font-mono text-gray-300 leading-relaxed">{req.reason}</p>
             </div>
             <div className="flex gap-2">
               <button onClick={() => handleApproveUnban(req)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded-sm hover:bg-neon-green/10 transition-all">
                 <CheckCircle size={12} /> Aprovar e Desbanir
               </button>
               <button onClick={() => setDenyUnbanModal(req)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded-sm hover:bg-red-400/10 transition-all">
                 <XCircle size={12} /> Negar
               </button>
             </div>
@@ -199,11 +199,11 @@ export default function SuperAdminPanel({
             </div>
             <div className="flex gap-2">
               <button onClick={() => handleApproveRequest(req)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded hover:bg-neon-green/10 transition-all">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono font-bold text-neon-green border border-neon-green/30 rounded-sm hover:bg-neon-green/10 transition-all">
                 <CheckCircle size={12} /> Aprovar e Reativar
               </button>
               <button onClick={() => handleDenyRequest(req)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all">
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded-sm hover:bg-red-400/10 transition-all">
                 <XCircle size={12} /> Negar
               </button>
             </div>

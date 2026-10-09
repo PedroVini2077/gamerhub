@@ -28,7 +28,7 @@ export default function CartaoDeNoticia({ artigo }) {
       className="card block overflow-hidden hover:border-neon-green/40 transition-colors group"
     >
       {capa && (
-        <div className="aspect-[16/9] overflow-hidden bg-dark-700">
+        <div className="aspect-video overflow-hidden bg-dark-700">
           <img
             src={capa} alt="" loading="lazy"
             className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"

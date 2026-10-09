@@ -7,7 +7,7 @@ import { fetchReports, updateReportStatus } from '../../services/moderationServi
 import { apenasData } from '../../services/result';
 import { linkDoConteudo } from './queueLabels';
 
-const STATUS_COLOR = { pending: 'tag-purple', reviewed: 'tag-cyan', dismissed: 'text-gray-600 border border-dark-500 bg-dark-700 px-2 py-0.5 rounded text-xs font-mono' };
+const STATUS_COLOR = { pending: 'tag-purple', reviewed: 'tag-cyan', dismissed: 'text-gray-600 border border-dark-500 bg-dark-700 px-2 py-0.5 rounded-sm text-xs font-mono' };
 const REASON_LABEL = {
   spam: 'Spam', hate: 'Discurso de ódio', nsfw: 'Conteúdo adulto',
   harassment: 'Assédio', misinformation: 'Desinformação', other: 'Outro',
@@ -45,7 +45,7 @@ export default function ReportsList() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 bg-dark-700 rounded animate-pulse" />)}</div>
+        <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 bg-dark-700 rounded-sm animate-pulse" />)}</div>
       ) : reports.length === 0 ? (
         <div className="card p-10 text-center">
           <Flag size={28} className="mx-auto mb-3 text-gray-600" />

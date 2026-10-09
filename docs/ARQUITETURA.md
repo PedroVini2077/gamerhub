@@ -18,8 +18,20 @@ src/
 │   │                      # @import no index.css é comportamento, não gosto:
 │   │                      # CSS resolve empate de especificidade por ordem
 │   ├── fontes.css         # @font-face das três famílias, servidas do domínio
-│   ├── tailwind.css       # as três diretivas @tailwind, isoladas para o
-│   │                      # index.css poder ser só imports
+│   ├── tailwind.css       # `[09/10]` a entrada do Tailwind 4 (`@import
+│   │                      # 'tailwindcss'`) e o TEMA em `@theme` — cores neon,
+│   │                      # famílias, sombras e nomes de animação. O
+│   │                      # arquivo de configuração em JS não existe mais:
+│   │                      # no Tailwind 4 a configuração é CSS
+│   ├── animacoes.css      # `[09/10]` os @keyframes, com o porquê de cada um.
+│   │                      # Casa própria porque o codemod do Tailwind 4 apagou
+│   │                      # os 183 comentários do config antigo, e recolocá-los
+│   │                      # junto dos tokens passaria de 300 linhas (§4)
+│   ├── compatibilidade-do-v3.css # `[09/10]` os TRÊS padrões que o Tailwind 4
+│   │                      # mudou e nós desfazemos: cor da borda (218 `border`
+│   │                      # nus), cursor do botão (274 botões) e cor do
+│   │                      # placeholder. A migração foi por advisory, não
+│   │                      # redesenho — o site tem de continuar igual
 │   ├── base.css           # reset, variáveis de cor, body — DEPOIS do preflight
 │   ├── componentes.css    # card, input, botões, tags, nav, texto neon,
 │   │                      # animações compartilhadas, celular, avatar.

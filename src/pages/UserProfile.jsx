@@ -66,8 +66,8 @@ export default function UserProfile() {
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-dark-500" />
           <div className="space-y-2 flex-1">
-            <div className="h-4 bg-dark-500 rounded w-1/3" />
-            <div className="h-3 bg-dark-500 rounded w-1/4" />
+            <div className="h-4 bg-dark-500 rounded-sm w-1/3" />
+            <div className="h-3 bg-dark-500 rounded-sm w-1/4" />
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@ export default function UserProfile() {
               <h1 className="font-display text-xl font-bold text-white">{profile.username}</h1>
               <span className={`tag ${roleColors[profile.role] || 'tag-cyan'}`}>{profile.role}</span>
               {rank && (
-                <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
+                <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded-sm border"
                   style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
                   {RankIcon && <RankIcon size={10} />}
                   {isOwner ? 'Fundador' : getRankLabel(rank)}
@@ -189,7 +189,7 @@ export default function UserProfile() {
             { label: 'Likes',  value: stats.likes, color: 'text-neon-purple' },
             { label: 'XP',     value: xpData?.xp ?? '—', color: 'text-yellow-400' },
           ].map(s => (
-            <div key={s.label} className="bg-dark-700 rounded p-3 text-center border border-dark-400">
+            <div key={s.label} className="bg-dark-700 rounded-sm p-3 text-center border border-dark-400">
               <p className={`font-display text-xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-gray-500 font-mono">{s.label}</p>
             </div>

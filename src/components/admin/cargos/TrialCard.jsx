@@ -20,7 +20,7 @@ export default function TrialCard({ nomination: nom, onDecide }) {
     <div className="card p-4 space-y-3">
       <div className="flex items-center gap-3 flex-wrap">
         <CandidateHeader profile={nom.candidate} extra={
-          <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-purple-400/15 text-purple-300 shrink-0">
+          <span className="text-xs font-mono px-1.5 py-0.5 rounded-sm bg-purple-400/15 text-purple-300 shrink-0">
             {roleLabel(nom.target_role)}
           </span>
         } />

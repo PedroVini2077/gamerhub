@@ -54,7 +54,7 @@ export default function GamingCard({ form, setField }) {
         </label>
         <div className="flex items-start bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
           <span className="pl-3 pr-2 pt-2.5 text-gray-500 shrink-0"><Swords size={14} /></span>
-          <textarea aria-label="Jogos favoritos" className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body resize-none"
+          <textarea aria-label="Jogos favoritos" className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-hidden font-body resize-none"
             rows={2} placeholder="Ex: CS2, Valorant, Minecraft..." value={form.favorite_games}
             onChange={e => setField('favorite_games', e.target.value)} maxLength={200} />
         </div>

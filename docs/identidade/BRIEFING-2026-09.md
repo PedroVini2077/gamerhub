@@ -114,7 +114,7 @@ tipografia cabem em **unidades de kB**.
 > | Afirmação | Onde conferi | Resultado |
 > | --- | --- | --- |
 > | teto de `760 kB` / `228 kB` | `scripts/orcamento-de-bytes.mjs` | bate: `TETO_BRUTO_KB = 760`, `TETO_GZIP_KB = 228` |
-> | `Orbitron` é a fonte de display | `tailwind.config.js` | **`[26/09]` NÃO continua: virou `Oxanium`.** A Orbitron desenha o til achatado e escrevia "nào" em todo título — defeito medido, não gosto. Ver `src/lib/fontesConferidas.js` |
+> | `Orbitron` é a fonte de display | a configuração do Tailwind, então em JS | **`[26/09]` NÃO continua: virou `Oxanium`.** A Orbitron desenha o til achatado e escrevia "nào" em todo título — defeito medido, não gosto. Ver `src/lib/fontesConferidas.js` |
 > | a cena 3D pesava 708 kB e saiu | `DESEMPENHO.md` + `package.json` | saiu em 11/09; `three` e `@react-three/fiber` não existem mais |
 >
 > **Por que o aviso apareceu mesmo assim, e vale registrar:** até hoje o

@@ -54,8 +54,8 @@ export default function Community() {
 
       {loading ? (
         <div className="card p-5 animate-pulse">
-          <div className="h-4 bg-dark-500 rounded w-1/2 mb-2" />
-          <div className="h-3 bg-dark-500 rounded" />
+          <div className="h-4 bg-dark-500 rounded-sm w-1/2 mb-2" />
+          <div className="h-3 bg-dark-500 rounded-sm" />
         </div>
       ) : items.length === 0 ? (
         <div className="card p-8 text-center">

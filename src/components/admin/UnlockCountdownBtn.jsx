@@ -19,7 +19,7 @@ export default function UnlockCountdownBtn({ onConfirm }) {
     <button
       onClick={countdown > 0 ? undefined : onConfirm}
       disabled={countdown > 0}
-      className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5"
+      className="flex-1 py-2 text-xs font-mono font-bold rounded-sm transition-all flex items-center justify-center gap-1.5"
       style={countdown > 0
         ? { background: '#111', color: '#555', border: '1px solid #333', cursor: 'not-allowed' }
         : { background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e40' }}>

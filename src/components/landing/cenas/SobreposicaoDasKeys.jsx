@@ -68,7 +68,7 @@ export default function SobreposicaoDasKeys({ progresso, lado = 'esquerda' }) {
     <PainelDaCena lado={lado} vidro={false} ancora="topo" largura="w-[min(86vw,18.5rem)]">
       <motion.div
         className="relative overflow-hidden rounded-xl border border-neon-green/25
-                   bg-dark-900/85 backdrop-blur-sm p-3.5
+                   bg-dark-900/85 backdrop-blur-xs p-3.5
                    shadow-[0_10px_36px_rgba(0,0,0,0.6)]"
         style={{ scale: escala, opacity: opacidade, y: subida }}
       >
@@ -95,7 +95,7 @@ export default function SobreposicaoDasKeys({ progresso, lado = 'esquerda' }) {
               cena, passaria despercebido. Achado no print. */}
           <motion.div
             className="absolute inset-0 border-r-2 border-neon-green/70
-                       bg-gradient-to-r from-dark-800 to-dark-600"
+                       bg-linear-to-r from-dark-800 to-dark-600"
             style={{ x: tarja }}
           >
             <span className="flex h-full items-center justify-center font-mono
@@ -128,7 +128,7 @@ export default function SobreposicaoDasKeys({ progresso, lado = 'esquerda' }) {
         </div>
 
         <motion.div
-          className="pointer-events-none absolute inset-y-[-40%] left-0 w-14 -rotate-[16deg]"
+          className="pointer-events-none absolute inset-y-[-40%] left-0 w-14 rotate-[-16deg]"
           style={{
             x: reflexo,
             background:

@@ -102,7 +102,7 @@ export default function AdminApplicationCard({ userId }) {
           <button
             onClick={() => setConfirming(true)}
             disabled={!eligibility.eligible}
-            className="w-full py-2.5 text-xs font-mono font-bold rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-full py-2.5 text-xs font-mono font-bold rounded-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             style={{ background: '#39ff1415', color: '#39ff14', border: '1px solid #39ff1440' }}>
             {eligibility.eligible ? 'Candidatar-se a Admin' : 'Critérios ainda não atendidos'}
           </button>

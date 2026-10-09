@@ -78,7 +78,7 @@ function CartaDeDestaque({ progresso, secao, indice, parado }) {
       href={alvoDaSecao(id)}
       style={parado ? undefined : { y: subida, opacity: opacidade }}
       whileHover={{ y: -3 }}
-      className="card p-4 flex flex-col items-center gap-2 text-center group focus:outline-none focus:ring-1 focus:ring-neon-green/60"
+      className="card p-4 flex flex-col items-center gap-2 text-center group focus:outline-hidden focus:ring-1 focus:ring-neon-green/60"
     >
       <Icone size={22} className={cor} />
       <span className="text-xs font-mono text-gray-400 group-hover:text-gray-200 transition-colors">

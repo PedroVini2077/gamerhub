@@ -90,11 +90,11 @@ export default function ReportModal({ contentType, contentId, onClose }) {
 
         <div className="flex gap-2">
           <button onClick={onClose}
-            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
+            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded-sm hover:bg-dark-700 transition-all">
             Cancelar
           </button>
           <button onClick={handleSubmit} disabled={loading || !reason}
-            className="flex-1 py-2 text-xs font-mono font-bold rounded flex items-center justify-center gap-1.5 transition-all"
+            className="flex-1 py-2 text-xs font-mono font-bold rounded-sm flex items-center justify-center gap-1.5 transition-all"
             style={{ background: '#f9731615', color: '#fb923c', border: '1px solid #f9731640',
               opacity: (!reason || loading) ? 0.5 : 1 }}>
             <Flag size={12} />{loading ? 'Enviando...' : 'Denunciar'}

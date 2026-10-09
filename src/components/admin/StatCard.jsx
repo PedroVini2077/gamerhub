@@ -5,7 +5,7 @@ import { gridCard } from '../../lib/motion';
 export default function StatCard({ icon: Icon, label, value, color }) {
   return (
     <motion.div variants={gridCard} className="card p-5 flex items-center gap-4">
-      <div className={`w-10 h-10 rounded flex items-center justify-center ${color}`}>
+      <div className={`w-10 h-10 rounded-sm flex items-center justify-center ${color}`}>
         <Icon size={18} />
       </div>
       <div>

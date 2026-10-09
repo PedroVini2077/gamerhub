@@ -43,7 +43,7 @@ export default function AvisoDeErro({ mensagem, detalhe, className = '' }) {
             detalhes técnicos
           </button>
           {aberto && (
-            <p className="text-[11px] font-mono text-gray-500 break-words whitespace-pre-wrap">
+            <p className="text-[11px] font-mono text-gray-500 wrap-break-word whitespace-pre-wrap">
               {detalhe}
             </p>
           )}

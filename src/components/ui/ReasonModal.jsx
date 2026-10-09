@@ -90,11 +90,11 @@ export default function ReasonModal({
 
         <div className="flex gap-2">
           <button onClick={onClose}
-            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
+            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded-sm hover:bg-dark-700 transition-all">
             Cancelar
           </button>
           <button onClick={handleConfirm} disabled={loading || (required && !note.trim())}
-            className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
+            className="flex-1 py-2 text-xs font-mono font-bold rounded-sm transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
             style={{ background: a.btnBg, color: a.btnColor, border: `1px solid ${a.btnBorder}` }}>
             {loading ? <span className="animate-pulse">...</span> : <>{ConfirmIcon && <ConfirmIcon size={12} />}{confirmLabel}</>}
           </button>

@@ -74,25 +74,25 @@ export default function LogsTab() {
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
         <select value={category} onChange={e => changeCategory(e.target.value)}
-          className="px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 focus:outline-none">
+          className="px-3 py-2 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-gray-400 focus:outline-hidden">
           <option value="">Todas as categorias</option>
           {LOG_CATEGORIES.map(c => (
             <option key={c.id} value={c.id}>{c.label}</option>
           ))}
         </select>
         <select value={severity} onChange={e => changeSeverity(e.target.value)}
-          className="px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 focus:outline-none">
+          className="px-3 py-2 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-gray-400 focus:outline-hidden">
           <option value="">Todos os níveis</option>
           <option value="info">Info</option>
           <option value="warning">Warning</option>
           <option value="critical">Critical</option>
         </select>
         <button aria-label="Atualizar" onClick={handleRefresh} disabled={refreshing}
-          className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+          className="p-2 bg-dark-700 border border-dark-400 rounded-sm text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
         </button>
         <button onClick={exportCSV} disabled={exporting}
-          className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 hover:text-orange-400 hover:border-orange-400/50 disabled:opacity-40 transition-colors">
+          className="ml-auto flex items-center gap-1.5 px-3 py-2 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-gray-400 hover:text-orange-400 hover:border-orange-400/50 disabled:opacity-40 transition-colors">
           <Download size={14} />
           {exporting ? 'Exportando...' : 'Exportar CSV'}
         </button>
@@ -127,7 +127,7 @@ export default function LogsTab() {
                     {log.actor_username || 'sistema'}
                   </span>
                   <span className="text-xs font-mono text-gray-400 break-all">{log.action}</span>
-                  <span className="text-xs font-mono px-1.5 py-0.5 rounded shrink-0"
+                  <span className="text-xs font-mono px-1.5 py-0.5 rounded-sm shrink-0"
                     style={{
                       color:      SEVERITY_COLOR[log.severity] || '#6b7280',
                       background: `${SEVERITY_COLOR[log.severity] || '#6b7280'}18`,
@@ -136,7 +136,7 @@ export default function LogsTab() {
                   </span>
                 </div>
                 {log.details && (
-                  <p className="text-xs text-gray-600 font-mono mt-0.5 break-words">{log.details}</p>
+                  <p className="text-xs text-gray-600 font-mono mt-0.5 wrap-break-word">{log.details}</p>
                 )}
               </div>
               <p className="text-xs font-mono text-gray-700 shrink-0 whitespace-nowrap">
@@ -157,11 +157,11 @@ export default function LogsTab() {
 
       <div className="flex gap-2 justify-center">
         <button disabled={offset === 0} onClick={prev}
-          className="px-4 py-2 text-xs font-mono inline-flex items-center gap-1 border border-dark-400 rounded text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          className="px-4 py-2 text-xs font-mono inline-flex items-center gap-1 border border-dark-400 rounded-sm text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
           <ChevronLeft size={13} /> Anterior
         </button>
         <button disabled={logs.length < LIMIT} onClick={next}
-          className="px-4 py-2 text-xs font-mono inline-flex items-center gap-1 border border-dark-400 rounded text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          className="px-4 py-2 text-xs font-mono inline-flex items-center gap-1 border border-dark-400 rounded-sm text-gray-400 hover:border-orange-400/50 hover:text-orange-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
           Próximo <ChevronRight size={13} />
         </button>
       </div>

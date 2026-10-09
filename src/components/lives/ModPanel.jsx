@@ -37,7 +37,7 @@ export default function ModPanel({
                   <p className="text-xs font-mono text-gray-600">{remaining} min restantes</p>
                 </div>
                 <button onClick={() => handleUnsilenceUser(t.user_id)}
-                  className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded transition-all">
+                  className="text-xs font-mono text-gray-500 hover:text-neon-green border border-dark-400 hover:border-neon-green/40 px-2 py-0.5 rounded-sm transition-all">
                   Remover
                 </button>
               </div>
@@ -68,7 +68,7 @@ export default function ModPanel({
                 </div>
                 {silenced ? (
                   <button onClick={() => handleUnsilenceUser(p.id)}
-                    className="text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:border-yellow-400/60 hover:bg-yellow-400/5 px-2 py-0.5 rounded transition-all active:scale-95">
+                    className="text-xs font-mono text-yellow-400 border border-yellow-400/30 hover:border-yellow-400/60 hover:bg-yellow-400/5 px-2 py-0.5 rounded-sm transition-all active:scale-95">
                     <VolumeX size={10} className="inline mr-1" />Remover
                   </button>
                 ) : (
@@ -77,7 +77,7 @@ export default function ModPanel({
                       type="button"
                       onClick={() => setSilenceMenu(silenceMenu === p.id ? null : p.id)}
                       disabled={silencingUser === p.id}
-                      className="text-xs font-mono text-gray-500 hover:text-yellow-400 border border-dark-400 hover:border-yellow-400/40 px-2 py-0.5 rounded transition-all flex items-center gap-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                      className="text-xs font-mono text-gray-500 hover:text-yellow-400 border border-dark-400 hover:border-yellow-400/40 px-2 py-0.5 rounded-sm transition-all flex items-center gap-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                       {silencingUser === p.id
                         ? <span className="animate-pulse">...</span>
                         : <span className="flex items-center gap-1"><Clock size={10} /><span>Silenciar</span></span>
@@ -89,7 +89,7 @@ export default function ModPanel({
                         <p className="text-xs font-mono text-gray-500 px-2 pb-1 border-b border-dark-500">Silenciar por:</p>
                         {[5, 10, 30, 60].map(min => (
                           <button key={min} type="button" onClick={() => handleSilenceUser(p.id, min)}
-                            className="text-xs font-mono text-gray-400 hover:text-yellow-400 hover:bg-dark-600 px-3 py-1 rounded text-left transition-colors active:scale-95">
+                            className="text-xs font-mono text-gray-400 hover:text-yellow-400 hover:bg-dark-600 px-3 py-1 rounded-sm text-left transition-colors active:scale-95">
                             {min} min
                           </button>
                         ))}

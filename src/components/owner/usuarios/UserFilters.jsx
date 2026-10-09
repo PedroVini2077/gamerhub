@@ -11,10 +11,10 @@ export default function UserFilters({ search, setSearch, filter, setFilter, tota
         <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
         <input aria-label="Buscar usuário" value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Buscar usuário..."
-          className="w-full pl-8 pr-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-300 focus:border-orange-400/50 focus:outline-none" />
+          className="w-full pl-8 pr-3 py-2 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-gray-300 focus:border-orange-400/50 focus:outline-hidden" />
       </div>
       <select aria-label="Filtrar por cargo" value={filter} onChange={e => setFilter(e.target.value)}
-        className="px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-400 focus:outline-none">
+        className="px-3 py-2 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-gray-400 focus:outline-hidden">
         <option value="all">Todos ({total})</option>
         <option value="admin">Admins</option>
         <option value="super_admin">Super Admins</option>
@@ -38,7 +38,7 @@ function RefreshButton({ refetch }) {
 
   return (
     <button aria-label="Atualizar" onClick={handleRefresh} disabled={refreshing}
-      className="p-2 bg-dark-700 border border-dark-400 rounded text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+      className="p-2 bg-dark-700 border border-dark-400 rounded-sm text-gray-500 hover:text-orange-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
       <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
     </button>
   );

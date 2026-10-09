@@ -49,7 +49,7 @@ export default function Hero({ introDone = true }) {
       {/* `[11/09]` Aqui morava a cena 3D com o raio — 708 kB para desenhar a
           marca que foi aposentada. No lugar dela, o que o NOME promete:
           trajetos chegando de fora e pousando onde o nome está. */}
-      <ConvergenciaDoHub className="absolute inset-0 z-[1]" />
+      <ConvergenciaDoHub className="absolute inset-0 z-1" />
 
       {/* `[11/09]` A marca que a abertura pintou ASSENTA aqui — mesmo centro,
           combinado em `lib/marcaNoHero.js`, para a troca ser um cruzamento e
@@ -57,7 +57,7 @@ export default function Hero({ introDone = true }) {
 
           Ela fica ENTRE a convergência e o texto: os trajetos convergem nela em
           vez de convergirem para espaço vazio, e o texto continua por cima. */}
-      <MarcaFlutuante className="z-[2]" />
+      <MarcaFlutuante className="z-2" />
 
       <ConteudoDoHero introDone={introDone} />
 

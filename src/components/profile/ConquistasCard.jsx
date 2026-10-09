@@ -82,9 +82,9 @@ function ItemDeConquista({ conquista }) {
             ruído, e o ícone aceso já diz o que precisa ser dito. */}
         {!concluida && (
           <div className="mt-2">
-            <div className="h-1 rounded bg-dark-500 overflow-hidden">
+            <div className="h-1 rounded-sm bg-dark-500 overflow-hidden">
               <div
-                className="h-full rounded transition-[width] duration-500"
+                className="h-full rounded-sm transition-[width] duration-500"
                 style={{ width: `${progresso}%`, background: cor, opacity: 0.75 }}
               />
             </div>

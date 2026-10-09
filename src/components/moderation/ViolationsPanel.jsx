@@ -9,7 +9,7 @@ const ACTION_LABEL = {
   hide:       { label: 'Ocultado',     cls: 'tag-purple' },
   suspend_1d: { label: 'Suspenso 1d',  cls: 'tag-green' },
   suspend_7d: { label: 'Suspenso 7d',  cls: 'tag-green' },
-  ban:        { label: 'Banido',       cls: 'text-red-400 border border-red-500/40 bg-red-500/10 px-2 py-0.5 rounded text-xs font-mono' },
+  ban:        { label: 'Banido',       cls: 'text-red-400 border border-red-500/40 bg-red-500/10 px-2 py-0.5 rounded-sm text-xs font-mono' },
 };
 
 const PAGE_SIZE = 20;
@@ -64,7 +64,7 @@ export default function ViolationsPanel() {
 
       {loading && items.length === 0 ? (
         <div className="space-y-2">
-          {[1,2,3].map(i => <div key={i} className="h-12 bg-dark-700 rounded animate-pulse" />)}
+          {[1,2,3].map(i => <div key={i} className="h-12 bg-dark-700 rounded-sm animate-pulse" />)}
         </div>
       ) : items.length === 0 ? (
         <div className="card p-10 text-center">
@@ -111,7 +111,7 @@ export default function ViolationsPanel() {
                       {expirada && (
                         <span
                           title={`Fora da janela de ${JANELA_DE_INFRACAO_DIAS} dias — não conta mais para a escalada`}
-                          className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border border-dark-400 rounded px-1.5 py-0.5 align-middle"
+                          className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border border-dark-400 rounded-sm px-1.5 py-0.5 align-middle"
                         >
                           <Clock size={10} aria-hidden="true" />
                           Expirada
@@ -123,7 +123,7 @@ export default function ViolationsPanel() {
                         // que precisa caber no celular.
                         <span
                           title={v.revogada_motivo || 'sem motivo registrado'}
-                          className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border border-dark-400 rounded px-1.5 py-0.5 align-middle"
+                          className="ml-1.5 inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-gray-400 border border-dark-400 rounded-sm px-1.5 py-0.5 align-middle"
                         >
                           <RotateCcw size={10} aria-hidden="true" />
                           Revogada
@@ -151,12 +151,12 @@ export default function ViolationsPanel() {
       {(page > 0 || count > PAGE_SIZE) && (
         <div className="flex items-center justify-between text-xs font-mono text-gray-500 pt-1">
           <button disabled={page === 0} onClick={() => { const p = page - 1; setPage(p); load(p, filter); }}
-            className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
+            className="px-3 py-1.5 border border-dark-400 rounded-sm hover:text-white disabled:opacity-40 transition-all">
             <ChevronLeft size={13} /> Anterior
           </button>
           <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, count)} de {count}</span>
           <button disabled={(page + 1) * PAGE_SIZE >= count} onClick={() => { const p = page + 1; setPage(p); load(p, filter); }}
-            className="px-3 py-1.5 border border-dark-400 rounded hover:text-white disabled:opacity-40 transition-all">
+            className="px-3 py-1.5 border border-dark-400 rounded-sm hover:text-white disabled:opacity-40 transition-all">
             Próxima <ChevronRight size={13} />
           </button>
         </div>

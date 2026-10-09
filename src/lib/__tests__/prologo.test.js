@@ -117,7 +117,12 @@ describe('o mecanismo', () => {
       + '  lição de 01/09 que fez as formas da "Sobre" darem um pulo.',
       // De novo a classe e não a palavra, pelo mesmo motivo do `sticky`: o
       // comentário do arquivo cita `100svh` ao explicar a escolha.
-    ).toMatch(/className=\{?[`"]sticky top-0 h-\[100svh\]/);
+      //
+      // `[09/10]` `h-svh` é a grafia do Tailwind 4 para o que era
+      // `h-[100svh]` — conferido no CSS gerado: `.h-svh{height:100svh}`. As
+      // duas valem; o que a trava não pode aceitar é `h-screen`, que é `100vh`
+      // e traz de volta exatamente o pulo que esta mensagem descreve.
+    ).toMatch(/className=\{?[`"]sticky top-0 h-(\[100svh\]|svh)\b/);
   });
 
   it('não entrou biblioteca de rolagem — o palco usa o que já existe', () => {

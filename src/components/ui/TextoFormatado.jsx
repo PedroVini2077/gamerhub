@@ -47,7 +47,7 @@ function Trecho({ no }) {
     if (!href) return `[${no.texto}](${no.url})`;
     return (
       <a href={href} target="_blank" rel="noopener noreferrer"
-        className="text-neon-green hover:underline break-words">
+        className="text-neon-green hover:underline wrap-break-word">
         {no.texto}
       </a>
     );

@@ -107,11 +107,15 @@ describe('o atalho é do CELULAR, e não conflita com a barra lateral', () => {
   it('fica ABAIXO do véu da barra lateral', () => {
     render(<LinhaDePublicar />);
     dispararVisibilidade(false);
-    const z = atalho().className.match(/z-\[(\d+)\]/)?.[1];
+    // `[09/10]` As duas grafias: o Tailwind 4 aceita `z-15` direto, e o
+    // codemod trocou o `z-[15]` que estava aqui. Conferido no CSS gerado —
+    // `.z-15{z-index:15}`. O que importa é o NÚMERO, que a linha abaixo
+    // compara com o véu, e ele é o mesmo nas duas escritas.
+    const z = atalho().className.match(/\bz-(?:\[(\d+)\]|(\d+))\b/);
     expect(z, 'o atalho ficou sem z-index explicito').toBeDefined();
     // O veu e `z-20` e a gaveta `z-30` (Sidebar.jsx). Passar de 20 faz o
     // atalho flutuar POR CIMA do menu aberto, clicavel, em cima dos itens.
-    expect(Number(z), 'o atalho subiu para cima do veu da barra lateral (z-20). '
+    expect(Number(z[1] ?? z[2]), 'o atalho subiu para cima do veu da barra lateral (z-20). '
       + 'Com o menu do celular aberto ele passa a flutuar sobre os itens do '
       + 'menu em vez de escurecer junto.').toBeLessThan(20);
   });

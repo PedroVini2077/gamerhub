@@ -160,7 +160,7 @@ function Sinal({ sinal }) {
       // CSS, e o chip pousaria no canto superior esquerdo sem erro nenhum.
       style={{ animationDelay: atraso, top: y, [lado === 'dir' ? 'right' : 'left']: x }}
     >
-      {/* `[12/09]` O fundo é SÓLIDO, e o `backdrop-blur` saiu junto ─────────
+      {/* `[12/09]` O fundo é SÓLIDO, e o `backdrop-blur-sm` saiu junto ─────────
           Pedido dele: *"o fundo é colorido, e o texto com esse balão vazado não
           dá pra enxergar muito... eles não ocupam muito espaço, então não
           atrapalha"*. Ele está certo, e o erro era meu: 78% de opacidade sobre

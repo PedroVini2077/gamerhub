@@ -70,7 +70,7 @@ export default function Busca() {
             <span className="pl-3 text-gray-500 shrink-0"><Search size={14} /></span>
             <input
               autoFocus
-              className="flex-1 bg-transparent py-2.5 px-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+              className="flex-1 bg-transparent py-2.5 px-3 text-sm text-white placeholder-gray-600 outline-hidden font-body"
               placeholder="Buscar no GamerHub..."
               aria-label="Buscar no GamerHub"
               value={termo}

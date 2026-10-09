@@ -207,7 +207,7 @@ describe('o movimento nasce do produto, e não do catálogo', () => {
 
 describe('o custo e a acessibilidade', () => {
   it('nenhuma sobreposição usa filtro caro sobre a arte', () => {
-    // `blur`/`drop-shadow` animados repintam a cada quadro sobre uma imagem que
+    // `blur-sm`/`drop-shadow-sm` animados repintam a cada quadro sobre uma imagem que
     // ocupa a faixa inteira. É o travamento clássico de celular, e é invisível
     // em máquina de desenvolvimento.
     for (const [nome, caminho] of Object.entries(CENAS)) {
@@ -261,7 +261,7 @@ describe('o custo e a acessibilidade', () => {
     // `[12/09]` Ele viu testando no computador: *"ficou pequeno demais os
     // elementos pra uma tela grande"*.
     //
-    // A causa: `w-[15.5rem]` são 248 pixels FIXOS. O painel ocupava 63% da
+    // A causa: `w-62` são 248 pixels FIXOS. O painel ocupava 63% da
     // largura num telefone de 390 e 17% num monitor de 1440 — ele não encolheu,
     // a tela cresceu em volta dele. E isso piora sozinho: cada monitor novo que
     // aparece no mundo deixa a camada de produto menor, sem ninguém mexer em

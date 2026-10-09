@@ -90,7 +90,7 @@ export default function BannedScreen({ reason, details, onSignOut }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-6 overflow-y-auto"
+      className="fixed inset-0 z-9999 flex items-center justify-center p-6 overflow-y-auto"
       style={{ background: 'rgba(6,6,8,0.97)' }}
     >
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -205,14 +205,14 @@ export default function BannedScreen({ reason, details, onSignOut }) {
               <button
                 onClick={() => { setRecorrendo(false); setMotivo(''); }}
                 disabled={enviando}
-                className="flex-1 py-2.5 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all disabled:opacity-40"
+                className="flex-1 py-2.5 text-xs font-mono text-gray-400 border border-dark-400 rounded-sm hover:bg-dark-700 transition-all disabled:opacity-40"
               >
                 Cancelar
               </button>
               <button
                 onClick={enviar}
                 disabled={enviando || faltam > 0}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-mono font-bold rounded border border-neon-green/30 text-neon-green hover:bg-neon-green/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-mono font-bold rounded-sm border border-neon-green/30 text-neon-green hover:bg-neon-green/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {enviando
                   ? <><Loader2 size={13} className="animate-spin" /> Enviando...</>
@@ -223,7 +223,7 @@ export default function BannedScreen({ reason, details, onSignOut }) {
         ) : pedido === null ? (
           <button
             onClick={() => setRecorrendo(true)}
-            className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-bold rounded border border-neon-green/30 text-neon-green hover:bg-neon-green/10 transition-all"
+            className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-bold rounded-sm border border-neon-green/30 text-neon-green hover:bg-neon-green/10 transition-all"
           >
             <Send size={13} /> Pedir revisão do banimento
           </button>
@@ -241,7 +241,7 @@ export default function BannedScreen({ reason, details, onSignOut }) {
           )}
           <button
             onClick={doSignOut}
-            className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-bold rounded border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
+            className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-bold rounded-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
           >
             <LogOut size={13} /> Sair agora
           </button>

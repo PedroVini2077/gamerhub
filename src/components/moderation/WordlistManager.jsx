@@ -70,7 +70,7 @@ export default function WordlistManager() {
             maxLength={100}
           />
           <select value={severity} onChange={e => setSeverity(e.target.value)}
-            className="bg-dark-700 border border-dark-500 text-xs font-mono text-gray-300 rounded px-2">
+            className="bg-dark-700 border border-dark-500 text-xs font-mono text-gray-300 rounded-sm px-2">
             <option value="low">Baixo</option>
             <option value="medium">Médio</option>
             <option value="high">Alto</option>
@@ -89,7 +89,7 @@ export default function WordlistManager() {
       {/* Lista */}
       {isLoading ? (
         <div className="space-y-2">
-          {[1,2,3].map(i => <div key={i} className="h-10 bg-dark-700 rounded animate-pulse" />)}
+          {[1,2,3].map(i => <div key={i} className="h-10 bg-dark-700 rounded-sm animate-pulse" />)}
         </div>
       ) : words.length === 0 ? (
         <div className="card p-8 text-center">

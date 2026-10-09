@@ -158,6 +158,15 @@ jobs:
       - name: Orçamento de bytes do carregamento
         run: node scripts/orcamento-de-bytes.mjs
 
+      # `[09/10]` ASSET QUE O CSS REFERENCIA E NÃO EXISTE MAIS.
+      #
+      # Em produção isso não vira 404: o rewrite de SPA devolve o `index.html`
+      # com HTTP 200, e o navegador descarta em silêncio — a imagem só não
+      # aparece. Foi o que a migração do Tailwind 4 fez com a moldura da tela
+      # de entrada, e nenhum dos portões existentes viu.
+      - name: CSS não perdeu asset
+        run: node scripts/css-nao-perde-asset.mjs
+
       # `[02/10]` A OUTRA METADE DO CÓDIGO PASSA A SER COMPILADA.
       #
       # O `Build` acima compila `src/`. As Edge Functions são TypeScript e

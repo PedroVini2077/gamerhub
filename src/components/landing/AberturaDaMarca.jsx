@@ -62,7 +62,7 @@ export default function AberturaDaMarca({ onComplete }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-dark-900 overflow-hidden abertura-veu"
+      className="fixed inset-0 z-60 bg-dark-900 overflow-hidden abertura-veu"
       style={variaveisDaAbertura()}
       aria-hidden="true"
     >

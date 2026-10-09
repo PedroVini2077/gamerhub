@@ -73,10 +73,15 @@ describe('a costura entre as cenas', () => {
     //                                    cima da anterior. Fica PIOR que o corte.
     //   máscara sem margem negativa .... a arte dissolve para o vazio, e o corte
     //                                    continua onde estava.
-    // `[1-9]` e não `\d`: `-mt-[0vh]` casaria com o dígito genérico e a trava
+    // `[1-9]` e não `\d`: `mt-0` casaria com o dígito genérico e a trava
     // aprovaria uma costura zerada. Provado reinjetando.
+    //
+    // `[09/10]` DUAS grafias, e o sinal continua obrigatório nas duas. O
+    // codemod do Tailwind 4 trocou `-mt-[9vh]` por `mt-[-9vh]` — mesmo CSS,
+    // outra escrita. O que NÃO se pode é aceitar `mt-\[[1-9]...` solto: isso
+    // passaria a aprovar margem POSITIVA, que é o oposto de costurar.
     expect(
-      /-mt-\[[1-9]\d*vh\]/.test(cena),
+      /(-mt-\[[1-9]\d*vh\]|mt-\[-[1-9]\d*vh\])/.test(cena),
       'A cena costurada perdeu a margem negativa.\n'
       + '  Sem sobreposição no LAYOUT não existe transformação possível: duas\n'
       + '  caixas que apenas se tocam só podem trocar de vez.',
@@ -180,14 +185,17 @@ describe('a ponte do hero para a faixa de destaques', () => {
   it('a faixa INVADE o fim do prólogo', () => {
     const landing = FONTE(LANDING);
     expect(
-      /-mt-\[\d+vh\][^"]*max-w-5xl[\s\S]{0,80}<HighlightsStrip/.test(landing),
+      // `[09/10]` As duas grafias do Tailwind 4 — ver a nota da costura acima.
+      // O sinal continua obrigatório: `mt-[22vh]` sem o menos empurraria a
+      // faixa para BAIXO, que é o corte que esta trava existe para impedir.
+      /(-mt-\[\d+vh\]|mt-\[-\d+vh\])[^"]*max-w-5xl[\s\S]{0,80}<HighlightsStrip/.test(landing),
       'A faixa de destaques voltou a começar depois do prólogo.\n'
       + '  Sem a margem negativa ela aparece num fundo vazio, já depois de o\n'
       + '  hero ter saído — que é exatamente o corte que o dono descreveu:\n'
       + '  "os cards parecem de uma nova página".',
     ).toBe(true);
     expect(
-      /z-20[^"]*-mt-\[/.test(landing),
+      /z-20[^"]*(-mt-\[|mt-\[-)/.test(landing),
       'A faixa perdeu o `z-20`.\n'
       + '  A cena presa do prólogo vem ANTES no fluxo: sem a camada explícita,\n'
       + '  ela fica por cima e as cartas somem atrás dela.',

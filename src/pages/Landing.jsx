@@ -71,7 +71,7 @@ export default function Landing({ introDone = true }) {
 
           O `z-20` é obrigatório: sem ele a cena presa, que vem antes no fluxo,
           ficaria por cima. */}
-      <div className="relative z-20 -mt-[22vh] md:-mt-[26vh] max-w-5xl mx-auto px-4 md:px-6">
+      <div className="relative z-20 mt-[-22vh] md:mt-[-26vh] max-w-5xl mx-auto px-4 md:px-6">
         <HighlightsStrip />
       </div>
 

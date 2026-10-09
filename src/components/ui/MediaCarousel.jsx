@@ -169,7 +169,7 @@ export default function MediaCarousel({ items, postTitle }) {
                     background: i === index ? '#39ff14' : 'rgba(255,255,255,0.4)' }} />
               ))}
             </div>
-            <div className="absolute top-2 right-2 bg-dark-800/80 rounded px-2 py-0.5 z-10">
+            <div className="absolute top-2 right-2 bg-dark-800/80 rounded-sm px-2 py-0.5 z-10">
               <span className="text-xs font-mono text-gray-300">{index + 1}/{items.length}</span>
             </div>
           </>
@@ -181,7 +181,7 @@ export default function MediaCarousel({ items, postTitle }) {
         <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
           {items.map((item, i) => (
             <button key={i} onClick={() => setIndex(i)}
-              className="shrink-0 rounded overflow-hidden border transition-all"
+              className="shrink-0 rounded-sm overflow-hidden border transition-all"
               style={{ width: 48, height: 48,
                 borderColor: i === index ? '#39ff14' : '#2e2e3e',
                 boxShadow: i === index ? '0 0 8px #39ff1440' : 'none' }}>

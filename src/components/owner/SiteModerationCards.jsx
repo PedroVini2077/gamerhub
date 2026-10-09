@@ -37,7 +37,7 @@ export default function SiteModerationCards({ config, setConfig, saveKey, toggle
                 setConfig(c => ({ ...c, [f.key]: String(v) }));
                 saveKey(f.key, v);
               }}
-              className="w-16 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-orange-400/50 focus:outline-none shrink-0"
+              className="w-16 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-center text-gray-200 focus:border-orange-400/50 focus:outline-hidden shrink-0"
             />
           </div>
         ))}
@@ -79,7 +79,7 @@ export default function SiteModerationCards({ config, setConfig, saveKey, toggle
                 setConfig(c => ({ ...c, [f.key]: String(rounded) }));
                 saveKey(f.key, rounded);
               }}
-              className="w-20 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-purple-400/50 focus:outline-none shrink-0"
+              className="w-20 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-center text-gray-200 focus:border-purple-400/50 focus:outline-hidden shrink-0"
             />
           </div>
         ))}

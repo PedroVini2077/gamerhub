@@ -74,7 +74,7 @@ export default function AvisoDeAceite() {
     >
       <FileText size={15} className="text-neon-cyan shrink-0 mt-0.5" />
 
-      <div className="flex-1 min-w-[14rem] space-y-1">
+      <div className="flex-1 min-w-56 space-y-1">
         <p className="text-xs font-mono text-gray-300">
           {primeiroAceite
             ? 'Temos documentos para você ler e aceitar.'

@@ -25,7 +25,7 @@
  */
 
 /** A sobreposição no layout. `z-10` porque a cena de cima vem antes no fluxo. */
-export const CLASSE_DA_COSTURA = '-mt-[9vh] md:-mt-[12vh] z-10';
+export const CLASSE_DA_COSTURA = 'mt-[-9vh] md:mt-[-12vh] z-10';
 
 /**
  * A máscara. O prefixo `-webkit-` não é opcional: sem ele o Safari mostra a

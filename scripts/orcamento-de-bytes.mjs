@@ -236,6 +236,55 @@ if (comprimido / 1024 > TETO_GZIP_KB) {
   falhas.push(`JavaScript inicial comprimido em ${kb(comprimido)} kB, acima do teto de ${TETO_GZIP_KB} kB.`);
 }
 
+// ── `[09/10]` O CSS, que este portão NUNCA tinha medido ─────────────────────
+//
+// Ele lia o `<script type="module">` e os `<link rel="modulepreload">`. A
+// folha de estilo entra por `<link rel="stylesheet">` e ficava de fora — ou
+// seja, **o portão de regressão de desempenho não via o arquivo que bloqueia a
+// pintura**. Nada é desenhado antes de o CSS chegar.
+//
+// Descoberto na migração para o Tailwind 4, que levou o CSS de 15,7 para 19,0
+// kB gzip e passaria verde. É o §1.5 dentro do mecanismo que existe para pegar
+// exatamente isso, e com o agravante de o verde parecer que alguém olhou.
+//
+// O teto é o tamanho de hoje mais folga pequena, como o de JS. **Ao subi-lo,
+// escreva no commit por que o site precisou engordar.**
+const TETO_CSS_GZIP_KB = 20;
+
+function cssInicial(html) {
+  return [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+\.css)"/g)]
+    .map(m => m[1].replace(/^\//, ''));
+}
+
+const folhas = cssInicial(readFileSync(indexHtml, 'utf8'));
+if (folhas.length === 0) {
+  // Mesma regra dos chunks: medir zero byte e aprovar é pior do que falhar.
+  console.error('ERRO: nenhuma folha de estilo encontrada no dist/index.html.');
+  console.error('Ou o build parou de gerar CSS, ou a regex deste script parou de casar.');
+  process.exit(2);
+}
+
+let cssBruto = 0;
+let cssGzip = 0;
+for (const caminho of folhas) {
+  const conteudo = readFileSync(join(DIST, caminho));
+  cssBruto += conteudo.length;
+  cssGzip += gzipSync(conteudo).length;
+}
+
+console.log('CSS, que bloqueia a pintura:');
+console.log(`  ${'TOTAL'.padEnd(46)} ${kb(cssBruto).padStart(8)} kB  ${kb(cssGzip).padStart(8)} kB gzip`);
+console.log(`  ${'teto'.padEnd(46)} ${''.padStart(8)}     ${String(TETO_CSS_GZIP_KB).padStart(8)} kB gzip\n`);
+
+if (cssGzip / 1024 > TETO_CSS_GZIP_KB) {
+  falhas.push(
+    `CSS comprimido em ${kb(cssGzip)} kB, acima do teto de ${TETO_CSS_GZIP_KB} kB.\n`
+    + '    CSS bloqueia a renderização: nada aparece na tela antes de ele chegar.\n'
+    + '    Suspeitos: classe utilitária nova que puxou um bloco inteiro do tema,\n'
+    + '    arquivo em `src/estilos/` que cresceu, ou atualização do Tailwind —\n'
+    + '    foi a do 4 que custou +3,4 kB gzip de uma vez (ver DESEMPENHO.md).');
+}
+
 // ── Teto por arquivo, incluindo os chunks de rota ───────────────────────────
 const todosOsChunks = readdirSync(join(DIST, 'assets')).filter(n => n.endsWith('.js'));
 

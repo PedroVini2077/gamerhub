@@ -127,7 +127,7 @@ export default function CofreDoFundador({ aoAbrir }) {
         )}
 
         <button type="submit" disabled={girando || codigo.length < MINIMO_DO_CODIGO}
-          className="cofre-botao w-full py-2.5 rounded text-sm font-display tracking-widest uppercase flex items-center justify-center gap-2">
+          className="cofre-botao w-full py-2.5 rounded-sm text-sm font-display tracking-widest uppercase flex items-center justify-center gap-2">
           {girando
             ? <><Unlock size={14} /> Abrindo…</>
             : <><Lock size={14} /> {definindo ? 'Criar e abrir' : 'Abrir'}</>}

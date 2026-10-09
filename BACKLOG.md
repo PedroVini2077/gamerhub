@@ -154,7 +154,9 @@ onde cota mora, e nos PRs #284 a #286.
 
 **Depende só de código** (posso tocar sem você):
 
-- 🟠 **Tailwind 4** — é a única saída real do advisory do `braces`, e é migração
+- ~~🟠 **Tailwind 4**~~ — **feito em 09/10.** `npm audit` em zero e `npm ls braces`
+  vazio: a cadeia saiu junto com o motor antigo. O histórico está em
+  `docs/DECISOES-FERRAMENTAL.md` e a medição em `docs/DESEMPENHO.md`. Era migração
   de verdade (o motor de CSS muda). Está na fila abaixo com a conta feita.
 - 🟠 **Contador de tentativas de login** — nunca foi LIGADO. Precisa do
   Password Verification Hook, e o passo a passo pesquisado já está no
@@ -1158,7 +1160,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**53 itens abertos** (+ 1 ideia sem compromisso)
+**52 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1590,34 +1592,6 @@ AGORA** escrito nele.
   **Discord** custa R$0, zero código e já tem moderação de voz pronta. Sala
   nativa só compensa quando o site tiver gente suficiente para que sair dele
   seja o problema — e aí a decisão volta com os três custos acima na mesa.
-
-
-- ⬜ `[02/10]` 🟠 **Migrar para o Tailwind 4 — é a única saída real do
-  `GHSA-vfj7-8cjw-p6xm`.** *Advisory sem conserto, aceito por escrito em
-  02/10.*
-
-  **O problema:** `braces` tem advisory de DoS por exaustão de pilha, e **não
-  existe versão corrigida** — 3.0.3 é a última publicada e o advisory cobre
-  `<=3.0.3`. Ela é transitiva do Tailwind 3:
-
-      tailwindcss → chokidar / fast-glob → micromatch → braces
-
-  O `npm audit fix` oferece Tailwind 4, que **não corrige o braces**: ele
-  remove a cadeia inteira, porque o 4 usa outro motor.
-
-  **O risco hoje é baixo, e isso é medido:** é dependência de build, não vai
-  para o navegador, não processa entrada de usuário, e quem escolhe os nossos
-  globs é o `tailwind.config.js` — exige quem já tem escrita no repositório.
-  Por isso virou exceção escrita em `scripts/advisories-aceitos.mjs`, com
-  motivo, data e esta condição de saída.
-
-  **Por que não foi feito agora:** Tailwind 4 move a configuração para CSS
-  (`@theme`), muda a sintaxe de várias utilidades e toca a folha de estilo
-  inteira. Fazer isso no meio de outra tarefa é trocar um risco teórico de
-  build por um risco real de produto.
-
-  **Quando for feito:** a entrada em `ACEITOS` sai junto — e o portão reprova
-  se ela ficar, porque ele acusa aceito que já não aparece.
 
 
 - ⬜ `[02/10]` 🔵 **Três roteiros E2E ainda têm o login INLINE.** *Dívida que
@@ -2675,8 +2649,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->200<!--/n--> arq ·
-  <!--n:src.lib.linhas-->25.959<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->201<!--/n--> arq ·
+  <!--n:src.lib.linhas-->26.087<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora

@@ -68,8 +68,8 @@ export default function Ranks() {
             <div className="flex gap-3 items-center animate-pulse">
               <div className="w-12 h-12 rounded-full bg-dark-500" />
               <div className="space-y-2 flex-1">
-                <div className="h-3 bg-dark-500 rounded w-1/3" />
-                <div className="h-2 bg-dark-500 rounded w-1/2" />
+                <div className="h-3 bg-dark-500 rounded-sm w-1/3" />
+                <div className="h-2 bg-dark-500 rounded-sm w-1/2" />
               </div>
             </div>
           ) : myRank ? (
@@ -147,7 +147,7 @@ export default function Ranks() {
         <div className="card p-4 space-y-2"
           style={{ borderColor: `${OWNER_RANK.color}40`, boxShadow: `0 0 25px ${OWNER_RANK.glow}` }}>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono px-2 py-0.5 rounded"
+            <span className="text-xs font-mono px-2 py-0.5 rounded-sm"
               style={{ background: `${OWNER_RANK.color}20`, color: OWNER_RANK.color }}>
               TIER EXCLUSIVO
             </span>
@@ -188,7 +188,7 @@ export default function Ranks() {
                       {tier.label}
                     </span>
                     {isCurrentTier && (
-                      <span className="text-xs font-mono px-1.5 py-0.5 rounded"
+                      <span className="text-xs font-mono px-1.5 py-0.5 rounded-sm"
                         style={{ background: `${tier.color}20`, color: tier.color }}>
                         você está aqui
                       </span>
@@ -243,7 +243,7 @@ export default function Ranks() {
                   style={{ color: src.color || '#6b7280' }} />
                 <span className="text-xs font-mono text-gray-300">{src.label}</span>
                 {src.oneTime && (
-                  <span className="text-xs font-mono text-gray-600 bg-dark-600 px-1.5 py-0.5 rounded">
+                  <span className="text-xs font-mono text-gray-600 bg-dark-600 px-1.5 py-0.5 rounded-sm">
                     único
                   </span>
                 )}

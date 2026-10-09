@@ -91,7 +91,7 @@ export default function SobreposicaoDoNews({ lado = 'direita' }) {
           {FONTES.map((f, i) => (
             <motion.span
               key={f.rotulo}
-              className="flex items-center gap-1 rounded-md bg-white/[0.06] px-1.5 py-1 font-mono text-[0.58rem] leading-none"
+              className="flex items-center gap-1 rounded-md bg-white/6 px-1.5 py-1 font-mono text-[0.58rem] leading-none"
               initial={menosMovimento ? false : { opacity: 0, y: -8 }}
               animate={mostrar ? { opacity: 1, y: 0 } : undefined}
               transition={{ duration: 0.4, delay: i * 0.18, ease: [0.16, 1, 0.3, 1] }}
@@ -105,7 +105,7 @@ export default function SobreposicaoDoNews({ lado = 'direita' }) {
         {/* 2. A matéria. As barras são abstratas porque manchete inventada na
             landing é promessa de conteúdo que não existe — e envelheceria. */}
         <motion.div
-          className="space-y-2 rounded-lg border border-white/10 bg-white/[0.04] p-2.5"
+          className="space-y-2 rounded-lg border border-white/10 bg-white/4 p-2.5"
           initial={menosMovimento ? false : { opacity: 0, y: 12 }}
           animate={estado >= 1 ? { opacity: 1, y: 0 } : undefined}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}

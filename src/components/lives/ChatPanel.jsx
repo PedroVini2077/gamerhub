@@ -43,7 +43,7 @@ export default function ChatPanel({
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-gray-300 break-words">{m.message}</span>
+                <span className="text-xs text-gray-300 wrap-break-word">{m.message}</span>
               </div>
               <div className="hidden group-hover:flex items-center gap-1 shrink-0">
                 {canReport && (

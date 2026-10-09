@@ -154,7 +154,7 @@ export function AuthProvider({ children }) {
         //     já tinha disparado: a pessoa via o site por alguns segundos antes
         //     de ser jogada para fora.
         //
-        // Agora a tela sobe na hora, cobrindo tudo (`z-[9999]`), e o `signOut`
+        // Agora a tela sobe na hora, cobrindo tudo (`z-9999`), e o `signOut`
         // acontece quando ELA termina — pelo botão, ou pelo contador. Manter a
         // sessão é o que torna o recurso possível: `solicitar_revisao_do_
         // proprio_ban` exige `authenticated`, e sem sessão não haveria como

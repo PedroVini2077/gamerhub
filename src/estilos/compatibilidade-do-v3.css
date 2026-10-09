@@ -1,0 +1,57 @@
+/* `[09/10]` O QUE O TAILWIND 4 MUDOU NO PADRÃO, e nós desfazemos.
+ *
+ * ── Por que este arquivo existe ───────────────────────────────────────────
+ *
+ * A migração para o Tailwind 4 foi feita por causa de UM advisory sem
+ * conserto (`braces`). Ela não é redesenho: o combinado é que **o site
+ * continua igual** (§7 — mudança aditiva, não mexer em aparência por conta
+ * própria).
+ *
+ * Só que o v4 mudou três padrões do Preflight. Nenhum deles quebra nada:
+ * cada um simplesmente deixa o site um pouco diferente, em silêncio, em
+ * centenas de lugares ao mesmo tempo. É §1.5 em forma de CSS.
+ *
+ * ── Os três, com o número de lugares afetados ─────────────────────────────
+ *
+ * | o que mudou | v3 | v4 | aqui |
+ * | --- | --- | --- | --- |
+ * | cor da borda sem classe | `gray-200` | `currentColor` | **218** `border` nus |
+ * | cursor do `<button>` | mãozinha | seta | **274** botões, só 26 com `cursor-pointer` |
+ * | cor do `placeholder` | `gray-400` | texto a 50% | 9 campos declaram a cor; o resto herdava |
+ *
+ * ── Quando REMOVER este arquivo ───────────────────────────────────────────
+ *
+ * Quando cada um dos três tiver classe explícita no lugar que precisa dele.
+ * Até lá, apagar isto é uma mudança visual em 200+ pontos que nenhum teste
+ * acusa — por isso `tailwind4MantemAAparencia.test.js` reprova a remoção. */
+
+@layer base {
+  /* 1. A BORDA. Este bloco veio do codemod oficial; o comentário é nosso.
+        `var(--color-gray-200, currentcolor)` e não `#e5e7eb` de propósito: se
+        um dia o cinza do tema mudar, a borda acompanha. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* 2. O CURSOR. O v4 passou a seguir o padrão do navegador (`default`) em
+        vez de forçar `pointer`. Num site cheio de ação — moderar, curtir,
+        publicar, abrir painel — a mãozinha é o que diz que aquilo CLICA.
+        Perder isso em 248 botões é regressão de usabilidade, não de estilo. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* 3. O PLACEHOLDER. O v4 usa a cor do texto a 50% de opacidade. Num tema
+        escuro de texto claro isso deixa o placeholder MAIS claro do que o
+        conteúdo real digitado — o oposto do que ele deve comunicar. O v3
+        usava um cinza fixo, e é ele que o site espera. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400, #99a1af);
+  }
+}
