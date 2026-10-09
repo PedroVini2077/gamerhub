@@ -1158,7 +1158,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**58 itens abertos** (+ 1 ideia sem compromisso)
+**53 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -2249,69 +2249,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
   As 3 órfãs de hoje já foram apagadas — eram minhas, do `claudetester`.
 
-- ⬜ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
-  para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
-
-  Apareceu no Security Advisor durante a auditoria das 48:
-  `auth_leaked_password_protection` desligado. O Supabase checaria a senha
-  escolhida contra o HaveIBeenPwned e recusaria as que já vazaram.
-
-  > **`[18/09]` EU ESCREVI ESTE ITEM ERRADO E O DONO QUASE PAGOU POR ISSO.**
-  > A primeira versão era um passo a passo mandando ele abrir o painel e ligar
-  > um toggle. **O toggle não existe no plano Free.** A documentação oficial é
-  > explícita: *"Leaked password protection is available on the **Pro Plan and
-  > above**"* — conferido em 18/09 em
-  > https://supabase.com/docs/guides/auth/password-security
-  >
-  > O item `[22/08]` já dizia isso — *"só no plano Pro (~US$25/mês)"* — e eu
-  > criei um segundo item contradizendo o primeiro, sem conferir nenhum dos
-  > dois. Os dois estão unificados aqui.
-  >
-  > **A falha é exatamente a que o §9.12 descreve:** *"passo a passo sem essa
-  > conferência é armadilha bem formatada"*. E ela veio no mesmo dia em que eu
-  > declarei ao dono que tinha pulado a pesquisa de documentação no prompt das
-  > 48 — ou seja, não foi descuido isolado: foi a mesma omissão, duas vezes.
-
-  **O que o Advisor não diz:** ele marca o recurso como desligado mesmo em
-  projeto que não pode ligá-lo. O alerta é genérico, não é acionável aqui.
-
-  **Custo:** ~US$25/mês (Pro). **Decisão dele.** Enquanto não for, a política
-  de senha do próprio site é o que protege — ver o item `[12/09]` sobre a
-  política do painel de Auth nunca ter sido conferida.
-
-- ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
-  de painel — eu não alcanço.*
-
-  Queixa do dono: *"não tá contando os logins errado"*. **Ele está certo, e
-  medido:** `login_attempts` tem **0 linhas** e `max(updated_at)` é *nunca*. Nos
-  logs do GoTrue das últimas 24 h houve **9 logins** e o único `run_hook`
-  registrado foi o da `send-email` — o de verificação de senha não aparece
-  nenhuma vez.
-
-  **NÃO é "faltou clicar", e eu afirmei isso antes de conferir.** O
-  `Password Verification Attempt` **não existe no plano Free**: a tabela da
-  [documentação de Auth Hooks](https://supabase.com/docs/guides/auth/auth-hooks)
-  o marca como `Teams and Enterprise`, enquanto quatro outros aparecem como
-  `Free, Pro`. O projeto **já sabia** — está num comentário em
-  `src/pages/Login.jsx` desde 28/08 — e eu diagnostiquei pelo banco sem ler o
-  comentário que estava no caminho.
-
-  A função existe, está correta e foi **provada em ROLLBACK** (4 erradas contam,
-  a 5ª bloqueia por 15 min, acertar limpa). Ela simplesmente **nunca é chamada**.
-
-  **A DECISÃO É SUA, e são duas opções honestas:**
-
-  | Opção | O que muda | Custo |
-  | --- | --- | --- |
-  | **A. Tirar a promessa da tela** | a mensagem "Conta bloqueada por excesso de tentativas" sai, e o site deixa de prometer o que não faz. A função e a migration ficam guardadas, prontas para o dia do upgrade | zero |
-  | **B. Subir de plano** | o hook liga e o contador passa a valer | mensalidade do Supabase |
-
-  **O que está fora:** contar do lado do cliente. Foi exatamente a brecha
-  fechada em 28/08 — qualquer um forjava o bloqueio de qualquer e-mail sem
-  saber a senha.
-
-  Enquanto isso, quem protege contra força bruta é o rate limit do próprio
-  GoTrue, que é server-side e não depende desta tela.
 
 - ⬜ `[11/09]` 🟡 **A foto do remetente do e-mail é a letra "G".** *Ação do dono
   — e o caminho não é o que este item dizia até hoje.*
@@ -2487,17 +2424,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   > `comment` (1) — **nenhum `sem_analise`**. Mesma ressalva do item acima:
   > nada foi postado desde 28/08, então o zero é falta de amostra, não prova.
 
-- ⬜ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
-  `hook_de_verificacao_de_senha` está no banco, testada e com `EXECUTE` só para
-  o `supabase_auth_admin` — mas o *Password Verification Attempt hook* aparece
-  cinza no painel: **"Team or Enterprise Plan required"**. O outro caminho
-  também está fechado: `auth.audit_log_entries` está vazia, zero linhas desde
-  sempre. **O que já está resolvido:** ninguém consegue mais fabricar alerta de
-  segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
-  O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
-  decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
-
-
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
@@ -2522,44 +2448,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   Ele respondeu "pode ir" para a Fase 1 + aviso de offline, e esta parte ficou
   explicitamente de fora. Fica registrada para não se perder.
 
-
-- ⬜ `[08/10]` 🟠 **A landing trava no app — e o portão por aparelho do §0.3
-  nunca foi construído.** *🟡 decisão dele: aprovar o portão por MEDIÇÃO.*
-
-  **Confirmado por ele:** *"a maioria é na landing page"*. O feed aguenta. Não
-  é o WebView — é a decoração.
-
-  **O que a investigação DESCARTOU, medindo:**
-
-  | | |
-  | --- | --- |
-  | JavaScript por quadro | `useProgressoDeRolagem` usa `MotionValue`, sem render do React por quadro. O erro que custou 714 ms no `FluxoDeDados` já está registrado no `DESEMPENHO.md` e não se repete |
-  | peso das imagens | 42 arquivos, 3,3 MB, já em variantes responsivas (828 px para celular alto, 1600 para largo) |
-
-  **O que sobra, e eu NÃO consigo medir daqui:** quantas camadas pintam ao
-  mesmo tempo. Depende da GPU do aparelho dele.
-
-  **A proposta, e ela esbarra numa regra do próprio projeto.** O §0.3, regra 2,
-  prevê um portão por aparelho que **nunca existiu**. Mas a regra 6 fecha o
-  caminho óbvio: *"detectar aparelho é medir, não identificar"* — ler modelo e
-  GPU foi RECUSADO por ser impressão digital.
-
-  Então o portão tem de medir **o próprio desenho**: contar quadros perdidos
-  nos primeiros ~1,5 s e, se estiver ruim, cair para a cena **parada** que já
-  existe para `prefers-reduced-motion` (`PrologoParado`, e o caminho "composição
-  parada, não vazia" do `PortalDoAtoZero`). Não é construir uma segunda landing
-  — é religar o que já está lá por outro motivo.
-
-  **A escolha explícita de quem olha VENCE a medição**, sempre (§0.3, regra 2).
-
-  **O risco, dito antes de construir:** medição de quadro no começo erra se o
-  aparelho estiver ocupado abrindo o app — ela acusaria lentidão inexistente e
-  cortaria o enfeite de quem não precisava. Por isso o corte não pode ser
-  permanente nem vencer a escolha de ninguém.
-
-  **As três perguntas para ele:** (1) aprova o portão por medição? (2) o corte
-  vale só na landing ou no site logado também? (3) botão visível para religar
-  os efeitos, ou basta o `prefers-reduced-motion` do sistema?
 
 - ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
   mais.** *Esbarrei nisto ao replicar a política para o app.*
@@ -2627,48 +2515,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   XP depende dele (SEC-028): post apagado deixou de pagar.
 
 
-
-- ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail.** *`[05/09]` O
-  CÓDIGO JÁ ESTÁ PRONTO — o que falta é ação de painel, e ela é do dono.*
-
-  **O que mudou em 05/09.** A função passou a aceitar **dois caminhos**:
-  se `SMTP_HOST` existir ela usa o relay; se não existir, segue no Gmail
-  exatamente como hoje. Mudança aditiva (§7): o caminho feliz de agora não foi
-  tocado, e voltar atrás é **apagar um segredo**.
-
-  Isso torna a migração uma ação de painel — sem deploy, sem coordenar horário,
-  sem mexer em código com o cadastro possivelmente quebrado.
-
-  **O que depende do dono, na ordem:**
-
-  1. criar conta no Brevo e **verificar um remetente**;
-  2. **a pergunta que decide o custo:** o Brevo aceita remetente verificado
-     **sem domínio próprio**? Se sim, custa **R$0**; se exigir domínio, são os
-     ~R$40/ano que ele já recusou uma vez. *Eu não consegui confirmar isso —
-     a documentação deles não abre para leitura automática, e prefiro dizer
-     isso a repetir de memória um número que pode ter mudado.* Ele vê em dois
-     minutos ao criar a conta;
-  3. pegar as credenciais SMTP e colar em **Supabase → Edge Functions →
-     Secrets**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e
-     `SMTP_FROM`. **A senha não passa por aqui** — mesma regra do Turnstile;
-  4. me avisar para eu reimplantar a função e conferir o primeiro envio.
-
-  **Como provamos que funcionou:** um cadastro de teste. Se falhar, a mensagem
-  em `admin_logs` agora diz **qual caminho** estava em uso — antes ela mandaria
-  investigar o provedor errado.
-
-  **O que continua sem prova até lá:** que o e-mail chega, que a senha está
-  certa e que o remetente foi aceito. Nada disso é verificável do repositório;
-  a trava `envioDeEmailTemDoisCaminhos.test.js` só garante que as propriedades
-  do código não sumam.
-
-  > **Por que isto NÃO é urgente por volume, medido em 05/09:** `auth_register`
-  > tem **12 registros na vida do projeto**, o último em 28/08. A cota de ~500/dia
-  > não está perto de estourar. O que mantém o item em 🟠 é outra coisa: se o
-  > Google travar a conta por envio automatizado, **cadastro e recuperação de
-  > senha param em silêncio** — e o site continua de pé, aparentando funcionar.
-
-
 ## 🟢 Recomendado
 
 - ⬜ `[18/09]` 🟢 **A tela de lives diz "1 ao vivo" e "Nenhuma live acontecendo
@@ -2728,7 +2574,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   trocá-la por uma que compare `idx_scan` **entre** índices da mesma tabela (o
   que distingue "ninguém usa este banco" de "ninguém usa este índice"). Enquanto
   não houver tráfego real, nenhuma das duas responde nada.
-
 
 
 - ⬜ `[11/09]` **Medir a landing NOVA em campo — o antes/depois que sobrou.**
@@ -2839,6 +2684,195 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   sugerido: a próxima migration que renomeie ou remova coluna.
 - ⬜ `[21/08]` **2FA no login.**
 - ⬜ `[21/08]` **Afinar detecção de ban** (hoje realtime + poll de 60s de reserva).
+
+## ⏸️ `[09/10]` DESATIVADO — decisão JÁ TOMADA, não é fila
+
+> Pedido dele em 09/10: *"tô quase te pedindo pra criar um outro bloco no
+> backlog de itens desativados, pra esses casos de decisões de custos ou algo
+> assim"*.
+
+**Por que este bloco existe, e a prova de que precisava existir.** Em 17/09 ele
+escreveu, na linha 1182 deste arquivo: *"ligar o contador de tentativas não dá,
+é pago esqueceu?"*. Em 09/10 eu listei o mesmo contador para ele como *"só
+depende de mim"* — depois de reler a fila.
+
+Não foi falta de informação: o item **dizia** que era plano pago, por extenso, e
+com link para a documentação. Foi o lugar. Ele morava numa seção chamada
+*"precisa de ação ou decisão do dono"*, marcado 🟠, e o `inicio-de-sessao.sh`
+imprime todo `- ⬜` com 🔴 ou 🟠 como prioridade da sessão. **O gatilho que
+existe para eu não esquecer os itens era o que me fazia ressuscitar estes.**
+
+**A diferença entre este bloco e a fila, em uma frase:** a fila é o que falta
+decidir; aqui a decisão **já foi tomada**, e reabrir exige ele dizer que mudou
+de ideia — não eu lembrar que existe.
+
+**A marca é `- ⏸️`, não `- ⬜`**, e isso não é estética: as duas máquinas que
+leem este arquivo procuram `^- ⬜`. O contador de itens abertos para de somá-los
+e o gatilho de sessão para de imprimi-los, sem precisar de regra nova nem de eu
+lembrar (§9.8, pergunta 5). A trava `backlogDesativadoNaoRessuscita.test.js`
+reprova quem escrever `- ⬜` aqui dentro.
+
+**O que NÃO muda:** nada foi apagado. Cada item continua inteiro, com a
+medição, o custo e o que o desbloquearia. Item que some em silêncio é o oposto
+do que este arquivo serve.
+
+### Por CUSTO — plano pago ou assinatura
+
+- ⏸️ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
+  de painel — eu não alcanço.*
+
+  Queixa do dono: *"não tá contando os logins errado"*. **Ele está certo, e
+  medido:** `login_attempts` tem **0 linhas** e `max(updated_at)` é *nunca*. Nos
+  logs do GoTrue das últimas 24 h houve **9 logins** e o único `run_hook`
+  registrado foi o da `send-email` — o de verificação de senha não aparece
+  nenhuma vez.
+
+  **NÃO é "faltou clicar", e eu afirmei isso antes de conferir.** O
+  `Password Verification Attempt` **não existe no plano Free**: a tabela da
+  [documentação de Auth Hooks](https://supabase.com/docs/guides/auth/auth-hooks)
+  o marca como `Teams and Enterprise`, enquanto quatro outros aparecem como
+  `Free, Pro`. O projeto **já sabia** — está num comentário em
+  `src/pages/Login.jsx` desde 28/08 — e eu diagnostiquei pelo banco sem ler o
+  comentário que estava no caminho.
+
+  A função existe, está correta e foi **provada em ROLLBACK** (4 erradas contam,
+  a 5ª bloqueia por 15 min, acertar limpa). Ela simplesmente **nunca é chamada**.
+
+  **A DECISÃO É SUA, e são duas opções honestas:**
+
+  | Opção | O que muda | Custo |
+  | --- | --- | --- |
+  | **A. Tirar a promessa da tela** | a mensagem "Conta bloqueada por excesso de tentativas" sai, e o site deixa de prometer o que não faz. A função e a migration ficam guardadas, prontas para o dia do upgrade | zero |
+  | **B. Subir de plano** | o hook liga e o contador passa a valer | mensalidade do Supabase |
+
+  **O que está fora:** contar do lado do cliente. Foi exatamente a brecha
+  fechada em 28/08 — qualquer um forjava o bloqueio de qualquer e-mail sem
+  saber a senha.
+
+  Enquanto isso, quem protege contra força bruta é o rate limit do próprio
+  GoTrue, que é server-side e não depende desta tela.
+
+- ⏸️ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
+  `hook_de_verificacao_de_senha` está no banco, testada e com `EXECUTE` só para
+  o `supabase_auth_admin` — mas o *Password Verification Attempt hook* aparece
+  cinza no painel: **"Team or Enterprise Plan required"**. O outro caminho
+  também está fechado: `auth.audit_log_entries` está vazia, zero linhas desde
+  sempre. **O que já está resolvido:** ninguém consegue mais fabricar alerta de
+  segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
+  O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
+  decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
+
+- ⏸️ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
+  para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
+
+  Apareceu no Security Advisor durante a auditoria das 48:
+  `auth_leaked_password_protection` desligado. O Supabase checaria a senha
+  escolhida contra o HaveIBeenPwned e recusaria as que já vazaram.
+
+  > **`[18/09]` EU ESCREVI ESTE ITEM ERRADO E O DONO QUASE PAGOU POR ISSO.**
+  > A primeira versão era um passo a passo mandando ele abrir o painel e ligar
+  > um toggle. **O toggle não existe no plano Free.** A documentação oficial é
+  > explícita: *"Leaked password protection is available on the **Pro Plan and
+  > above**"* — conferido em 18/09 em
+  > https://supabase.com/docs/guides/auth/password-security
+  >
+  > O item `[22/08]` já dizia isso — *"só no plano Pro (~US$25/mês)"* — e eu
+  > criei um segundo item contradizendo o primeiro, sem conferir nenhum dos
+  > dois. Os dois estão unificados aqui.
+  >
+  > **A falha é exatamente a que o §9.12 descreve:** *"passo a passo sem essa
+  > conferência é armadilha bem formatada"*. E ela veio no mesmo dia em que eu
+  > declarei ao dono que tinha pulado a pesquisa de documentação no prompt das
+  > 48 — ou seja, não foi descuido isolado: foi a mesma omissão, duas vezes.
+
+  **O que o Advisor não diz:** ele marca o recurso como desligado mesmo em
+  projeto que não pode ligá-lo. O alerta é genérico, não é acionável aqui.
+
+  **Custo:** ~US$25/mês (Pro). **Decisão dele.** Enquanto não for, a política
+  de senha do próprio site é o que protege — ver o item `[12/09]` sobre a
+  política do painel de Auth nunca ter sido conferida.
+
+- ⏸️ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail.** *`[05/09]` O
+  CÓDIGO JÁ ESTÁ PRONTO — o que falta é ação de painel, e ela é do dono.*
+
+  **O que mudou em 05/09.** A função passou a aceitar **dois caminhos**:
+  se `SMTP_HOST` existir ela usa o relay; se não existir, segue no Gmail
+  exatamente como hoje. Mudança aditiva (§7): o caminho feliz de agora não foi
+  tocado, e voltar atrás é **apagar um segredo**.
+
+  Isso torna a migração uma ação de painel — sem deploy, sem coordenar horário,
+  sem mexer em código com o cadastro possivelmente quebrado.
+
+  **O que depende do dono, na ordem:**
+
+  1. criar conta no Brevo e **verificar um remetente**;
+  2. **a pergunta que decide o custo:** o Brevo aceita remetente verificado
+     **sem domínio próprio**? Se sim, custa **R$0**; se exigir domínio, são os
+     ~R$40/ano que ele já recusou uma vez. *Eu não consegui confirmar isso —
+     a documentação deles não abre para leitura automática, e prefiro dizer
+     isso a repetir de memória um número que pode ter mudado.* Ele vê em dois
+     minutos ao criar a conta;
+  3. pegar as credenciais SMTP e colar em **Supabase → Edge Functions →
+     Secrets**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e
+     `SMTP_FROM`. **A senha não passa por aqui** — mesma regra do Turnstile;
+  4. me avisar para eu reimplantar a função e conferir o primeiro envio.
+
+  **Como provamos que funcionou:** um cadastro de teste. Se falhar, a mensagem
+  em `admin_logs` agora diz **qual caminho** estava em uso — antes ela mandaria
+  investigar o provedor errado.
+
+  **O que continua sem prova até lá:** que o e-mail chega, que a senha está
+  certa e que o remetente foi aceito. Nada disso é verificável do repositório;
+  a trava `envioDeEmailTemDoisCaminhos.test.js` só garante que as propriedades
+  do código não sumam.
+
+  > **Por que isto NÃO é urgente por volume, medido em 05/09:** `auth_register`
+  > tem **12 registros na vida do projeto**, o último em 28/08. A cota de ~500/dia
+  > não está perto de estourar. O que mantém o item em 🟠 é outra coisa: se o
+  > Google travar a conta por envio automatizado, **cadastro e recuperação de
+  > senha param em silêncio** — e o site continua de pé, aparentando funcionar.
+
+
+### PAUSADO por ele — não é custo, é prioridade
+
+- ⏸️ `[08/10]` 🟠 **A landing trava no app — e o portão por aparelho do §0.3
+  nunca foi construído.** *🟡 decisão dele: aprovar o portão por MEDIÇÃO.*
+
+  **Confirmado por ele:** *"a maioria é na landing page"*. O feed aguenta. Não
+  é o WebView — é a decoração.
+
+  **O que a investigação DESCARTOU, medindo:**
+
+  | | |
+  | --- | --- |
+  | JavaScript por quadro | `useProgressoDeRolagem` usa `MotionValue`, sem render do React por quadro. O erro que custou 714 ms no `FluxoDeDados` já está registrado no `DESEMPENHO.md` e não se repete |
+  | peso das imagens | 42 arquivos, 3,3 MB, já em variantes responsivas (828 px para celular alto, 1600 para largo) |
+
+  **O que sobra, e eu NÃO consigo medir daqui:** quantas camadas pintam ao
+  mesmo tempo. Depende da GPU do aparelho dele.
+
+  **A proposta, e ela esbarra numa regra do próprio projeto.** O §0.3, regra 2,
+  prevê um portão por aparelho que **nunca existiu**. Mas a regra 6 fecha o
+  caminho óbvio: *"detectar aparelho é medir, não identificar"* — ler modelo e
+  GPU foi RECUSADO por ser impressão digital.
+
+  Então o portão tem de medir **o próprio desenho**: contar quadros perdidos
+  nos primeiros ~1,5 s e, se estiver ruim, cair para a cena **parada** que já
+  existe para `prefers-reduced-motion` (`PrologoParado`, e o caminho "composição
+  parada, não vazia" do `PortalDoAtoZero`). Não é construir uma segunda landing
+  — é religar o que já está lá por outro motivo.
+
+  **A escolha explícita de quem olha VENCE a medição**, sempre (§0.3, regra 2).
+
+  **O risco, dito antes de construir:** medição de quadro no começo erra se o
+  aparelho estiver ocupado abrindo o app — ela acusaria lentidão inexistente e
+  cortaria o enfeite de quem não precisava. Por isso o corte não pode ser
+  permanente nem vencer a escolha de ninguém.
+
+  **As três perguntas para ele:** (1) aprova o portão por medição? (2) o corte
+  vale só na landing ou no site logado também? (3) botão visível para religar
+  os efeitos, ou basta o `prefers-reduced-motion` do sistema?
+
 
 ## 💡 Ideias registradas, sem compromisso
 

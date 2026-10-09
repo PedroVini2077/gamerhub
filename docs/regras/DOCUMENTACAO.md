@@ -56,7 +56,7 @@ um lugar onde as coisas **entram e nunca saem**.
 | `docs/regras/MECANISMOS.md` | **`[24/09]`** O **inventário dos portões e robôs** que rodam sozinhos, e — igualmente importante — o que eles **não** verificam | A descrição de cada trava por dentro, que é `TRAVAS.md` |
 | `docs/regras/EXECUCAO.md` | **Como executar** (`[03/09]`): sequência antes de mexer em arquivo, classificação da tarefa, território como recorte de contexto, e o que fazer ao perder o fio | Regra sobre o produto |
 | `supabase/*/README.md` | Como publicar Edge Function e versionar migration | Comportamento do site |
-| `BACKLOG.md` | **DOIS trabalhos** (`[03/09]`): a fila do que falta, e a seção **EM EXECUÇÃO**, que é a memória operacional da tarefa em curso | Decisão, histórico, item já feito, pensamento solto |
+| `BACKLOG.md` | **TRÊS trabalhos** (`[09/10]`): a fila do que falta, a seção **EM EXECUÇÃO** (memória operacional da tarefa em curso) e o bloco **DESATIVADO**, onde a decisão já foi tomada | Decisão de produto, histórico, item já feito, pensamento solto |
 | `db/AAAA-MM-DD-*.md` | Relatório de auditoria: o que foi achado e como foi provado. **Retrato de um dia — deve envelhecer**, e o varredor o ignora de propósito | Estado atual do sistema |
 
 > **`[02/09]` Esta tabela listava 11 dos <!--n:docs.arquivos-->59<!--/n-->
@@ -79,6 +79,23 @@ um lugar onde as coisas **entram e nunca saem**.
 4. **Decisão não é backlog.** Se a resposta é "não vamos fazer isso, porque…",
    vai para `docs/DECISOES.md` com data. É o que impede a mesma discussão de
    voltar em dois meses e alguém "consertar" uma decisão proposital.
+
+   > **`[09/10]` A exceção, e ela tem bloco próprio: o item que não foi
+   > recusado — foi DESLIGADO.** *"Não vamos fazer isso"* é decisão e vai para
+   > o `DECISOES.md`. *"Faríamos, se não custasse US$25/mês"* é outra coisa: o
+   > item continua válido, continua querido, e só não cabe agora. Ele não é
+   > fila — oferecê-lo é fazer o dono repetir um "não" que ele já deu — e não é
+   > decisão, porque não houve escolha de desenho nenhuma.
+   >
+   > Por isso o bloco **DESATIVADO** do `BACKLOG.md`, com a marca `- ⏸️` em vez
+   > de `- ⬜`. **A marca é o mecanismo**, não o enfeite: o contador de abertos
+   > e o `inicio-de-sessao.sh` procuram `^- ⬜`, então a troca desliga os dois
+   > de uma vez. Trava: `backlogDesativadoNaoRessuscita.test.js`.
+   >
+   > *Isto nasceu de uma falha minha, registrada no próprio bloco: em 17/09 ele
+   > escreveu que o contador de login é plano pago, e em 09/10 eu o ofereci como
+   > "só depende de mim". O item dizia a verdade; o lugar dele é que o
+   > imprimia como prioridade toda sessão.*
 5. **Seção passou de ~150 linhas? Vira arquivo próprio.** Mesma lógica do
    split de código (§4): documento gigante é onde a informação desatualizada se
    esconde. Ao criar o arquivo, acrescentar na tabela do `README.md` — arquivo
@@ -292,7 +309,7 @@ Nenhum portão responde *"este parágrafo em português ainda é verdade?"*. Fin
 que responde seria pior do que não ter portão (§6.3).
 
 O que mudou é o **custo** dessa leitura. Mandar reler
-<!--n:docs.linhas-->31.663<!--/n--> linhas por precaução a cada sessão consome
+<!--n:docs.linhas-->31.715<!--/n--> linhas por precaução a cada sessão consome
 contexto que deveria ir para o trabalho (§0.1) — e regra cara demais é regra que
 deixa de ser cumprida, que é como a camada 3 falhou quatro vezes. `npm run docs`
 cruza o que a sessão mexeu com o mapa de territórios e devolve **quais** abrir e
