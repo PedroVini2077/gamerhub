@@ -1774,3 +1774,65 @@ igual?"*.
 
 A classe virou portão (`scripts/css-nao-perde-asset.mjs`), mas o print
 continua sendo o que acha o que ninguém pensou em travar.
+
+---
+
+## ⚠️ `[09/10]` A marca do hero saiu do lugar no celular — e a culpa é da MINHA comparação de print
+
+O Tailwind 4 foi para produção e **ele viu primeiro**: *"o que a logo tá torta
+na landing?"*, com print do celular.
+
+### O mecanismo, medido no CSS gerado
+
+A marca é ancorada por `left`/`top` no ponto onde o **centro** dela deve ficar,
+e recuava metade de si mesma. Até o Tailwind 3 isso convivia com o desvio do
+ponteiro porque eram **propriedades diferentes**:
+
+```
+centragem (Tailwind 3) ...  transform: translate(-50%, -50%)
+ponteiro (nosso CSS) .....  translate: <x> <y>
+```
+
+O v4 passou a escrever as utilitárias na propriedade individual:
+
+```css
+.-translate-x-1\/2 { translate: var(--tw-translate-x) var(--tw-translate-y) }
+```
+
+As duas passaram a disputar a mesma propriedade, a nossa regra ganhou por vir
+depois no `index.css`, e **a centragem deixou de existir**.
+
+### O estrago, em números (390 px de largura)
+
+| | com o bug | consertado |
+| --- | --- | --- |
+| borda esquerda da marca | 195 | **70** |
+| centro da marca | 320 | **195** |
+| âncora | 195 | 195 |
+
+A marca tem `min(64vmin, 460px)` — **250 px** num celular de 390. Com o centro
+em 320, **55 px dela ficavam fora da tela**.
+
+### Por que a minha comparação de print não pegou
+
+Eu comparei v3 × v4 lado a lado e dei a migração por boa. **A comparação foi em
+1.280 px.** No desktop a marca é um detalhe no fundo e o deslocamento some; no
+celular ela ocupa 64% da menor dimensão.
+
+**A lição corrige a que eu escrevi ontem.** Ali eu disse que o print lado a
+lado *"é a única medição que responde se o site continua igual"*. Continua
+verdade — e incompleto: **print de UMA largura responde por UMA largura**. Uma
+peça dimensionada em `vmin` muda de papel entre os dois tamanhos, e foi
+exatamente a que quebrou.
+
+A partir daqui, comparação de print de mudança global de estilo vai em **duas
+larguras**: 390 e 1.280.
+
+### A trava
+
+`transformDoCssNaoBrigaComTailwind.test.js`, e ela pergunta pela **classe**:
+existe alguma classe nossa que escreve `translate`/`rotate`/`scale` e é usada
+junto de uma utilitária do Tailwind que escreve o mesmo? **Duas das três
+checagens nasceram decoração** e só a reinjeção mostrou — uma pedia `-50%` uma
+vez só (passava com o bug em um eixo), e a outra ancorava no primeiro
+`prefers-reduced-motion` do arquivo, que vem antes da regra certa.

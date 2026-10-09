@@ -84,8 +84,11 @@ export default function MarcaFlutuante({
   return (
     <div
       ref={caixa}
+      // `[09/10]` SEM `-translate-x-1/2 -translate-y-1/2` aqui, de propósito: no
+      // Tailwind 4 essas classes escrevem na propriedade `translate`, a mesma
+      // que `.marca-flutuante-ponteiro` usa para o desvio do ponteiro — uma
+      // apagava a outra. A centragem passou a ser parte do `calc` no CSS.
       className={`marca-flutuante-ponteiro pointer-events-none absolute
-                  -translate-x-1/2 -translate-y-1/2
                   ${naTela ? '' : 'marca-flutuante-parada'} ${className}`}
       style={{
         left: CENTRO_DA_MARCA.x,

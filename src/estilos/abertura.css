@@ -152,10 +152,35 @@
  * JavaScript. No mesmo elemento, a animação ganharia da variável e o ponteiro
  * deixaria de funcionar — animação sempre vence. Aninhar é o que deixa os dois
  * movimentos se somarem. */
+/* ── `[09/10]` A CENTRAGEM MORA AQUI, e isso não é estilo: é conserto ───────
+ *
+ * Este elemento é ancorado pelo `left`/`top` no ponto onde a marca deve ficar,
+ * e precisa recuar metade de si mesmo para o ponto cair no CENTRO dela. Até o
+ * Tailwind 3 isso vinha das classes `-translate-x-1/2 -translate-y-1/2`, e as
+ * duas coisas conviviam porque **eram propriedades diferentes**:
+ *
+ *     a centragem do Tailwind 3 ....  transform: translate(-50%, -50%)
+ *     o desvio do ponteiro .........  translate: <x> <y>
+ *
+ * **O Tailwind 4 passou a escrever as utilitárias na propriedade `translate`.**
+ * Medido no CSS gerado:
+ *
+ *     .-translate-x-1\/2 { translate: var(--tw-translate-x) var(--tw-translate-y) }
+ *
+ * As duas passaram a disputar a MESMA propriedade, esta regra ganhou por vir
+ * depois, e a centragem simplesmente deixou de existir: a marca saiu meio
+ * tamanho para a direita e para baixo. Medido em 390 px: a caixa começava em
+ * `x=195` — o centro da tela — em vez de `x=126`.
+ *
+ * Por isso o recuo virou parte do `calc`. Uma propriedade, uma fonte, e a
+ * transição continua valendo sobre ela. Trava:
+ * `transformDoCssNaoBrigaComTailwind.test.js`. */
 .marca-flutuante-ponteiro {
   /* `var(..., 0)` obrigatório: no celular ninguém escreve estas variáveis, e
    * sem o padrão o `calc` inteiro morre e a marca não aparece. */
-  translate: calc(var(--ponteiro-x, 0) * 26px) calc(var(--ponteiro-y, 0) * 18px);
+  translate:
+    calc(-50% + var(--ponteiro-x, 0) * 26px)
+    calc(-50% + var(--ponteiro-y, 0) * 18px);
   transition: translate 620ms cubic-bezier(0.2, 0, 0.2, 1);
   will-change: translate;
 }
@@ -222,5 +247,9 @@
   .marca-flutuante-deriva,
   .marca-flutuante-respiro,
   .marca-flutuante-brilho { animation: none; }
-  .marca-flutuante-ponteiro { translate: none; transition: none; }
+  /* `[09/10]` `-50% -50%` e NÃO `none`: a centragem vive nesta propriedade
+   * desde que o Tailwind 4 passou a disputá-la. `none` tiraria o movimento
+   * **e** o recuo, e a marca sairia do lugar justamente para quem pediu menos
+   * movimento — o contrário do que esta regra existe para fazer. */
+  .marca-flutuante-ponteiro { translate: -50% -50%; transition: none; }
 }
