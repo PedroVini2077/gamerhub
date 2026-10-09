@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Trash2, Heart, Flag, EyeOff } from 'lucide-react';
+import TextoFormatado from '../ui/TextoFormatado';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { useRole } from '../../hooks/useRole';
@@ -136,8 +137,21 @@ export default function MuralCard({ item, onDelete }) {
             </Link>
             <span className="text-xs text-gray-600 font-mono shrink-0">{timeAgo(item.created_at)}</span>
           </div>
+          {/* `[09/10]` O mural era o ÚLTIMO lugar que desenhava texto puro:
+              post, comentário e News já passavam pelo `TextoFormatado`. Quem
+              escrevesse `**oi**` aqui via os asteriscos na tela.
+
+              `separador={false}`, igual ao comentário e pelo mesmo motivo:
+              recado curto não tem seções, e uma régua horizontal ali sugere
+              uma estrutura que a mensagem não tem.
+
+              **O que isto NÃO faz, e é decisão dele:** o formulário continua
+              um `<textarea>` simples, sem a barra do editor. Renderizar o que
+              alguém escreveu à mão é uma coisa; OFERECER cor e tamanho no
+              mural é outra, e muda o tom do lugar. Está no `BACKLOG.md`. */}
           {item.message && (
-            <p className="text-sm text-gray-300 leading-relaxed wrap-break-word whitespace-pre-wrap">{item.message}</p>
+            <TextoFormatado texto={item.message} separador={false}
+              className="text-sm text-gray-300 leading-relaxed wrap-break-word" />
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">

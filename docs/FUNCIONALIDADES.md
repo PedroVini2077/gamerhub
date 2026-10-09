@@ -1099,6 +1099,26 @@ marcador vai virar algo.
 - Modal de exclusão com confirmação; contador de mensagens no cabeçalho.
 - Em tempo real (Supabase Realtime). Banidos não postam (RLS).
 
+#### `[09/10]` O mural era o último lugar com texto CRU
+
+Post, comentário e News passam pelo `TextoFormatado` desde 25/09. O mural
+continuava desenhando `{item.message}` dentro de um `<p>`: quem escrevesse
+`**oi**` via os dois asteriscos na tela.
+
+Agora ele formata, com o **mesmo corte do comentário** — `separador={false}`,
+porque régua horizontal atravessando um recado de duas frases sugere uma
+estrutura que ele não tem.
+
+**O que isto NÃO fez, e é decisão dele:** o formulário continua um `<textarea>`
+simples, **sem a barra do editor**. Desenhar o que alguém escreveu à mão é uma
+coisa; *oferecer* cor e tamanho no mural é outra, e muda o tom de um lugar de
+recado curto. Está no `BACKLOG.md` esperando a palavra dele.
+
+> Trava: `textoDeGenteNaoVaiCru.test.js`. Ela nomeia as superfícies de **corpo**
+> e carrega a exceção escrita — o `CartaoDeNoticia` recusa o formatador de
+> propósito, porque o `resumo` é texto puro da equipe e um asterisco solto
+> viraria itálico sem ninguém pedir.
+
 ### Lives + chat em tempo real
 
 A aba `Lives` exibe duas categorias de conteúdo lado a lado via **sub-tabs**:
@@ -1108,6 +1128,32 @@ A aba `Lives` exibe duas categorias de conteúdo lado a lado via **sub-tabs**:
 - **Gameplays** — `live_kind = 'gameplay'`.
 - **Reacts** — `live_kind = 'react'`.
 - **Outros** — `live_kind = 'outro'` (com label livre definido pelo autor).
+
+#### `[09/10]` A aba vazia parou de falar pelo site inteiro
+
+Com uma live no ar e a tela recém-carregada, três coisas apareciam juntas:
+
+| onde | o que dizia |
+| --- | --- |
+| cabeçalho | **1 ao vivo** |
+| aba *Gameplays* | **(1)** |
+| o miolo | *"Nenhuma live acontecendo agora — volte mais tarde!"* |
+
+**Nada disso era erro de dado.** O "Ficar ao vivo" sempre define um
+`live_kind` (padrão `gameplay`), e a aba padrão é *Da comunidade*, que casa
+justamente com quem **não** tem `live_kind`. Quem acabava de transmitir caía
+numa aba dizendo que não havia nada — com a própria live contada ao lado.
+
+**O conserto é de leitura, não de estrutura.** Separar live de jogador de live
+da comunidade é deliberado e continua. O que mudou é o texto: ele afirmava
+sobre o **site** o que só sabia sobre a **aba**.
+
+Hoje o vazio diz *"Nenhuma live nesta aba"*, informa quantas há no ar, e
+oferece **Ver onde estão** — que troca para a aba que tem. Sem live nenhuma no
+site, a frase antiga volta, porque aí ela é verdade.
+
+> Foi o **E2E** que achou, não leitura de código: cada pedaço estava certo
+> sozinho. Trava: `vazioDaAbaNaoMenteSobreOSite.test.jsx`.
 
 **Lives de jogadores** (`LiveGoModal`):
 - Botão "Ficar ao vivo" na aba Lives abre um modal `createPortal`.

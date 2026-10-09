@@ -347,6 +347,9 @@ que as seções 1–6, e está aqui **declarado** em vez de disfarçado de compl
 | `orcamentoVeOCss.test.js` | o orçamento de bytes enxerga o CSS | — |
 | `regrasCarregadas.test.js` | CLAUDE.md — as regras continuam sendo carregadas | — |
 | `transformDoCssNaoBrigaComTailwind.test.js` | classe nossa e utilitária do Tailwind disputando `translate`/`rotate`/`scale` — a marca do hero saiu 55 px da tela no celular | — |
+| `vazioDaAbaNaoMenteSobreOSite.test.jsx` | o vazio de uma aba afirmando sobre o SITE o que só sabe da ABA — "1 ao vivo" no cabeçalho e "nenhuma live acontecendo" no miolo, juntos. *(Não usa `readFileSync`, então o portão de completude não a exige: ela exercita o componente. Está aqui porque protege um invariante de leitura.)* | — |
+| `falhaDoVitestEhLegivelDeFora.test.js` | falha de teste unitário no CI devolvendo só `exit code 1` — o log vive em outro host e a API não o alcança | — |
+| `textoDeGenteNaoVaiCru.test.js` | superfície de CORPO desenhando texto de usuário sem o `TextoFormatado` — o mural era a última, e quem escrevesse `**oi**` via os asteriscos | — |
 
 **8 que leem a ESTEIRA (CI, scripts, package.json)**
 
