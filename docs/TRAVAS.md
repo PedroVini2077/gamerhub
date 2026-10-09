@@ -267,12 +267,118 @@ coberto?".
 
 ---
 
+## 7 · ⚠️ `[09/10]` AS 42 QUE FALTAVAM — e por que o inventário não percebeu
+
+Medido hoje, com o mesmo critério das seções acima: **113 arquivos de teste
+leem algum arquivo do projeto** (é isso que separa trava de teste comum), e o
+inventário nomeava **71**. Cobertura real: **63%**.
+
+### A causa, e ela está escrita no fim deste arquivo
+
+O fecho dizia: *"este arquivo é vigiado pelos portões que já existem"*.
+
+**Vigilância de mão única.** O `documentacao-quebrada.mjs` confere se todo
+caminho CITADO aqui existe. Nenhum portão conferia o contrário — se toda trava
+que EXISTE está citada aqui. Então o inventário envelheceu do único jeito que
+nada acusava: por omissão.
+
+É a mesma falha que o dono apontou sobre a tabela da política de privacidade,
+e que o `CLAUDE.md` §6.3 registra sobre a própria tabela de mecanismos — *lista
+que se apresenta como o inventário e não é deixa de ser verdade para quem a
+lê*. Inclusive para mim, na sessão em que eu for procurar se já existe trava
+para alguma coisa.
+
+**Agora existe o portão da outra direção:**
+`inventarioDeTravasEstaCompleto.test.js`.
+
+### O que estas linhas são, e o que NÃO são
+
+A coluna "o que ela prova" é o `describe()` de cada arquivo, **extraído do
+código**, não redigido agora — o mesmo princípio do §1.4: a fonte que executa
+vence a memória. A natureza vem do que cada uma LÊ, que é critério mensurável:
+
+| lê | natureza |
+| --- | --- |
+| `supabase/migrations` | trava de invariante |
+| `src/` | trava de contrato |
+| `.github/workflows`, `scripts/`, `package.json` | trava da esteira |
+
+**O que falta, dito com todas as letras:** as travas desta seção ainda não
+foram relidas uma a uma para ganhar `INV-*` próprio — as que já citam um
+invariante no código o trazem; o resto aparece com `—`. Isso é menos preciso
+que as seções 1–6, e está aqui **declarado** em vez de disfarçado de completo.
+
+**34 que leem o `src/`**
+
+| Trava | O que ela prova | Invariante |
+| --- | --- | --- |
+| `telaDePausa.test.js` | a tela de pausa mostra o motivo que o dono escreveu | — |
+| `assuntosDeContato.test.js` | assuntos do contato | — |
+| `secoesDaLanding.test.js` | as seções declaradas existem na página | — |
+| `useAuth.test.js` | useAuth — os dois logouts | — |
+| `usePostComposer.test.js` | usePostComposer — ciclo de vida das prévias | — |
+| `useVigiaDeBanimento.test.js` | useVigiaDeBanimento | — |
+| `abertura.test.js` | o tempo da abertura | — |
+| `animacaoComAtraso.test.js` | animação com atraso não pode nascer acesa | — |
+| `cenasVivas.test.js` | a varredura não pode ficar vazia | — |
+| `continuidadeDaLanding.test.js` | o fundo da landing | — |
+| `conviteDeInstalacaoNaoInsiste.test.js` | o convite de instalação não insiste nem chega tarde | — |
+| `cspDoAppSegueADaWeb.test.js` | a política de conteúdo do app segue a da web | — |
+| `dadosEstruturados.test.js` | dados estruturados | — |
+| `deployPendenteNaoEhAfrouxamento.test.js` | deploy pendente não é afrouxamento | — |
+| `entradaDeInstalacaoNaoSome.test.js` | a entrada de instalação não some nem chuta | — |
+| `envioDeEmailTemDoisCaminhos.test.js` | o envio de e-mail mantém as propriedades que seguram o cadastro | — |
+| `errosDeAuth.test.js` | erros de autenticação | — |
+| `metaDaPagina.test.js` | meta por página | — |
+| `moderacaoDeImagem.test.js` | moderate-image — uma imagem por requisição da OpenAI | — |
+| `moderacaoDeMidia.test.js` | todo caminho que modera imagem também modera vídeo | — |
+| `ocultarTemInversa.test.js` | ocultar tem inversa alcançável pela tela | — |
+| `prologo.test.js` | o roteiro dos atos | — |
+| `relatoDeFalhaDeVideo.test.js` | relato de falha de vídeo — navegador × moderate-image | — |
+| `robotsSitemapLlms.test.js` | robots.txt, sitemap.xml e llms.txt | — |
+| `rotasComSom.test.js` | rotas com som ambiente | — |
+| `rotasE2E.test.js` | rotas exercitadas pelos testes de navegador | — |
+| `semPromessaDeBloqueio.test.js` | a tela de entrada não promete bloqueio por tentativas | — |
+| `sinaisDoAtoZero.test.js` | os sinais de vida do ATO 0 | — |
+| `tailwind4MantemAAparencia.test.js` | o Tailwind 4 não mudou a aparência do site | — |
+| `tiposDeConteudo.test.js` | tipos de conteúdo — o contrato entre quem produz e quem modera | — |
+| `modosDoLogin.test.js` | todo modo da tela de entrada tem frase própria | — |
+| `edgeFunctionsParseiam.test.js` | as Edge Functions são código válido | — |
+| `orcamentoVeOCss.test.js` | o orçamento de bytes enxerga o CSS | — |
+| `regrasCarregadas.test.js` | CLAUDE.md — as regras continuam sendo carregadas | — |
+
+**8 que leem a ESTEIRA (CI, scripts, package.json)**
+
+| Trava | O que ela prova | Invariante |
+| --- | --- | --- |
+| `cenasDaLanding.test.js` | as artes das cenas | — |
+| `marca.test.js` | a marca | — |
+| `servicoDeCacheNaoPrendeNaVersaoVelha.test.js` | o service worker não prende ninguém na versão velha | — |
+| `advisoriesAceitosTemMotivo.test.js` | exceção de advisory é decisão escrita | — |
+| `backlogDesativadoNaoRessuscita.test.js` | o bloco de itens desativados não ressuscita sozinho | — |
+| `cssNaoPerdeAsset.test.js` | o CSS não perde asset no caminho para o pacote | — |
+| `documentacaoQuebrada.test.js` | portão de documentação quebrada | — |
+| `segredosVazados.test.js` | o portão de segredos — senha em texto | — |
+---
+
 ## Como manter isto verdadeiro
 
 **Trava nova entra aqui no mesmo PR**, com o `INV-*` ao lado. Se não houver
 invariante, ou ela se escreve, ou fica a linha `— sem INV` dizendo a verdade.
 
-**Este arquivo é vigiado pelos portões que já existem:** todo caminho citado é
-conferido pelo `documentacao-quebrada.mjs`, e o `territorio.mjs` o liga às
-pastas de teste. Não foi criado mecanismo novo — a espiral de controle é
-justamente o que o `EXECUCAO.md` §9.8 proíbe.
+**Este arquivo é vigiado nos DOIS sentidos**, e até 09/10 era só num:
+
+| sentido | quem confere | o que pega |
+| --- | --- | --- |
+| o que está citado aqui EXISTE | `documentacao-quebrada.mjs` | trava apagada ou renomeada |
+| o que EXISTE está citado aqui | `inventarioDeTravasEstaCompleto.test.js` | **trava nova que ninguém registrou** |
+
+> **`[09/10]` O fecho anterior dizia que os portões existentes bastavam, e que
+> criar mecanismo novo seria a espiral de controle do §9.8.** Estava errado, e
+> o número mostrou: o inventário tinha caído para **63%** sem nada acusar. A
+> pergunta 2 daquele mesmo §9.8 é *"ele está realmente falhando, ou eu não o
+> usei?"* — aqui ele não falhou nem deixou de ser usado: **ele nunca olhou
+> para esse lado.** Isso é buraco de cobertura, não espiral.
+>
+> E o conserto é uma checagem, não um script com portão e documentação: a
+> própria regra do §9.8, pergunta 5, aplicada ao conserto dela.

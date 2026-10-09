@@ -167,8 +167,6 @@ onde cota mora, e nos PRs #284 a #286.
 
 - 🟠 **Migrar o email para fora do Gmail** — hoje são ~500 envios/dia e o
   cadastro para quando estourar. Escolher o provedor é decisão de custo.
-- **A reorganização documental** (Fase 0 feita, esperando aprovação) — está na
-  fila abaixo.
 
 #### 4. A VISÃO DE FUTURO envelheceu — TRÊS itens já existem
 
@@ -471,121 +469,6 @@ Hoje **não**: 331,4 kB brutos contra 7,1 kB ([DESEMPENHO.md](docs/DESEMPENHO.md
 > não pelo peso ter saído do caminho crítico.
 
 ---
-
-### ⬜ `[19/09]` REORGANIZAÇÃO DOCUMENTAL — Fase 0 FEITA, esperando aprovação
-
-**Pedido dele:** auditoria estrutural de documentação, prosas e travas, com
-*"NÃO QUEBRE NENHUMA TRAVA EXISTENTE"* como regra acima de todas. Implementação
-**só depois da aprovação** — este bloco é o levantamento, não a execução.
-
-#### O que foi MEDIDO (Fase 0) — nada foi alterado
-
-| | |
-| --- | --- |
-| documentação | 17.385 linhas em 22 arquivos. Maiores: `DECISOES.md` 2.506 · `BACKLOG.md` 1.907 · `OPERACAO.md` 1.661 · `SEGURANCA.md` 1.581 · `DESEMPENHO.md` 1.477 |
-| relatórios de auditoria | 23 arquivos em `db/`, 5.316 linhas |
-| testes/roteiros/portões | **147** arquivos |
-| inventário de travas do `CLAUDE.md` | cita **43** → cobre **29%** |
-| travas que leem SQL como TEXTO | **23** (a classe frágil do item 17) |
-| prosa em `src/` | 12.356 de 45.067 linhas (**27%**); 208 arquivos com bloco de 15+ linhas |
-| prosa em migrations | 5.060 de 16.286 linhas (**31%**) |
-| IDs vivos | `SEC-*` em 51 migrations e 29 arquivos de `src/`; `LIVE-*` em 13 e 19; `N*` só em documentação |
-| `ADR-*` e `INV-*` | **não existem** — 0 ocorrências no repositório inteiro |
-
-#### O achado que MUDA o tamanho do item 14 (HTML/DevTools)
-
-Medido, não suposto:
-
-- **comentário JSX `{/* */}`: 227 blocos no fonte, ZERO no build.** O
-  compilador os remove. Não chegam ao DOM, não poluem DevTools, não pesam.
-- **`index.html`: 7 comentários, e os 7 SOBREVIVEM** para `dist/index.html`.
-
-Então o item 14 **não é problema de projeto — é de um arquivo só**, e o
-conserto são 7 linhas. Afirmar o contrário seria inflar o trabalho.
-
-#### O que o projeto JÁ TEM e não precisa ser criado
-
-A estrutura pedida em grande parte existe com outro nome. Criar de novo seria
-duplicar fonte de verdade (§4):
-
-| O prompt pede | Já existe como |
-| --- | --- |
-| `docs/audits/` | **`db/AAAA-MM-DD-*.md`** — 23 relatórios, e o lembrete de auditoria já lê a data deles |
-| `docs/rules/` | **`docs/regras/`**, injetado por `@import` no `CLAUDE.md` |
-| índice de decisões | **`docs/DECISOES.md`** + `DECISOES-FERRAMENTAL.md` |
-| rastreabilidade achado→correção | parcial: `SEGURANCA.md` liga N→SEC/LIVE em prosa |
-
-#### O que falta de verdade — e é CURTO
-
-1. **`docs/INVARIANTES.md`** — a camada `INV-*` não existe. Hoje a regra
-   permanente só existe implícita, dentro do teste que a protege.
-2. **Inventário de travas com rastreabilidade** — o do `CLAUDE.md` cobre 29% e
-   **não distingue trava de teste comum**. Esse é o buraco real, não o tamanho.
-3. **ADRs** para as decisões que hoje moram em prosa de migration.
-
-#### Riscos que a migração precisa respeitar (levantados, não resolvidos)
-
-- **Três portões leem caminho de documento:** `documentacao-quebrada.mjs`,
-  `territorio-coberto.mjs` e `numeros-do-projeto.mjs` (36 números vivos em 52
-  documentos). Mover arquivo sem atualizar `scripts/territorio.mjs` **reprova o
-  CI** — e pior, `territorio-coberto` passa a dizer que uma pasta não tem dono.
-- **23 travas leem o TEXTO das migrations.** Reescrever comentário de migration
-  pode quebrá-las: várias já foram enganadas por prosa citando comando.
-- **A prosa das migrations é imutável na prática:** a migration já rodou. Editar
-  o arquivo não muda o banco, e faz o espelho mentir.
-
-#### Ordem proposta (cada uma é um PR, e nenhuma apaga nada)
-
-1. ✅ **FEITO** — `docs/INVARIANTES.md`. **`[24/09]` correção: eu disse "31
-   invariantes em 8 famílias" e eram 37 em 9** — contei errado ao relatar, o
-   arquivo sempre teve as 37. Derivadas dos `describe()` das travas que já
-   rodam; nada inventado. Registrado no `README`, no `territorio.mjs`, no
-   `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`. **0 arquivos de código
-   tocados.**
-2. ✅ **FEITO** — `docs/TRAVAS.md`: os **149** classificados em 7 naturezas
-   (9 portões de CI · 23 travas de invariante · 18 de contrato · 19 E2E ·
-   4 robôs que avisam · 62 testes comuns · **14 que NÃO são trava**, nomeados).
-   Achou **9 travas sem invariante escrito** e **1 erro no `CLAUDE.md`**
-   (o `edges-implantadas` dizia estar fora do CI; roda no `implantar-edges.yml`).
-   **0 arquivos de código tocados.**
-3. ✅ **FEITO** — as **9 travas órfãs** viraram invariante: `INV-NAV-001`,
-   `INV-TELA-001/002/003`, `INV-LEGAL-001/002`, `INV-CONTRATO-007` e
-   `INV-CONTA-006/007`. O `INVARIANTES.md` passou a **46 invariantes em 12
-   famílias**, e nenhuma linha do `TRAVAS.md` diz mais "sem INV".
-4. ✅ **FEITO** `[24/09]` — os **7 comentários do `index.html`**. Eles eram os
-   únicos comentários do projeto que **chegam ao navegador**: o JSX tem 227
-   blocos no fonte e zero no build, o de HTML vai inteiro para o `dist/`. A
-   prosa foi **copiada** para a seção "O `index.html` — o que cada linha faz, e
-   por quê" do `ARQUITETURA.md` (nada apagado), e a trava
-   `htmlNaoVazaProsa.test.js` confere as duas pontas — nenhum comentário no
-   HTML **e** a seção continuar de pé com o conteúdo dentro, senão ela premiaria
-   quem apaga a explicação. `INV-PORTA-009`.
-5. ✅ **FEITO** `[24/09]` — e **saiu diferente do planejado, de propósito.**
-   Virou **um índice**, `docs/DECISOES-DE-BANCO.md`, e não uma pasta de ADRs.
-   Três desvios, todos escritos dentro do próprio arquivo:
-
-   | O plano dizia | O que foi feito | Por quê |
-   | --- | --- | --- |
-   | criar `ADR-001`, `ADR-002`… | usar os IDs que **já existem** (`SEC-*`, `LIVE-*`) | um segundo espaço de IDs para o mesmo fato é a duplicação do §4 — `SEC-027` já é citado em migration, teste, `SEGURANCA.md` e `INVARIANTES.md` |
-   | um arquivo por decisão | um índice | *"NÃO CRIE 500 ARQUIVOS"* foi pedido explícito, e o que faltava era **navegação** |
-   | **copiar** a prosa | **resumir** decisão + descarte e apontar a migration | copiar cria a segunda fonte que envelhece. E **nenhuma migration foi tocada** — 23 travas leem o texto delas |
-
-   12 decisões indexadas em 5 temas. Registrado no `README`, no
-   `territorio.mjs`, no `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`.
-
-**Nada de banco. Nada de RLS. Nada de comportamento.**
-
----
-
-
-- ⬜ `[24/09]` 🟢 **O `CLAUDE.md` está a DUAS linhas do próprio teto (898 de
-  900).** *Descoberto pela trava `regrasCarregadas.test.js`, que reprovou quando
-  uma linha nova o levou a exatamente 900 — ela funcionou. A próxima regra que
-  entrar não cabe, e a saída certa não é subir o teto: é o §6.2 regra 5 (seção
-  acima de ~150 linhas vira arquivo próprio), que foi como nasceram os
-  `docs/regras/`. Candidatos a sair: §0.2 (cotas, ~90 linhas) e §6.3 (a tabela
-  dos mecanismos, ~80). Não é urgente — vira urgente no dia em que eu precisar
-  escrever uma regra e não puder.*
 
 ### ✅ `[24/09]` O comentário sumia da tela — resposta velha sobrescrevendo a nova
 
@@ -1160,7 +1043,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**52 itens abertos** (+ 1 ideia sem compromisso)
+**51 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
