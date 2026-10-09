@@ -41,24 +41,43 @@ import { RECEITAS, receitaDeInstalacao } from '../comoInstalar.js';
  * explícito e o desconhecido é uma RECEITA de verdade (§4).
  */
 
-const BARRA = 'src/components/landing/LandingSidebar.jsx';
+const HOOK = 'src/lib/useInstalacao.js';
 const PAINEL = 'src/components/ui/ComoInstalar.jsx';
+// `[09/10]` As DUAS telas que têm a entrada. Ele pediu a segunda: *"sabe o
+// footer? faltou o link pra download tbm, como na barra lateral"*. Elas
+// precisam estar aqui nomeadas — uma delas perdendo a entrada é a falha que
+// esta trava existe para pegar, e o inventário dela não pode ser "a que eu
+// lembrar na hora".
+const TELAS = [
+  'src/components/landing/LandingSidebar.jsx',
+  'src/components/landing/rodape/ColunasDoRodape.jsx',
+];
 
 describe('a entrada de instalação não some nem chuta', () => {
-  it('a barra lateral da landing tem a entrada, e ela pergunta o CERTO', () => {
-    const jsx = readFileSync(BARRA, 'utf8');
+  it('a decisão mora no hook, e ele pergunta o CERTO', () => {
+    // `[09/10]` Antes isto lia o JSX da barra lateral. A lógica virou hook
+    // quando o rodapé ganhou a mesma entrada — duas cópias divergiriam em
+    // silêncio, uma respeitando o "não" e a outra não (§4). A trava seguiu a
+    // fonte única em vez de ser afrouxada, e ganhou a 2ª tela junto.
+    // SEM os comentários: o cabeçalho do hook explica a diferença entre
+    // `devoConvidar()` e `podeInstalar()`, e a última checagem procura
+    // exatamente `devoConvidar`. Lida com a prosa junto, ela acusaria a
+    // própria explicação — foi o que aconteceu no 1º run.
+    const hook = readFileSync(HOOK, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^\s*\/\/[^\n]*/gm, ' ');
 
     expect(
-      /podeInstalar/.test(jsx) && /abrirConvite/.test(jsx),
-      'a entrada "Instalar o app" saiu da barra lateral da landing.\n'
-      + 'Ela é a porta permanente: sem ela, quem dispensa a faixa fica sem\n'
+      /podeInstalar/.test(hook) && /abrirConvite/.test(hook),
+      'o hook de instalação deixou de abrir o convite do navegador.\n'
+      + 'Ele é a porta permanente: sem ela, quem dispensa a faixa fica sem\n'
       + 'nenhuma — e a faixa aparece UMA vez só.',
     ).toBe(true);
 
     // Esta checagem já exigiu o CONTRÁRIO — que a entrada só aparecesse com o
     // convite em mãos. Foi o que a deixou invisível em produção.
     expect(
-      /\{!estaInstalado\(\) && \(/.test(jsx),
+      /aparece:\s*!estaInstalado\(\)/.test(hook),
       'a entrada voltou a SUMIR quando o navegador não ofereceu o convite.\n'
       + 'Foi assim que ela ficou invisível em produção e passou por deploy que\n'
       + 'não chegou. O único caso de ausência honesta é quem já abriu pelo app\n'
@@ -66,7 +85,7 @@ describe('a entrada de instalação não some nem chuta', () => {
     ).toBe(true);
 
     expect(
-      /setMostrarComo\(true\)/.test(jsx) && /ComoInstalar/.test(jsx),
+      /setMostrarComo\(true\)/.test(hook),
       'o clique sem convite voltou a não fazer NADA.\n'
       + 'Entrada que existe e não responde é pior do que entrada nenhuma — e é\n'
       + 'o caso do iPhone, onde o Safari não implementa o evento, e o de quem\n'
@@ -74,14 +93,34 @@ describe('a entrada de instalação não some nem chuta', () => {
     ).toBe(true);
 
     expect(
-      /devoConvidar/.test(jsx),
-      'a barra lateral passou a perguntar `devoConvidar()`.\n'
+      /devoConvidar/.test(hook),
+      'o hook passou a perguntar `devoConvidar()`.\n'
       + 'Essa é a pergunta da FAIXA, e ela respeita a decisão guardada — o que\n'
       + 'faz a entrada fixa DESAPARECER justamente para quem dispensou a faixa,\n'
       + 'que é exatamente quem ela existe para atender. A pergunta da entrada é\n'
       + '`podeInstalar()`. Nada quebra se alguém trocar: a tela funciona e a\n'
       + 'volta fecha em silêncio.',
     ).toBe(false);
+  });
+
+  it('as DUAS telas usam o hook e sabem mostrar o passo a passo', () => {
+    const faltando = [];
+    for (const tela of TELAS) {
+      const jsx = readFileSync(tela, 'utf8');
+      if (!/useInstalacao\(\)/.test(jsx)) faltando.push(`${tela}: não usa o hook`);
+      if (!/Instalar o app/.test(jsx)) faltando.push(`${tela}: perdeu a entrada`);
+      if (!/\{instalacao\.aparece && \(/.test(jsx)) faltando.push(`${tela}: não respeita \`aparece\``);
+      if (!/ComoInstalar/.test(jsx)) faltando.push(`${tela}: não mostra o passo a passo`);
+    }
+    expect(
+      faltando,
+      'tela(s) com a entrada de instalação incompleta:\n'
+      + faltando.map((f) => `  - ${f}`).join('\n')
+      + '\n\nAs duas são procuradas, não empurradas: a gaveta e o rodapé. Uma\n'
+      + 'delas sem o painel de instruções volta ao bug de 09/10 — o clique não\n'
+      + 'faz nada no iPhone e em quem já instalou, sem erro e sem explicação.\n'
+      + 'Uma delas sem o hook é a cópia que diverge (§4).',
+    ).toEqual([]);
   });
 
   it('cada plataforma recebe a receita DELA', () => {

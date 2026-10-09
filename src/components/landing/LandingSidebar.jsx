@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   X, Info, LogIn, ShieldCheck, Scale, ShieldOff, Mail, FileText, Download,
 } from 'lucide-react';
 import { SECOES, alvoDaSecao } from './secoesDaLanding';
-import { podeInstalar, abrirConvite, estaInstalado } from '../../lib/conviteDeInstalacao';
+import { useInstalacao } from '../../lib/useInstalacao';
 import ComoInstalar from '../ui/ComoInstalar';
 
 /**
@@ -54,7 +54,10 @@ import ComoInstalar from '../ui/ComoInstalar';
  * instala na hora, sem convite ela **explica como**.
  */
 export default function LandingSidebar({ aberta, aoFechar }) {
-  const [mostrarComo, setMostrarComo] = useState(false);
+  // `[09/10]` A decisão de "quando aparece / o que o clique faz" mora no hook,
+  // porque o RODAPÉ passou a ter a mesma entrada. Duas cópias divergiriam em
+  // silêncio — uma respeitando o "não" e a outra não (§4).
+  const instalacao = useInstalacao();
 
   // `Escape` fecha, e o corpo para de rolar enquanto a gaveta está aberta —
   // sem isso a página de trás rola junto e a gaveta parece quebrada.
@@ -72,21 +75,10 @@ export default function LandingSidebar({ aberta, aoFechar }) {
 
   if (!aberta) return null;
 
+  // A gaveta fecha só quando o diálogo do navegador abriu; com o painel de
+  // instruções ela FICA, senão o painel apareceria sobre a landing nua.
   async function instalar() {
-    if (podeInstalar()) {
-      // `prompt()` precisa do gesto: ele roda ainda dentro deste clique, ANTES
-      // do primeiro `await` lá dentro. Fechar a gaveta primeiro perderia o
-      // gesto em alguns navegadores.
-      const desfecho = await abrirConvite();
-      if (desfecho !== 'indisponivel') {
-        aoFechar();
-        return;
-      }
-    }
-    // Sem convite do navegador, o certo NÃO é não fazer nada: é dizer onde a
-    // opção mora. Foi a ausência silenciosa que fez o recurso parecer um
-    // deploy que não chegou.
-    setMostrarComo(true);
+    if (await instalacao.instalar()) aoFechar();
   }
 
   return createPortal(
@@ -206,7 +198,7 @@ export default function LandingSidebar({ aberta, aoFechar }) {
               app instalado — ali a ausência não é ambígua, a pessoa está
               dentro do que o botão ofereceria. Em todo o resto ela aparece, e
               o clique resolve de um jeito ou de outro. */}
-          {!estaInstalado() && (
+          {instalacao.aparece && (
             <button
               type="button"
               onClick={instalar}
@@ -227,7 +219,7 @@ export default function LandingSidebar({ aberta, aoFechar }) {
         </div>
       </nav>
 
-      {mostrarComo && <ComoInstalar aoFechar={() => setMostrarComo(false)} />}
+      {instalacao.mostrarComo && <ComoInstalar aoFechar={instalacao.fecharComo} />}
     </div>,
     document.body,
   );

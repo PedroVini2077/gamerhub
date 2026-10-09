@@ -1758,6 +1758,27 @@ botão fixo competiria com o Hero e com o CTA, na camada mais externa do site
 (§0.4). A gaveta só abre quando alguém toca no menu — que é a forma certa de
 oferecer ação secundária: descoberta sob demanda, sem empurrar nada.
 
+#### `[09/10]` E no RODAPÉ também, pelo mesmo motivo
+
+Pedido dele: *"sabe o footer? faltou o link pra download tbm, como na barra
+lateral"*. **Instalar o app** entrou na coluna *Sua conta*, logo antes de
+*Entrar ou criar conta* — a mesma ordem da gaveta, e ela importa: quem rolou
+até ali sem conta decide primeiro **onde o site vai morar**, depois se cria
+conta.
+
+É o mesmo princípio das duas: quem rola até o fim está **procurando**, como
+quem abre a gaveta. Nenhuma das duas empurra nada.
+
+**O rodapé aparece em cinco telas** — a landing, a `/sobre` e as três páginas
+legais —, então a entrada existe nas cinco. E ela é `<button>`, não link:
+abre o diálogo do navegador sem sair da página, e um `<a href="#">` mentiria
+para o leitor de tela e sujaria o histórico.
+
+**A decisão vive num lugar só** (`lib/useInstalacao.js`). Duas telas com a
+mesma regra escrita duas vezes divergem em silêncio — uma respeitando o "não"
+guardado e a outra não —, e este projeto já pagou isso com ícones de log,
+rótulos de cargo, cores de cargo e a regra de bloqueio de login.
+
 #### ⚠️ `[09/10]` E ela SUMIA quando não tinha o que fazer — durou dez minutos
 
 Estava escrito aqui, no dia anterior, que a entrada *"desaparece quando não tem

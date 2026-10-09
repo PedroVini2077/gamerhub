@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail, FileText } from 'lucide-react';
+import { Info, LogIn, ShieldQuestion, ShieldCheck, Scale, Mail, FileText, Download } from 'lucide-react';
 // Marca vem do `react-icons/fa6`, não do lucide (§4 da convenção de UI) — e o
 // lucide nem tem mais `Github`, ele saiu do pacote junto com os outros ícones
 // de marca.
 import { FaGithub } from 'react-icons/fa6';
 import { SECOES, alvoDaSecao } from '../secoesDaLanding';
 import { colunaDoRodape, staggerContainer, VIEWPORT } from '../../../lib/landingMotion';
+import { useInstalacao } from '../../../lib/useInstalacao';
+import ComoInstalar from '../../ui/ComoInstalar';
 
 /**
  * As três colunas de navegação do rodapé.
@@ -44,7 +46,7 @@ function Coluna({ titulo, children }) {
   );
 }
 
-function ItemDeLink({ para, href, icone: Icone, children }) {
+function ItemDeLink({ para, href, aoClicar, icone: Icone, children }) {
   // A microinteração é o ÍCONE deslizando, não o texto: mover o rótulo faz a
   // coluna inteira parecer instável quando o ponteiro passa por vários links em
   // sequência. O ícone é pequeno e o deslocamento fica contido nele.
@@ -57,16 +59,24 @@ function ItemDeLink({ para, href, icone: Icone, children }) {
       className="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
     />
   );
+  // `[09/10]` A terceira forma é BOTÃO, e ela não é navegação: "Instalar o
+  // app" abre o diálogo do navegador sem sair da página. Usar `<a href="#">`
+  // aqui mentiria para o leitor de tela e sujaria o histórico.
   return (
     <li>
-      {para
-        ? <Link to={para} className={classe}>{icone}{children}</Link>
-        : <a href={href} className={classe}>{icone}{children}</a>}
+      {aoClicar && <button type="button" onClick={aoClicar} className={classe}>{icone}{children}</button>}
+      {!aoClicar && para && <Link to={para} className={classe}>{icone}{children}</Link>}
+      {!aoClicar && !para && <a href={href} className={classe}>{icone}{children}</a>}
     </li>
   );
 }
 
 export default function ColunasDoRodape() {
+  // `[09/10]` Pedido dele: *"sabe o footer? faltou o link pra download tbm,
+  // como na barra lateral"*. A decisão vem do MESMO hook que a gaveta usa —
+  // duas cópias divergiriam em silêncio, e este rodapé aparece em cinco telas.
+  const instalacao = useInstalacao();
+
   return (
     <motion.div
       variants={staggerContainer(0.08)}
@@ -102,6 +112,13 @@ export default function ColunasDoRodape() {
       </Coluna>
 
       <Coluna titulo="Sua conta">
+        {/* `[09/10]` Antes de "Entrar", na mesma ordem da barra lateral — foi
+            o que ele pediu, e a ordem importa: quem rolou até aqui sem conta
+            decide primeiro ONDE o site vai morar, depois se cria conta.
+            Some só para quem já abriu pelo app instalado. */}
+        {instalacao.aparece && (
+          <ItemDeLink aoClicar={instalacao.instalar} icone={Download}>Instalar o app</ItemDeLink>
+        )}
         <ItemDeLink para="/login" icone={LogIn}>Entrar ou criar conta</ItemDeLink>
         {/* `[02/09]` Estas duas linhas dividem as pessoas por uma pergunta
             só: **você ainda consegue entrar?**
@@ -119,6 +136,8 @@ export default function ColunasDoRodape() {
         <ItemDeLink para="/login" icone={ShieldQuestion}>Fui banido — ver meu caso</ItemDeLink>
         <ItemDeLink para="/contato" icone={Mail}>Não consigo entrar na conta</ItemDeLink>
       </Coluna>
+
+      {instalacao.mostrarComo && <ComoInstalar aoFechar={instalacao.fecharComo} />}
     </motion.div>
   );
 }

@@ -215,6 +215,13 @@ src/
 │   │                      #   Mapa explícito, e o desconhecido é uma receita de
 │   │                      #   verdade ("procure no menu"), não os passos de
 │   │                      #   outra plataforma — isso seria o §4 vestido de ajuda
+│   ├── useInstalacao.js   # `[09/10]` A ENTRADA FIXA de instalar, em um lugar só:
+│   │                      #   quando ela aparece, o que o clique faz, e o painel
+│   │                      #   de instruções quando o navegador não oferece.
+│   │                      #   Hook porque DUAS telas a têm — a gaveta da landing
+│   │                      #   e o rodapé (que aparece em cinco páginas). Cópia
+│   │                      #   divergiria em silêncio: uma respeitando o "não"
+│   │                      #   guardado e a outra não (§4)
 │   ├── conviteDeInstalacao.js # `[08/10]` O convite para instalar o PWA.
 │   │                      #   Captura o `beforeinstallprompt`, que dispara UMA
 │   │                      #   vez e ANTES do React montar — por isso é chamado
