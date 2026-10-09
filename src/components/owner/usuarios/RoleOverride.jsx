@@ -24,7 +24,7 @@ export default function RoleOverride({ user, open, onToggle, onOverride }) {
           <div className="flex flex-wrap gap-2">
             {ASSIGNABLE.filter(r => r !== user.role).map(r => (
               <button key={r} type="button" onClick={() => onOverride(user, r)}
-                className="px-2.5 py-1 text-xs font-mono border border-yellow-500/30 rounded text-yellow-500/80 hover:bg-yellow-500/10 transition-colors">
+                className="px-2.5 py-1 text-xs font-mono border border-yellow-500/30 rounded-sm text-yellow-500/80 hover:bg-yellow-500/10 transition-colors">
                 <ArrowRight size={11} className="inline align-[-1px]" /> {roleLabel(r)}
               </button>
             ))}

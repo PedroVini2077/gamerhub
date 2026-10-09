@@ -72,7 +72,7 @@ export default function SobreposicaoDasLives({ lado = 'esquerda' }) {
   const assistindo = 1247 + ((inicio * 7) % 23) - 11;
 
   return (
-    <PainelDaCena lado={lado} largura="w-[17rem]">
+    <PainelDaCena lado={lado} largura="w-68">
       <div ref={caixa}>
         <div className="flex items-center justify-between pb-2.5">
           <span className="flex items-center gap-1.5">

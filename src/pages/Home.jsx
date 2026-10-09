@@ -59,7 +59,7 @@ export default function Home() {
           <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green transition-all">
             <span className="pl-3 text-gray-500 shrink-0"><Search size={14} /></span>
             <input
-              className="flex-1 bg-transparent py-2.5 px-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+              className="flex-1 bg-transparent py-2.5 px-3 text-sm text-white placeholder-gray-600 outline-hidden font-body"
               placeholder="Buscar no GamerHub..."
               aria-label="Buscar no GamerHub"
               value={search}
@@ -94,9 +94,9 @@ export default function Home() {
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
               <div key={i} className="card p-5 animate-pulse">
-                <div className="h-4 bg-dark-500 rounded mb-3 w-1/3" />
-                <div className="h-3 bg-dark-500 rounded mb-2" />
-                <div className="h-3 bg-dark-500 rounded w-2/3" />
+                <div className="h-4 bg-dark-500 rounded-sm mb-3 w-1/3" />
+                <div className="h-3 bg-dark-500 rounded-sm mb-2" />
+                <div className="h-3 bg-dark-500 rounded-sm w-2/3" />
               </div>
             ))}
           </div>

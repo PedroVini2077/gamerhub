@@ -1702,3 +1702,75 @@ reprova aqui, e a sala de verdade está no `vendor-supabase`, não neste número
 
 **Medição de laboratório** (§0.3 regra 5): byte de build, mesma máquina, com
 `.env.local` presente — que é o que a Vercel serve.
+
+---
+
+## `[09/10]` O Tailwind 4 custou +3,4 kB gzip de CSS — e o portão de bytes não vê CSS
+
+A migração foi por segurança (o advisory `braces`, sem conserto), não por
+desempenho. Mas ela engorda o site, e o número precisa estar escrito.
+
+| | bruto | gzip |
+| --- | --- | --- |
+| v3 — o CSS que estava **no ar** | 76.408 | **15.658** |
+| v4 — build local, mesmo código | 112.349 | **19.115** |
+| diferença | +35,9 kB | **+3,5 kB (+22%)** |
+
+### De onde vem, medido no CSS gerado
+
+Não é a paleta: o v4 emite só 35 `--color-*` (1,3 kB brutos), já podada. São
+as garantias que ele dá para as próprias funções modernas:
+
+```
+@supports   21.788 bytes  (138 blocos)
+@property    4.411 bytes  (70 blocos)
+```
+
+26 kB brutos dos 36 de crescimento. Comprimem bem — são repetitivos —, e por
+isso o efeito em gzip é 3,4 e não 26. **Não há chave para desligá-los.**
+
+### O que isso exige de quem visita
+
+Safari 16.4+, Chrome 111+, Firefox 128+. É a troca que o v4 faz por usar
+`@property` e `color-mix()` sem transpilar.
+
+### ⚠️ E o buraco que isto revelou no portão de bytes
+
+**`scripts/orcamento-de-bytes.mjs` mede JavaScript, não CSS.** Ele lê o
+`<script type="module">` e os `<link rel="modulepreload">` do `index.html` —
+a folha de estilo entra por `<link rel="stylesheet">` e nunca foi contada.
+
+Ou seja: estes 3,4 kB **passariam em silêncio**. É o §1.5 dentro do mecanismo
+que existe para impedir regressão de desempenho, e com o agravante de o verde
+parecer que alguém olhou — a mesma falha de 11/09, quando o teto era conferido
+contra um build podado.
+
+E CSS não é um byte qualquer: ele é **bloqueante de renderização**. Nada é
+pintado antes de ele chegar.
+
+**O orçamento passou a contar o CSS**, com teto próprio medido hoje. Trava:
+`orcamentoVeOCss.test.js`.
+
+### ⚠️ E a comparação de PRINT achou o que nenhum teste viu
+
+Antes de dar a migração por pronta, construí a **v3 ao lado** (worktree + o
+`npm install` dela) e fotografei as mesmas rotas nas duas versões, no mesmo
+navegador e na mesma janela. Foi o que revelou:
+
+```
+v3   url("/assets/moldura-verde-C42BpkIK.webp")   image/webp
+v4   url("/assets/auth/moldura-verde.webp")       text/html   <- a arte sumiu
+```
+
+A causa está em `vite.config.js`; a correção foi trocar o Tailwind de plugin
+de **PostCSS** para plugin do **Vite**, e os hashes voltaram **idênticos aos
+da v3** — prova de que é o mesmo arquivo.
+
+**O que isso diz sobre o método:** os ~50 mecanismos do projeto cobrem
+comportamento, contrato e byte. **Nenhum deles olha a tela.** Para uma
+migração de ferramenta de ESTILO, o print lado a lado não é luxo — é a única
+medição que responde à pergunta que a migração promete: *"o site continua
+igual?"*.
+
+A classe virou portão (`scripts/css-nao-perde-asset.mjs`), mas o print
+continua sendo o que acha o que ninguém pensou em travar.

@@ -137,7 +137,7 @@ export default function MuralCard({ item, onDelete }) {
             <span className="text-xs text-gray-600 font-mono shrink-0">{timeAgo(item.created_at)}</span>
           </div>
           {item.message && (
-            <p className="text-sm text-gray-300 leading-relaxed break-words whitespace-pre-wrap">{item.message}</p>
+            <p className="text-sm text-gray-300 leading-relaxed wrap-break-word whitespace-pre-wrap">{item.message}</p>
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">

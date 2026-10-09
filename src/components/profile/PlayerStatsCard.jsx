@@ -20,7 +20,7 @@ export default function PlayerStatsCard({ stats, xpData, rank, progress, nextTie
 
       <div className="grid grid-cols-3 gap-3 text-center">
         {cells.map(s => (
-          <div key={s.label} className="bg-dark-700 rounded p-3 border border-dark-400">
+          <div key={s.label} className="bg-dark-700 rounded-sm p-3 border border-dark-400">
             <p className={`font-display text-lg font-bold ${s.color}`}>{s.value}</p>
             <p className="text-xs text-gray-500 font-mono">{s.label}</p>
           </div>

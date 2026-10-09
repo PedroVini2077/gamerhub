@@ -42,7 +42,7 @@ export default function ProfileIdentityCard({
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className={`tag ${roleTag(profile?.role)}`}>{profile?.role || 'user'}</span>
             {rank && (
-              <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded border"
+              <span className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded-sm border"
                 style={{ color: rank.color, borderColor: `${rank.color}40`, background: `${rank.color}10` }}>
                 {RankIcon && <RankIcon size={10} />}
                 {isOwner ? 'Fundador' : getRankLabel(rank)}

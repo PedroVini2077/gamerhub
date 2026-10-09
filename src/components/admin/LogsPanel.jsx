@@ -51,8 +51,8 @@ export default function LogsPanel({ logs, logCat, setLogCat, logsLoading, fetchL
         <div className="space-y-2">
           {[1,2,3].map(i => (
             <div key={i} className="card p-3 animate-pulse">
-              <div className="h-3 bg-dark-500 rounded w-3/4 mb-2" />
-              <div className="h-2 bg-dark-500 rounded w-1/3" />
+              <div className="h-3 bg-dark-500 rounded-sm w-3/4 mb-2" />
+              <div className="h-2 bg-dark-500 rounded-sm w-1/3" />
             </div>
           ))}
         </div>

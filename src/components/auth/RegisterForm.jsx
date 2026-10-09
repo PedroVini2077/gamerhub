@@ -22,7 +22,7 @@ export default function RegisterForm({
 
   return (
     <>
-      <div className="flex border border-dark-400 rounded overflow-hidden mb-6">
+      <div className="flex border border-dark-400 rounded-sm overflow-hidden mb-6">
         {/* Mesmo preparo por intenção do `LoginForm`: a volta também troca as
             duas artes, e quem chega pelo link de cadastro nunca baixou o par do
             login. Ver `lib/artesDaArena.js`. */}
@@ -43,7 +43,7 @@ export default function RegisterForm({
           <InputWrap>
             <span className="pl-3 pr-2 text-gray-500 shrink-0"><User size={14} /></span>
             <input id="username" aria-label="Nome de usuário"
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-hidden font-body"
               placeholder="seu_nick_aqui" value={username}
               onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               onKeyDown={e => e.key === 'Enter' && onSubmit()}
@@ -58,7 +58,7 @@ export default function RegisterForm({
           <InputWrap>
             <span className="pl-3 pr-2 text-gray-500 shrink-0"><Mail size={14} /></span>
             <input id="email-register" aria-label="Email" type="email"
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-hidden font-body"
               placeholder="gamer@email.com" value={email}
               onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && onSubmit()} />
@@ -109,7 +109,7 @@ export default function RegisterForm({
           <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
             <span className="pl-3 pr-2 text-gray-500 shrink-0"><Calendar size={14} /></span>
             <input aria-label="Data de nascimento" type="date"
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white outline-none font-body"
+              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white outline-hidden font-body"
               value={birthDate} onChange={e => setBirthDate(e.target.value)}
               max={maxBirthDate} />
           </div>
@@ -124,7 +124,7 @@ export default function RegisterForm({
           <div className="flex items-center bg-dark-700 border border-dark-400 rounded-md focus-within:border-neon-green focus-within:shadow-[0_0_0_2px_#39ff1420] transition-all">
             <span className="pl-3 pr-2 text-gray-500 shrink-0"><MapPin size={14} /></span>
             <select aria-label="Estado" value={uf} onChange={e => setUf(e.target.value)}
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white outline-none font-body appearance-none">
+              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white outline-hidden font-body appearance-none">
               <option value="" className="bg-dark-800">Selecione seu estado...</option>
               {BR_STATES.map(s => <option key={s} value={s} className="bg-dark-800">{s}</option>)}
             </select>

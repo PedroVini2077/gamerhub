@@ -50,7 +50,7 @@ export default function PedirReativacaoDaLive({ postId, titulo }) {
   return (
     <>
       <button type="button" onClick={() => setAberto(true)}
-        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-dark-400 text-gray-400 text-xs font-mono hover:border-neon-green/50 hover:text-neon-green transition-all">
+        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-dark-400 text-gray-400 text-xs font-mono hover:border-neon-green/50 hover:text-neon-green transition-all">
         <RotateCcw size={12} /> Pedir reativação
       </button>
 

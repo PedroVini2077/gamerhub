@@ -39,7 +39,7 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
     <>
       <button
         onClick={disablePopup ? undefined : handleOpen}
-        className="block rounded-full focus:outline-none shrink-0"
+        className="block rounded-full focus:outline-hidden shrink-0"
         style={disablePopup ? { cursor: 'default' } : {}}
       >
         <Avatar
@@ -131,7 +131,7 @@ export default function AvatarPopup({ profile, size = 36, className = '', postsC
               {canBan && (
                 <button
                   onClick={() => { setOpen(false); setBanModal(true); }}
-                  className="flex items-center justify-center gap-2 w-full py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition-all"
+                  className="flex items-center justify-center gap-2 w-full py-2 text-xs font-mono text-red-400 border border-red-400/30 rounded-sm hover:bg-red-400/10 transition-all"
                 >
                   <Ban size={12} /> Banir usuário
                 </button>

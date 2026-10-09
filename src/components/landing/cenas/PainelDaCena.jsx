@@ -32,7 +32,7 @@
  *
  * ── Vidro, e não cartão opaco ───────────────────────────────────────────────
  *
- * `bg-dark-900/80` + `backdrop-blur-sm`: a arte continua aparecendo por baixo,
+ * `bg-dark-900/80` + `backdrop-blur-xs`: a arte continua aparecendo por baixo,
  * o que é a diferença entre "uma interface acontecendo dentro daquele mundo" e
  * "um cartão colado por cima da foto". O `.card` do site é opaco de propósito —
  * ele vive sobre fundo escuro liso, não sobre arte.
@@ -51,7 +51,7 @@
  * ── `[12/09]` O painel CRESCE com a tela, e antes ele não crescia ───────────
  *
  * Ele viu testando no computador: *"ficou pequeno demais os elementos pra uma
- * tela grande"*. Estava certo, e a causa era uma só — `w-[15.5rem]` são **248
+ * tela grande"*. Estava certo, e a causa era uma só — `w-62` são **248
  * pixels fixos**, os mesmos num telefone de 390 e num monitor de 1440. O painel
  * não encolheu; a tela cresceu em volta dele. Ele ocupava 63% da largura no
  * celular e **17%** no computador.
@@ -77,7 +77,7 @@
  *   `topo` para cena presa, `meio` para cena que rola.
  */
 export default function PainelDaCena({
-  lado = 'esquerda', largura = 'w-[15.5rem]', vidro = true, ancora = 'meio', children,
+  lado = 'esquerda', largura = 'w-62', vidro = true, ancora = 'meio', children,
 }) {
   const textoNaEsquerda = lado === 'esquerda';
   // `[12/09]` `topo` deixou de ser o TOPO. Ele viu o cartão das Keys no
@@ -94,7 +94,7 @@ export default function PainelDaCena({
   // barra enquanto ela sobe — é por isso que existem dois valores.
   const noCelular = ancora === 'topo' ? 'items-start pt-[26vh]' : 'items-center pb-32';
   const chrome = vidro
-    ? `rounded-xl border border-white/10 bg-dark-900/80 backdrop-blur-sm p-3.5
+    ? `rounded-xl border border-white/10 bg-dark-900/80 backdrop-blur-xs p-3.5
        shadow-[0_8px_32px_rgba(0,0,0,0.55)]`
     : '';
 

@@ -22,7 +22,7 @@ export default function ForgotForm({ email, setEmail, loading, onSubmit, onBack 
           <InputWrap>
             <span className="pl-3 pr-2 text-gray-500 shrink-0"><Mail size={14} /></span>
             <input id="email" aria-label="Email" type="email"
-              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-none font-body"
+              className="flex-1 bg-transparent py-2.5 pr-3 text-sm text-white placeholder-gray-600 outline-hidden font-body"
               placeholder="gamer@email.com" value={email}
               onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && onSubmit()} />

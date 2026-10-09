@@ -47,11 +47,11 @@ export default function ConfirmModal({
 
         <div className="flex gap-2">
           <button onClick={onClose} disabled={loading}
-            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded-sm hover:bg-dark-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
             Cancelar
           </button>
           <button onClick={handleConfirm} disabled={loading}
-            className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex-1 py-2 text-xs font-mono font-bold rounded-sm transition-all flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ background: a.btnBg, color: a.btnColor, border: `1px solid ${a.btnBorder}` }}>
             {loading
               ? <><Loader2 size={12} className="animate-spin" /> Aguarde...</>

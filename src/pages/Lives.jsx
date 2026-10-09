@@ -94,7 +94,7 @@ export default function Lives() {
         <h2 className="font-display text-sm text-white truncate flex-1 min-w-0">{activeLive.title}</h2>
         {isLiveOwner && !liveEnded && (
           <button type="button" onClick={() => setConfirmandoFim(true)}
-            className="flex items-center gap-1 px-2 py-1 rounded border border-red-500/40 text-red-400 text-xs font-mono hover:bg-red-500/10 transition-all shrink-0 cursor-pointer">
+            className="flex items-center gap-1 px-2 py-1 rounded-sm border border-red-500/40 text-red-400 text-xs font-mono hover:bg-red-500/10 transition-all shrink-0 cursor-pointer">
             <X size={11} /><span>Encerrar</span>
           </button>
         )}

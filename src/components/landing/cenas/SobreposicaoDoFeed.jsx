@@ -97,7 +97,7 @@ export default function SobreposicaoDoFeed({ lado = 'esquerda' }) {
             animate={mostrar ? { opacity: 1, y: 0 } : undefined}
             transition={{ duration: 0.5, delay: i * 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className={`h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br ${post.cor} opacity-90`} />
+            <div className={`h-7 w-7 shrink-0 rounded-lg bg-linear-to-br ${post.cor} opacity-90`} />
             <div className="flex-1 space-y-1.5">
               <p className="font-mono text-[0.6rem] leading-none text-gray-300">
                 {post.nome}
@@ -138,7 +138,7 @@ export default function SobreposicaoDoFeed({ lado = 'esquerda' }) {
         {/* O comentário é o último a chegar, e é o que fecha a leitura: primeiro
             alguém curtiu, depois alguém respondeu. */}
         <motion.div
-          className="rounded-lg bg-white/[0.06] px-2.5 py-1.5"
+          className="rounded-lg bg-white/6 px-2.5 py-1.5"
           initial={menosMovimento ? false : { opacity: 0, x: -10 }}
           animate={estado >= 3 ? { opacity: 1, x: 0 } : undefined}
           transition={{ duration: 0.4, ease: 'easeOut' }}

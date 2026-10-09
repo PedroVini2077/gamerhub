@@ -82,7 +82,7 @@ export default function CartaoDeContato({ m, marcar, responder }) {
         <p className="select-all break-all">{m.email}</p>
       </div>
 
-      <p className="text-sm font-body text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
+      <p className="text-sm font-body text-gray-300 leading-relaxed whitespace-pre-wrap wrap-break-word">
         {m.message}
       </p>
 
@@ -95,7 +95,7 @@ export default function CartaoDeContato({ m, marcar, responder }) {
             {m.handled_by_username && ` por @${m.handled_by_username}`}
             {m.handled_at && ` em ${new Date(m.handled_at).toLocaleString('pt-BR')}`}
           </p>
-          <p className="text-sm font-body text-gray-400 leading-relaxed whitespace-pre-wrap break-words">
+          <p className="text-sm font-body text-gray-400 leading-relaxed whitespace-pre-wrap wrap-break-word">
             {m.reply_text}
           </p>
         </div>

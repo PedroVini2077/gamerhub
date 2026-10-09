@@ -56,11 +56,11 @@ export default function UnbanRequestModal({ target, onClose, onSent }) {
         </div>
         <div className="flex gap-2">
           <button onClick={onClose}
-            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
+            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded-sm hover:bg-dark-700 transition-all">
             Cancelar
           </button>
           <button onClick={handleSend} disabled={!reason.trim() || loading}
-            className="flex-1 py-2 text-xs font-mono font-bold rounded transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
+            className="flex-1 py-2 text-xs font-mono font-bold rounded-sm transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
             style={{ background: '#eab30815', color: '#fbbf24', border: '1px solid #eab30840' }}>
             {loading ? <span className="animate-pulse">...</span> : <><CheckCircle size={12} />Enviar Solicitação</>}
           </button>

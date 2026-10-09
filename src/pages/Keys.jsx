@@ -24,7 +24,7 @@ function KeyCard({ item }) {
         <h3 className="font-bold text-white text-base">{item.game_title}</h3>
         <span className="tag tag-green">{item.platform}</span>
       </div>
-      <div className="flex items-center gap-2 bg-dark-700 border border-dark-400 rounded px-3 py-2">
+      <div className="flex items-center gap-2 bg-dark-700 border border-dark-400 rounded-sm px-3 py-2">
         <span className="font-mono text-sm text-neon-green flex-1 break-all">{item.key_code}</span>
         <button onClick={copyKey} aria-label={copied ? 'Key copiada' : 'Copiar key'}
           className="text-gray-400 hover:text-neon-green transition-colors shrink-0">

@@ -59,7 +59,7 @@ export default function CampoDeSenha({
         <input
           id={idDoCampo}
           type={visivel ? 'text' : 'password'}
-          className="campo-de-senha flex-1 bg-transparent py-2.5 text-sm text-white placeholder-gray-600 outline-none font-body min-w-0"
+          className="campo-de-senha flex-1 bg-transparent py-2.5 text-sm text-white placeholder-gray-600 outline-hidden font-body min-w-0"
           placeholder={placeholder}
           value={valor}
           autoFocus={autoFocus}

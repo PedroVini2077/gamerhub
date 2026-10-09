@@ -114,7 +114,7 @@ export default function SiteTab() {
             onChange={e => setConfig(c => ({ ...c, banner_text: e.target.value }))}
             onBlur={e  => saveKey('banner_text', e.target.value)}
             placeholder="ex: Manutenção programada às 22h"
-            className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-300 focus:border-orange-400/50 focus:outline-none"
+            className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-gray-300 focus:border-orange-400/50 focus:outline-hidden"
           />
         </div>
 
@@ -124,7 +124,7 @@ export default function SiteTab() {
             {BANNER_COLORS.map(c => (
               <button key={c.value}
                 onClick={() => { setConfig(prev => ({ ...prev, banner_color: c.value })); saveKey('banner_color', c.value); }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-mono transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border text-xs font-mono transition-all"
                 style={{
                   borderColor: config.banner_color === c.value ? c.hex : '#2e2e3e',
                   color:       config.banner_color === c.value ? c.hex : '#6b7280',
@@ -189,7 +189,7 @@ export default function SiteTab() {
           onChange={e => setConfig(c => ({ ...c, pause_reason: e.target.value }))}
           onBlur={e => saveKey('pause_reason', e.target.value.trim())}
           placeholder="Ex.: Pausado até dia 5 — limite de banda do plano gratuito atingido."
-          className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-gray-200 focus:border-neon-green/50 focus:outline-none resize-none"
+          className="w-full px-3 py-2 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-gray-200 focus:border-neon-green/50 focus:outline-hidden resize-none"
         />
       </div>
 
@@ -251,7 +251,7 @@ export default function SiteTab() {
               setConfig(c => ({ ...c, live_xp_minutos: String(v) }));
               saveKey('live_xp_minutos', v);
             }}
-            className="w-20 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded text-xs font-mono text-center text-gray-200 focus:border-neon-green/50 focus:outline-none shrink-0"
+            className="w-20 px-2 py-1.5 bg-dark-700 border border-dark-400 rounded-sm text-xs font-mono text-center text-gray-200 focus:border-neon-green/50 focus:outline-hidden shrink-0"
           />
         </div>
       </div>

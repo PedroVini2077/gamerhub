@@ -38,20 +38,17 @@ import { execFileSync } from 'node:child_process';
  * responde as três perguntas, e o teste cobra.
  */
 export const ACEITOS = [
-  {
-    id: 'GHSA-vfj7-8cjw-p6xm',
-    pacote: 'braces',
-    desde: '2026-10-02',
-    motivo:
-      'Nao existe versao corrigida: `braces` esta em 3.0.3, a ultima publicada, e o '
-      + 'advisory cobre <=3.0.3. E dependencia de BUILD (tailwindcss -> chokidar/fast-glob '
-      + '-> micromatch -> braces): ela nao vai para o navegador e nao processa entrada de '
-      + 'usuario. O ataque e exaustao de pilha com padrao glob aninhado, e quem escolhe os '
-      + 'nossos globs e o `tailwind.config.js` — ou seja, exige quem ja tem escrita no repo.',
-    sai_quando:
-      'O Tailwind 4 entrar (item no BACKLOG). Ele troca o motor e a cadeia inteira some — '
-      + 'nao e patch do braces, e remocao da dependencia.',
-  },
+  // `[09/10]` VAZIA, e isso é o sucesso dela — não descuido.
+  //
+  // A única entrada que já existiu foi `GHSA-vfj7-8cjw-p6xm` em `braces`,
+  // aceita em 02/10 com a condição de saída escrita: *"o Tailwind 4 entrar.
+  // Ele troca o motor e a cadeia inteira some — não é patch do braces, é
+  // remoção da dependência."*
+  //
+  // O Tailwind 4 entrou em 09/10. Medido depois: `npm audit` em zero e
+  // `npm ls braces` devolvendo vazio — a dependência não existe mais na
+  // árvore. **Foi o portão que cobrou a saída:** ele reprova o aceito que
+  // deixa de aparecer, então a exceção não tinha como virar cemitério.
 ];
 
 const PERIGOSAS = new Set(['high', 'critical']);

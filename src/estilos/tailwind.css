@@ -1,16 +1,76 @@
-/* As três diretivas do Tailwind, em arquivo próprio.
+/* A ENTRADA DO TAILWIND, e os tokens próprios do GamerHub.
  *
- * Elas ficam num arquivo só para o `index.css` poder ser uma LISTA DE IMPORTS e
- * mais nada. CSS exige que todo `@import` venha antes de qualquer regra — se as
- * diretivas continuassem no `index.css`, tudo o que hoje vem depois delas
- * (`.card`, `.btn-*`, `.tag-*`) teria que ser importado ANTES, e passaria a
- * perder para as utilitárias do Tailwind em empate de especificidade.
+ * `[09/10]` Aqui era `@tailwind base/components/utilities` e um
+ * `tailwind.config.js` de 183 linhas. O Tailwind 4 acabou com o arquivo de
+ * configuração: o tema é CSS, em `@theme`, e vira variável de verdade no
+ * navegador — `var(--color-neon-green)` existe em tempo de execução, o que
+ * não acontecia no 3.
  *
- * Isso não é teoria: é o que mudaria a aparência de qualquer elemento que usa
- * `.card` junto de uma utilitária da mesma propriedade. Manter a ORDEM é o que
- * faz esta extração ser mecânica, e a prova está no build — o CSS gerado é
- * idêntico ao de antes, byte a byte. */
+ * ── Por que migramos, dito sem enfeite ────────────────────────────────────
+ *
+ * Por UM advisory: `GHSA-vfj7-8cjw-p6xm` em `braces`, que não tem versão
+ * corrigida e chegava por `tailwindcss → chokidar/fast-glob → micromatch`. O
+ * Tailwind 4 não conserta o `braces` — ele REMOVE a cadeia, porque usa outro
+ * motor. O `autoprefixer` saiu junto, embutido no novo processador.
+ *
+ * ── O que isso CUSTOU, medido ─────────────────────────────────────────────
+ *
+ *     CSS no ar (v3)    76.408 bruto  ·  15.658 gzip
+ *     CSS local (v4)   112.067 bruto  ·  19.029 gzip   (+21% comprimido)
+ *
+ * Quase tudo são os 138 blocos `@supports` e os 70 `@property` que o v4 emite
+ * para garantir as próprias funções modernas. Não há chave para desligá-los.
+ * O histórico está em `docs/DESEMPENHO.md`.
+ *
+ * ── O que ele exige de quem visita ────────────────────────────────────────
+ *
+ * Safari 16.4+, Chrome 111+, Firefox 128+. É a troca que o v4 faz por usar
+ * `@property` e `color-mix()` sem transpilar.
+ *
+ * ── A ordem continua sendo o comportamento ────────────────────────────────
+ *
+ * Quem decide a ordem é o `index.css`, e ela não mudou: este arquivo vem
+ * antes de `base.css` e de `componentes.css`, porque é o que faz `.card`
+ * vencer uma utilitária de mesma propriedade. */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@import './animacoes.css';
+@import './compatibilidade-do-v3.css';
+
+@theme {
+  --color-neon-green: #39ff14;
+  --color-neon-purple: #bf00ff;
+  --color-neon-cyan: #00ffff;
+  --color-neon-pink: #ff0090;
+
+  --color-dark-400: #2e2e3e;
+  --color-dark-500: #22222e;
+  --color-dark-600: #1a1a24;
+  --color-dark-700: #13131a;
+  --color-dark-800: #0d0d12;
+  --color-dark-900: #060608;
+
+  --font-display: 'Oxanium', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+
+  --shadow-neon: 0 0 10px #39ff14, 0 0 30px #39ff1430;
+  --shadow-neon-purple: 0 0 10px #bf00ff, 0 0 30px #bf00ff30;
+  --shadow-neon-cyan: 0 0 10px #00ffff, 0 0 30px #00ffff30;
+
+  /* Os `@keyframes` de cada uma estão em `animacoes.css`, com o porquê. */
+  --animate-pulse-neon: pulseNeon 2s ease-in-out infinite;
+  --animate-slide-in: slideIn 0.3s ease-out;
+  --animate-fade-up: fadeUp 0.4s ease-out;
+  --animate-scanline: scanline 8s linear infinite;
+  --animate-electric-buzz: electricBuzz 5s ease-in-out infinite;
+  --animate-electric-arc: electricArc 4s ease-in-out infinite;
+  --animate-bolt-float: boltFloat 7s ease-in-out infinite;
+  --animate-shape-drift: shapeDrift 9s ease-in-out infinite;
+  --animate-anel-orbita: anelOrbita 30s linear infinite;
+  --animate-nucleo-pulsa: nucleoPulsa 4.5s ease-in-out infinite;
+  --animate-raio-respira: raioRespira 9s ease-in-out infinite;
+  --animate-fragmento-flutua: fragmentoFlutua 16s ease-in-out infinite;
+  --animate-travessia: travessia 24s linear infinite;
+  --animate-subir-dado: subirDado 1s linear infinite;
+}

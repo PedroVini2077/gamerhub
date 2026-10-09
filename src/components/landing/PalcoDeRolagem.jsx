@@ -74,7 +74,7 @@ export default function PalcoDeRolagem({
 
   return (
     <div ref={alvo} style={{ height: `${altura}vh` }} className={className}>
-      {/* `h-[100svh]` e não `100vh`: no celular a barra de endereço some ao
+      {/* `h-svh` e não `100vh`: no celular a barra de endereço some ao
           rolar e a janela CRESCE. Com `vh` a cena presa mudaria de altura no
           meio do movimento — é a mesma lição de 01/09 que fez as formas da
           "Sobre" darem um pulo (ver `index.css`).
@@ -89,7 +89,7 @@ export default function PalcoDeRolagem({
           **Quem recorta a arte agora é a própria arte**, num contêiner sem
           transformação: ver `ArteQueInvade` e a camada do prólogo. */}
       <div
-        className={`sticky top-0 h-[100svh] w-full overflow-x-clip ${classeDoPalco}`}
+        className={`sticky top-0 h-svh w-full overflow-x-clip ${classeDoPalco}`}
         style={estiloDoPalco}
       >
         {children(progresso)}

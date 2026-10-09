@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ACEITOS } from '../advisories-aceitos.mjs';
 
 /**
@@ -34,11 +35,39 @@ import { ACEITOS } from '../advisories-aceitos.mjs';
  */
 
 describe('exceção de advisory é decisão escrita', () => {
-  it('a lista não está vazia nem virou texto solto', () => {
-    // Lista vazia faria o `for` abaixo não rodar nenhuma vez e o teste ficar
+  it('a lista é uma lista, e vazia só quando ALGUÉM ESCREVEU que é', () => {
+    // Lista vazia faz o `for` abaixo não rodar nenhuma vez e o teste ficar
     // verde para sempre — a classe que o `varrerFontes` existe para impedir.
+    //
+    // `[09/10]` Só que ela ficou vazia DE VERDADE: o Tailwind 4 entrou, e com
+    // ele saiu a cadeia do `braces` — a condição de saída que a própria
+    // entrada tinha escrito em 02/10. Medido: `npm audit` em zero e
+    // `npm ls braces` vazio.
+    //
+    // Então a exigência mudou de lugar em vez de sumir. Antes era "não pode
+    // estar vazia"; agora é **"vazia precisa ser decisão escrita"**, igual a
+    // uma entrada. Um `ACEITOS` que ficou vazio porque alguém apagou as linhas
+    // não traz justificativa junto, e é isso que esta checagem pega.
     expect(Array.isArray(ACEITOS), 'ACEITOS deixou de ser uma lista').toBe(true);
-    expect(ACEITOS.length, 'ACEITOS veio vazio — o import quebrou?').toBeGreaterThan(0);
+
+    if (ACEITOS.length > 0) return;
+
+    const fonte = readFileSync(
+      join(import.meta.dirname, '../advisories-aceitos.mjs'),
+      'utf8',
+    );
+    const corpo = fonte.slice(
+      fonte.indexOf('export const ACEITOS = ['),
+      fonte.indexOf('];', fonte.indexOf('export const ACEITOS = [')),
+    );
+    expect(
+      /\/\/[^\n]{40,}/.test(corpo),
+      'ACEITOS está vazia e sem uma linha dizendo POR QUE.\n'
+      + 'Vazia é o estado bom — significa que nenhum advisory precisa de\n'
+      + 'exceção. Mas vazia por alguém ter apagado as entradas é o oposto, e a\n'
+      + 'única diferença visível entre as duas é o motivo escrito ali dentro.\n'
+      + 'Se o último aceito saiu, escreva qual era e o que o resolveu.',
+    ).toBe(true);
   });
 
   for (const a of ACEITOS) {

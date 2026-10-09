@@ -6,7 +6,7 @@ function ActionSelect({ value, onChange }) {
   return (
     <select value={value} onChange={e => onChange(e.target.value)}
       aria-label="Ação de moderação"
-      className="bg-dark-700 border border-dark-500 text-xs font-mono text-gray-300 rounded px-2 py-1.5 w-full">
+      className="bg-dark-700 border border-dark-500 text-xs font-mono text-gray-300 rounded-sm px-2 py-1.5 w-full">
       <option value="">Selecionar ação...</option>
       {/* "Sem punição" é uma escolha EXPLÍCITA, não o padrão. Antes, aprovar
           sem marcar nada gerava zero ponto em silêncio — e a escalação
@@ -65,7 +65,7 @@ export default function QueueItemCard({
             mensagem — só o item saía da fila. */}
         <button onClick={() => onResolve('approved')}
           disabled={isResolving}
-          className="flex-1 py-2 text-xs font-mono font-bold rounded flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-2 text-xs font-mono font-bold rounded-sm flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: '#ef444415', color: '#f87171', border: '1px solid #ef444440' }}>
           {isResolving
             ? <><Loader2 size={12} className="animate-spin" /> Processando...</>
@@ -75,7 +75,7 @@ export default function QueueItemCard({
         </button>
         <button onClick={() => onResolve('rejected')}
           disabled={isResolving}
-          className="flex-1 py-2 text-xs font-mono rounded flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-2 text-xs font-mono rounded-sm flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: '#22c55e15', color: '#4ade80', border: '1px solid #22c55e40' }}>
           {/* "Restaurar" só faz sentido onde houve ocultação. No chat nada foi
               escondido, então a recusa é simplesmente dispensar o item. */}
@@ -83,7 +83,7 @@ export default function QueueItemCard({
         </button>
         <button onClick={onBan}
           disabled={isResolving}
-          className="px-3 py-2 text-xs font-mono rounded flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-2 text-xs font-mono rounded-sm flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: '#7c3aed15', color: '#a78bfa', border: '1px solid #7c3aed40' }}>
           <UserX size={12} /> Banir
         </button>

@@ -773,8 +773,8 @@ outro motor. É reescrita, com a configuração em CSS.
 
 **O risco real, medido:** é dependência de **build**. Não vai para o navegador
 e não processa entrada de usuário. O ataque é exaustão de pilha com padrão
-glob aninhado, e quem escolhe os nossos globs é o `tailwind.config.js` — ou
-seja, exige quem já tem escrita no repositório.
+glob aninhado, e quem escolhe os nossos globs é a configuração do Tailwind 3
+— ou seja, exige quem já tem escrita no repositório.
 
 **Recusado 1 — deixar o portão vermelho.** Portão que **não pode ser
 satisfeito** é a 4ª regra do §0.2 pelo avesso: ele não grita à toa, grita o
@@ -849,3 +849,53 @@ transformação.
 **Isto não fecha a porta.** Se aparecer uma cena que exija sequência real
 (A termina, B começa, C depende do estado de B), a conta muda e a decisão se
 reabre — com medição, não com preferência.
+
+---
+
+## `[09/10]` O Tailwind 4 ENTROU — e o `braces` saiu junto com o motor antigo
+
+A decisão de 02/10 (acima) aceitou o advisory por escrito, com a condição de
+saída: *"o Tailwind 4 entrar. Ele troca o motor e a cadeia inteira some."*
+Cumprida em 09/10, a pedido dele.
+
+**Medido depois:** `npm audit` em **zero**, `npm ls braces` devolvendo vazio. O
+`autoprefixer` saiu junto — virou parte do próprio Tailwind 4. A lista de
+advisories aceitos ficou **vazia**, e isso só não é suspeito porque o portão
+reprova o aceito que deixa de aparecer: foi ele que cobrou a saída.
+
+### O que mudou de forma
+
+| | antes | agora |
+| --- | --- | --- |
+| configuração | arquivo de configuração em JS, 183 linhas | `@theme` em `src/estilos/tailwind.css` |
+| diretivas | `@tailwind base/components/utilities` | `@import 'tailwindcss'` |
+| integração | plugin de PostCSS + `autoprefixer` | **plugin do Vite** |
+| navegadores | praticamente todos | Safari 16.4+, Chrome 111+, Firefox 128+ |
+
+### Plugin do VITE, e não de PostCSS — isto é correção, não preferência
+
+O codemod oficial configura o `@tailwindcss/postcss`, e ele **quebra os assets
+do CSS**: o Tailwind achata os `@import` antes de o Vite reescrever os `url()`
+relativos, e a moldura da tela de entrada virou um caminho que devolve
+`text/html`. A medição está em `DESEMPENHO.md`; a trava, em
+`cssNaoPerdeAsset.test.js`.
+
+### Recusado — aceitar as mudanças de padrão do v4
+
+O v4 mudou três coisas do Preflight: cor da borda (`gray-200` →
+`currentColor`), cursor do `<button>` (mãozinha → seta) e cor do
+`placeholder`. São 218 `border` nus e 274 botões no projeto.
+
+Deixar passar seria transformar uma migração de segurança em redesenho
+silencioso, contra o §7. Entrou `src/estilos/compatibilidade-do-v3.css`, com a
+**condição de remoção escrita** e trava própria.
+
+### O que ela custou, dito sem enfeite
+
+**+3,5 kB gzip de CSS** (15,7 → 19,1), quase tudo em blocos `@supports` e
+`@property` que o v4 emite para garantir as próprias funções modernas. Não há
+chave para desligá-los. E o CSS **bloqueia a pintura** — não é byte qualquer.
+
+Foi a conta que o dono pagou por um advisory de dependência de build. Está
+aqui escrito para que ninguém leia a migração como ganho de desempenho: ela
+não é.

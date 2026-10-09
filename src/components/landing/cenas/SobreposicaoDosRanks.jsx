@@ -71,7 +71,7 @@ export default function SobreposicaoDosRanks({ progresso, lado = 'esquerda' }) {
   );
 
   return (
-    <PainelDaCena lado={lado} largura="w-[15rem]">
+    <PainelDaCena lado={lado} largura="w-60">
       <div className="flex items-center justify-between pb-2.5">
         {/* Os dois selos ocupam a MESMA célula, empilhados: o novo não empurra
             nada ao chegar, ele toma o lugar do antigo. */}

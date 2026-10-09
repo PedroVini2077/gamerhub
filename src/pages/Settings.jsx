@@ -111,7 +111,7 @@ export default function Settings_() {
 
         {/* Email */}
         <div className="flex items-start gap-4 py-4 border-b border-dark-500">
-          <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0 mt-0.5">
+          <div className="w-8 h-8 rounded-sm bg-dark-500 flex items-center justify-center shrink-0 mt-0.5">
             <Mail size={15} className="text-gray-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -149,7 +149,7 @@ export default function Settings_() {
 
         {/* Role */}
         <div className="flex items-center gap-4 py-4 border-b border-dark-500">
-          <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-sm bg-dark-500 flex items-center justify-center shrink-0">
             <Shield size={15} className="text-gray-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -163,7 +163,7 @@ export default function Settings_() {
 
         {/* Senha */}
         <div className="flex items-center gap-4 py-4">
-          <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-sm bg-dark-500 flex items-center justify-center shrink-0">
             <Lock size={15} className="text-gray-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -202,7 +202,7 @@ export default function Settings_() {
       <div className="card p-5">
         <h2 className="font-display text-xs text-gray-500 tracking-widest uppercase mb-2">Notificações</h2>
         <div className="flex items-center gap-4 py-4 border-b border-dark-500">
-          <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-sm bg-dark-500 flex items-center justify-center shrink-0">
             <Heart size={15} className="text-gray-400" />
           </div>
           <div className="flex-1">
@@ -213,7 +213,7 @@ export default function Settings_() {
             onChange={v => handleToggleNotif('likes', v)} />}
         </div>
         <div className="flex items-center gap-4 py-4">
-          <div className="w-8 h-8 rounded bg-dark-500 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-sm bg-dark-500 flex items-center justify-center shrink-0">
             <MessageSquare size={15} className="text-gray-400" />
           </div>
           <div className="flex-1">

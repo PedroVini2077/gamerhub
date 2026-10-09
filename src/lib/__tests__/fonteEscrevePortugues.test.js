@@ -16,20 +16,26 @@ import { FONTES_CONFERIDAS, FONTES_REPROVADAS } from '../fontesConferidas';
  * renderizado e olhado.
  */
 
-const TAILWIND = readFileSync('tailwind.config.js', 'utf8');
+// `[09/10]` O tema saiu do `tailwind.config.js` e virou CSS: o Tailwind 4
+// acabou com o arquivo de configuração, e `--font-display: 'Oxanium', …`
+// dentro de `@theme` é onde as famílias moram agora.
+//
+// A extração mudou junto, e a 1ª checagem abaixo é o que impede isso de
+// passar em silêncio: se o formato mudar de novo, ela acha ZERO famílias e
+// reprova, em vez de aprovar o vazio.
+const TEMA = readFileSync('src/estilos/tailwind.css', 'utf8');
 const FONTES_CSS = readFileSync('src/estilos/fontes.css', 'utf8');
 
-/** As famílias declaradas no `fontFamily` do Tailwind. */
+/** As famílias declaradas nos tokens `--font-*` do `@theme`. */
 function familiasDoTailwind() {
-  const bloco = TAILWIND.match(/fontFamily:\s*\{([\s\S]*?)\}/)?.[1] ?? '';
-  return [...bloco.matchAll(/["']'([^']+)'["']/g)].map((m) => m[1]);
+  return [...TEMA.matchAll(/--font-[a-z-]+:\s*'([^']+)'/g)].map((m) => m[1]);
 }
 
 describe('toda fonte do site foi conferida para o português', () => {
   it('a extração acha as famílias — senão a trava aprova o vazio', () => {
     const familias = familiasDoTailwind();
     expect(familias.length, 'nao achei nenhuma familia no `fontFamily` do '
-      + 'tailwind.config.js. O formato mudou? Sem isto a trava passa verde sem '
+      + '`@theme` de `src/estilos/tailwind.css`. O formato mudou? Sem isto a trava passa verde sem '
       + 'olhar nada — a mesma vacuidade que o `varrerFontes` fecha.')
       .toBeGreaterThanOrEqual(3);
   });
@@ -38,7 +44,7 @@ describe('toda fonte do site foi conferida para o português', () => {
     const naoConferidas = familiasDoTailwind()
       .filter((f) => !Object.hasOwn(FONTES_CONFERIDAS, f));
 
-    expect(naoConferidas, 'estas fontes entraram no `tailwind.config.js` sem '
+    expect(naoConferidas, 'estas fontes entraram no `@theme` do Tailwind sem '
       + 'passar pela conferencia de portugues:\n'
       + `  ${naoConferidas.join(', ')}\n\n`
       + '  A Orbitron ficou no ar escrevendo "nao" como "nao" com CRASE ate o '

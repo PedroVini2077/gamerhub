@@ -34,11 +34,11 @@ export default function RightPanel() {
         ) : (
           <div className="space-y-3">
             {keys.map(k => (
-              <div key={k.id} className="border border-dark-400 rounded p-3 hover:border-neon-green/30 transition-colors">
+              <div key={k.id} className="border border-dark-400 rounded-sm p-3 hover:border-neon-green/30 transition-colors">
                 <p className="text-sm font-semibold text-white mb-1">{k.game_title}</p>
                 <span className="tag tag-green">{k.platform}</span>
                 {k.key_code && (
-                  <p className="mt-2 font-mono text-xs text-neon-green bg-dark-700 px-2 py-1 rounded break-all">
+                  <p className="mt-2 font-mono text-xs text-neon-green bg-dark-700 px-2 py-1 rounded-sm break-all">
                     {k.key_code}
                   </p>
                 )}
@@ -59,7 +59,7 @@ export default function RightPanel() {
         ) : (
           <div className="space-y-3">
             {promos.map(p => (
-              <div key={p.id} className="border border-dark-400 rounded p-3 hover:border-neon-purple/30 transition-colors">
+              <div key={p.id} className="border border-dark-400 rounded-sm p-3 hover:border-neon-purple/30 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-semibold text-white">{p.game_title}</p>
                   {p.discount_percent > 0 && (

@@ -183,7 +183,7 @@ export default function Admin() {
             <p className="text-xs text-gray-500 font-mono">Área restrita. Acesso controlado por hierarquia.</p>
           </div>
           <button onClick={() => setAlertOwnerModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-red-400/80 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 rounded transition-all shrink-0">
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-red-400/80 hover:text-red-400 border border-red-400/30 hover:border-red-400/60 rounded-sm transition-all shrink-0">
             <Siren size={12} />Alertar o Fundador
           </button>
         </div>

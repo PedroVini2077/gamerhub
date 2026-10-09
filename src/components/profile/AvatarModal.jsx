@@ -10,7 +10,7 @@ export default function AvatarModal({ avatarUrl, profile, onClose }) {
         <div className="relative">
           <div className="absolute inset-0 grid-bg opacity-60" />
           <img src={avatarUrl} alt="avatar" className="w-full h-64 object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-800 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-dark-800 via-transparent to-transparent" />
         </div>
         <div className="bg-dark-800 px-5 py-4">
           <div className="flex items-center justify-between mb-1">

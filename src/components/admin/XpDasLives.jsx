@@ -94,14 +94,14 @@ export default function XpDasLives() {
               ) : s.invalidada_em ? (
                 <button
                   onClick={() => desfazer(s)}
-                  className="flex items-center gap-1 text-xs font-mono text-neon-green/70 hover:text-neon-green border border-neon-green/20 hover:border-neon-green/50 px-2 py-0.5 rounded transition-all shrink-0"
+                  className="flex items-center gap-1 text-xs font-mono text-neon-green/70 hover:text-neon-green border border-neon-green/20 hover:border-neon-green/50 px-2 py-0.5 rounded-sm transition-all shrink-0"
                 >
                   <RotateCcw size={10} />Devolver
                 </button>
               ) : (
                 <button
                   onClick={() => { setAvisoDeErro(null); setAlvo(s); }}
-                  className="flex items-center gap-1 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/20 hover:border-red-400/50 px-2 py-0.5 rounded transition-all shrink-0"
+                  className="flex items-center gap-1 text-xs font-mono text-red-400/70 hover:text-red-400 border border-red-400/20 hover:border-red-400/50 px-2 py-0.5 rounded-sm transition-all shrink-0"
                 >
                   <Ban size={10} />Tirar XP
                 </button>

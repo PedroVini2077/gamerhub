@@ -15,7 +15,7 @@ export default function NominationCard({ nomination: nom, isOpen, onToggle, onDe
       <button type="button" onClick={onToggle} aria-expanded={isOpen}
         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-dark-700/40 transition-colors text-left">
         <CandidateHeader profile={nom.candidate} extra={
-          <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-purple-400/15 text-purple-300 shrink-0">
+          <span className="text-xs font-mono px-1.5 py-0.5 rounded-sm bg-purple-400/15 text-purple-300 shrink-0">
             <ArrowRight size={11} className="inline align-[-1px]" /> {roleLabel(nom.target_role)}
           </span>
         } />

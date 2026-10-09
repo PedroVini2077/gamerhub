@@ -76,7 +76,7 @@ export default function ResetDoCofre({ aoConfirmar, aoFechar }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-100 flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.92)' }}
       role="dialog"
       aria-modal="true"
@@ -118,14 +118,14 @@ export default function ResetDoCofre({ aoConfirmar, aoFechar }) {
               type="button"
               onClick={aoFechar}
               disabled={conferindo}
-              className="flex-1 py-2.5 rounded text-sm font-display tracking-widest uppercase border border-dark-400 text-gray-400 hover:text-gray-200 transition-colors"
+              className="flex-1 py-2.5 rounded-sm text-sm font-display tracking-widest uppercase border border-dark-400 text-gray-400 hover:text-gray-200 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={conferindo || !senha}
-              className="cofre-botao flex-1 py-2.5 rounded text-sm font-display tracking-widest uppercase flex items-center justify-center gap-2"
+              className="cofre-botao flex-1 py-2.5 rounded-sm text-sm font-display tracking-widest uppercase flex items-center justify-center gap-2"
             >
               <RotateCcw size={14} />
               {conferindo ? 'Conferindo…' : 'Apagar'}

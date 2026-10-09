@@ -97,7 +97,7 @@ export default function QueueContentPreview({ contentType, contentId }) {
 
       {corpo && (
         <div className="space-y-1">
-          <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap break-words">
+          <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap wrap-break-word">
             {visivel}
           </p>
           {comprido && (

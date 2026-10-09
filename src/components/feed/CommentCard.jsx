@@ -74,7 +74,7 @@ export default function CommentCard({ comment, replies = [], onDelete, onReply, 
               horizontal ali sugere seções que uma resposta não tem. O corte é o
               mesmo de `RECURSOS_DE_COMENTARIO`. */}
           <TextoFormatado texto={comment.content} separador={false}
-            className="text-xs text-gray-300 leading-relaxed break-words" />
+            className="text-xs text-gray-300 leading-relaxed wrap-break-word" />
           <div className="flex items-center gap-4 mt-1.5">
             <button
               onClick={toggle}

@@ -88,7 +88,7 @@ export default function PainelTab({ onlineCount }) {
         <div className="flex items-end gap-1 h-20">
           {daily.map(d => (
             <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-              <div className="w-full rounded-sm transition-all"
+              <div className="w-full rounded-xs transition-all"
                 style={{
                   height: `${d.count > 0 ? Math.max((d.count / maxCnt) * 64, 8) : 3}px`,
                   background: d.count > 0 ? OC : '#2e2e3e',

@@ -154,7 +154,9 @@ onde cota mora, e nos PRs #284 a #286.
 
 **Depende só de código** (posso tocar sem você):
 
-- 🟠 **Tailwind 4** — é a única saída real do advisory do `braces`, e é migração
+- ~~🟠 **Tailwind 4**~~ — **feito em 09/10.** `npm audit` em zero e `npm ls braces`
+  vazio: a cadeia saiu junto com o motor antigo. O histórico está em
+  `docs/DECISOES-FERRAMENTAL.md` e a medição em `docs/DESEMPENHO.md`. Era migração
   de verdade (o motor de CSS muda). Está na fila abaixo com a conta feita.
 - 🟠 **Contador de tentativas de login** — nunca foi LIGADO. Precisa do
   Password Verification Hook, e o passo a passo pesquisado já está no
@@ -165,8 +167,6 @@ onde cota mora, e nos PRs #284 a #286.
 
 - 🟠 **Migrar o email para fora do Gmail** — hoje são ~500 envios/dia e o
   cadastro para quando estourar. Escolher o provedor é decisão de custo.
-- **A reorganização documental** (Fase 0 feita, esperando aprovação) — está na
-  fila abaixo.
 
 #### 4. A VISÃO DE FUTURO envelheceu — TRÊS itens já existem
 
@@ -469,121 +469,6 @@ Hoje **não**: 331,4 kB brutos contra 7,1 kB ([DESEMPENHO.md](docs/DESEMPENHO.md
 > não pelo peso ter saído do caminho crítico.
 
 ---
-
-### ⬜ `[19/09]` REORGANIZAÇÃO DOCUMENTAL — Fase 0 FEITA, esperando aprovação
-
-**Pedido dele:** auditoria estrutural de documentação, prosas e travas, com
-*"NÃO QUEBRE NENHUMA TRAVA EXISTENTE"* como regra acima de todas. Implementação
-**só depois da aprovação** — este bloco é o levantamento, não a execução.
-
-#### O que foi MEDIDO (Fase 0) — nada foi alterado
-
-| | |
-| --- | --- |
-| documentação | 17.385 linhas em 22 arquivos. Maiores: `DECISOES.md` 2.506 · `BACKLOG.md` 1.907 · `OPERACAO.md` 1.661 · `SEGURANCA.md` 1.581 · `DESEMPENHO.md` 1.477 |
-| relatórios de auditoria | 23 arquivos em `db/`, 5.316 linhas |
-| testes/roteiros/portões | **147** arquivos |
-| inventário de travas do `CLAUDE.md` | cita **43** → cobre **29%** |
-| travas que leem SQL como TEXTO | **23** (a classe frágil do item 17) |
-| prosa em `src/` | 12.356 de 45.067 linhas (**27%**); 208 arquivos com bloco de 15+ linhas |
-| prosa em migrations | 5.060 de 16.286 linhas (**31%**) |
-| IDs vivos | `SEC-*` em 51 migrations e 29 arquivos de `src/`; `LIVE-*` em 13 e 19; `N*` só em documentação |
-| `ADR-*` e `INV-*` | **não existem** — 0 ocorrências no repositório inteiro |
-
-#### O achado que MUDA o tamanho do item 14 (HTML/DevTools)
-
-Medido, não suposto:
-
-- **comentário JSX `{/* */}`: 227 blocos no fonte, ZERO no build.** O
-  compilador os remove. Não chegam ao DOM, não poluem DevTools, não pesam.
-- **`index.html`: 7 comentários, e os 7 SOBREVIVEM** para `dist/index.html`.
-
-Então o item 14 **não é problema de projeto — é de um arquivo só**, e o
-conserto são 7 linhas. Afirmar o contrário seria inflar o trabalho.
-
-#### O que o projeto JÁ TEM e não precisa ser criado
-
-A estrutura pedida em grande parte existe com outro nome. Criar de novo seria
-duplicar fonte de verdade (§4):
-
-| O prompt pede | Já existe como |
-| --- | --- |
-| `docs/audits/` | **`db/AAAA-MM-DD-*.md`** — 23 relatórios, e o lembrete de auditoria já lê a data deles |
-| `docs/rules/` | **`docs/regras/`**, injetado por `@import` no `CLAUDE.md` |
-| índice de decisões | **`docs/DECISOES.md`** + `DECISOES-FERRAMENTAL.md` |
-| rastreabilidade achado→correção | parcial: `SEGURANCA.md` liga N→SEC/LIVE em prosa |
-
-#### O que falta de verdade — e é CURTO
-
-1. **`docs/INVARIANTES.md`** — a camada `INV-*` não existe. Hoje a regra
-   permanente só existe implícita, dentro do teste que a protege.
-2. **Inventário de travas com rastreabilidade** — o do `CLAUDE.md` cobre 29% e
-   **não distingue trava de teste comum**. Esse é o buraco real, não o tamanho.
-3. **ADRs** para as decisões que hoje moram em prosa de migration.
-
-#### Riscos que a migração precisa respeitar (levantados, não resolvidos)
-
-- **Três portões leem caminho de documento:** `documentacao-quebrada.mjs`,
-  `territorio-coberto.mjs` e `numeros-do-projeto.mjs` (36 números vivos em 52
-  documentos). Mover arquivo sem atualizar `scripts/territorio.mjs` **reprova o
-  CI** — e pior, `territorio-coberto` passa a dizer que uma pasta não tem dono.
-- **23 travas leem o TEXTO das migrations.** Reescrever comentário de migration
-  pode quebrá-las: várias já foram enganadas por prosa citando comando.
-- **A prosa das migrations é imutável na prática:** a migration já rodou. Editar
-  o arquivo não muda o banco, e faz o espelho mentir.
-
-#### Ordem proposta (cada uma é um PR, e nenhuma apaga nada)
-
-1. ✅ **FEITO** — `docs/INVARIANTES.md`. **`[24/09]` correção: eu disse "31
-   invariantes em 8 famílias" e eram 37 em 9** — contei errado ao relatar, o
-   arquivo sempre teve as 37. Derivadas dos `describe()` das travas que já
-   rodam; nada inventado. Registrado no `README`, no `territorio.mjs`, no
-   `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`. **0 arquivos de código
-   tocados.**
-2. ✅ **FEITO** — `docs/TRAVAS.md`: os **149** classificados em 7 naturezas
-   (9 portões de CI · 23 travas de invariante · 18 de contrato · 19 E2E ·
-   4 robôs que avisam · 62 testes comuns · **14 que NÃO são trava**, nomeados).
-   Achou **9 travas sem invariante escrito** e **1 erro no `CLAUDE.md`**
-   (o `edges-implantadas` dizia estar fora do CI; roda no `implantar-edges.yml`).
-   **0 arquivos de código tocados.**
-3. ✅ **FEITO** — as **9 travas órfãs** viraram invariante: `INV-NAV-001`,
-   `INV-TELA-001/002/003`, `INV-LEGAL-001/002`, `INV-CONTRATO-007` e
-   `INV-CONTA-006/007`. O `INVARIANTES.md` passou a **46 invariantes em 12
-   famílias**, e nenhuma linha do `TRAVAS.md` diz mais "sem INV".
-4. ✅ **FEITO** `[24/09]` — os **7 comentários do `index.html`**. Eles eram os
-   únicos comentários do projeto que **chegam ao navegador**: o JSX tem 227
-   blocos no fonte e zero no build, o de HTML vai inteiro para o `dist/`. A
-   prosa foi **copiada** para a seção "O `index.html` — o que cada linha faz, e
-   por quê" do `ARQUITETURA.md` (nada apagado), e a trava
-   `htmlNaoVazaProsa.test.js` confere as duas pontas — nenhum comentário no
-   HTML **e** a seção continuar de pé com o conteúdo dentro, senão ela premiaria
-   quem apaga a explicação. `INV-PORTA-009`.
-5. ✅ **FEITO** `[24/09]` — e **saiu diferente do planejado, de propósito.**
-   Virou **um índice**, `docs/DECISOES-DE-BANCO.md`, e não uma pasta de ADRs.
-   Três desvios, todos escritos dentro do próprio arquivo:
-
-   | O plano dizia | O que foi feito | Por quê |
-   | --- | --- | --- |
-   | criar `ADR-001`, `ADR-002`… | usar os IDs que **já existem** (`SEC-*`, `LIVE-*`) | um segundo espaço de IDs para o mesmo fato é a duplicação do §4 — `SEC-027` já é citado em migration, teste, `SEGURANCA.md` e `INVARIANTES.md` |
-   | um arquivo por decisão | um índice | *"NÃO CRIE 500 ARQUIVOS"* foi pedido explícito, e o que faltava era **navegação** |
-   | **copiar** a prosa | **resumir** decisão + descarte e apontar a migration | copiar cria a segunda fonte que envelhece. E **nenhuma migration foi tocada** — 23 travas leem o texto delas |
-
-   12 decisões indexadas em 5 temas. Registrado no `README`, no
-   `territorio.mjs`, no `CLAUDE.md` e na tabela do `DOCUMENTACAO.md`.
-
-**Nada de banco. Nada de RLS. Nada de comportamento.**
-
----
-
-
-- ⬜ `[24/09]` 🟢 **O `CLAUDE.md` está a DUAS linhas do próprio teto (898 de
-  900).** *Descoberto pela trava `regrasCarregadas.test.js`, que reprovou quando
-  uma linha nova o levou a exatamente 900 — ela funcionou. A próxima regra que
-  entrar não cabe, e a saída certa não é subir o teto: é o §6.2 regra 5 (seção
-  acima de ~150 linhas vira arquivo próprio), que foi como nasceram os
-  `docs/regras/`. Candidatos a sair: §0.2 (cotas, ~90 linhas) e §6.3 (a tabela
-  dos mecanismos, ~80). Não é urgente — vira urgente no dia em que eu precisar
-  escrever uma regra e não puder.*
 
 ### ✅ `[24/09]` O comentário sumia da tela — resposta velha sobrescrevendo a nova
 
@@ -1158,7 +1043,7 @@ trajetos leva ponto. Conferido em 1280×800 e em 400×800.
 ---
 
 **Última conferência contra o sistema:** 18/09/2026 ·
-**58 itens abertos** (+ 1 ideia sem compromisso)
+**51 itens abertos** (+ 1 ideia sem compromisso)
 
 ---
 
@@ -1590,34 +1475,6 @@ AGORA** escrito nele.
   **Discord** custa R$0, zero código e já tem moderação de voz pronta. Sala
   nativa só compensa quando o site tiver gente suficiente para que sair dele
   seja o problema — e aí a decisão volta com os três custos acima na mesa.
-
-
-- ⬜ `[02/10]` 🟠 **Migrar para o Tailwind 4 — é a única saída real do
-  `GHSA-vfj7-8cjw-p6xm`.** *Advisory sem conserto, aceito por escrito em
-  02/10.*
-
-  **O problema:** `braces` tem advisory de DoS por exaustão de pilha, e **não
-  existe versão corrigida** — 3.0.3 é a última publicada e o advisory cobre
-  `<=3.0.3`. Ela é transitiva do Tailwind 3:
-
-      tailwindcss → chokidar / fast-glob → micromatch → braces
-
-  O `npm audit fix` oferece Tailwind 4, que **não corrige o braces**: ele
-  remove a cadeia inteira, porque o 4 usa outro motor.
-
-  **O risco hoje é baixo, e isso é medido:** é dependência de build, não vai
-  para o navegador, não processa entrada de usuário, e quem escolhe os nossos
-  globs é o `tailwind.config.js` — exige quem já tem escrita no repositório.
-  Por isso virou exceção escrita em `scripts/advisories-aceitos.mjs`, com
-  motivo, data e esta condição de saída.
-
-  **Por que não foi feito agora:** Tailwind 4 move a configuração para CSS
-  (`@theme`), muda a sintaxe de várias utilidades e toca a folha de estilo
-  inteira. Fazer isso no meio de outra tarefa é trocar um risco teórico de
-  build por um risco real de produto.
-
-  **Quando for feito:** a entrada em `ACEITOS` sai junto — e o portão reprova
-  se ela ficar, porque ele acusa aceito que já não aparece.
 
 
 - ⬜ `[02/10]` 🔵 **Três roteiros E2E ainda têm o login INLINE.** *Dívida que
@@ -2249,69 +2106,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 
   As 3 órfãs de hoje já foram apagadas — eram minhas, do `claudetester`.
 
-- ⬜ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
-  para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
-
-  Apareceu no Security Advisor durante a auditoria das 48:
-  `auth_leaked_password_protection` desligado. O Supabase checaria a senha
-  escolhida contra o HaveIBeenPwned e recusaria as que já vazaram.
-
-  > **`[18/09]` EU ESCREVI ESTE ITEM ERRADO E O DONO QUASE PAGOU POR ISSO.**
-  > A primeira versão era um passo a passo mandando ele abrir o painel e ligar
-  > um toggle. **O toggle não existe no plano Free.** A documentação oficial é
-  > explícita: *"Leaked password protection is available on the **Pro Plan and
-  > above**"* — conferido em 18/09 em
-  > https://supabase.com/docs/guides/auth/password-security
-  >
-  > O item `[22/08]` já dizia isso — *"só no plano Pro (~US$25/mês)"* — e eu
-  > criei um segundo item contradizendo o primeiro, sem conferir nenhum dos
-  > dois. Os dois estão unificados aqui.
-  >
-  > **A falha é exatamente a que o §9.12 descreve:** *"passo a passo sem essa
-  > conferência é armadilha bem formatada"*. E ela veio no mesmo dia em que eu
-  > declarei ao dono que tinha pulado a pesquisa de documentação no prompt das
-  > 48 — ou seja, não foi descuido isolado: foi a mesma omissão, duas vezes.
-
-  **O que o Advisor não diz:** ele marca o recurso como desligado mesmo em
-  projeto que não pode ligá-lo. O alerta é genérico, não é acionável aqui.
-
-  **Custo:** ~US$25/mês (Pro). **Decisão dele.** Enquanto não for, a política
-  de senha do próprio site é o que protege — ver o item `[12/09]` sobre a
-  política do painel de Auth nunca ter sido conferida.
-
-- ⬜ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
-  de painel — eu não alcanço.*
-
-  Queixa do dono: *"não tá contando os logins errado"*. **Ele está certo, e
-  medido:** `login_attempts` tem **0 linhas** e `max(updated_at)` é *nunca*. Nos
-  logs do GoTrue das últimas 24 h houve **9 logins** e o único `run_hook`
-  registrado foi o da `send-email` — o de verificação de senha não aparece
-  nenhuma vez.
-
-  **NÃO é "faltou clicar", e eu afirmei isso antes de conferir.** O
-  `Password Verification Attempt` **não existe no plano Free**: a tabela da
-  [documentação de Auth Hooks](https://supabase.com/docs/guides/auth/auth-hooks)
-  o marca como `Teams and Enterprise`, enquanto quatro outros aparecem como
-  `Free, Pro`. O projeto **já sabia** — está num comentário em
-  `src/pages/Login.jsx` desde 28/08 — e eu diagnostiquei pelo banco sem ler o
-  comentário que estava no caminho.
-
-  A função existe, está correta e foi **provada em ROLLBACK** (4 erradas contam,
-  a 5ª bloqueia por 15 min, acertar limpa). Ela simplesmente **nunca é chamada**.
-
-  **A DECISÃO É SUA, e são duas opções honestas:**
-
-  | Opção | O que muda | Custo |
-  | --- | --- | --- |
-  | **A. Tirar a promessa da tela** | a mensagem "Conta bloqueada por excesso de tentativas" sai, e o site deixa de prometer o que não faz. A função e a migration ficam guardadas, prontas para o dia do upgrade | zero |
-  | **B. Subir de plano** | o hook liga e o contador passa a valer | mensalidade do Supabase |
-
-  **O que está fora:** contar do lado do cliente. Foi exatamente a brecha
-  fechada em 28/08 — qualquer um forjava o bloqueio de qualquer e-mail sem
-  saber a senha.
-
-  Enquanto isso, quem protege contra força bruta é o rate limit do próprio
-  GoTrue, que é server-side e não depende desta tela.
 
 - ⬜ `[11/09]` 🟡 **A foto do remetente do e-mail é a letra "G".** *Ação do dono
   — e o caminho não é o que este item dizia até hoje.*
@@ -2487,17 +2281,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   > `comment` (1) — **nenhum `sem_analise`**. Mesma ressalva do item acima:
   > nada foi postado desde 28/08, então o zero é falta de amostra, não prova.
 
-- ⬜ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
-  `hook_de_verificacao_de_senha` está no banco, testada e com `EXECUTE` só para
-  o `supabase_auth_admin` — mas o *Password Verification Attempt hook* aparece
-  cinza no painel: **"Team or Enterprise Plan required"**. O outro caminho
-  também está fechado: `auth.audit_log_entries` está vazia, zero linhas desde
-  sempre. **O que já está resolvido:** ninguém consegue mais fabricar alerta de
-  segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
-  O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
-  decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
-
-
 
 - ⬜ `[29/08]` 🟢 **Decidir as outras abas da navegação lateral da landing.**
   Hoje ela tem as cinco seções da página, "Sobre" e "Entrar". Você disse que não
@@ -2522,44 +2305,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   Ele respondeu "pode ir" para a Fase 1 + aviso de offline, e esta parte ficou
   explicitamente de fora. Fica registrada para não se perder.
 
-
-- ⬜ `[08/10]` 🟠 **A landing trava no app — e o portão por aparelho do §0.3
-  nunca foi construído.** *🟡 decisão dele: aprovar o portão por MEDIÇÃO.*
-
-  **Confirmado por ele:** *"a maioria é na landing page"*. O feed aguenta. Não
-  é o WebView — é a decoração.
-
-  **O que a investigação DESCARTOU, medindo:**
-
-  | | |
-  | --- | --- |
-  | JavaScript por quadro | `useProgressoDeRolagem` usa `MotionValue`, sem render do React por quadro. O erro que custou 714 ms no `FluxoDeDados` já está registrado no `DESEMPENHO.md` e não se repete |
-  | peso das imagens | 42 arquivos, 3,3 MB, já em variantes responsivas (828 px para celular alto, 1600 para largo) |
-
-  **O que sobra, e eu NÃO consigo medir daqui:** quantas camadas pintam ao
-  mesmo tempo. Depende da GPU do aparelho dele.
-
-  **A proposta, e ela esbarra numa regra do próprio projeto.** O §0.3, regra 2,
-  prevê um portão por aparelho que **nunca existiu**. Mas a regra 6 fecha o
-  caminho óbvio: *"detectar aparelho é medir, não identificar"* — ler modelo e
-  GPU foi RECUSADO por ser impressão digital.
-
-  Então o portão tem de medir **o próprio desenho**: contar quadros perdidos
-  nos primeiros ~1,5 s e, se estiver ruim, cair para a cena **parada** que já
-  existe para `prefers-reduced-motion` (`PrologoParado`, e o caminho "composição
-  parada, não vazia" do `PortalDoAtoZero`). Não é construir uma segunda landing
-  — é religar o que já está lá por outro motivo.
-
-  **A escolha explícita de quem olha VENCE a medição**, sempre (§0.3, regra 2).
-
-  **O risco, dito antes de construir:** medição de quadro no começo erra se o
-  aparelho estiver ocupado abrindo o app — ela acusaria lentidão inexistente e
-  cortaria o enfeite de quem não precisava. Por isso o corte não pode ser
-  permanente nem vencer a escolha de ninguém.
-
-  **As três perguntas para ele:** (1) aprova o portão por medição? (2) o corte
-  vale só na landing ou no site logado também? (3) botão visível para religar
-  os efeitos, ou basta o `prefers-reduced-motion` do sistema?
 
 - ⬜ `[08/10]` 🔵 **A CSP ainda libera o Google Fonts, que o projeto não usa
   mais.** *Esbarrei nisto ao replicar a política para o app.*
@@ -2627,48 +2372,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   XP depende dele (SEC-028): post apagado deixou de pagar.
 
 
-
-- ⬜ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail.** *`[05/09]` O
-  CÓDIGO JÁ ESTÁ PRONTO — o que falta é ação de painel, e ela é do dono.*
-
-  **O que mudou em 05/09.** A função passou a aceitar **dois caminhos**:
-  se `SMTP_HOST` existir ela usa o relay; se não existir, segue no Gmail
-  exatamente como hoje. Mudança aditiva (§7): o caminho feliz de agora não foi
-  tocado, e voltar atrás é **apagar um segredo**.
-
-  Isso torna a migração uma ação de painel — sem deploy, sem coordenar horário,
-  sem mexer em código com o cadastro possivelmente quebrado.
-
-  **O que depende do dono, na ordem:**
-
-  1. criar conta no Brevo e **verificar um remetente**;
-  2. **a pergunta que decide o custo:** o Brevo aceita remetente verificado
-     **sem domínio próprio**? Se sim, custa **R$0**; se exigir domínio, são os
-     ~R$40/ano que ele já recusou uma vez. *Eu não consegui confirmar isso —
-     a documentação deles não abre para leitura automática, e prefiro dizer
-     isso a repetir de memória um número que pode ter mudado.* Ele vê em dois
-     minutos ao criar a conta;
-  3. pegar as credenciais SMTP e colar em **Supabase → Edge Functions →
-     Secrets**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e
-     `SMTP_FROM`. **A senha não passa por aqui** — mesma regra do Turnstile;
-  4. me avisar para eu reimplantar a função e conferir o primeiro envio.
-
-  **Como provamos que funcionou:** um cadastro de teste. Se falhar, a mensagem
-  em `admin_logs` agora diz **qual caminho** estava em uso — antes ela mandaria
-  investigar o provedor errado.
-
-  **O que continua sem prova até lá:** que o e-mail chega, que a senha está
-  certa e que o remetente foi aceito. Nada disso é verificável do repositório;
-  a trava `envioDeEmailTemDoisCaminhos.test.js` só garante que as propriedades
-  do código não sumam.
-
-  > **Por que isto NÃO é urgente por volume, medido em 05/09:** `auth_register`
-  > tem **12 registros na vida do projeto**, o último em 28/08. A cota de ~500/dia
-  > não está perto de estourar. O que mantém o item em 🟠 é outra coisa: se o
-  > Google travar a conta por envio automatizado, **cadastro e recuperação de
-  > senha param em silêncio** — e o site continua de pé, aparentando funcionar.
-
-
 ## 🟢 Recomendado
 
 - ⬜ `[18/09]` 🟢 **A tela de lives diz "1 ao vivo" e "Nenhuma live acontecendo
@@ -2728,7 +2431,6 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   trocá-la por uma que compare `idx_scan` **entre** índices da mesma tabela (o
   que distingue "ninguém usa este banco" de "ninguém usa este índice"). Enquanto
   não houver tráfego real, nenhuma das duas responde nada.
-
 
 
 - ⬜ `[11/09]` **Medir a landing NOVA em campo — o antes/depois que sobrou.**
@@ -2830,8 +2532,8 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->200<!--/n--> arq ·
-  <!--n:src.lib.linhas-->25.959<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->201<!--/n--> arq ·
+  <!--n:src.lib.linhas-->26.087<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->25<!--/n--> arq ·
   <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
@@ -2839,6 +2541,195 @@ contagem do CI foi a 1, e o `REVOKE` a zerou.
   sugerido: a próxima migration que renomeie ou remova coluna.
 - ⬜ `[21/08]` **2FA no login.**
 - ⬜ `[21/08]` **Afinar detecção de ban** (hoje realtime + poll de 60s de reserva).
+
+## ⏸️ `[09/10]` DESATIVADO — decisão JÁ TOMADA, não é fila
+
+> Pedido dele em 09/10: *"tô quase te pedindo pra criar um outro bloco no
+> backlog de itens desativados, pra esses casos de decisões de custos ou algo
+> assim"*.
+
+**Por que este bloco existe, e a prova de que precisava existir.** Em 17/09 ele
+escreveu, na linha 1182 deste arquivo: *"ligar o contador de tentativas não dá,
+é pago esqueceu?"*. Em 09/10 eu listei o mesmo contador para ele como *"só
+depende de mim"* — depois de reler a fila.
+
+Não foi falta de informação: o item **dizia** que era plano pago, por extenso, e
+com link para a documentação. Foi o lugar. Ele morava numa seção chamada
+*"precisa de ação ou decisão do dono"*, marcado 🟠, e o `inicio-de-sessao.sh`
+imprime todo `- ⬜` com 🔴 ou 🟠 como prioridade da sessão. **O gatilho que
+existe para eu não esquecer os itens era o que me fazia ressuscitar estes.**
+
+**A diferença entre este bloco e a fila, em uma frase:** a fila é o que falta
+decidir; aqui a decisão **já foi tomada**, e reabrir exige ele dizer que mudou
+de ideia — não eu lembrar que existe.
+
+**A marca é `- ⏸️`, não `- ⬜`**, e isso não é estética: as duas máquinas que
+leem este arquivo procuram `^- ⬜`. O contador de itens abertos para de somá-los
+e o gatilho de sessão para de imprimi-los, sem precisar de regra nova nem de eu
+lembrar (§9.8, pergunta 5). A trava `backlogDesativadoNaoRessuscita.test.js`
+reprova quem escrever `- ⬜` aqui dentro.
+
+**O que NÃO muda:** nada foi apagado. Cada item continua inteiro, com a
+medição, o custo e o que o desbloquearia. Item que some em silêncio é o oposto
+do que este arquivo serve.
+
+### Por CUSTO — plano pago ou assinatura
+
+- ⏸️ `[11/09]` 🟠 **O contador de tentativas de login nunca foi LIGADO.** *Ação
+  de painel — eu não alcanço.*
+
+  Queixa do dono: *"não tá contando os logins errado"*. **Ele está certo, e
+  medido:** `login_attempts` tem **0 linhas** e `max(updated_at)` é *nunca*. Nos
+  logs do GoTrue das últimas 24 h houve **9 logins** e o único `run_hook`
+  registrado foi o da `send-email` — o de verificação de senha não aparece
+  nenhuma vez.
+
+  **NÃO é "faltou clicar", e eu afirmei isso antes de conferir.** O
+  `Password Verification Attempt` **não existe no plano Free**: a tabela da
+  [documentação de Auth Hooks](https://supabase.com/docs/guides/auth/auth-hooks)
+  o marca como `Teams and Enterprise`, enquanto quatro outros aparecem como
+  `Free, Pro`. O projeto **já sabia** — está num comentário em
+  `src/pages/Login.jsx` desde 28/08 — e eu diagnostiquei pelo banco sem ler o
+  comentário que estava no caminho.
+
+  A função existe, está correta e foi **provada em ROLLBACK** (4 erradas contam,
+  a 5ª bloqueia por 15 min, acertar limpa). Ela simplesmente **nunca é chamada**.
+
+  **A DECISÃO É SUA, e são duas opções honestas:**
+
+  | Opção | O que muda | Custo |
+  | --- | --- | --- |
+  | **A. Tirar a promessa da tela** | a mensagem "Conta bloqueada por excesso de tentativas" sai, e o site deixa de prometer o que não faz. A função e a migration ficam guardadas, prontas para o dia do upgrade | zero |
+  | **B. Subir de plano** | o hook liga e o contador passa a valer | mensalidade do Supabase |
+
+  **O que está fora:** contar do lado do cliente. Foi exatamente a brecha
+  fechada em 28/08 — qualquer um forjava o bloqueio de qualquer e-mail sem
+  saber a senha.
+
+  Enquanto isso, quem protege contra força bruta é o rate limit do próprio
+  GoTrue, que é server-side e não depende desta tela.
+
+- ⏸️ `[28/08]` **Contar falha de login de verdade exige plano Team.** A função
+  `hook_de_verificacao_de_senha` está no banco, testada e com `EXECUTE` só para
+  o `supabase_auth_admin` — mas o *Password Verification Attempt hook* aparece
+  cinza no painel: **"Team or Enterprise Plan required"**. O outro caminho
+  também está fechado: `auth.audit_log_entries` está vazia, zero linhas desde
+  sempre. **O que já está resolvido:** ninguém consegue mais fabricar alerta de
+  segurança, e força bruta continua barrada pelo rate limit do próprio GoTrue.
+  O que falta é só a contagem para avisar a equipe. Mesma família do HIBP —
+  decisão de custo, não de código. Ver [SEGURANCA.md](docs/SEGURANCA.md).
+
+- ⏸️ `[18/09]` 🔵 **A proteção contra senha vazada está DESLIGADA — e não dá
+  para ligar no plano Free.** *Decisão de CUSTO, não ação de painel.*
+
+  Apareceu no Security Advisor durante a auditoria das 48:
+  `auth_leaked_password_protection` desligado. O Supabase checaria a senha
+  escolhida contra o HaveIBeenPwned e recusaria as que já vazaram.
+
+  > **`[18/09]` EU ESCREVI ESTE ITEM ERRADO E O DONO QUASE PAGOU POR ISSO.**
+  > A primeira versão era um passo a passo mandando ele abrir o painel e ligar
+  > um toggle. **O toggle não existe no plano Free.** A documentação oficial é
+  > explícita: *"Leaked password protection is available on the **Pro Plan and
+  > above**"* — conferido em 18/09 em
+  > https://supabase.com/docs/guides/auth/password-security
+  >
+  > O item `[22/08]` já dizia isso — *"só no plano Pro (~US$25/mês)"* — e eu
+  > criei um segundo item contradizendo o primeiro, sem conferir nenhum dos
+  > dois. Os dois estão unificados aqui.
+  >
+  > **A falha é exatamente a que o §9.12 descreve:** *"passo a passo sem essa
+  > conferência é armadilha bem formatada"*. E ela veio no mesmo dia em que eu
+  > declarei ao dono que tinha pulado a pesquisa de documentação no prompt das
+  > 48 — ou seja, não foi descuido isolado: foi a mesma omissão, duas vezes.
+
+  **O que o Advisor não diz:** ele marca o recurso como desligado mesmo em
+  projeto que não pode ligá-lo. O alerta é genérico, não é acionável aqui.
+
+  **Custo:** ~US$25/mês (Pro). **Decisão dele.** Enquanto não for, a política
+  de senha do próprio site é o que protege — ver o item `[12/09]` sobre a
+  política do painel de Auth nunca ter sido conferida.
+
+- ⏸️ `[23/08]` 🟠 **Migrar o envio de email para fora do Gmail.** *`[05/09]` O
+  CÓDIGO JÁ ESTÁ PRONTO — o que falta é ação de painel, e ela é do dono.*
+
+  **O que mudou em 05/09.** A função passou a aceitar **dois caminhos**:
+  se `SMTP_HOST` existir ela usa o relay; se não existir, segue no Gmail
+  exatamente como hoje. Mudança aditiva (§7): o caminho feliz de agora não foi
+  tocado, e voltar atrás é **apagar um segredo**.
+
+  Isso torna a migração uma ação de painel — sem deploy, sem coordenar horário,
+  sem mexer em código com o cadastro possivelmente quebrado.
+
+  **O que depende do dono, na ordem:**
+
+  1. criar conta no Brevo e **verificar um remetente**;
+  2. **a pergunta que decide o custo:** o Brevo aceita remetente verificado
+     **sem domínio próprio**? Se sim, custa **R$0**; se exigir domínio, são os
+     ~R$40/ano que ele já recusou uma vez. *Eu não consegui confirmar isso —
+     a documentação deles não abre para leitura automática, e prefiro dizer
+     isso a repetir de memória um número que pode ter mudado.* Ele vê em dois
+     minutos ao criar a conta;
+  3. pegar as credenciais SMTP e colar em **Supabase → Edge Functions →
+     Secrets**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` e
+     `SMTP_FROM`. **A senha não passa por aqui** — mesma regra do Turnstile;
+  4. me avisar para eu reimplantar a função e conferir o primeiro envio.
+
+  **Como provamos que funcionou:** um cadastro de teste. Se falhar, a mensagem
+  em `admin_logs` agora diz **qual caminho** estava em uso — antes ela mandaria
+  investigar o provedor errado.
+
+  **O que continua sem prova até lá:** que o e-mail chega, que a senha está
+  certa e que o remetente foi aceito. Nada disso é verificável do repositório;
+  a trava `envioDeEmailTemDoisCaminhos.test.js` só garante que as propriedades
+  do código não sumam.
+
+  > **Por que isto NÃO é urgente por volume, medido em 05/09:** `auth_register`
+  > tem **12 registros na vida do projeto**, o último em 28/08. A cota de ~500/dia
+  > não está perto de estourar. O que mantém o item em 🟠 é outra coisa: se o
+  > Google travar a conta por envio automatizado, **cadastro e recuperação de
+  > senha param em silêncio** — e o site continua de pé, aparentando funcionar.
+
+
+### PAUSADO por ele — não é custo, é prioridade
+
+- ⏸️ `[08/10]` 🟠 **A landing trava no app — e o portão por aparelho do §0.3
+  nunca foi construído.** *🟡 decisão dele: aprovar o portão por MEDIÇÃO.*
+
+  **Confirmado por ele:** *"a maioria é na landing page"*. O feed aguenta. Não
+  é o WebView — é a decoração.
+
+  **O que a investigação DESCARTOU, medindo:**
+
+  | | |
+  | --- | --- |
+  | JavaScript por quadro | `useProgressoDeRolagem` usa `MotionValue`, sem render do React por quadro. O erro que custou 714 ms no `FluxoDeDados` já está registrado no `DESEMPENHO.md` e não se repete |
+  | peso das imagens | 42 arquivos, 3,3 MB, já em variantes responsivas (828 px para celular alto, 1600 para largo) |
+
+  **O que sobra, e eu NÃO consigo medir daqui:** quantas camadas pintam ao
+  mesmo tempo. Depende da GPU do aparelho dele.
+
+  **A proposta, e ela esbarra numa regra do próprio projeto.** O §0.3, regra 2,
+  prevê um portão por aparelho que **nunca existiu**. Mas a regra 6 fecha o
+  caminho óbvio: *"detectar aparelho é medir, não identificar"* — ler modelo e
+  GPU foi RECUSADO por ser impressão digital.
+
+  Então o portão tem de medir **o próprio desenho**: contar quadros perdidos
+  nos primeiros ~1,5 s e, se estiver ruim, cair para a cena **parada** que já
+  existe para `prefers-reduced-motion` (`PrologoParado`, e o caminho "composição
+  parada, não vazia" do `PortalDoAtoZero`). Não é construir uma segunda landing
+  — é religar o que já está lá por outro motivo.
+
+  **A escolha explícita de quem olha VENCE a medição**, sempre (§0.3, regra 2).
+
+  **O risco, dito antes de construir:** medição de quadro no começo erra se o
+  aparelho estiver ocupado abrindo o app — ela acusaria lentidão inexistente e
+  cortaria o enfeite de quem não precisava. Por isso o corte não pode ser
+  permanente nem vencer a escolha de ninguém.
+
+  **As três perguntas para ele:** (1) aprova o portão por medição? (2) o corte
+  vale só na landing ou no site logado também? (3) botão visível para religar
+  os efeitos, ou basta o `prefers-reduced-motion` do sistema?
+
 
 ## 💡 Ideias registradas, sem compromisso
 

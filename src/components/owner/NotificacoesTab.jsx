@@ -73,10 +73,10 @@ export default function NotificacoesTab() {
                 className="flex items-start gap-3 px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg">
                 <Icon size={14} style={{ color: cfg.color }} className="shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-mono break-words" style={{ color: cfg.color }}>
+                  <p className="text-xs font-mono wrap-break-word" style={{ color: cfg.color }}>
                     {n.body || n.action}
                   </p>
-                  <p className="text-xs font-mono text-gray-600 mt-0.5 break-words">
+                  <p className="text-xs font-mono text-gray-600 mt-0.5 wrap-break-word">
                     {n.actor && n.actor !== 'sistema' ? `@${n.actor} · ` : ''}{n.action}
                   </p>
                 </div>

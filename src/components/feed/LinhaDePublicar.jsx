@@ -117,7 +117,7 @@ export default function LinhaDePublicar() {
         por CSS". Atalho montado e invisível seria conteúdo que o leitor de
         tela anuncia sem a pessoa poder usar.
 
-        `z-[15]` fica ABAIXO do véu da barra lateral (`z-20`) de propósito: com
+        `z-15` fica ABAIXO do véu da barra lateral (`z-20`) de propósito: com
         o menu do celular aberto, o atalho escurece junto e para de receber
         clique, em vez de flutuar por cima do menu. Resolver isso lendo o
         estado da gaveta exigiria passar essa informação por três componentes,
@@ -127,10 +127,10 @@ export default function LinhaDePublicar() {
         onClick={ir}
         aria-label="Criar post"
         data-publicar="flutuante"
-        className="md:hidden fixed bottom-5 right-5 z-[15] flex h-14 w-14
+        className="md:hidden fixed bottom-5 right-5 z-15 flex h-14 w-14
                    items-center justify-center rounded-full border
                    border-neon-green/40 bg-neon-green/15 text-neon-green
-                   shadow-lg shadow-black/50 backdrop-blur animate-fade-up
+                   shadow-lg shadow-black/50 backdrop-blur-sm animate-fade-up
                    transition-colors hover:bg-neon-green/25"
       >
         <Plus size={24} />

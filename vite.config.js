@@ -1,8 +1,27 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [react()],
+  // `[09/10]` O Tailwind entra como PLUGIN DO VITE, não como plugin do
+  // PostCSS — e isso não é preferência, é correção de um bug medido.
+  //
+  // Com `@tailwindcss/postcss`, o Tailwind achata os `@import` do CSS ANTES
+  // de o Vite reescrever os `url()` relativos. Resultado, provado no build:
+  //
+  //     v3   url("/assets/moldura-verde-C42BpkIK.webp")   image/webp
+  //     v4   url("/assets/auth/moldura-verde.webp")       text/html  <- sumiu
+  //
+  // A arte da moldura da tela de entrada simplesmente deixava de existir. E o
+  // pior: o caminho responde **HTTP 200**, porque o rewrite de SPA devolve o
+  // `index.html` para qualquer coisa que não exista — a mesma armadilha que o
+  // `portas-da-web.mjs` documenta para o `/.env`.
+  //
+  // Nenhum teste pegou: o `artes-da-arena.mjs` olha os `<img>` dos lutadores,
+  // e a moldura é `background-image`. Quem pegou foi a comparação de PRINT
+  // entre as duas versões. Hoje a classe inteira tem trava:
+  // `cssNaoPerdeAsset.test.js`.
+  plugins: [tailwindcss(), react()],
 
   build: {
     rollupOptions: {

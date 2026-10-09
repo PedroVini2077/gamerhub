@@ -82,7 +82,7 @@ export default function Header({ onMenuClick }) {
 
   return (
     <header
-      className="fixed left-0 right-0 md:left-60 h-14 bg-dark-800/95 backdrop-blur border-b border-dark-500 z-10 flex items-center px-4 gap-4"
+      className="fixed left-0 right-0 md:left-60 h-14 bg-dark-800/95 backdrop-blur-sm border-b border-dark-500 z-10 flex items-center px-4 gap-4"
       // Mesma variável do `AvisoSemBanco` — ver `LandingNav`.
       style={{ top: 'var(--altura-do-aviso, 0px)' }}
     >
@@ -116,7 +116,7 @@ export default function Header({ onMenuClick }) {
                 onClick={() => setOpen(false)}
               />
               <motion.div
-                className="absolute right-0 top-10 w-80 notif-panel bg-dark-700 border border-dark-400 rounded shadow-xl z-50"
+                className="absolute right-0 top-10 w-80 notif-panel bg-dark-700 border border-dark-400 rounded-sm shadow-xl z-50"
                 initial={{ opacity: 0, y: -8, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.97 }}

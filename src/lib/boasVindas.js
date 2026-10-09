@@ -70,7 +70,7 @@ export const EVENTO_ENTROU = 'gh:entrou';
  * terminar. Nessa janela o portão consome a marca e sobe; quando
  * `cancelarEntradaAgora()` roda, já não há marca para apagar.
  *
- * Hoje isso não aparece na tela porque a `BannedScreen` tem `z-[9999]` e o
+ * Hoje isso não aparece na tela porque a `BannedScreen` tem `z-9999` e o
  * portão tem `z-index: 80`. Só que isso é **proteção acidental**, que este
  * projeto já registrou como a pior espécie: basta alguém mexer num `z-index`
  * para o portão passar a dar as boas-vindas a quem acabou de ser barrado.

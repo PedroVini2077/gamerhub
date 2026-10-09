@@ -48,7 +48,7 @@ export default function UnlockLoginModal({ target, onConfirm, onClose }) {
 
         <div className="flex gap-2 pt-1">
           <button onClick={onClose}
-            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded hover:bg-dark-700 transition-all">
+            className="flex-1 py-2 text-xs font-mono text-gray-400 border border-dark-400 rounded-sm hover:bg-dark-700 transition-all">
             Cancelar
           </button>
           <UnlockCountdownBtn key={target.email} onConfirm={onConfirm} />

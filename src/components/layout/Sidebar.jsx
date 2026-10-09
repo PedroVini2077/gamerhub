@@ -134,7 +134,7 @@ export default function Sidebar({ open, onClose }) {
               { label: 'Posts/dia', value: stats.postsToday, color: 'text-neon-green' },
               { label: 'Keys', value: stats.keysCount, color: 'text-neon-purple' },
             ].map(s => (
-              <div key={s.label} className="flex justify-between items-center px-2 py-1.5 bg-dark-700 rounded border border-dark-500">
+              <div key={s.label} className="flex justify-between items-center px-2 py-1.5 bg-dark-700 rounded-sm border border-dark-500">
                 <p className="text-xs text-gray-500 font-mono">{s.label}</p>
                 <p className={`text-sm font-bold font-mono ${s.color}`}>{formatNumber(s.value)}</p>
               </div>

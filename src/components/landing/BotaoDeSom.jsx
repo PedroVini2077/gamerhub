@@ -144,7 +144,7 @@ export default function BotaoDeSom({ introTerminou = false }) {
         <div
           role="status"
           className="flex items-center gap-2 rounded-full border border-dark-500
-                     bg-dark-800/90 backdrop-blur px-3 py-2 animate-fade-up"
+                     bg-dark-800/90 backdrop-blur-sm px-3 py-2 animate-fade-up"
         >
           <span className="text-[11px] font-mono text-gray-400 whitespace-nowrap">
             {decisao === SEM_DECISAO
@@ -175,7 +175,7 @@ export default function BotaoDeSom({ introTerminou = false }) {
         aria-label={ligado ? 'Desligar som ambiente' : 'Ligar som ambiente'}
         title={ligado ? 'Desligar som ambiente' : 'Ligar som ambiente'}
         className={`grid place-items-center w-11 h-11 shrink-0 rounded-full border
-                    backdrop-blur transition-colors
+                    backdrop-blur-sm transition-colors
                     ${ligado
                       ? 'border-neon-green/40 bg-neon-green/10 text-neon-green'
                       : 'border-dark-500 bg-dark-800/80 text-gray-500 hover:text-gray-300'}`}

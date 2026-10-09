@@ -47,10 +47,10 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-sm font-mono text-white">{user.username}</span>
             {user.banned && (
-              <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-red-400/15 text-red-400">banido</span>
+              <span className="text-xs font-mono px-1.5 py-0.5 rounded-sm bg-red-400/15 text-red-400">banido</span>
             )}
             {isOwnerUser && (
-              <span className="text-xs font-mono px-1.5 py-0.5 rounded"
+              <span className="text-xs font-mono px-1.5 py-0.5 rounded-sm"
                 style={{ background: '#f9731618', color: OWNER_COLOR }}>fundador</span>
             )}
             {user.ban_count > 0 && !user.banned && (
@@ -71,7 +71,7 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
 
           <div className="flex flex-wrap gap-2 items-center">
             <Link to={`/u/${user.username}`}
-              className="px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-400 hover:text-white hover:border-gray-400 transition-colors">
+              className="px-3 py-1.5 text-xs font-mono border border-dark-400 rounded-sm text-gray-400 hover:text-white hover:border-gray-400 transition-colors">
               Ver perfil
             </Link>
 
@@ -80,19 +80,19 @@ const UserRow = memo(function UserRow({ user, onNominate, onDemote, onBan, onOve
               <>
                 {user.role === 'user' && (
                   <button type="button" onClick={() => onNominate(user, 'admin')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-500 hover:border-purple-400/50 hover:text-purple-300 transition-colors">
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded-sm text-gray-500 hover:border-purple-400/50 hover:text-purple-300 transition-colors">
                     <UserPlus size={12} /> Indicar para Admin
                   </button>
                 )}
                 {user.role === 'admin' && (
                   <button type="button" onClick={() => onNominate(user, 'super_admin')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-500 hover:border-neon-green/50 hover:text-neon-green transition-colors">
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded-sm text-gray-500 hover:border-neon-green/50 hover:text-neon-green transition-colors">
                     <UserPlus size={12} /> Indicar p/ Super Admin
                   </button>
                 )}
                 {(user.role === 'admin' || user.role === 'super_admin') && (
                   <button type="button" onClick={() => onDemote(user)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded text-gray-500 hover:border-red-400/50 hover:text-red-400 transition-colors">
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-dark-400 rounded-sm text-gray-500 hover:border-red-400/50 hover:text-red-400 transition-colors">
                     <ShieldAlert size={12} /> Solicitar rebaixamento
                   </button>
                 )}
