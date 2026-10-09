@@ -258,6 +258,13 @@ export const TERRITORIO = {
   // esta entrada passa a apontar para ela — e ate la apontar para qualquer
   // pasta faria o relatorio mensal cobrar atualizacao de algo que nao mudou.
   'docs/PLANO-ANDROID.md': [],
+  // `[09/10]` O estudo de cosmeticos. Vazio pelo MESMO motivo dos dois acima:
+  // ele descreve um sistema que ainda nao existe. Apontar para
+  // `components/ui/Avatar.jsx` faria o relatorio mensal cobrar atualizacao do
+  // estudo toda vez que alguem mexesse no avatar por outro motivo — e o estudo
+  // envelhece por DECISAO dele, nao por commit nosso.
+  'docs/PLANEJAMENTO-COSMETICOS.md': [],
+  'docs/PROMPT-CONTINUIDADE-COSMETICOS.md': [],
   'docs/VISAO-DE-FUTURO.md': [],
   'docs/DECISOES.md': [],
   'docs/DECISOES-FERRAMENTAL.md': [],

@@ -33,7 +33,7 @@
 
 ---
 
-**52 itens abertos** (+ 5 desativados, no bloco do fim)
+**53 itens abertos** (+ 5 desativados, no bloco do fim)
 
 > **`[09/10]` Este arquivo tinha 2.758 linhas, e o primeiro item da fila
 > aparecia na 1.213.** Quase metade dele era passado: 22 seções já concluídas
@@ -518,6 +518,23 @@
   certo lá seja uma versão bem enxuta, ou nenhum.
 
 ## 🟠 Importante — dá para fazer
+
+- ⬜ `[09/10]` 🟡 **A busca mostra "?" no lugar de toda foto de perfil.**
+  *Achado durante o estudo de cosméticos, e NÃO corrigido ali de propósito — o
+  prompt daquela tarefa proibia tocar em código.*
+
+  `src/pages/Busca.jsx:128` chama `<Avatar url={...} username={...} size={32} />`,
+  e o componente aceita **`profile`**, não `url`/`username`. Com `profile`
+  indefinido ele cai no caminho da letra inicial — e `profile?.username?.[0]`
+  também é indefinido, então sai `?`. **Toda pessoa no resultado da busca
+  aparece sem foto desde o PR #243.**
+
+  **Por que nada acusou:** não há erro, não há log, e a tela funciona. Prop que
+  o componente não declara é simplesmente ignorada pelo React.
+
+  **A trava não é "conferir esta linha"** — é a classe: componente chamado com
+  prop que ele não conhece. Vale varrer se há mais casos antes de consertar.
+
 
 - ⬜ `[02/10]` 🔵 **O GamerHub News está DE PÉ — o que falta são três acabamentos**
 
