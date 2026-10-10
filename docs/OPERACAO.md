@@ -1441,7 +1441,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->31.377<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->31.437<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -2154,3 +2154,49 @@ Supabase é registro secundário.
 do que a pasta. Se isso incomodar, a saída é liberar o `apply_migration` para a
 sessão — nunca reaplicar o SQL por fora, que não acrescentaria nada ao histórico
 de qualquer jeito.
+
+### ✅ E existe um PORTÃO que cobra isso — ele ficou vermelho na hora
+
+Eu escrevi a regra *"migration nunca vai para a `main` antes de estar
+aplicada"* como se fosse disciplina minha. **Não é: já existe máquina.** O
+passo `O espelho de migrations acompanha o banco`
+(`scripts/espelho-de-migrations.mjs`, de 02/09) reprovou o PR das conquistas
+com a mensagem certa:
+
+```
+arquivos em supabase/migrations/ : 253
+migrations aplicadas no Supabase : 251
+
+2 arquivo(s) a MAIS no repositorio do que migrations no banco.
+```
+
+Então a sequência real não depende de ninguém lembrar: **o CI fica vermelho até
+a migration ser aplicada**, e volta a verde depois — sem mexer em nada.
+
+> **O que isto corrige no texto acima:** a regra existia, eu só não a conhecia
+> quando escrevi esta seção. Fica registrado porque a §9.8 é explícita — antes
+> de criar regra nova, perguntar se já existe mecanismo. Aqui existia, e ele é
+> melhor do que a regra: um portão não esquece.
+
+### ⚠️ O que o diagnóstico custou, e o buraco que ficou
+
+A anotação `::error::` do CI devolveu só `Process completed with exit code 1`.
+As travas de 03/10 e 09/10 fecharam esse silêncio para os roteiros que chamam
+`salvarEvidencia` e para o `vitest` — **um passo `run:` simples, como este,
+ficou de fora.** Eu gastei seis execuções locais procurando o roteiro errado
+antes de parar.
+
+**O caminho curto existe e não precisa de mecanismo novo** (§9.8, perguntas 1 e
+5): a API do GitHub devolve a conclusão **passo a passo** do job.
+
+```bash
+RUN=$(gh api "repos/PedroVini2077/gamerhub/actions/runs?head_sha=$(git rev-parse HEAD)" \
+        --jq '.workflow_runs[0].id')
+gh api repos/PedroVini2077/gamerhub/actions/runs/$RUN/jobs \
+  --jq '.jobs[]|select(.conclusion=="failure")|.name,
+        (.steps[]|select(.conclusion=="failure")|"  passo: \(.name)")'
+```
+
+Isso devolveu `rotas num navegador de verdade → O espelho de migrations
+acompanha o banco` em um comando. **Primeira coisa a rodar quando um job
+vermelho não disser por quê.**

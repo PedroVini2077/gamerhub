@@ -33,7 +33,7 @@
 
 ---
 
-**52 itens abertos** (+ 5 desativados, no bloco do fim)
+**53 itens abertos** (+ 5 desativados, no bloco do fim)
 
 > **`[09/10]` Este arquivo tinha 2.758 linhas, e o primeiro item da fila
 > aparecia na 1.213.** Quase metade dele era passado: 22 seções já concluídas
@@ -833,6 +833,20 @@ A recusa de 05/09 continua válida para o desenho que ela recusou.
 
 
 ## 🟢 Recomendado
+
+- ⬜ `[10/10]` 🟢 **Job vermelho num passo `run:` simples não diz POR QUÊ.** A
+  anotação devolveu `Process completed with exit code 1` e nada mais — as
+  travas de 03/10 (`salvarEvidencia`) e 09/10 (`vitest`) cobrem os roteiros e
+  os testes unitários, e **um passo de uma linha ficou de fora**. Custou seis
+  execuções locais procurando o roteiro errado antes de eu parar e perguntar à
+  API.
+
+  **Não precisa de mecanismo novo** (§9.8, perguntas 1 e 5): a API já devolve
+  a conclusão passo a passo, e o comando está escrito no `OPERACAO.md`. O que
+  cabe decidir é se vale um passo `if: failure()` que imprima o nome do passo
+  falho como anotação — ganho pequeno, manutenção permanente. **Minha
+  recomendação: deixar como comando documentado**, e só mecanizar se isso me
+  pegar uma segunda vez.
 
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
