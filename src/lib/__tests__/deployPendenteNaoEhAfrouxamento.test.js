@@ -32,10 +32,17 @@ import { readFileSync } from 'node:fs';
  * inverter, e o aviso deixar de existir.
  */
 
+// `[10/10]` Os DOIS arquivos, desde o corte do portão (375 -> 285 + 130).
+// As quatro listas e a `aguardandoDeploy` saíram para
+// `e2e/portas-da-web/expectativas.mjs`; ler só o roteiro deixaria esta
+// trava procurando o que já não está lá — e procurar e não achar, aqui,
+// significa PASSAR, porque o que ela vigia é a lista não encolher.
 const ROTEIRO = 'e2e/portas-da-web.mjs';
+const ROTEIRO_EXPECTATIVAS = 'e2e/portas-da-web/expectativas.mjs';
 
 function fonte() {
-  return readFileSync(ROTEIRO, 'utf8');
+  return readFileSync(ROTEIRO, 'utf8')
+    + '\n' + readFileSync(ROTEIRO_EXPECTATIVAS, 'utf8');
 }
 
 /** A função `aguardandoDeploy` do roteiro, avaliada de verdade. */

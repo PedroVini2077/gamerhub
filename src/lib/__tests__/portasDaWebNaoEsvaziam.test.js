@@ -46,8 +46,15 @@ import { readFileSync } from 'node:fs';
  * 'unsafe-inline'` responde com sim.
  */
 
+// `[10/10]` Os DOIS arquivos, desde o corte do portão (375 -> 285 + 130).
+// As quatro listas e a `aguardandoDeploy` saíram para
+// `e2e/portas-da-web/expectativas.mjs`; ler só o roteiro deixaria esta
+// trava procurando o que já não está lá — e procurar e não achar, aqui,
+// significa PASSAR, porque o que ela vigia é a lista não encolher.
 const PORTAO = 'e2e/portas-da-web.mjs';
-const fonte = readFileSync(PORTAO, 'utf8');
+const PORTAO_EXPECTATIVAS = 'e2e/portas-da-web/expectativas.mjs';
+const fonte = readFileSync(PORTAO, 'utf8')
+  + '\n' + readFileSync(PORTAO_EXPECTATIVAS, 'utf8');
 
 /** Prosa cita comando. O nome do cabeçalho aparece no texto explicativo também. */
 const semComentarios = fonte

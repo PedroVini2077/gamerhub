@@ -67,34 +67,50 @@ passa('território coberto',      'node scripts/territorio-coberto.mjs');
 
 // Arquivo grande: §4 manda dividir ANTES de entregar, não anotar pra depois.
 //
-// `[10/10]` A MENSAGEM diz qual pasta ele olhou, e isso é conserto de uma
-// afirmação falsa — não enfeite. Ele varre `src/` e só: medido hoje, havia
-// CINCO arquivos acima de 300 linhas fora do alcance dele (611, 449, 401, 375
-// e 324, em `e2e/` e `scripts/`), e ele imprimia "OK nenhum arquivo acima de
-// 300 linhas". A frase não era verdade, e verde que afirma mais do que mediu é
-// o §1.5 pelo lado da falsa confiança.
+// `[10/10]` ELE PASSOU A VARRER `e2e/` E `scripts/` TAMBÉM.
 //
-// **Ampliar a varredura é o conserto de verdade, e ele não cabe aqui:** os
-// cinco precisam ser divididos primeiro, senão o portão reprova toda sessão
-// por dívida conhecida — alarme que grita o que ninguém pode calar agora
-// (§0.2, 4ª regra). Está no `BACKLOG.md`, um arquivo por PR. Até lá, o rótulo
-// diz o alcance e para de prometer o que não cobre.
+// Antes olhava só `src/`, e imprimia "OK nenhum arquivo acima de 300 linhas" —
+// frase que não era verdade: havia SETE arquivos acima do teto fora do alcance
+// dele (611, 449, 401, 375, 324, 317, 313). Verde que afirma mais do que mediu
+// é o §1.5 pelo lado da falsa confiança, e o pior tipo, porque parece que
+// alguém olhou.
+//
+// **Ampliar só foi possível depois de dividir os sete**, no mesmo PR: ligar a
+// varredura com dívida conhecida em pé faria o portão reprovar toda sessão por
+// algo que ninguém pode calar na hora — alarme que grita à toa ensina a
+// ignorar o canal (§0.2, 4ª regra). A ordem importou: primeiro os cortes,
+// depois o portão.
+//
+// `__tests__` continua de fora, e isso é escolha: arquivo de teste longo é
+// legível por construção (casos em sequência), e o que ele vigia já está
+// coberto pela trava que exige o inventário completo.
 const varrer = d => readdirSync(d).flatMap(n => {
   const c = join(d, n);
   return statSync(c).isDirectory() ? varrer(c) : [c];
 });
-const grandes = varrer('src')
-  .filter(f => /\.(js|jsx)$/.test(f) && !f.includes('__tests__'))
-  .map(f => [f, readFileSync(f, 'utf8').split('\n').length])
+const PASTAS_VIGIADAS = ['src', 'e2e', 'scripts'];
+const grandes = PASTAS_VIGIADAS.flatMap(varrer)
+  .filter(f => /\.(js|jsx|mjs)$/.test(f) && !f.includes('__tests__'))
+  // `[10/10]` O `.replace(/\n$/, '')` corrige um erro que este portão tinha
+  // desde que nasceu: `split('\n')` conta a string VAZIA depois do newline
+  // final, então todo arquivo era medido com UMA LINHA A MAIS — o teto real
+  // era 299, não 300.
+  //
+  // Apareceu quando a varredura passou a cobrir `e2e/`: o `lives.mjs` tem
+  // exatos 300 linhas (`wc -l`) e o portão o acusou com 301. Ele teria me
+  // feito dividir um arquivo que está dentro do limite, o que é o avesso do
+  // alarme falso — não grita à toa, grita um número levemente errado, e só na
+  // fronteira. Mais difícil de notar do que um erro grande.
+  .map(f => [f, readFileSync(f, 'utf8').replace(/\n$/, '').split('\n').length])
   .filter(([, n]) => n > 300)
   .sort((a, b) => b[1] - a[1]);
 
 if (grandes.length) {
-  console.log(`  FALHOU  nenhum arquivo de src/ acima de 300 linhas`);
+  console.log(`  FALHOU  nenhum arquivo acima de 300 linhas`);
   falhas.push('arquivos acima de 300 linhas (§4 manda dividir ANTES de entregar):\n'
     + grandes.map(([f, n]) => `    ${n} linhas  ${f}`).join('\n'));
 } else {
-  console.log('  OK      nenhum arquivo de src/ acima de 300 linhas');
+  console.log(`  OK      nenhum arquivo acima de 300 linhas (${PASTAS_VIGIADAS.join(', ')})`);
 }
 
 // Contador do backlog batendo com a contagem real: já divergiu, e um contador
