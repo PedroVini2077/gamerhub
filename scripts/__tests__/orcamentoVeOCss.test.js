@@ -29,10 +29,39 @@ import { join } from 'node:path';
  * que é a mesma vacuidade que o `varrerFontes` existe para fechar.
  */
 
-const SCRIPT = join(import.meta.dirname, '../orcamento-de-bytes.mjs');
-const fonte = () => readFileSync(SCRIPT, 'utf8');
+/**
+ * `[10/10]` Ela lê os DOIS arquivos, desde o corte do portão em 324 linhas.
+ *
+ * Os tetos saíram para `orcamento/tetos.mjs` (eles são decisão, com data e
+ * motivo) e a medição ficou no script de entrada. Uma trava que continuasse
+ * olhando só o arquivo antigo perderia a checagem do `TETO_CSS_GZIP_KB` — e
+ * perderia **passando verde**, que é o pior jeito.
+ */
+const MEDICAO = join(import.meta.dirname, '../orcamento-de-bytes.mjs');
+const TETOS   = join(import.meta.dirname, '../orcamento/tetos.mjs');
+const fonte = () => readFileSync(MEDICAO, 'utf8') + '\n' + readFileSync(TETOS, 'utf8');
 
 describe('o orçamento de bytes enxerga o CSS', () => {
+  it('os DOIS arquivos foram lidos, e a medição IMPORTA os tetos', () => {
+    // Vacuidade nas duas pontas. A primeira é óbvia: arquivo vazio faz toda
+    // regex abaixo falhar por ausência, não por defeito.
+    expect(readFileSync(MEDICAO, 'utf8').length, 'a medição veio vazia.').toBeGreaterThan(500);
+    expect(readFileSync(TETOS, 'utf8').length, 'os tetos vieram vazios.').toBeGreaterThan(500);
+
+    // A segunda é a que o CORTE criou, e é sutil: como esta trava concatena os
+    // dois, alguém pode reescrever `const TETO_CSS_GZIP_KB = 25` DENTRO da
+    // medição e deixar o `tetos.mjs` intacto. A concatenação teria os dois
+    // valores, a checagem de teto passaria, e o número que vale seria o novo —
+    // um teto subindo sem a justificativa que o §0.3 cobra, com a trava verde.
+    expect(
+      /from '\.\/orcamento\/tetos\.mjs'/.test(readFileSync(MEDICAO, 'utf8')),
+      'a medição deixou de IMPORTAR os tetos de `orcamento/tetos.mjs`.\n'
+      + 'Como esta trava lê os dois arquivos juntos, um teto reescrito à mão\n'
+      + 'dentro da medição passaria verde — e seria um teto subindo sem a\n'
+      + 'justificativa datada que o §0.3 exige. O número tem de vir de lá.',
+    ).toBe(true);
+  });
+
   it('ele procura a folha de estilo no HTML', () => {
     expect(
       /rel="stylesheet"[^/]*href=.*\\\.css/.test(fonte()),

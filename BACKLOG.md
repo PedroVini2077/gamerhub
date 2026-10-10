@@ -822,6 +822,57 @@
   mensagem QUAL pasta ele olhou. Prefiro ampliar — mas isso obriga a dividir os
   dois antes, então é trabalho, não ajuste.*
 
+  > **`[10/10]` MEDIDO de novo, e são CINCO, não dois.** O item envelheceu em
+  > 16 dias (§1.4 — documento envelhece, o sistema não mente):
+  >
+  > ```
+  > 611  e2e/portas-do-banco.mjs
+  > 449  e2e/painel-admin.mjs
+  > 401  scripts/territorio.mjs
+  > 375  e2e/portas-da-web.mjs
+  > 324  scripts/orcamento-de-bytes.mjs
+  > ```
+  >
+  > Dois cruzaram o teto **depois** de o item ser escrito, sem nada acusar — que
+  > é exatamente o buraco que o item descreve, acontecendo enquanto ele esperava
+  > na fila.
+  >
+  > **E o trabalho é maior do que "dividir dois":** cada um desses arquivos é
+  > lido por travas que o abrem **por caminho**, então o corte obriga a
+  > atualizar quem o vigia. Cortar sem isso produz o pior caso — trava verde
+  > lendo arquivo que já não tem o que ela vigiava.
+  >
+  > **Ordem recomendada:** um arquivo por PR, começando pelo
+  > `orcamento-de-bytes.mjs` — é o menor excesso e dá para PROVAR rodando o
+  > próprio portão, que é local. Os de `e2e/` não dá para executar daqui (batem
+  > em produção), então a prova deles é a trava, não a execução.
+  >
+  > ### `[10/10]` 1 de 5 FEITO, e a mensagem falsa foi consertada já
+  >
+  > ```
+  > ✅ 324 -> 185 + 184   scripts/orcamento-de-bytes.mjs  (tetos saíram para
+  >                       scripts/orcamento/tetos.mjs)
+  > ⬜ 611                e2e/portas-do-banco.mjs
+  > ⬜ 449                e2e/painel-admin.mjs
+  > ⬜ 401                scripts/territorio.mjs
+  > ⬜ 375                e2e/portas-da-web.mjs
+  > ```
+  >
+  > **Prova do corte:** a saída do portão é **byte por byte idêntica** à de
+  > antes (`diff` limpo), e a trava que o vigia ganhou 1 checagem e foi provada
+  > reinjetando as 5.
+  >
+  > **A parte que NÃO esperou os outros quatro:** a mensagem dizia *"OK nenhum
+  > arquivo acima de 300 linhas"* varrendo só `src/`. A frase era falsa hoje, e
+  > consertá-la não dependia de corte nenhum — ela agora diz **"nenhum arquivo
+  > de `src/` acima de 300 linhas"**.
+  >
+  > **Ampliar a varredura continua sendo o conserto de verdade, e continua
+  > pendente de propósito:** com quatro ainda acima do teto, ampliar faria o
+  > `npm run fim` reprovar toda sessão por dívida conhecida — alarme que grita
+  > o que ninguém pode calar agora (§0.2, 4ª regra). Ela entra junto com o
+  > último corte.
+
 - ⬜ `[24/09]` 🟢 **Medir o tamanho do lote do feed com dado de verdade.** *O 20
   foi escolhido por ser menor que os 30 de antes, não por medição — o feed
   está vazio. O que medir, com dado semeado: custo de render por card (com e

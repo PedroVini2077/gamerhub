@@ -346,7 +346,7 @@ que as seções 1–6, e está aqui **declarado** em vez de disfarçado de compl
 | `tiposDeConteudo.test.js` | tipos de conteúdo — o contrato entre quem produz e quem modera | — |
 | `modosDoLogin.test.js` | todo modo da tela de entrada tem frase própria | — |
 | `edgeFunctionsParseiam.test.js` | as Edge Functions são código válido | — |
-| `orcamentoVeOCss.test.js` | o orçamento de bytes enxerga o CSS | — |
+| `orcamentoVeOCss.test.js` | o orçamento de bytes enxerga o CSS — e, **`[10/10]`**, lê os DOIS arquivos desde o corte do portão: os tetos saíram para `scripts/orcamento/tetos.mjs` e uma trava que continuasse olhando só o script de entrada perderia a checagem do teto de CSS **passando verde**. Ganhou a guarda da brecha que o próprio corte abriu: como ela concatena os dois, um teto reescrito à mão dentro da medição passaria — então ela exige que a medição **importe** de `tetos.mjs` | — |
 | `regrasCarregadas.test.js` | CLAUDE.md — as regras continuam sendo carregadas | — |
 | `transformDoCssNaoBrigaComTailwind.test.js` | classe nossa e utilitária do Tailwind disputando `translate`/`rotate`/`scale` — a marca do hero saiu 55 px da tela no celular | — |
 | `vazioDaAbaNaoMenteSobreOSite.test.jsx` | o vazio de uma aba afirmando sobre o SITE o que só sabe da ABA — "1 ao vivo" no cabeçalho e "nenhuma live acontecendo" no miolo, juntos. *(Não usa `readFileSync`, então o portão de completude não a exige: ela exercita o componente. Está aqui porque protege um invariante de leitura.)* | — |

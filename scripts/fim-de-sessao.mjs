@@ -66,6 +66,19 @@ passa('território coberto',      'node scripts/territorio-coberto.mjs');
 // ── 2. O que SÓ este script vê ─────────────────────────────────────────────
 
 // Arquivo grande: §4 manda dividir ANTES de entregar, não anotar pra depois.
+//
+// `[10/10]` A MENSAGEM diz qual pasta ele olhou, e isso é conserto de uma
+// afirmação falsa — não enfeite. Ele varre `src/` e só: medido hoje, havia
+// CINCO arquivos acima de 300 linhas fora do alcance dele (611, 449, 401, 375
+// e 324, em `e2e/` e `scripts/`), e ele imprimia "OK nenhum arquivo acima de
+// 300 linhas". A frase não era verdade, e verde que afirma mais do que mediu é
+// o §1.5 pelo lado da falsa confiança.
+//
+// **Ampliar a varredura é o conserto de verdade, e ele não cabe aqui:** os
+// cinco precisam ser divididos primeiro, senão o portão reprova toda sessão
+// por dívida conhecida — alarme que grita o que ninguém pode calar agora
+// (§0.2, 4ª regra). Está no `BACKLOG.md`, um arquivo por PR. Até lá, o rótulo
+// diz o alcance e para de prometer o que não cobre.
 const varrer = d => readdirSync(d).flatMap(n => {
   const c = join(d, n);
   return statSync(c).isDirectory() ? varrer(c) : [c];
@@ -77,11 +90,11 @@ const grandes = varrer('src')
   .sort((a, b) => b[1] - a[1]);
 
 if (grandes.length) {
-  console.log(`  FALHOU  nenhum arquivo acima de 300 linhas`);
+  console.log(`  FALHOU  nenhum arquivo de src/ acima de 300 linhas`);
   falhas.push('arquivos acima de 300 linhas (§4 manda dividir ANTES de entregar):\n'
     + grandes.map(([f, n]) => `    ${n} linhas  ${f}`).join('\n'));
 } else {
-  console.log('  OK      nenhum arquivo acima de 300 linhas');
+  console.log('  OK      nenhum arquivo de src/ acima de 300 linhas');
 }
 
 // Contador do backlog batendo com a contagem real: já divergiu, e um contador
