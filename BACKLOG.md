@@ -33,7 +33,7 @@
 
 ---
 
-**54 itens abertos** (+ 5 desativados, no bloco do fim)
+**53 itens abertos** (+ 5 desativados, no bloco do fim)
 
 > **`[09/10]` Este arquivo tinha 2.758 linhas, e o primeiro item da fila
 > aparecia na 1.213.** Quase metade dele era passado: 22 seções já concluídas
@@ -774,24 +774,6 @@
 
 ## 🟢 Recomendado
 
-- ⬜ `[10/10]` 🟠 **Apagar UMA linha de sonda no histórico de migrations** — e é
-  dele porque eu não alcanço: `DELETE` é recusado no meu ambiente (ver
-  `OPERACAO.md`, *"DROP e DELETE de nível superior"*).
-
-  No [SQL Editor](https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/sql/new):
-
-  ```sql
-  delete from supabase_migrations.schema_migrations
-   where name = 'sonda_apply_migration';
-  ```
-
-  **O que ela é:** eu a criei testando se o `apply_migration` estava bloqueado.
-  Ela contém só um `COMMENT ON TABLE` que **já está** dentro da migration real
-  `conquistas_desbloqueadas_tabela` — então apagar a linha não desfaz nada no
-  schema, só tira ruído do histórico.
-
-  **Como conferir:** o portão do espelho passa a dizer `253 / 253`. Hoje diz
-  `253 arquivos / 254 aplicadas`, e é só por causa dela.
 
 - ⬜ `[10/10]` 🟢 **Job vermelho num passo `run:` simples não diz POR QUÊ.** A
   anotação devolveu `Process completed with exit code 1` e nada mais — as
