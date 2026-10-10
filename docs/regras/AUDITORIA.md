@@ -48,7 +48,7 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->518<!--/n--> arquivos · <!--n:src.linhas-->60.670<!--/n--> linhas |
+| código em `src/` | <!--n:src.arquivos-->518<!--/n--> arquivos · <!--n:src.linhas-->60.684<!--/n--> linhas |
 | dividido em | `lib` <!--n:src.lib.arquivos-->208<!--/n--> · `components` <!--n:src.components.arquivos-->205<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->50<!--/n--> · `pages` <!--n:src.pages.arquivos-->26<!--/n--> · `services` <!--n:src.services.arquivos-->26<!--/n--> |
 | rede de testes | <!--n:testes.arquivos-->152<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->27<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->10<!--/n--> |
@@ -65,7 +65,7 @@ digitado à mão:
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
 > **dobrou** — <!--n:src.arquivos-->518<!--/n--> arquivos,
-> <!--n:src.linhas-->60.670<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> <!--n:src.linhas-->60.684<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
 > *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
@@ -265,7 +265,8 @@ obrigatórias e nenhuma substitui a outra.
 
 **1. Código morto e duplicado**
 ```bash
-find src -name '*.jsx' -o -name '*.js' | xargs wc -l | sort -rn | head -15
+find src e2e scripts \( -name '*.jsx' -o -name '*.js' -o -name '*.mjs' \) \
+  | grep -v __tests__ | xargs wc -l | sort -rn | head -15
 ```
 - Arquivo > 300 linhas → dividir agora (§4).
 - Função exportada sem nenhum call site → apagar. *(Cuidado: referência passada

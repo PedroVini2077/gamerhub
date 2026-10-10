@@ -127,7 +127,7 @@ export async function recusarSeBanido(page) {
  * QUARTA cópia do mesmo trecho (§6.1: mesma lógica em 2+ lugares, extrair).
  *
  * `fluxos.mjs`, `lives.mjs` e `painel-admin.mjs` continuam com a versão inline
- * deles: migrá-los exigiria tocar o `painel-admin.mjs`, que está em 449 linhas
+ * deles: migrá-los exigiria tocar o `painel-admin.mjs`, que estava em 449 linhas
  * e me obrigaria a dividi-lo no meio de outra tarefa (§4). Está no `BACKLOG.md`
  * com esse motivo — e é dívida declarada, não esquecida.
  *

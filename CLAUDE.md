@@ -429,7 +429,8 @@ Na prática:
   divido, mesmo que não seja o que foi pedido (regra de esbarrar, §0).
 - Varredura barata pra rodar sempre que fechar um bloco de trabalho:
   ```bash
-  find src -name '*.jsx' -o -name '*.js' | xargs wc -l | sort -rn | head -15
+  find src e2e scripts \( -name '*.jsx' -o -name '*.js' -o -name '*.mjs' \) \
+    | grep -v __tests__ | xargs wc -l | sort -rn | head -15
   ```
 - **O que continua exigindo aprovação** (§7): quando dividir deixa de ser
   movimentação mecânica e vira **decisão de arquitetura** — trocar o padrão de
