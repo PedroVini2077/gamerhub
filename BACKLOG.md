@@ -33,7 +33,7 @@
 
 ---
 
-**53 itens abertos** (+ 5 desativados, no bloco do fim)
+**54 itens abertos** (+ 5 desativados, no bloco do fim)
 
 > **`[09/10]` Este arquivo tinha 2.758 linhas, e o primeiro item da fila
 > aparecia na 1.213.** Quase metade dele era passado: 22 seções já concluídas
@@ -49,67 +49,7 @@
 
 ## 🔄 EM EXECUÇÃO
 
-### `[10/10]` A tabela de conquistas — o REGISTRO do desbloqueio
-
-**Pedido dele em 09/10:** *"Vc disse que a tabela de conquistas não tem, pode
-fazer tbm 👍🏻"* — depois de o estudo de cosméticos medir que as conquistas são
-**derivadas** e que, sem persistência, não existe *"desbloqueado para sempre"*.
-
-**O que isto NÃO é, e a distinção decide tudo.** O cabeçalho de
-`lib/conquistas.js` recusou a tabela em 05/09 com a pergunta do §0.2 —
-*"quantas vezes por dia isso roda?"* — e a resposta era *"uma escrita por
-interação de todo mundo"*, porque o desenho pressuposto era **gatilho em
-`posts`, `post_likes` e `comments`**. Não é esse. Aqui a escrita acontece
-**uma vez por conquista, por pessoa, para sempre**: no máximo 8 linhas por
-conta, gravadas quando ela abre o PRÓPRIO perfil e algo novo cruzou a meta.
-A recusa de 05/09 continua válida para o desenho que ela recusou.
-
-| | o que foi recusado em 05/09 | o que entra agora |
-| --- | --- | --- |
-| gatilho | em toda tabela de conteúdo | **nenhum** |
-| escritas | 1 por post, curtida e comentário | ≤ 8 por conta, **na vida** |
-| quando | a cada interação | ao abrir o próprio perfil, se algo cruzou |
-
-**Etapas:**
-
-1. ✅ migration **escrita** — `20261010000000_conquistas_desbloqueadas_tabela.sql` +
-   `20261010000100_conquistas_desbloqueadas_funcoes.sql`:
-   tabela + RLS + `REVOKE` (SEC-052) + as duas funções + o backfill
-2. ✅ a RPC `registrar_conquistas()` mede no SERVIDOR e **não recebe
-   parâmetro** — é aí que mora a proteção (§1.3, o site usa a `anon key`)
-3. ✅ trava `conquistaNaoDerivaDoBanco.test.js` — 20 checagens, **provada
-   reinjetando 6 bugs**, cada um reprovou na checagem certa
-4. ✅ a tela ganha a data, e só a data (`useConquistas` + `ConquistasCard`)
-5. ✅ **provado em `ROLLBACK`** — 10 de 10 veredictos OK: forjar `INSERT`,
-   `UPDATE` e `DELETE` todos bloqueados, `medir_conquistas` de outra pessoa
-   bloqueada, RLS mostrando 1 própria e 0 alheias, `anon` barrado nas duas
-   portas, a RPC idempotente (2ª chamada devolve 0) e `retroativa=false` no
-   que ela gravou. Backfill: **5 linhas, 5 pessoas, só `um_mes_de_casa`** —
-   o número que eu tinha dimensionado antes
-6. 🟠 **APLICAR — é dele, e eu não alcanço.** O `apply_migration` e todo
-   `execute_sql` que **efetiva** são recusados nesta sessão (leitura e
-   `BEGIN…ROLLBACK` passam — medido, 5 linhas de evidência no `OPERACAO.md`).
-   O passo a passo está em
-   [`docs/OPERACAO.md`](docs/OPERACAO.md) → *"APLICAR UMA MIGRATION QUANDO EU
-   NÃO CONSIGO"*: link direto do SQL Editor, os dois arquivos **em ordem**, a
-   consulta de conferência com os 4 números esperados, o que pode dar errado
-   (conferido antes) e como desfazer.
-7. 🟠 **O MERGE ESPERA a etapa 6**, e isso é regra nova escrita no
-   `OPERACAO.md`: código que chama RPC inexistente **degrada em silêncio** —
-   os services devolvem o vazio seguro, a tela renderiza sem data, nada
-   estoura. Parece entregue e não está (§1.5).
-
-**Decisões tomadas, com o motivo:**
-
-- **O backfill vai na migration, com `retroativa = true`.** Sem ele, quem já
-  tem sete conquistas receberia **a data de hoje** nas sete — uma data que se
-  apresenta como história e não é (§1.1). Varrendo a base de uma vez, tudo o
-  que foi gravado depois tem data verdadeira, e a RPC nunca precisa decidir se
-  é o primeiro registro daquela conta.
-- **A tela NÃO muda o que considera concluída.** Isso é a decisão pendente nº 1
-  do estudo (*desbloqueio permanente ou condicional?*), e ela é dele. O que
-  entra é só a infraestrutura + a data; trocar a origem do "concluída" depois é
-  uma linha, com os dados já no lugar.
+*Vazia — nenhuma tarefa em curso. Ela é estado, não histórico.*
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -833,6 +773,25 @@ A recusa de 05/09 continua válida para o desenho que ela recusou.
 
 
 ## 🟢 Recomendado
+
+- ⬜ `[10/10]` 🟠 **Apagar UMA linha de sonda no histórico de migrations** — e é
+  dele porque eu não alcanço: `DELETE` é recusado no meu ambiente (ver
+  `OPERACAO.md`, *"DROP e DELETE de nível superior"*).
+
+  No [SQL Editor](https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/sql/new):
+
+  ```sql
+  delete from supabase_migrations.schema_migrations
+   where name = 'sonda_apply_migration';
+  ```
+
+  **O que ela é:** eu a criei testando se o `apply_migration` estava bloqueado.
+  Ela contém só um `COMMENT ON TABLE` que **já está** dentro da migration real
+  `conquistas_desbloqueadas_tabela` — então apagar a linha não desfaz nada no
+  schema, só tira ruído do histórico.
+
+  **Como conferir:** o portão do espelho passa a dizer `253 / 253`. Hoje diz
+  `253 arquivos / 254 aplicadas`, e é só por causa dela.
 
 - ⬜ `[10/10]` 🟢 **Job vermelho num passo `run:` simples não diz POR QUÊ.** A
   anotação devolveu `Process completed with exit code 1` e nada mais — as

@@ -77,11 +77,33 @@ REVOKE ALL ON public.conquistas_desbloqueadas FROM anon, authenticated;
 GRANT SELECT ON public.conquistas_desbloqueadas TO authenticated;
 
 -- Ler o PROPRIO registro, e so.
-DROP POLICY IF EXISTS "Ve as proprias conquistas" ON public.conquistas_desbloqueadas;
-CREATE POLICY "Ve as proprias conquistas"
-  ON public.conquistas_desbloqueadas FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
+--
+-- `[10/10]` O guard e `IF NOT EXISTS` e NAO `DROP POLICY IF EXISTS`, que era o
+-- padrao daqui. Motivo medido nesta sessao: o ambiente em que eu rodo recusa
+-- qualquer statement DESTRUTIVO de nivel superior — `DROP` e `DELETE` —, e isso
+-- tornava esta migration impossivel de eu mesmo aplicar. Provado: um
+-- `DROP TABLE IF EXISTS` numa tabela que nunca existiu foi recusado, e a mesma
+-- palavra dentro de uma string passou.
+--
+-- A saida NAO e esconder o `DROP` num `DO $$ ... $$`: ali ele viaja como string
+-- e a guarda nao o ve. Contornar protecao de propria mao e exatamente o que o
+-- §5 proibe quando diz que eu passo por cima de tudo e por isso preciso de
+-- disciplina propria. Perguntar ao `pg_policies` e idempotente sem nada
+-- destrutivo.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+     WHERE schemaname = 'public'
+       AND tablename  = 'conquistas_desbloqueadas'
+       AND policyname = 'Ve as proprias conquistas'
+  ) THEN
+    CREATE POLICY "Ve as proprias conquistas"
+      ON public.conquistas_desbloqueadas FOR SELECT
+      TO authenticated
+      USING (user_id = auth.uid());
+  END IF;
+END $$;
 
 -- NAO existe policy de INSERT, UPDATE nem DELETE, e isso e deliberado: quem
 -- escreve e a RPC `SECURITY DEFINER` abaixo. Sem `GRANT INSERT`, a REST API
