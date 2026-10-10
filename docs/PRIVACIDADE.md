@@ -146,6 +146,7 @@ autentica, e por isso existe.
 | `banned`, `ban_reason`, `banned_by`, `suspended_until` | `profiles` | moderação e trilha de auditoria | sim | colunas revogadas do papel `authenticated` |
 | e-mail + tentativas | `login_attempts` | barrar força bruta | sim | ver retenção abaixo |
 | ações de moderação | `admin_logs` | trilha de auditoria | sim | ver retenção abaixo |
+| **`[10/10]`** conquista desbloqueada + quando | `conquistas_desbloqueadas` | mostrar a data no próprio perfil | **opcional** — é consequência de usar o site | **só a própria pessoa lê** (RLS `user_id = auth.uid()`), e some com a conta (`ON DELETE CASCADE`). Nenhum dado novo é coletado: é derivado do que já existe em `posts`, `post_likes`, `comments` e `profiles` |
 
 ### Quem mais recebe alguma coisa
 

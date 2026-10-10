@@ -49,7 +49,56 @@
 
 ## 🔄 EM EXECUÇÃO
 
-*Vazia — nenhuma tarefa em curso. Ela é estado, não histórico.*
+### `[10/10]` A tabela de conquistas — o REGISTRO do desbloqueio
+
+**Pedido dele em 09/10:** *"Vc disse que a tabela de conquistas não tem, pode
+fazer tbm 👍🏻"* — depois de o estudo de cosméticos medir que as conquistas são
+**derivadas** e que, sem persistência, não existe *"desbloqueado para sempre"*.
+
+**O que isto NÃO é, e a distinção decide tudo.** O cabeçalho de
+`lib/conquistas.js` recusou a tabela em 05/09 com a pergunta do §0.2 —
+*"quantas vezes por dia isso roda?"* — e a resposta era *"uma escrita por
+interação de todo mundo"*, porque o desenho pressuposto era **gatilho em
+`posts`, `post_likes` e `comments`**. Não é esse. Aqui a escrita acontece
+**uma vez por conquista, por pessoa, para sempre**: no máximo 8 linhas por
+conta, gravadas quando ela abre o PRÓPRIO perfil e algo novo cruzou a meta.
+A recusa de 05/09 continua válida para o desenho que ela recusou.
+
+| | o que foi recusado em 05/09 | o que entra agora |
+| --- | --- | --- |
+| gatilho | em toda tabela de conteúdo | **nenhum** |
+| escritas | 1 por post, curtida e comentário | ≤ 8 por conta, **na vida** |
+| quando | a cada interação | ao abrir o próprio perfil, se algo cruzou |
+
+**Etapas:**
+
+1. ✅ migration **escrita** — `20261010000000_conquistas_desbloqueadas.sql`:
+   tabela + RLS + `REVOKE` (SEC-052) + as duas funções + o backfill
+2. ✅ a RPC `registrar_conquistas()` mede no SERVIDOR e **não recebe
+   parâmetro** — é aí que mora a proteção (§1.3, o site usa a `anon key`)
+3. ✅ trava `conquistaNaoDerivaDoBanco.test.js` — 20 checagens, **provada
+   reinjetando 6 bugs**, cada um reprovou na checagem certa
+4. ✅ a tela ganha a data, e só a data (`useConquistas` + `ConquistasCard`)
+5. 🔴 **BLOQUEADO: aplicar no banco.** As duas tentativas de rodar a prova em
+   `ROLLBACK` pelo MCP foram **recusadas** (as chamadas de leitura passaram).
+   A 1ª tinha um `UPDATE profiles` num usuário real dentro da transação e a
+   recusa foi justa — eu reescrevi sem tocar em `profiles` e a 2ª também foi
+   recusada. **Precisa da autorização dele**, e nada disto vai para a `main`
+   antes: código que chama RPC inexistente degrada para o comportamento de
+   hoje (o card fica sem data), mas gritaria no console a cada visita ao
+   perfil, que é ruído (§0.2, 4ª regra)
+
+**Decisões tomadas, com o motivo:**
+
+- **O backfill vai na migration, com `retroativa = true`.** Sem ele, quem já
+  tem sete conquistas receberia **a data de hoje** nas sete — uma data que se
+  apresenta como história e não é (§1.1). Varrendo a base de uma vez, tudo o
+  que foi gravado depois tem data verdadeira, e a RPC nunca precisa decidir se
+  é o primeiro registro daquela conta.
+- **A tela NÃO muda o que considera concluída.** Isso é a decisão pendente nº 1
+  do estudo (*desbloqueio permanente ou condicional?*), e ela é dele. O que
+  entra é só a infraestrutura + a data; trocar a origem do "concluída" depois é
+  uma linha, com os dados já no lugar.
 
 ## 🔴 ACHADOS DE SEGURANÇA — `[10/09]`
 
@@ -976,10 +1025,10 @@
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->205<!--/n--> arq ·
-  <!--n:src.lib.linhas-->26.623<!--/n--> linhas; `src/services/`,
-  <!--n:src.services.arquivos-->25<!--/n--> arq ·
-  <!--n:src.services.linhas-->2.492<!--/n--> linhas) concentram quase todo o
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->207<!--/n--> arq ·
+  <!--n:src.lib.linhas-->27.057<!--/n--> linhas; `src/services/`,
+  <!--n:src.services.arquivos-->26<!--/n--> arq ·
+  <!--n:src.services.linhas-->2.568<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
   toda a conversa com o Supabase e a lógica pura já 100% testada. Gatilho
   sugerido: a próxima migration que renomeie ou remova coluna.

@@ -146,6 +146,10 @@ src/
 │   ├── useLivesList.js    # Lista de lives, com debounce (INSERT e UPDATE quase juntos)
 │   ├── useProfileForm.js  # Estado do formulário de perfil
 │   ├── useProfileStats.js # Números do perfil
+│   ├── useConquistas.js   # `[10/10]` O REGISTRO de desbloqueio das conquistas.
+│   │                      # Registra ANTES de ler, senão a conquista que acabou
+│   │                      # de ser cumprida aparece sem data nesta visita — e
+│   │                      # isso é indistinguível de registro que falhou
 │   ├── useUserXP.js       # XP e rank do usuário
 │   ├── useAvatarUpload.js # Envio da foto de perfil
 │   ├── useDeleteCountdown.js # Contagem antes de ação destrutiva, com cancelar
@@ -419,10 +423,18 @@ src/
 │   │                      # `[05/09]` A marca é escrita ANTES do login, e
 │   │                      # `nomeDaSaudacao()` tem duas fontes porque o perfil
 │   │                      # pode não ter chegado quando o portão sobe
-│   ├── conquistas.js      # `[05/09]` As 8 conquistas do perfil. DERIVADAS do
-│   │                      # que a get_user_xp já devolve — zero tabela, zero
+│   ├── conquistas.js      # `[05/09]` As 8 conquistas do perfil. O PROGRESSO é
+│   │                      # DERIVADO do que a get_user_xp já devolve — zero
 │   │                      # trigger, zero consulta nova. avaliarConquistas()
-│   │                      # devolve null (e não zeros) enquanto falta dado
+│   │                      # devolve null (e não zeros) enquanto falta dado.
+│   │                      # `[10/10]` Desde a tabela de desbloqueio ela aceita
+│   │                      # `desbloqueadas` e acrescenta SÓ a data: quem decide
+│   │                      # "concluída" continua sendo a medição derivada
+│   ├── textoVisivel.js    # `[10/10]` "Sobrou caractere VISÍVEL?" — o espelho
+│   │                      # em JS da `texto_visivel` do banco (SEC-046).
+│   │                      # `trim()` só corta branco ASCII, então o perfil de
+│   │                      # U+200B contava como completo na tela e vazio no
+│   │                      # servidor
 │   ├── cofre.js           # `[05/09]` O cofre do painel do Fundador: define,
 │   │                      # confere e abre por aba. CENOGRÁFICO — tranca de
 │   │                      # tela, não autorização. O código nunca é guardado,
@@ -514,6 +526,9 @@ src/
 │   ├── postMediaService.js # Upload e storage da mídia de post — a única
 │   │                      # parte do domínio que conversa com o BUCKET
 │   ├── profileService.js  # Perfis, XP, stats, avatar, preferências
+│   ├── conquistasService.js # `[10/10]` Registra e lê o desbloqueio. A RPC não
+│   │                      # recebe parâmetro de propósito: o site usa a anon
+│   │                      # key, e nomear a conquista seria forjá-la
 │   ├── communityService.js# Mural da comunidade
 │   ├── liveService.js     # Chat de live, silenciamentos
 │   ├── liveXpService.js   # `[19/09]` As 3 RPCs de XP de live que já aconteceu

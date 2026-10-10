@@ -4,6 +4,7 @@ import { Save } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useProfileForm } from '../hooks/useProfileForm';
 import { useProfileStats } from '../hooks/useProfileStats';
+import { useConquistas } from '../hooks/useConquistas';
 import { useAvatarUpload } from '../hooks/useAvatarUpload';
 import { getSubRankProgress, RANK_TIERS, getBorderForProfile } from '../lib/ranks';
 import AdminApplicationCard from '../components/profile/AdminApplicationCard';
@@ -22,6 +23,7 @@ export default function Profile() {
   const { form, setField, saving, save, maxBirthDate } =
     useProfileForm({ user, profile, refreshProfile });
   const { stats, xpData } = useProfileStats(user?.id);
+  const desbloqueadas = useConquistas(user?.id);
   const { avatarUrl, uploading, fileRef, handleAvatarUpload } =
     useAvatarUpload({ user, profile, refreshProfile });
 
@@ -58,7 +60,7 @@ export default function Profile() {
       {/* `[05/09]` As conquistas vêm logo depois dos stats porque leem os
           MESMOS dados — a chamada de XP que o card acima já fez. Nenhuma
           consulta nova entra por causa deste card. */}
-      <ConquistasCard xpData={xpData} profile={profile} />
+      <ConquistasCard xpData={xpData} profile={profile} desbloqueadas={desbloqueadas} />
 
       {/* Candidatura a admin — só faz sentido pra quem ainda é usuário comum */}
       {profile?.role === 'user' && <AdminApplicationCard userId={user.id} />}
