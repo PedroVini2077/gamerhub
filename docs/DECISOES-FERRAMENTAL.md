@@ -575,6 +575,69 @@ minutos, pega ponto cego. Não vale automatizar.
 
 ---
 
+## `[10/10]` Dois 🟢 fechados com NÃO CONSTRUIR — e os dois pelo mesmo motivo
+
+Ele mandou seguir com os 🟢 (*"pode seguir com o resto ✅"*). Dois deles eu
+fechei **não construindo**, e isso é a recomendação, não preguiça: nos dois o
+mecanismo custaria manutenção permanente para responder algo que já tem
+resposta, e a 4ª regra do §0.2 vale para o portão que ninguém precisava tanto
+quanto para o que grita à toa.
+
+### 1. Job vermelho num passo `run:` — fica COMANDO, não vira portão
+
+**O problema é real:** a anotação do CI devolve `Process completed with exit
+code 1` e nada mais num passo de uma linha. As travas de 03/10
+(`salvarEvidencia`) e 09/10 (`vitest`) cobrem os roteiros e os testes; um passo
+simples ficou de fora, e isso me custou **seis execuções locais** procurando o
+roteiro errado antes de eu parar de chutar.
+
+**Por que não mecanizo:** a API já responde, em **um** comando, e ele está
+escrito no [`OPERACAO.md`](OPERACAO.md):
+
+```bash
+gh api .../jobs --jq '.jobs[]|select(.conclusion=="failure")|.name,
+  (.steps[]|select(.conclusion=="failure")|"  passo: \(.name)")'
+```
+
+Ele apontou `rotas num navegador de verdade → O espelho de migrations` de
+primeira, nas duas vezes que usei depois. Um passo `if: failure()` novo
+economizaria **um comando** e criaria manutenção permanente — §9.8, perguntas
+6 e 7.
+
+**A condição de saída, para "não agora" não virar "nunca":** se isso me pegar
+uma segunda vez, mecaniza.
+
+### 2. Paginação e aviso de novidade no E2E — a COBERTURA é declarada, não ampliada
+
+O item pedia exercitar os dois num navegador, e ele mesmo já dizia a saída
+honesta: *"é honesto dizer qual é qual"*.
+
+**O que custaria construir:** a paginação precisa de **mais de 20 posts** no
+feed para existir uma segunda página. Num roteiro de CI isso é ~21 publicações
+e ~21 exclusões **em produção** por rodada — e o `retencaoDePostDeTeste` existe
+justamente porque sobra de teste já ficou no ar e confundiu o dono. O aviso de
+novidade precisa de duas sessões simultâneas; o `duasContas.mjs` tem as duas
+contas, mas o aviso depende de **tempo** entre elas, que é o tipo de teste que
+fica intermitente.
+
+**O que já existe, e é por isso que o preço não se paga:**
+
+| caminho | coberto por | o que ele prova |
+| --- | --- | --- |
+| paginação | `paginacaoDoFeed.test.js` | a RPC continuar `SECURITY INVOKER` (senão a RLS deixa de valer e o feed lista conteúdo moderado), os dois ramos do cursor não virarem um `OR` (medido: derruba o Index Cond para Filter), e o lote caber no teto da RPC |
+| aviso de novidade | `novidadeDoFeed.test.js` | live não entrar, post que nasce oculto não entrar, apagado não entrar — e o aviso **lê a mesma consulta** do feed, então filtro novo que ele ignore reprova nomeando a coluna |
+
+**A decisão:** a cobertura fica como está, e passa a estar **escrita** —
+contrato e ROLLBACK sim, navegador não. Dizer qual é qual é o que o §6 chama de
+honestidade sobre o método; fingir cobertura de navegador seria pior do que
+não tê-la.
+
+**A condição de saída:** no dia em que o feed tiver movimento real, a segunda
+página passa a existir sem ninguém semear nada — e aí o roteiro custa quase
+zero. Hoje o feed não tem um post vivo (item próprio no `BACKLOG.md`).
+
+---
+
 ## `[10/10]` O mapa de arquivos casa por NOME, e nome genérico passa de graça — DESCARTADO consertar
 
 **O que foi observado.** Criei `src/lib/conquistas/lista.js` e **esqueci** de

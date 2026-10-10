@@ -6,6 +6,8 @@ import { logAudit } from '../../lib/auditLog';
 import { moderateText, moderateImages } from '../../services/moderationAiService';
 import { suspendedUntil } from '../../lib/roles';
 import SuspendedNotice from '../ui/SuspendedNotice';
+import EditorDeTexto from '../ui/EditorDeTexto';
+import { RECURSOS_DE_COMENTARIO } from '../../lib/formatacao/vocabulario';
 import toast from 'react-hot-toast';
 import { Send, Image as ImageIcon, X } from 'lucide-react';
 
@@ -89,16 +91,33 @@ const MuralForm = memo(function MuralForm({ onPost }) {
 
   return (
     <div className="card p-4">
-      <textarea
+      {/* `[10/10]` A BARRA entrou, e o conjunto é o do COMENTÁRIO — não um
+          terceiro.
+
+          O mural já RENDERIZAVA formatação desde 09/10 (`TextoFormatado` com
+          `separador={false}`, igual ao comentário e pelo mesmo motivo), mas
+          não oferecia como escrevê-la: quem já sabia `**` usava, quem não
+          sabia não descobria. Recurso que só funciona para quem já o conhece
+          é indistinguível de recurso que não existe.
+
+          `RECURSOS_DE_COMENTARIO` e não um conjunto novo porque o mural É
+          conversa, como o comentário — e porque a barra não pode oferecer o
+          que o renderizador daqui não lê. Os dois usam o mesmo corte, então
+          reusar a decisão é o §4: um terceiro conjunto divergiria do
+          renderizador no dia em que alguém mexesse num só.
+
+          Cor e tamanho ficam de fora pela razão que ele deu sobre o
+          comentário: "nem tudo que tem na hora de postar precisa ter nos
+          comentários" — ali viram disputa de quem grita mais alto. */}
+      <EditorDeTexto
         id="mural-message"
-        aria-label="Mensagem para o mural da comunidade"
-        className="input-gamer resize-none w-full"
-        rows={2}
-        placeholder="Escreva no mural da comunidade... (Enter para enviar)"
         value={message}
-        onChange={e => setMessage(e.target.value)}
-        onKeyDown={handleKey}
+        onChange={setMessage}
+        placeholder="Escreva no mural da comunidade... (Enter para enviar)"
         maxLength={500}
+        rows={2}
+        recursos={RECURSOS_DE_COMENTARIO}
+        onKeyDown={handleKey}
       />
 
       {medias.length > 0 && (

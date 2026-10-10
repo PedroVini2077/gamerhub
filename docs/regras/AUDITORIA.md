@@ -48,9 +48,9 @@ digitado à mão:
 
 | | |
 | --- | --- |
-| código em `src/` | <!--n:src.arquivos-->518<!--/n--> arquivos · <!--n:src.linhas-->60.684<!--/n--> linhas |
-| dividido em | `lib` <!--n:src.lib.arquivos-->208<!--/n--> · `components` <!--n:src.components.arquivos-->205<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->50<!--/n--> · `pages` <!--n:src.pages.arquivos-->26<!--/n--> · `services` <!--n:src.services.arquivos-->26<!--/n--> |
-| rede de testes | <!--n:testes.arquivos-->152<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->27<!--/n--> roteiros de navegador |
+| código em `src/` | <!--n:src.arquivos-->519<!--/n--> arquivos · <!--n:src.linhas-->60.830<!--/n--> linhas |
+| dividido em | `lib` <!--n:src.lib.arquivos-->209<!--/n--> · `components` <!--n:src.components.arquivos-->205<!--/n--> · `hooks` <!--n:src.hooks.arquivos-->50<!--/n--> · `pages` <!--n:src.pages.arquivos-->26<!--/n--> · `services` <!--n:src.services.arquivos-->26<!--/n--> |
+| rede de testes | <!--n:testes.arquivos-->153<!--/n--> arquivos de teste · <!--n:e2e.roteiros-->27<!--/n--> roteiros de navegador |
 | Edge Functions | <!--n:edge.funcoes-->10<!--/n--> |
 | banco | **medir na hora**, com as consultas acima — retrato guardado aqui envelheceria em silêncio |
 
@@ -64,8 +64,8 @@ digitado à mão:
 > `[03/09]` **Esta seção mudou, e a mudança foi aprovada pelo dono.** Ela dizia
 > *"o padrão é ler tudo"*, sustentada pela frase *"este projeto tem ~14 mil
 > linhas, isso é lível por inteiro"*. Era verdade quando foi escrita; o projeto
-> **dobrou** — <!--n:src.arquivos-->518<!--/n--> arquivos,
-> <!--n:src.linhas-->60.684<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
+> **dobrou** — <!--n:src.arquivos-->519<!--/n--> arquivos,
+> <!--n:src.linhas-->60.830<!--/n--> linhas, e 73 funções `SECURITY DEFINER`
 > *(este último é o retrato de 03/09, congelado; eram **77** em 10/09)* — e a
 > frase sobreviveu ao fato. Foi esse caso que produziu o portão
 > `numeros-do-projeto.mjs` (ver [DOCUMENTACAO.md](DOCUMENTACAO.md)).
@@ -122,8 +122,8 @@ com leitura parcial.
 ### Honestidade sobre o método
 
 **Ao relatar, dizer qual método foi usado e o número real de cobertura** —
-"li <!--n:src.arquivos-->518<!--/n--> de <!--n:src.arquivos-->518<!--/n-->
-arquivos" ou "li 40 de <!--n:src.arquivos-->518<!--/n-->, parei em X". Nunca deixar parecer
+"li <!--n:src.arquivos-->519<!--/n--> de <!--n:src.arquivos-->519<!--/n-->
+arquivos" ou "li 40 de <!--n:src.arquivos-->519<!--/n-->, parei em X". Nunca deixar parecer
 que "olhei tudo" quando foi grep. Se a fase foi parcial, ela está **parcial**,
 não concluída.
 
@@ -295,9 +295,59 @@ projeto: o teto de deploys da Vercel estourou primeiro — ver §0.2)
 - Efeito com deps que remontam canal de realtime a cada render.
 
 **5. Banco**
+
 ```sql
-select * from pg_stat_user_indexes where idx_scan = 0;  -- índice nunca usado
+-- Índice parado que VALE olhar. Medido em 10/10: a versão ingênua
+-- (`where idx_scan = 0`) acusava 177; esta acusa 4.
+select i.relname as tabela, i.indexrelname as indice,
+       pg_size_pretty(pg_relation_size(i.indexrelid)) as tamanho
+  from pg_stat_user_indexes i
+  join pg_stat_user_tables  t on t.relid = i.relid
+ where i.schemaname = 'public'                     -- 1. só o que é NOSSO
+   and i.idx_scan = 0
+   and (t.seq_scan + t.idx_scan) > 1000            -- 2. tabela com tráfego
+   and not exists (select 1 from pg_index x        -- 3. nem PK, nem unique
+                    where x.indexrelid = i.indexrelid
+                      and (x.indisprimary or x.indisunique))
+   and not exists (select 1 from pg_constraint c   -- 4. nem cobertura de FK
+                    where c.conrelid = i.relid and c.contype = 'f'
+                      and c.conkey @> (select array_agg(a.attnum)
+                                         from pg_index ix
+                                         join unnest(ix.indkey) k(attnum) on true
+                                         join pg_attribute a
+                                           on a.attrelid = i.relid and a.attnum = k.attnum
+                                        where ix.indexrelid = i.indexrelid))
+ order by pg_relation_size(i.indexrelid) desc;
 ```
+
+> ### ⚠️ `[10/10]` A query que estava aqui era PERIGOSA, não inútil
+>
+> Ela era `select * from pg_stat_user_indexes where idx_scan = 0`, e o item do
+> backlog dizia que ela "não serve neste volume" porque o site tem poucos
+> usuários. **Medido, o diagnóstico era outro:** o banco tem **1,37 milhão** de
+> leituras e a tabela mais lida passa de 675 mil. Tráfego existe.
+>
+> O problema são **quatro filtros que faltavam**, e os dois primeiros fazem a
+> query recomendar estrago:
+>
+> | faltava | o que ela mandava apagar |
+> | --- | --- |
+> | `schemaname = 'public'` | índices de `auth.users` e `auth.sessions` — **tabelas do Supabase**, que não são nossas |
+> | excluir cobertura de FK | `idx_profiles_banned_by`, `idx_site_config_updated_by` — `idx_scan = 0` é o **esperado** neles, e este mesmo §6.1 manda tê-los na linha de baixo |
+> | tabela com tráfego | índice de tabela que ninguém leu ainda, onde zero não diz nada |
+> | PK e unique | a chave primária de quase toda tabela |
+>
+> **E não havia ganho a perseguir:** todos os acusados têm **8 a 32 kB**.
+> Apagar os 177 economizaria menos do que uma imagem de post.
+>
+> **O que a substituta devolve hoje são 4**, e os quatro são a mesma coisa —
+> índice esperando um caminho que ainda não existe: a busca do News
+> (`idx_news_articles_busca`), a fila de itens pendentes do radar, e os
+> compostos de `moderation_queue`/`reports`. **Nenhum é dívida**, e é por isso
+> que a saída dela é uma lista para JULGAR, não para apagar: 4 itens uma pessoa
+> lê; 177 ninguém lê, e lista que ninguém lê é o mesmo que portão desligado
+> (§0.2, 4ª regra).
+
 - FK sem índice de cobertura; coluna filtrada/ordenada sem índice.
 - Tabela append-only sem retenção (`admin_logs`, `login_attempts`, `live_chat`).
 - `get_advisors` (security **e** performance) depois de mexer em schema.

@@ -33,7 +33,7 @@
 
 ---
 
-**52 itens abertos** (+ 5 desativados, no bloco do fim)
+**48 itens abertos** (+ 5 desativados, no bloco do fim)
 
 > **`[09/10]` Este arquivo tinha 2.758 linhas, e o primeiro item da fila
 > aparecia na 1.213.** Quase metade dele era passado: 22 seções já concluídas
@@ -284,41 +284,6 @@
   apaga por par: não é troca mecânica.
 
 ## 🟠 Importante — precisa de ação ou decisão do dono
-
-- ⬜ `[25/09]` 🟠 **O QUE CONTINUA SENDO DECISÃO DELE — o resto das duas perguntas**
-
-  **1. "Eu como owner posso ter um painel próprio de publicar notícias?"**
-
-  **Minha recomendação: NÃO um segundo editor — mas SIM uma visão editorial no
-  `/owner`.** Dois editores são duas implementações que divergem (§4), e a
-  diferença entre owner e admin já está expressa no lugar certo: os botões que
-  aparecem. O que falta no `/owner` não é a ferramenta de escrever, é o **estado
-  do jornal**: quantos rascunhos esperando revisão, o que está agendado, o que
-  saiu na semana. Isso é informação de fundador, não cópia de painel.
-
-  **2. "As recomendações por IA, acha bom implementar?"**
-
-  **Sim, mas só como ASSISTENTE de quem escreve — nunca como autor.** O corte:
-
-  | Cabe | Não cabe |
-  | --- | --- |
-  | sugerir resumo/subtítulo **a partir do corpo que ele já escreveu** | escrever a matéria a partir do título |
-  | sugerir editoria pelo título | inventar fato, data, número ou citação |
-  | avisar "este texto não tem link de fonte" | publicar sem gente ler |
-
-  **O motivo não é técnico, é o que está escrito na landing:** *"apurado pela
-  equipe, sem caça-clique e sem repost sem fonte"*. IA que redige a partir de um
-  título produz exatamente o contrário, com a marca do GamerHub assinando.
-
-  **O custo, que é a parte que ninguém pergunta (§0.2 regra 2):** a chamada seria
-  **uma por matéria** — algumas por dia, não por tecla. Essa é a forma certa. Mas
-  **não existe orçamento de IA decidido**, e toda cota grátis deste projeto já
-  estourou pelo menos uma vez.
-
-  **Onde a IA paga de verdade:** na ingestão (`news_items_raw`), resumindo o item
-  coletado num rascunho que o editor reescreve. Mas isso exige a ingestão primeiro.
-
-  ---
 
 - ⬜ `[18/09]` 🧪 **EXPERIMENTO NO PREVIEW — o Ato 0 como PORTAL em SVG**
 
@@ -775,20 +740,6 @@
 ## 🟢 Recomendado
 
 
-- ⬜ `[10/10]` 🟢 **Job vermelho num passo `run:` simples não diz POR QUÊ.** A
-  anotação devolveu `Process completed with exit code 1` e nada mais — as
-  travas de 03/10 (`salvarEvidencia`) e 09/10 (`vitest`) cobrem os roteiros e
-  os testes unitários, e **um passo de uma linha ficou de fora**. Custou seis
-  execuções locais procurando o roteiro errado antes de eu parar e perguntar à
-  API.
-
-  **Não precisa de mecanismo novo** (§9.8, perguntas 1 e 5): a API já devolve
-  a conclusão passo a passo, e o comando está escrito no `OPERACAO.md`. O que
-  cabe decidir é se vale um passo `if: failure()` que imprima o nome do passo
-  falho como anotação — ganho pequeno, manutenção permanente. **Minha
-  recomendação: deixar como comando documentado**, e só mecanizar se isso me
-  pegar uma segunda vez.
-
 - ⬜ `[10/09]` 🟢 **4. Integrar o PROTOCOLO DE CONTROLE DE COMPLEXIDADE às
   regras.** *Documento estrutural → precisa de proposta (§6.2).*
 
@@ -817,31 +768,6 @@
   sem mídia, em aparelho lento), bytes por lote, e rolagem no celular. Muda um
   número só (`TAMANHO_DO_LOTE`), e a trava garante que ele não passe do teto
   da RPC.*
-
-- ⬜ `[24/09]` 🟢 **O E2E não exercita a paginação nem o aviso de novidade.**
-  *O `cicloDoPost` publica um post só, então nunca há segunda página; e o aviso
-  de novidade exigiria duas sessões simultâneas. Os dois caminhos estão
-  cobertos por trava de contrato e por prova em ROLLBACK, mas não por navegador
-  — e é honesto dizer qual é qual.*
-
-- ⬜ `[09/10]` 🔵 **O mural ganha a BARRA do editor?** *A renderização já
-  entrou em 09/10 — quem escreve `**oi**` no mural agora vê negrito, com o
-  mesmo corte do comentário (sem separador).*
-
-  na aba padrão**.
-
-  Resultado, com a tela recém-carregada: o cabeçalho conta `1 ao vivo`, a aba
-  `Gameplays` mostra `(1)`, e o miolo diz *"Nenhuma live acontecendo agora —
-  volte mais tarde!"*.
-
-  **Não é defeito**: separar live de jogador de live da comunidade é de
-  propósito. É leitura de tela. Quem acabou de ficar ao vivo cai numa aba que
-  diz que não tem nada.
-
-  Saídas possíveis (decisão de produto): abrir na primeira aba **que tem
-  conteúdo** · esconder a contagem quando a aba está vazia mas o site não ·
-  trocar o texto vazio por *"nenhuma aqui — veja em Gameplays (1)"*.
-
 
 - ⬜ `[12/09]` 🟢 **A falha do `e2e/fluxos.mjs` manda investigar o lugar
   errado.** *Achado hoje, custou alguns minutos de investigação minha.*
@@ -980,8 +906,8 @@
 - ⬜ `[21/08]` **Migração para TypeScript.** *Rebaixada em 28/08 a pedido do
   dono — fica por último.* Não descartada: quando a hora chegar, a análise de
   28/08 recomenda fazer por fronteira, e não de uma vez. As duas primeiras
-  fatias (`src/lib/`, <!--n:src.lib.arquivos-->208<!--/n--> arq ·
-  <!--n:src.lib.linhas-->27.297<!--/n--> linhas; `src/services/`,
+  fatias (`src/lib/`, <!--n:src.lib.arquivos-->209<!--/n--> arq ·
+  <!--n:src.lib.linhas-->27.424<!--/n--> linhas; `src/services/`,
   <!--n:src.services.arquivos-->26<!--/n--> arq ·
   <!--n:src.services.linhas-->2.568<!--/n--> linhas) concentram quase todo o
   benefício — é onde mora
