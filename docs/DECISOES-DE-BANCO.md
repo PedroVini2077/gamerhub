@@ -325,6 +325,56 @@ invisíveis pagava igual a um preenchido.
 → `supabase/migrations/20260919034016_sec_046_bonus_de_perfil_exige_caractere_visivel_nao_so_trim.sql` ·
 `xpSoPagaOQueAparece.test.js`
 
+### `[10/10]` O desbloqueio de conquista é REGISTRADO — e sem gatilho nenhum
+
+**Decidido:** uma tabela append-only (`conquistas_desbloqueadas`) escrita por
+uma RPC `SECURITY DEFINER` sem parâmetro, chamada quando a pessoa abre o
+próprio perfil.
+
+**A alternativa RECUSADA, e ela é a óbvia:** `achievements` +
+`user_achievements` com `TRIGGER` em `posts`, `post_likes` e `comments`. Foi
+recusada em 05/09 pela pergunta do §0.2 — *quantas vezes por dia isso roda?* —
+e a resposta era **uma escrita por interação de todo mundo**, que multiplica por
+usuários × posts × leitores. **A recusa continua válida**, e é por isso que o
+cabeçalho de `src/lib/conquistas.js` não foi apagado: o que mudou não foi a
+conta, foi o desenho.
+
+| | recusado em 05/09 | o que entrou |
+| --- | --- | --- |
+| gatilho | em 3 tabelas de conteúdo | **nenhum** |
+| escritas | 1 por post, curtida e comentário | ≤ 8 por conta, **na vida** |
+| quando | a cada interação | ao abrir o próprio perfil, se algo cruzou |
+
+**Por que a RPC não recebe parâmetro.** O site usa a `anon key`: um
+`p_conquista_id` daria todas as conquistas a qualquer pessoa logada por um
+`POST` no `/rest/v1/rpc/`. Ela mede do zero, no servidor, para `auth.uid()` —
+não há o que forjar. O preço é a lista de metas existir também em SQL, o que é
+deriva por construção, travada por `conquistaNaoDerivaDoBanco.test.js`
+(`INV-CONTRATO-009`).
+
+**Por que o backfill vai na migration, e não na RPC.** Sem ele, quem já tem
+sete conquistas recebe **a data de hoje** nas sete no primeiro acesso depois do
+deploy — uma data que se apresenta como história e não é (§1.1), e nada
+acusaria. Varrendo a base de uma vez com `retroativa = true`, todo registro
+gravado depois tem data verdadeira.
+
+**A alternativa que parecia mais simples e erra:** a RPC decidir *"é a primeira
+vez desta conta?"* olhando se a tabela está vazia para o usuário. Ela erra
+justamente no caso novo — uma conta criada hoje, que publica o 1º post amanhã,
+tem a tabela vazia e marcaria retroativa uma conquista de data conhecida.
+
+**O que NÃO foi decidido aqui, de propósito:** se a conquista passa a ser
+**permanente** (o registro manda) ou continua **condicional** (a medição
+derivada manda, e apagar o 10º post volta a travar "Presença Constante"). Isso
+é comportamento público e é decisão do dono — a pendência nº 1 do
+[`PLANEJAMENTO-COSMETICOS.md`](PLANEJAMENTO-COSMETICOS.md). Até ela, a tabela
+acrescenta **só a data**, e trocar a origem do "concluída" depois é uma linha
+com os dados já no lugar.
+
+→ `supabase/migrations/20261010000000_conquistas_desbloqueadas_tabela.sql` ·
+`supabase/migrations/20261010000100_conquistas_desbloqueadas_funcoes.sql` ·
+`conquistaNaoDerivaDoBanco.test.js`
+
 ---
 
 ## Live

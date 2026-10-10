@@ -1391,8 +1391,8 @@ hoje. Corrigida no mesmo PR.
 Cobrança do dono, no mesmo dia: *"toda a documentação do projeto, não falo
 algumas, todas! todas devem estar atualizadas, e em uma única sessão"* — depois
 de eu achar que `docs/regras/AUDITORIA.md` afirmava *"131 arquivos / 14.362
-linhas"* num projeto de <!--n:src.arquivos-->513<!--/n--> arquivos e
-<!--n:src.linhas-->59.852<!--/n--> linhas.
+linhas"* num projeto de <!--n:src.arquivos-->517<!--/n--> arquivos e
+<!--n:src.linhas-->60.444<!--/n--> linhas.
 
 **Os três portões existentes aprovaram aquilo, e cada um por um motivo
 diferente** — o que prova que não era descuido de nenhum deles, e sim uma
@@ -1416,7 +1416,7 @@ Os três olham **nomes de arquivo**. Nenhum lê o que o texto **afirma**.
 | `npm run docs -- --tudo` | o estado de todos, por idade | não |
 
 **Como o número deixa de envelhecer.** O documento escreve o valor dentro de um
-comentário HTML — `<!--n:src.arquivos-->513<!--/n-->` —, invisível no markdown
+comentário HTML — `<!--n:src.arquivos-->517<!--/n-->` —, invisível no markdown
 renderizado. O script mede o projeto e reescreve o miolo; no CI ele confere e
 reprova. Chave desconhecida é **erro**, não silêncio: um typo faria aquele
 número nunca mais ser atualizado, com o agravante de **parecer vigiado**.
@@ -1441,7 +1441,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->31.088<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->31.344<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -2024,3 +2024,145 @@ on conflict on constraint news_sources_url_unica do nothing;
 FeedBurner dá 1 item), The Enemy (não resolve), Flow Games (404), Jovem Nerd
 (404), Nintendo Blast (1 item). A lista com o motivo está na migration
 `news_fontes_rss_iniciais`.
+
+---
+
+## `[10/10]` `DROP` E `DELETE` DE NÍVEL SUPERIOR SÃO RECUSADOS NO MEU AMBIENTE
+
+> **Esta seção foi reescrita no mesmo dia, e a versão anterior estava ERRADA.**
+> Eu havia concluído *"qualquer coisa que efetive é recusada"* e mandado o dono
+> aplicar a migration à mão. O diagnóstico certo saiu porque ele não aceitou a
+> conclusão: *"eu **nunca** nego nenhuma operação… será que vc não consegue
+> fazer uns testes usando os comandos que falham?"*. Ele estava certo, e a
+> correção fica registrada em vez de o texto ser trocado em silêncio (§1.1).
+
+### O que é, com a medição que isolou UMA variável por vez
+
+| teste | resultado |
+| --- | --- |
+| `CREATE TEMP TABLE` **sem** transação (commita) | **passou** → derruba *"o que efetiva é recusado"* |
+| `ALTER TABLE` + `REVOKE` + `GRANT` pelo `execute_sql` | **passou** → não é o tipo de comando |
+| `SELECT` inofensivo com **8,2 kB** | **passou** → não é tamanho |
+| `apply_migration` com **1 linha** (`COMMENT ON`) | **passou** → não é a ferramenta |
+| `DROP TABLE IF EXISTS` numa tabela **que nunca existiu** | **RECUSADO** |
+| `SELECT 'DROP' AS palavra` (a palavra numa string) | **passou** → a guarda **analisa o SQL**, não procura texto |
+| `DELETE FROM … WHERE` (uma linha que eu mesmo criei) | **RECUSADO** |
+
+**O achado:** existe uma guarda contra **statement destrutivo de nível
+superior** — `DROP` e `DELETE` — entre mim e o banco. Ela não é burra: a mesma
+palavra dentro de uma string literal passa, e `REVOKE` passa.
+
+**E ela explica as 11 chamadas, sem exceção.** Toda chamada "cancelada" daquela
+sessão continha um `DROP POLICY IF EXISTS`; nenhuma das que passaram continha.
+As duas metades da prova em `ROLLBACK` passaram porque, ao compactá-las para
+caberem, eu troquei o `DROP POLICY` por um `CREATE POLICY` direto e o `DELETE`
+por um `INSERT` com exclusão — **sem perceber que era essa a variável**. Foi
+isso que me fez culpar tamanho e commit, que eram correlação.
+
+### O que isso muda em como eu escrevo migration
+
+O padrão idempotente daqui era `DROP POLICY IF EXISTS` seguido de `CREATE
+POLICY`. Ele torna a migration **impossível de eu mesmo aplicar**. A troca é
+perguntar ao catálogo:
+
+```sql
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+     WHERE schemaname='public' AND tablename='x' AND policyname='y'
+  ) THEN
+    CREATE POLICY "y" ON public.x FOR SELECT TO authenticated USING (…);
+  END IF;
+END $$;
+```
+
+Idempotente, e sem nada destrutivo.
+
+> **O que eu NÃO faço, e é a parte que importa:** esconder o `DROP` dentro de um
+> `DO $$ … $$`. Ali ele viaja como string e a guarda não o vê — **provado** pelo
+> teste da palavra em string. Contornar uma proteção com a minha própria mão é
+> exatamente o que o §5 proíbe quando diz que eu passo por cima de RLS, guard e
+> hierarquia e **por isso** preciso de disciplina própria. Se uma migration
+> precisar de `DROP` de verdade (apagar coluna, função, tabela), ela é 🔴 pelo
+> §7 — eu alerto e **ele** executa, que é o desenho certo e não um contorno.
+
+### Quando a migration PRECISA de `DROP`, o passo a passo é dele
+
+**1. Abra o editor de SQL** — link direto, já no projeto certo:
+
+`https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/sql/new`
+
+Editor de texto grande, botão **Run** no canto inferior direito (`Ctrl+Enter`).
+
+**2. Cole o conteúdo do arquivo**, um por vez, na ordem do nome:
+
+```
+supabase/migrations/<data>_<nome>.sql
+```
+
+Um por vez e não todos juntos: se o segundo falhar, é preciso saber que o
+primeiro passou. O que aparece ao dar certo: **`Success. No rows returned`**.
+
+**3. Confira** com uma consulta que devolva números, e **me diga os números** —
+não "deu certo". Número diferente do esperado é informação, não detalhe.
+
+**4. O histórico do Supabase NÃO registra** o que passa pelo SQL Editor. Depois
+de aplicar, eu reaplico pelo `apply_migration` (o SQL é idempotente, então não
+muda nada) só para a linha entrar em `schema_migrations` — e o portão do espelho
+volta a verde.
+
+### A regra que isso cria
+
+**Migration nunca vai para a `main` antes de estar aplicada.** O motivo não é
+burocracia: código que chama RPC inexistente **degrada em silêncio** — os
+services devolvem o vazio seguro, a tela renderiza sem o recurso, e nada
+estoura. É o §1.5 pelo pior lado, porque *parece* entregue.
+
+Então a ordem é: provar em `ROLLBACK` → ele aplica → conferir → **aí** mergear.
+
+### ✅ E existe um PORTÃO que cobra isso — ele ficou vermelho na hora
+
+Eu escrevi a regra *"migration nunca vai para a `main` antes de estar
+aplicada"* como se fosse disciplina minha. **Não é: já existe máquina.** O
+passo `O espelho de migrations acompanha o banco`
+(`scripts/espelho-de-migrations.mjs`, de 02/09) reprovou o PR das conquistas
+com a mensagem certa:
+
+```
+arquivos em supabase/migrations/ : 253
+migrations aplicadas no Supabase : 251
+
+2 arquivo(s) a MAIS no repositorio do que migrations no banco.
+```
+
+Então a sequência real não depende de ninguém lembrar: **o CI fica vermelho até
+a migration ser aplicada**, e volta a verde depois — sem mexer em nada.
+
+> **O que isto corrige no texto acima:** a regra existia, eu só não a conhecia
+> quando escrevi esta seção. Fica registrado porque a §9.8 é explícita — antes
+> de criar regra nova, perguntar se já existe mecanismo. Aqui existia, e ele é
+> melhor do que a regra: um portão não esquece.
+
+### ⚠️ O que o diagnóstico custou, e o buraco que ficou
+
+A anotação `::error::` do CI devolveu só `Process completed with exit code 1`.
+As travas de 03/10 e 09/10 fecharam esse silêncio para os roteiros que chamam
+`salvarEvidencia` e para o `vitest` — **um passo `run:` simples, como este,
+ficou de fora.** Eu gastei seis execuções locais procurando o roteiro errado
+antes de parar.
+
+**O caminho curto existe e não precisa de mecanismo novo** (§9.8, perguntas 1 e
+5): a API do GitHub devolve a conclusão **passo a passo** do job.
+
+```bash
+RUN=$(gh api "repos/PedroVini2077/gamerhub/actions/runs?head_sha=$(git rev-parse HEAD)" \
+        --jq '.workflow_runs[0].id')
+gh api repos/PedroVini2077/gamerhub/actions/runs/$RUN/jobs \
+  --jq '.jobs[]|select(.conclusion=="failure")|.name,
+        (.steps[]|select(.conclusion=="failure")|"  passo: \(.name)")'
+```
+
+Isso devolveu `rotas num navegador de verdade → O espelho de migrations
+acompanha o banco` em um comando. **Primeira coisa a rodar quando um job
+vermelho não disser por quê.**

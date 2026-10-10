@@ -66,6 +66,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | --- | --- | --- | --- |
 | **INV-XP-001** | Conteúdo **fora do ar não paga XP**, em nenhuma das quatro formas de ganhar: post, curtida, comentário e live | N8, N9, N10 · SEC-028 · LIVE-040 | `src/lib/__tests__/xpSegueOQueEstaNoAr.test.js` |
 | **INV-XP-002** | O bônus de perfil exige **caractere visível** — `trim()` não basta, porque não corta U+200B, U+00A0, U+3000, U+FEFF nem U+2060 | N3 · SEC-046 | `src/lib/__tests__/xpSoPagaOQueAparece.test.js` |
+| **INV-XP-005** | **`[10/10]`** A TELA mede "campo preenchido" pelo mesmo critério do BANCO. Enquanto nada registrava desbloqueio, divergir só dava um selo errado; com o registro, a conquista aparece concluída e **nunca recebe data** | a tabela de conquistas tornou a divergência observável | `src/lib/__tests__/conquistaNaoDerivaDoBanco.test.js` |
 | **INV-XP-003** | Ninguém soma `posts.likes` — a coluna **foi apagada**, e três lugares já somaram ela achando que valia algo | — | `src/lib/__tests__/xpNaoLeColunaMorta.test.js` |
 | **INV-XP-004** | A moderação alcança o XP de uma live **mesmo depois que o cron apagou o post** | LIVE-052 | `src/lib/__tests__/moderacaoDeXpDeLive.test.js` |
 
@@ -215,6 +216,7 @@ a cadeia que o `docs/SEGURANCA.md` já contava em prosa.
 | **INV-CONTRATO-006** | Escrita que pode ser negada **confere quantas linhas caíram** | idem | `src/lib/__tests__/apagarConfereLinhas.test.js` |
 | **INV-CONTRATO-007** | Todo tipo da fila de moderação existe nos **três** mapas: rótulo, tabela de leitura e tabela de autor — e o link leva ao lugar certo, ou a lugar nenhum | (o `chat` que caiu no `else`) | `src/components/moderation/__tests__/queueLabels.test.js` |
 | **INV-CONTRATO-008** | **`[09/10]`** Ninguém chama um componente vigiado com prop que ele **não declara**. O React descarta prop desconhecida sem erro, sem log e sem lint: o componente desenha o caminho do valor ausente, e isso é indistinguível de "não tem dado" | a busca mostrando "?" no lugar de **toda** foto de perfil desde o PR #243 | `src/lib/__tests__/propQueNinguemDeclaraNaoPassa.test.js` |
+| **INV-CONTRATO-009** | **`[10/10]`** A lista de conquistas e as **metas** são as mesmas no JS (que desenha) e no SQL (que autoriza o registro). A duplicação é inevitável — o servidor tem de medir, porque o cliente usa a `anon key` —, então ela é travada | a tabela de desbloqueio criou o segundo lugar | `src/lib/__tests__/conquistaNaoDerivaDoBanco.test.js` |
 
 ---
 

@@ -2,6 +2,8 @@ import {
   FileText, Layers, Tv, Heart, Flame, MessageCircle, UserCheck, CalendarClock,
 } from 'lucide-react';
 
+import { textoVisivel } from './textoVisivel';
+
 /**
  * As CONQUISTAS — e por que elas não têm tabela no banco.
  *
@@ -32,6 +34,27 @@ import {
  * O dia em que uma dessas colunas virar necessidade — notificar, ou datar — a
  * tabela passa a valer o preço. Hoje não vale.
  *
+ * ── `[10/10]` E ESSE DIA CHEGOU, para a coluna "quando" — sem gatilho ───────
+ *
+ * O estudo de cosméticos mediu que sem persistência não existe *"desbloqueado
+ * para sempre"*, e ele autorizou a tabela. **A recusa acima continua válida
+ * para o desenho que ela recusou** — e é por isso que ela não foi apagada:
+ *
+ *     recusado:  TRIGGER em posts/post_likes/comments
+ *                -> 1 escrita por interação de todo mundo
+ *     o que há:  `registrar_conquistas()` quando a pessoa abre o PRÓPRIO perfil
+ *                -> no máximo 8 escritas por conta, NA VIDA
+ *
+ * A avaliação desta lista continua **derivada e a única fonte do progresso na
+ * tela**. A tabela acrescenta uma coisa só: a DATA. O que a tela considera
+ * "concluída" não mudou, e isso é deliberado — trocar a origem disso é a
+ * decisão pendente nº 1 do estudo (*desbloqueio permanente ou condicional?*),
+ * e ela é do dono.
+ *
+ * As duas migrations `conquistas_desbloqueadas_tabela` e
+ * `…_funcoes` (10/10) têm o desenho inteiro. A deriva entre a lista daqui e a de lá é travada por
+ * `__tests__/conquistaNaoDerivaDoBanco.test.js`.
+ *
  * ── Nada aqui inventa valor ─────────────────────────────────────────────────
  *
  * `avaliarConquistas` devolve `null` quando os dados ainda não chegaram, em vez
@@ -51,6 +74,13 @@ const DIAS_DE_CASA = 30;
  * nos dois lados. O que se ganha em troca é não depender do número mágico 140
  * (a soma dos bônus): se um bônus mudar de valor no SQL, esta conquista continua
  * verdadeira, porque ela olha os campos e não o total.
+ *
+ * **`[10/10]` E o CRITÉRIO deixou de divergir.** Aqui estava `.trim() !== ''`,
+ * e o SQL usa `texto_visivel` desde a SEC-046: `trim` só corta branco ASCII,
+ * então um perfil preenchido com U+200B contava como completo **na tela** e
+ * vazio **no servidor**. Era invisível enquanto nada registrava o desbloqueio;
+ * com a tabela, o card passaria a mostrar a conquista concluída e **sem data,
+ * para sempre**, sem erro e sem log. Ver `lib/textoVisivel.js`.
  */
 const CAMPOS_DO_PERFIL = ['bio', 'avatar_url', 'platform', 'discord', 'twitch', 'youtube'];
 
@@ -124,7 +154,7 @@ export const CONQUISTAS = [
     cor: '#f97316',
     meta: CAMPOS_DO_PERFIL.length,
     medir: ({ perfil }) => CAMPOS_DO_PERFIL
-      .filter((campo) => String(perfil?.[campo] ?? '').trim() !== '').length,
+      .filter((campo) => textoVisivel(perfil?.[campo])).length,
   },
   {
     id: 'um_mes_de_casa',
@@ -154,16 +184,24 @@ function diasDesde(quando) {
 /**
  * Avalia a lista inteira.
  *
- * @param {object|null} xp      o que a `get_user_xp` devolveu
- * @param {object|null} perfil  a linha de `profiles`
- * @returns {Array|null}        `null` enquanto faltar dado — nunca uma lista
- *                              de zeros, que seria mentira sobre a pessoa
+ * `desbloqueadas` é opcional e **só acrescenta a data**: quem decide
+ * `concluida` continua sendo a medição derivada. Passá-lo como `null` devolve
+ * exatamente o que esta função devolvia antes de a tabela existir — e é esse o
+ * caminho enquanto o registro não chega, que é a maior parte do tempo de tela.
+ *
+ * @param {object|null} xp             o que a `get_user_xp` devolveu
+ * @param {object|null} perfil         a linha de `profiles`
+ * @param {object|null} desbloqueadas  `{ [id]: { desbloqueada_em, retroativa } }`
+ * @returns {Array|null}               `null` enquanto faltar dado — nunca uma
+ *                                     lista de zeros, que seria mentira
  */
-export function avaliarConquistas(xp, perfil) {
+export function avaliarConquistas(xp, perfil, desbloqueadas = null) {
   if (!xp || typeof xp.posts !== 'number') return null;
 
   return CONQUISTAS.map((c) => {
     const valor = Math.max(0, c.medir({ xp, perfil }) ?? 0);
+    const registro = desbloqueadas?.[c.id] ?? null;
+
     return {
       ...c,
       valor: Math.min(valor, c.meta),
@@ -171,6 +209,12 @@ export function avaliarConquistas(xp, perfil) {
       // Percentual já pronto: a barra não deve fazer conta, e assim as duas
       // (barra e texto) nunca discordam.
       progresso: Math.min(100, Math.round((valor / c.meta) * 100)),
+      // `null` tem TRÊS causas aqui, e a tela precisa tratar as três igual:
+      // o registro ainda não chegou, não existe, ou é retroativo (a condição
+      // já estava cumprida antes de haver registro, então a data é do backfill
+      // e não do feito). Em nenhuma delas se mostra data — mostrar a do
+      // backfill seria afirmar uma história que ninguém observou (§1.1).
+      em: registro && !registro.retroativa ? registro.desbloqueada_em : null,
     };
   });
 }

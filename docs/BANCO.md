@@ -39,6 +39,7 @@ todas as tabelas públicas.**
 | `contact_messages`           | Mensagens do formulário público `/contato`. **Sem policy de INSERT de propósito** — a única porta é a RPC `enviar_mensagem_de_contato`, e desde `[03/09]` ela também não é mais chamável por `anon` (o captcha). Só `is_staff()` lê e atualiza. `reply_text` guarda o que a equipe respondeu |
 | `login_attempts`             | Tentativas de login por e-mail (bloqueio) — sem acesso direto    |
 | `admin_logs`                 | Trilha de auditoria                                              |
+| `conquistas_desbloqueadas`   | **`[10/10]`** O REGISTRO de desbloqueio das 8 conquistas do perfil. **Append-only, e sem gatilho nenhum** — o desenho com `TRIGGER` em `posts`/`post_likes`/`comments` foi recusado em 05/09 por custar uma escrita por interação de todo mundo, e a recusa continua valendo. Aqui o teto é **8 linhas por conta, na vida**: a `registrar_conquistas()` escreve quando a pessoa abre o PRÓPRIO perfil e algo novo cruzou a meta. `PRIMARY KEY (user_id, conquista_id)` + `ON CONFLICT DO NOTHING` fazem a 2ª visita custar zero escrita. `ON DELETE CASCADE` para `profiles` responde a 2ª pergunta do §5 (exclusão de conta). **Portas:** RLS ligada, `GRANT SELECT` para `authenticated` e **nada mais** — zero policy de INSERT/UPDATE/DELETE, de propósito: quem escreve é a RPC `SECURITY DEFINER`, e sem `GRANT` de escrita a REST API não alcança a tabela nem com policy. `anon` não recebe nada, porque o card vive atrás de `RequireAuth`. **A coluna `retroativa`** marca "a condição já estava cumprida antes de existir registro, então NÃO sabemos quando": a tela cala a data nesses casos em vez de mostrar a do backfill, que seria afirmar uma história que ninguém observou |
 | `admin_notifications`        | Notificações para admins                                         |
 | `admin_notification_reads`   | Marcação de lidas por admin                                      |
 | `site_config`                | Configuração global (manutenção, flags, banner, thresholds de moderação) |
@@ -277,6 +278,23 @@ transforma esta pegadinha em bug silencioso (§4).
   **Executável só por `authenticated`** desde 05/09: `anon` e `PUBLIC` saíram,
   porque nenhum caminho anônimo a chamava e ela é cálculo (quatro `COUNT`) sem
   sessão. Ver [SEGURANCA.md](SEGURANCA.md).
+- **`[10/10]` Conquistas: `medir_conquistas(uuid)` e `registrar_conquistas()`.**
+  A segunda é a única que o cliente alcança, e ela **não recebe parâmetro** —
+  é aí que mora a proteção inteira. Com um `p_conquista_id`, qualquer pessoa
+  logada se daria todas as conquistas por um `POST` no `/rest/v1/rpc/`, porque
+  o site usa a `anon key` (§1.3). Ela mede do zero, no servidor, para
+  `auth.uid()`, e devolve **quantas linhas entraram** — `0` é o caso normal
+  depois da primeira vez, e é resposta e não silêncio (§1.5).
+
+  A primeira é só leitura e **não é exposta**: `REVOKE ALL … FROM PUBLIC, anon,
+  authenticated`. Ela é `SECURITY DEFINER` porque o backfill da migration varre
+  `profiles` inteiro — exposta ao cliente, viraria um oráculo que diz quantas
+  curtidas qualquer pessoa tem.
+
+  **A lista de `id`/`meta` existe aqui E em `src/lib/conquistas.js`**, e isso é
+  deriva por construção: o servidor tem de medir, e medir exige as metas. A
+  trava `conquistaNaoDerivaDoBanco.test.js` compara os dois conjuntos nos dois
+  sentidos — ver [TRAVAS.md](TRAVAS.md), `INV-CONTRATO-009`.
 - Auditoria: `log_audit_event`.
 - Owner: `owner_get_stats`, `owner_get_users`, `owner_get_audit_logs`,
   `owner_get_notifications`, `owner_get_metrics`, `owner_set_role`,

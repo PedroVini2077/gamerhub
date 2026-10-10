@@ -5,9 +5,22 @@ import { avaliarConquistas, contarConcluidas } from '../../lib/conquistas';
 /**
  * As conquistas do perfil.
  *
- * Os dados vêm da mesma chamada que o card de stats já faz — nenhuma consulta
- * nova. A justificativa de por que elas são derivadas, e o que se perde com
- * isso, está em `lib/conquistas.js`.
+ * O progresso vem da mesma chamada que o card de stats já faz — nenhuma
+ * consulta nova. A justificativa de por que ele é derivado está em
+ * `lib/conquistas.js`.
+ *
+ * ── `[10/10]` A DATA, e o que a ausência dela significa ─────────────────────
+ *
+ * `desbloqueadas` traz o registro de `conquistas_desbloqueadas`. Ele acrescenta
+ * **só a data** — quem decide "concluída" continua sendo a medição derivada.
+ *
+ * E a data **falta em três casos diferentes**, todos legítimos: o registro
+ * ainda não chegou, não existe, ou é **retroativo** (a condição já estava
+ * cumprida antes de haver registro, então a data é do backfill da migration e
+ * não do feito). Nos três a tela mostra a conquista concluída e cala sobre o
+ * quando — porque mostrar a data do backfill seria afirmar uma história que
+ * ninguém observou (§1.1). É a razão de `avaliarConquistas` devolver `em: null`
+ * em vez de deixar a tela decidir: a regra fica num lugar só.
  *
  * ── Enquanto o dado não chega, ele DIZ que não chegou ───────────────────────
  *
@@ -15,8 +28,8 @@ import { avaliarConquistas, contarConcluidas } from '../../lib/conquistas';
  * nenhuma — e quem já tem sete veria sete cadeados por um instante a cada
  * carregamento. "Carregando" é a informação verdadeira ali.
  */
-export default function ConquistasCard({ xpData, profile }) {
-  const conquistas = avaliarConquistas(xpData, profile);
+export default function ConquistasCard({ xpData, profile, desbloqueadas = null }) {
+  const conquistas = avaliarConquistas(xpData, profile, desbloqueadas);
   const resumo = contarConcluidas(conquistas);
 
   return (
@@ -52,7 +65,7 @@ export default function ConquistasCard({ xpData, profile }) {
  * a lista num enigma em vez de num objetivo.
  */
 function ItemDeConquista({ conquista }) {
-  const { Icon, nome, descricao, cor, valor, meta, concluida, progresso } = conquista;
+  const { Icon, nome, descricao, cor, valor, meta, concluida, progresso, em } = conquista;
 
   return (
     <li
@@ -77,6 +90,14 @@ function ItemDeConquista({ conquista }) {
           {nome}
         </p>
         <p className="text-[11px] font-mono text-gray-600 leading-snug mt-0.5">{descricao}</p>
+
+        {/* A data só aparece quando ela é VERDADEIRA. Sem registro, ou com
+            registro retroativo, o lugar fica vazio — ver o cabeçalho. */}
+        {concluida && em && (
+          <p className="text-[10px] font-mono text-gray-700 mt-1">
+            conquistada em {new Date(em).toLocaleDateString('pt-BR')}
+          </p>
+        )}
 
         {/* A barra some quando a conquista já foi feita: barra cheia parada é
             ruído, e o ícone aceso já diz o que precisa ser dito. */}

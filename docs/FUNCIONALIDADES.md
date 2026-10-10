@@ -288,6 +288,17 @@ transições discretas das páginas internas.
   que faltam aparecem **com o nome à mostra** e uma barra de progresso — o que
   falta é objetivo, não enigma. Enquanto os dados não chegam, o card diz
   "Carregando" em vez de mostrar tudo bloqueado.
+
+  **`[10/10]` Elas agora mostram QUANDO foram conquistadas.** A data aparece
+  embaixo da descrição, e só quando ela é verdadeira: quem já tinha a conquista
+  antes de o site passar a registrar isso continua vendo "conquistada" **sem
+  data**, porque ninguém sabe o dia — e inventar um seria pior do que não ter.
+  Daqui para frente toda conquista nova nasce com data.
+
+  O que **não** mudou: o que conta como concluída continua sendo a medição do
+  que a pessoa tem hoje. Se um post for apagado e a contagem cair abaixo da
+  meta, a conquista volta a aparecer em progresso. Transformar o desbloqueio em
+  permanente é uma decisão em aberto, não um esquecimento.
 - **`[05/09]` O olho de mostrar/ocultar senha existe em TODO campo de senha do
   site** — login, cadastro, redefinição, configurações e o cofre do Fundador —
   e é igual no computador e no celular. Antes ele só aparecia em alguns
