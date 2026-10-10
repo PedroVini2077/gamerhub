@@ -11,6 +11,105 @@
 
 ---
 
+## `[10/10]` O mural GANHOU a barra do editor — com o conjunto do comentário
+
+**A pergunta estava aberta desde 09/10:** o mural passou a **renderizar**
+formatação (quem escreve `**oi**` vê negrito), mas não oferecia como escrevê-la.
+
+**Decidido: dar a barra.** Recurso que só funciona para quem já o conhece é
+indistinguível de recurso que não existe — quem sabia `**` usava, quem não
+sabia não descobria. E o custo é perto de zero: o `EditorDeTexto` já existe e
+já serve ao post, ao comentário e ao News.
+
+**O conjunto é `RECURSOS_DE_COMENTARIO`, e não um terceiro.** Duas razões, e a
+segunda é a que importa:
+
+1. **O mural É conversa**, como o comentário. Cor e tamanho ficam de fora pela
+   razão que ele mesmo deu sobre o comentário — *"nem tudo que tem na hora de
+   postar precisa ter nos comentários"* —, porque ali viram disputa de quem
+   grita mais alto.
+2. **A barra não pode oferecer o que aquela tela CORTA.** O mural renderiza com
+   `separador={false}`, igual ao comentário: o `---` é ruído numa mensagem de
+   duas linhas. Inventar um terceiro conjunto criaria um par que divergiria no
+   dia em que alguém mexesse num lado só (§4).
+
+**O que isso criou, e virou trava no mesmo PR:** `RECURSOS_COMPLETOS` é o
+**padrão** do `EditorDeTexto`, então basta **omitir** a prop para a barra do
+mural passar a oferecer o separador — e aí a pessoa clica, escreve `---`,
+envia, e o renderizador o descarta. Nada estoura; parece que o site comeu o que
+ela escreveu. `barraNaoOfereceOQueATelaCORTA.test.js` cobre os dois pares
+(mural e comentário) e as quatro formas de abrir o buraco, **provadas por
+reinjeção** — inclusive a de omitir a prop, que é a mais provável porque é a
+que menos parece uma mudança.
+
+→ `src/components/community/MuralForm.jsx` ·
+`src/lib/formatacao/__tests__/barraNaoOfereceOQueATelaCORTA.test.js`
+
+---
+
+## `[10/10]` As duas perguntas do News — respondidas, e já estavam IMPLEMENTADAS
+
+Ele aprovou as duas em 10/10 (*"pode fazer a visita editorial no owner e as
+recomendações de IA, oq vc recomendar"*). **Conferido contra o sistema antes de
+implementar, as duas já estavam no ar** — o item do backlog ficou duas semanas
+pedindo decisão sobre coisa construída. É o §1.4 na veia, e a segunda vez no
+mesmo dia (o item do portão de 300 linhas dizia "dois arquivos" e eram sete).
+
+### 1. O owner tem painel próprio de publicar notícias? **NÃO — tem a FILA**
+
+**Decidido:** não um segundo editor; uma **visão editorial** no `/owner`.
+
+Dois editores são duas implementações da mesma coisa, e é onde elas divergem
+(§4). A diferença entre owner e admin já está expressa no lugar certo: **quais
+botões aparecem** no editor que existe.
+
+O que faltava no `/owner` não era a ferramenta de escrever, era o **estado do
+jornal** — quantas esperando revisão, quantas no ar, o que está parado há
+semanas. *"Há quanto tempo"* é a parte que não é enfeite: matéria em revisão há
+duas semanas não é fila, é esquecimento, e esquecimento é invisível numa lista
+ordenada por data, onde ela simplesmente desce.
+
+**Já no ar desde 25/09:** `src/components/owner/FilaEditorialTab.jsx`, ligada
+como a aba **News** do painel do Fundador. O cabeçalho dela carrega esta mesma
+justificativa.
+
+### 2. Recomendações por IA? **SIM — como assistente de quem escreve, nunca autor**
+
+| Cabe | Não cabe |
+| --- | --- |
+| sugerir resumo a partir do corpo **que ele já escreveu** | escrever a matéria a partir do título |
+| sugerir editoria pelo título | inventar fato, data, número ou citação |
+| avisar *"este texto não tem link de fonte"* | publicar sem gente ler |
+
+**O motivo não é técnico, é o que está escrito na landing:** *"apurado pela
+equipe, sem caça-clique e sem repost sem fonte"*. IA que redige a partir de um
+título produz exatamente o contrário, com a marca do GamerHub assinando.
+
+**As três do "Cabe" já existem**, e a tela as consome por um ponto único
+(`sugestoesPara`, em `src/lib/news/assistente.js`, usado pelo
+`SugestoesDaMateria` dentro do `EditorDeArtigo`):
+
+| recomendação | onde |
+| --- | --- |
+| resumo a partir do corpo | `resumoAutomatico` |
+| editoria pelo título | `sugerirEditoria` (`editoriaProvavel.js`) |
+| avisar fonte/corpo faltando | `avisosDaMateria` |
+
+**E o "Não cabe" é travado, não confiado:** `rascunhoDeIaNaoDeriva.test.js`
+exige zero caminho de escrita no banco, a porta em `is_staff()`, o
+`MINIMO_DE_NOTAS = 40` (que é o que impede redigir a partir de um título só) e
+o marcador `[CONFERIR: …]` casando com quem o conta na tela.
+
+**O que continua aberto, e é de custo:** não existe orçamento de IA decidido, e
+toda cota grátis deste projeto já estourou pelo menos uma vez. O `seam` está no
+lugar — quem chamar `sugestoesPara` recebe o mesmo formato, venha de regra local
+ou de modelo pago. Trocar é decisão de custo, não de arquitetura.
+
+→ `src/components/owner/FilaEditorialTab.jsx` · `src/lib/news/assistente.js` ·
+`rascunhoDeIaNaoDeriva.test.js` · `assistenteSugereNaoDecide.test.js`
+
+---
+
 ## `[10/10]` Conquista de EVENTO não volta atrás; a de ESTADO volta — e a decisão é por conquista
 
 **A pergunta.** Com a tabela `conquistas_desbloqueadas` no ar, o que a tela

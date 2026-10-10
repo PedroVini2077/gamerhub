@@ -1127,10 +1127,22 @@ Agora ele formata, com o **mesmo corte do comentário** — `separador={false}`,
 porque régua horizontal atravessando um recado de duas frases sugere uma
 estrutura que ele não tem.
 
-**O que isto NÃO fez, e é decisão dele:** o formulário continua um `<textarea>`
-simples, **sem a barra do editor**. Desenhar o que alguém escreveu à mão é uma
-coisa; *oferecer* cor e tamanho no mural é outra, e muda o tom de um lugar de
-recado curto. Está no `BACKLOG.md` esperando a palavra dele.
+**`[10/10]` E a BARRA entrou — com o conjunto do comentário.** Em 09/10 o
+formulário continuava um `<textarea>` simples, e isso ficou esperando a palavra
+dele. A decisão veio: **dar a barra**, porque recurso que só funciona para quem
+já o conhece é indistinguível de recurso que não existe — quem sabia `**`
+usava, quem não sabia não descobria.
+
+O que a barra oferece no mural é **negrito, itálico, tachado e link**: o mesmo
+do comentário, e por dois motivos. O mural é conversa, e cor e tamanho ali
+viram disputa de quem grita mais alto — a razão que ele próprio deu sobre os
+comentários. E a barra **não pode oferecer o que a tela corta**: o mural
+renderiza sem separador, então o botão de `---` escreveria um marcador que o
+próprio mural descarta.
+
+> Trava: `barraNaoOfereceOQueATelaCORTA.test.js`, porque o conjunto completo é
+> o **padrão** do editor — bastaria omitir uma prop para o botão reaparecer, e
+> a pessoa veria o `---` desaparecer do que ela acabou de escrever.
 
 > Trava: `textoDeGenteNaoVaiCru.test.js`. Ela nomeia as superfícies de **corpo**
 > e carrega a exceção escrita — o `CartaoDeNoticia` recusa o formatador de
