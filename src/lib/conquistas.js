@@ -1,193 +1,39 @@
-import {
-  FileText, Layers, Tv, Heart, Flame, MessageCircle, UserCheck, CalendarClock,
-} from 'lucide-react';
-
-import { textoVisivel } from './textoVisivel';
+import { CONQUISTAS } from './conquistas/lista';
 
 /**
- * As CONQUISTAS — e por que elas não têm tabela no banco.
+ * A AVALIAÇÃO das conquistas — a lista em si mora em `conquistas/lista.js`.
  *
- * ── A decisão que define tudo aqui ──────────────────────────────────────────
+ * ── Por que o corte é aqui, e não por tamanho ───────────────────────────────
  *
- * Conquista, normalmente, é uma tabela: `achievements` mais `user_achievements`,
- * com trigger gravando a cada post, curtida e comentário. Aqui não é, e a razão
- * é a mesma que decide quase tudo neste projeto (§0.2): **quantas vezes por dia
- * isso roda?**
+ * `[10/10]` O arquivo chegou a 294 linhas ao receber a decisão de evento ×
+ * estado — abaixo do teto de 300, e perto o bastante para o §4 mandar dividir
+ * **antes** de criar dívida, e não depois de passar.
  *
- * A resposta seria "uma escrita por interação de todo mundo" — e isso multiplica
- * por usuários × posts × curtidas, que é exatamente a conta que cresce.
+ * O corte separa **dado de regra**: a lista é um catálogo que cresce a cada
+ * conquista nova, e a avaliação é uma função que não cresce junto. São as duas
+ * coisas que mudam por motivos diferentes.
  *
- * Estas conquistas são **derivadas**: a `get_user_xp` já devolve posts,
- * curtidas, comentários e lives numa chamada que o perfil **já faz**. Avaliar a
- * lista em cima disso custa **zero** consulta nova, zero escrita, zero tabela e
- * zero trigger.
- *
- * ── O que se perde com isso, dito antes de alguém descobrir ─────────────────
- *
- * | | derivada (é assim) | com tabela |
- * | --- | --- | --- |
- * | custo | zero | uma escrita por interação |
- * | "quando" foi conquistada | **não existe** | data guardada |
- * | notificar na hora | **não dá** | dá |
- * | conquista de evento que não deixa rastro (ex.: "entrou no 1º dia") | **impossível** | possível |
- *
- * O dia em que uma dessas colunas virar necessidade — notificar, ou datar — a
- * tabela passa a valer o preço. Hoje não vale.
- *
- * ── `[10/10]` E ESSE DIA CHEGOU, para a coluna "quando" — sem gatilho ───────
- *
- * O estudo de cosméticos mediu que sem persistência não existe *"desbloqueado
- * para sempre"*, e ele autorizou a tabela. **A recusa acima continua válida
- * para o desenho que ela recusou** — e é por isso que ela não foi apagada:
- *
- *     recusado:  TRIGGER em posts/post_likes/comments
- *                -> 1 escrita por interação de todo mundo
- *     o que há:  `registrar_conquistas()` quando a pessoa abre o PRÓPRIO perfil
- *                -> no máximo 8 escritas por conta, NA VIDA
- *
- * A avaliação desta lista continua **derivada e a única fonte do progresso na
- * tela**. A tabela acrescenta uma coisa só: a DATA. O que a tela considera
- * "concluída" não mudou, e isso é deliberado — trocar a origem disso é a
- * decisão pendente nº 1 do estudo (*desbloqueio permanente ou condicional?*),
- * e ela é do dono.
- *
- * As duas migrations `conquistas_desbloqueadas_tabela` e
- * `…_funcoes` (10/10) têm o desenho inteiro. A deriva entre a lista daqui e a de lá é travada por
- * `__tests__/conquistaNaoDerivaDoBanco.test.js`.
- *
- * ── Nada aqui inventa valor ─────────────────────────────────────────────────
- *
- * `avaliarConquistas` devolve `null` quando os dados ainda não chegaram, em vez
- * de responder "0 de 10". A diferença importa: "0 de 10" é uma afirmação falsa
- * sobre a pessoa, e a tela mostraria conquista bloqueada para quem já a tem
- * (§4, fallback silencioso).
+ * `CONQUISTAS` é **reexportada** aqui de propósito: este arquivo continua sendo
+ * a porta única (`lib/conquistas`), então quem já importava não mudou nada, e
+ * ninguém precisa saber que existe uma pasta. A alternativa — cada consumidor
+ * importando de `conquistas/lista` — espalharia o caminho interno por aí e
+ * tornaria o próximo corte uma mudança em N arquivos.
  */
-
-/** Quantos dias de conta o "Um Mês de Casa" pede. */
-const DIAS_DE_CASA = 30;
-
-/**
- * Os seis campos que fazem o perfil estar completo.
- *
- * A mesma lista existe na `get_user_xp`, que paga bônus por cada um. **Não dá
- * para importar dali** — é SQL —, então a duplicação é assumida e está anotada
- * nos dois lados. O que se ganha em troca é não depender do número mágico 140
- * (a soma dos bônus): se um bônus mudar de valor no SQL, esta conquista continua
- * verdadeira, porque ela olha os campos e não o total.
- *
- * **`[10/10]` E o CRITÉRIO deixou de divergir.** Aqui estava `.trim() !== ''`,
- * e o SQL usa `texto_visivel` desde a SEC-046: `trim` só corta branco ASCII,
- * então um perfil preenchido com U+200B contava como completo **na tela** e
- * vazio **no servidor**. Era invisível enquanto nada registrava o desbloqueio;
- * com a tabela, o card passaria a mostrar a conquista concluída e **sem data,
- * para sempre**, sem erro e sem log. Ver `lib/textoVisivel.js`.
- */
-const CAMPOS_DO_PERFIL = ['bio', 'avatar_url', 'platform', 'discord', 'twitch', 'youtube'];
-
-/**
- * A lista fechada.
- *
- * `medir` recebe `{ xp, perfil }` e devolve **um número** — quanto a pessoa tem
- * daquilo. A comparação com `meta` é feita num lugar só, o que impede duas
- * conquistas de discordarem sobre o que é "concluída".
- */
-export const CONQUISTAS = [
-  {
-    id: 'primeiro_post',
-    nome: 'Primeiro Post',
-    descricao: 'Publique seu primeiro post no feed',
-    Icon: FileText,
-    cor: '#39ff14',
-    meta: 1,
-    medir: ({ xp }) => xp.posts,
-  },
-  {
-    id: 'dez_posts',
-    nome: 'Presença Constante',
-    descricao: 'Publique 10 posts',
-    Icon: Layers,
-    cor: '#39ff14',
-    meta: 10,
-    medir: ({ xp }) => xp.posts,
-  },
-  {
-    id: 'primeira_live',
-    nome: 'No Ar',
-    descricao: 'Transmita sua primeira live',
-    Icon: Tv,
-    cor: '#00ffff',
-    meta: 1,
-    medir: ({ xp }) => xp.lives,
-  },
-  {
-    id: 'primeira_curtida',
-    nome: 'Alguém Curtiu',
-    descricao: 'Receba a primeira curtida de outra pessoa',
-    Icon: Heart,
-    cor: '#bf00ff',
-    meta: 1,
-    medir: ({ xp }) => xp.likes,
-  },
-  {
-    id: 'vinte_e_cinco_curtidas',
-    nome: 'Em Alta',
-    descricao: 'Receba 25 curtidas nos seus posts',
-    Icon: Flame,
-    cor: '#bf00ff',
-    meta: 25,
-    medir: ({ xp }) => xp.likes,
-  },
-  {
-    id: 'dez_comentarios',
-    nome: 'Conversador',
-    descricao: 'Deixe 10 comentários',
-    Icon: MessageCircle,
-    cor: '#00ffff',
-    meta: 10,
-    medir: ({ xp }) => xp.comments,
-  },
-  {
-    id: 'perfil_completo',
-    nome: 'Identidade Completa',
-    descricao: 'Preencha bio, avatar, plataforma e as três redes',
-    Icon: UserCheck,
-    cor: '#f97316',
-    meta: CAMPOS_DO_PERFIL.length,
-    medir: ({ perfil }) => CAMPOS_DO_PERFIL
-      .filter((campo) => textoVisivel(perfil?.[campo])).length,
-  },
-  {
-    id: 'um_mes_de_casa',
-    nome: 'Um Mês de Casa',
-    descricao: 'Complete 30 dias de conta no GamerHub',
-    Icon: CalendarClock,
-    cor: '#f97316',
-    meta: DIAS_DE_CASA,
-    medir: ({ perfil }) => diasDesde(perfil?.created_at),
-  },
-];
-
-/**
- * Dias inteiros desde uma data.
- *
- * Devolve 0 para data ausente ou inválida — e aqui o 0 **é** a resposta certa,
- * não um chute: sem data conhecida, a pessoa não tem tempo de casa comprovado.
- * `Math.floor` porque 29,9 dias não são 30.
- */
-function diasDesde(quando) {
-  if (!quando) return 0;
-  const inicio = new Date(quando).getTime();
-  if (Number.isNaN(inicio)) return 0;
-  return Math.max(0, Math.floor((Date.now() - inicio) / 86400000));
-}
+export { CONQUISTAS };
 
 /**
  * Avalia a lista inteira.
  *
- * `desbloqueadas` é opcional e **só acrescenta a data**: quem decide
- * `concluida` continua sendo a medição derivada. Passá-lo como `null` devolve
- * exatamente o que esta função devolvia antes de a tabela existir — e é esse o
- * caminho enquanto o registro não chega, que é a maior parte do tempo de tela.
+ * `desbloqueadas` é opcional, e passá-lo como `null` devolve exatamente o que
+ * esta função devolvia antes de a tabela existir — é esse o caminho enquanto o
+ * registro não chega, que é o primeiro instante de toda visita.
+ *
+ * Com ele em mãos, ele faz DUAS coisas, e a segunda mudou em 10/10:
+ *
+ *   1. a DATA (`em`), só quando ela é verdadeira — ver abaixo;
+ *   2. sustenta `concluida` nas conquistas de EVENTO (`permanente: true`),
+ *      mesmo que a contagem de agora tenha caído. A medição derivada continua
+ *      sendo a única fonte do PROGRESSO (a barra e o "7 / 10").
  *
  * @param {object|null} xp             o que a `get_user_xp` devolveu
  * @param {object|null} perfil         a linha de `profiles`
@@ -202,10 +48,29 @@ export function avaliarConquistas(xp, perfil, desbloqueadas = null) {
     const valor = Math.max(0, c.medir({ xp, perfil }) ?? 0);
     const registro = desbloqueadas?.[c.id] ?? null;
 
+    // Conquista sem `permanente` declarado ESTOURA, e não assume um lado.
+    // Qualquer padrão aqui seria chute sobre o significado dela: `true` faria
+    // um estado mentir, `false` faria um evento mentir — e nos dois casos em
+    // silêncio, que é o fallback que o §4 proíbe. Isto é o par em runtime da
+    // checagem que o `conquistaNaoDerivaDoBanco` faz em teste.
+    if (typeof c.permanente !== 'boolean') {
+      throw new Error(
+        `A conquista "${c.id}" não declara \`permanente\`. Responda: ela é um `
+        + 'EVENTO (aconteceu, e apagar o conteúdo depois não desfaz) ou um '
+        + 'ESTADO (afirma algo sobre o perfil AGORA)? Ver o cabeçalho da lista '
+        + 'em lib/conquistas.js.',
+      );
+    }
+
+    // O registro só sustenta "concluída" numa conquista de EVENTO — e a de
+    // backfill (`retroativa`) vale aqui de propósito: ela não tem data, mas é
+    // prova de que a condição já estava cumprida.
+    const registrada = c.permanente && registro !== null;
+
     return {
       ...c,
       valor: Math.min(valor, c.meta),
-      concluida: valor >= c.meta,
+      concluida: valor >= c.meta || registrada,
       // Percentual já pronto: a barra não deve fazer conta, e assim as duas
       // (barra e texto) nunca discordam.
       progresso: Math.min(100, Math.round((valor / c.meta) * 100)),

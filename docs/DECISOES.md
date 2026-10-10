@@ -11,6 +11,58 @@
 
 ---
 
+## `[10/10]` Conquista de EVENTO não volta atrás; a de ESTADO volta — e a decisão é por conquista
+
+**A pergunta.** Com a tabela `conquistas_desbloqueadas` no ar, o que a tela
+considera "concluída" passou a ter duas fontes possíveis: a medição de agora
+(`xp_dos_usuarios`, que filtra conteúdo fora do ar) ou o registro de
+desbloqueio. *Permanente ou condicional?*
+
+**Decidido por ele:** **por conquista**, declarado campo a campo em
+`src/lib/conquistas.js` — `permanente: true` nas sete de evento,
+`permanente: false` em `perfil_completo`.
+
+**O critério, e é o mesmo do resto do projeto:** a tela não pode afirmar algo
+falso sobre a pessoa. É a razão de `avaliarConquistas` devolver `null` em vez de
+"0 de 10" enquanto o dado não chega. Aplicado às três saídas:
+
+| | o que a tela afirmaria de falso |
+| --- | --- |
+| condicional em tudo (como estava) | "9 de 10 posts" para quem **publicou 10** — falso em 6 das 8 |
+| permanente em tudo | "Identidade Completa" num perfil esvaziado — falso em 1 |
+| **por conquista** | nenhuma |
+
+**As duas primeiras foram RECUSADAS por isso**, e não por serem mais simples:
+cada uma mente num lado. A distinção que as separa é de natureza, não de grau —
+seis conquistas afirmam *você fez X* (evento, e apagar o conteúdo depois não
+desfaz o feito) e uma afirma *seu perfil está preenchido* (estado, no presente).
+`um_mes_de_casa` nunca regride, então as três opções coincidem nela.
+
+**Por que "contar a vida inteira" não era alternativa.** Seria o jeito natural
+de medir evento, e essa contagem **não existe**: a view filtra `deleted_at` e
+`hidden_at`, e o `ban_user` dá `DELETE` nos posts — o histórico some de verdade.
+A `conquistas_desbloqueadas` **é** o livro de eventos, e `permanente: true` é
+apenas lê-lo para o que ele serve. *(Isto fecha a pergunta "por que construir a
+tabela?" que o desenho de 10/10 deixou meio aberta: sem ela, a opção certa não
+existiria.)*
+
+**O que esta decisão NÃO decide, de propósito.** Moderação. Se os dez posts
+forem ocultados por quebrar regra, o XP sai (`INV-XP-001`, com trava) e o selo
+**fica**. Revogar o registro nesse caso exigiria gatilho em caminho de moderação,
+e hoje a conquista é informativa — não dá poder, XP nem destrava nada. **No dia
+em que ela liberar moldura ou figurinha** (o estudo de cosméticos), ela vira item
+de verdade e isso volta à mesa.
+
+**Sem padrão silencioso** (§4): `avaliarConquistas` **lança** se uma conquista
+não declarar `permanente`, e `conquistaNaoDerivaDoBanco` reprova em teste. Quem
+criar a 9ª é obrigado a responder "evento ou estado?" — a distinção vive no dado,
+não na memória de quem leu o comentário.
+
+→ `src/lib/conquistas.js` · `conquistaNaoDerivaDoBanco.test.js` (5 checagens,
+provadas por reinjeção) · `INV-TELA-020`
+
+---
+
 ## `[26/09]` A fonte de display: OXANIUM no lugar da Orbitron — e o motivo é DEFEITO, não gosto
 
 **O item estava aberto desde 25/09 como decisão de estilo**, com o argumento de

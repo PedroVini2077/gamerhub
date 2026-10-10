@@ -423,13 +423,21 @@ src/
 │   │                      # `[05/09]` A marca é escrita ANTES do login, e
 │   │                      # `nomeDaSaudacao()` tem duas fontes porque o perfil
 │   │                      # pode não ter chegado quando o portão sobe
-│   ├── conquistas.js      # `[05/09]` As 8 conquistas do perfil. O PROGRESSO é
+│   ├── conquistas/
+│   │   └── lista.js       # `[10/10]` O CATÁLOGO das 8: id, nome, ícone, meta,
+│   │                      # `medir` e `permanente`. Separado da avaliação
+│   │                      # porque é dado que cresce a cada conquista nova,
+│   │                      # enquanto a função não cresce junto
+│   ├── conquistas.js      # `[05/09]` A AVALIAÇÃO das 8 conquistas, e a porta
+│   │                      # única (reexporta `CONQUISTAS`). O PROGRESSO é
 │   │                      # DERIVADO do que a get_user_xp já devolve — zero
 │   │                      # trigger, zero consulta nova. avaliarConquistas()
 │   │                      # devolve null (e não zeros) enquanto falta dado.
-│   │                      # `[10/10]` Desde a tabela de desbloqueio ela aceita
-│   │                      # `desbloqueadas` e acrescenta SÓ a data: quem decide
-│   │                      # "concluída" continua sendo a medição derivada
+│   │                      # `[10/10]` Cada conquista declara `permanente`:
+│   │                      # EVENTO ("publicou 10 posts") fica concluída pelo
+│   │                      # registro mesmo se a contagem cair; ESTADO
+│   │                      # (`perfil_completo`) não. Sem padrão — a função
+│   │                      # LANÇA se a declaração faltar (INV-TELA-020)
 │   ├── textoVisivel.js    # `[10/10]` "Sobrou caractere VISÍVEL?" — o espelho
 │   │                      # em JS da `texto_visivel` do banco (SEC-046).
 │   │                      # `trim()` só corta branco ASCII, então o perfil de

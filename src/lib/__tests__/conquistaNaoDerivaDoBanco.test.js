@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { CONQUISTAS } from '../conquistas';
+import { CONQUISTAS, avaliarConquistas } from '../conquistas';
 import { textoVisivel } from '../textoVisivel';
 
 /**
@@ -237,6 +237,137 @@ describe('as conquistas não derivam entre o JS e o banco', () => {
  * colou caractere invisível no próprio perfil. Com a tabela, a conquista passa
  * a aparecer concluída **e sem data, para sempre**.
  */
+/**
+ * ── `[10/10]` EVENTO × ESTADO — a decisão dele, virada máquina ──────────────
+ *
+ * *"Desbloqueio permanente ou condicional?"* foi decidida **por conquista**: as
+ * de evento continuam concluídas depois que a contagem cai; a de estado não.
+ *
+ * As três formas de isso apodrecer são todas MUDAS:
+ *
+ *   1. conquista nova sem `permanente` → um padrão qualquer faria metade da
+ *      lista mentir, sem erro;
+ *   2. `perfil_completo` virando `true` → "Identidade Completa" num perfil
+ *      esvaziado, afirmação falsa sobre a pessoa;
+ *   3. o `concluida` deixando de olhar o registro → a decisão continua escrita
+ *      nos oito objetos e **não é usada por ninguém**, que é o caso mais
+ *      traiçoeiro porque a lista parece certa.
+ */
+describe('evento e estado são declarados, e a declaração é USADA', () => {
+  it('toda conquista declara `permanente` — sem padrão', () => {
+    const semDeclarar = CONQUISTAS
+      .filter((c) => typeof c.permanente !== 'boolean')
+      .map((c) => c.id);
+
+    expect(semDeclarar, [
+      'Conquista sem `permanente` declarado:',
+      ...semDeclarar.map((id) => `  - ${id}`),
+      '',
+      'Responda: ela é um EVENTO (aconteceu, e apagar o conteúdo depois não',
+      'desfaz) ou um ESTADO (afirma algo sobre o perfil AGORA)?',
+      '',
+      'Não existe padrão de propósito: `true` faria um estado mentir, `false`',
+      'faria um evento mentir — e os dois em silêncio (§4).',
+    ].join('\n')).toEqual([]);
+  });
+
+  it('`perfil_completo` é ESTADO, e as outras são EVENTO', () => {
+    // A lista é escrita aqui de propósito: ela é a decisão dele, e trocar um
+    // valor no `conquistas.js` tem de reprovar AQUI, não passar silenciosamente
+    // por já estar "declarado".
+    const estado = CONQUISTAS.filter((c) => c.permanente === false).map((c) => c.id);
+
+    expect(estado, [
+      'A classificação evento/estado mudou.',
+      '',
+      'Esperado: só `perfil_completo` é ESTADO. Encontrado: ' + JSON.stringify(estado),
+      '',
+      '`perfil_completo` afirma que o perfil ESTÁ preenchido, agora — marcá-la',
+      'permanente deixaria "Identidade Completa" aceso num perfil esvaziado.',
+      '',
+      'E marcar uma de evento como estado faz a tela mostrar "9 de 10" para',
+      'quem publicou dez. Se a decisão realmente mudou, mude aqui também e',
+      'registre em `docs/DECISOES.md` — ela é do dono (§7).',
+    ].join('\n')).toEqual(['perfil_completo']);
+  });
+
+  it('o registro sustenta EVENTO e NÃO sustenta estado', () => {
+    // Executa `avaliarConquistas` de verdade, numa condição em que a contagem
+    // caiu abaixo da meta mas o registro existe. Olhar o texto-fonte aqui não
+    // serviria: a pergunta é o que a função DEVOLVE.
+    const xpZerado = { posts: 0, likes: 0, comments: 0, lives: 0 };
+    const perfilVazio = { created_at: new Date().toISOString() };
+    const registroDeTudo = Object.fromEntries(
+      CONQUISTAS.map((c) => [c.id, { desbloqueada_em: '2026-07-01T00:00:00Z', retroativa: false }]),
+    );
+
+    const avaliadas = avaliarConquistas(xpZerado, perfilVazio, registroDeTudo);
+    const porId = Object.fromEntries(avaliadas.map((c) => [c.id, c]));
+
+    expect(porId.dez_posts.concluida, [
+      '`dez_posts` tem registro de desbloqueio e a contagem de agora é 0, e a',
+      'função disse que NÃO está concluída.',
+      '',
+      'Isso é a decisão de 10/10 desligada: o registro existe, a conquista é de',
+      'EVENTO, e o selo deveria ficar. Com isso a tela volta a mostrar "0 de 10"',
+      'para quem publicou dez posts e depois fez faxina no próprio feed.',
+    ].join('\n')).toBe(true);
+
+    expect(porId.perfil_completo.concluida, [
+      '`perfil_completo` ficou concluída com o perfil VAZIO, só porque existe',
+      'registro.',
+      '',
+      'Ela é ESTADO: afirma que o perfil está preenchido AGORA. Um registro de',
+      'julho não torna isso verdade hoje — e "Identidade Completa" num perfil',
+      'esvaziado é exatamente a afirmação falsa que o card existe para evitar.',
+    ].join('\n')).toBe(false);
+  });
+
+  it('sem registro, EVENTO volta a depender só da medição', () => {
+    // O outro lado: se esta checagem não existisse, um `concluida: true` fixo
+    // passaria nas três acima.
+    const avaliadas = avaliarConquistas(
+      { posts: 0, likes: 0, comments: 0, lives: 0 },
+      { created_at: new Date().toISOString() },
+      {},
+    );
+
+    expect(avaliadas.every((c) => c.concluida === false), [
+      'Alguma conquista apareceu concluída com contagem ZERO e NENHUM registro.',
+      '',
+      'Concluídas: ' + JSON.stringify(avaliadas.filter((c) => c.concluida).map((c) => c.id)),
+      '',
+      'Sem isto, um `concluida: true` constante passaria nas outras checagens —',
+      'é o controle que impede a trava de aprovar o sempre-verdadeiro.',
+    ].join('\n')).toBe(true);
+  });
+
+  it('o registro RETROATIVO também sustenta o evento', () => {
+    // Ele não tem data (a tela cala o "quando"), mas é prova de que a condição
+    // já estava cumprida. Exigir `retroativa === false` aqui faria toda conta
+    // antiga perder o selo no dia em que apagasse um post.
+    const avaliadas = avaliarConquistas(
+      { posts: 0, likes: 0, comments: 0, lives: 0 },
+      { created_at: new Date().toISOString() },
+      { dez_posts: { desbloqueada_em: '2026-10-10T00:00:00Z', retroativa: true } },
+    );
+    const dezPosts = avaliadas.find((c) => c.id === 'dez_posts');
+
+    expect(dezPosts.concluida, [
+      'Registro RETROATIVO deixou de sustentar a conquista de evento.',
+      '',
+      'Ele é o do backfill: não tem data confiável, e por isso a tela cala o',
+      '"quando" — mas é prova de que a condição JÁ estava cumprida. Ignorá-lo',
+      'faria toda conta anterior a 10/10 perder o selo ao apagar um post.',
+    ].join('\n')).toBe(true);
+
+    expect(dezPosts.em, [
+      'A conquista retroativa voltou a mostrar data.',
+      'Ela é a data do backfill, não a do feito (§1.1).',
+    ].join('\n')).toBeNull();
+  });
+});
+
 describe('o critério de "campo preenchido" é o mesmo nos dois lados', () => {
   /**
    * A classe de caracteres da `texto_visivel` do SQL, reconstruída e testada
@@ -303,7 +434,11 @@ describe('o critério de "campo preenchido" é o mesmo nos dois lados', () => {
   });
 
   it('`perfil_completo` não voltou a medir com `trim()`', () => {
-    const fonte = readFileSync('src/lib/conquistas.js', 'utf8')
+    // `[10/10]` O caminho é `conquistas/lista.js` desde o corte do arquivo — a
+    // medição mora com a LISTA, não com a avaliação. Esta checagem reprovou no
+    // momento do corte, que é o comportamento certo: `readFileSync` num caminho
+    // morto estoura, em vez de ler vazio e aprovar nada (`varrerFontes`).
+    const fonte = readFileSync('src/lib/conquistas/lista.js', 'utf8')
       // Tira comentário: o cabeçalho deste arquivo EXPLICA o `trim()` que saiu,
       // e sem isto a trava acusaria a própria explicação — erro que já apareceu
       // três vezes neste projeto.
