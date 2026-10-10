@@ -371,7 +371,8 @@ derivada manda, e apagar o 10º post volta a travar "Presença Constante"). Isso
 acrescenta **só a data**, e trocar a origem do "concluída" depois é uma linha
 com os dados já no lugar.
 
-→ `supabase/migrations/20261010000000_conquistas_desbloqueadas.sql` ·
+→ `supabase/migrations/20261010000000_conquistas_desbloqueadas_tabela.sql` ·
+`supabase/migrations/20261010000100_conquistas_desbloqueadas_funcoes.sql` ·
 `conquistaNaoDerivaDoBanco.test.js`
 
 ---

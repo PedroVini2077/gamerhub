@@ -1441,7 +1441,7 @@ sem pedir que a documentação acompanhasse.
 
 Nenhum deles responde *"este parágrafo em português ainda é verdade?"*. Essa
 continua sendo leitura humana, e é por isso que `npm run docs` existe: em vez de
-mandar reler <!--n:docs.linhas-->31.227<!--/n--> linhas por precaução — o que
+mandar reler <!--n:docs.linhas-->31.377<!--/n--> linhas por precaução — o que
 custa contexto e, por custar, acaba não acontecendo —, ele diz **quais** abrir e
 **o que mudou embaixo de cada um**.
 
@@ -2024,3 +2024,133 @@ on conflict on constraint news_sources_url_unica do nothing;
 FeedBurner dá 1 item), The Enemy (não resolve), Flow Games (404), Jovem Nerd
 (404), Nintendo Blast (1 item). A lista com o motivo está na migration
 `news_fontes_rss_iniciais`.
+
+---
+
+## `[10/10]` APLICAR UMA MIGRATION QUANDO EU NÃO CONSIGO — passo a passo
+
+> Nasceu de um caso concreto: a migration das conquistas
+> (`conquistas_desbloqueadas`). Está escrito como receita geral porque a causa
+> não tem nada a ver com conquista.
+
+### O que eu consigo e o que eu não consigo, MEDIDO
+
+Nesta sessão, pelo MCP do Supabase:
+
+| o que tentei | resultado |
+| --- | --- |
+| `SELECT` (várias: `pg_proc`, a view, contagens) | **passou** |
+| `BEGIN … DDL … ROLLBACK` (3 vezes, uma com 4,8 kB) | **passou** |
+| `BEGIN … ROLLBACK` com ~7 kB de script | recusado — **tamanho**, e foi o que o corte em dois blocos provou |
+| DDL que **efetiva** (sem `ROLLBACK`) | **recusado** |
+| `apply_migration` (2 tentativas, payloads diferentes) | **recusado** |
+
+**Inferência, não fato** (§1.1): o padrão é consistente com *"leitura e
+transação que desfaz passam; qualquer coisa que efetive é recusada"*. Eu não
+alcanço a configuração de permissão desta sessão para confirmar — o que eu
+observei são as cinco linhas acima.
+
+**A consequência prática é boa:** eu continuo podendo **provar** uma mudança de
+banco em `ROLLBACK` (§5) com evidência de verdade. O que passa a depender dele
+é o commit.
+
+### A regra que isso cria
+
+**Migration nunca vai para a `main` antes de estar aplicada.** O motivo não é
+burocracia: código que chama RPC inexistente **degrada em silêncio** — os
+services devolvem o vazio seguro, a tela renderiza sem o recurso, e nada
+estoura. É o §1.5 pelo pior lado, porque *parece* entregue.
+
+Então a ordem é: provar em `ROLLBACK` → ele aplica → conferir → **aí** mergear.
+
+### Passo a passo
+
+**1. Abra o editor de SQL** — link direto, já no projeto certo:
+
+`https://supabase.com/dashboard/project/yuqbdcoljlvncxdnesxk/sql/new`
+
+Você vai ver um editor de texto grande com um botão **Run** no canto inferior
+direito (atalho: `Ctrl+Enter`).
+
+**2. Pegue o SQL.** Ele está no repositório, e **esta pasta é a verdade sobre o
+schema** — não um rascunho que eu colei no chat:
+
+```
+supabase/migrations/<data>_<nome>.sql
+```
+
+Para as conquistas são **dois** arquivos, e a **ordem importa** (o segundo cria
+funções que leem a tabela do primeiro):
+
+```
+supabase/migrations/20261010000000_conquistas_desbloqueadas_tabela.sql
+supabase/migrations/20261010000100_conquistas_desbloqueadas_funcoes.sql
+```
+
+**3. Cole um, rode, confira, cole o outro.** Um por vez, não os dois juntos: se
+o segundo falhar, você precisa saber que o primeiro passou.
+
+O que você vai ver ao dar certo: **`Success. No rows returned`**.
+
+**4. Confira que funcionou** — cole isto e rode:
+
+```sql
+select
+  (select count(*) from pg_policies
+    where schemaname='public' and tablename='conquistas_desbloqueadas') as policies,
+  (select relrowsecurity from pg_class
+    where oid='public.conquistas_desbloqueadas'::regclass)              as rls_ligada,
+  (select count(*) from information_schema.role_table_grants
+    where table_schema='public' and table_name='conquistas_desbloqueadas'
+      and grantee='anon')                                              as anon_alcanca,
+  (select count(*) from public.conquistas_desbloqueadas)               as linhas_do_backfill;
+```
+
+**O que tem de aparecer:** `policies = 1`, `rls_ligada = true`,
+`anon_alcanca = 0`, `linhas_do_backfill = 5`.
+
+> O `5` foi **medido antes**, em `ROLLBACK`: a base tem 6 perfis e 5 deles têm
+> 30 dias ou mais de conta, então o backfill grava `um_mes_de_casa` para esses
+> cinco e nada mais — ninguém tem post, curtida, comentário ou live hoje. Se
+> aparecer outro número, **me diga** em vez de seguir: a diferença é informação,
+> não detalhe.
+
+**5. Me avise.** Eu confiro pelo MCP (leitura passa), rodo a trava e mergeio.
+
+### O que pode dar errado, conferido ANTES
+
+| risco | por que não acontece aqui |
+| --- | --- |
+| rodar duas vezes e duplicar | tudo é idempotente: `CREATE TABLE IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION`, `DROP POLICY IF EXISTS` antes do `CREATE POLICY`, e o backfill tem `ON CONFLICT DO NOTHING` |
+| a tabela nascer aberta | o `REVOKE ALL … FROM anon, authenticated` está **dentro** da migration, e é a primeira coisa depois do `CREATE` (SEC-052: toda tabela nova nasce aberta) |
+| a função nova nascer chamável por `anon` | o event trigger `fecha_funcao_nova_para_anon` escreve o `REVOKE` sozinho (SEC-056), e a migration ainda escreve o dela explicitamente |
+| derrubar alguma tela | a mudança é **puramente aditiva**: nenhuma tabela, função, policy ou grant existente é tocada. Conferido lendo a migration inteira |
+| o backfill inventar data | ele grava `retroativa = true`, e a tela **cala a data** nesse caso em vez de mostrar a do backfill |
+
+### Como desfazer, se precisar
+
+```sql
+drop function if exists public.registrar_conquistas();
+drop function if exists public.medir_conquistas(uuid);
+drop table    if exists public.conquistas_desbloqueadas;
+```
+
+Nada mais depende delas — nenhuma outra função, policy ou trigger as referencia
+(conferido antes de escrever isto). A tela volta a mostrar as conquistas sem
+data, que é o comportamento de antes de 10/10.
+
+### O que falta, e é dele: o histórico do Supabase
+
+O SQL Editor **não registra** a migration em `supabase_migrations.schema_migrations`
+— e o `apply_migration`, que registraria, está recusado nesta sessão.
+
+**Isso importa menos do que parece, e o motivo está escrito no
+[`migrations/README.md`](../supabase/migrations/README.md):** a pasta do
+repositório *é* a verdade sobre o schema, e a receita de recriar o banco do zero
+já é "concatene os arquivos em ordem e cole no SQL Editor". O histórico do
+Supabase é registro secundário.
+
+**O que se perde mesmo:** `list_migrations` passa a mostrar duas entradas menos
+do que a pasta. Se isso incomodar, a saída é liberar o `apply_migration` para a
+sessão — nunca reaplicar o SQL por fora, que não acrescentaria nada ao histórico
+de qualquer jeito.

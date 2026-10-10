@@ -51,8 +51,8 @@ import { textoVisivel } from './textoVisivel';
  * decisão pendente nº 1 do estudo (*desbloqueio permanente ou condicional?*),
  * e ela é do dono.
  *
- * `supabase/migrations/20261010000000_conquistas_desbloqueadas.sql` tem o
- * desenho inteiro. A deriva entre a lista daqui e a de lá é travada por
+ * As duas migrations `conquistas_desbloqueadas_tabela` e
+ * `…_funcoes` (10/10) têm o desenho inteiro. A deriva entre a lista daqui e a de lá é travada por
  * `__tests__/conquistaNaoDerivaDoBanco.test.js`.
  *
  * ── Nada aqui inventa valor ─────────────────────────────────────────────────

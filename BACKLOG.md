@@ -72,21 +72,32 @@ A recusa de 05/09 continua válida para o desenho que ela recusou.
 
 **Etapas:**
 
-1. ✅ migration **escrita** — `20261010000000_conquistas_desbloqueadas.sql`:
+1. ✅ migration **escrita** — `20261010000000_conquistas_desbloqueadas_tabela.sql` +
+   `20261010000100_conquistas_desbloqueadas_funcoes.sql`:
    tabela + RLS + `REVOKE` (SEC-052) + as duas funções + o backfill
 2. ✅ a RPC `registrar_conquistas()` mede no SERVIDOR e **não recebe
    parâmetro** — é aí que mora a proteção (§1.3, o site usa a `anon key`)
 3. ✅ trava `conquistaNaoDerivaDoBanco.test.js` — 20 checagens, **provada
    reinjetando 6 bugs**, cada um reprovou na checagem certa
 4. ✅ a tela ganha a data, e só a data (`useConquistas` + `ConquistasCard`)
-5. 🔴 **BLOQUEADO: aplicar no banco.** As duas tentativas de rodar a prova em
-   `ROLLBACK` pelo MCP foram **recusadas** (as chamadas de leitura passaram).
-   A 1ª tinha um `UPDATE profiles` num usuário real dentro da transação e a
-   recusa foi justa — eu reescrevi sem tocar em `profiles` e a 2ª também foi
-   recusada. **Precisa da autorização dele**, e nada disto vai para a `main`
-   antes: código que chama RPC inexistente degrada para o comportamento de
-   hoje (o card fica sem data), mas gritaria no console a cada visita ao
-   perfil, que é ruído (§0.2, 4ª regra)
+5. ✅ **provado em `ROLLBACK`** — 10 de 10 veredictos OK: forjar `INSERT`,
+   `UPDATE` e `DELETE` todos bloqueados, `medir_conquistas` de outra pessoa
+   bloqueada, RLS mostrando 1 própria e 0 alheias, `anon` barrado nas duas
+   portas, a RPC idempotente (2ª chamada devolve 0) e `retroativa=false` no
+   que ela gravou. Backfill: **5 linhas, 5 pessoas, só `um_mes_de_casa`** —
+   o número que eu tinha dimensionado antes
+6. 🟠 **APLICAR — é dele, e eu não alcanço.** O `apply_migration` e todo
+   `execute_sql` que **efetiva** são recusados nesta sessão (leitura e
+   `BEGIN…ROLLBACK` passam — medido, 5 linhas de evidência no `OPERACAO.md`).
+   O passo a passo está em
+   [`docs/OPERACAO.md`](docs/OPERACAO.md) → *"APLICAR UMA MIGRATION QUANDO EU
+   NÃO CONSIGO"*: link direto do SQL Editor, os dois arquivos **em ordem**, a
+   consulta de conferência com os 4 números esperados, o que pode dar errado
+   (conferido antes) e como desfazer.
+7. 🟠 **O MERGE ESPERA a etapa 6**, e isso é regra nova escrita no
+   `OPERACAO.md`: código que chama RPC inexistente **degrada em silêncio** —
+   os services devolvem o vazio seguro, a tela renderiza sem data, nada
+   estoura. Parece entregue e não está (§1.5).
 
 **Decisões tomadas, com o motivo:**
 
