@@ -575,6 +575,45 @@ minutos, pega ponto cego. Não vale automatizar.
 
 ---
 
+## `[10/10]` O mapa de arquivos casa por NOME, e nome genérico passa de graça — DESCARTADO consertar
+
+**O que foi observado.** Criei `src/lib/conquistas/lista.js` e **esqueci** de
+declará-lo no `ARQUITETURA.md`. O portão `scripts/mapa-de-arquivos.mjs` deu
+**verde**: ele compara o basename sem extensão (`lista`) contra o documento
+inteiro, e a palavra "lista" aparece em prosa em vários lugares. Ele aprovou por
+acidente, não por o arquivo estar lá.
+
+A classe é toda nome genérico: `lista`, `index`, `tipos`, `util`, `estado`.
+
+**A correção óbvia, MEDIDA e descartada.** Exigir que o nome apareça numa linha
+de **árvore** (`├──`/`└──`) em vez de em qualquer lugar do documento:
+
+```
+518 arquivos em src/
+214 não citados numa linha de árvore   <- falsos positivos
+```
+
+São 214 porque o `ARQUITETURA.md` cita muita coisa em **prosa** — e o próprio
+script já avisa isso num comentário, escrito depois de uma primeira versão que
+*"acusou 145 arquivos que estavam no mapa o tempo todo"*. Portão que acusa errado
+é pior do que portão nenhum (§0.2, 4ª regra), e eu quase repeti o mesmo erro:
+a ideia parecia estritamente melhor e só a medição mostrou que não era.
+
+**A alternativa que sobrava** — uma lista de nomes "genéricos" que precisam estar
+na árvore — é heurística com tabela escrita à mão, ou seja manutenção permanente
+para um ganho pequeno (§9.8, perguntas 6 e 7).
+
+**O que protege de fato, e está dito para não virar falsa confiança:** o
+`npm run docs` apontou o `ARQUITETURA.md` como território mexido e não conferido
+— foi ele que me pôs na frente do documento. E o que fez eu declarar o arquivo
+foi **conferir em vez de confiar no verde**, que é julgamento e o §6.3 já diz
+que não tem conserto em código.
+
+→ `scripts/mapa-de-arquivos.mjs` (o comentário sobre os 145 continua sendo a
+melhor explicação do limite)
+
+---
+
 ## `[02/10]` O PR de 14 dependências virou 9 — cada bump foi PESADO sozinho
 
 O Dependabot propôs 14 atualizações num PR só (#226). Ele reprovava o orçamento

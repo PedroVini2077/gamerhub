@@ -95,7 +95,11 @@ porque privilégio de coluna não expressa *"só o que você possui"*.
 
 Nenhuma implementação deve começar antes destas:
 
-1. **Desbloqueio permanente ou condicional?** (recomendação: permanente)
+1. ~~**Desbloqueio permanente ou condicional?**~~ **✅ decidida em 10/10:** por
+   conquista — `permanente: true` nas de EVENTO, `false` em `perfil_completo`,
+   que é ESTADO. Já no ar, com trava. Ver `DECISOES.md`.
+   **O que ela deixou aberto, para quando a conquista destravar item:**
+   moderação ocultar o conteúdo deve revogar a moldura?
 2. **Aceita que figurinha derivada de OpenMoji torne a coleção CC BY-SA?**
 3. **Coleção nova exigindo deploy é aceitável agora?**
 4. **Onde as figurinhas entram primeiro?** (recomendação: chat da live)

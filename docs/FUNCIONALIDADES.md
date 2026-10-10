@@ -295,10 +295,17 @@ transições discretas das páginas internas.
   data**, porque ninguém sabe o dia — e inventar um seria pior do que não ter.
   Daqui para frente toda conquista nova nasce com data.
 
-  O que **não** mudou: o que conta como concluída continua sendo a medição do
-  que a pessoa tem hoje. Se um post for apagado e a contagem cair abaixo da
-  meta, a conquista volta a aparecer em progresso. Transformar o desbloqueio em
-  permanente é uma decisão em aberto, não um esquecimento.
+  **`[10/10]` E uma conquista conquistada NÃO volta atrás — exceto a que fala
+  do presente.** Sete das oito contam uma coisa que **aconteceu**: quem publicou
+  dez posts publicou dez posts, e apagar alguns depois (ou fazer faxina no
+  próprio feed) não desfaz o feito. O selo fica.
+
+  A exceção é **Identidade Completa**, e ela é diferente por natureza: não diz
+  "você já preencheu", diz que o seu perfil **está** preenchido. Se você limpar
+  a bio, ela volta a aparecer em progresso — porque continuar acesa seria o site
+  afirmando algo que deixou de ser verdade.
+
+  **Um Mês de Casa** nunca regride de jeito nenhum: tempo de conta só cresce.
 - **`[05/09]` O olho de mostrar/ocultar senha existe em TODO campo de senha do
   site** — login, cadastro, redefinição, configurações e o cofre do Fundador —
   e é igual no computador e no celular. Antes ele só aparecia em alguns

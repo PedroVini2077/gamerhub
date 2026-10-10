@@ -394,12 +394,24 @@ certa". Se as duas entrarem juntas e a moldura não aparecer, há dois suspeitos
 
 **Objetivo:** a moldura passa a ser conquistada.
 
-**Dependência que o estudo revelou:** §2.3 — conquista é derivada. Esta fase
-precisa decidir **[DECISÃO PENDENTE]** se o desbloqueio é condicional (derivado,
-some se a condição deixar de valer) ou permanente (gravado, nunca some).
+**Dependência que o estudo revelou:** §2.3 — conquista é derivada.
 
-**[RECOMENDAÇÃO]** permanente. *"Ganhei e perdi"* é pior do que nunca ter
-ganhado, e ele pediu explicitamente que o item continue após o evento.
+**✅ `[10/10]` RESOLVIDA, e ela já está no ar.** A tabela
+`conquistas_desbloqueadas` existe, e ele decidiu **por conquista**, não por
+interruptor: `permanente: true` nas sete de EVENTO (*você publicou dez posts*),
+`permanente: false` em `perfil_completo`, que é ESTADO (*seu perfil está
+preenchido*). A história inteira, com as alternativas recusadas, está em
+[`DECISOES.md`](DECISOES.md) — e a regra permanente é `INV-TELA-020`.
+
+**O que isso entrega para esta fase, de graça:** o livro de eventos que uma
+moldura conquistada precisa. Antes de 10/10 a Fase 2 era bloqueada por não haver
+onde gravar "você desbloqueou"; agora há, com RLS, sem gatilho, e com a conta de
+escrita medida (≤ 8 por conta, na vida).
+
+**O que ela NÃO resolve, e continua valendo aqui:** moderação. Hoje o selo fica
+quando o conteúdo é ocultado — aceitável porque conquista é informativa. **No
+momento em que ela destravar moldura, deixa de ser**, porque passa a ser item.
+Essa é a decisão que a Fase 2 herda, e está nomeada no `DECISOES.md`.
 
 ### Fase 3 — Figurinhas
 
@@ -437,15 +449,18 @@ de a Fase 2 rodar um ciclo inteiro com gente de verdade.
 
 ## 8. Decisões que dependem dele
 
-1. **O desbloqueio é permanente ou condicional?** (§6, Fase 2) — minha
-   recomendação é permanente.
+1. ~~**O desbloqueio é permanente ou condicional?**~~ **✅ decidida em 10/10:**
+   por conquista — evento é permanente, estado não. Ver [`DECISOES.md`](DECISOES.md).
+   **A que ela criou, e é desta fase:** quando a conquista destravar moldura,
+   moderação ocultar o conteúdo deve revogar o item?
 2. **Aceita que figurinhas derivadas de OpenMoji tornem a coleção CC BY-SA?**
    Se não, a origem tem de ser arte própria.
 3. **Molduras em CSS/SVG significam deploy a cada coleção nova.** Aceitável
    agora?
 4. **Onde as figurinhas entram primeiro** — minha recomendação é o chat da live.
 5. **A moldura aparece nos avatares de 24 px?** Precisa de teste visual antes.
-6. **O bug da busca (§2.6) vira item do backlog agora?**
+6. ~~**O bug da busca (§2.6) vira item do backlog agora?**~~ **✅ decidida em
+   09/10: consertado, com trava de classe.**
 
 ---
 
