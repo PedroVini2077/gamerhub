@@ -822,6 +822,31 @@
   mensagem QUAL pasta ele olhou. Prefiro ampliar — mas isso obriga a dividir os
   dois antes, então é trabalho, não ajuste.*
 
+  > **`[10/10]` MEDIDO de novo, e são CINCO, não dois.** O item envelheceu em
+  > 16 dias (§1.4 — documento envelhece, o sistema não mente):
+  >
+  > ```
+  > 611  e2e/portas-do-banco.mjs
+  > 449  e2e/painel-admin.mjs
+  > 401  scripts/territorio.mjs
+  > 375  e2e/portas-da-web.mjs
+  > 324  scripts/orcamento-de-bytes.mjs
+  > ```
+  >
+  > Dois cruzaram o teto **depois** de o item ser escrito, sem nada acusar — que
+  > é exatamente o buraco que o item descreve, acontecendo enquanto ele esperava
+  > na fila.
+  >
+  > **E o trabalho é maior do que "dividir dois":** cada um desses arquivos é
+  > lido por travas que o abrem **por caminho**, então o corte obriga a
+  > atualizar quem o vigia. Cortar sem isso produz o pior caso — trava verde
+  > lendo arquivo que já não tem o que ela vigiava.
+  >
+  > **Ordem recomendada:** um arquivo por PR, começando pelo
+  > `orcamento-de-bytes.mjs` — é o menor excesso e dá para PROVAR rodando o
+  > próprio portão, que é local. Os de `e2e/` não dá para executar daqui (batem
+  > em produção), então a prova deles é a trava, não a execução.
+
 - ⬜ `[24/09]` 🟢 **Medir o tamanho do lote do feed com dado de verdade.** *O 20
   foi escolhido por ser menor que os 30 de antes, não por medição — o feed
   está vazio. O que medir, com dado semeado: custo de render por card (com e
